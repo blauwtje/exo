@@ -81,12 +81,14 @@ export function copyPluginWithoutTasks(root, destination) {
   return destination;
 }
 
+// /tmp/ hides the TMPDIR confined-child.mjs makes at the cell root, which an
+// exo-run cell's repo is, from git and so from land-task's stray check.
 function writeExoSettings(repo) {
   fs.mkdirSync(path.join(repo, path.dirname(LOCAL_FILE)), { recursive: true });
   fs.writeFileSync(path.join(repo, LOCAL_FILE), `${JSON.stringify(EXO_SETTINGS, null, 2)}\n`);
   const info = path.join(repo, '.git', 'info');
   fs.mkdirSync(info, { recursive: true });
-  fs.appendFileSync(path.join(info, 'exclude'), `/${LOCAL_FILE.split(path.sep).join('/')}\n/.exo/\n`);
+  fs.appendFileSync(path.join(info, 'exclude'), `/${LOCAL_FILE.split(path.sep).join('/')}\n/.exo/\n/tmp/\n`);
 }
 
 // Builds the cell repo in an empty repo directory: seed/ as the initial commit,

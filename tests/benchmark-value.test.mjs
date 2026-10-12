@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { parsePlan } from '#plan-tasks';
 import { fixture } from './harness.mjs';
 import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, newestRunLedger, parseSpendCap, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from '../benchmarks/value.mjs';
 
@@ -340,6 +341,18 @@ test('the exo-run plan is copied with the repo as Repository:, passes plan-check
     assert.match(success, /^node --test --test-isolation=none tests\/tax\.test\.mjs .* && node --test --test-isolation=none tests\/options\.test\.mjs tests\/pricing\.test\.mjs /);
     assert.equal(/^Depends on: .*\| Proof: (.+)$/m.exec(text)?.[1], success);
     assert.equal(git(repo, ['status', '--porcelain']).trim(), '');
+    // confined-child.mjs puts the session's TMPDIR at <cell root>/tmp, and the
+    // exo-run arm's cell root is this repo; land-task would count it as stray.
+    await fs.mkdir(path.join(repo, 'tmp', 'isolated-zsh'), { recursive: true });
+    await fs.writeFile(path.join(repo, 'tmp', 'isolated-zsh', '.zcompdump'), '');
+    assert.equal(git(repo, ['status', '--porcelain', '--untracked-files=all']).trim(), '');
+    // land-task's isCovered reads only an entry ending in `/` as a folder.
+    for (const task of parsePlan(text).tasks) {
+      for (const { path: entry } of task.files) {
+        const stat = await fs.stat(path.join(repo, entry)).catch(() => null);
+        if (stat?.isDirectory()) assert.ok(entry.endsWith('/'), `Files: entry ${entry} names a folder without a trailing /`);
+      }
+    }
     const report = execFileSync(process.execPath, [path.join(ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'), '--plan', plan, '--loop', '--run'], { encoding: 'utf8' });
     assert.match(report, /plan-check: ok/);
     assert.equal(newestRunLedger(repo), null);
