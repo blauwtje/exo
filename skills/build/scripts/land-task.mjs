@@ -35,6 +35,7 @@ import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTas
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
+import { runOnBase, testPaths } from '#red-green';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -550,12 +551,44 @@ function proofOutcomeOf(tail) {
 
 // The report's `Proof: <command> -> <outcome>` line for each proof this landing passed, so the
 // session reports proofs from script output and never reruns them.
-function writeProofRecord({ root, planId, number, proofs }) {
+function writeProofRecord({ root, planId, number, proofs, redLine }) {
   if (proofs.length === 0) return;
-  const lines = proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${proofOutcomeOf(tail)}\n`);
+  const lines = [...proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${proofOutcomeOf(tail)}\n`), `${redLine}\n`];
   const record = proofRecordPath(root, planId, number);
   fs.mkdirSync(path.dirname(record), { recursive: true });
   fs.writeFileSync(record, lines.join(''));
+}
+
+// The task's uncommitted paths: changed, added and untracked files, a deleted path as a removal.
+function taskChangedPaths(root) {
+  const entries = execFileSync('git', ['-C', root, 'status', '--porcelain', '-z', '-uall'], { encoding: 'utf8' }).split('\0').filter((entry) => entry !== '');
+  const paths = [];
+  for (let i = 0; i < entries.length; i++) {
+    paths.push(entries[i].slice(3));
+    if (/[RC]/.test(entries[i].slice(0, 2))) paths.push(entries[++i]);
+  }
+  return paths;
+}
+
+// A Proof that passes on HEAD with only the task's test changes laid over it proves nothing
+// about the task's production change, unless the task names `Red: none (<reason>)`. A Proof of
+// several commands is red when one fails there. Fails closed: a base run that errors refuses.
+// Returns the proof record's line.
+function redGreenLine(task, proofCommands, root, pending) {
+  if (task.red !== null) return `Red: skipped: none (${task.red.reason})`;
+  if (pending !== null) return 'Red: skipped: deferred MCP proof';
+  const overlay = testPaths(taskChangedPaths(root));
+  const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  let sha = '';
+  for (const command of proofCommands) {
+    const base = runOnBase({ root, base: 'HEAD', command, overlay, timeoutMs });
+    sha = base.sha.slice(0, 7);
+    if (base.status === 'error') {
+      throw new LandingError(`Task ${task.number}: the red-green check of "${command}" on ${sha || 'HEAD'} failed to finish:\n${base.output.trim().split('\n').slice(-PROOF_TAIL_LINES).join('\n')}`);
+    }
+    if (base.status === 'red') return 'Red: proved';
+  }
+  throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task`);
 }
 
 function refuseStrayPaths(task, root, planPath, siblingWork) {
@@ -612,6 +645,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
+  const redLine = redGreenLine(task, proofCommands, root, pending);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
   const gateLine = runLandGate(frame.landGate, root, dropsOf(task)) ?? '';
@@ -636,7 +670,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   }
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
-  writeProofRecord({ root, planId, number, proofs });
+  writeProofRecord({ root, planId, number, proofs, redLine });
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (exit 0)`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const route = planRoute(plan.tasks);
