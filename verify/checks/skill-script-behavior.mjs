@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 
 const TALLY_KEYS = ['tests', 'pass', 'fail', 'skipped'];
 
@@ -38,7 +39,10 @@ export function checkSkillScriptBehavior(report, repository) {
     return;
   }
 
-  const run = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...testFiles], {
+  // why: the check can run inside `exo run`, whose variables would make the tests park gates in the live run.
+  const stripFile = repository.join('tests', 'clean-run-env.mjs');
+  const strip = fs.existsSync(stripFile) ? ['--import', pathToFileURL(stripFile).href] : [];
+  const run = spawnSync(process.execPath, [...strip, '--test', '--test-reporter=tap', ...testFiles], {
     encoding: 'utf8'
   });
   const lines = `${run.stdout ?? ''}${run.stderr ?? ''}`.split('\n');

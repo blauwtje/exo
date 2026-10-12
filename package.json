@@ -50,7 +50,7 @@
     "validate": "node verify.mjs",
     "validate:static": "node verify.mjs --static",
     "validate:self": "node verify.mjs --self-test",
-    "test": "node --test --test-concurrency=2 \"tests/*.test.mjs\"",
+    "test": "node --import ./tests/clean-run-env.mjs --test --test-concurrency=2 \"tests/*.test.mjs\"",
     "smoke": "bash tests/smoke.sh",
     "check": "npm run validate:self",
     "bump": "node bump.mjs",

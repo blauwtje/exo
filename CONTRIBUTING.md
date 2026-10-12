@@ -22,7 +22,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 
 CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every pull request.
 
-`npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through TAP, so its failure line names each failing test as `not ok`.
+`npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through TAP, so its failure line names each failing test as `not ok`. Both load `tests/clean-run-env.mjs` first, which strips the run variables `EXO_RUN`, `EXO_RUN_DIR`, `EXO_RUN_TASK` and `EXO_DROPS`, so a test inside `exo run` never parks gates in the live run.
 
 The `instruction density` check fails a list item of three or more sentences and a sentence over 40 words in the Markdown under `skills/`, `agents/` and `output-styles/`, outside fenced code, frontmatter, HTML comments, headings and tables; an inline code span counts as one word. `verify/instruction-density-allowlist.txt` names the offenders the tree held when the check began, and `INSTRUCTION_DENSITY_ALLOWLIST_LOCK` in `verify/budgets.mjs` caps its length. A line that no longer matches fails `npm test` until `node verify/instruction-density.mjs --prune` drops it; the command never adds a line and prints the new count to copy into the lock.
 
