@@ -7,7 +7,6 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, run } from './harness.mjs';
-import { readState } from '../skills/build/scripts/run-state.mjs';
 import { STUB, setup } from './run-plan-fixture.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
@@ -47,8 +46,17 @@ await import('./session.mjs');
 }
 
 const runDirOf = async (root) => {
-  const [id] = (await fs.readdir(path.join(root, '.exo', 'run'))).filter((name) => name !== 'lock');
-  return { id, dir: path.join(root, '.exo', 'run', id) };
+  for (const where of ['run', 'kept']) {
+    const names = await fs.readdir(path.join(root, '.exo', where)).catch(() => []);
+    const [id] = names.filter((name) => name !== 'lock');
+    if (id !== undefined) return { id, dir: path.join(root, '.exo', where, id) };
+  }
+  throw new Error(`no run under ${root}/.exo`);
+};
+
+const readRun = async (root) => {
+  const { dir } = await runDirOf(root);
+  return JSON.parse(await fs.readFile(path.join(dir, 'state.json'), 'utf8'));
 };
 
 test('a passing run with Land: local lands itself, reports and notifies once', async () => {
@@ -58,7 +66,9 @@ test('a passing run with Land: local lands itself, reports and notifies once', a
   assert.match(result.stdout, /^Next: exo run lands branch feat\/run per Land: local; 1 manual check are listed in the detail file$/m);
   assert.doesNotMatch(result.stdout, /push it or open a pull request/);
   const { id, dir } = await runDirOf(c.root);
-  const state = readState(c.root, id);
+  assert.equal(dir, path.join(c.root, '.exo', 'kept', id));
+  await assert.rejects(fs.access(path.join(c.root, '.exo', 'run', id)));
+  const state = await readRun(c.root);
   assert.equal(state.phase, 'landed');
   assert.equal(state.stage, 'landing');
   assert.equal(git(c.root, 'rev-parse', '--abbrev-ref', 'HEAD'), 'main');
@@ -75,7 +85,7 @@ test('a passing run with Land: local lands itself, reports and notifies once', a
 
   const again = await c.exo(['run', '--resume', id]);
   assert.equal(again.code, 2);
-  assert.match(again.stderr, /already landed/);
+  assert.match(again.stderr, /no run/);
 });
 
 test('report.md lists the refused commands', async () => {
@@ -97,7 +107,8 @@ test('a passing run of an old plan with no Land: line ends at passed with the pu
   assert.equal(result.code, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /^Next: review branch feat\/run, then push it or open a pull request/m);
   const { id, dir } = await runDirOf(c.root);
-  const state = readState(c.root, id);
+  assert.equal(dir, path.join(c.root, '.exo', 'kept', id));
+  const state = await readRun(c.root);
   assert.equal(state.phase, 'passed');
   assert.equal(state.stage, 'build');
   assert.equal(git(c.root, 'rev-parse', '--abbrev-ref', 'HEAD'), 'feat/run');
@@ -116,7 +127,8 @@ test('a session gate parks the run; exo approve lands it', async () => {
   const result = await c.exo(['run', c.plan, '--claude', c.stub]);
   assert.equal(result.code, 3, result.stdout + result.stderr);
   const { id, dir } = await runDirOf(c.root);
-  const state = readState(c.root, id);
+  assert.equal(dir, path.join(c.root, '.exo', 'run', id));
+  const state = await readRun(c.root);
   assert.equal(state.phase, 'parked');
   assert.equal(state.stage, 'build');
   assert.match(await fs.readFile(path.join(dir, 'report.md'), 'utf8'), /Phase: parked[\s\S]*Open gates: 1[\s\S]*task 1: git push --force/);
@@ -133,8 +145,10 @@ test('a session gate parks the run; exo approve lands it', async () => {
   const approved = await c.exo(['approve', id]);
   assert.equal(approved.code, 0, approved.stdout + approved.stderr);
   assert.match(approved.stdout, /approved 1 gate\(s\)/);
-  assert.equal(readState(c.root, id).phase, 'landed');
-  assert.match(await fs.readFile(path.join(dir, 'gates.md'), 'utf8'), /^- approved: task 1: git push --force/m);
+  assert.equal((await readRun(c.root)).phase, 'landed');
+  const kept = path.join(c.root, '.exo', 'kept', id);
+  await assert.rejects(fs.access(dir));
+  assert.match(await fs.readFile(path.join(kept, 'gates.md'), 'utf8'), /^- approved: task 1: git push --force/m);
   assert.equal((await c.notified()).length, 2);
   await fs.access(path.join(c.root, 'b.txt'));
 });
@@ -145,6 +159,6 @@ test('exo approve refuses a run that is not parked', async () => {
   const { id } = await runDirOf(c.root);
   const result = await c.exo(['approve', id]);
   assert.equal(result.code, 2);
-  assert.match(result.stderr, /landed, not parked/);
+  assert.match(result.stderr, /no run/);
   assert.equal((await c.exo(['approve', 'nope'])).code, 2);
 });

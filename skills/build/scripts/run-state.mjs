@@ -119,6 +119,26 @@ export function removeRun(root, id) {
   fs.rmSync(runDir(root, id), { recursive: true, force: true });
 }
 
+export function keptDir(root, id) {
+  return path.join(root, '.exo', 'kept', id);
+}
+
+export function keepRun(root, id) {
+  const from = runDir(root, id);
+  const to = keptDir(root, id);
+  if (!fs.existsSync(from)) return;
+  if (fs.existsSync(to)) {
+    process.stderr.write(`exo: run ${id} stays in ${from}: ${to} exists\n`);
+    return;
+  }
+  try {
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    settle(() => fs.renameSync(from, to));
+  } catch (error) {
+    process.stderr.write(`exo: run ${id} stays in ${from}: ${error.message}\n`);
+  }
+}
+
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const claimFile = (root, key, n) => path.join(runsDir(root), `lock.${key}.${n}`);
 

@@ -11,7 +11,7 @@ import { readDecisions } from '#run-decision';
 import { isMain } from '#script-flags';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
-import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
+import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
 const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup';
 const CLI = fileURLToPath(import.meta.url);
@@ -400,6 +400,7 @@ async function runCommand(argv, { approving = false } = {}) {
       process.stderr.write(`exo: report.md not written: ${error.message}\n`);
     }
     notify(id, phase);
+    if (['landed', 'passed', 'refused'].includes(phase)) keepRun(root, id);
   }
   return code;
 }

@@ -7,7 +7,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import {
   createRun, updateRun, readState, listRuns, acquireLock, releaseLock, newRunId, isAlive, runDir,
-  PHASES, FINAL_PHASES, openGate, readGates, approveGates, takeApproved,
+  PHASES, FINAL_PHASES, openGate, readGates, approveGates, takeApproved, keepRun,
 } from '../skills/build/scripts/run-state.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'run-state-'));
@@ -49,6 +49,39 @@ test('listRuns returns runs oldest first and skips the lock file', () => {
   acquireLock(root, 'a');
   assert.deepEqual(listRuns(root).map((r) => r.id), ['a', 'b']);
   assert.deepEqual(listRuns(tmp()), []);
+});
+
+test('keepRun moves the run dir to .exo/kept/<id> and creates .exo/kept', () => {
+  const root = tmp();
+  createRun(root, { id: 'a', plan: 'p.md' });
+  fs.writeFileSync(path.join(runDir(root, 'a'), 'report.md'), 'Phase: landed\n');
+  keepRun(root, 'a');
+  assert.ok(!fs.existsSync(runDir(root, 'a')));
+  assert.ok(fs.existsSync(path.join(root, '.exo', 'kept', 'a', 'state.json')));
+  assert.equal(fs.readFileSync(path.join(root, '.exo', 'kept', 'a', 'report.md'), 'utf8'), 'Phase: landed\n');
+});
+
+test('keepRun on a missing run dir does nothing', () => {
+  const root = tmp();
+  keepRun(root, 'nope');
+  assert.ok(!fs.existsSync(path.join(root, '.exo', 'kept', 'nope')));
+});
+
+test('keepRun leaves the run in place and writes one exo: line when the target exists', () => {
+  const root = tmp();
+  createRun(root, { id: 'a', plan: 'p.md' });
+  fs.mkdirSync(path.join(root, '.exo', 'kept', 'a'), { recursive: true });
+  const written = [];
+  const write = process.stderr.write;
+  process.stderr.write = (text) => { written.push(String(text)); return true; };
+  try {
+    keepRun(root, 'a');
+  } finally {
+    process.stderr.write = write;
+  }
+  assert.ok(fs.existsSync(path.join(runDir(root, 'a'), 'state.json')));
+  assert.equal(written.length, 1);
+  assert.match(written[0], /^exo: .*\n$/);
 });
 
 test('lock refuses a second live run and names the holder', () => {
