@@ -84,7 +84,8 @@ function expandHome(word) {
   return match ? path.join(home, match[1]) : word;
 }
 
-const slashed = (file) => file.split(path.sep).join('/');
+// why: glob matching runs on `/`, not the Windows `\`.
+const slashed =(file) => file.split(path.sep).join('/');
 
 const GLOB_TOKEN = /\*\*\/|\*\*|\*|\?|[.+^${}()|[\]\\]/g;
 const GLOB_PATTERNS = { '**/': '(?:.*/)?', '**': '.*', '*': '[^/]*', '?': '[^/]' };

@@ -134,6 +134,7 @@ function drop(file) {
   } catch {}
 }
 
+// why: Windows refuses for a moment to replace or unlink a file another process has open.
 function settle(fn) {
   for (let attempt = 0; ; attempt++) {
     try {

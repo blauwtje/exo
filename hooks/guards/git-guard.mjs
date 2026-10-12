@@ -70,6 +70,7 @@ function missingCommits(directory, branch) {
   }, null);
 }
 
+// why: merging into the base yields the base's tree, and merge-tree --write-tree needs git 2.38 or later.
 function contentLanded(directory, base, branch) {
   return attempt(() => git(directory, 'merge-tree', '--write-tree', base, `refs/heads/${branch}`).split('\n')[0]
     === git(directory, 'rev-parse', `${base}^{tree}`));
