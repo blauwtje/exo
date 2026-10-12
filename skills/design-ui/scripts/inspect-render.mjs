@@ -253,6 +253,7 @@ export function rasterize(image) {
 
 function linearize(channel) {
   const scaled = channel / 255;
+  // why: the sRGB spec's knee is 0.04045, not WCAG's 0.03928; no 8-bit channel falls between them.
   return scaled <= 0.04045 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
 }
 

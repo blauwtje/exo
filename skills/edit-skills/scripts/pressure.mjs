@@ -103,6 +103,7 @@ function claudeArguments({ model, effort, promptText, settingSources, pluginFlag
     '--effort', effort,
     '--output-format', 'stream-json',
     '--verbose',
+    // why: the host's MCP servers would otherwise load and let a user's tools steer a case.
     '--strict-mcp-config'
   ];
   if (settingSources !== undefined) args.push('--setting-sources', settingSources);
@@ -192,6 +193,7 @@ function answerText(outcome) {
 }
 
 function fileSafe(value) {
+  // why: a model id may hold characters such as `[` or `/` that a file name cannot.
   return value.replace(/[^A-Za-z0-9._-]/g, '_');
 }
 
