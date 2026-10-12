@@ -55,6 +55,44 @@ test('a failing head is not green', () => {
   assert.equal(worktrees(git), 1);
 });
 
+test('a root-level overlay file is proved', () => {
+  const { root, git, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  write(root, 'a.test.sh', 'grep -q new value.txt\n');
+  const r = redGreen({ root, base, command: 'sh a.test.sh', overlay: ['a.test.sh'], timeoutMs: 30000 });
+  assert.equal(r.outcome, 'proved');
+  assert.equal(worktrees(git), 1);
+});
+
+test('a nested symlink overlay path is an error', () => {
+  const { root, git, base } = repo();
+  fs.mkdirSync(path.join(root, 'tests'));
+  fs.symlinkSync('/etc/hosts', path.join(root, 'tests/link.test.txt'));
+  const r = runOnBase({ root, base, command: 'true', overlay: ['tests/link.test.txt'], timeoutMs: 30000 });
+  assert.equal(r.status, 'error');
+  assert.match(r.output, /not a plain file/);
+  assert.equal(worktrees(git), 1);
+});
+
+test('a worktree that stays registered after cleanup is an error, never proved', () => {
+  const { root, git, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  const command = 'git worktree lock "$(pwd)"; exit 1';
+  try {
+    const b = runOnBase({ root, base, command, timeoutMs: 30000 });
+    assert.equal(b.status, 'error');
+    assert.match(b.output, /still registered/);
+    const r = redGreen({ root, base, command: `test "$(pwd)" = "${fs.realpathSync(root)}" || { ${command}; }`, timeoutMs: 30000 });
+    assert.equal(r.outcome, 'error');
+  } finally {
+    for (const line of git('worktree', 'list', '--porcelain').split('\n')) {
+      if (line.startsWith('worktree ') && line !== `worktree ${fs.realpathSync(root)}`) git('worktree', 'unlock', line.slice(9));
+    }
+    git('worktree', 'prune');
+  }
+  assert.equal(worktrees(git), 1);
+});
+
 test('a path outside the tree is an error', () => {
   const { root, git, base } = repo();
   const r = redGreen({ root, base, command: 'true', overlay: ['../escape.txt'], timeoutMs: 30000 });
@@ -67,6 +105,7 @@ test('a symlink overlay path is an error', () => {
   fs.symlinkSync('/etc/hosts', path.join(root, 'link.test.txt'));
   const r = runOnBase({ root, base, command: 'true', overlay: ['link.test.txt'], timeoutMs: 30000 });
   assert.equal(r.status, 'error');
+  assert.match(r.output, /not a plain file/);
   assert.equal(worktrees(git), 1);
 });
 
@@ -75,6 +114,7 @@ test('a directory overlay path is an error', () => {
   write(root, 'tests/x.txt', 'x');
   const r = runOnBase({ root, base, command: 'true', overlay: ['tests'], timeoutMs: 30000 });
   assert.equal(r.status, 'error');
+  assert.match(r.output, /not a plain file/);
   assert.equal(worktrees(git), 1);
 });
 
