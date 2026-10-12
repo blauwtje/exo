@@ -170,8 +170,10 @@ test('each kept guard denies a sample that passes when that guard alone is remov
   const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-guards-'));
   fs.mkdirSync(path.join(project, '.claude'));
   fs.writeFileSync(path.join(project, '.claude', 'settings.json'), JSON.stringify({ permissions: { deny: ['Read(./.env)'] } }));
-  const saved = { CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR, CLAUDE_PROJECT_DIR: process.env.CLAUDE_PROJECT_DIR };
+  const saved = Object.fromEntries(['CLAUDE_CONFIG_DIR', 'CLAUDE_PROJECT_DIR', 'EXO_RUN', 'EXO_RUN_DIR'].map((key) => [key, process.env[key]]));
   Object.assign(process.env, { CLAUDE_CONFIG_DIR: project, CLAUDE_PROJECT_DIR: project });
+  delete process.env.EXO_RUN;
+  delete process.env.EXO_RUN_DIR;
   const decide = (command, guards) => dispatchBash({ tool_name: 'Bash', cwd: project, tool_input: { command } }, guards);
   try {
     assert.deepEqual(GUARDS.map((guard) => guard.name).sort(), Object.keys(GUARD_SAMPLES).sort());
