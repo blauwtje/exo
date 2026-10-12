@@ -28,6 +28,9 @@ Risky → `## Red before green` as written, quoting failing output before the pr
 
 Test passes before the change → proves nothing. Tighten the assertion, or report that a failing-before test could not be established.
 
+- `land-task` and `exo run` refuse a Proof or Success criterion that passes before the change, unless the plan names `Red: none (<reason>)`.
+- Proof needing an untracked build artifact → reads as red on the base; build it inside the Proof command.
+
 ## Define the proof
 
 Before the test, write one sentence: `Given <public input/state>, the caller observes <output/effect> instead of <old result>.` Pick the nearest repository test that observes that result through a public function, response, event, persisted record, file, or command output.
@@ -41,10 +44,8 @@ Before the test, write one sentence: `Given <public input/state>, the caller obs
 
 ## Documented boundaries
 
-Add a case only when the changed contract accepts it: absent/empty input, each documented minimum or maximum, malformed input, a named error or permission state, or concurrent access to changed shared mutable state. No unrelated boundary categories to raise test count.
+Add a case only when the changed contract accepts it: absent/empty input, each documented minimum or maximum, malformed input, a named error or permission state, or concurrent access to changed shared mutable state. No cases to pad count.
 
 ## Judgment
 
 - Failing-before and passing-after public observation outranks coverage percentage or assertion count.
-- Repository test levels and public contracts outrank a new testing abstraction.
-- Test coupled to private construction → replace with the nearest stable observable boundary, even when the private assertion is easier.

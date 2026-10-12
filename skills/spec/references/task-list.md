@@ -2,14 +2,15 @@
 
 ## Sections, in order
 
-1. `## Goal`: one sentence naming result.
+1. `## Goal`: one result sentence.
 2. `## Plan basis`: `Repository: <absolute root>`, `Branch: <branch>`; no repo → `Branch: main`; the executor runs `git init -b main` there before the first task, never an init step for the owner.
    - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
-   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass. Per task only if full check under 60 s, else verify runs it once.
+   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck`, else `none`; lands only on pass. Per task only if full check under 60 s, else verify once.
    - `Land:` → `ship` setting; `push` → `push-main`; `open-pr`, `pr-merge` → `pr`; `ask` → recommend `local`.
-   - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
+   - package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
    - `Allow:` → each backticked task command no other field names, else `none`.
 3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.
+   - Passes on the run's base → refused, unless `Red: none (<reason>)`; flaky → `Repeat: <2-5> (<reason>)`.
    - `bin` or `scripts.start` → command runs it; else `Product run: none (<reason>)`.
 4. `## Checkpoint`: `Blocks first:`, `Shared state:`, `Smallest safe split:`, each naming tasks or `none`; `Parallel:` → `Tasks 1, 2 and 3` or `every task` sharing no `Depends on:` chain or `Files:` path, else `none`; no range.
 5. `## Tasks`, dependency-ordered.
@@ -19,22 +20,22 @@
 ```
 ### Task <n>: <type>(<scope>): <subject>
 
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one command>
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure>[ | Design: <skill name>][ | Risk: <category>][ | Red: none (<reason>)] | Proof: <one command>
 ```
 
 - `Files:` ending `/` → whole folder.
 - `Proof:` → shows this task landed, not suite.
-- Runnable result → prove on real input via own command, else builder script using only its tools, never test alone.
-- MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not shell.
+- Runnable result → prove via own command, else builder script, only its tools, never test alone.
+- MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; not shell.
 - `Data:` → structure holding result, not fields or logic; ask before changing public signature or persisted format.
-- `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
+- `Risk:` → `security boundary`, `persisted format`, `public signature` or `dependency`.
 - Heading: `land-task`'s conventional-commit subject; `Files:` staged, no `Commit:` block.
 - `Design:` → skill loaded first, only for page's look.
 
 ## Rules
 
 1. **Verified names only.** List path or symbol only after reading it.
-2. **One field line, one task.** Second field line, `Run:`, `Expected:` or code block → long-format, needing `Commit:`, `Run:`, `Expected:`.
+2. **One field line, one task.** Second field line, `Run:`, `Expected:` or code block → long-format.
 3. **Small tasks.** One concern; split only when `Files:` spans shared write target and independent one.
    - Size → (task + `Files:` bytes) / 4 over 25,000 fails.
    - `Files:` → also each registry, index or test list naming added file.
