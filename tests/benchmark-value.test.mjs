@@ -13,7 +13,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
-import { checkoutPlanBranch, copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, newestRunLedger, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from '../benchmarks/value.mjs';
+import { cellFits, checkoutPlanBranch, copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, newestRunLedger, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from '../benchmarks/value.mjs';
 
 const SCHEMA = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const SCORE = fileURLToPath(new URL('../benchmarks/score.mjs', import.meta.url));
@@ -349,4 +349,11 @@ test('the exo-run plan is copied with the repo as Repository:, passes plan-check
 
 test('a task without run-plan.md is an error for the exo-run arm', () => {
   assert.throws(() => runPlanPath({ id: 'value-x', directory: '/nonexistent' }), /no run-plan\.md/);
+});
+
+test('cellFits lets a cell run only while spent plus expected stays within the cap', () => {
+  assert.equal(cellFits({ spent: 0.5, expected: 0.7, cap: 1.2 }), true);
+  assert.equal(cellFits({ spent: 0.6, expected: 0.7, cap: 1.2 }), false);
+  assert.equal(cellFits({ spent: 5, expected: 5, cap: null }), true);
+  assert.equal(cellFits({ spent: 0, expected: 2, cap: 1.2 }), false);
 });

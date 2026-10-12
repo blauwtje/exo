@@ -32,7 +32,7 @@ import { confinedClaude } from '#confine-claude';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
-import { checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, planFileOf, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { cellFits, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, planFileOf, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -59,7 +59,7 @@ function tierTasks(tier) {
 }
 
 function parseArguments(argv) {
-  const options = { mode: 'custom', tasks: null, tier: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, confirm: false, out: null, effort: null, dryRun: false };
+  const options = { mode: 'custom', tasks: null, tier: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, maxTotalUsd: null, confirm: false, out: null, effort: null, dryRun: false };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = () => argv[++index];
@@ -72,6 +72,7 @@ function parseArguments(argv) {
     else if (flag === '--runs') options.runs = Number(value());
     else if (flag === '--model') options.model = value();
     else if (flag === '--concurrency') options.concurrency = Number(value());
+    else if (flag === '--max-total-usd') options.maxTotalUsd = Number(value());
     else if (flag === '--out') options.out = value();
     else if (flag === '--effort') options.effort = value();
     else if (flag === '--dry-run') options.dryRun = true;
@@ -477,6 +478,9 @@ async function main() {
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
+  let spent = 0;
+  const skipped = [];
+  const highestCost = {};
   const cellHome = makeDefaultOptionsHome();
   // One copy per run and variant, made only for a cell that loads one.
   const copies = {};
@@ -494,9 +498,25 @@ async function main() {
         console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
         return;
       }
+      // Stop before a cell that would pass the total cap; expected is the
+      // highest finished cell of its arm in this run, else the task's estimate.
+      if (options.maxTotalUsd !== null) {
+        const expected = highestCost[cell.arm] ?? cell.task.estimateUsd ?? DEFAULT_ESTIMATE_USD;
+        if (!cellFits({ spent, expected, cap: options.maxTotalUsd })) {
+          skipped.push(cell);
+          console.log(`skipped ${cell.task.id} ${cell.arm} #${cell.run}: spent $${spent.toFixed(3)} + expected $${expected.toFixed(3)} passes $${options.maxTotalUsd}`);
+          return;
+        }
+        // The cell's own cap leaves room under the total.
+        cell.task = { ...cell.task, maxBudgetUsd: Math.min(cell.task.maxBudgetUsd ?? CELL_BUDGET_USD, options.maxTotalUsd - spent) };
+      }
       const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome, copies);
       done += 1;
       const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
+      if (typeof result.total_cost_usd === 'number') {
+        spent += result.total_cost_usd;
+        highestCost[cell.arm] = Math.max(highestCost[cell.arm] ?? 0, result.total_cost_usd);
+      }
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
       const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}`, value: checks.harnessError ? 'HARNESS ERROR' : `pass=${checks.pass} defects=${checks.defects}/${checks.total}` };
       const verdict = verdicts[checks.tier] ?? checks.tier;
@@ -507,6 +527,7 @@ async function main() {
     fs.rmSync(cellHome, { recursive: true, force: true });
     for (const copy of Object.values(copies)) fs.rmSync(copy, { recursive: true, force: true });
   }
+  if (options.maxTotalUsd !== null) console.log(`spent $${spent.toFixed(3)} of $${options.maxTotalUsd}; ${skipped.length} cells skipped`);
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);
 }
 

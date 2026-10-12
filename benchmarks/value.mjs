@@ -252,3 +252,9 @@ export function projectCost(cells, runsDirectory) {
   }
   return projection;
 }
+
+// Whether a cell expected to cost `expected` may start with `spent` already
+// used; a null cap never stops a run.
+export function cellFits({ spent, expected, cap }) {
+  return cap === null || spent + expected <= cap;
+}
