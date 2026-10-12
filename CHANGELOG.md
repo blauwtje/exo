@@ -38,6 +38,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- A test run inside `exo run` no longer parks its guard refusals as open gates in the live run, nor fails tests that branch on the run: `npm test` and `npm run check` strip `EXO_RUN`, `EXO_RUN_DIR`, `EXO_RUN_TASK` and `EXO_DROPS` first.
 - A timeout or kill of `exo run` now also stops its claude session, which runs in its own process group, and a run whose log folder was removed no longer crashes; a benchmark cell time-out likewise ends the cell's whole process tree before its folder goes.
 - The red-green gate kills the whole proof tree on timeout, accepts a top-level overlay path, reports a worktree it left behind, skips when no passing Bash proof or run start commit exists, and records the Red outcome of an MCP-deferred task; the benchmark spend cap rejects a bad value and counts an unpriced cell, and `exo-run` usage survives a truncated last session line.
 - `exo run` no longer stops with `Landing the review fix failed: no changed path to commit` when the review fixer changes nothing; it goes on to the final gate.
