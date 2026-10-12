@@ -30,6 +30,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails on any disallowed comment in `skills/`, `lib/` and `hooks/`.
 - Each release keeps the newest 10 versions in `CHANGELOG.md` and moves the rest to `CHANGELOG-archive.md`.
 - `plan-check` refuses a task whose Proof or the `Allow:` list starts a nested claude, because `exo run`'s sandbox cannot; the measurement moves to the Success line.
+- A run that ends `landed`, `passed` or `refused` moves itself to `.exo/kept/<id>/`, so `.exo/run/` holds only live runs.
 
 ### Changed
 
@@ -52,6 +53,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The Success gate of `exo run` drops an unreachable stall stop.
 - The code rules judge code structure only on lines whose code changed.
 - A directory named `spec` no longer marks test code, so a task that changes `skills/spec/` gets a real red check.
+- `report.md` of an `exo run` keeps the refused commands after the worktree is removed: the run directory stores them and the report lists every command the permission rules refused.
 
 ## 0.131.1 - 2026-10-11
 
