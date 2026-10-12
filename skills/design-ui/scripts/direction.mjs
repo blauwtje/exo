@@ -1,47 +1,4 @@
-// Deal seeded, divergent direction axes inside a project's own axis space, then
-// validate and freeze the filled direction contracts. The vocabulary below fixes
-// the shape of an axis value and names the values a space may reuse; it is never
-// the option set. Every dealt value comes from the supplied space, so a direction
-// is traceable to Phase 1 evidence rather than to this file. Nothing is written.
-//
-//   node scripts/direction.mjs --plan --seed <token> --space <file> [--variants <2..6>]
-//   node scripts/direction.mjs --check --contracts <file> --space <file>
-//   node scripts/direction.mjs --select --contracts <file> --index <n> --space <file>
-//   node scripts/direction.mjs --shape
-//
-// --space is JSON, written from this header rather than from the validators
-// below: {"schemaVersion":1,"axes":{<axis>:{"values":[{"id":<token>,
-// "value":<payload>,"evidence":<key>}]}},"evidence":{<key>:{"kind":<kind>,
-// "detail":<why>}}}. The seven axes and their payloads: composition
-// {focalX,focalY: 0..1, asymmetry: token}; ground {mechanism}; colorTopology
-// {topology, commitment}; type {strategy}; material {grammar}; densityCadence
-// {cadence: [4 steps, each focal|dense|sparse], scaleContrast}; artifact
-// {class}. An id
-// or token is [a-z0-9-]+ and names a Phase 1 finding, never a built-in option;
-// every axis lists two or more values; an evidence kind is observation, brief,
-// repository or open-decision, and open-decision still records its reason.
-// A contract's palette.anchors entry is a color token, or {"color":<token>,
-// "evidence":<key>} when the color needs a reason: --check rejects a purple,
-// a cream, or a neon beside a near-black anchor as template-kit unless that
-// anchor's evidence is of kind brief or repository.
-// A contract's type.display and type.body each carry family and provenance:
-// chosen, with matchEvidence (the traits it fits) and loadSource, or repository
-// or brief, with sourceEvidence. --check rejects a chosen family that
-// scripts/overused-fonts.mjs bans.
-// A contract's dials is {density, variance, motion, start, reasons}: each dial
-// an integer 1..10, filled by the session; --check rejects any other value as
-// invalid-dial and names dials.<name>. start names the source (table:<kind> or
-// DESIGN.md); reasons maps each moved dial to one string.
-// A contract's seed is <container seed>:<n>, n being the index --plan dealt it
-// at, so a container may hold any subset of the dealt contracts in any order;
-// --check re-deals index n and rejects axes that differ from that deal.
-// --select freezes a contract only after the same check passes. Every report
-// whose status is not ok exits 1, with the report still on stdout.
-// --check names the shape and the allowed vocabulary of anything it rejects.
-
 import process from 'node:process';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
 import { isCream, isNearBlack, isNeon, isPurple } from './check-ui.mjs';
@@ -54,11 +11,51 @@ const MAX_STRING = 240;
 const MAX_ITEMS = 8;
 const ENUMERATION_LIMIT = 65_536;
 const SAMPLE_ATTEMPTS = 4096;
-// Planning and checking read the same floor: a lower one here would emit containers
-// `--check` then rejects, a higher one would reject containers `--plan` just wrote.
 const MIN_AXIS_DIVERGENCE = 3;
 const MAX_VARIANTS = 6;
 const DEALT_INDEX = /^(0|[1-9][0-9]*)$/;
+
+const USAGE = `Deal seeded, divergent direction axes inside a project's own axis space, then
+validate and freeze the filled direction contracts. The vocabulary below fixes
+the shape of an axis value and names the values a space may reuse; it is never
+the option set. Every dealt value comes from the supplied space, so a direction
+is traceable to Phase 1 evidence rather than to this file. Nothing is written.
+
+  node scripts/direction.mjs --plan --seed <token> --space <file> [--variants <2..6>]
+  node scripts/direction.mjs --check --contracts <file> --space <file>
+  node scripts/direction.mjs --select --contracts <file> --index <n> --space <file>
+  node scripts/direction.mjs --shape
+
+--space is JSON, written from this header rather than from the validators
+below: {"schemaVersion":1,"axes":{<axis>:{"values":[{"id":<token>,
+"value":<payload>,"evidence":<key>}]}},"evidence":{<key>:{"kind":<kind>,
+"detail":<why>}}}. The seven axes and their payloads: composition
+{focalX,focalY: 0..1, asymmetry: token}; ground {mechanism}; colorTopology
+{topology, commitment}; type {strategy}; material {grammar}; densityCadence
+{cadence: [4 steps, each focal|dense|sparse], scaleContrast}; artifact
+{class}. An id
+or token is [a-z0-9-]+ and names a Phase 1 finding, never a built-in option;
+every axis lists two or more values; an evidence kind is observation, brief,
+repository or open-decision, and open-decision still records its reason.
+A contract's palette.anchors entry is a color token, or {"color":<token>,
+"evidence":<key>} when the color needs a reason: --check rejects a purple,
+a cream, or a neon beside a near-black anchor as template-kit unless that
+anchor's evidence is of kind brief or repository.
+A contract's type.display and type.body each carry family and provenance:
+chosen, with matchEvidence (the traits it fits) and loadSource, or repository
+or brief, with sourceEvidence. --check rejects a chosen family that
+scripts/overused-fonts.mjs bans.
+A contract's dials is {density, variance, motion, start, reasons}: each dial
+an integer 1..10, filled by the session; --check rejects any other value as
+invalid-dial and names dials.<name>. start names the source (table:<kind> or
+DESIGN.md); reasons maps each moved dial to one string.
+A contract's seed is <container seed>:<n>, n being the index --plan dealt it
+at, so a container may hold any subset of the dealt contracts in any order;
+--check re-deals index n and rejects axes that differ from that deal.
+--select freezes a contract only after the same check passes. Every report
+whose status is not ok exits 1, with the report still on stdout.
+--check names the shape and the allowed vocabulary of anything it rejects.
+`;
 
 const isToken = (value) => typeof value === 'string' && TOKEN.test(value);
 const isUnitNumber = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
@@ -68,12 +65,6 @@ const hasExactKeys = (value, keys) =>
 
 const CADENCE_STEPS = ['focal', 'dense', 'sparse'];
 
-/**
- * Per-axis payload shape only — deliberately no list of value ids. Supplying
- * built-in options would make them the default answer; a subject-derived id
- * with a shape-valid payload is equally legal, and --plan draws only from the
- * space it is given.
- */
 export const VOCABULARY = {
   composition: {
     keys: ['focalX', 'focalY', 'asymmetry'],
@@ -123,8 +114,6 @@ const QUIET_JOBS = [
 
 const FONT_PROVENANCE = ['chosen', 'repository', 'brief'];
 
-// A semantic block may extend its axis but never restate it: what the axis
-// decided is read from the dealt payload alone.
 const RESERVED_SEMANTIC_KEYS = {
   ground: ['mechanism'],
   palette: ['topology', 'commitment'],
@@ -133,8 +122,6 @@ const RESERVED_SEMANTIC_KEYS = {
 };
 
 const finding = (code, variant, detail) => ({ code, variant, detail });
-
-// --- axis space ------------------------------------------------------------
 
 function evidenceFindings(space, axisName, entry) {
   const record = space.evidence?.[entry.evidence];
@@ -206,8 +193,6 @@ function* seededAssignments(space, prng) {
   }
 }
 
-// --- divergence ------------------------------------------------------------
-
 function axisValueDiffers(axisName, left, right) {
   if (axisName === 'composition') {
     return left.focalX !== right.focalX || left.focalY !== right.focalY || left.asymmetry !== right.asymmetry;
@@ -218,8 +203,6 @@ function axisValueDiffers(axisName, left, right) {
   return JSON.stringify(left) !== JSON.stringify(right);
 }
 
-/** Distance between two contracts over the seven axes, computed from the dealt
- *  payloads. Renaming a value id without changing its payload changes nothing. */
 export function axisDistance(left, right) {
   return AXIS_NAMES.filter((axisName) => {
     const a = left?.axes?.[axisName]?.value;
@@ -228,8 +211,6 @@ export function axisDistance(left, right) {
     return axisValueDiffers(axisName, a, b);
   }).length;
 }
-
-// --- planning --------------------------------------------------------------
 
 const emptyRole = () => ({
   family: null, provenance: null, loadSource: null, matchEvidence: [], sourceEvidence: null
@@ -281,8 +262,6 @@ export function planDirections({ seed, variants, space }) {
   }
   return { schemaVersion: 1, status: 'ok', seed, contracts };
 }
-
-// --- contract validation ---------------------------------------------------
 
 function proseFindings(value, variant, trail) {
   if (typeof value === 'string') {
@@ -369,10 +348,8 @@ function quietRegionFindings(contract, variant) {
   });
 }
 
-// Evidence kinds that let a kit color stand: the brief asked for it, or the repository already ships it.
 const KIT_EXEMPT_KINDS = ['brief', 'repository'];
 
-/** The check-ui kit a palette anchor color falls in, or null; neon counts only beside a near-black anchor. */
 function kitOf(color, hasNearBlackAnchor) {
   if (isPurple(color)) return 'purple-palette';
   if (isCream(color)) return 'cream-ground';
@@ -447,8 +424,6 @@ function dialFindings(contract, variant) {
     `dials.${name} is ${JSON.stringify(contract.dials?.[name] ?? null)}; it must be an integer from 1 to 10`));
 }
 
-// The skeleton `--plan` emits carries every required key already, so presence
-// alone proves nothing: these are the leaves a variant is undesigned without.
 const REQUIRED_CONTRACT_PROSE = [
   'ground.source', 'ground.origin', 'ground.textSeparation', 'ground.reducedMotion',
   'palette.regionalAssignment', 'materialLight', 'motion.decision', 'motion.reducedMotion'
@@ -477,7 +452,6 @@ function substanceFindings(contract, variant) {
   return findings;
 }
 
-/** The index --plan dealt a contract at, read from its '<seed>:<n>' seed, or null. */
 function dealtIndexOf(contractSeed, seed) {
   if (typeof contractSeed !== 'string' || typeof seed !== 'string') return null;
   const prefix = `${seed}:`;
@@ -488,8 +462,6 @@ function dealtIndexOf(contractSeed, seed) {
   return dealtIndex < MAX_VARIANTS ? dealtIndex : null;
 }
 
-/** Re-deals index n from the container seed: the plan is deterministic, so the
- *  seed proves the axes only when they equal that deal. */
 function dealtAxisFindings(contract, space, seed, dealtIndex, variant) {
   const plan = planDirections({ seed, variants: dealtIndex + 1, space });
   const dealt = plan.status === 'ok' ? plan.contracts[dealtIndex].axes : null;
@@ -582,8 +554,6 @@ export function selectContract(container, index, { space }) {
   };
 }
 
-// --- CLI -------------------------------------------------------------------
-
 function requireVariants(text) {
   if (text === undefined) return 2;
   const count = Number(text);
@@ -600,28 +570,16 @@ function requireIndex(text) {
   return index;
 }
 
-// --shape prints the header above the imports: the one documented shape of
-// --space and of a contract, so a caller never reads this file to learn it.
-function headerText() {
-  const source = readFileSync(fileURLToPath(import.meta.url), 'utf8');
-  const header = [];
-  for (const line of source.split('\n')) {
-    if (!line.startsWith('//')) break;
-    header.push(line.replace(/^\/\/ ?/, ''));
-  }
-  return `${header.join('\n')}\n`;
-}
-
 async function main(argv) {
   const flags = parseFlags(argv, {
     plan: 'boolean', check: 'boolean', select: 'boolean', shape: 'boolean',
     seed: 'value', space: 'value', variants: 'value',
     contracts: 'value', index: 'value'
-  });
+  }, { usage: USAGE });
   const modes = ['plan', 'check', 'select', 'shape'].filter((mode) => flags[mode]);
   if (modes.length !== 1) throw new UsageError('exactly one of --plan, --check, --select or --shape is required');
 
-  if (modes[0] === 'shape') return headerText();
+  if (modes[0] === 'shape') return USAGE;
 
   if (modes[0] === 'plan') {
     if (!flags.seed) throw new UsageError('--seed is required with --plan');

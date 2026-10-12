@@ -1,21 +1,3 @@
-// Deterministic render diagnostics for the ui-design skill.
-//
-// Descriptive colour and spatial evidence over capture PNGs, with no browser
-// and no aggregate score: every number here is input the critique reads, never
-// a target to optimise. Low-variance areas are reported as candidates with the
-// thresholds that produced them; whether one is a fault is a design judgement
-// made against the selected direction contract, not here.
-//
-//   node scripts/inspect-render.mjs --image <png> [--image <png> …]
-//                                   [--baseline <png> [--baseline <png> …]]
-//                                   [--tile <8..128>] [--accent <#rrggbb>]
-//                                   [--max-quiet-regions <n>]
-//
-// Pass one --baseline per --image, in the same order: each image is deltaed
-// against the baseline at its own position. pairs only compares images of
-// matching source dimensions, since a tile-position match across differing
-// viewports is not a pixel correspondence.
-
 import fs from 'node:fs/promises';
 import process from 'node:process';
 import { inflateSync } from 'node:zlib';
@@ -45,14 +27,23 @@ const DECIMALS = 6;
 const DETECTION_LIMITATIONS =
   'threshold-based low-variance detection; candidates are diagnostic input, not design faults';
 
+const USAGE = `Usage:
+  node scripts/inspect-render.mjs --image <png> [--image <png> …]
+                                  [--baseline <png> [--baseline <png> …]]
+                                  [--tile <8..128>] [--accent <#rrggbb>]
+                                  [--max-quiet-regions <n>]
+
+Prints descriptive colour and spatial evidence over capture PNGs as JSON, with
+no browser and no aggregate score. Pass one --baseline per --image, in the same
+order. Pairs compare only images of matching source dimensions.
+`;
+
 export class UnsupportedPngError extends Error {
   constructor(message) {
     super(message);
     this.name = 'UnsupportedPngError';
   }
 }
-
-// ── PNG decoding ────────────────────────────────────────────────────────────
 
 function readChunks(bytes) {
   if (bytes.length < 8 || !bytes.subarray(0, 8).equals(PNG_SIGNATURE)) {
@@ -164,11 +155,6 @@ function expandRow(colorType, palette, transparency, width, source, target) {
   }
 }
 
-/**
- * Decode an 8-bit non-interlaced PNG into a row-wise reader. `forEachRow`
- * unfilters one scanline at a time into a reused RGBA buffer, so no full-size
- * RGBA copy of the image ever exists; the inflated raster is the peak cost.
- */
 export function decodePng(bytes) {
   const chunks = readChunks(bytes);
   const header = readHeader(chunks.find((chunk) => chunk.type === 'IHDR'));
@@ -205,8 +191,6 @@ export function decodePng(bytes) {
         unfilterRow(raster[offset], current, previous, bytesPerPixel);
         expandRow(header.colorType, palette, transparency, header.width, current, rgba);
         visit(y, rgba);
-        // The next row overwrites `current` wholesale, so the two buffers swap
-        // roles instead of allocating a fresh copy per scanline.
         const spent = previous;
         previous = current;
         current = spent;
@@ -215,18 +199,12 @@ export function decodePng(bytes) {
   };
 }
 
-// ── Raster and colour space ─────────────────────────────────────────────────
-
 function analysisFactor(width, height) {
   let factor = 1;
   while (Math.ceil(width / factor) * Math.ceil(height / factor) > MAX_ANALYSIS_PIXELS) factor += 1;
   return factor;
 }
 
-/**
- * Box-filter a decoded image down to at most MAX_ANALYSIS_PIXELS, compositing
- * translucent pixels over white. Every later metric reads this raster only.
- */
 export function rasterize(image) {
   const factor = analysisFactor(image.width, image.height);
   const width = Math.ceil(image.width / factor);
@@ -269,15 +247,10 @@ export function rasterize(image) {
     sourceHeight: image.height,
     alphaCoverage: translucentPixels / (image.width * image.height)
   };
-  // Every metric below reads OKLab, so the conversion happens once here rather
-  // than once per metric call.
   raster.oklab = toOklab(raster);
   return raster;
 }
 
-// The sRGB spec's knee, 0.04045, because these metrics are colorimetric rather than
-// WCAG contrast; check-ui.mjs keeps WCAG's 0.03928. No 8-bit channel scales into the
-// gap between the two (10/255 = 0.039216, 11/255 = 0.043137), so both agree exactly.
 function linearize(channel) {
   const scaled = channel / 255;
   return scaled <= 0.04045 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
@@ -295,7 +268,6 @@ function oklabInto(r, g, b, out) {
   out[2] = 0.0259040371 * long + 0.7827717662 * medium - 0.808675766 * short;
 }
 
-/** Convert one sRGB triple (channels 0..255) to OKLab. */
 export function srgbToOklab(r, g, b) {
   const out = new Float64Array(3);
   oklabInto(r, g, b, out);
@@ -319,10 +291,6 @@ function toOklab(raster) {
   return { lightness, green, blue, chroma, cells };
 }
 
-// ── Colour metrics ──────────────────────────────────────────────────────────
-
-// Negative zero is a rounding artefact here, never a measurement: it survives
-// JSON as `0` but not a strict comparison, so it is normalised away at source.
 function round(value) {
   const rounded = Number(value.toFixed(DECIMALS));
   return rounded === 0 ? 0 : rounded;
@@ -382,17 +350,10 @@ function hueStatistics(lab) {
   if (weight <= 0) return { effectiveHueCount: 0, hueDispersion: 0 };
   return {
     effectiveHueCount: Math.exp(entropy(bins, weight)),
-    // The resultant length cannot exceed the total weight; float error can push
-    // it a hair past, so the floor keeps dispersion inside [0, 1].
     hueDispersion: Math.max(0, 1 - Math.hypot(cosine, sine) / weight)
   };
 }
 
-/**
- * Share of the largest of eight OKLab k-means clusters over a fixed-stride
- * sample. Centroids start at even quantiles of the sample ordered by lightness
- * then chroma, so the result depends on the pixels alone, never on a seed.
- */
 function dominantClusterShare(lab) {
   const stride = Math.max(1, Math.ceil(lab.cells / CLUSTER_SAMPLE_LIMIT));
   const sample = [];
@@ -441,7 +402,6 @@ function dominantClusterShare(lab) {
   return Math.max(...counts) / sample.length;
 }
 
-/** Hasler–Süsstrunk colourfulness over the sRGB opponent axes. */
 function colorfulness(raster) {
   const cells = raster.width * raster.height;
   const redGreen = new Float64Array(cells);
@@ -494,8 +454,6 @@ function colorReport(raster, lab, accent) {
     accentAreaShare: accent ? round(accentAreaShare(lab, accent)) : null
   };
 }
-
-// ── Spatial metrics ─────────────────────────────────────────────────────────
 
 const TILE_ACCUMULATORS = 6;
 
@@ -619,8 +577,6 @@ function quietRegionCandidate(members, grid, raster, tile) {
       confident = false;
     }
   }
-  // Reported in source-image coordinates: the bounding box of the tile group,
-  // scaled back through the analysis downsample factor.
   const left = minColumn * tile * raster.factor;
   const top = minRow * tile * raster.factor;
   const right = Math.min(raster.sourceWidth, (maxColumn + 1) * tile * raster.factor);
@@ -653,9 +609,6 @@ function spatialReport(raster, tile, maxQuietRegions) {
   };
 }
 
-// ── Public metric entry points ──────────────────────────────────────────────
-
-/** Full descriptive record for one raster produced by `rasterize`. */
 export function renderMetrics(image, { tile = DEFAULT_TILE, accent = null, maxQuietRegions = DEFAULT_MAX_QUIET_REGIONS } = {}) {
   return {
     width: image.sourceWidth,
@@ -673,12 +626,6 @@ function sampleTile(grid, column, columns, row, rows) {
   return y * grid.columns + x;
 }
 
-/**
- * Mean OKLab distance between corresponding tile means of two rasters. Grids of
- * different shapes are compared at matching relative positions on the smaller of
- * the two, so the measure stays defined across viewports without pretending the
- * pixels align.
- */
 export function compareImages(a, b, { tile = DEFAULT_TILE } = {}) {
   const first = tileGrid(a, tile);
   const second = tileGrid(b, tile);
@@ -705,8 +652,6 @@ export function compareImages(a, b, { tile = DEFAULT_TILE } = {}) {
     identicalTileShare: round(compared > 0 ? identical / compared : 0)
   };
 }
-
-// ── CLI ─────────────────────────────────────────────────────────────────────
 
 function parseTile(raw) {
   if (raw === undefined) return DEFAULT_TILE;
@@ -770,7 +715,7 @@ async function main(argv) {
     tile: 'value',
     accent: 'value',
     'max-quiet-regions': 'value'
-  });
+  }, { usage: USAGE });
   const paths = flags.image ?? [];
   if (paths.length === 0) throw new UsageError('--image is required at least once');
   const baselinePaths = flags.baseline ?? [];

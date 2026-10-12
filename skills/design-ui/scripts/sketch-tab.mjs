@@ -1,33 +1,3 @@
-// The sketch tab for the ui-design skill: one browser tab that stays open for
-// the whole session and shows the newest sketch in a folder, so a visual
-// question costs one file write and its revision costs one more. A sketch is a
-// small HTML fragment whose options carry data-choice; one click answers.
-//
-//   node scripts/sketch-tab.mjs --serve <dir> [--labels <labels.json>]
-//                               [--idle <seconds, default 1800>] [--no-open]
-//   node scripts/sketch-tab.mjs --wait <dir> --sketch <file.html>
-//                               [--timeout <seconds, default 600>]
-//
-// --serve runs once per session, in the background. It opens the tab at once,
-// with a waiting line until the first sketch lands, and pushes every newer
-// sketch into that same tab. A sketch that lands while no tab is connected
-// opens the tab again, and a second --serve on a folder that is already served
-// prints the running URL and opens nothing. It leaves when no tab has been
-// connected for --idle seconds. Exit 3 means no browser can open here.
-//
-// --wait blocks until the tab records an answer for that one sketch and prints
-// it on stdout as one line, {"sketch","choice","label","steer"}, plus "fields"
-// whenever the page's form holds any, from a click on a data-choice element or
-// a note sent from the footer. choice is null
-// when the chooser sent a note without picking. Exit 2 is a usage error; exit 3
-// means no tab server runs for the folder or no answer arrived in time, and the
-// recommended option is then the selection.
-//
-// A sketch opens with <title>, which is the question the tab asks above it.
-// The rest is its own markup and its own <style>, served inside the picker's
-// structural shell in a sandboxed frame. Every answer is appended to
-// answers.jsonl in the folder, which is also the record of what was chosen.
-
 import { randomBytes } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -45,39 +15,34 @@ import { isMain } from '#script-flags';
 const DEFAULT_IDLE_SECONDS = 1800;
 const FOLDER_SCAN_MS = 300;
 const ANSWER_POLL_MS = 250;
-// --wait and --serve may start in the same message, so a missing server is
-// only a finding once it has had this long to write its tab file.
-// EXO_SKETCH_TAB_SERVER_GRACE_MS overrides it for a test.
 export const SERVER_START_GRACE_MS = 5000;
-// A browser that is still starting has no tab connected yet, and a sketch
-// landing in that gap must not open a second one.
 const BROWSER_START_GRACE_MS = 8000;
-// An answer is a choice id and one sentence of steer; anything larger is not
-// an answer, and this server buffers no more than that.
 const ANSWER_BYTES_MAX = 16384;
 const STEER_CHARACTERS_MAX = 2000;
-// A click inside a form sends the form's fields with it, so a page of several
-// questions is one answer. Each field is one short answer; 64 of them is far
-// more than one page asks.
 const FIELDS_MAX = 64;
 
 const SKETCH_NAME = /^[A-Za-z0-9][\w.-]*\.html$/;
 const SKETCH_TITLE = /<title>([^<]*)<\/title>/i;
 const SKETCH_CHOICE = /\bdata-choice\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
-// The server reads an id from the file's text and the page sends the parsed
-// attribute; the two agree only for an id no entity or escape can change.
 const PLAIN_CHOICE = /^[\w-]+$/;
 const TAB_FILE = 'tab.json';
 const ANSWERS_FILE = 'answers.jsonl';
 
-// The last resort for a key the --labels file leaves out; the skill writes the
-// tab's copy in the conversation's own language on every run.
+const USAGE = `Usage:
+  node scripts/sketch-tab.mjs --serve <dir> [--labels <labels.json>]
+                              [--idle <seconds, default 1800>] [--no-open]
+  node scripts/sketch-tab.mjs --wait <dir> --sketch <file.html>
+                              [--timeout <seconds, default 600>]
+
+--serve runs once per session, in the background, and keeps one browser tab
+open on the newest sketch in the folder. Exit 3 means no browser can open here.
+--wait blocks until the tab records an answer for that sketch and prints
+{"sketch","choice","label","steer"} on one line. Exit 2 is a usage error; exit 3
+means no tab server runs for the folder or no answer arrived in time.
+`;
+
 const DEFAULT_LABELS = JSON.parse(readFileSync(new URL('../assets/sketch-tab-labels.json', import.meta.url), 'utf8'));
 
-/** The name the tab and the answer repeat for a clicked option: its aria-label,
- *  else its first heading, else the start of its text. The shim carries this
- *  function's source into the sketch frame, so it reads nothing outside its
- *  own body. */
 export function optionName(choice) {
   const textStartCharacters = 40;
   const tidy = (text) => (text ?? '').trim().replace(/\s+/g, ' ');
@@ -87,11 +52,6 @@ export function optionName(choice) {
     || tidy(choice.textContent).slice(0, textStartCharacters);
 }
 
-// Injected into every served sketch. It turns each data-choice element into a
-// control a keyboard reaches, hands a click to the tab, and marks the option
-// only once the tab confirms the answer arrived, so a click that went nowhere
-// never looks chosen. The ring is black on white because the sketch owns every
-// colour behind it and one tone alone would vanish on some ground.
 const SKETCH_SHIM = `<style>
 [data-choice]{cursor:pointer}
 [data-choice]:focus-visible,[data-choice][aria-pressed="true"]{outline:3px solid #000;outline-offset:2px;box-shadow:0 0 0 8px #fff}
@@ -160,9 +120,6 @@ function requireIdle(text) {
   return seconds;
 }
 
-/** The sketch folder, created when absent: the server, the wait and the first
- *  sketch start in one message, in no fixed order. Canonical, because
- *  resolveAsset compares real paths. */
 async function requireFolder(directory, flag) {
   if (!directory) throw new UsageError(`${flag} needs the sketch folder`);
   try {
@@ -173,8 +130,6 @@ async function requireFolder(directory, flag) {
   }
 }
 
-/** The most recently written sketch in the folder, by name where two share a
- *  timestamp, or null while the folder holds none. */
 async function newestSketch(directory) {
   const names = await fs.readdir(directory);
   let newest = null;
@@ -188,8 +143,6 @@ async function newestSketch(directory) {
   return newest;
 }
 
-/** One sketch as the tab needs it: the question from its <title>, the markup
- *  without that title, and the choice ids an answer may name. */
 async function readSketch(directory, name) {
   const file = SKETCH_NAME.test(name) ? await resolveAsset({ directory }, name) : null;
   if (!file) return null;
@@ -319,9 +272,6 @@ ${CHROME_TOKENS}
 </script></body></html>`;
 }
 
-/** The fields a form sent with its click: null when none were sent, undefined
- *  when they are not an object of plain names holding text, which refuses the
- *  whole answer. Values are cut like the steer. */
 function readFields(fields) {
   if (fields === undefined || fields === null) return null;
   if (typeof fields !== 'object' || Array.isArray(fields)) return undefined;
@@ -335,9 +285,6 @@ function readFields(fields) {
   return read;
 }
 
-/** The answer a POST body carries, or null when it names another sketch, an
- *  option the sketch on screen does not hold, fields it cannot trust, or
- *  nothing at all. */
 function readAnswer(body, current) {
   let parsed = null;
   try { parsed = JSON.parse(body); } catch { return null; }
@@ -422,8 +369,6 @@ async function handleRequest(tab, request, response) {
   const url = new URL(request.url, `http://127.0.0.1:${tab.port}`);
   if (!askedOfLoopback(request, tab.port)) return send(response, 403, null, '');
 
-  // A sketch carries the key in its path, as the picker's comps do, so the
-  // frame's own URL needs no query the tab page would have to rebuild.
   const asked = tab.sketchPath.exec(url.pathname);
   if (request.method === 'GET' && asked) return sendSketch(tab, asked[1], response);
 
@@ -437,8 +382,6 @@ async function handleRequest(tab, request, response) {
   return recordAnswer(tab, request, response);
 }
 
-/** Push a newer sketch to every connected tab, and open the tab again when
- *  the chooser closed it since the last one. */
 async function showNewestSketch(tab) {
   const newest = await newestSketch(tab.directory).catch(() => null);
   if (!newest) return;
@@ -463,8 +406,6 @@ function idleTooLong(tab, idleSeconds) {
   return Date.now() - lastSign > idleSeconds * 1000;
 }
 
-/** Serve the tab on a random localhost port behind a per-run key, and return
- *  once no tab has been connected for the idle window or a signal arrives. */
 async function serveTab(directory, words, { idleSeconds, wantsBrowser }) {
   const key = randomBytes(8).toString('hex');
   const tab = {
@@ -496,7 +437,6 @@ async function serveTab(directory, words, { idleSeconds, wantsBrowser }) {
       await new Promise((resolve) => { setTimeout(resolve, FOLDER_SCAN_MS); });
     }
   } finally {
-    // A tab file that outlives its scan makes every --wait trust a dead tab.
     for (const stream of tab.streams) stream.end();
     server.close();
     server.closeAllConnections();
@@ -504,7 +444,6 @@ async function serveTab(directory, words, { idleSeconds, wantsBrowser }) {
   }
 }
 
-/** The tab server recorded for this folder, when its process still runs. */
 async function runningTab(directory) {
   const text = await fs.readFile(path.join(directory, TAB_FILE), 'utf8').catch(() => null);
   if (text === null) return null;
@@ -514,7 +453,6 @@ async function runningTab(directory) {
   try {
     process.kill(recorded.pid, 0);
   } catch (error) {
-    // EPERM means the process exists under another user, which is still alive.
     if (error.code !== 'EPERM') return null;
   }
   return recorded;
@@ -531,9 +469,6 @@ async function recordedAnswer(directory, sketchName) {
   return null;
 }
 
-/** Block until the tab records an answer for this sketch. A revision is a new
- *  file name, never a rewrite of an answered one: answers are matched by name,
- *  so a rewritten sketch would be answered by the click its first version got. */
 async function waitForAnswer(directory, sketchName, timeoutSeconds) {
   const startedAt = Date.now();
   const deadline = startedAt + timeoutSeconds * 1000;
@@ -556,7 +491,7 @@ async function main(argv) {
   const flags = parseFlags(argv, {
     serve: 'value', wait: 'value', sketch: 'value', labels: 'value',
     idle: 'value', timeout: 'value', 'no-open': 'boolean'
-  });
+  }, { usage: USAGE });
   if ((flags.serve === undefined) === (flags.wait === undefined)) {
     throw new UsageError('give exactly one of --serve <dir> and --wait <dir>');
   }
