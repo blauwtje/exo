@@ -1,27 +1,14 @@
-// Bash guard: denies deleting a container, volume, database or credential,
-// often reached for to get past a blocked state whose data is the only copy.
-// Git deletions are git-guard's. Segments split at `;`, `&`, `|` and line
-// breaks in the blanked command; the command word is read blanked, arguments
-// raw. SQL counts only in a pipeline that runs a database client.
-// Ceiling: matched, not parsed; SQL read from a file (`psql -f`, `< x.sql`) is
-// not seen; `|&` ends a pipeline.
-
 import { blankCommandText, HEREDOC_OPERATOR } from './command-text.mjs';
 
 const SEGMENT_SEPARATOR = /[;&|\n]/g;
 const START = '(?:^|[ (])';
 const ENGINE = '(?:docker|podman)';
-// A database client, also after a path, `sudo`, an assignment or `docker exec`.
 const SQL_CLIENT = /(?:^|[ (/])(?:psql|mysql|mariadb|sqlite3|duckdb)(?: |$)/;
-// A heredoc operator; `<<<` is a here-string, read as an argument.
 const HEREDOC_START = /(?<!<)<<(?!<)/g;
 
 const CREDENTIAL_REASON = 'destructive-guard: deleting a credential file locks the user out, and the secret often exists nowhere else. Report the path and ask the user.';
 const DATABASE_FILE_REASON = 'destructive-guard: deleting a database file deletes the only copy of its data. Ask the user.';
 
-// [command word on the blanked segment, argument on the raw segment or null,
-// reason]. `docker stop`, `rmi`, plain `compose down`, and a deployment or pod
-// delete stay allowed. A credential directory matches on its prefix.
 const SEGMENT_RULES = [
   [new RegExp(`${START}${ENGINE} +(?:container +|compose +)?rm(?: |$)`), null,
     'destructive-guard: removing a container destroys its writable layer and everything in it that is not on a volume. Stop it instead, or report the container and ask the user.'],
@@ -50,7 +37,6 @@ const SEGMENT_RULES = [
     'destructive-guard: chezmoi destroy deletes the target file and chezmoi forget drops it from the source. Ask the user.']
 ].map(([command, argument, reason]) => ({ command, argument, reason }));
 
-// DDL is matched in the text a client pipeline is fed, whatever the client.
 const SQL_RULES = [
   { argument: /(?:^|[^a-z_])drop\s+(?:database|schema|table)(?:\s|$)/i,
     reason: 'destructive-guard: dropping a database, schema or table deletes data that is often the only copy. Ask the user, or put it in a migration the user approves.' },
@@ -58,7 +44,6 @@ const SQL_RULES = [
     reason: 'destructive-guard: TRUNCATE empties a table and cannot be undone. Ask the user.' }
 ];
 
-// Blanked and raw text of each segment, grouped into pipelines joined by a lone `|`.
 function pipelinesOf(command) {
   const blanked = blankCommandText(command);
   const pipelines = [[]];
@@ -77,8 +62,6 @@ function segmentReason(segment) {
   return SEGMENT_RULES.find((rule) => rule.command.test(segment.blanked) && (!rule.argument || rule.argument.test(segment.raw)))?.reason;
 }
 
-// The body of the heredoc whose operator is at `index`, from `from` or the next
-// line, up to its delimiter; `end` is where the next heredoc's body starts.
 function heredocBody(command, index, from) {
   HEREDOC_OPERATOR.lastIndex = index;
   const match = HEREDOC_OPERATOR.exec(command);
@@ -94,7 +77,6 @@ function heredocBody(command, index, from) {
   return { text, end: bodyStart + lines.slice(0, close + 1).join('\n').length + 1 };
 }
 
-// The SQL reason for a client pipeline, in its arguments and heredoc bodies.
 function sqlReason(pipeline, command) {
   if (!pipeline.some((segment) => SQL_CLIENT.test(segment.blanked))) return null;
   const texts = pipeline.map((segment) => segment.raw);

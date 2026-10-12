@@ -1,24 +1,11 @@
-// Blanks the text of a shell command that runs nothing (quoted text, heredoc
-// bodies, the bare word after git `-m`) to spaces, keeping every position, so a
-// guard matches the words that run. A substitution in double quotes or an
-// unquoted heredoc runs, so it is kept. Ceiling: a command built from variables
-// reads as written; a quote inside `$((...))` reads as a quote.
-
-// A heredoc operator and its delimiter, shared with destructive-guard.
 export const HEREDOC_OPERATOR = /<<(-?)[ \t]*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|\\?([A-Za-z_]\w*))/y;
 
-// Regex source for `git` (optional `.exe` and closing quote) and its global
-// options in any order, up to the subcommand; `-C`, `-c`, `--git-dir`,
-// `--work-tree` and `--namespace` take a value. Whitespace includes a
-// `\`-newline. Ceiling: a quoted `"git"` counts only at the start of a command.
 const SPACE = '(?:[ \\t]|\\\\\\n)';
 const OPTION = `(?:(?:-[cC]|--(?:git-dir|work-tree|namespace))${SPACE}+[^ \\t\\n]+|-[^ \\t\\n]+)`;
 export const GIT_PREFIX_SOURCE = `git(?:\\.exe)?["']?(?:${SPACE}+${OPTION})*${SPACE}+`;
 
-// A quoted `git` that is the command word, blanked as text and restored after.
 const QUOTED_GIT_COMMAND = /(?:^|[;&|(\n])[ \t]*(["'])(git(?:\.exe)?)\1/g;
 
-// A git prefix, arguments up to a message flag, then a bare plain word.
 const GIT_MESSAGE_WORD = new RegExp(
   `((?:^|[;&|(\`/\\n])[ \\t]*["']?${GIT_PREFIX_SOURCE}(?:[^;&|\\n]|(?<=\\\\)\\n)*?(?<=[ \\t\\n])(?:-[a-zA-Z]*m|--message=?)[ \\t]*)([^\\s;&|"'\`$()<>\\\\]+)`,
   'g'
@@ -36,7 +23,6 @@ export function blankCommandText(command) {
     for (let index = start; index < end; index += 1) blank(index);
   };
 
-  // Blanks text up to the closing `quote` or `limit`, scanning substitutions as code.
   function scanText(quote, limit) {
     while (position < limit) {
       const character = command[position];
@@ -67,7 +53,6 @@ export function blankCommandText(command) {
     position = Math.min(closing + 1, command.length);
   }
 
-  // Reads the heredoc bodies that start on the line after the operators.
   function scanHeredocBodies(heredocs) {
     for (const heredoc of heredocs) {
       const bodyStart = position;
@@ -95,7 +80,6 @@ export function blankCommandText(command) {
     }
   }
 
-  // Scans code up to `terminator`: `)` at depth zero, a backtick, or the end.
   function scanCode(terminator) {
     const heredocs = [];
     let depth = 0;

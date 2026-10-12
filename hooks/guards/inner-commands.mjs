@@ -1,15 +1,7 @@
-// Lists the string argument of each `bash`, `sh` or `zsh -c` (also `-lc`, a
-// path) and `eval` in a command, quotes and escapes resolved, so a guard judges
-// `bash -c "git reset --hard"` like the bare command. Calls are found in the
-// blanked text. Ceiling: only a call at a command start counts (`sudo bash -c`,
-// `xargs sh -c` pass); `eval` reads its first argument only.
-
 import { blankCommandText } from './command-text.mjs';
 
 const CALL = /(?:^|[;&|(\n])[ \t]*(?:(?:\S*\/)?(?:bash|sh|zsh)(?:[ \t]+-[-\w]+)*?[ \t]+-[a-zA-Z]*c[a-zA-Z]*|eval)[ \t]+/g;
 
-// The argument of a double-quoted string starting after the quote at `start`,
-// with `\"`, `\\`, `\$` and a backtick escape resolved.
 function doubleQuoted(text, start) {
   let value = '';
   let index = start;
@@ -22,7 +14,6 @@ function doubleQuoted(text, start) {
   return value;
 }
 
-// The one shell word at `start` in `text`: single-quoted, double-quoted or bare.
 function wordAt(text, start) {
   const quote = text[start];
   if (quote === "'") {

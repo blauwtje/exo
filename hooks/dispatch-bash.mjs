@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-// The one PreToolUse hook on Bash: runs the three guards in one process, each
-// in its own try/catch, then the context check, and returns the first deny. `guards` `off` stands them
-// down; an unreadable setting leaves them on. An unreadable input exits 0 with
-// no output.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
@@ -15,7 +11,6 @@ import { innerCommands } from './guards/inner-commands.mjs';
 import { approvedPass, parkOutput, runGateReason } from './guards/run-gate.mjs';
 import { denialFor as secretDenial } from './guards/secret-guard.mjs';
 
-// How many `bash -c` or `eval` strings deep a guard looks; deeper passes.
 const INNER_DEPTH = 3;
 
 function guardsOn() {
@@ -36,7 +31,6 @@ function innerDenial(command, hookInput, denialFor, depth) {
   return null;
 }
 
-// The deny output when `denialFor` names a reason for the command or a `bash -c` or `eval` string in it.
 export function guardDecision(hookInput, denialFor) {
   const command = hookInput.tool_input?.command;
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '' || !guardsOn()) return null;
@@ -45,8 +39,6 @@ export function guardDecision(hookInput, denialFor) {
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
 }
 
-// In this order, so the first deny wins.
-// In a run a git-guard or destructive-guard deny parks the run and an approval skips them; secret-guard's stays plain and always runs.
 export const GUARDS = [['git-guard', gitDenial, true], ['secret-guard', secretDenial, false], ['destructive-guard', destructiveDenial, true]]
   .map(([name, denialFor, parks]) => ({
     name,
@@ -57,8 +49,6 @@ export const GUARDS = [['git-guard', gitDenial, true], ['secret-guard', secretDe
     }
   }));
 
-// First, in a run only: an approved gate's command passes once and the guards stand down;
-// a publish, release, tag push or deploy parks.
 export const RUN_GATE_STEP = {
   name: 'run-gate',
   run(hookInput) {
@@ -67,7 +57,6 @@ export const RUN_GATE_STEP = {
   }
 };
 
-// Last, so a guard's deny wins; a context deny still beats any allow.
 export const CONTEXT_STEP = {
   name: 'context-limit',
   run(hookInput) {
@@ -76,7 +65,6 @@ export const CONTEXT_STEP = {
   }
 };
 
-// The one output, or null: the first deny, else the first other decision, plus every step's context.
 export async function dispatchBash(hookInput, steps = [RUN_GATE_STEP, ...GUARDS, CONTEXT_STEP]) {
   const outputs = [];
   let skipGuards = false;
@@ -105,6 +93,5 @@ if (isMain(import.meta.url)) {
     const output = text.trim() === '' ? null : await dispatchBash(JSON.parse(text));
     if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
   } catch {
-    // An unreadable input lets the call through.
   }
 }

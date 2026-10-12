@@ -1,13 +1,3 @@
-// Bash guard: denies a shell read of a path a `Read(...)` rule under
-// `permissions.deny` protects (user, project and local settings), since those
-// rules bind only the Read tool. Globs follow the Read rule forms (`//abs`,
-// `~/x`, `/x` from the project root, `./x`, bare `x` at any depth). A read is an
-// operand of a reader command, a `curl` upload or a `<` file; a glob word is
-// expanded first, and a directory word reads what it holds.
-// Ceiling: tokenised, not run: every reader operand counts as a file, `cd` is
-// not followed, and a reader behind `xargs` or `find -exec` is not seen. An
-// unreadable settings file is skipped and named on stderr.
-
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -31,7 +21,6 @@ function unquote(token) {
   return token.replace(QUOTED_PART, (whole, single, double, escaped) => single ?? double?.replace(/\\(.)/g, '$1') ?? escaped);
 }
 
-// Word segments split at `; & | ( )` and newlines; `<` files go to `redirected`, `>` targets drop.
 function wordSegments(command) {
   const segments = [];
   let words = [];
@@ -58,14 +47,12 @@ function wordSegments(command) {
   return segments;
 }
 
-// A substitution inside a double-quoted string runs, so its body is split again.
 function readSegments(command) {
   const segments = wordSegments(command);
   for (const match of command.matchAll(SUBSTITUTION)) segments.push(...readSegments(match[1] ?? match[2]));
   return segments;
 }
 
-// The words a segment reads: a reader's operands and every `<` file.
 function readWords({ words, redirected }) {
   let start = 0;
   while (start < words.length && (ASSIGNMENT.test(words[start]) || WRAPPERS.has(words[start]))) start += 1;
@@ -78,7 +65,6 @@ function readWords({ words, redirected }) {
   return [...operands, ...redirected];
 }
 
-// The files `curl` sends: `-T file`, `--upload-file file` and `@file` data.
 function curlFiles(args) {
   const files = [];
   for (const [index, word] of args.entries()) {
@@ -98,10 +84,8 @@ function expandHome(word) {
   return match ? path.join(home, match[1]) : word;
 }
 
-// Glob matching runs on `/`, not the Windows `\`.
 const slashed = (file) => file.split(path.sep).join('/');
 
-// `**/`, `**`, `*` and `?` become their patterns; any other regex character is escaped.
 const GLOB_TOKEN = /\*\*\/|\*\*|\*|\?|[.+^${}()|[\]\\]/g;
 const GLOB_PATTERNS = { '**/': '(?:.*/)?', '**': '.*', '*': '[^/]*', '?': '[^/]' };
 
@@ -109,7 +93,6 @@ function globRegExp(glob) {
   return new RegExp(`^${glob.replace(GLOB_TOKEN, (token) => GLOB_PATTERNS[token] ?? `\\${token}`)}$`);
 }
 
-// The absolute glob a `Read(...)` spec stands for.
 function absoluteGlob(spec, directory, root) {
   if (spec.startsWith('//')) return spec.slice(1);
   if (spec.startsWith('~/')) return path.join(os.homedir(), spec.slice(2));
@@ -118,7 +101,6 @@ function absoluteGlob(spec, directory, root) {
   return spec.includes('/') ? path.join(directory, spec) : `**/${spec}`;
 }
 
-// The `Read(...)` specs of one settings file; a file that is absent has none.
 function readSpecs(file) {
   const deny = readLayer(file).permissions?.deny;
   if (!Array.isArray(deny)) return [];
@@ -141,7 +123,6 @@ function protectedRules(directory, root, notes) {
   return rules;
 }
 
-// The paths a glob word names in `directory`; a word without `*` or `?` names none.
 function expandGlob(word, directory) {
   if (!/[*?]/.test(word)) return [];
   const absolute = path.resolve(directory, expandHome(word));
@@ -171,7 +152,6 @@ function expandGlob(word, directory) {
   return paths;
 }
 
-// The first rule that protects the word's path, or what lies under it.
 function matchingRule(word, directory, rules) {
   const file = path.resolve(directory, expandHome(word));
   const under = slashed(path.join(file, 'x'));
