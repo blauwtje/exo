@@ -11,6 +11,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - **`exo run` now builds a small plan in one session and lands it by script: in the flow benchmark it uses 1.23x the no-plugin baseline's tokens with the hidden check 4/4, against 1.76x for the `build` flow.**
 - **A plan task's Proof and a plan's Success must now fail before the change: on the test-pollution benchmark `exo run` with this red-green gate passed 5 of 5, against 1 of 35 for the no-plugin baseline.**
+- **exo now refuses new code comments at edit time and at landing, except a license header, a public doc comment, a link or a `why:` line; one capped `exo run` added 0 comment lines with the hidden check passing.**
 
 ### Added
 
@@ -20,6 +21,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo run` refuses a plan whose Success passes on the run's start commit and writes the red-green gate line to `run.log`.
 - `plan-check` flags a malformed `Red:` or `Repeat:` line and a Success that cannot fail.
 - The value benchmark gains an `exo-run` arm that runs a task through `exo run`, and a spend cap that stops a run before a cell would pass it (`benchmarks/results/2026-10-12-test-pollution-red-green.md`).
+- `lib/code-comments.mjs` finds comment and suppression lines in added code across common languages, and `lib/code-rules.mjs` adds ESLint checks for nesting depth 2, 3 parameters, nested ternaries and `else` after `return`, with function length over 20 lines as a warning.
+- A PreToolUse `Edit|Write|MultiEdit` hook denies an edit that adds a comment line; `guards` off turns it off.
+- The flow benchmark counts comment lines added, hook denials and the hidden check per cell (`benchmarks/results/2026-10-12-no-comments.md`).
+
+### Changed
+
+- The code standard is rewritten to four principles and bans comments except the allowed list.
+- `land-task` refuses a task whose added code breaks the code rules, and verify sends each such line to the review fixer as a `fix` finding.
 
 ### Fixed
 
