@@ -79,9 +79,9 @@ export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gat
   '',
   '## Tasks',
   '### Task 1: feat(a): add a',
-  `Depends on: none | Files: \`a.txt\`${risk === null ? '' : ', `a.test.mjs`'} | Data: a line${risk === null ? '' : ` | Risk: ${risk}`} | Proof: node --version`,
+  `Depends on: none | Files: \`a.txt\`${risk === null ? '' : ', `a.test.mjs`'} | Data: a line${risk === null ? '' : ` | Risk: ${risk}`} | Proof: node --version | Red: none (fixture)`,
   '### Task 2: feat(b): add b',
-  'Depends on: 1 | Files: `b.txt` | Data: a line | Proof: node --version',
+  'Depends on: 1 | Files: `b.txt` | Data: a line | Proof: node --version | Red: none (fixture)',
   ''
 ].filter((line) => line !== null).join('\n');
 
