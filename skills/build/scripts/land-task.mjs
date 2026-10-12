@@ -36,6 +36,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { runOnBase, testPaths } from '#red-green';
+import { codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -497,6 +498,16 @@ function runLint(lint, files, root) {
   }
 }
 
+// The task's own paths must add no comment, suppression or over-nested code; a fail refuses
+// the landing, a warn comes back as a line for the output.
+function runCodeRules(files, root) {
+  const { fails, warns } = codeRuleFindings({ root, base: 'HEAD', paths: files.filter((file) => !file.endsWith('/')) });
+  if (fails.length > 0) {
+    throw new LandingError(`the added code breaks the code rules:\n${fails.join('\n')}\nRemove the comment or make the code clearer.`);
+  }
+  return warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
+}
+
 // A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
 // right before the commit, so a check spec wrote against the plan's own
 // layout still holds on whatever the build left; a plan without the line, or
@@ -629,7 +640,8 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
-  const gateLine = runLandGate(frame.landGate, root, dropsOf(task)) ?? '';
+  const warnLines = runCodeRules(task.files.map((file) => file.path), root);
+  const gateLine = warnLines + (runLandGate(frame.landGate, root, dropsOf(task)) ?? '');
   return `${gateLine}Report OK: Task ${number}\n`;
 }
 
@@ -650,7 +662,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const redLine = redGreenLine(task, proofCommands, root, pending);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
-  const gateLine = runLandGate(frame.landGate, root, dropsOf(task)) ?? '';
+  const warnLines = runCodeRules(task.files.map((file) => file.path), root);
+  const gateLine = warnLines + (runLandGate(frame.landGate, root, dropsOf(task)) ?? '');
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
