@@ -1097,6 +1097,7 @@ export async function staticAudit(directory) {
   return findings;
 }
 
+// why: a canvas round-trip is not exact in every engine (obscura returns 0.2 alpha as 10/255), so the string is parsed directly.
 export function parseComputedColor(value) {
   const text = String(value).trim().toLowerCase();
   if (text === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
@@ -1139,6 +1140,7 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
   canvas.width = 1;
   canvas.height = 1;
   const paint = canvas.getContext('2d', { willReadFrequently: true });
+  // why: some engines round-trip canvas alpha wrongly, so the canvas converts only opaque channels and its alpha is never read.
   const toRgba = (value) => {
     const parsed = parseColor(value) ?? { r: null, g: null, b: null, a: 1 };
     if (parsed.r !== null) return parsed;
@@ -1149,6 +1151,7 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     const [r, g, b] = paint.getImageData(0, 0, 1, 1).data;
     return { r, g, b, a: parsed.a };
   };
+  // why: WCAG 2.x pins the luminance knee at 0.03928, not the sRGB spec's 0.04045, and no 8-bit channel falls between the two.
   const channel = (value) => {
     const scaled = value / 255;
     return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
@@ -1174,6 +1177,7 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     let uncertain = false;
     while (node) {
       const style = getComputedStyle(node);
+      // why: an engine that does not implement a property serialises it as '', as backdropFilter already allows.
       if (style.backgroundImage && style.backgroundImage !== 'none') uncertain = true;
       if (parseFloat(style.opacity) < 1) uncertain = true;
       if (style.mixBlendMode && style.mixBlendMode !== 'normal') uncertain = true;
@@ -1334,6 +1338,7 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     return { top, bottom, left, right, width: right - left, height: bottom - top };
   };
 
+  // why: some engines report a stylesheet's `hidden` as `auto`, so the overflow keyword only raises confidence and never gates the finding.
   const clippedBoxes = Array.from(document.querySelectorAll('body *'))
     .filter(isVisible)
     .slice(0, LAYOUT_ELEMENT_LIMIT);
@@ -1371,6 +1376,7 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     });
   }
 
+  // why: an inline element that wraps reports one union rect spanning every line it occupies, so only block-level text boxes are compared.
   const inFlowText = textOwners
     .filter((element) => {
       const style = getComputedStyle(element);
@@ -1492,6 +1498,7 @@ async function overflowFindings(page, url) {
   return findings;
 }
 
+// why: the canvas paints html's background, and body's when html has none, across the whole page, so neither is a candidate then.
 const REGION_AUDIT = (parseColor, describe) => {
   const SHORT_BY = 16;
   const EDGE = 8;
@@ -1628,8 +1635,10 @@ export async function renderedAudit({ url, viewports, cwd }) {
       const key = `${viewport.width}x${viewport.height}`;
       await page.setViewportSize(viewport);
       await page.goto(url, { waitUntil: 'load' });
+      // why: a same-document navigation does not reload the document, so focus from the previous viewport's Tab pass would survive.
       await page.reload({ waitUntil: 'load' });
       await settleAnimations(page);
+      // why: a function argument cannot cross into the page, so the audit and the colour parser travel as one source expression.
       const audit = await page.evaluate(
         `(${PAGE_AUDIT})(${JSON.stringify(FOCUS_SIGNATURE_PROPERTIES)}, ${parseComputedColor}, ${describeElement})`);
       const focusFindings = await focusIndicatorFindings(page, audit.focusables);
