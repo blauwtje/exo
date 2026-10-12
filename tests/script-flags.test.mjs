@@ -25,6 +25,37 @@ function run(args) {
   return spawnSync(process.execPath, args, { encoding: 'utf8' }).stdout;
 }
 
+function runHelp(args, usage) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-help-'));
+  const script = path.join(directory, 'help.mjs');
+  const options = usage === undefined ? '' : `, { usage: ${JSON.stringify(usage)} }`;
+  fs.writeFileSync(
+    script,
+    `import { parseFlags } from '${FLAGS_URL}';\nparseFlags(process.argv.slice(2), { name: 'string' }${options});\nprocess.stdout.write('parsed');\n`
+  );
+  const result = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
+  fs.rmSync(directory, { recursive: true, force: true });
+  return result;
+}
+
+test('--help prints the usage text to stdout and exits 0', () => {
+  const result = runHelp(['--help'], 'usage: help --name <x>');
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, 'usage: help --name <x>\n');
+});
+
+test('--help prints usage before any other argument is judged', () => {
+  const result = runHelp(['--bogus', '--help'], 'usage: help');
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, 'usage: help\n');
+});
+
+test('--help without usage text stays an unknown flag', () => {
+  const result = runHelp(['--help']);
+  assert.notEqual(result.status, 0);
+  assert.equal(result.stdout, '');
+});
+
 test('isMain is true when the module is the process entry', () => {
   const { directory, probe } = makeProbe();
   assert.equal(run([probe]), 'main');
