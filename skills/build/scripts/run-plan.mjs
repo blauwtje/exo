@@ -1013,7 +1013,7 @@ async function main(argv) {
           : command === null || command.startsWith('mcp:') ? 'no shell Success command' : null;
       if (skip !== null) {
         run.redGreenLine = `Red-green: skipped (${skip})`;
-        appendLog(progressFile, `- ${run.redGreenLine}\n`);
+        say(run.redGreenLine);
         return null;
       }
       const evaluate = () => redGreen({
@@ -1034,7 +1034,7 @@ async function main(argv) {
         result = evaluate();
       }
       run.redGreenLine = result.outcome === 'proved' ? 'Red-green: proved' : `Red-green: ${result.outcome}: ${result.lines[0]}`;
-      appendLog(progressFile, `- ${run.redGreenLine}\n`);
+      say(run.redGreenLine);
       return result.outcome === 'proved' ? null : { line: `red-green: ${result.outcome}: ${result.lines[0]}`, why: `The Success criterion is not proved red-green (${clip(result.lines[0], 80)})`, next: 'fix the Success criterion or add Red: none (<reason>), then run exo run again', gate: 'FAIL' };
     };
     const gateStop = await successGate();

@@ -52,5 +52,12 @@ test('Red: none on the Success criterion skips the gate and logs it', async () =
   const context = await setup({ successRed: 'Red: none (docs)' });
   const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
   assert.match(result.detail, /^Red-green: skipped \(Red: none \(docs\)\)$/m, result.stdout + result.stderr);
-  assert.match(result.progress, /^- Red-green: skipped \(Red: none \(docs\)\)$/m);
+  assert.match(result.progress, /^- \[\d\d:\d\d\] Red-green: skipped \(Red: none \(docs\)\)$/m);
+});
+
+test('the red-green skip and outcome lines reach stdout, which exo run keeps as run.log', async () => {
+  const skipped = await runPlan(await setup({ successRed: 'Red: none (docs)' }), [land(1), land(2), { result: 'Verify done.' }]);
+  assert.match(skipped.stdout, /^\[\d\d:\d\d\] Red-green: skipped \(Red: none \(docs\)\)$/m, skipped.stdout + skipped.stderr);
+  const proved = await runPlan(await setup({ success: '`test -f b.txt`', successRed: null }), [land(1), land(2), { result: 'Verify done.' }]);
+  assert.match(proved.stdout, /^\[\d\d:\d\d\] Red-green: proved$/m, proved.stdout + proved.stderr);
 });

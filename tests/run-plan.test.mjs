@@ -217,7 +217,7 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const live = result.stdout.trim().split('\n');
   const events = live.filter((line) => /^\[\d\d:\d\d\] /.test(line)).map((line) => line.replace(/^\[\d\d:\d\d\] /, ''));
   assert.match(events[0], /^run start: .*plan\.md, branch feat\/run, 2 tasks \(2 to build\)$/);
-  assert.deepEqual(events.slice(1).map((line) => line.replace(/ [0-9a-f]{7},.*$/, '')), ['task 1 start', 'task 1 landed', 'task 2 start', 'task 2 landed', 'all tasks landed, final review start', 'run done']);
+  assert.deepEqual(events.slice(1).map((line) => line.replace(/ [0-9a-f]{7},.*$/, '')), ['task 1 start', 'task 1 landed', 'task 2 start', 'task 2 landed', 'Red-green: skipped (Red: none (fixture))', 'all tasks landed, final review start', 'run done']);
   const summaryPart = live.slice(live.findIndex((line) => !/^\[\d\d:\d\d\] /.test(line)));
   assert.ok(summaryPart.length <= 6, summaryPart.join('\n'));
   assert.equal(summaryPart[0], 'Landed 2 of 2 tasks: 1, 2.');
