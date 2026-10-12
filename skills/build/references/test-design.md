@@ -28,6 +28,9 @@ Risky → `## Red before green` as written, quoting failing output before the pr
 
 Test passes before the change → proves nothing. Tighten the assertion, or report that a failing-before test could not be established.
 
+- Proof or Success criterion passing before the change → `land-task` and `exo run` refuse it, unless the plan names `Red: none (<reason>)`.
+- Proof needing an untracked build artifact → reads as red on the base; build it inside the Proof command.
+
 ## Define the proof
 
 Before the test, write one sentence: `Given <public input/state>, the caller observes <output/effect> instead of <old result>.` Pick the nearest repository test that observes that result through a public function, response, event, persisted record, file, or command output.

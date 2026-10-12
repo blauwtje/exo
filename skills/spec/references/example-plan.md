@@ -19,6 +19,7 @@ Allow: none
 
 ## Success criterion
 `npm test` passes.
+Red: none (each task's Proof proves its own red)
 
 ## Checkpoint
 - Blocks first: none.

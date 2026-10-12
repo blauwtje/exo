@@ -10,6 +10,7 @@
    - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
    - `Allow:` → each backticked task command no other field names, else `none`.
 3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.
+   - Passes on the run's base → refused, unless `Red: none (<reason>)`; flaky → `Repeat: <2-5> (<reason>)`; each on its own line under the command.
    - `bin` or `scripts.start` → command runs it; else `Product run: none (<reason>)`.
 4. `## Checkpoint`: `Blocks first:`, `Shared state:`, `Smallest safe split:`, each naming tasks or `none`; `Parallel:` → `Tasks 1, 2 and 3` or `every task` sharing no `Depends on:` chain or `Files:` path, else `none`; no range.
 5. `## Tasks`, dependency-ordered.
@@ -19,7 +20,7 @@
 ```
 ### Task <n>: <type>(<scope>): <subject>
 
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one command>
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>][ | Red: none (<reason>)] | Proof: <one command>
 ```
 
 - `Files:` ending `/` → whole folder.

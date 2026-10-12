@@ -64,9 +64,12 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/critique.md': 797,
   'skills/build/references/data-migration.md': 874,
   'skills/build/references/security.md': 999,
-  'skills/build/references/test-design.md': 862,
+  // test-design.md and task-list.md grew for the red-green rules of plan
+  // autonomous-exo-5 Task 10; their older rules stay whole.
+  'skills/build/references/test-design.md': 925,
   'skills/build/references/wave-worktrees.md': 928,
   'skills/ship/references/pr-prep.md': 772,
+  'skills/spec/references/task-list.md': 795,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
