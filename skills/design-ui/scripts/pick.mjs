@@ -342,8 +342,6 @@ export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
 }
 
 function page(variants, key, { words, recommended, recommendedNote }) {
-  const seated = variants;
-
   const signature = (written) => {
     if (!written) return '';
     const faceName = written.face?.name ?? '';
@@ -381,13 +379,13 @@ function page(variants, key, { words, recommended, recommendedNote }) {
     return `<section class="panel" role="tabpanel" id="panel-${variant.index}" aria-labelledby="tab-${variant.index}" data-index="${variant.index}"${seat === 0 ? '' : ' hidden'}><iframe sandbox="${sandbox}" loading="eager" title="${escapeHtml(title)}" src="${escapeHtml(source)}"${width}></iframe></section>`;
   };
 
-  const fontLinks = [...new Set(seated.map((variant) => variant.signature?.fontHref).filter(Boolean))]
+  const fontLinks = [...new Set(variants.map((variant) => variant.signature?.fontHref).filter(Boolean))]
     .map((href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`).join('\n');
 
   const why = recommendedNote
     ? `<p class="why"><span class="why-mark" aria-hidden="true">&#9733;</span>${escapeHtml(recommendedNote)}</p>`
     : '';
-  const first = seated[0];
+  const first = variants[0];
   const firstTitle = titleOf(first, 0);
 
   return `<!doctype html>
@@ -535,11 +533,11 @@ ${CHROME_TOKENS}
   <button type="button" class="choose" id="choose" data-choose="${first.index}" aria-label="${escapeHtml(`${words.choose}: ${firstTitle}`)}">${escapeHtml(words.choose)}</button>
 </header>
 <div class="tabs" role="tablist" aria-label="${escapeHtml(words.tabs)}">
-${seated.map(tab).join('\n')}
+${variants.map(tab).join('\n')}
 </div>
 <p class="description" id="description" title="${escapeHtml(descriptionOf(first))}">${escapeHtml(descriptionOf(first))}</p>
 <div class="panels">
-${seated.map(panel).join('\n')}
+${variants.map(panel).join('\n')}
 </div>
 <script>
   const key = ${JSON.stringify(key)};
