@@ -1025,11 +1025,6 @@ async function main(argv) {
       let result = evaluate();
       if (result.outcome !== 'proved') {
         say(`red-green: ${result.outcome}, repair session`);
-        if (stall >= STALL_LIMIT) {
-          run.redGreenLine = `Red-green: ${result.outcome}: ${result.lines[0]}`;
-          return { line: `red-green: ${result.outcome}: ${result.lines[0]}`, why: `The Success criterion is not proved red-green (${clip(result.lines[0], 80)})`, next: 'fix the Success criterion or add Red: none (<reason>), then run exo run again', gate: 'FAIL' };
-        }
-        stall += 1;
         const session = await runSession({ kind: 'fix', prompt: `The Success criterion \`${command}\` must fail on the run's start commit ${startCommit.slice(0, 12)} (with the tests of this run laid over it) and pass on the head. The check found:\n${result.lines.join('\n')}\n\nChange the tests or the product so the command proves the work, commit it, and end on one line.` });
         if (session.stop !== undefined) return session.stop;
         result = evaluate();
