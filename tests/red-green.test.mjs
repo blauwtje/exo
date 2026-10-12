@@ -137,6 +137,36 @@ test('a timeout is an error, never red', () => {
   assert.equal(worktrees(git), 1);
 });
 
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+test('a timed-out base run leaves no child running', async () => {
+  const { root, git, base } = repo();
+  const pidFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'red-green-pid-')), 'pid');
+  const r = runOnBase({ root, base, command: `sleep 7.31 & echo $! > '${pidFile}'; wait`, timeoutMs: 300 });
+  assert.equal(r.status, 'error');
+  const pid = Number(fs.readFileSync(pidFile, 'utf8').trim());
+  assert.ok(pid > 0);
+  for (let i = 0; i < 20 && alive(pid); i++) await new Promise((resolve) => setTimeout(resolve, 50));
+  const survived = alive(pid);
+  if (survived) process.kill(pid, 'SIGKILL');
+  assert.equal(survived, false, `sleeper ${pid} outlived the timeout`);
+  assert.equal(worktrees(git), 1);
+});
+
+test('the base runs a bash-only construct like the head Proof', () => {
+  const { root, git, base } = repo();
+  const r = runOnBase({ root, base, command: 'diff <(echo a) <(echo a)', timeoutMs: 30000 });
+  assert.equal(r.status, 'green', r.output);
+  assert.equal(worktrees(git), 1);
+});
+
 test('an unknown base is an error, never proved', () => {
   const { root, git } = repo();
   const r = redGreen({ root, base: 'nope', command: 'true', timeoutMs: 30000 });
