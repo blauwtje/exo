@@ -217,8 +217,7 @@ function flowCells() {
       budgetUsd: '1',
       prompt: `Implement every task in ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
     },
-    { ...shared, id: 'flow-run', runSession: 'plan', budgetUsd: '1', prompt: null },
-    { ...shared, id: 'flow-run-task', runSession: 'task', budgetUsd: '1', prompt: null }
+    { ...shared, id: 'flow-run', runSession: 'plan', budgetUsd: '1', prompt: null }
   ];
 }
 

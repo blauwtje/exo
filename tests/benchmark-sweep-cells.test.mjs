@@ -14,14 +14,14 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 51 calls: 33 review, 5 build, 5 fixer, 3 plan and 5 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 51);
+test('the full set makes 50 calls: 33 review, 5 build, 5 fixer, 3 plan and 4 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 50);
   assert.equal(selectCells(cells, ['review']).length, 33);
   assert.equal(selectCells(cells, ['build']).length, 5);
   assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
-  assert.equal(selectCells(cells, ['flow']).length, 5);
-  assert.equal(selectCells(cells, ['plan', 'flow']).length, 8);
+  assert.equal(selectCells(cells, ['flow']).length, 4);
+  assert.equal(selectCells(cells, ['plan', 'flow']).length, 7);
 });
 
 test('an unknown set name stops the selection', () => {
@@ -94,10 +94,10 @@ test('the session flow cells run flow-c7 prompt on a cut variant and load the co
   }
 });
 
-test('the run arms start exo run on the fixed plan, one session per plan or per task, through the confining wrapper', () => {
-  const [plan, task] = selectCells(cells, ['flow']).filter((cell) => cell.runSession);
-  assert.deepEqual([plan.id, plan.runSession, task.id, task.runSession], ['flow-run', 'plan', 'flow-run-task', 'task']);
-  for (const cell of [plan, task]) {
+test('the run arms start exo run on the fixed plan, one session per plan, through the confining wrapper', () => {
+  const [plan] = selectCells(cells, ['flow']).filter((cell) => cell.runSession);
+  assert.deepEqual([plan.id, plan.runSession], ['flow-run', 'plan']);
+  for (const cell of [plan]) {
     assert.equal(cell.budgetUsd, '1', cell.id);
     const args = runArguments(cell, '/tmp/copy');
     assert.deepEqual(args.slice(0, 3), ['/tmp/copy/skills/build/scripts/exo-cli.mjs', 'run', FLOW_PLAN], cell.id);

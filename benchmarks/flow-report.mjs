@@ -18,7 +18,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { meanAndSd } from './statistics.mjs';
 
-const EXO_ARM = ['flow-c7', 'flow-run', 'flow-run-task'];
+const EXO_ARM = ['flow-c7', 'flow-run'];
 const BASELINE_ARM = 'flow-base';
 
 // The flow records of one out dir; a cell that has not finished has none.

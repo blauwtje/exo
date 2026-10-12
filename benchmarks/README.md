@@ -98,10 +98,10 @@ The projection takes each cell's cost from the mean of its finished twins under 
 | `build` | 5: each `safe/` task built from its seed | Sonnet 5 at `high` |
 | `fixer` | 5: each `safe/` task's review-fixer dispatch, from `review-fixer-prompt.md` | Sonnet 5 at `high` |
 | `plan` | 3: one fixed request planned in a small text library | Opus 5.5 at `high`, Fable 5.1 at `high` and `xhigh` |
-| `flow` | 5: a fixed four-task plan run through `build` (`flow-c7`, `flow-session`), the same plan with no plugin (`flow-base`, no `--plugin-dir`), and through `exo run` as one plan session (`flow-run`) or one session per task (`flow-run-task`), at most $1 each | Sonnet 5 at `high` (run arms: the run's default model) |
+| `flow` | 4: a fixed four-task plan run through `build` (`flow-c7`, `flow-session`), the same plan with no plugin (`flow-base`, no `--plugin-dir`), and through `exo run` as one plan session (`flow-run`), at most $1 each | Sonnet 5 at `high` (run arms: the run's default model) |
 
 ```bash
-node benchmarks/sweep.mjs --set all                    # prints the 51 calls it would make and starts none
+node benchmarks/sweep.mjs --set all                    # prints the 50 calls it would make and starts none
 node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three hours at the default --concurrency 2
 node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
 node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # writes the results file under <dir> instead of results/

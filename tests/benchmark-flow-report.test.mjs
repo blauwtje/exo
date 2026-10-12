@@ -134,11 +134,8 @@ test('an arm with no hidden-check result is not better', () => {
 test('each run arm shows its weighted tokens as a multiple of flow-base and its hidden check count', () => {
   const text = flowReport([
     record('flow-base', { tokens: 1000 }),
-    record('flow-run', { tokens: 1050 }),
-    record('flow-run-task', { tokens: 2000, hiddenPass: false })
+    record('flow-run', { tokens: 1050 })
   ]);
-  assert.deepEqual(aggregateFlow([record('flow-base', {}), record('flow-run-task', {}), record('flow-run', {})]).map((arm) => arm.id), ['flow-run', 'flow-run-task', 'flow-base']);
+  assert.deepEqual(aggregateFlow([record('flow-base', {}), record('flow-run', {})]).map((arm) => arm.id), ['flow-run', 'flow-base']);
   assert.match(text, /^flow-run:[\s\S]*weighted tokens 1\.05x flow-base, hidden check 1\/1/m);
-  assert.match(text, /^flow-run-task:[\s\S]*weighted tokens 2\.00x flow-base, hidden check 0\/1/m);
-  assert.match(text, /Pass-rate difference \(flow-run-task minus flow-base\)/);
 });
