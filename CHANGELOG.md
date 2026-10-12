@@ -43,6 +43,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `verify` and the red check share one test-path rule, `isTestPath` in `lib/red-green.mjs`; a `-test.` suffix no longer counts as a test file.
 - A builder flattens a too-deep block it touches.
 - Comments in `skills/`, `lib/` and `hooks/` are removed, from 14.6% of lines to 0.0% disallowed; a comment on behavior forced by a library, browser, platform or protocol returns as a `// why:` line.
+- Every exo question keeps its options in a fixed A, B, C order; the recommendation is marked where it stands and never moves an option to the top.
 
 ### Fixed
 
