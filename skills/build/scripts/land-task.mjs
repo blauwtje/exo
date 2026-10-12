@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { exportSignatures } from '#export-signatures';
-import { runTreeSync } from '#process-tree';
+import { runTreeSync, withoutRunVariables } from '#process-tree';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
@@ -222,7 +222,7 @@ function runProof(task, command, root, field) {
   const before = workingTreeKey(root);
   const started = Date.now();
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs });
+  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: withoutRunVariables() });
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   if (proofRun.status === 0 && !proofRun.timedOut) {
