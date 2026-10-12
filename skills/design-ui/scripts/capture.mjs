@@ -1,16 +1,3 @@
-// Deterministic screenshots for the ui-design skill.
-//
-// This file also owns the shared browser-capability ladder and the small CLI
-// helpers that the skill folder's other scripts import, so the ladder and the
-// flag grammar behave identically everywhere. Nothing here installs a
-// dependency or writes inside the repository.
-//
-//   node scripts/capture.mjs --url <file:// or http:// url>
-//                            [--viewport <width>x<height>]   (repeatable)
-//                            [--full-page]
-//                            [--color-scheme light|dark|no-preference]
-//                            [--label <name>] [--out <dir>]
-
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -32,18 +19,10 @@ export const NO_BROWSER_MESSAGE =
 
 export const COLOR_SCHEMES = ['light', 'dark', 'no-preference'];
 
-// The capture sizes the design-ui docs and agents name, mobile first; the last
-// is the single viewport check-ui and inspect-styles default to.
 export const DEFAULT_VIEWPORTS = Object.freeze(
   JSON.parse(readFileSync(new URL('../assets/viewports.json', import.meta.url), 'utf8')).capture
 );
 
-/**
- * Capabilities a caller can need beyond rendering a page and taking a picture
- * of it. Obscura, the driven fallback below every Chrome rung, reports nothing
- * for CSS.getPlatformFontsForNode and ignores prefers-color-scheme, so a caller
- * that depends on either names it and obscura is passed over.
- */
 export const BROWSER_CAPABILITIES = Object.freeze({
   darkColorScheme: 'color-scheme-dark',
   platformFonts: 'platform-fonts'
@@ -54,13 +33,10 @@ const OBSCURA_MISSING_CAPABILITIES = [
   BROWSER_CAPABILITIES.platformFonts
 ];
 
-// Obscura also lacks popover, <dialog> and SVG <use>, and lays a page out wider
-// than Chrome does, so a picture it takes can show faults Chrome never renders.
 const OBSCURA_WARNING =
   'obscura fallback: it lacks popover, <dialog> and SVG <use> and lays out differently from Chrome, ' +
   'so verify anything that looks broken in Chrome before fixing it';
 
-/** The caveat a capture taken by this engine carries, or null when it has none. */
 export function engineWarning(engine) {
   return engine === 'obscura' ? OBSCURA_WARNING : null;
 }
@@ -68,11 +44,8 @@ export function engineWarning(engine) {
 const OBSCURA_READY_TIMEOUT_MS = 10_000;
 const OBSCURA_STOP_GRACE_MS = 2_000;
 
-// The flag grammar lives in `#script-flags`; this skill's scripts read it here,
-// beside the other CLI helpers they import.
 export { environmentMs, parseFlags, UsageError };
 
-/** A required capability is missing: the caller gets exit 3. */
 export class CapabilityError extends Error {
   constructor(message, payload) {
     super(message);
@@ -80,8 +53,6 @@ export class CapabilityError extends Error {
   }
 }
 
-// Every flag naming a JSON input fails the same three ways — absent, unreadable,
-// unparseable — and each failure is a usage error, not a tool error.
 export async function readJsonFlag(file, flag) {
   if (!file) throw new UsageError(`${flag} is required`);
   let text;
@@ -182,11 +153,6 @@ function requireFromProject(moduleName, cwd) {
   }
 }
 
-/**
- * Resolve a command against PATH the way a shell would, without spawning one.
- * Unlike the fixed browser paths this scans a directory list anyone can write
- * to, so the executable bit is checked here and not only the file's existence.
- */
 async function findOnPath(command) {
   const directories = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
   const suffixes = process.platform === 'win32'
@@ -203,10 +169,6 @@ async function findOnPath(command) {
   return null;
 }
 
-// Playwright keeps every downloaded browser under one root. Asking the installed
-// library where its own build lives finds that root, and the revision it was
-// built against, even when that revision was never downloaded. Both beat
-// guessing a per-platform cache path.
 function playwrightRegistryLocation(chromium) {
   let registryPath;
   try {
@@ -224,13 +186,6 @@ function playwrightRegistryLocation(chromium) {
   };
 }
 
-/**
- * A full Chrome.app registers itself with the desktop and flashes an icon in the
- * macOS Dock on every headless launch; Playwright's chrome-headless-shell does
- * not. Prefer an installed shell over any browser application, and inside the
- * shared browser root prefer the revision this client was built against, because
- * only that one is guaranteed to speak its protocol.
- */
 async function headlessShellBinary(chromium) {
   const registry = playwrightRegistryLocation(chromium);
   if (!registry) return null;
@@ -252,12 +207,6 @@ async function headlessShellBinary(chromium) {
   return null;
 }
 
-/**
- * The obscura server speaks CDP on a loopback port that any local process can
- * reach while it runs, so file:// access stays off unless the capture actually
- * needs it. Private-network access stays on: this tool exists to photograph a
- * development server, which is exactly what that flag permits.
- */
 export function obscuraServerArguments(port, url) {
   const args = ['serve', '--port', String(port), '--host', '127.0.0.1', '--allow-private-network', '--quiet'];
   if (typeof url === 'string' && url.toLowerCase().startsWith('file://')) args.push('--allow-file-access');
@@ -280,15 +229,11 @@ async function startObscuraServer({ binary, url }) {
   const endpoint = `http://127.0.0.1:${port}`;
   const child = spawn(binary, obscuraServerArguments(port, url), { stdio: ['ignore', 'ignore', 'pipe'] });
 
-  // Without a listener a spawn failure is an uncaught exception rather than the
-  // capability error the ladder knows how to fall back from.
   let spawnFailure = null;
   child.on('error', (error) => { spawnFailure = error; });
   let complaint = '';
   child.stderr.on('data', (chunk) => { complaint = `${complaint}${chunk}`.slice(-400); });
 
-  // This process owns the server: it holds an unauthenticated CDP port, so it is
-  // stopped on every exit path and killed outright if it ignores the request.
   const stop = async () => {
     if (spawnFailure || child.exitCode !== null || child.signalCode !== null) return;
     child.kill('SIGTERM');
@@ -320,8 +265,6 @@ async function startObscuraServer({ binary, url }) {
   }
 }
 
-// Rung 3 can be passed over for four different reasons and the caller is owed
-// the one that actually applied, in the order the ladder checks them.
 function obscuraSkipReason({ client, unmet, failedRungs, obscura }) {
   if (failedRungs.includes(3)) return 'obscura: skipped after its server failed to start';
   if (!obscura) return 'obscura: not found on PATH';
@@ -330,15 +273,6 @@ function obscuraSkipReason({ client, unmet, failedRungs, obscura }) {
   return null;
 }
 
-/**
- * The one capability ladder. Rungs 1 and 2 drive Chrome or Chromium, rung 3
- * drives obscura, and rungs 4 and 5 can only take a screenshot. Obscura is
- * reached only when no Chrome binary is found or every Chrome rung failed to
- * launch, so a capture runs in Chrome whenever this machine can reach one.
- * failedRungs names the rungs whose launch already failed in this run. Every
- * attempt is recorded so the caller can report which rung ran and why the
- * others did not.
- */
 export async function resolveBrowser({
   cwd = process.cwd(),
   colorScheme = 'no-preference',
@@ -366,13 +300,10 @@ export async function resolveBrowser({
   const client = playwright?.chromium ?? playwrightCore?.chromium ?? null;
   const clientName = playwright?.chromium ? 'playwright' : 'playwright-core';
 
-  // CHROME_PATH is read before any rung is chosen, so a broken value is reported
-  // whichever rung ends up running.
   const envBinary = process.env.CHROME_PATH;
   const explicitBinary = envBinary && (await isExecutableFile(envBinary)) ? envBinary : null;
   if (envBinary && !explicitBinary) attempts.push(`CHROME_PATH: '${envBinary}' is not an existing file`);
 
-  // Rung 1: a project that installs Playwright brings its own headless browser.
   if (playwright?.chromium) {
     if (!failedRungs.includes(1)) {
       return {
@@ -400,10 +331,6 @@ export async function resolveBrowser({
     if (!binary) attempts.push('platform-known Chrome, Chromium and Edge paths: none present');
   }
 
-  // Rung 2: the Playwright client driving a binary this machine already has.
-  // CHROME_PATH names an explicit choice and keeps precedence; otherwise an
-  // installed headless shell wins, because a browser application would claim a
-  // Dock icon.
   if (client && failedRungs.includes(2)) {
     attempts.push(`${clientName}: skipped after its executablePath failed to launch`);
   } else if (client) {
@@ -424,9 +351,6 @@ export async function resolveBrowser({
     attempts.push(`${clientName}: resolved but no compatible executablePath, so it is unavailable`);
   }
 
-  // Rung 3: obscura renders through a CDP server of our own. It is the driven
-  // fallback only, because it lacks popover, <dialog> and SVG <use> and lays a
-  // page out differently from Chrome.
   const needed = colorScheme === 'dark'
     ? [...requires, BROWSER_CAPABILITIES.darkColorScheme]
     : requires;
@@ -474,11 +398,6 @@ export async function resolveBrowser({
   };
 }
 
-/**
- * Open a browser for a driven rung. Obscura needs a server of its own before
- * anything can connect to it, so both driven paths meet here and every caller
- * shuts down through the same close.
- */
 async function launchDrivenBrowser({ capability, url }) {
   if (capability.engine !== 'obscura') {
     const launchOptions = capability.executablePath ? { executablePath: capability.executablePath } : {};
@@ -505,16 +424,6 @@ async function launchDrivenBrowser({ capability, url }) {
   };
 }
 
-/**
- * A driven rung can resolve and still fail to launch: Playwright installed
- * without its browser download, a CHROME_PATH that is no browser, a stale
- * obscura binary or a port taken between reservation and bind. Each failure
- * passes over that rung and launches the next driven one, so a run lands on
- * obscura only after every Chrome rung failed, and reports the rung that ran.
- * The loop ends because resolveBrowser never returns a rung in failedRungs.
- * With no driven rung left the first failure is rethrown, because it names the
- * browser the caller should fix.
- */
 async function openDrivenBrowser({ capability, cwd, url, colorScheme, requires }) {
   const failedRungs = [];
   const launchFailures = [];
@@ -534,10 +443,6 @@ async function openDrivenBrowser({ capability, cwd, url, colorScheme, requires }
   throw firstFailure;
 }
 
-/**
- * Open a driven page on rungs 1 to 3. Returns null when no driven rung resolves;
- * the caller decides whether that is a diagnostic or a failure.
- */
 export async function openDrivenPage({
   cwd = process.cwd(),
   url,
@@ -572,22 +477,10 @@ export async function openDrivenPage({
   };
 }
 
-// design-ui asks every screen for entrance motion (staggered reveals, count-up
-// figures, chart draws), so a screenshot or measurement taken at load reads the
-// first frame of it. The cap bounds the wait when the motion never ends.
 const SETTLE_CAP_MS = 4_000;
 const SETTLE_QUIET_MS = 300;
 const SETTLE_SAMPLE_MS = 50;
 
-/**
- * Runs inside the page as one evaluation. Phase 1 waits on every running Web
- * Animation with a finite end, querying again so an animation an earlier one
- * started is waited on too. Phase 2 covers motion the Animations API does not
- * list, requestAnimationFrame count-ups and everything on obscura, which lists
- * none: it waits until the text and the animated paint properties hold still for
- * quietMs. Both phases share one deadline. Elements an endless animation drives
- * stay out of the comparison.
- */
 async function settlePage({ capMs, quietMs, sampleMs }) {
   const deadline = performance.now() + capMs;
   const pause = (ms) => new Promise((resolve) => {
@@ -606,16 +499,12 @@ async function settlePage({ capMs, quietMs, sampleMs }) {
         finishing.push(animation.finished);
       }
       if (finishing.length === 0) break;
-      // finished rejects when the page cancels the animation, which also ends it.
       await Promise.race([Promise.allSettled(finishing), pause(capMs)]);
     }
   }
 
   const root = document.body ?? document.documentElement;
   const snapshot = () => {
-    // obscura keeps serving the computed style of the first frame until the DOM
-    // changes, so an empty comment added to and removed from <head> makes it
-    // recompute; no selector matches a comment, so the page's styles are untouched.
     const marker = document.createComment('');
     document.head?.append(marker);
     marker.remove();
@@ -640,10 +529,6 @@ async function settlePage({ capMs, quietMs, sampleMs }) {
   }
 }
 
-/**
- * Wait until the page's entrance motion has settled, at most SETTLE_CAP_MS.
- * Every driven screenshot and measurement calls this after a load.
- */
 export async function settleAnimations(page) {
   await page.evaluate(settlePage, { capMs: SETTLE_CAP_MS, quietMs: SETTLE_QUIET_MS, sampleMs: SETTLE_SAMPLE_MS });
 }
@@ -670,14 +555,9 @@ async function screenshotIsComplete(target) {
   }
 }
 
-// Chrome writes the screenshot within about a second but then keeps a freshly
-// created --user-data-dir profile alive for roughly a minute. Waiting for the
-// PNG's IEND chunk rather than for process exit keeps a capture fast without
-// giving up the isolated profile.
 function runScreenshotBinary(binary, args, target) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { stdio: 'ignore' });
-    // A child that failed to spawn emits 'error' and never 'exit'.
     const childGone = new Promise((resolveGone) => {
       child.once('exit', resolveGone);
       child.once('error', resolveGone);
@@ -689,8 +569,6 @@ function runScreenshotBinary(binary, args, target) {
       clearInterval(poll);
       clearTimeout(deadline);
       child.kill('SIGKILL');
-      // The caller removes the profile next, and a browser still exiting keeps
-      // writing into it: that removal then fails with ENOTEMPTY.
       childGone.then(() => {
         if (error) reject(error);
         else resolve();
@@ -714,7 +592,6 @@ function runScreenshotBinary(binary, args, target) {
 }
 
 async function captureWithCli({ binary, url, width, height, target }) {
-  // A leftover file from an earlier run would otherwise satisfy the completion poll.
   await fs.rm(target, { force: true });
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'ui-design-profile-'));
   try {
@@ -732,7 +609,6 @@ async function captureWithCli({ binary, url, width, height, target }) {
       url
     ], target);
   } finally {
-    // Chrome's helper processes can outlive the main process by a moment.
     await fs.rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
@@ -779,8 +655,6 @@ export async function capture(options) {
     const suffix = fullPage ? '-fullpage' : '';
     const target = path.join(directory, `${label}-${width}x${height}${suffix}.png`);
     if (capability.driven) {
-      // A rung that fell back stays fallen back for the remaining viewports, so
-      // every record and the final report name the rung that actually ran.
       capability = await captureWithPlaywright({
         capability, cwd, url, width, height, fullPage, colorScheme, target
       });
@@ -791,9 +665,6 @@ export async function capture(options) {
     const bytes = await fs.readFile(target);
     const geometry = readPngGeometry(bytes);
     if (!geometry) throw new Error(`capture at ${target} is not a PNG`);
-    // A full-page capture grows to the document's scroll size, so a width above
-    // the viewport is horizontal overflow on the page: it is recorded as
-    // scrollWidth and judged by check-ui, never rejected here.
     if (fullPage ? geometry.width < width : geometry.width !== width) {
       throw new Error(`capture at ${target} decoded width ${geometry.width}, expected ${fullPage ? 'at least ' : ''}${width}`);
     }
@@ -818,6 +689,17 @@ export async function capture(options) {
   return { capability, records };
 }
 
+const USAGE = `Usage:
+  node scripts/capture.mjs --url <file:// or http:// url>
+                           [--viewport <width>x<height>]   (repeatable)
+                           [--full-page]
+                           [--color-scheme light|dark|no-preference]
+                           [--label <name>] [--out <dir>]
+
+Takes deterministic screenshots and prints one JSON record per viewport.
+Exit 2 is a usage error; exit 3 means no browser engine.
+`;
+
 async function main(argv) {
   const flags = parseFlags(argv, {
     url: 'value',
@@ -826,7 +708,7 @@ async function main(argv) {
     'color-scheme': 'value',
     label: 'value',
     out: 'value'
-  });
+  }, { usage: USAGE });
   const url = requireUrl(flags.url);
   const viewports = (flags.viewport ?? DEFAULT_VIEWPORTS).map(parseViewport);
   const colorScheme = parseColorScheme(flags['color-scheme']);

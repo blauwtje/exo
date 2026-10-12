@@ -1,71 +1,3 @@
-// Blocking live picker for the ui-design skill: every direction comp runs live
-// in its own sandboxed frame, one comp per tab at full size, and the script
-// waits for one click and prints the choice. A comp is a whole page, so its
-// frame fills the room under the tab strip at scale 1 and the comp scrolls
-// inside its own frame; its hover and motion run where it is compared. The one
-// Choose button in the bar answers with the tab on screen, and a shim
-// neutralises navigation so a click demonstrates without doing anything. The
-// server binds a random localhost port behind a per-run key, so nothing else on
-// the machine can read the comps or answer for the user.
-//
-//   node scripts/pick.mjs --comps <dir> --contracts <contracts.json>
-//                         [--labels <labels.json>] [--intrinsic]
-//                         [--frame <width>x<height>, default full width]
-//                         [--recommend <n>] [--recommend-note <one sentence>]
-//                         [--timeout <seconds, default 600>] [--no-open]
-//                         [--unchecked]
-//                         [--url <template> --source <template>]
-//   node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json>
-//                         [--labels <labels.json>] [--variant <n>]
-//                         [--url <template> --source <template>]
-//
-// --contracts decides the seats: contracts[i] is variant i, and --comps holds
-// one directory per variant, named variant-0, variant-1, and so on, each
-// carrying an index.html plus its own assets. The script waits until every
-// seat's index.html exists and only then prints the URL and opens the tab, so
-// the chooser never looks at an empty tab. A comp fills the panel's width
-// unless --frame sets one width for every frame, or --intrinsic reads each
-// variant's own meta.json ({"width":<n>}); the height is always the room left,
-// and a frame is never transformed or scaled. stdout carries one line,
-// {"index","label","steer"}, on exit 0. Exit 2 is a usage error; exit 3 means
-// no browser, comps that never all landed, or no answer, and the --recommend
-// variant is then the selection.
-//
-// --check renders every comp before the chooser sees it: each variant is
-// captured full-page at 390 and 1440 wide through capture.mjs and audited
-// through check-ui.mjs, and both land under that variant's own checked/
-// directory, the only thing this script writes. It prints one JSON line per
-// variant, {"index","captures","fullPage","findings","checkUi"}, and exits 0;
-// exit 2 names a missing comp, exit 3 means no browser engine. The picker
-// refuses (exit 2) a variant whose captures at both widths are not at least as
-// new as every file of that comp, so a fix after the check needs a new check.
-// --unchecked skips that gate, only for when --check exited 3. --variant <n>
-// checks that one comp alone, so a builder per comp checks its own.
-//
-// --url serves the comps from the project's own dev server instead: each '{n}'
-// in the template becomes the variant index, so --url
-// 'http://localhost:5173/directions.html?direction={n}' loads variant 1 from
-// '?direction=1'. --source names each comp's source folder the same way, which
-// the static audit reads and the freshness gate dates; the captures still land
-// under --comps/variant-<n>/checked/. A seat is ready once its source folder
-// exists and its URL answers.
-//
-// A comp file opening with <!doctype or <html is served as it stands. Anything
-// else is a fragment, and the server wraps it in the document shell, so a comp
-// carries its own markup and its own CSS and nothing every comp would repeat.
-// That shell is structural only, never a font, a colour or a spacing scale: a
-// shared visual theme across comps would destroy the comparison this picker
-// exists for.
-//
-// --labels carries the screen's own copy, written by the skill in the language
-// the conversation runs in: an object with any of title, hint, recommended,
-// fallbackTitle, choose, tabs, typeRole, steer, done, failed, plus lang, the
-// language tag that copy is written in. Only fallbackTitle keeps a {n}
-// placeholder, which stands for the seat's letter. Whatever it omits falls back
-// to its English string in assets/pick-labels.json. --recommend seats that
-// variant first and badges its tab, and --recommend-note puts one plain
-// sentence of reasoning in the header.
-
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { createReadStream, readFileSync, realpathSync } from 'node:fs';
@@ -81,41 +13,18 @@ import { applyNotesTable, renderedAudit, staticAudit } from './check-ui.mjs';
 import { isMain } from '#script-flags';
 
 const DEFAULT_TIMEOUT_SECONDS = 600;
-// No frame size by default: a comp fills the panel's width, because a whole
-// page shown at 100% is read as the page it will be.
 const DEFAULT_FRAME = null;
 
-// A module script, and every font and stylesheet a crossorigin attribute
-// marks, is fetched in CORS mode. A frame sandboxed without allow-same-origin
-// sends Origin 'null', so a comp built by Vite or any bundler stays white
-// unless its server answers that origin; a served comp's assets do, and a
-// dev-server comp runs under its own origin instead (see the panel frame).
 const OPAQUE_ORIGIN = 'null';
 
-// The widths a comp is checked at before the picker serves it, mobile first.
 const CHECK_VIEWPORTS = DEFAULT_VIEWPORTS.map(parseViewport);
 const CHECKED_DIRECTORY = 'checked';
 
-// The last resort, reached only for a key the --labels file leaves out. A flag
-// cannot know what language the session runs in, so this script ships no
-// vocabulary to pick from: the skill writes the screen's copy in the
-// conversation's own language on every run, and one English string per key is
-// what keeps the picker usable when a key is missing. {n} is a variant's
-// position.
 const DEFAULT_LABELS = JSON.parse(readFileSync(new URL('../assets/pick-labels.json', import.meta.url), 'utf8'));
 
-// The one label that carries a variant's seat mark; dropping {n} would leave a
-// tile headed 'Option .' with no way to tell which of three it is.
 const NUMBERED_LABELS = ['fallbackTitle'];
-// lang is the document's language attribute rather than copy: a screen reader
-// announcing Dutch words as English is unusable, so the file carrying the words
-// also names which language they are. It lands in an HTML attribute, so its
-// shape is checked instead of escaped.
 const LANGUAGE_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 
-// A seat is marked by its letter, so a chooser says 'B' rather than counting.
-// Past Z there is no letter left, and a picker that far along has bigger
-// problems than its marks; the number keeps it correct rather than clever.
 const seatMark = (seat) => (seat < 26 ? String.fromCharCode(65 + seat) : String(seat + 1));
 
 const fillPosition = (template, mark) => template.replaceAll('{n}', mark);
@@ -141,10 +50,6 @@ const MEDIA_TYPES = new Map(Object.entries({
   '.txt': 'text/plain; charset=utf-8'
 }));
 
-// Injected into every served comp document. The frame is sandboxed without
-// allow-forms, allow-popups, or allow-top-navigation, so this covers the one
-// gap that leaves: a same-frame link would replace the comp being compared. It
-// forwards no key, so the arrows and the space bar scroll the comp itself.
 const DEMO_SHIM = `<script>
 (() => {
   const swallow = (event) => {
@@ -157,20 +62,11 @@ const DEMO_SHIM = `<script>
 })();
 </script>`;
 
-// The shell a fragment is served inside. Every declaration here removes a user
-// agent's opinion rather than adding one of this script's: no family, no size,
-// no colour, no spacing, because the ground, the type, the palette and the
-// technique are the direction and they live in the comp. Controls inherit so
-// the comp's own type reaches its buttons and fields, which the user agent
-// otherwise overrides with a system face the direction never chose.
 const COMP_RESET = '*,*::before,*::after{box-sizing:border-box}'
   + 'html,body{margin:0;padding:0;width:100%;min-height:100%}'
   + 'img,svg,video,canvas{display:block;max-width:100%}'
   + 'button,input,select,textarea{font:inherit;color:inherit}';
 
-// A comp that wrote its own <head> owns the whole document and keeps it; the
-// shim is appended either way, because the picker neutralises navigation in
-// both cases.
 const OPENS_ITS_OWN_DOCUMENT = /^\s*<(?:!doctype|html)\b/i;
 
 export function compDocument(markup, lang, shim = DEMO_SHIM) {
@@ -207,7 +103,6 @@ function requireFrame(text) {
   }
 }
 
-// The marker a --url or --source template replaces with the variant index.
 const INDEX_MARKER = '{n}';
 
 function requireUrlTemplate(text) {
@@ -233,10 +128,6 @@ function requireSourceTemplate(text, urlTemplate) {
   return text;
 }
 
-// The recommended variant is dealt the first seat, so the badge on the leading
-// tile is the whole statement and no sentence of chrome has to name a number.
-// The tiles stay identical in size and treatment, so the seat is the only
-// steer, and the chooser can still disagree with one click on any other.
 function requireRecommendation(text, count) {
   if (text === undefined) return null;
   const index = Number(text);
@@ -257,8 +148,6 @@ function requireRecommendationNote(text, recommended) {
   return text.trim();
 }
 
-// CI, a display-less SSH session, or a display-less Linux box cannot show a
-// tab. --no-open skips the check because the caller then opens the URL itself.
 export function headlessReason() {
   if (process.env.CI) return 'CI is set';
   if (process.env.SSH_CONNECTION && !process.env.DISPLAY) return 'SSH session without DISPLAY';
@@ -277,14 +166,9 @@ export function openSystemBrowser(url) {
     child.on('error', () => {});
     child.unref();
   } catch {
-    // The URL is already on stderr, so the user can open it by hand.
   }
 }
 
-/** A variant's own frame width, used only under --intrinsic; the shared --frame
- *  wins otherwise, so a direction comparison stays a like-for-like one. The
- *  height is the room under the tab strip, so a written height is checked but
- *  never applied. */
 async function readFrame(directory, fallback) {
   let text;
   try {
@@ -307,9 +191,6 @@ async function readFrame(directory, fallback) {
   return width === null ? null : { width, height };
 }
 
-// A CSS value written by the skill lands in a style attribute. Escaping keeps it
-// inside the quotes; these characters are what would let it add declarations or
-// fetch something once it is in there.
 const CSS_VALUE_BREAKERS = /[;{}<>\\]|url\s*\(/i;
 
 function requireCssValue(value, where) {
@@ -322,9 +203,6 @@ function requireCssValue(value, where) {
   return value.trim();
 }
 
-/** The one-glance material summary under a comp: the display face set in
- *  itself, and what each colour is for. Every part is optional, so a contract
- *  written before this existed still renders a tile. */
 function readSignature(contract, index) {
   const written = contract?.signature;
   if (written === undefined || written === null) return null;
@@ -333,8 +211,6 @@ function readSignature(contract, index) {
   }
   const where = `contract ${index} signature`;
 
-  // The name is the contract's own type.display.family, never a second copy in
-  // the signature: two places to write a typeface is two places to get it wrong.
   const faceName = contract.type?.display?.family;
   const face = written.typeface === undefined
     ? null
@@ -350,7 +226,6 @@ function readSignature(contract, index) {
 
   const colors = written.colors ?? [];
   if (!Array.isArray(colors)) throw new UsageError(`${where}.colors must be an array`);
-  // Four is where a legend stops being a glance and starts being a table.
   if (colors.length > 4) throw new UsageError(`${where}.colors holds ${colors.length} entries, at most 4 fit`);
   const swatches = colors.map((entry, position) => {
     const at = `${where}.colors[${position}]`;
@@ -368,8 +243,6 @@ function readSignature(contract, index) {
       role: entry.role.trim(),
       name: entry.name?.trim() ?? '',
       value,
-      // A hex is read letter by letter, so one case throughout beats whatever
-      // the contract happened to be typed in.
       code: /^#[0-9a-f]{3,8}$/i.test(value) ? value.toUpperCase() : value
     };
   });
@@ -378,16 +251,10 @@ function readSignature(contract, index) {
   return { face, fontHref, swatches };
 }
 
-/** One seat per contract. Every seat starts on the shared frame, null for full
- *  width; main swaps in each comp's own meta.json width under --intrinsic once
- *  every comp exists. */
 export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME, url = null, source = null } = {}) {
   if (!compsDirectory) throw new UsageError('--comps is required');
   let root;
   try {
-    // Canonical, because resolveAsset compares real paths: on macOS a comps
-    // tree under /tmp or a temp dir resolves into /private, and a variant
-    // directory that still carried the symlinked spelling would match nothing.
     root = realpathSync(compsDirectory);
   } catch {
     throw new UsageError(`--comps directory '${compsDirectory}' cannot be read`);
@@ -415,10 +282,6 @@ export async function loadVariants(compsDirectory, contractsFile, { frame = DEFA
   return variants;
 }
 
-/** True once the seat's own index.html exists. The realpath is taken here and
- *  not at load time, because the directory a comp lands in did not exist when
- *  the run started and resolveAsset compares real paths. A dev-server seat is
- *  ready once its source folder exists and its URL answers. */
 async function seatReady(variant) {
   if (variant.ready) return true;
   if (variant.url) {
@@ -437,11 +300,8 @@ async function seatReady(variant) {
   return true;
 }
 
-// How often the comps directory is checked while the session is still writing.
 const COMP_POLL_MS = 250;
 
-/** Resolves once every seat's comp exists. The tab opens only after
- *  this, because a card that fills in later makes the chooser wait twice. */
 async function waitForEveryComp(variants, deadline, timeoutSeconds) {
   for (;;) {
     const readiness = await Promise.all(variants.map(seatReady));
@@ -453,10 +313,6 @@ async function waitForEveryComp(variants, deadline, timeoutSeconds) {
   }
 }
 
-/** The chooser's own copy, written by the skill in the language the
- *  conversation runs in. Every key is optional: what the file leaves out falls
- *  back to English, so a partial file still yields a screen with no blanks.
- *  `defaults` names the keys a screen knows; the sketch tab passes its own. */
 export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
   if (labelsFile === undefined) return defaults;
   const written = await readJsonFlag(labelsFile, '--labels');
@@ -484,17 +340,10 @@ export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
 }
 
 function page(variants, key, { words, recommended, recommendedNote }) {
-  // The recommendation is expressed as the first seat rather than as a sentence
-  // of chrome above the comps. Every data-* attribute keeps carrying the real
-  // variant index, so a reordered screen still answers with the index the comps
-  // directory and the caller agreed on.
   const seated = recommended === null
     ? variants
     : [variants[recommended], ...variants.filter((variant) => variant.index !== recommended)];
 
-  // The material as a row of chips in the tab: the face set in itself, then one
-  // chip per colour. A tab has no room to print the words, so they stay in the
-  // markup for a screen reader and in the tooltip for a pointer.
   const signature = (written) => {
     if (!written) return '';
     const faceName = written.face?.name ?? '';
@@ -508,9 +357,6 @@ function page(variants, key, { words, recommended, recommendedNote }) {
     return `<span class="signature">${face}${swatches}</span>`;
   };
 
-  // What a chooser reads is the contract's own title and description, written by
-  // the skill in the words of the subject. The dealt axis ids stay out of the
-  // tab: they name the machinery, not the direction.
   const titleOf = (variant, seat) => variant.contract?.title ?? fillPosition(words.fallbackTitle, seatMark(seat));
   const descriptionOf = (variant) => variant.contract?.description ?? '';
 
@@ -535,9 +381,6 @@ function page(variants, key, { words, recommended, recommendedNote }) {
     return `<section class="panel" role="tabpanel" id="panel-${variant.index}" aria-labelledby="tab-${variant.index}" data-index="${variant.index}"${seat === 0 ? '' : ' hidden'}><iframe sandbox="${sandbox}" loading="eager" title="${escapeHtml(title)}" src="${escapeHtml(source)}"${width}></iframe></section>`;
   };
 
-  // The comps load their own faces inside their frames, which the picker page
-  // cannot borrow, so the sample needs the same stylesheet here. Deduplicated,
-  // because three variants on one family would otherwise fetch it three times.
   const fontLinks = [...new Set(seated.map((variant) => variant.signature?.fontHref).filter(Boolean))]
     .map((href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`).join('\n');
 
@@ -814,20 +657,16 @@ export function send(response, status, type, body) {
   response.end(body);
 }
 
-/** Resolve one comp asset inside its own variant directory, refusing anything
- *  that escapes it, so a comp cannot serve the rest of the filesystem. */
 export async function resolveAsset(variant, relative) {
   let decoded;
   try {
     decoded = decodeURIComponent(relative);
   } catch {
-    return null; // A lone '%' in a comp's own URL is a missing asset, not a crash.
+    return null;
   }
   const target = path.resolve(variant.directory, decoded);
   if (target !== variant.directory && !target.startsWith(variant.directory + path.sep)) return null;
   if (!(await fs.stat(target).catch(() => null))?.isFile()) return null;
-  // The prefix check is string arithmetic, so it clears `..` but not a symlink
-  // pointing out of the tree; resolve the real path before serving the bytes.
   let real;
   try {
     real = realpathSync(target);
@@ -837,17 +676,10 @@ export async function resolveAsset(variant, relative) {
   return real === variant.directory || real.startsWith(variant.directory + path.sep) ? real : null;
 }
 
-/** True when the request names this server by its loopback address, which a
- *  page on another site rebinding its own name to 127.0.0.1 cannot do. */
 export function askedOfLoopback(request, port) {
   return [`127.0.0.1:${port}`, `localhost:${port}`].includes(request.headers.host);
 }
 
-/** True when an answer can only have come from this server's own page. A
- *  served frame runs scripts and can read the key out of its own URL, so the
- *  key alone proves nothing. Both of these a frame cannot forge: its sandbox
- *  gives it a null Origin, and a JSON content-type from an opaque origin needs
- *  a preflight this server fails. */
 export function sentByOwnPage(request, port) {
   const origin = request.headers.origin;
   const foreignOrigin = origin !== undefined
@@ -856,17 +688,12 @@ export function sentByOwnPage(request, port) {
   return !foreignOrigin && isJson;
 }
 
-/** Serve the comps, and the picker page when an answer is wanted, on a random
- *  localhost port. onAnswer receives the first valid answer; close stops the
- *  server, which --check calls once every comp is rendered. */
 async function startServer(variants, key, presentation, onAnswer) {
   const server = http.createServer(async (request, response) => {
     const { port } = server.address();
     const url = new URL(request.url, `http://127.0.0.1:${port}`);
     if (!askedOfLoopback(request, port)) return send(response, 403, null, '');
 
-    // Comp assets carry the key in the path, not the query, so a comp's own
-    // relative URLs resolve without every stylesheet and font needing a token.
     const asset = new RegExp(`^/k/${key}/v/(\\d+)/(.+)$`).exec(url.pathname);
     if (request.method === 'GET' && asset && variants[Number(asset[1])]) {
       const variant = variants[Number(asset[1])];
@@ -895,7 +722,7 @@ async function startServer(variants, key, presentation, onAnswer) {
     request.on('data', (chunk) => { body += chunk; });
     request.on('end', () => {
       let parsed = null;
-      try { parsed = JSON.parse(body); } catch { /* answered below as a bad request */ }
+      try { parsed = JSON.parse(body); } catch { }
       const variant = Number.isInteger(parsed?.index) ? variants[parsed.index] : undefined;
       if (!variant) return send(response, 400, 'application/json', '{"ok":false}');
       send(response, 200, 'application/json', '{"ok":true}');
@@ -914,9 +741,6 @@ async function startServer(variants, key, presentation, onAnswer) {
   return { origin, close };
 }
 
-/** Serve the picker. Returns the URL to print and a promise that resolves on
- *  the first valid answer or rejects at the deadline, which the wait for the
- *  comps has already spent part of. */
 async function serve(variants, key, presentation, timeoutSeconds, deadline) {
   let settle;
   const answer = new Promise((resolve, reject) => {
@@ -934,8 +758,6 @@ async function serve(variants, key, presentation, timeoutSeconds, deadline) {
   return { url: `${origin}/?key=${key}`, answer };
 }
 
-/** The newest modification time of any file of the comp, every file outside
- *  its checked/ directory, so an asset edited after the check counts too. */
 async function newestCompTime(directory) {
   let newest = 0;
   for (const entry of await fs.readdir(directory, { withFileTypes: true, recursive: true })) {
@@ -948,8 +770,6 @@ async function newestCompTime(directory) {
   return newest;
 }
 
-/** Refuse the picker until every comp has a capture at each check width at
- *  least as new as the comp itself, so the chooser sees only checked comps. */
 async function requireFreshChecks(variants) {
   for (const variant of variants) {
     const newest = await newestCompTime(variant.source ?? variant.directory);
@@ -964,8 +784,6 @@ async function requireFreshChecks(variants) {
   }
 }
 
-/** Render and audit every comp into its own checked/ directory, one JSON line
- *  per variant. A missing comp is a usage error; no engine is exit 3. */
 async function check(variants, words) {
   for (const variant of variants) {
     if (await seatReady(variant)) continue;
@@ -1013,7 +831,6 @@ async function check(variants, words) {
   }
 }
 
-/** The one variant --variant names, or every variant without it. */
 function requireVariant(text, variants) {
   if (text === undefined) return variants;
   const index = Number(text);
@@ -1023,13 +840,33 @@ function requireVariant(text, variants) {
   return [variants[index]];
 }
 
+const USAGE = `Usage:
+  node scripts/pick.mjs --comps <dir> --contracts <contracts.json>
+                        [--labels <labels.json>] [--intrinsic]
+                        [--frame <width>x<height>, default full width]
+                        [--recommend <n>] [--recommend-note <one sentence>]
+                        [--timeout <seconds, default 600>] [--no-open]
+                        [--unchecked]
+                        [--url <template> --source <template>]
+  node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json>
+                        [--labels <labels.json>] [--variant <n>]
+                        [--url <template> --source <template>]
+
+Shows every direction comp live, one per tab, and prints {"index","label","steer"} for the choice.
+--comps holds variant-0, variant-1, ... each with an index.html; contracts[i] is variant i.
+--check captures every comp at 390 and 1440 wide and audits it; the picker refuses stale captures.
+--unchecked skips that gate, only when --check exited 3.
+--url and --source serve comps from a dev server; '{n}' stands for the variant index.
+Exit 2 is a usage error; exit 3 means no browser, comps that never landed, or no answer.
+`;
+
 async function main(argv) {
   const flags = parseFlags(argv, {
     comps: 'value', contracts: 'value', frame: 'value', intrinsic: 'boolean',
     labels: 'value', recommend: 'value', 'recommend-note': 'value',
     timeout: 'value', 'no-open': 'boolean', check: 'boolean', unchecked: 'boolean',
     url: 'value', source: 'value', variant: 'value'
-  });
+  }, { usage: USAGE });
   const urlTemplate = requireUrlTemplate(flags.url);
   const source = requireSourceTemplate(flags.source, urlTemplate);
   if (flags.check) {
