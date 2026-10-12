@@ -353,6 +353,14 @@ test('--proofs prints each landed task\'s recorded Proof lines and the decision 
   assert.match(result.stdout, /^Proof: `node --test` -> exit 0, ℹ pass 3$/m);
 });
 
+test('--proofs reports a record holding only a Red line as no proof, not a passing one', async () => {
+  const { root, planPath } = await checkout();
+  land(root, 1, 'feat(app): greet');
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/proof-fixture-task-1.txt'), 'Red: skipped: deferred MCP proof\n');
+  assert.equal(proofsReport({ planPath, planText: PLAN, root }), 'No proof: Task 1 landed with no passing Bash proof\nRed: skipped: deferred MCP proof\n');
+});
+
 test('--block prints each landed task\'s recorded Proof lines after the block, so the report has them however verify ends', async () => {
   const { root, planPath } = await checkout();
   assert.doesNotMatch(blockReport({ planPath, planText: PLAN, root }), /^(Proof|No proof|Decisions):/m);

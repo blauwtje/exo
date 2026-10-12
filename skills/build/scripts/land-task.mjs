@@ -550,9 +550,9 @@ function proofOutcomeOf(tail) {
 }
 
 // The report's `Proof: <command> -> <outcome>` line for each proof this landing passed, so the
-// session reports proofs from script output and never reruns them.
+// session reports proofs from script output and never reruns them, then the Red line; a task
+// with no Bash proof, such as an MCP-deferred one, records its Red line alone.
 function writeProofRecord({ root, planId, number, proofs, redLine }) {
-  if (proofs.length === 0) return;
   const lines = [...proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${proofOutcomeOf(tail)}\n`), `${redLine}\n`];
   const record = proofRecordPath(root, planId, number);
   fs.mkdirSync(path.dirname(record), { recursive: true });

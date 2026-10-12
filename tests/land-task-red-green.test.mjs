@@ -75,3 +75,12 @@ for (const [name, edit] of [
     assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   });
 }
+
+test('an MCP-deferred task with no Bash proof still records its Red line', async () => {
+  const proof = 'mcp:run_playtest mode=play';
+  const { root, plan, planPath } = await checkout(proof);
+  const reportText = `Landed: src/app.js\nProof:\n- \`${proof}\`: deferred\nUnresolved: none\n`;
+  const output = landTask({ planPath, planText: plan, number: 1, root, reportText });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.equal(await record(root), 'Red: skipped: deferred MCP proof\n');
+});
