@@ -15,6 +15,7 @@ import { isMain } from '#script-flags';
 const DEFAULT_TIMEOUT_SECONDS = 600;
 const DEFAULT_FRAME = null;
 
+// why: a frame sandboxed without allow-same-origin sends Origin 'null', so a bundled comp's module scripts stay blocked unless the server answers that origin.
 const OPAQUE_ORIGIN = 'null';
 
 const CHECK_VIEWPORTS = DEFAULT_VIEWPORTS.map(parseViewport);
@@ -255,6 +256,7 @@ export async function loadVariants(compsDirectory, contractsFile, { frame = DEFA
   if (!compsDirectory) throw new UsageError('--comps is required');
   let root;
   try {
+    // why: resolveAsset compares real paths, and on macOS a temp dir resolves into /private.
     root = realpathSync(compsDirectory);
   } catch {
     throw new UsageError(`--comps directory '${compsDirectory}' cannot be read`);

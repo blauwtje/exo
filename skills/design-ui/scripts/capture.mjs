@@ -196,6 +196,7 @@ async function headlessShellBinary(chromium) {
   const newerFirst = shells
     .filter((entry) => revisionOf(entry) !== registry.revision)
     .sort((left, right) => Number(revisionOf(right)) - Number(revisionOf(left)));
+  // why: a full Chrome.app flashes a Dock icon on every headless launch on macOS; chrome-headless-shell does not.
   const binaryName = process.platform === 'win32' ? 'chrome-headless-shell.exe' : 'chrome-headless-shell';
   for (const revision of [...matching, ...newerFirst]) {
     const platformDirectories = await fs.readdir(path.join(registry.root, revision)).catch(() => []);
@@ -209,6 +210,7 @@ async function headlessShellBinary(chromium) {
 
 export function obscuraServerArguments(port, url) {
   const args = ['serve', '--port', String(port), '--host', '127.0.0.1', '--allow-private-network', '--quiet'];
+  // why: the obscura CDP port is reachable by any local process, so file:// access stays off unless the capture needs it.
   if (typeof url === 'string' && url.toLowerCase().startsWith('file://')) args.push('--allow-file-access');
   return args;
 }
@@ -230,6 +232,7 @@ async function startObscuraServer({ binary, url }) {
   const child = spawn(binary, obscuraServerArguments(port, url), { stdio: ['ignore', 'ignore', 'pipe'] });
 
   let spawnFailure = null;
+  // why: without a listener a spawn failure is an uncaught exception, not the capability error the ladder falls back from.
   child.on('error', (error) => { spawnFailure = error; });
   let complaint = '';
   child.stderr.on('data', (chunk) => { complaint = `${complaint}${chunk}`.slice(-400); });
@@ -505,6 +508,7 @@ async function settlePage({ capMs, quietMs, sampleMs }) {
 
   const root = document.body ?? document.documentElement;
   const snapshot = () => {
+    // why: obscura keeps serving the first frame's computed style until the DOM changes, so an added and removed empty comment forces a recompute.
     const marker = document.createComment('');
     document.head?.append(marker);
     marker.remove();
@@ -557,7 +561,9 @@ async function screenshotIsComplete(target) {
 
 function runScreenshotBinary(binary, args, target) {
   return new Promise((resolve, reject) => {
+    // why: Chrome writes the PNG within a second but keeps a fresh --user-data-dir profile alive for about a minute, so completion is the PNG's IEND chunk, not process exit.
     const child = spawn(binary, args, { stdio: 'ignore' });
+    // why: a child that failed to spawn emits 'error' and never 'exit'.
     const childGone = new Promise((resolveGone) => {
       child.once('exit', resolveGone);
       child.once('error', resolveGone);
