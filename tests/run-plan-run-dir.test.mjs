@@ -21,9 +21,9 @@ async function phaseAfter(steps, { set = true } = {}) {
   return JSON.parse(await fs.readFile(state, 'utf8')).phase;
 }
 
-test('EXO_RUN_DIR: the run state shows build while tasks run and verify once the tail starts', async () => {
-  assert.equal(await phaseAfter([{ result: 'Task 1: BLOCKED nothing to do' }]), 'build');
-  assert.equal(await phaseAfter([land(1), land(2), { result: 'Verify done.' }]), 'verify');
+test('EXO_RUN_DIR: the run state ends stopped after a block and passed after the tail', async () => {
+  assert.equal(await phaseAfter([{ result: 'Task 1: BLOCKED nothing to do' }]), 'stopped');
+  assert.equal(await phaseAfter([land(1), land(2), { result: 'Verify done.' }]), 'passed');
 });
 
 async function runDirContext() {
@@ -108,6 +108,26 @@ test('EXO_RUN_DIR: a stale blocked marker never stops a run whose session writes
   const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS');
   assert.doesNotMatch(result.stdout, /^Decisions/m);
+});
+
+test('EXO_RUN_DIR: state.json keeps the current task, the landed count and the stop reason', async () => {
+  const { context, dir } = await runDirContext();
+  await runPlan(context, [land(1), { result: 'Task 2: BLOCKED nothing to do' }]);
+  const state = JSON.parse(await fs.readFile(path.join(dir, 'state.json'), 'utf8'));
+  assert.equal(state.task.n, 2);
+  assert.equal(state.landed, 1);
+  assert.equal(state.total, 2);
+  assert.equal(state.phase, 'stopped');
+  assert.match(state.reason, /^task 2 blocked: nothing to do/);
+});
+
+test('EXO_RUN_DIR: a finished run records passed and its done line', async () => {
+  const { context, dir } = await runDirContext();
+  await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  const state = JSON.parse(await fs.readFile(path.join(dir, 'state.json'), 'utf8'));
+  assert.equal(state.landed, 2);
+  assert.equal(state.phase, 'passed');
+  assert.equal(state.reason, 'done, 2/2 tasks landed, gate PASS');
 });
 
 test('EXO_RUN_DIR unset: the run state stays as it was', async () => {

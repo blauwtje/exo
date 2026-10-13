@@ -12,7 +12,7 @@ import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { updateRun } from './run-state.mjs';
+import { recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
@@ -118,6 +118,18 @@ function numberFlag(value, name, { integer = false } = {}) {
 function setPhase(phase) {
   const dir = process.env.EXO_RUN_DIR;
   if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), { phase });
+}
+
+const STOP_PHASE = { 0: 'passed', 3: 'parked' };
+
+function noteTask(task) {
+  const dir = process.env.EXO_RUN_DIR;
+  if (dir) recordTask(path.resolve(dir, '..', '..', '..'), path.basename(dir), task);
+}
+
+function noteStop(stop) {
+  const dir = process.env.EXO_RUN_DIR;
+  if (dir) recordStop(path.resolve(dir, '..', '..', '..'), path.basename(dir), stop);
 }
 
 async function main(argv) {
@@ -317,6 +329,7 @@ async function main(argv) {
     const ms = Date.now() - startedTask;
     landedStats.push({ ms, turns: record.turns, tokens: record.tokens, cost: record.cost });
     say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, tokens: record.tokens, cost: record.cost }));
+    noteTask({ n, subject: taskSubject(plan.tasks.find((entry) => entry.number === n).title), landed: passes.size, total: plan.tasks.length });
     for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
       const file = line.slice(3);
       if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
@@ -393,6 +406,7 @@ async function main(argv) {
     const n = task.number;
     const startedTask = Date.now();
     say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
+    noteTask({ n, subject: taskSubject(task.title), landed: landed.length, total: plan.tasks.length });
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
     const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote + handoffNote(n)), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
@@ -534,6 +548,7 @@ async function main(argv) {
     }
   }
   if (stop?.parked) exitCode = 3;
+  noteStop({ phase: STOP_PHASE[exitCode] ?? 'stopped', reason: stop.line });
   for (const line of averageLines(landedStats)) say(line);
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
