@@ -60,7 +60,8 @@ const REPO_PLACEHOLDERS = ['@@REPO@@', '{{REPOSITORY}}'];
 
 // Every schema key, set in the project layer so the user's global exo options
 // (workspace=worktree, a compression level) never reach either version. Defaults,
-// except workspace and ship, which would otherwise ask.
+// except workspace and ship, which would otherwise ask, and budget, whose old name
+// medium every version reads as the same kind table column.
 export const EXO_SETTINGS = {
   specs: 'docs',
   compression: 'low',

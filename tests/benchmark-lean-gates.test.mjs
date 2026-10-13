@@ -119,11 +119,11 @@ test('argv names the plugin, model, effort, budget and session; the prompt is ve
   assert.deepEqual(argv.map((value, index) => (value === other[index] ? null : index)).filter((index) => index !== null), [argv.indexOf('--plugin-dir') + 1]);
 });
 
-test('the neutral exo settings set every schema key to a valid value', () => {
+test('the neutral exo settings set every schema key to a valid value or an alias of one', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA, 'utf8'));
   assert.deepEqual(Object.keys(EXO_SETTINGS).sort(), Object.keys(schema).sort());
   for (const [key, value] of Object.entries(EXO_SETTINGS)) {
     assert.equal(typeof value, schema[key].type, key);
-    if (schema[key].options) assert.ok(schema[key].options.includes(value), key);
+    if (schema[key].options) assert.ok(schema[key].options.includes(schema[key].aliases?.[value] ?? value), key);
   }
 });
