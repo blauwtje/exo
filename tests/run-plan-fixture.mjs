@@ -1,10 +1,13 @@
-// Shared by the run-plan tests: the stub claude, the plan text and the temp
-// repository (feature branch, local bare remote) they run against.
+// Shared by the run-plan tests: the stub claude, the plan text, the temp
+// repository (feature branch, local bare remote) they run against, and runPlan
+// with the argv helpers that read back what the runner passed.
 
+import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import './clean-run-env.mjs';
-import { fixture, git, gitRepository } from './harness.mjs';
+import { fixture, git, gitRepository, run } from './harness.mjs';
 
 // The stub: one step of the scenario per call, chosen by how many calls the
 // record already holds. A step may land tasks (one commit per entry, each
@@ -111,3 +114,56 @@ export async function setup(options = {}) {
 }
 
 export const FAKE_KEYS = { deepseek: 'fake-deepseek-key-1f3a', zai: 'fake-zai-key-9c7e' };
+
+export const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
+
+export const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
+
+export async function runPlan(context, steps, args = []) {
+  const scenario = path.join(context.tools, 'scenario.json');
+  const record = path.join(context.tools, 'calls.jsonl');
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: context.pluginPath ?? PLUGIN_ROOT, planPath: context.plan, steps }));
+  const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...(args.includes('--session') ? [] : ['--session', 'task']), ...args], {
+    cwd: context.root,
+    env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1', HOME: context.home, ...context.env }
+  });
+  const text = await fs.readFile(record, 'utf8').catch(() => '');
+  const calls = text.split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  for (const call of calls) {
+    const mode = call.argv.indexOf('--permission-mode');
+    assert.equal(call.argv[mode + 1], 'dontAsk');
+    assert.ok(!call.argv.includes('--bare'));
+    assert.ok(call.argv.includes('--strict-mcp-config'), 'a session loads no MCP servers');
+    assert.ok(!call.argv.includes('--mcp-config'));
+    assert.equal(call.marker, null, 'the running session marker is not passed on');
+  }
+  // The terminal ends on a short summary; the stop line closes the detail file it names.
+  const detail = result.stdout.match(/^Details: (.+)$/m)?.[1];
+  const lines = (detail === undefined ? result.stdout : await fs.readFile(detail, 'utf8')).trim().split('\n');
+  return { ...result, calls, stop: lines.at(-1) };
+}
+
+export const allowOf = (call) => call.argv.slice(call.argv.indexOf('--allowedTools') + 1, call.argv.indexOf('--disallowedTools'));
+
+export const settingsOf = (call) => (call.argv.includes('--settings') ? JSON.parse(call.argv[call.argv.indexOf('--settings') + 1]) : null);
+
+export const SCRIPTS = path.join(PLUGIN_ROOT, 'skills', 'build', 'scripts');
+
+export const SANDBOX_RULE = /^- Bash runs in a sandbox\. A command that fails with "Operation not permitted" or EPERM hit the sandbox/m;
+
+export const sandboxOff = (context) => fs.writeFile(path.join(context.home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { sandbox: { enabled: false } } }));
+
+/** The allowlist with the sandbox off: the plan's commands, read-only git and inspection. */
+export function assertPlanAllowlist(call) {
+  const allow = allowOf(call);
+  assert.ok(allow.includes('Bash(node --version *)'));
+  assert.ok(allow.includes('Bash(git status *)'));
+  for (const command of ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n']) {
+    for (const rule of [`Bash(${command})`, `Bash(${command} *)`]) assert.ok(allow.includes(rule), rule);
+  }
+  for (const rule of ['Bash(sed *)', 'Bash(sed)', 'Bash(python3 *)', 'Bash(find *)']) assert.ok(!allow.includes(rule), rule);
+}
+
+export const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
+
+export const SPAWN_ONCE = ['--max-iterations', '1'];

@@ -11,7 +11,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RUNNER_VARIABLE = 'NODE_TEST_CONTEXT';
 const STATE = '{"id":"live","phase":"starting"}\n';
 
-for (const file of ['run-plan.test.mjs', 'run-tail.test.mjs']) {
+for (const file of ['run-plan-run-dir.test.mjs', 'run-plan-loop.test.mjs', 'run-plan-start.test.mjs', 'run-plan-session.test.mjs', 'run-plan-plan-session.test.mjs', 'run-tail.test.mjs']) {
   test(`bare node --test ${file} leaves the caller's run directory untouched`, () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'bare-test-run-env-'));
     try {
