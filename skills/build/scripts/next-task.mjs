@@ -218,7 +218,8 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [] }) {
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   const route = planRoute(plan.tasks);
   const inline = route.route === 'inline';
-  const wave = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel, inFlight);
+  const ready = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel, inFlight);
+  const wave = landed.length === 0 && inFlight.length === 0 ? ready.slice(0, 1) : ready;
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,

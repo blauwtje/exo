@@ -44,10 +44,18 @@ test('with nothing landed, the report names the first wave with no drift and a b
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   assert.match(report, /^Branch: feat\/fixture$/m);
   assert.match(report, /^Landed: none$/m);
-  assert.match(report, /^Wave: Task 1, Task 3$/m);
+  assert.match(report, /^Next: Task 1$/m);
   assert.match(report, /^Drift: none$/m);
   assert.ok(report.includes(`\nBrief: ${briefPath(root, 1)}\n`), report);
-  assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
+  assert.ok(!report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
+});
+
+test('two independent ready tasks with none landed start only Task 1', async () => {
+  const { root, planPath } = await checkout();
+  const report = nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: plannedTasks(2) }), root });
+  assert.match(report, /^Next: Task 1$/m);
+  assert.doesNotMatch(report, /^Wave:/m);
+  await assert.rejects(fs.access(briefPath(root, 2)), { code: 'ENOENT' });
 });
 
 test('a stacked branch counts only the trailers that name this plan\'s file', async () => {
@@ -72,27 +80,30 @@ test('the route follows the plan\'s task count against BLOCK_TASK_LIMIT, never t
   const atLimit = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(BLOCK_TASK_LIMIT) });
   assert.match(nextTaskReport({ planPath, planText: atLimit, root }), /^Route: unit \(\d+ tasks\)$/m);
   const aboveLimit = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(BLOCK_TASK_LIMIT + 4) });
+  land(root, 1, 'feat(app): part 1');
   const report = nextTaskReport({ planPath, planText: aboveLimit, root });
   assert.match(report, /^Route: unit \(12 tasks\)$/m);
-  assert.match(report, /^Wave: Task 1, Task 2, Task 3, Task 4$/m, 'a wave still prints above the limit');
+  assert.match(report, /^Wave: Task 2, Task 3, Task 4, Task 5$/m, 'a wave still prints above the limit');
 });
 
 test('the wave admits only the tasks the Checkpoint Parallel: line names', async () => {
   const { root } = await checkout();
   const planPath = path.join(root, 'docs/plans/named.md');
-  await fs.writeFile(planPath, planFixture({ worktreeSetup: 'none', parallel: '1, 3.', tasks: plannedTasks(4) }));
+  await fs.writeFile(planPath, planFixture({ worktreeSetup: 'none', parallel: '2, 4.', tasks: plannedTasks(5) }));
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): part 1', '-m', 'Plan-task: named/1');
   const named = await run(SCRIPT, ['--plan', planPath, '--root', root], { cwd: root });
   assert.equal(named.code, 0, named.stderr);
-  assert.match(named.stdout, /^Wave: Task 1, Task 3$/m);
+  assert.match(named.stdout, /^Wave: Task 2, Task 4$/m);
 });
 
 test('a plan with no Parallel: line waves its disjoint tasks and keeps an overlapping one out', async () => {
   const { root, planPath } = await checkout();
-  const wave = nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: plannedTasks(3) }), root });
-  assert.match(wave, /^Wave: Task 1, Task 2, Task 3$/m);
+  land(root, 1, 'feat(app): part 1');
+  const wave = nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: plannedTasks(4) }), root });
+  assert.match(wave, /^Wave: Task 2, Task 3, Task 4$/m);
   const task = (number, files, extra = {}) => taskSection({ number, title: `Part ${number}`, files, subject: `feat(app): part ${number}`, ...extra });
-  const overlap = [task(1, ['- Create: `src/a.js`']), task(2, ['- Create: `src/a.js`']), task(3, ['- Create: `src/c.js`'])];
-  assert.match(nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: overlap }), root }), /^Wave: Task 1, Task 3$/m);
+  const overlap = [task(1, ['- Create: `src/z.js`']), task(2, ['- Create: `src/a.js`']), task(3, ['- Create: `src/a.js`']), task(4, ['- Create: `src/c.js`'])];
+  assert.match(nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: overlap }), root }), /^Wave: Task 2, Task 4$/m);
   const alone = [task(1, []), task(2, ['- Create: `src/b.js`'])];
   assert.doesNotMatch(nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: alone }), root }), /^Wave: /m);
   const design = [task(1, ['- Create: `src/a.js`'], { design: true }), task(2, ['- Create: `src/b.js`'])];
@@ -101,13 +112,14 @@ test('a plan with no Parallel: line waves its disjoint tasks and keeps an overla
 
 test('a checkout under .claude/worktrees/ builds one task at a time, while the main checkout still forms the wave', async () => {
   const { root, planPath } = await checkout();
-  const planText = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(2) });
+  const planText = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(3) });
   const isolated = path.join(root, '.claude', 'worktrees', 'feat+x');
   git(root, 'worktree', 'add', '-q', '-b', 'feat/x', isolated);
   const report = nextTaskReport({ planPath, planText, root: isolated });
   assert.match(report, /^Next: Task 1$/m);
   assert.doesNotMatch(report, /^Wave:/m);
-  assert.match(nextTaskReport({ planPath, planText, root }), /^Wave: Task 1, Task 2$/m);
+  land(root, 1, 'feat(app): part 1');
+  assert.match(nextTaskReport({ planPath, planText, root }), /^Wave: Task 2, Task 3$/m);
 });
 
 test('the brief file holds the frame and the task section, and the report holds neither', async () => {
@@ -186,6 +198,10 @@ test('a three-file task with no bullet naming its paths keeps every bullet', asy
 test('a task of at most two files keeps only the bullets naming its paths and leaves out an empty heading and an empty Modify ranges', async () => {
   const { root, planPath } = await checkout();
   nextTaskReport({ planPath, planText: PLAN, root });
+  const first = await fs.readFile(briefPath(root, 1), 'utf8');
+  land(root, 1, 'feat(app): greet');
+  land(root, 2, 'feat(app): style');
+  nextTaskReport({ planPath, planText: PLAN, root });
   const brief = await fs.readFile(briefPath(root, 3), 'utf8');
   assert.doesNotMatch(brief, /^Non-goals touching these paths:/m);
   assert.doesNotMatch(brief, /^Context for these paths and symbols:/m);
@@ -194,7 +210,6 @@ test('a task of at most two files keeps only the bullets naming its paths and le
   assert.doesNotMatch(brief, /src\/other\.js/);
   assert.match(brief, /^Goal: The fixture proves the plan reader\.$/m);
   assert.match(brief, /^The task section:$/m);
-  const first = await fs.readFile(briefPath(root, 1), 'utf8');
   assert.doesNotMatch(first, /src\/other\.js/);
   assert.match(first, /^Context for these paths and symbols:\n- `src\/app\.js` exports `greet`\.$/m);
 });
@@ -212,10 +227,11 @@ test('a small task keeps a bullet naming its basename or a parent directory, not
 
 test('a wave of two writes two briefs, and a task outside the wave gets none', async () => {
   const { root, planPath } = await checkout();
-  nextTaskReport({ planPath, planText: PLAN, root });
-  assert.match(await fs.readFile(briefPath(root, 1), 'utf8'), /^### Task 1: Greet$/m);
-  assert.match(await fs.readFile(briefPath(root, 3), 'utf8'), /^### Task 3: Wave$/m);
-  await assert.rejects(fs.access(briefPath(root, 2)), { code: 'ENOENT' });
+  land(root, 1, 'feat(app): part 1');
+  nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', parallel: '2, 3.', tasks: plannedTasks(4) }), root });
+  assert.match(await fs.readFile(briefPath(root, 2), 'utf8'), /^### Task 2: Part 2$/m);
+  assert.match(await fs.readFile(briefPath(root, 3), 'utf8'), /^### Task 3: Part 3$/m);
+  await assert.rejects(fs.access(briefPath(root, 4)), { code: 'ENOENT' });
 });
 
 test('a landed task leaves the report, and a Design: task builds alone with the visual direction', async () => {
@@ -271,7 +287,7 @@ test('the command line reads the plan and the checkout, and refuses a missing pl
   const { root, planPath } = await checkout();
   const good = await run(SCRIPT, ['--plan', planPath, '--root', root], { cwd: root });
   assert.equal(good.code, 0, good.stderr);
-  assert.match(good.stdout, /^Wave: Task 1, Task 3$/m);
+  assert.match(good.stdout, /^Next: Task 1$/m);
   assert.doesNotMatch(good.stdout, /^### Task \d+:/m);
   assert.ok(good.stdout.includes(`\nBrief: ${briefPath(root, 1)}\n`), good.stdout);
   const missing = await run(SCRIPT, ['--plan', path.join(root, 'nope.md')], { cwd: root });
