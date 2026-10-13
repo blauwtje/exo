@@ -133,10 +133,12 @@ export const SCENARIOS = [
   { name: 'skill-repeats-references-section', check: 'process structure', mutate: (root) =>
     replaceText(root, 'skills/verify/SKILL.md', '\n## References\n', '\n## References\n\n## References\n') },
   // A slim skill ends on its Report line, so each line below goes in before it.
+  // spec's body sits within a few bytes of its STAGE_BODY_TOKENS lock, so the
+  // banned lines go into verify, whose body has room for them.
   { name: 'banned-phrase', check: 'portable language', mutate: (root) =>
-    beforeReport(root, 'skills/spec/SKILL.md', "let me know if you'd like me to continue") },
+    beforeReport(root, 'skills/verify/SKILL.md', "let me know if you'd like me to continue") },
   { name: 'expanded-banned-language', check: 'portable language', mutate: (root) =>
-    beforeReport(root, 'skills/spec/SKILL.md', 'Use WebSearch when useful.') },
+    beforeReport(root, 'skills/verify/SKILL.md', 'Use WebSearch when useful.') },
   { name: 'derived-name', check: 'derivation', mutate: (root) =>
     beforeReport(root, 'skills/spec/SKILL.md', `${Buffer.from('d2F5ZmluZGVy', 'base64')}`) },
   { name: 'derived-name-outside-shipped-files', check: 'derivation', mutate: (root) =>
