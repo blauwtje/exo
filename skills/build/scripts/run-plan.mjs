@@ -7,6 +7,8 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
+import { INHERIT, readKindTable } from '#model-kinds';
+import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
@@ -37,6 +39,14 @@ class Refusal extends Error {}
 // why: the run's one app process; the entry point's `finally` kills its tree.
 let appPid = null;
 
+function budgetPin(name, flags) {
+  if (name !== 'claude' || flags.model !== undefined || flags.effort !== undefined) return {};
+  const budget = settingValue('budget');
+  if (budget === 'off') return { model: null, effort: null };
+  const { model, effort } = readKindTable(undefined, { budget }).kinds['build-task'];
+  return { model: model === INHERIT ? null : model, effort };
+}
+
 function chooseProvider(flags, home, project) {
   let config;
   try {
@@ -53,6 +63,7 @@ function chooseProvider(flags, home, project) {
     ...provider,
     asked,
     model: flags.model ?? provider.model,
+    ...budgetPin(name, flags),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
     contextBudget: config.defaults.contextBudget,
     sandbox: sandboxMode(config, project)

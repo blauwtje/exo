@@ -72,6 +72,20 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.doesNotMatch(off.stdout, /--settings/);
 });
 
+test('dry run takes the build-task model and effort from the budget, and none under off', async () => {
+  const context = await setup();
+  context.env.CLAUDE_PROJECT_DIR = context.root;
+  const medium = await runPlan(context, [land(1)], ['--dry-run']);
+  assert.match(medium.stdout, /^Model: sonnet$/m);
+  assert.match(medium.stdout, / --model sonnet --effort medium /);
+  await fs.mkdir(path.join(context.root, '.claude'), { recursive: true });
+  await fs.writeFile(path.join(context.root, '.claude', 'exo.json'), JSON.stringify({ budget: 'off' }));
+  const off = await runPlan(context, [land(1)], ['--dry-run']);
+  assert.doesNotMatch(off.stdout, /--model|--effort/);
+  const flagged = await runPlan(context, [land(1)], ['--dry-run', '--model', 'opus']);
+  assert.match(flagged.stdout, / --model opus /);
+});
+
 test('sandbox: every process gets sandbox settings excluding only exo\'s gate scripts, and no Bash rule for sandboxed commands', async () => {
   const context = await setup();
   const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
