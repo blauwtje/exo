@@ -91,7 +91,7 @@ export const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       'No spec step 7, last fallback.', 'No spec step 7.');
     replaceText(root, 'skills/build/SKILL.md',
-      'Never here: the unit reads it.', 'Never here.');
+      'Never here: unit reads it.', 'Never here.');
   } },
   // build's body sits at its STAGE_BODY_TOKENS lock; trimming two
   // References descriptions offsets the added Judgment section's bytes.
@@ -116,7 +116,7 @@ export const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       'No spec step 7, last fallback.', 'No spec step 7.');
     replaceText(root, 'skills/build/SKILL.md',
-      'Never here: the unit reads it.', 'Never here.');
+      'Never here: unit reads it.', 'Never here.');
   } },
   { name: 'slim-skill-without-references-table', check: 'process structure', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', '## References', '## Sources') },

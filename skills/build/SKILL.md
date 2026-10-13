@@ -30,15 +30,15 @@ A decided change with no plan file follows `references/no-spec.md`. After a comp
 | File | Read it when |
 |---|---|
 | `references/run-loop.md` | Steps 1-6, without `--task`. |
-| `references/run-loop-inline.md` | Never here: next-task. |
+| `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
-| `references/tail.md` | Step 7; on `Route: inline`, only when its `Steps:` fall back. |
+| `references/tail.md` | Step 7; `Route: inline`, only when its `Steps:` fall back. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
 | `references/rolling-window.md` | Never here: unit reads it. |
-| `references/agent-cases.md` | Never here: agents. |
+| `references/agent-cases.md` | Never here: agents read it. |
 | `implementer-prompt.md` | Never here: unit reads it. |
 | `drift-repairer-prompt.md` | Never here: unit reads it. |
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |
@@ -51,7 +51,7 @@ A decided change with no plan file follows `references/no-spec.md`. After a comp
 | `references/security.md` | When its first line applies. |
 | `references/data-migration.md` | When its first line applies. |
 | `references/test-design.md` | When its first line applies. |
-| `references/test-first.md` | No spec test-first work, before the first boundary. |
+| `references/test-first.md` | No spec test-first work, before first boundary. |
 | `references/project-knowledge.md` | No spec step 6, when its first line applies. |
 | `references/performance.md` | No spec speed-only work, before measuring. |
 | `../route-skills/references/question.md` | Before asking the user to pick. |
