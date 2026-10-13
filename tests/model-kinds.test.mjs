@@ -17,12 +17,6 @@ function readRepoFile(file) {
   return fs.readFileSync(path.join(ROOT, file), 'utf8');
 }
 
-function frontmatterField(file, field) {
-  const frontmatter = readRepoFile(file).split('---')[1];
-  const line = frontmatter.split('\n').find((row) => row.startsWith(`${field}:`));
-  return line ? line.slice(field.length + 1).trim() : null;
-}
-
 function readTableWith(change) {
   const copy = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
   change(copy);
@@ -33,12 +27,10 @@ function readTableWith(change) {
 
 test('every kind resolves through the claude block to a model and an effort or null', () => {
   assert.deepEqual(Object.keys(table.kinds).sort(), [
-    'build', 'build-task', 'chore', 'coordinate', 'handover', 'hardest', 'hardest-high', 'hardest-low', 'investigate',
-    'lookup', 'peer', 'peer-review', 'prose', 'research', 'review', 'review-deep', 'review-deep-high'
+    'build', 'build-task', 'chore', 'coordinate', 'handover', 'hardest', 'investigate',
+    'lookup', 'peer', 'peer-review', 'prose', 'research', 'review', 'review-deep'
   ]);
   assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'high' });
-  assert.deepEqual(table.kinds['hardest-high'], { model: 'opus', effort: 'xhigh' });
-  assert.deepEqual(table.kinds['hardest-low'], { model: 'opus', effort: 'medium' });
   assert.deepEqual(table.kinds.build, { model: 'sonnet', effort: 'high' });
   assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: 'low' });
   assert.deepEqual(table.kinds.peer, { model: 'inherit', effort: 'high' });
@@ -51,8 +43,22 @@ test('the raw table names a tier and a neutral effort per kind, and the claude b
   assert.deepEqual(raw.providers.claude.tiers, { strong: 'opus', standard: 'sonnet', fast: 'haiku' });
   assert.deepEqual(raw.providers.claude.models, ['fable', 'opus', 'sonnet', 'haiku']);
   assert.deepEqual(Object.keys(raw.providers.claude.efforts), ['low', 'medium', 'high', 'xhigh', 'max']);
-  assert.deepEqual(raw.kinds.hardest, { tier: 'strong', effort: 'high' });
-  assert.deepEqual(raw.kinds.lookup, { tier: 'fast', effort: 'low' });
+  assert.deepEqual(raw.kinds.hardest, {
+    low: { tier: 'strong', effort: 'medium' },
+    medium: { tier: 'strong', effort: 'high' },
+    high: { tier: 'strong', effort: 'xhigh' }
+  });
+  assert.deepEqual(raw.kinds.handover.high, { tier: 'inherit', effort: null });
+  assert.equal(raw.budgets, undefined);
+  assert.equal(raw.skills, undefined);
+});
+
+test('the budget picks the column a kind resolves from, and medium is the default', () => {
+  assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'low' }).kinds.build, { model: 'sonnet', effort: 'medium' });
+  assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'high' }).kinds.build, { model: 'opus', effort: 'medium' });
+  assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'high' }).kinds.hardest, { model: 'opus', effort: 'xhigh' });
+  assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'medium' }).kinds, table.kinds);
+  assert.throws(() => readKindTable(TABLE_PATH, { budget: 'off' }), /unknown budget off/);
 });
 
 test('the reader resolves a kind through whichever provider block is active', () => {
@@ -71,7 +77,7 @@ test('the reader resolves a kind through whichever provider block is active', ()
 test('a tier on inherit, a kind on xhigh and a listed model no tier uses all load', () => {
   const loaded = readTableWith((copy) => {
     copy.providers.claude.tiers.fast = 'inherit';
-    copy.kinds.build.effort = 'xhigh';
+    copy.kinds.build.medium.effort = 'xhigh';
   })();
   assert.deepEqual(loaded.kinds.lookup, { model: 'inherit', effort: 'low' });
   assert.deepEqual(loaded.kinds.build, { model: 'sonnet', effort: 'xhigh' });
@@ -86,12 +92,12 @@ test('the reader rejects an unknown provider, tier, effort, kind or skill field,
   assert.throws(readTableWith((copy) => { copy.providers.claude.tiers.fast = 'mini'; }), /tier fast names mini, which models does not list/);
   assert.throws(readTableWith((copy) => { delete copy.providers.claude.models; }), /tier strong names opus, which models does not list/);
   assert.throws(readTableWith((copy) => { delete copy.providers.claude.efforts.xhigh; }), /no value for effort xhigh/);
-  assert.throws(readTableWith((copy) => { copy.kinds.build.tier = 'huge'; }), /kind build: unknown tier huge/);
-  assert.throws(readTableWith((copy) => { copy.kinds.build.effort = 'huge'; }), /kind build: unknown effort huge/);
+  assert.throws(readTableWith((copy) => { copy.kinds.build.medium.tier = 'huge'; }), /kind build: unknown tier huge/);
+  assert.throws(readTableWith((copy) => { copy.kinds.build.high.effort = 'huge'; }), /kind build: unknown effort huge/);
+  assert.throws(readTableWith((copy) => { delete copy.kinds.build.low; }), /kind build: no low column/);
   assert.throws(readTableWith((copy) => { copy.agents['agents/build-ui.md'].kind = 'nope'; }), /agents\/build-ui\.md: unknown kind nope/);
   assert.throws(readTableWith((copy) => { copy.dispatches[0].kind = 'nope'; }), /unknown kind nope/);
   assert.throws(readTableWith((copy) => { copy.stages.build.kind = 'nope'; }), /stage build: unknown kind nope/);
-  assert.throws(readTableWith((copy) => { copy.skills['skills/verify/SKILL.md'].fields = ['tools']; }), /unknown field tools/);
 });
 
 test('every agent file has exactly one entry, and each entry names a file or its source', () => {
@@ -105,21 +111,12 @@ test('every agent file has exactly one entry, and each entry names a file or its
   }
 });
 
-test('every skill entry holds the kind values in the fields it lists', () => {
-  for (const [file, entry] of Object.entries(table.skills)) {
-    const kind = table.kinds[entry.kind];
-    for (const field of entry.fields) {
-      assert.equal(frontmatterField(file, field), kind[field], `${file} ${field}`);
-    }
-  }
-});
-
-test('every dispatch match is one line holding one model word, the kind\'s', () => {
+test('every dispatch match is one line that names its kind tag and no model word', () => {
   for (const { file, match, kind } of table.dispatches) {
     const lines = readRepoFile(file).split('\n').filter((line) => line.includes(match));
     assert.equal(lines.length, 1, `${file}: "${match}" matches ${lines.length} lines`);
-    const words = [...lines[0].matchAll(MODEL_WORD)].map((found) => found[1]);
-    assert.deepEqual(words, table.kinds[kind].model === 'inherit' ? [] : [table.kinds[kind].model], `${file}: "${match}"`);
+    assert.ok(lines[0].includes(`exo-kind: ${kind}`), `${file}: "${match}" lacks the ${kind} tag`);
+    assert.deepEqual([...lines[0].matchAll(MODEL_WORD)], [], `${file}: "${match}"`);
   }
 });
 
@@ -142,28 +139,18 @@ test('the codex block lists its models, tiers, identity efforts, shift, null eff
   assert.deepEqual(codex.efforts, { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' });
   assert.deepEqual(codex.effortShift, { strong: 1 });
   assert.equal(codex.nullEffort, 'medium');
-  assert.equal(codex.lowTwins, undefined);
-  assert.deepEqual(Object.fromEntries(Object.entries(codex.codexTwins).map(([name, twin]) => [name, [twin.from, twin.kind, twin.budget ?? null]])), {
-    'exo-critique-ui-high': ['agents/critique-ui.md', 'review-deep-high', null],
-    'exo-critique-ui-low': ['agents/critique-ui.md', 'review-deep', 'low'],
-    'exo-review-branch-deep': ['agents/review-branch.md', 'review-deep', null],
-    'exo-review-branch-deep-high': ['agents/review-branch.md', 'review-deep-high', null],
-    'exo-review-branch-deep-low': ['agents/review-branch.md', 'review-deep', 'low'],
-    'exo-solve-hard-high': ['agents/solve-hard.md', 'hardest-high', null],
-    'exo-solve-hard-low': ['agents/solve-hard.md', 'hardest-low', null]
-  });
+  assert.equal(codex.codexTwins, undefined);
 });
 
 test('the budget twin agent files are folded into their base agents', () => {
   for (const twin of ['critique-ui-high', 'review-branch-deep', 'review-branch-deep-high', 'solve-hard-high', 'solve-hard-low']) {
     assert.ok(!(`agents/${twin}.md` in table.agents), `agents/${twin}.md is still an agents entry`);
   }
-  for (const kind of ['review-deep-high', 'hardest-high', 'hardest-low']) assert.ok(kind in table.kinds, `kind ${kind} is kept for the budget call mapping`);
+  for (const kind of ['review-deep-high', 'hardest-high', 'hardest-low']) assert.ok(!(kind in table.kinds), `kind ${kind} is gone`);
 });
 
-test('the default provider stays claude and carries no codex twins', () => {
+test('the default provider stays claude', () => {
   assert.equal(readKindTable().provider, 'claude');
-  assert.deepEqual(readKindTable().codexTwins, {});
   assert.deepEqual(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds, table.kinds);
 });
 
@@ -171,45 +158,28 @@ test('the codex provider shifts a strong kind up one effort step, clamped at max
   const codex = readKindTable(TABLE_PATH, { provider: 'codex' });
   assert.equal(codex.provider, 'codex');
   assert.deepEqual(codex.kinds.build, { model: 'gpt-6.1-sol', effort: 'high' });
-  assert.deepEqual(codex.kinds.research, { model: 'gpt-6.1-sol', effort: 'medium' });
+  assert.deepEqual(codex.kinds.research, { model: 'gpt-6.1-sol', effort: 'low' });
   assert.deepEqual(codex.kinds.lookup, { model: 'gpt-6-luna', effort: 'low' });
   const nulled = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'table.json');
   const raw = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
-  raw.kinds.lookup.effort = null;
+  raw.kinds.lookup.medium.effort = null;
   fs.writeFileSync(nulled, JSON.stringify(raw));
   assert.equal(readKindTable(nulled, { provider: 'codex' }).kinds.lookup.effort, 'medium');
-  assert.deepEqual(codex.kinds['review-deep'], { model: 'gpt-6.1-sol', effort: 'xhigh' });
-  assert.deepEqual(codex.kinds['review-deep-high'], { model: 'gpt-6.1-sol', effort: 'max' });
-  assert.deepEqual(codex.kinds['hardest-low'], { model: 'gpt-6.1-sol', effort: 'high' });
+  assert.deepEqual(codex.kinds['review-deep'], { model: 'gpt-6.1-sol', effort: 'high' });
+  assert.deepEqual(codex.kinds.hardest, { model: 'gpt-6.1-sol', effort: 'xhigh' });
   assert.deepEqual(codex.kinds.handover, { model: 'inherit', effort: null });
-  assert.equal(codex.kinds.prose.effort, 'xhigh');
+  assert.equal(codex.kinds.prose.effort, 'high');
 });
 
 test('a strong kind at max stays at max under the codex shift', () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'table.json');
   const copy = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
-  copy.kinds.prose.effort = 'max';
+  copy.kinds.hardest.medium.effort = 'max';
   fs.writeFileSync(file, JSON.stringify(copy));
-  assert.equal(readKindTable(file, { provider: 'codex' }).kinds.prose.effort, 'max');
+  assert.equal(readKindTable(file, { provider: 'codex' }).kinds.hardest.effort, 'max');
 });
 
-test('each codex twin resolves its kind, and a budget twin at that budget\'s tier swap without the effort shift', () => {
-  const { codexTwins } = readKindTable(TABLE_PATH, { provider: 'codex' });
-  const resolved = Object.fromEntries(Object.entries(codexTwins).map(([name, twin]) => [name, `${twin.model}:${twin.effort}`]));
-  assert.deepEqual(resolved, {
-    'exo-critique-ui-high': 'gpt-6.1-sol:max',
-    'exo-critique-ui-low': 'gpt-6.1-sol:high',
-    'exo-review-branch-deep': 'gpt-6.1-sol:xhigh',
-    'exo-review-branch-deep-high': 'gpt-6.1-sol:max',
-    'exo-review-branch-deep-low': 'gpt-6.1-sol:high',
-    'exo-solve-hard-high': 'gpt-6.1-sol:max',
-    'exo-solve-hard-low': 'gpt-6.1-sol:high'
-  });
-  assert.equal(codexTwins['exo-review-branch-deep'].from, 'agents/review-branch.md');
-  assert.equal(codexTwins['exo-review-branch-deep'].description, 'Reviews one risky plan branch. Dispatched by verify only.');
-});
-
-test('the reader rejects a bad codex shift, null effort or low twin', () => {
+test('the reader rejects a bad codex shift or null effort', () => {
   const codex = (change) => () => {
     const read = readTableWith((copy) => { copy.provider = 'codex'; change(copy.providers.codex); });
     return read();
@@ -217,9 +187,6 @@ test('the reader rejects a bad codex shift, null effort or low twin', () => {
   assert.throws(readKindTable.bind(null, TABLE_PATH, { provider: 'nope' }), /unknown provider nope/);
   assert.throws(codex((block) => { block.effortShift = { strong: 1, huge: 1 }; }), /effortShift names unknown tier huge/);
   assert.throws(codex((block) => { block.nullEffort = 'huge'; }), /nullEffort names unknown effort huge/);
-  assert.throws(codex((block) => { block.codexTwins['exo-nope-low'] = { from: 'agents/nope.md', kind: 'build', description: 'x' }; }), /codexTwins exo-nope-low names agents\/nope\.md, which agents does not list/);
-  assert.throws(codex((block) => { block.codexTwins['exo-nope-low'] = { from: 'agents/build-task.md', kind: 'nope', description: 'x' }; }), /codexTwins exo-nope-low: unknown kind nope/);
-  assert.throws(codex((block) => { block.codexTwins['exo-build-task-low'] = { from: 'agents/build-task.md', kind: 'build', budget: 'low', description: 'x' }; }), /exo-build-task-low: kind build is not on a tier the low budget swaps/);
 });
 
 const BUILDER_KINDS = ['build', 'build-task', 'coordinate'];

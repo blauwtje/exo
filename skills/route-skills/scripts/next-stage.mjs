@@ -75,7 +75,8 @@ export function nextStageReport({ after, artifact }) {
 
 function effortLine(stage) {
   const { kinds, stages } = readKindTable();
-  return `Build runs at \`${kinds[stages[stage].kind].effort}\` effort, which the build skill sets; \`/effort auto\` returns the session to normal effort.`;
+  const { effort } = kinds[stages[stage].kind];
+  return `Build runs best at \`${effort}\` effort: type \`/effort ${effort}\` first; \`/effort auto\` returns the session to normal effort.`;
 }
 
 function openEntries(artifact) {

@@ -11,39 +11,80 @@
       "tiers": { "strong": "gpt-6.1-sol", "standard": "gpt-6.1-sol", "fast": "gpt-6-luna" },
       "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" },
       "effortShift": { "strong": 1 },
-      "nullEffort": "medium",
-      "codexTwins": {
-        "exo-critique-ui-high": { "from": "agents/critique-ui.md", "kind": "review-deep-high", "description": "critique-ui, high budget, by name only." },
-        "exo-critique-ui-low": { "from": "agents/critique-ui.md", "kind": "review-deep", "budget": "low", "description": "critique-ui, low budget, by name only." },
-        "exo-review-branch-deep": { "from": "agents/review-branch.md", "kind": "review-deep", "description": "Reviews one risky plan branch. Dispatched by verify only." },
-        "exo-review-branch-deep-high": { "from": "agents/review-branch.md", "kind": "review-deep-high", "description": "review-branch-deep, high budget, by name only." },
-        "exo-review-branch-deep-low": { "from": "agents/review-branch.md", "kind": "review-deep", "budget": "low", "description": "review-branch-deep, low budget, by name only." },
-        "exo-solve-hard-high": { "from": "agents/solve-hard.md", "kind": "hardest-high", "description": "solve-hard, high budget, by name only." },
-        "exo-solve-hard-low": { "from": "agents/solve-hard.md", "kind": "hardest-low", "description": "solve-hard, low budget, by name only." }
-      }
+      "nullEffort": "medium"
     }
   },
-  "budgets": {
-    "low": { "strong": "standard" }
-  },
   "kinds": {
-    "build": { "tier": "standard", "effort": "high" },
-    "build-task": { "tier": "standard", "effort": "medium" },
-    "hardest": { "tier": "strong", "effort": "high" },
-    "review": { "tier": "standard", "effort": "high" },
-    "review-deep": { "tier": "strong", "effort": "high" },
-    "review-deep-high": { "tier": "strong", "effort": "xhigh" },
-    "investigate": { "tier": "standard", "effort": "high" },
-    "coordinate": { "tier": "standard", "effort": "medium" },
-    "research": { "tier": "standard", "effort": "medium" },
-    "lookup": { "tier": "fast", "effort": "low" },
-    "prose": { "tier": "strong", "effort": "high" },
-    "chore": { "tier": "standard", "effort": "low" },
-    "hardest-high": { "tier": "strong", "effort": "xhigh" },
-    "hardest-low": { "tier": "strong", "effort": "medium" },
-    "peer": { "tier": "inherit", "effort": "high" },
-    "peer-review": { "tier": "inherit", "effort": "medium" },
-    "handover": { "tier": "inherit", "effort": null }
+    "build-task": {
+      "low": { "tier": "standard", "effort": "low" },
+      "medium": { "tier": "standard", "effort": "medium" },
+      "high": { "tier": "standard", "effort": "high" }
+    },
+    "build": {
+      "low": { "tier": "standard", "effort": "medium" },
+      "medium": { "tier": "standard", "effort": "high" },
+      "high": { "tier": "strong", "effort": "medium" }
+    },
+    "hardest": {
+      "low": { "tier": "strong", "effort": "medium" },
+      "medium": { "tier": "strong", "effort": "high" },
+      "high": { "tier": "strong", "effort": "xhigh" }
+    },
+    "review": {
+      "low": { "tier": "standard", "effort": "medium" },
+      "medium": { "tier": "standard", "effort": "high" },
+      "high": { "tier": "strong", "effort": "medium" }
+    },
+    "review-deep": {
+      "low": { "tier": "standard", "effort": "high" },
+      "medium": { "tier": "strong", "effort": "medium" },
+      "high": { "tier": "strong", "effort": "high" }
+    },
+    "investigate": {
+      "low": { "tier": "standard", "effort": "low" },
+      "medium": { "tier": "standard", "effort": "medium" },
+      "high": { "tier": "standard", "effort": "high" }
+    },
+    "coordinate": {
+      "low": { "tier": "standard", "effort": "low" },
+      "medium": { "tier": "standard", "effort": "medium" },
+      "high": { "tier": "standard", "effort": "medium" }
+    },
+    "research": {
+      "low": { "tier": "fast", "effort": "medium" },
+      "medium": { "tier": "standard", "effort": "low" },
+      "high": { "tier": "standard", "effort": "medium" }
+    },
+    "lookup": {
+      "low": { "tier": "fast", "effort": "low" },
+      "medium": { "tier": "fast", "effort": "low" },
+      "high": { "tier": "fast", "effort": "medium" }
+    },
+    "prose": {
+      "low": { "tier": "standard", "effort": "medium" },
+      "medium": { "tier": "standard", "effort": "high" },
+      "high": { "tier": "strong", "effort": "medium" }
+    },
+    "chore": {
+      "low": { "tier": "fast", "effort": "low" },
+      "medium": { "tier": "fast", "effort": "low" },
+      "high": { "tier": "standard", "effort": "low" }
+    },
+    "peer": {
+      "low": { "tier": "inherit", "effort": "medium" },
+      "medium": { "tier": "inherit", "effort": "high" },
+      "high": { "tier": "inherit", "effort": "high" }
+    },
+    "peer-review": {
+      "low": { "tier": "inherit", "effort": "low" },
+      "medium": { "tier": "inherit", "effort": "medium" },
+      "high": { "tier": "inherit", "effort": "high" }
+    },
+    "handover": {
+      "low": { "tier": "inherit", "effort": null },
+      "medium": { "tier": "inherit", "effort": null },
+      "high": { "tier": "inherit", "effort": null }
+    }
   },
   "stages": {
     "build-no-spec": { "kind": "hardest" },
@@ -61,14 +102,6 @@
     "agents/run-unit.md": { "kind": "coordinate" },
     "agents/solve-hard.md": { "kind": "hardest" },
     "agents/survey-ui.md": { "kind": "investigate" }
-  },
-  "skills": {
-    "skills/build/SKILL.md": { "kind": "coordinate", "fields": ["effort"] },
-    "skills/check-docs/SKILL.md": { "kind": "investigate", "fields": ["effort"] },
-    "skills/configure/SKILL.md": { "kind": "chore", "fields": ["model"] },
-    "skills/design-ui/SKILL.md": { "kind": "build", "fields": ["effort"] },
-    "skills/file-issues/SKILL.md": { "kind": "prose", "fields": ["model", "effort"] },
-    "skills/verify/SKILL.md": { "kind": "review", "fields": ["effort"] }
   },
   "dispatches": [
     { "file": "skills/find-cause/SKILL.md", "match": "the prompt opening with `exo-kind: build`", "kind": "build" },

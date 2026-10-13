@@ -4,7 +4,6 @@
 // and `## Visual direction` to pick the model switch.
 
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -15,10 +14,9 @@ import { assertQuestionShape } from './question-shape.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
 
-// The effort line names the effort the build skill's frontmatter pins, so the
-// line stays true to the skill that runs.
-const BUILD_EFFORT = (await fs.readFile(new URL('../skills/build/SKILL.md', import.meta.url), 'utf8')).match(/^effort: (\S+)$/m)[1];
-const EFFORT_LINE = `Build runs at \`${BUILD_EFFORT}\` effort, which the build skill sets; \`/effort auto\` returns the session to normal effort.`;
+const { kinds: KINDS, stages: STAGES } = readKindTable();
+const BUILD_EFFORT = KINDS[STAGES.build.kind].effort;
+const EFFORT_LINE = `Build runs best at \`${BUILD_EFFORT}\` effort: type \`/effort ${BUILD_EFFORT}\` first; \`/effort auto\` returns the session to normal effort.`;
 
 // The model of the kind `lib/model-kinds.json` gives the build stage.
 function buildStageModel() {
