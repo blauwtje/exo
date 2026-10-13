@@ -36,16 +36,16 @@ test('every general-purpose delegate dispatch names its model', () => {
   assert.deepEqual(unnamed, []);
 });
 
-test('every review dispatch names the agent the printed REVIEW line picks and passes its model and effort', () => {
+test('every review dispatch names the agent the printed REVIEW line picks and opens its prompt with its kind', () => {
   const [agent, ...parameters] = REVIEWER_AGENTS.deep.split(' ');
   assert.equal(agent, REVIEWER_AGENTS.light);
-  assert.deepEqual(parameters.map((pair) => pair.split('=')[0]), ['model', 'effort']);
+  assert.deepEqual(parameters, ['exo-kind:', 'review-deep']);
   for (const relativePath of ['verify/SKILL.md']) {
     const text = fs.readFileSync(path.join(skillsRoot, relativePath), 'utf8');
     const dispatch = text.match(/^.*`exo:review-branch` agent.*$/m)?.[0];
     assert.ok(dispatch, `${relativePath} does not dispatch \`exo:review-branch\``);
     assert.ok(dispatch.includes(`\`exo:${REVIEWER_AGENTS.light}\``), `${relativePath} does not name exo:${REVIEWER_AGENTS.light}`);
-    assert.match(dispatch, /`model` and `effort` to the line's `model=` and `effort=`/, `${relativePath} does not pass the REVIEW line's model and effort`);
+    assert.ok(dispatch.includes('opening its prompt with `exo-kind: review-deep`'), `${relativePath} does not open the review prompt with its kind`);
     assert.doesNotMatch(dispatch, /exo:review-branch-deep/, `${relativePath} still names the deep twin`);
   }
 });
