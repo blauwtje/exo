@@ -7,30 +7,34 @@ function makeState(fields) {
   return { phase: 'build', task: { n: 2, subject: 'add log' }, landed: 1, total: 5, startedAt: '2026-10-13T10:00:00Z', updatedAt: '2999-01-01T00:00:00Z', ...fields };
 }
 
+function makeFs({ root, gitText, states, mainStates, mtimeMs, lists }) {
+  const runBases = { '/repo/.exo/run': mainStates, [`${root}/.exo/run`]: states };
+  return {
+    list: async (path) => {
+      lists.push(path);
+      const runs = runBases[path];
+      if (runs) return Object.keys(runs).map((name) => ({ name, kind: 'dir' }));
+      return [{ name: 'run.log', kind: 'file', mtimeMs }];
+    },
+    read: async (file) => {
+      if (file.endsWith('/.git')) {
+        if (gitText === undefined) throw new Error('ENOENT');
+        return gitText;
+      }
+      const runId = file.split('/').at(-2);
+      return JSON.stringify(file.startsWith(`${root}/`) ? states[runId] : mainStates[runId]);
+    }
+  };
+}
+
 function makeHarness(states, options = {}) {
   const { root = '/repo', gitText, mainStates = {}, mtimeMs = Date.now() } = options;
   const calls = { timers: [], statuses: [], prompts: [], lists: [] };
   const handlers = {};
-  const runBases = { '/repo/.exo/run': mainStates, [`${root}/.exo/run`]: states };
   const $ = {
     clock: { every: (ms, tick) => calls.timers.push({ ms, tick }) },
     session: { root: async () => root },
-    fs: {
-      list: async (path) => {
-        calls.lists.push(path);
-        const runs = runBases[path];
-        if (runs) return Object.keys(runs).map((name) => ({ name, kind: 'dir' }));
-        return [{ name: 'run.log', kind: 'file', mtimeMs }];
-      },
-      read: async (file) => {
-        if (file.endsWith('/.git')) {
-          if (gitText === undefined) throw new Error('ENOENT');
-          return gitText;
-        }
-        const runId = file.split('/').at(-2);
-        return JSON.stringify(file.startsWith(`${root}/`) ? states[runId] : mainStates[runId]);
-      }
-    },
+    fs: makeFs({ root, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
     ui: { status: (text) => calls.statuses.push(text) },
     prompt: { submit: async (message) => calls.prompts.push(message.text) }
   };
