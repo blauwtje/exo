@@ -91,6 +91,9 @@ export function resolveClaude({ flag, pathValue = process.env.PATH ?? '', platfo
   return { refused: 'no claude on PATH; pass --claude <path>' };
 }
 
+const denialText = (denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`;
+const deniedFields = (parsed) => ({ denied: parsed.denials.map(denialText), refused: parsed.refusals.map(denialText) });
+
 export function parseStream(text) {
   const events = [];
   for (const line of text.split(/\r?\n/)) {
@@ -109,6 +112,9 @@ export function parseStream(text) {
       if (!denials.has(denial.tool_use_id)) denials.set(denial.tool_use_id, denial);
     }
   }
+  const ruleDenied = new Set(events.filter((event) => event.type === 'system' && event.subtype === 'permission_denied').map((event) => event.tool_use_id));
+  const calledIds = new Set(events.filter((event) => event.type === 'assistant').flatMap((event) => event.message?.content ?? []).filter((block) => block?.type === 'tool_use').map((block) => block.id));
+  const isRefusal = (denial) => calledIds.has(denial.tool_use_id) && !ruleDenied.has(denial.tool_use_id);
   const peakContext = Math.max(0, ...events.filter((event) => event.type === 'assistant').map((event) => {
     const usage = event.message?.usage ?? {};
     return (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0);
@@ -123,7 +129,8 @@ export function parseStream(text) {
     peakContext,
     sessionId: init?.session_id ?? final?.session_id ?? null,
     hooks: events.filter((event) => event.type === 'system' && event.subtype === 'hook_started').length,
-    denials: [...denials.values()]
+    denials: [...denials.values()].filter((denial) => !isRefusal(denial)),
+    refusals: [...denials.values()].filter(isRefusal)
   };
 }
 
@@ -555,6 +562,8 @@ function summaryLines(run, stop) {
   else lines.push(stop.gate === 'PASS' ? 'Final check passed.' : `Final check failed: ${run.verifyLines[0] ?? 'see the detail file'}.`);
   const denied = records.reduce((sum, record) => sum + record.denied.length, 0);
   if (denied > 0) lines.push(`${denied} command${denied === 1 ? ' was' : 's were'} refused by the permission rules; the detail file lists them.`);
+  const refused = records.reduce((sum, record) => sum + record.refused.length, 0);
+  if (refused > 0) lines.push(`${refused} command${refused === 1 ? ' was' : 's were'} refused by hooks; the detail file lists them.`);
   const decisions = process.env.EXO_RUN_DIR ? readDecisions(process.env.EXO_RUN_DIR) : [];
   if (decisions.length > 0) lines.push(`Decisions: ${decisions.length}, in ${path.join(process.env.EXO_RUN_DIR, 'decisions.md')}`);
   lines.push(`Next: ${stop.next}`);
@@ -564,10 +573,14 @@ function summaryLines(run, stop) {
 }
 
 function deniedLines(records) {
-  const denied = records.flatMap((record) => record.denied.map((command) => ({ record, command })));
-  if (denied.length === 0) return [];
-  const header = `Denied: ${denied.length} command${denied.length === 1 ? '' : 's'} (first 120 characters each; add one to Allow: if its task needs it; full text in the iteration logs)`;
-  return [header, ...denied.map(({ record, command }) => `  iteration ${record.iteration}, task ${record.task}: ${clip(command, 120)}`)];
+  const listed = (field) => records.flatMap((record) => record[field].map((command) => ({ record, command })));
+  const entries = ({ record, command }) => `  iteration ${record.iteration}, task ${record.task}: ${clip(command, 120)}`;
+  const denied = listed('denied');
+  const refused = listed('refused');
+  const lines = [];
+  if (denied.length > 0) lines.push(`Denied: ${denied.length} command${denied.length === 1 ? '' : 's'} (first 120 characters each; add one to Allow: if its task needs it; full text in the iteration logs)`, ...denied.map(entries));
+  if (refused.length > 0) lines.push(`Refused by hooks: ${refused.length} command${refused.length === 1 ? '' : 's'} (first 120 characters each; a hook refused them, not the permission rules; full text in the iteration logs)`, ...refused.map(entries));
+  return lines;
 }
 
 function detailLines(run, stop) {
@@ -799,7 +812,7 @@ async function main(argv) {
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
       const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-      const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`) };
+      const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
       run.records.push(record);
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
       stop = unsafeStop(first, before, planTaskTrailer(planId, first), parsed, log) ?? undefined;
@@ -858,8 +871,7 @@ async function main(argv) {
     const trailer = planTaskTrailer(planId, n);
     const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote + handoffNote(n)), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-    const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);
-    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied };
+    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
     run.records.push(record);
 
     const markerFile = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'blocked') : null;
@@ -908,7 +920,7 @@ async function main(argv) {
       const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
       const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel });
       const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
-      run.records.push({ iteration: number, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [] });
+      run.records.push({ iteration: number, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [], refused: [] });
       const breach = planBreach() ?? breachOf(root, before, { tail: true });
       const parked = breach === null ? takeParked('tail') : null;
       const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
