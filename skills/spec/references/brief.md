@@ -1,6 +1,6 @@
 # The brief
 
-Brief = decided outcome, in fixed sections a later session resumes from. Sections hold decisions, not their reasoning, which the next stage would argue again.
+Brief = decided outcome, in fixed sections a later session resumes from. Sections hold decisions, not their reasoning.
 
 ## Sections
 
@@ -8,6 +8,7 @@ In this order:
 
 - **Goal:** the observable result, in one sentence.
 - **Decisions:** every bin-1 decision with its answer, closed by you, the code with its settling path, or exo for a second "I don't know" or small work.
+- **Non-goals:** what a reader would assume is included, one bullet each naming its paths; none → omit.
 - **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
 - **Acceptance:** the observable checks and the highest seam running them, the one closest to what the user does.
@@ -23,7 +24,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## The task list
 
-- Make the split and every design choice before writing the list; the `sonnet` builder cannot ask.
+- Make the split and every design choice before writing the list.
 - Choice the user would notice → Decisions.
 - Point the user would not notice → `Data:`.
 - Security-boundary task → name its reference in its heading or `Data:`.
@@ -33,7 +34,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Judgment
 
-- `## Open points` keeps that exact name; plan-check and start-run read it.
+- `## Open points` keeps that exact name.
 - `## Visual direction` (exact name; design-ui reads it) names an existing `contract-selected.json` → design-ui gets a decided direction; it resumes at Build and repeats no variant choice.
 
 ## Open points step
