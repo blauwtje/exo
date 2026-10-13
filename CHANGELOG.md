@@ -60,6 +60,10 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A directory named `spec` no longer marks test code, so a task that changes `skills/spec/` gets a real red check.
 - `report.md` of an `exo run` keeps the refused commands after the worktree is removed: the run directory stores them and the report lists every command the permission rules refused.
 - A guard test run inside an exo build no longer parks that run on its sample commands.
+- Plan-check estimates a task's read cost at 2 bytes per token, so it flags tasks too big for one session.
+- A run's task session over the context limit writes a hand-off in its worktree, and the run continues the task in a fresh session instead of stopping.
+- The run report lists hook refusals apart from permission denials, and advises `Allow:` only for real denials.
+- Tests that start run scripts drop the run variables under bare `node --test`, so they never write a live run's state.
 
 ## 0.131.1 - 2026-10-11
 
