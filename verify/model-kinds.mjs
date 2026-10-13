@@ -87,7 +87,7 @@ export function findKindDrift(root, table) {
 }
 
 function main() {
-  parseArgs({ options: { write: { type: 'boolean', default: false } } });
+  parseArgs({ options: {} });
   const root = fileURLToPath(new URL('..', import.meta.url));
   const drift = findKindDrift(root);
   for (const record of drift) {

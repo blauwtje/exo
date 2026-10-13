@@ -96,7 +96,7 @@ The plugin ships no permission guard: a cap on what a machine may do belongs in 
 
 ## Codex
 
-`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/generate.mjs` applies `harnesses/codex/rules.mjs` to the Claude sources and builds the Codex tree in memory: each skill rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` per agent and per `codexTwins` entry. The Codex installer builds it fresh on every install, so the tree is never committed; `npm run generate` writes it to the gitignored `harnesses/codex/generated/` for inspection only, and nothing reads that copy. `npm run check` fails when the sources cannot generate the tree.
+`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/generate.mjs` applies `harnesses/codex/rules.mjs` to the Claude sources and builds the Codex tree in memory: each skill rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` per agent. The Codex installer builds it fresh on every install, so the tree is never committed; `npm run generate` writes it to the gitignored `harnesses/codex/generated/` for inspection only, and nothing reads that copy. `npm run check` fails when the sources cannot generate the tree.
 
 `harnesses/codex/overrides/<path under generated>` replaces one generated file and opens with `<!-- exo:override source-sha256=<hash> -->`. Add one only after a skill reads wrong in a real Codex run; a changed source hash fails `npm run check`.
 

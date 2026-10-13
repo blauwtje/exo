@@ -57,7 +57,7 @@
     "bump": "node bump.mjs",
     "release-pending": "node release-pending.mjs",
     "release-notes": "node release-notes.mjs",
-    "models": "node verify/model-kinds.mjs --write",
+    "models": "node verify/model-kinds.mjs",
     "generate": "node harnesses/codex/generate.mjs",
     "overlap": "node verify/phrase-overlap.mjs"
   }

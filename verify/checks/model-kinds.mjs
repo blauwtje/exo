@@ -1,7 +1,3 @@
-// One result: every agent, skill field and dispatch line the kind table names
-// holds its kind's model and effort, and the generated twin matches its source.
-// `npm run models` writes the table into those files.
-
 import path from 'node:path';
 import { readKindTable } from '../../lib/model-kinds.mjs';
 import { findInheritanceGaps, findKindDrift } from '../model-kinds.mjs';
@@ -21,8 +17,8 @@ export function checkModelKinds(report, repository) {
   report.assert(
     drift.length === 0,
     name,
-    'every agent, skill field and dispatch line holds its kind\'s model and effort',
-    `${drift.map((record) => `${record.file} ${record.field} is ${record.actual}, the table says ${record.expected}`).join('; ')}: run npm run models`
+    'no agent or skill pins a model or effort, and every dispatch line opens its prompt with its kind',
+    `${drift.map((record) => `${record.file} ${record.field} is ${record.actual}${record.expected === null ? '' : `, the table says ${record.expected}`}`).join('; ')}: remove the pin, or open the dispatch prompt with \`exo-kind: <kind>\``
   );
   report.assert(
     gaps.length === 0,
