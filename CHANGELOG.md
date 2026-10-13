@@ -9,6 +9,19 @@ Versions before 0.127.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+
+- A detached run now rebases onto `main` when it moves, before each task and at landing, instead of stopping.
+- A run commits changes to `CHANGELOG.md` and plan docs that no task lists, and untracked files no longer park it.
+- A blocked task is repaired once inside the run when the plan error is small, before the run stops.
+- A hazard the review reports as unproven now starts the fixer, and the verify report names its lines in plain words.
+- A new `env` setting copies gitignored `.env` files into the run worktree; the spec asks once about it before the run starts.
+
+### Fixed
+
+- A task no longer stops the run for a file outside the plan when that file is `CHANGELOG.md` or a plan doc.
+- A plan Proof that names bare `main` after `git diff`, `git log` or `git show` now fails the plan check, since `main` may have moved.
+
 ## 0.132.3 - 2026-10-13
 
 ### Changed
