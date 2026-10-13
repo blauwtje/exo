@@ -17,6 +17,8 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- `save-session` ends each handoff with a `Resume:` line and `## Then` steps, and the session hook shows them.
+- `exo wait <id>` blocks until a detached run ends, then prints its phase and report path; its deadline is `EXO_WAIT_MS` (default 6 h), and the `--detach` start line prints it as the watch command.
 - A detached `exo run` writes one followable live log at `.exo/run/live.log` and shows task progress in a status line under the prompt; when a run stops, a watcher hook wakes the lead to repair and resume it.
 - `exo run` orchestrates a plan by script: a small plan with no shared step or design task runs as one plan session whose tasks the script lands, any other plan task by task, each session from one generated task brief with lean flags and the run's plugin; a plan session that stops short has its leftover saved as a patch in the run's log folder and the tree cleaned before the per-task fallback; `--session auto|task|plan` picks the mode, `--max-run-usd` caps the run from a per-run session ledger, a scripted tail reviews, fixes and verifies the branch, and `land-task` under a run pin prints at most 20 lines.
 - The flow benchmark gains a `flow-run` arm that measures `exo run` with confined child sessions and ranks it against `flow-base` (`benchmarks/results/2026-10-12-flow-run-4b.md`); the per-task `flow-run-task` arm was dropped at 2.7x.
@@ -40,6 +42,9 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- `exo run` opens only the package registries of the ecosystems the repo or plan uses, plus the registries named in its `.npmrc`, `.yarnrc.yml`, `nuget.config` and `pip.conf`, and sets the dotnet variables only for .NET projects, under the user's own values.
+- The stall limit is set by `EXO_STALL_MS` (default 60 s) and the run prompts name the same limit; the stall hook caps timeouts at `BASH_MAX_TIMEOUT_MS`.
+- `run-state.mjs` holds the one exit-code-to-phase map for `exo run` and `exo-cli`, so exit 2 reads `refused` everywhere.
 - Lines in the run's live log now start with `[HH:MM:SS]` and read as plain text: task start, landed lines with duration, turns, tokens and cost, and the stop reason.
 - `build` on a plan starts the detached loop (`exo-cli.mjs run <plan> --detach`); the in-session unit route stays only for `--task` mode, a codex host, or no `claude` on `PATH`.
 - `exo run` runs each task's `Proof:` and `Land gate:` from its own process, outside the build session's sandbox and without a subagent.
@@ -62,6 +67,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- A lead over its context limit may still use ToolSearch, SendMessage, TaskStop, Monitor and a one-line append, and the deny text tells it to wait on and relay its background work.
 - A dotnet command no longer hangs the run session (#120): registry domains are allowed in the run sandbox.
 - A command that prints nothing for too long is stopped by the stall guard within seconds and reported, instead of being waited out for minutes.
 - The app named in a plan's `App:` line is started before each task and plan session, not only before the first proof, so a dead app no longer stalls the run.
