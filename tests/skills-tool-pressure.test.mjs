@@ -407,23 +407,21 @@ function cellsFor(file) {
   return run(PRESSURE, ['--cells-for', file]);
 }
 
-test('--cells-for prints the kind\'s cell and each budget replacement as a --cells value', async () => {
+test('--cells-for prints the kind\'s cell from each budget column as one --cells value', async () => {
   const critic = await cellsFor('agents/critique-ui.md');
   assert.equal(critic.code, 0, critic.stderr);
-  assert.equal(critic.stdout, 'opus:high,sonnet:high,opus:xhigh\n');
-  const build = await cellsFor('agents/build-task.md');
-  assert.equal(build.stdout, 'sonnet:medium\n');
+  assert.equal(critic.stdout, 'sonnet:high,opus:medium,opus:high\n');
+  assert.equal((await cellsFor('agents/build-task.md')).stdout, 'sonnet:low,sonnet:medium,sonnet:high\n');
 });
 
-test('--cells-for adds every per-call kind a budget runs the file on, deep and high review and the hard twins', async () => {
-  assert.equal((await cellsFor('agents/review-branch.md')).stdout, 'sonnet:high,opus:high,opus:xhigh\n');
-  assert.equal((await cellsFor('agents/solve-hard.md')).stdout, 'opus:high,sonnet:high,opus:xhigh,opus:medium\n');
+test('--cells-for prints a column\'s cell once when two budget columns share it', async () => {
+  assert.equal((await cellsFor('agents/review-branch.md')).stdout, 'sonnet:medium,sonnet:high,opus:medium\n');
+  assert.equal((await cellsFor('agents/solve-hard.md')).stdout, 'opus:medium,opus:high,opus:xhigh\n');
+  assert.equal((await cellsFor('agents/locate-code.md')).stdout, 'haiku:low,haiku:medium\n');
 });
 
-test('--cells-for prints a kind effort, and a dispatches entry\'s kind for its file', async () => {
-  assert.equal((await cellsFor('agents/locate-code.md')).stdout, 'haiku:low\n');
-  assert.equal((await cellsFor('skills/find-cause/fixer-prompt.md')).stdout, 'sonnet:high\n');
-  assert.equal((await cellsFor('skills/configure/SKILL.md')).stdout, 'sonnet:low\n');
+test('--cells-for prints a dispatches entry\'s kind for its file', async () => {
+  assert.equal((await cellsFor('skills/find-cause/fixer-prompt.md')).stdout, 'sonnet:medium,sonnet:high,opus:medium\n');
 });
 
 test('--cells-for a file no kind lists is a usage error with an empty stdout', async () => {

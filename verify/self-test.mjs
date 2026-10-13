@@ -225,18 +225,14 @@ export const SCENARIOS = [
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {
     for (const skill of ['find-cause']) dropLines(root, `skills/${skill}/SKILL.md`, 'effort:');
   } },
-  { name: 'effort-low', expect: 'accept', mutate: (root) => {
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low');
-  } },
-  { name: 'effort-medium', expect: 'accept', mutate: (root) => {
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: medium');
-  } },
-  { name: 'effort-high', expect: 'accept', mutate: (root) => {
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high');
-  } },
-  { name: 'effort-max', expect: 'accept', mutate: (root) => {
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max');
-  } },
+  { name: 'effort-low', check: 'model kinds', mutate: (root) =>
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low') },
+  { name: 'effort-medium', check: 'model kinds', mutate: (root) =>
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: medium') },
+  { name: 'effort-high', check: 'model kinds', mutate: (root) =>
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high') },
+  { name: 'effort-max', check: 'model kinds', mutate: (root) =>
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max') },
   { name: 'effort-bogus', check: 'YAML frontmatter', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: bogus') },
   { name: 'model-bogus', check: 'YAML frontmatter', mutate: (root) =>
