@@ -11,6 +11,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Highlights
 
+- **The `budget` setting now defaults to `off`, so every helper runs on the session's model; `fast`, `balanced` and `quality` replace `low`, `medium` and `high`.**
 - **A plan now builds through the detached loop by default, its proofs run outside the sandbox, one review covers the branch, and small or clear work reaches build without questions. A detached run is now watched: its progress shows under the prompt, and a blocked task wakes the lead to repair and resume it.**
 - **`exo run` now builds a small plan in one session and lands it by script: in the flow benchmark it uses 1.23x the no-plugin baseline's tokens with the hidden check 4/4, against 1.76x for the `build` flow.**
 - **A plan task's Proof and a plan's Success must now fail before the change: on the test-pollution benchmark `exo run` with this red-green gate passed 5 of 5, against 1 of 35 for the no-plugin baseline.**
@@ -42,6 +43,8 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- The `budget` setting values are now `off`, `fast`, `balanced` and `quality`; a stored `low`, `medium`, `high`, `lean`, `normal` or `full` still reads as its new name, and the model table columns carry the new names.
+- The `budget` setting now defaults to `off` (was `medium`): exo sets no model or effort, so every agent runs on the session's model.
 - `spec` asks the brief for a `Non-goals` section.
 - `spec`'s architecture sketch names the throwaway script that answers a question.
 - `code-standard` tells the writer to match the surrounding file and bans test-fitted code.
