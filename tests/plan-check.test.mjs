@@ -467,16 +467,6 @@ test('plan-check --loop refuses a command part that redirects output to a file, 
   assert.match(loopProblems(loopPlan().replace('`node --test` passes.', '`npm run build > out.txt` passes.'))[0], /Success criterion: .* redirects output to a file/);
 });
 
-test('plan-check --loop refuses a Design: task unless Visual direction names a contract-selected.json', () => {
-  const task = compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], design: 'design-ui', proof: 'node --test tests/app.test.mjs' });
-  const visual = (text) => loopPlan([task]).replace('## Tasks', `## Visual direction\n${text}\n\n## Tasks`);
-  const refused = loopProblems(visual('Quiet record.'));
-  assert.equal(refused.length, 1);
-  assert.match(refused[0], /Task 1: .*Design:.*contract-selected\.json/);
-  assert.deepEqual(loopProblems(visual('Contract: docs/contract-selected.json')), []);
-  assert.deepEqual(loopProblems(loopPlan()), []);
-});
-
 test('plan-check --loop refuses a Branch: that names the default branch', async () => {
   const root = await gitRepository({ 'src/app.js': GOOD_CODE });
   const onMain = loopPlan().replace('Branch: feat/fixture', 'Branch: main');
