@@ -246,7 +246,9 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
   const settings = stallGuard ? withStallGuard(base) : base;
   return [
     '-p', '--permission-mode', 'dontAsk', '--permission-prompts', 'none',
-    '--output-format', 'stream-json', '--verbose', '--model', model, '--effort', effort,
+    '--output-format', 'stream-json', '--verbose',
+    ...(model === null ? [] : ['--model', model]),
+    ...(effort === null ? [] : ['--effort', effort]),
     ...(budget === undefined ? [] : ['--max-budget-usd', budget]),
     ...(settings === null ? [] : ['--settings', typeof settings === 'string' ? settings : JSON.stringify(settings)]),
     '--strict-mcp-config',
