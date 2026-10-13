@@ -91,5 +91,19 @@
       "on": { "label": "On", "gives": "risky commands and edits get blocked" },
       "off": { "label": "Off", "gives": "nothing gets blocked" }
     }
+  },
+  "env": {
+    "type": "string",
+    "options": ["ask", "copy", "never"],
+    "default": "ask",
+    "description": "whether a run copies the local env files of the main checkout into its worktree: ask puts the question; copy copies them; never copies none",
+    "label": "Local env files",
+    "about": "whether runs copy your env files",
+    "question": "Should runs copy your local env files?",
+    "choices": {
+      "ask": { "label": "Ask me", "gives": "I ask each time" },
+      "copy": { "label": "Copy them", "gives": "env files are copied into the run folder" },
+      "never": { "label": "Never", "gives": "no env file is copied" }
+    }
   }
 }

@@ -328,6 +328,20 @@ test('guards is on by default and off when the project sets it', async () => {
   assert.match(rejected.stderr, /guards=maybe is not one of on, off/);
 });
 
+test('env is ask by default, takes copy or never from the project, and rejects other values', async () => {
+  const unset = await workspace();
+  assert.equal((await settings(unset, ['get', 'env'])).stdout.trim(), 'ask');
+  for (const value of ['copy', 'never']) {
+    const project = await workspace({ project: { env: value } });
+    assert.equal((await settings(project, ['get', 'env'])).stdout.trim(), value);
+    assert.match((await settings(project, ['context'])).stdout, new RegExp(`env=${value} \\(project\\)`));
+  }
+  assert.doesNotMatch((await settings(unset, ['context'])).stdout, /env=/);
+  const rejected = await settings(unset, ['set', 'env', 'always', '--scope', 'project']);
+  assert.notEqual(rejected.code, 0);
+  assert.match(rejected.stderr, /env=always is not one of ask, copy, never/);
+});
+
 test('a value past the second pick is named as a typed answer', async () => {
   const result = await settings(await workspace(), ['menu', 'ship']);
   assert.ok(result.stdout.includes('**What should happen once work is finished?**\nOr type `push` for Push or `local` for Keep it here.\n\n- **(A) Keep Ask me**'), result.stdout);

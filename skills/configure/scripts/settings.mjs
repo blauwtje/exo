@@ -28,6 +28,7 @@ const USAGE = [
 ].join('\n');
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
+const QUIET_DEFAULT = new Set(['env']);
 
 function activeRules(values) {
   const onCodex = currentHost() === 'codex';
@@ -46,14 +47,14 @@ function contextLine(root) {
     const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
     const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
-    const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '');
+    const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '' && !(QUIET_DEFAULT.has(key) && resolved[key].layer === 'default'));
     const parts = printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
     const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
     return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${rules}`;
   } catch (error) {
     const defaults = Object.fromEntries(Object.entries(SCHEMA).map(([key, entry]) => [key, entry.default]));
     const defaultParts = Object.entries(defaults)
-      .filter(([, value]) => value !== '')
+      .filter(([key, value]) => value !== '' && !QUIET_DEFAULT.has(key))
       .map(([key, value]) => `${key}=${value} (default)`);
     return `exo settings: ${defaultParts.join(', ')}; ${error.message}. ${activeRules(defaults)}`;
   }
@@ -110,7 +111,7 @@ const MAX_PICKS = 2;
 const TOPICS = {
   work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['compression', 'budget'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code and finished work go', keys: ['specs', 'workspace', 'ship'] },
-  safety: { label: 'Safety', question: 'Which part of safety?', about: 'what I block', keys: ['guards'] }
+  safety: { label: 'Safety', question: 'Which part of safety?', about: 'what I block', keys: ['guards', 'env'] }
 };
 
 function question(title, context, keep, picks, reason) {

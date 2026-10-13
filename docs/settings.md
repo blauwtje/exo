@@ -16,6 +16,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 | `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. A plan's `Land:` line comes from it: `local` lands `local`, `push` lands `push-main`, `open-pr` and `pr-merge` land `pr`; `ask` makes the spec grill ask, recommending `local`. `pr-merge` opens the pull request in the run and merges it outside the run. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |
 | `guards` | `on`, `off` | Whether the guards refuse anything. There is no switch per guard. |
+| `env` | `ask`, `copy`, `never` | Whether a run copies the local env files of the main checkout into its worktree. `ask` puts the question, `copy` copies them, `never` copies none. |
 | `budget` | `off`, `fast`, `balanced`, `quality` | Which model and effort each helper runs on, from one per-kind table. `off` sets none, so every helper inherits your session. `off` is the default. A stored `low`, `medium` or `high` still reads as `fast`, `balanced` or `quality`, and `lean`, `normal` or `full` read the same way. |
 
 Every reply level keeps code, commands, paths, error text, numbers and every not, no, only and except whole. Only chat prose is shortened.

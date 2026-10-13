@@ -51,6 +51,13 @@
       "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything. Not sure? Keep on. A project overrides this in .claude/exo.json.",
       "options": ["on", "off"],
       "default": "on"
+    },
+    "env": {
+      "type": "string",
+      "title": "Local env files in a run",
+      "description": "ask: the run puts the question. copy: copy the local env files into the run's worktree. never: copy none. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
+      "options": ["ask", "copy", "never"],
+      "default": "ask"
     }
   }
 }
