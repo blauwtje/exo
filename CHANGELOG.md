@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.128.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.129.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.133.0 - 2026-10-13
 
 ### Added
 
@@ -182,9 +184,3 @@ Versions before 0.128.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 
 - After approval, `spec` starts `exo run <brief> --detach` itself: a background run whose phase sits in `.exo/run/<id>/state.json`, a lock refuses a second run in the same checkout, `exo status` shows each run, and `exo run --resume <id>` continues one whose process died; a brief in an issue or a refused start falls back to the `--fresh` command.
-
-## 0.128.0 - 2026-10-11
-
-### Added
-
-- `benchmarks/results/2026-10-11-test-pollution.md` now records the `value-export-mismatch` check (baseline 5 of 5, exo 4 of 5) and the dropped `find-cause-success` branch.
