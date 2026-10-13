@@ -9,6 +9,10 @@ Versions before 0.126.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+
+- CI runs on `ubuntu-24.04` instead of `ubuntu-latest`, so GitHub's move of that label to Ubuntu 26 on 2026-10-19 cannot break a release unasked.
+
 ## 0.132.1 - 2026-10-13
 
 ### Fixed
