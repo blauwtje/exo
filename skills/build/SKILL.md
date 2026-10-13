@@ -9,7 +9,7 @@ effort: medium
 
 ## The loop
 
-1. **Find the plan.**
+1. **Find the plan, then start its detached run.**
 2. **Leave the plan to the unit.** On `Route: unit`: After dispatch, read only script output and unit returns, no plan or diff.
 3. **Ask the branch what landed.**
 4. **Take the block.**
