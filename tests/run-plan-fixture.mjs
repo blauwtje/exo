@@ -3,6 +3,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import './clean-run-env.mjs';
 import { fixture, git, gitRepository } from './harness.mjs';
 
 // The stub: one step of the scenario per call, chosen by how many calls the
