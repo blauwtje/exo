@@ -263,12 +263,16 @@ function isCovered(entries, changed) {
   return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
 }
 
-function strayPaths(task, root, planPath, siblingWork = () => false) {
+function strayPaths(task, { root, planPath, siblingWork = () => false }) {
   const entries = task.files.map((file) => file.path);
   return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !siblingWork(changed));
 }
 
-function siblingWorkOf(plan, task, root, planPath, landing) {
+function isPlanDoc(changed) {
+  return changed === 'CHANGELOG.md' || (changed.startsWith('docs/') && changed.endsWith('.md'));
+}
+
+function siblingWorkOf(plan, task, { root, planPath, landing }) {
   const written = landing && (task.commitBlock !== null || !task.compact);
   const added = written ? addedPathspecs(task.commitBlock ?? '') : [];
   if (added === null) return () => false;
@@ -276,10 +280,12 @@ function siblingWorkOf(plan, task, root, planPath, landing) {
   const entries = plan.tasks
     .filter((other) => other.number !== task.number && !landed.includes(other.number))
     .flatMap((other) => other.files.map((file) => file.path));
+  const named = plan.tasks.flatMap((other) => other.files.map((file) => file.path));
   const staged = landing ? execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only'], { encoding: 'utf8' }).split('\n') : [];
   const untracked = written ? new Set(untrackedPaths(root)) : null;
-  return (changed) => isCovered(entries, changed) && !staged.includes(changed)
-    && (!written || (untracked.has(changed) && !isCovered(added, changed)));
+  const siblingFile = (changed) => isCovered(entries, changed) && (!written || (untracked.has(changed) && !isCovered(added, changed)));
+  const planDoc = (changed) => isPlanDoc(changed) && !isCovered(named, changed) && !isCovered(added, changed);
+  return (changed) => !staged.includes(changed) && (siblingFile(changed) || planDoc(changed));
 }
 
 const STAGES_ALL = /^(?:\.|\.\/|-A|--all|:\/|.*[*?[].*)$/;
@@ -442,8 +448,8 @@ function redGreenLine(task, proofCommands, root, pending) {
   throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}`);
 }
 
-function refuseStrayPaths(task, root, planPath, siblingWork) {
-  const stray = strayPaths(task, root, planPath, siblingWork);
+function refuseStrayPaths(task, options) {
+  const stray = strayPaths(task, options);
   if (stray.length > 0) {
     throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
@@ -474,7 +480,7 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseMcpProofUnderPin(pin, task);
-  refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, false));
+  refuseStrayPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }) });
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
@@ -491,7 +497,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseMcpProofUnderPin(pin, task);
-  refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, true));
+  refuseStrayPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);

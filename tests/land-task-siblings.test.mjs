@@ -52,6 +52,30 @@ test('a landing beside a sibling task\'s files commits only its own Files:, and 
   assert.throws(() => checkTask({ planPath, planText: SIBLING_PLAN, number: 2, root, reportText: 'Proof:\n- `node tests/left.test.mjs`: pass\n' }), /Task 2 changed a path outside Files: `src\/app\.js`/);
 });
 
+test('a landing leaves CHANGELOG.md and docs markdown no task names unstaged and unrefused', async () => {
+  const { root, planPath } = await compactCheckout(SIBLING_PLAN);
+  await writeReport(root, PASS_REPORT);
+  await fs.mkdir(path.join(root, 'docs/specs'), { recursive: true });
+  await fs.writeFile(path.join(root, 'CHANGELOG.md'), '## Unreleased\n');
+  await fs.writeFile(path.join(root, 'docs/specs/plan.md'), '# plan\n');
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  assert.throws(() => landTask({ planPath, planText: SIBLING_PLAN, number: 1, root, reportText: PASS_REPORT }), /outside Files: `src\/extra\.js`$/m);
+  await fs.rm(path.join(root, 'src/extra.js'));
+  const output = landTask({ planPath, planText: SIBLING_PLAN, number: 1, root, reportText: PASS_REPORT });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), ['src/app.js']);
+  assert.match(git(root, 'status', '--porcelain'), /CHANGELOG\.md/);
+  assert.match(git(root, 'status', '--porcelain'), /docs\//);
+});
+
+test('a landing refuses a staged CHANGELOG.md, which its commit would take', async () => {
+  const { root, planPath } = await compactCheckout(SIBLING_PLAN);
+  await writeReport(root, PASS_REPORT);
+  await fs.writeFile(path.join(root, 'CHANGELOG.md'), '## Unreleased\n');
+  git(root, 'add', 'CHANGELOG.md');
+  assert.throws(() => landTask({ planPath, planText: SIBLING_PLAN, number: 1, root, reportText: PASS_REPORT }), /outside Files: `CHANGELOG\.md`/);
+});
+
 test('a landing refuses a staged sibling path, which its commit would take', async () => {
   const { root, planPath } = await siblingCheckout();
   git(root, 'add', 'src/left.js');
