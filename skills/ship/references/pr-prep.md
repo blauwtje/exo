@@ -20,7 +20,7 @@
 - Note what slows a reviewer: noise commits, a description the diff outgrew, off-goal changes, mechanical edits tangled with logic, absent tests, no clear place to start.
 - Improve the description, not the pushed history.
 - Open it with a TL;DR true to the current diff; set core files apart from generated or mechanical ones.
-- Flag risky edits, migration order, rollout, test coverage; link any issue, dashboard or design doc giving the intent.
+- Flag risky edits, migration order, rollout, test coverage.
 - Notes alone cannot make it reviewable → split recommendation in the report.
 
 ## Title
@@ -38,7 +38,7 @@
 - Keep the PR body under about 40 lines; it is the squash commit body.
 - Video or screenshots only when they prove a claim.
 - Sections in order, dropping one with nothing to say:
-  - `## Why`: goal and how the change reaches it, at most two brief paragraphs; no SHAs, rebase genealogy or "based on main" preamble.
+  - `## Why`: goal and how the change reaches it, at most two brief paragraphs; link any issue, dashboard or design doc giving the intent; no SHAs, rebase genealogy or "based on main" preamble.
   - `## Scope`: a bullet per real symbol or path; rename or retarget → old and new name; mark in or out only where that line matters.
   - `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about; skip with no real choice.
   - `## Blast Radius`: one sentence, three at most: whom or what the change reaches, what makes it safe or risky, cost of staying red without the fix.
