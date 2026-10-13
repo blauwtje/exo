@@ -268,7 +268,7 @@ export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {} } = 
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (handoff !== null) env.EXO_RUN_HANDOFF = handoff;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
-  return { ...ecosystemEnv, ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
+  return { ...ecosystemEnv, ...env, ...provider.env, ...(provider.effort === null ? {} : { CLAUDE_CODE_EFFORT_LEVEL: provider.effort }) };
 }
 
 export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {

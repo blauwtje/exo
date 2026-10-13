@@ -45,11 +45,17 @@ test('provider: each provider sends its model, env and the mapped effort for eve
   assert.equal(overridden.argv[overridden.argv.indexOf('--model') + 1], 'glm-other');
 });
 
-test('provider: the default is claude on sonnet at medium effort', async () => {
-  const call = lastCall(await runPlan(await setup(), [{}], SPAWN_ONCE));
-  assert.equal(call.argv[call.argv.indexOf('--model') + 1], 'sonnet');
-  assert.equal(call.argv[call.argv.indexOf('--effort') + 1], 'medium');
-  assert.equal(call.env.CLAUDE_CODE_EFFORT_LEVEL, 'medium');
+test('provider: the default is claude on sonnet at medium effort, and the off budget pins neither', async () => {
+  const context = await setup();
+  context.env = { CLAUDE_CODE_EFFORT_LEVEL: undefined };
+  const call = lastCall(await runPlan(context, [{}], SPAWN_ONCE));
+  assert.ok(!call.argv.includes('--model'));
+  assert.ok(!call.argv.includes('--effort'));
+  assert.equal(call.env.CLAUDE_CODE_EFFORT_LEVEL, undefined);
+  const asked = lastCall(await runPlan(context, [{}], [...SPAWN_ONCE, '--effort', 'medium']));
+  assert.equal(asked.argv[asked.argv.indexOf('--model') + 1], 'sonnet');
+  assert.equal(asked.argv[asked.argv.indexOf('--effort') + 1], 'medium');
+  assert.equal(asked.env.CLAUDE_CODE_EFFORT_LEVEL, 'medium');
 });
 
 test('provider: one defined only in run.json runs, and run.json can change the default provider', async () => {
