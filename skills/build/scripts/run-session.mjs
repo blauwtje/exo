@@ -138,11 +138,14 @@ const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((
 
 const unsandboxedScripts = (tail) => (tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]);
 
+export const REGISTRY_DOMAINS = ['registry.npmjs.org', 'api.nuget.org', 'pypi.org', 'files.pythonhosted.org', 'crates.io', 'static.crates.io', 'proxy.golang.org'];
+
 export function sandboxMode(config, { platform = process.platform } = {}) {
   if (platform === 'win32') return { enabled: false, reason: 'native Windows has no sandbox' };
   const sandbox = config?.defaults?.sandbox ?? {};
   if (sandbox.enabled === false) return { enabled: false, reason: 'sandbox.enabled is false in run.json' };
-  return { enabled: true, allowedDomains: Array.isArray(sandbox.allowedDomains) ? sandbox.allowedDomains.map(String) : [] };
+  const extra = Array.isArray(sandbox.allowedDomains) ? sandbox.allowedDomains.map(String) : [];
+  return { enabled: true, allowedDomains: [...new Set([...REGISTRY_DOMAINS, ...extra])] };
 }
 
 export function sandboxSettings(mode, { tail = false } = {}) {
@@ -196,6 +199,8 @@ export function claudeArgs({ model, effort, budget, allow, settings = null, kind
   ];
 }
 
+const DOTNET_ENV = { DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_NOLOGO: '1', MSBUILDDISABLENODEREUSE: '1', DOTNET_CLI_USE_MSBUILD_SERVER: '0' };
+
 export function childEnv(pin, provider, handoff = null) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
@@ -204,7 +209,7 @@ export function childEnv(pin, provider, handoff = null) {
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (handoff !== null) env.EXO_RUN_HANDOFF = handoff;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
-  return { ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
+  return { ...env, ...DOTNET_ENV, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
 }
 
 export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {
