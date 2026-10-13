@@ -15,6 +15,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    - Run `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" propose --count`; above 0 adds the line `Lessons: <n> ready: /exo:remember`, beside the three lines; 0 or a failing command adds none.
 3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.
    - Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push.
+   - A plan `Land:` handed over by `verify` sets the route with no question: `push-main` → `push`, `pr` → `open-pr`, `local` → no route.
    - A set `route: ` skips asking; an unapplied `ship=` is explained.
    - `--land` → take the menu's (A) with no question.
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.

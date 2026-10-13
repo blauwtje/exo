@@ -11,6 +11,11 @@ test('spec: small or clear work asks no question and exo closes each choice', ()
   assert.match(brief, /closed by you, the code with its settling path, or exo/);
 });
 
+test('ship: a plan Land sets the route and skips the question', () => {
+  const skill = fs.readFileSync(new URL('../skills/ship/SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /plan `Land:` handed over by `verify` sets the route with no question: `push-main` → `push`, `pr` → `open-pr`, `local` → no route/);
+});
+
 const open = { state: 'OPEN', mergeStateStatus: 'CLEAN', statusCheckRollup: [] };
 
 test('gate: passed, skipped and neutral checks do not hold the merge', () => {
