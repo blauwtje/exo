@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { allowRules, REGISTRY_DOMAINS, sandboxMode, sandboxSettings } from '../skills/build/scripts/run-session.mjs';
+import { allowRules, sandboxMode, sandboxSettings } from '../skills/build/scripts/run-session.mjs';
 import { parsePlan } from '../lib/plan-tasks.mjs';
 import { fixture, git, run } from './harness.mjs';
 import { planText, setup, PLUGIN_ROOT, runPlan, allowOf, settingsOf, SCRIPTS, SANDBOX_RULE, sandboxOff, assertPlanAllowlist, land } from './run-plan-fixture.mjs';
@@ -62,7 +62,7 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.match(result.stdout, /--tools Read,Edit,Write,Bash,Grep,Glob .*--disable-slash-commands --include-hook-events --allowedTools/);
   const withPlugin = await runPlan(context, [land(1)], ['--dry-run', '--plugin-dir', '/tmp/exo-plugin']);
   assert.match(withPlugin.stdout, /--plugin-dir \/tmp\/exo-plugin /);
-  assert.ok(result.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: ${REGISTRY_DOMAINS.join(', ')}\n`), result.stdout);
+  assert.ok(result.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: none\n`), result.stdout);
   assert.match(result.stdout, /--settings <sandbox settings>/);
   assert.doesNotMatch(result.stdout, /Bash\(git status \*\)|Bash\(node --version \*\)/);
   await sandboxOff(context);
@@ -86,7 +86,7 @@ test('sandbox: every process gets sandbox settings excluding only exo\'s gate sc
     assert.equal(Boolean(preToolUse), index < 2, 'the stall hook is set in task sessions only, not the tail');
     if (index < 2) assert.ok(preToolUse.some((entry) => entry.matcher === 'Bash' && entry.hooks.some((hook) => hook.command.includes('run-stall-guard.mjs'))), 'task sessions hold the Bash stall-guard hook');
     assert.equal(sandbox.failIfUnavailable, true);
-    assert.deepEqual(sandbox.network, { allowedDomains: REGISTRY_DOMAINS });
+    assert.deepEqual(sandbox.network, { allowedDomains: [] }, 'a repo without manifests opens no registry');
     for (const command of [`node "${landTask}"`, `node ${landTask}`]) assert.ok(sandbox.excludedCommands.includes(command), command);
     assert.equal(sandbox.excludedCommands.some((command) => command.includes('verify.mjs')), index === 2, 'verify.mjs is excluded only in the tail');
     const allow = allowOf(call);
@@ -95,6 +95,22 @@ test('sandbox: every process gets sandbox settings excluding only exo\'s gate sc
     for (const rule of [`Bash(node "${landTask}" *)`, `Bash(node ${landTask} *)`, `Edit(/${context.root}/**)`]) assert.ok(allow.includes(rule), rule);
     assert.equal(allow.includes(`Bash(node ${verify} *)`), index === 2);
     assert.ok(call.argv.slice(call.argv.indexOf('--disallowedTools') + 1).includes('Bash(git push *)'));
+  }
+});
+
+test('sandbox: a .csproj repo opens NuGet in the dry run and hands each session the dotnet env', async () => {
+  const context = await setup();
+  await fs.writeFile(path.join(context.root, 'App.csproj'), '<Project/>\n');
+  git(context.root, 'add', '-A');
+  git(context.root, 'commit', '-q', '-m', 'chore: add the project');
+  const dry = await runPlan(context, [land(1)], ['--dry-run']);
+  assert.ok(dry.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: api.nuget.org\n`), dry.stdout);
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.match(result.stop, /^run-plan: stop: done, 2\/2 tasks landed/, result.stdout + result.stderr);
+  assert.ok(result.calls.length >= 2, 'both task sessions ran');
+  for (const call of result.calls) {
+    assert.deepEqual(settingsOf(call).sandbox.network, { allowedDomains: ['api.nuget.org'] });
+    assert.equal(call.env.MSBUILDDISABLENODEREUSE, '1');
   }
 });
 
@@ -118,7 +134,7 @@ test('sandbox: native Windows runs with the sandbox off and the same allowlist a
   assert.equal(sandboxSettings(windows), null);
   assert.equal(sandboxSettings(windows, { tail: true }), null);
   assert.deepEqual(sandboxMode({ defaults: { sandbox: { enabled: false } } }, { platform: 'darwin' }), { enabled: false, reason: 'sandbox.enabled is false in run.json' });
-  assert.deepEqual(sandboxMode({ defaults: { sandbox: { allowedDomains: ['registry.npmjs.org', 'example.com'] } } }, { platform: 'linux' }), { enabled: true, allowedDomains: [...REGISTRY_DOMAINS, 'example.com'] });
+  assert.deepEqual(sandboxMode({ defaults: { sandbox: { allowedDomains: ['registry.npmjs.org', 'example.com'] } } }, { platform: 'linux' }), { enabled: true, allowedDomains: ['registry.npmjs.org', 'example.com'] });
   const off = allowRules({ root, planPath, plan, sandbox: windows.enabled });
   assert.deepEqual(off, allowRules({ root, planPath, plan }));
   for (const rule of ['Bash(git status *)', 'Bash(node --version *)', 'Bash(ls)']) assert.ok(off.includes(rule), rule);

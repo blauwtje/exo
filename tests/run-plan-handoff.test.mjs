@@ -36,7 +36,7 @@ async function runPlan(context, steps) {
 
 test('childEnv hands a task session its hand-off path and no other session one', () => {
   const provider = { name: 'claude', effort: 'high', env: {} };
-  assert.equal(childEnv('plan/1', provider, '/r/.exo/handoff-task-1.md').EXO_RUN_HANDOFF, '/r/.exo/handoff-task-1.md');
+  assert.equal(childEnv('plan/1', provider, { handoff: '/r/.exo/handoff-task-1.md' }).EXO_RUN_HANDOFF, '/r/.exo/handoff-task-1.md');
   process.env.EXO_RUN_HANDOFF = 'inherited';
   try {
     assert.equal(childEnv('plan/1', provider).EXO_RUN_HANDOFF, undefined);

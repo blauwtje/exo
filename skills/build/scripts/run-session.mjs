@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { loopCommands } from '#plan-tasks';
+import { ECOSYSTEM_MANIFESTS } from '#size-facts';
 
 const KILL_GRACE_MS = 5000;
 const PARENT_POLL_MS = 5000;
@@ -138,14 +139,64 @@ const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((
 
 const unsandboxedScripts = (tail) => (tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]);
 
-export const REGISTRY_DOMAINS = ['registry.npmjs.org', 'api.nuget.org', 'pypi.org', 'files.pythonhosted.org', 'crates.io', 'static.crates.io', 'proxy.golang.org'];
+const ECOSYSTEMS = [
+  { manifests: ECOSYSTEM_MANIFESTS.npm, domains: ['registry.npmjs.org'] },
+  { manifests: ['yarn.lock'], domains: ['registry.yarnpkg.com'] },
+  {
+    manifests: ['*.csproj', '*.fsproj', '*.sln'],
+    domains: ['api.nuget.org'],
+    env: { DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_NOLOGO: '1', MSBUILDDISABLENODEREUSE: '1', DOTNET_CLI_USE_MSBUILD_SERVER: '0' }
+  },
+  { manifests: ECOSYSTEM_MANIFESTS.pypi, domains: ['pypi.org', 'files.pythonhosted.org'] },
+  { manifests: ECOSYSTEM_MANIFESTS.crates, domains: ['index.crates.io', 'static.crates.io'] },
+  { manifests: ECOSYSTEM_MANIFESTS.go, domains: ['proxy.golang.org', 'sum.golang.org'] }
+];
 
-export function sandboxMode(config, { platform = process.platform } = {}) {
+const REGISTRY_CONFIGS = [
+  { file: '.npmrc', url: /^\s*(?:@[^\s:=]+:)?registry\s*=\s*(\S+)/gm },
+  { file: '.yarnrc.yml', url: /^\s*npmRegistryServer\s*:\s*["']?([^"'\s]+)/gm },
+  { file: 'nuget.config', url: /<add\b[^>]*\bvalue\s*=\s*"([^"]+)"/gi },
+  { file: 'pip.conf', url: /^\s*(?:extra-)?index-url\s*=\s*(\S+)/gm }
+];
+
+function matchesManifest(pattern, name) {
+  if (pattern.startsWith('*')) return name.endsWith(pattern.slice(1));
+  return name === pattern;
+}
+
+function webHost(url) {
+  if (!URL.canParse(url)) return null;
+  const parsed = new URL(url);
+  if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+  return parsed.hostname;
+}
+
+function configuredRegistries(root, entries) {
+  return REGISTRY_CONFIGS.flatMap(({ file, url }) => {
+    const entry = entries.find((name) => name.toLowerCase() === file);
+    if (entry === undefined) return [];
+    const text = fs.readFileSync(path.join(root, entry), 'utf8');
+    return [...text.matchAll(url)].map((match) => webHost(match[1])).filter((host) => host !== null);
+  });
+}
+
+export function projectEcosystems({ root, planFiles = [] }) {
+  const entries = fs.readdirSync(root);
+  const names = [...entries, ...planFiles.map((file) => path.basename(file))];
+  const applied = ECOSYSTEMS.filter((ecosystem) => ecosystem.manifests.some((pattern) => names.some((name) => matchesManifest(pattern, name))));
+  return {
+    domains: [...applied.flatMap((ecosystem) => ecosystem.domains), ...configuredRegistries(root, entries)],
+    env: Object.assign({}, ...applied.map((ecosystem) => ecosystem.env ?? {}))
+  };
+}
+
+export function sandboxMode(config, { platform = process.platform, root = null, planFiles = [] } = {}) {
   if (platform === 'win32') return { enabled: false, reason: 'native Windows has no sandbox' };
   const sandbox = config?.defaults?.sandbox ?? {};
   if (sandbox.enabled === false) return { enabled: false, reason: 'sandbox.enabled is false in run.json' };
+  const project = root === null ? [] : projectEcosystems({ root, planFiles }).domains;
   const extra = Array.isArray(sandbox.allowedDomains) ? sandbox.allowedDomains.map(String) : [];
-  return { enabled: true, allowedDomains: [...new Set([...REGISTRY_DOMAINS, ...extra])] };
+  return { enabled: true, allowedDomains: [...new Set([...project, ...extra])] };
 }
 
 export function sandboxSettings(mode, { tail = false } = {}) {
@@ -207,9 +258,7 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
   ];
 }
 
-const DOTNET_ENV = { DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_NOLOGO: '1', MSBUILDDISABLENODEREUSE: '1', DOTNET_CLI_USE_MSBUILD_SERVER: '0' };
-
-export function childEnv(pin, provider, handoff = null) {
+export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {} } = {}) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   delete env.EXO_RUN_TASK;
@@ -217,7 +266,7 @@ export function childEnv(pin, provider, handoff = null) {
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (handoff !== null) env.EXO_RUN_HANDOFF = handoff;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
-  return { ...env, ...DOTNET_ENV, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
+  return { ...ecosystemEnv, ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
 }
 
 export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {

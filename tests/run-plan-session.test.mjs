@@ -104,10 +104,7 @@ test('childEnv: the runner changes only the copy it hands the child, never its o
   assert.equal(env.ANTHROPIC_AUTH_TOKEN, 'fake-token');
   assert.equal(env.CLAUDE_CODE_EFFORT_LEVEL, 'high');
   assert.equal(env.EXO_RUN_TASK, 'plan/1');
-  assert.equal(env.DOTNET_CLI_TELEMETRY_OPTOUT, '1');
-  assert.equal(env.DOTNET_NOLOGO, '1');
-  assert.equal(env.MSBUILDDISABLENODEREUSE, '1');
-  assert.equal(env.DOTNET_CLI_USE_MSBUILD_SERVER, '0');
+  assert.equal(env.DOTNET_NOLOGO, process.env.DOTNET_NOLOGO, 'no ecosystem env without a project manifest');
   assert.equal(env.BASH_MAX_TIMEOUT_MS, process.env.BASH_MAX_TIMEOUT_MS, 'no Bash cap is added');
   assert.equal(process.env.ANTHROPIC_API_KEY, 'fake-anthropic-key-5b2d');
   assert.equal(process.env.ANTHROPIC_AUTH_TOKEN, before.ANTHROPIC_AUTH_TOKEN);

@@ -22,7 +22,7 @@ const record = process.env.STUB_RECORD;
 const stdin = fs.readFileSync(0, 'utf8');
 const index = fs.existsSync(record) ? fs.readFileSync(record, 'utf8').split('\\n').filter(Boolean).length : 0;
 fs.appendFileSync(record, JSON.stringify({ argv: process.argv.slice(2), stdin, pin: process.env.EXO_RUN_TASK ?? null, marker: process.env.CLAUDECODE ?? null,
-  env: Object.fromEntries(Object.entries(process.env).filter(([name]) => /^(ANTHROPIC_|CLAUDE_CODE_EFFORT_LEVEL$|CLAUDE_CODE_ALWAYS_ENABLE_EFFORT$|API_TIMEOUT_MS$)/.test(name))) }) + '\\n');
+  env: Object.fromEntries(Object.entries(process.env).filter(([name]) => /^(ANTHROPIC_|CLAUDE_CODE_EFFORT_LEVEL$|CLAUDE_CODE_ALWAYS_ENABLE_EFFORT$|API_TIMEOUT_MS$|MSBUILDDISABLENODEREUSE$)/.test(name))) }) + '\\n');
 const step = scenario.steps[index] ?? {};
 const emit = (event) => process.stdout.write(JSON.stringify(event) + '\\n');
 const init = { type: 'system', subtype: 'init', cwd: process.cwd(), session_id: 'session-1', permissionMode: 'dontAsk',

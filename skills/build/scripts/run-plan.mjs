@@ -15,7 +15,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
+import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { averageLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
@@ -37,7 +37,7 @@ class Refusal extends Error {}
 // why: the run's one app process; the entry point's `finally` kills its tree.
 let appPid = null;
 
-function chooseProvider(flags, home) {
+function chooseProvider(flags, home, project) {
   let config;
   try {
     config = loadRunConfig({ home });
@@ -55,7 +55,7 @@ function chooseProvider(flags, home) {
     model: flags.model ?? provider.model,
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
     contextBudget: config.defaults.contextBudget,
-    sandbox: sandboxMode(config)
+    sandbox: sandboxMode(config, project)
   };
 }
 
@@ -153,9 +153,11 @@ async function main(argv) {
     return 2;
   }
   const { claude, planPath, root, plan, branch } = context;
+  const project = { root, planFiles: plan.tasks.flatMap((task) => task.files.map((file) => file.path)) };
+  const ecosystemEnv = projectEcosystems(project).env;
   let provider;
   try {
-    provider = chooseProvider(flags, os.homedir());
+    provider = chooseProvider(flags, os.homedir(), project);
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;
     process.stdout.write(`run-plan: refused: ${error.message}\n`);
@@ -258,7 +260,7 @@ async function main(argv) {
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
     const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind) }), {
-      cwd: root, env: childEnv(pin, provider, kind === 'task' && task !== null ? handoffFile(task) : null), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
+      cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const parsed = parseStream(outcome.text);
     spent += parsed.cost;
