@@ -2,7 +2,6 @@
 name: design-ui
 description: "Use when a page or component's look or copy changes, or looks empty, boring or generic. Not for a typo or non-visual change."
 argument-hint: <page, component or visual change>
-effort: high
 ---
 
 # Visual Design

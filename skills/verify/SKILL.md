@@ -2,7 +2,6 @@
 name: verify
 description: "Use when a plan's tasks are landed and its branch needs the gate before a pull request: the scripted checks, the branch review and its repairs. Not for landing a task (build) or a change with no plan."
 argument-hint: "[plan path] [--land]"
-effort: high
 ---
 
 # Verifying a branch

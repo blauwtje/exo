@@ -4,7 +4,6 @@ description: Use when the user asks to set up or configure exo, or to see or cha
 disable-model-invocation: true
 argument-hint: "[nothing to walk every setting, or a key, a value and --scope project|local]"
 allowed-tools: Bash(node *settings.mjs*), Bash(git remote get-url origin), Bash(git rev-parse *), Bash(gh auth status)
-model: sonnet
 ---
 
 # Settings

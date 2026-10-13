@@ -4,8 +4,6 @@ description: Use when the user asks in plain words to file, open, write or split
 disable-model-invocation: true
 argument-hint: <what the issue or issues should cover>
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh pr list *), Bash(git log *), Bash(node *repo-fields.mjs*)
-model: opus
-effort: high
 ---
 
 # File issues that read as specs
