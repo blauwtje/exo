@@ -26,6 +26,9 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 665, measured: '2026-10-11' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1228, measured: '2026-10-12' };
+// Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
+// large test file is split before it lands.
+export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Words every session loads before the first prompt: the session-start output,
 // each model-invocable skill's name and description, each agent's name and
 // description; verify/checks/session-load.mjs fails above it.
