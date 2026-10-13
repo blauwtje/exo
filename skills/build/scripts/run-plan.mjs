@@ -295,6 +295,27 @@ async function main(argv) {
       if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
     }
   };
+  const landByScript = (n) => {
+    const log = path.join(logDir, `land-task-${n}.log`);
+    const answer = spawnSync(process.execPath, [SCRIPT.landTask, '--plan', planPath, '--task', String(n), '--root', root], {
+      cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs
+    });
+    const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
+    appendLog(log, output, fs.writeFileSync);
+    return { landed: answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n), output, log };
+  };
+  const landInOrder = (numbers, record, started) => {
+    for (const n of numbers) {
+      const attempt = landedTasks(plan.tasks, root, planId).includes(n) ? { landed: true } : landByScript(n);
+      if (attempt.landed) {
+        markLanded(n, record, started);
+        continue;
+      }
+      say(`task ${n} not landed by the script: ${clip(lastLine(attempt.output), 80)}`);
+      retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${lastLine(attempt.output)}\nIts log: ${attempt.log}`;
+      return;
+    }
+  };
   if (chosen.mode === 'plan' && order.length > 0) {
     stop = budgetStop() ?? undefined;
     const first = order[0];
@@ -312,25 +333,7 @@ async function main(argv) {
       stop = unsafeStop(first, before, planTaskTrailer(planId, first), parsed, log) ?? undefined;
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
       if (stop === undefined && status !== null) stop = blockedStop(first, status[1] || last);
-      for (const n of stop === undefined ? order : []) {
-        if (landedTasks(plan.tasks, root, planId).includes(n)) {
-          markLanded(n, record, startedPlan);
-          continue;
-        }
-        const landLog = path.join(logDir, `land-task-${n}.log`);
-        const answer = spawnSync(process.execPath, [SCRIPT.landTask, '--plan', planPath, '--task', String(n), '--root', root], {
-          cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs
-        });
-        const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
-        appendLog(landLog, output, fs.writeFileSync);
-        if (answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n)) {
-          markLanded(n, record, startedPlan);
-          continue;
-        }
-        say(`task ${n} not landed by the script: ${clip(lastLine(output), 80)}`);
-        retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${lastLine(output)}\nIts log: ${landLog}`;
-        break;
-      }
+      landInOrder(stop === undefined ? order : [], record, startedPlan);
       if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
         const { patch, failed } = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
         if (patch !== null) say(`plan session leftover saved to ${patch}`);
@@ -389,13 +392,21 @@ async function main(argv) {
       stop = blockedStop(n, blocked?.[1] || last);
       break;
     }
+    const attempt = outcome.timedOut ? null : landByScript(n);
+    if (attempt?.landed) {
+      markLanded(n, record, startedTask);
+      continue;
+    }
+    const failure = attempt === null ? last : lastLine(attempt.output);
+    retryNote = attempt === null
+      ? `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`
+      : `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nThe script's proof and land output ended: ${failure}\nIts log: ${attempt.log}`;
     stall += 1;
-    say(`task ${n} failed: ${outcome.timedOut ? last : clip(last, 80)}`);
+    say(`task ${n} failed: ${outcome.timedOut ? failure : clip(failure, 80)}`);
     if (stall >= STALL_LIMIT) {
       stop = { line: `no progress on task ${n} in ${STALL_LIMIT} iterations, log ${log}`, why: `Task ${n} did not land in ${STALL_LIMIT} tries`, next: fix(log) };
       break;
     }
-    retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`;
   }
 
   let exitCode = 1;

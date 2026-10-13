@@ -1,0 +1,82 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { git, run } from './harness.mjs';
+import { setup } from './run-plan-fixture.mjs';
+
+const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
+const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
+
+const writer = (stub) => `import fs from 'node:fs';
+const index = fs.existsSync(process.env.STUB_RECORD) ? fs.readFileSync(process.env.STUB_RECORD, 'utf8').split('\\n').filter(Boolean).length : 0;
+if (index < 2) {
+  fs.writeFileSync(index === 0 ? 'a.txt' : 'b.txt', 'x\\n');
+  fs.mkdirSync('.exo', { recursive: true });
+  fs.writeFileSync('.exo/implementer-' + (index + 1) + '.md', 'Landed: x\\nProof:\\nnode --version: pass\\n  v1\\nUnresolved: none\\n');
+}
+await import(${JSON.stringify(stub)});
+`;
+
+async function useWriter(context) {
+  const wrapper = path.join(context.tools, 'writer.mjs');
+  await fs.writeFile(wrapper, writer(context.stub));
+  context.stub = wrapper;
+}
+
+async function runTaskMode(context, steps) {
+  const scenario = path.join(context.tools, 'scenario.json');
+  const record = path.join(context.tools, 'calls.jsonl');
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps }));
+  const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, '--session', 'task'], {
+    cwd: context.root,
+    env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1', HOME: context.home, EXO_RUN_DIR: '' }
+  });
+  const text = await fs.readFile(record, 'utf8').catch(() => '');
+  return { ...result, calls: text.split('\n').filter(Boolean).map((line) => JSON.parse(line)) };
+}
+
+const logsOf = (context) => fs.readdir(path.join(context.root, '.exo', 'run-plan', 'plan'), { recursive: true });
+
+test('task mode: the script lands each task after a session that committed nothing', async () => {
+  const context = await setup();
+  await useWriter(context);
+  const result = await runTaskMode(context, [{ result: 'Task 1: GREEN' }, { result: 'Task 2: GREEN' }]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.equal(result.calls.length, 2, 'one session per task, no retry');
+  const logs = await logsOf(context);
+  assert.ok(logs.some((name) => name.endsWith('land-task-1.log')) && logs.some((name) => name.endsWith('land-task-2.log')), logs.join());
+});
+
+test('task mode: the prompt hands the proof to the script and warns off the sandbox trap', async () => {
+  const context = await setup();
+  const result = await runTaskMode(context, [{ result: 'Task 1: BLOCKED stub' }]);
+  const prompt = result.calls[0].stdin;
+  assert.doesNotMatch(prompt, /^Land: /m, 'no land step');
+  assert.ok(!prompt.includes('land-task.mjs'), 'no land command');
+  assert.match(prompt, /A test or command your sandbox refuses is not a block: never end `Task 1: BLOCKED` on one/);
+  assert.match(prompt, /Write and Edit tools, not a heredoc/);
+  assert.match(prompt, /the script proves and lands/);
+});
+
+test('task mode: a session that ends BLOCKED is not landed by the script', async () => {
+  const context = await setup();
+  await useWriter(context);
+  const result = await runTaskMode(context, [{ result: 'Task 1: BLOCKED NEEDS ANSWER: which one?' }]);
+  assert.notEqual(result.code, 0, result.stdout);
+  const logs = await logsOf(context);
+  assert.ok(!logs.some((name) => name.includes('land-task-')), logs.join());
+});
+
+test('task mode: a failing proof leaves the task unlanded and the retry note names the land log', async () => {
+  const context = await setup();
+  const text = (await fs.readFile(context.plan, 'utf8')).replace('Proof: node --version | Red: none (fixture)', 'Proof: node -e "process.exit(1)" | Red: none (fixture)');
+  await fs.writeFile(context.plan, text);
+  git(context.root, 'commit', '-q', '-am', 'docs: failing proof');
+  await useWriter(context);
+  const result = await runTaskMode(context, [{ result: 'Task 1: GREEN' }, { result: 'Task 1: GREEN' }]);
+  assert.notEqual(result.code, 0, result.stdout);
+  assert.match(result.calls[1].stdin, /The previous attempt did not land task 1\. Its last result line: /);
+  assert.match(result.calls[1].stdin, /land-task-1\.log/);
+});

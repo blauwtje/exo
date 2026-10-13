@@ -27,7 +27,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
       ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${path.join(runDir, 'decisions.md')}) and go on.`]
       : []),
     ...(sandbox
-      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. land-task reruns the proof outside the sandbox, so land when those are the only failures left.']
+      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. The script reruns the proof outside the sandbox and lands, so end when those are the only failures left.']
       : [])
   ].join('\n');
   const fields = {
@@ -37,7 +37,6 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     report: path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`),
     brief: [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
     extra,
-    land: `node "${SCRIPT.landTask}" --plan ${planPath} --task ${number} --root ${root}`,
     retry: retryNote
   };
   return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Build session').split('\n').slice(1).join('\n').trim()
