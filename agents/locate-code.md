@@ -1,8 +1,6 @@
 ---
 name: locate-code
 description: "Finds where code lives across several files, or after one search failed. Not for a named file or symbol, a fix or a design."
-model: haiku
-effort: low
 tools: Read, Glob, Grep, Bash
 maxTurns: 20
 omitClaudeMd: true

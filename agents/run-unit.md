@@ -1,8 +1,6 @@
 ---
 name: run-unit
 description: "Builds and lands one plan block. Dispatched by build only."
-model: sonnet
-effort: medium
 tools: Read, Bash, Agent, SendMessage
 maxTurns: 90
 ---

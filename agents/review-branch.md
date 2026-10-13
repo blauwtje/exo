@@ -1,8 +1,6 @@
 ---
 name: review-branch
 description: "Reviews one finished plan branch. Dispatched by verify only."
-model: sonnet
-effort: high
 tools: Read, Write, Glob, Grep, Bash
 maxTurns: 30
 ---

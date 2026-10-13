@@ -41,10 +41,6 @@ function readAgent(fileName) {
 
 const kindTable = readKindTable();
 
-function agentKind(name) {
-  return kindTable.kinds[kindTable.agents[`agents/${name}.md`].kind];
-}
-
 const agents = fs.readdirSync(agentsRoot)
   .filter((fileName) => fileName.endsWith('.md'))
   .map(readAgent);
@@ -69,11 +65,10 @@ test('every agent is named after its file', () => {
   }
 });
 
-test('every agent pins the model and effort its kind resolves to, and no effort when the kind sets none', () => {
+test('no agent pins a model or effort, so each inherits the session', () => {
   for (const agent of agents) {
-    const { model, effort } = agentKind(agent.frontmatter.name);
-    assert.equal(agent.frontmatter.model, model, `${agent.fileName} model`);
-    assert.equal(agent.frontmatter.effort, effort ?? undefined, `${agent.fileName} effort`);
+    assert.equal(agent.frontmatter.model, undefined, `${agent.fileName} model`);
+    assert.equal(agent.frontmatter.effort, undefined, `${agent.fileName} effort`);
   }
 });
 
@@ -166,7 +161,7 @@ test('the budget twins fold into their base agents, which a dispatch runs at the
   }
   assert.deepEqual(Object.keys(kindTable.agents).filter((file) => kindTable.agents[file].generatedFrom !== undefined), []);
   const source = agents.find((agent) => agent.frontmatter.name === 'solve-hard');
-  assert.equal(source.frontmatter.model, 'opus');
+  assert.equal(source.frontmatter.model, undefined);
   assert.match(source.body, /carry out the prompt you are handed/i);
   assert.ok(agents.find((agent) => agent.frontmatter.name === 'review-branch').body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
 });
@@ -211,11 +206,11 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');
 });
 
-test('the implementer pins its kind\'s model and effort whatever the session runs at', () => {
+test('the implementer pins no model or effort', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
   assert.ok(implementer, 'agents/build-task.md exists');
-  assert.equal(implementer.frontmatter.model, agentKind('build-task').model);
-  assert.equal(implementer.frontmatter.effort, agentKind('build-task').effort);
+  assert.equal(implementer.frontmatter.model, undefined);
+  assert.equal(implementer.frontmatter.effort, undefined);
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
@@ -238,7 +233,7 @@ test('a Design: task with a named direction goes to a design-ui delegate, not th
 test('the design builder runs with a 60-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
   const builder = agents.find((agent) => agent.frontmatter.name === 'build-ui');
   assert.ok(builder, 'agents/build-ui.md exists');
-  assert.equal(builder.frontmatter.model, agentKind('build-ui').model);
+  assert.equal(builder.frontmatter.model, undefined);
   assert.equal(Number(builder.frontmatter.maxTurns), 60);
   assert.deepEqual(builder.frontmatter.tools.split(', ').filter((tool) => tool === 'Agent'), []);
   assert.match(builder.body, /`foundation`/);
@@ -314,8 +309,8 @@ test('the branch reviewer confirms with one test file or Probe command, never th
 test('the open-points finder is read-only, runs the decisions check first and caps its report', () => {
   const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
   assert.deepEqual(finder.frontmatter.tools.split(', '), ['Read', 'Glob', 'Grep', 'Bash']);
-  assert.equal(finder.frontmatter.effort, 'high');
-  assert.equal(finder.frontmatter.model, agentKind('review-branch').model);
+  assert.equal(finder.frontmatter.effort, undefined);
+  assert.equal(finder.frontmatter.model, undefined);
   assert.ok(finder.body.indexOf('memory.mjs" decisions') > 0, 'no decisions run');
   assert.ok(finder.body.includes('[code|assume|user]'));
   assert.ok(finder.body.includes('Under 1.5k tokens'));

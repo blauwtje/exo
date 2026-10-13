@@ -1,8 +1,6 @@
 ---
 name: survey-ui
 description: "Surveys one design-ui redesign. Dispatched by design-ui only."
-model: sonnet
-effort: high
 tools: Read, Write, Glob, Grep, Bash
 maxTurns: 30
 omitClaudeMd: true
