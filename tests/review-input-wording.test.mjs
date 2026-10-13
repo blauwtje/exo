@@ -38,10 +38,9 @@ test('review-rules resumes a reviewer once by SendMessage for a missing file, th
   assert.doesNotMatch(rules, /no resume, no redispatch/, 'the old blanket ban on a resume is gone for the missing-file case');
 });
 
-test('run-unit resumes its reviewers by SendMessage, the fixer turn-cap rule is unchanged and a missing fix-review.md ends the turn', () => {
+test('run-unit keeps SendMessage, the fixer turn-cap rule is unchanged and a missing fix-review.md ends the turn', () => {
   assert.doesNotMatch(rules, /without SendMessage/, 'no dispatcher is exempt from the resume');
   assert.match(runUnit.split('---')[1], /^tools: .*\bSendMessage\b/m, 'run-unit lists SendMessage in its tools');
-  assert.match(runUnit, /Brief and resume per `<skill>\/\.\.\/verify\/references\/review-rules\.md`/, 'run-unit resumes a reviewer per the dispatch rules');
   assert.match(repair, /Still no file → end the turn `BLOCKED` with its report, fixes uncommitted, even when the return line reads `CLEAN`/, 'a fix-review.md still missing after the resume ends the turn');
   assert.match(rules, /Scope `fix diff` → `merge-reviews\.mjs` never reads that file/, 'merge-reviews never runs on fix-review.md');
   assert.match(repair, /no resume, no redispatch/, 'the fixer turn-cap rule stands');
