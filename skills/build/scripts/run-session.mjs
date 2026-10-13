@@ -184,7 +184,15 @@ export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PL
 
 const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', fix: 'Read,Edit,Write,Bash,Grep,Glob', review: 'Read,Write,Glob,Grep,Bash' };
 
-export function claudeArgs({ model, effort, budget, allow, settings = null, kind = 'build', pluginDir = null }) {
+const STALL_HOOK = { hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: `node "${path.join(PLUGIN_ROOT, 'hooks', 'run-stall-guard.mjs')}"` }] }] } };
+
+function withStallGuard(settings) {
+  if (settings === null) return STALL_HOOK;
+  return { ...(typeof settings === 'string' ? JSON.parse(settings) : settings), ...STALL_HOOK };
+}
+
+export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false }) {
+  const settings = stallGuard ? withStallGuard(base) : base;
   return [
     '-p', '--permission-mode', 'dontAsk', '--permission-prompts', 'none',
     '--output-format', 'stream-json', '--verbose', '--model', model, '--effort', effort,

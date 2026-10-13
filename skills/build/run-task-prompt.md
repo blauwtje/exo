@@ -15,6 +15,7 @@ Rules:
 - Run one command per Bash call, exactly as the plan writes it; add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
 - Create and change files only with the Write and Edit tools, not a heredoc or a redirect; read with Read.
 - Run at most one test inside this session.
+- Run builds and tests with output streaming; a command silent for 60 seconds is stopped, so fix from the first error line.
 - A test or command your sandbox or permission rules refuse is not a block: never end `[[task]]: BLOCKED` on one; report it as `not run`, not `failed`.
 - Write the report and end; the script proves and lands.
 - Change only the files the task lists. A registry, index or test list that must name a new file and is not listed → end on `[[task]]: BLOCKED <file> is missing from the file list`.
