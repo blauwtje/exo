@@ -306,6 +306,16 @@ function writeReport(root, id, phase, result) {
   fs.writeFileSync(path.join(dir, 'report.md'), `${lines.slice(0, 15).join('\n')}\n${refused}`);
 }
 
+function teeToFile(file) {
+  for (const stream of [process.stdout, process.stderr]) {
+    const write = stream.write.bind(stream);
+    stream.write = (chunk, ...rest) => {
+      fs.appendFileSync(file, chunk);
+      return write(chunk, ...rest);
+    };
+  }
+}
+
 function notify(id, phase) {
   // why: a host without osascript makes spawnSync return an error, which is ignored.
   spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
@@ -351,6 +361,10 @@ async function runCommand(argv, { approving = false } = {}) {
     if (lock.stale) process.stdout.write(`exo: took over the lock of run ${lock.stale}, whose process is gone\n`);
   }
 
+  const live = path.join(root, '.exo', 'run', 'live.log');
+  if (!child) fs.appendFileSync(live, `=== ${new Date().toTimeString().slice(0, 8)} run ${id} ${path.basename(plan)} ===\n`);
+  if (child && detach) teeToFile(live);
+
   if (approving && !child) {
     const approved = approveGates(runDir(root, id));
     if (!detach) process.stdout.write(`exo: approved ${approved} gate(s) of run ${id}; continuing\n`);
@@ -363,7 +377,7 @@ async function runCommand(argv, { approving = false } = {}) {
     started.unref();
     fs.closeSync(fd);
     updateRun(root, id, { pid: started.pid });
-    process.stdout.write(`exo: run ${id} started in the background (pid ${started.pid}); exo status ${id}, log ${log}\n`);
+    process.stdout.write(`exo: run ${id} started in the background (pid ${started.pid}); exo status ${id}, log ${log}, live log ${live}\n`);
     return 0;
   }
 
