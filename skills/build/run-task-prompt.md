@@ -30,6 +30,7 @@ Last line of the reply, nothing after it, one of:
 - `[[task]]: GREEN`
 - `[[task]]: BLOCKED <reason>`, one clause
 - `[[task]]: PLAN DRIFT <reason>`, one clause
+- `[[task]]: HANDOFF`, only when a context-limit notice tells you to write a hand-off file
 [[retry]]
 
 ## Plan session

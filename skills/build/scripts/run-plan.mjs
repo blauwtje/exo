@@ -209,11 +209,13 @@ function claudeArgs({ model, effort, budget, allow, settings = null, kind = 'bui
   ];
 }
 
-export function childEnv(pin, provider) {
+export function childEnv(pin, provider, handoff = null) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   delete env.EXO_RUN_TASK;
+  delete env.EXO_RUN_HANDOFF;
   if (pin !== null) env.EXO_RUN_TASK = pin;
+  if (handoff !== null) env.EXO_RUN_HANDOFF = handoff;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
   return { ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
 }
@@ -724,11 +726,15 @@ async function main(argv) {
   const budgetStop = () => (runCap !== undefined && spent >= runCap
     ? { line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd, then run exo run again' }
     : null);
+  const handoffFile = (number) => path.join(root, SCRATCH_FOLDER, `handoff-task-${number}.md`);
+  const handoffNote = (number) => (isFileOnDisk(handoffFile(number))
+    ? `\nA previous session ran out of context and left a hand-off: read ${handoffFile(number)} first, then continue task ${number} from it.`
+    : '');
   const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model }) => {
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
     const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir }), {
-      cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
+      cwd: root, env: childEnv(pin, provider, kind === 'task' && task !== null ? handoffFile(task) : null), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const parsed = parseStream(outcome.text);
     spent += parsed.cost;
@@ -774,6 +780,7 @@ async function main(argv) {
     retryNote = '';
     run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
     passes.add(n);
+    fs.rmSync(handoffFile(n), { force: true });
     writeTasks();
     say(`task ${n} landed ${run.landings.get(n).sha.slice(0, 7)}, ${record.turns} turns, ${money(record.cost)}, ${Math.round((Date.now() - startedTask) / 1000)}s`);
     for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
@@ -849,7 +856,7 @@ async function main(argv) {
     say(`task ${n} start${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
-    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
+    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote + handoffNote(n)), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);
     const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied };
@@ -863,6 +870,11 @@ async function main(argv) {
     if (stop !== undefined) break;
     if (landedTasks(plan.tasks, root, planId).includes(n)) {
       markLanded(n, record, startedTask);
+      continue;
+    }
+    if (!outcome.timedOut && new RegExp(`^Task ${n}: HANDOFF\\b`).test(last) && isFileOnDisk(handoffFile(n))) {
+      say(`task ${n} handed off at the context limit`);
+      retryNote = '';
       continue;
     }
     const statusLine = new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`);
