@@ -8,6 +8,7 @@
    - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass. Per task only if full check under 60 s, else verify runs it once.
    - `Land:` → `ship` setting; `push` → `push-main`; `open-pr`, `pr-merge` → `pr`; `ask` → recommend `local`.
    - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
+   - Proofs need a running app → `App: <start command> | Ready: <url>`, else `none`; proofs run with it started.
    - `Allow:` → each backticked task command no other field names, else `none`.
 3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.
    - Passes on the run's base → refused, unless `Red: none (<reason>)`; flaky → `Repeat: <2-5> (<reason>)`; each on its own line under the command.
