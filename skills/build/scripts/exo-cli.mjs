@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
 import { readDecisions } from '#run-decision';
 import { environmentMs, isMain } from '#script-flags';
+import { layers, resolve as resolveSetting } from '#settings-store';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
 import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, keptDir, listRuns, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
@@ -72,7 +73,26 @@ function worktreeFor(root, wanted) {
   const args = exists ? ['worktree', 'add', where, wanted] : ['worktree', 'add', '-b', wanted, where, base];
   const done = git(root, args);
   if (!done.ok) throw new Refusal(`git ${args.join(' ')} failed: ${done.error}`);
+  if (resolveSetting('env', layers(root)).value === 'copy') copyEnvFiles(root, where);
   return where;
+}
+
+const ENV_NAME = /^\.env/;
+
+export function envFileNames(names, pattern = ENV_NAME) {
+  return names.filter((name) => pattern.test(name));
+}
+
+// why: only gitignored files are copied, so a tracked file is never overwritten and nothing is staged.
+export function copyEnvFiles(root, where, pattern = ENV_NAME) {
+  const files = fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
+  const copied = [];
+  for (const name of envFileNames(files, pattern)) {
+    if (!git(root, ['check-ignore', '-q', '--', name]).ok || fs.existsSync(path.join(where, name))) continue;
+    fs.copyFileSync(path.join(root, name), path.join(where, name));
+    copied.push(name);
+  }
+  return copied;
 }
 
 function isPluginCheckout(root) {

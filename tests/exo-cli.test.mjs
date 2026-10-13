@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { copyEnvFiles, envFileNames } from '../skills/build/scripts/exo-cli.mjs';
 import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
@@ -341,6 +342,23 @@ test('worktree: a checkout the pointer does not name is switched in place', asyn
     env: { STUB_RECORD: context.record, HOME: context.home, CLAUDE_CONFIG_DIR: config }
   });
   assert.equal(git(context.root, 'branch', '--show-current'), 'feat/new');
+});
+
+test('env names: only names starting with .env match', () => {
+  const names = ['.env', '.env.local', '.envrc', 'env.txt', 'a.env', '.gitignore'];
+  assert.deepEqual(envFileNames(names), ['.env', '.env.local', '.envrc']);
+});
+
+test('env copy: only gitignored files matching the pattern are copied, none staged', async () => {
+  const root = await gitRepository({ 'README.md': 'fixture\n', '.gitignore': 'local.cfg\nother.cfg\n', 'tracked.cfg': 'kept\n' });
+  await fs.writeFile(path.join(root, 'local.cfg'), 'secret\n');
+  await fs.writeFile(path.join(root, 'other.txt'), 'plain\n');
+  const where = await fixture();
+  const copied = copyEnvFiles(root, where, /\.cfg$/);
+  assert.deepEqual(copied, ['local.cfg']);
+  assert.equal(await fs.readFile(path.join(where, 'local.cfg'), 'utf8'), 'secret\n');
+  assert.deepEqual(await fs.readdir(where), ['local.cfg']);
+  assert.equal(git(root, 'status', '--porcelain'), '?? other.txt');
 });
 
 test('SIGTERM to exo-cli alone leaves no live claude process', async () => {
