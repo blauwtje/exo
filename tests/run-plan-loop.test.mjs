@@ -131,11 +131,13 @@ test('no progress: a hanging process is killed at the timeout and counts as no p
   assert.equal(result.calls.length, 2);
 });
 
-test('blocked: a last line Task 1: BLOCKED stops after one spawn', async () => {
+test('blocked: a last line Task 1: BLOCKED gets one repair session, and a repair that leaves the plan unchanged stops the run', async () => {
   const context = await setup();
   const result = await runPlan(context, [{ result: 'Looked.\nTask 1: BLOCKED the data shape is open' }]);
   assert.equal(result.stop, 'run-plan: stop: task 1 blocked: the data shape is open; re-plan with exo:spec');
-  assert.equal(result.calls.length, 1);
+  assert.equal(result.calls.length, 2);
+  assert.match(result.calls[1].stdin, /Plan repair of task 1/);
+  assert.match(result.stdout, /task 1 repair rejected/);
 });
 
 test('blocked: a BLOCKED task\'s edits are saved to a patch and the tree is left clean', async () => {
