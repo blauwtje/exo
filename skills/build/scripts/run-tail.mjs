@@ -13,7 +13,6 @@ const SCRIPT = {
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
   landTask: path.join(HERE, 'land-task.mjs')
 };
-const REVIEW_CONCURRENCY = 3;
 const REVIEW_AGENT = path.join(PLUGIN_ROOT, 'agents', 'review-branch.md');
 const FIXER_PROMPT = path.join(PLUGIN_ROOT, 'skills', 'build', 'review-fixer-prompt.md');
 const REVIEW_RULES = path.join(PLUGIN_ROOT, 'skills', 'verify', 'references', 'review-rules.md');
@@ -55,69 +54,47 @@ const verdictOf = (text) => text.match(/verdict=(CLEAN|FINDINGS|BLOCKED)\b/)?.[1
 const countOf = (text, name) => Number(text.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
 
 export function parseReviewLines(text) {
-  const reviews = [];
+  let review = null;
   const overlaps = [];
-  const reviewed = [];
   for (const line of text.split('\n')) {
-    const review = line.match(/^REVIEW Task (\d+) ([^:]*): (review-branch)(?: model=(\S+))?(?: effort=(\S+))?\s*$/);
-    if (review !== null) reviews.push({ number: Number(review[1]), shas: review[2], model: review[4] ?? null });
+    const branchLine = line.match(/^REVIEW Branch ([^:]*): (review-branch)(?: model=(\S+))?(?: effort=(\S+))?\s*$/);
+    if (branchLine !== null) review = { range: branchLine[1], model: branchLine[3] ?? null };
     const overlap = line.match(/^OVERLAP (?!none)(.+?) \(Tasks [^)]*\)$/);
     if (overlap !== null) overlaps.push(overlap[1]);
-    const record = line.match(/^REVIEWED Task \d+ (.+)$/);
-    if (record !== null) reviewed.push(record[1]);
   }
-  return { reviews, overlaps, reviewed };
+  return { review, overlaps };
 }
 
 const stopOf = (line, why, next) => ({ line, why, next });
 
-async function mapLimited(items, limit, work) {
-  const results = new Array(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const index = next;
-      next += 1;
-      results[index] = await work(items[index]);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-}
+const BRANCH_QUESTIONS = [
+  'Does the branch, taken as a whole, do what the plan Goal says?',
+  'Is any requirement of the plan missing or only half done?',
+  'Is any changed behavior wrong, whatever task it came from?'
+];
 
 export async function runTail({ planPath, plan, root, base, branch, runSession, say = () => {} }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
   const baseText = base ?? 'HEAD';
-  const { reviews, overlaps, reviewed } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
-  const reports = [...reviewed];
+  const { review: branchReview, overlaps } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
   const reviewModel = agentModel();
   const dispatches = [
-    ...reviews.map((review) => {
-      const task = plan.tasks.find((entry) => entry.number === review.number);
-      const findings = path.join(exo, `review-${review.shas.split(',')[0].slice(0, 7)}.md`);
-      const questions = [
-        `Does the task's commit do what its heading "${task.title}" says and nothing outside its Files:?`,
-        'Does it meet the Data: line of its plan section?',
-        ...(task.risk === null ? [] : [`Does it hold its Risk: "${task.risk}"?`]),
-        'Does it follow the code standard, and does each test observe changed behavior?'
-      ];
-      return { task: review.number, model: review.model ?? reviewModel, findings, scope: `task ${review.shas.replaceAll(',', ' ')}`, questions };
-    }),
-    ...(overlaps.length === 0 ? [] : [{ task: null, model: reviewModel, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
+    ...(branchReview === null ? [] : [{ task: null, name: 'branch', model: branchReview.model ?? reviewModel, findings: path.join(exo, 'review-branch.md'), scope: `branch ${branchReview.range}`, questions: BRANCH_QUESTIONS }]),
+    ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', model: reviewModel, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
+  const reports = dispatches.map((dispatch) => dispatch.findings);
   const review = async (dispatch) => {
-    const name = dispatch.task === null ? 'overlap' : `task ${dispatch.task}`;
+    const name = dispatch.name;
     say(`review start: ${name}`);
     fs.rmSync(dispatch.findings, { force: true });
     const session = await runSession({ kind: 'review', task: dispatch.task, model: dispatch.model, prompt: reviewPrompt({ planPath, root, base: baseText, branch, ...dispatch }) });
     if (session.stop === undefined) say(`review done: ${name}: ${verdictOf(session.resultText) ?? 'no verdict line'}`);
     return session;
   };
-  const sessions = await mapLimited(dispatches, REVIEW_CONCURRENCY, review);
+  const sessions = await Promise.all(dispatches.map(review));
   const stopped = sessions.find((session) => session.stop !== undefined);
   if (stopped !== undefined) return { stop: stopped.stop };
-  reports.push(...dispatches.map((dispatch) => dispatch.findings));
 
   if (reports.length > 0) {
     const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
