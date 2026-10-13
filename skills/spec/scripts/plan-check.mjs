@@ -120,6 +120,29 @@ function checkFilesExist(task, root, byNumber) {
   return problems;
 }
 
+function existingTestsOf(sourcePath, testFiles) {
+  const base = path.basename(sourcePath, '.mjs');
+  return testFiles
+    .filter((name) => name === `${base}.test.mjs` || (name.startsWith(`${base}-`) && name.endsWith('.test.mjs')))
+    .map((name) => `tests/${name}`);
+}
+
+function checkUnlistedTests(task, root) {
+  if (root === undefined || root === null) return [];
+  const testsDir = path.join(root, 'tests');
+  if (!fs.existsSync(testsDir)) return [];
+  const testFiles = fs.readdirSync(testsDir);
+  const listed = new Set(task.files.map((file) => file.path));
+  const sources = task.files.filter((file) => file.kind !== 'Create' && file.path.endsWith('.mjs') && !file.path.endsWith('.test.mjs'));
+  const problems = [];
+  for (const source of sources) {
+    const tests = existingTestsOf(source.path, testFiles);
+    if (tests.length === 0 || tests.some((testPath) => listed.has(testPath))) continue;
+    problems.push(`Task ${task.number}: Files: \`${source.path}\` has existing tests ${tests.map((testPath) => `\`${testPath}\``).join(', ')} and lists none of them`);
+  }
+  return problems;
+}
+
 function dependencyChainOf(byNumber, from) {
   const stack = [...byNumber.get(from).dependsOn];
   const seen = new Set();
@@ -410,6 +433,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
     ...plan.tasks.flatMap((task) => checkContextSize(task, resolvedRoot)),
+    ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
     ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
     ...checkParallelForm(plan.frame),
