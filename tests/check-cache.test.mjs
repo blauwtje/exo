@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { cachedPass, codePass, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 
 function repo() {
@@ -153,6 +154,24 @@ test('a same-size edit in the second of the index entry misses', () => {
   assert.equal(git('diff', '--name-only'), 'a.txt\n');
   assert.equal(cachedPass(root, 'x'), null);
   assert.equal(codePass(root, 'x'), null);
+});
+
+test('the query CLI prints pass with the time on a hit and miss otherwise, and writes nothing', () => {
+  const { root, git } = repo();
+  const script = fileURLToPath(new URL('../lib/check-cache.mjs', import.meta.url));
+  const run = (command) => spawnSync('node', [script, '--query', command], { cwd: root, encoding: 'utf8' });
+  const miss = run('npm run check');
+  assert.equal(miss.status, 1);
+  assert.equal(miss.stdout, 'miss\n');
+  assert.equal(fs.existsSync(path.join(root, '.git', 'exo')), false);
+  recordPass(root, 'npm run check', 4321);
+  const hit = run('npm run check');
+  assert.equal(hit.status, 0);
+  assert.equal(hit.stdout, 'pass 4321\n');
+  assert.equal(run('npm test').stdout, 'miss\n');
+  fs.writeFileSync(path.join(root, 'a.txt'), 'two\n');
+  assert.equal(run('npm run check').status, 1);
+  assert.equal(git('diff', '--cached', '--name-only'), '');
 });
 
 test('SLOW_GATE_MS is one minute', () => {

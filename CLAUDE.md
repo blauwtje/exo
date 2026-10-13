@@ -14,7 +14,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's; handover between phases → the brief and `.exo/` files.
 - Land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; the plan's final task has already added the `CHANGELOG.md` lines.
 - After rebase → every line of this run stays under `## Unreleased`; release workflow pushes a `chore(release)` commit after every push.
-- Then → `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; fast-forward `main`; push `main` directly, no pull request.
+- Then → `node lib/check-cache.mjs --query "npm run check"` first, `pass` skips the check, `miss` runs `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; fast-forward `main`; push `main` directly, no pull request.
 - After push → remove every worktree and branch the run created, local and remote.
 - Remove worktree → from main checkout, one command per worktree: `node skills/build/scripts/remove-worktree.mjs --kept --worktree .worktrees/<name> --run .`. Not plain `git worktree remove`: it deletes the excluded `.exo/` with exit 0.
 - `remove-worktree.mjs` → output not piped away, exit not masked; it refuses → leave that worktree and its branch in place, report 2-3 options to user; no `--force`.
