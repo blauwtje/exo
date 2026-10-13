@@ -334,13 +334,14 @@ async function main(argv) {
   };
   const repaired = new Set();
   const withoutFields = (line) => line.replace(/(?:Files|Proof):[^|]*/g, '');
+  const withoutAddedRed = (line, changed) => (/\bRed:/.test(line) ? changed : changed.replace(/\s*\|\s*Red: none \([^|]*\)/, ''));
   const onlyFieldsChanged = (before, after, n) => {
     const old = before.split('\n');
     const now = after.split('\n');
     const from = old.findIndex((line) => line.startsWith(`### Task ${n}:`));
     const next = old.findIndex((line, index) => index > from && line.startsWith('#'));
     const inTask = (index) => from >= 0 && index > from && (next === -1 || index < next);
-    return old.length === now.length && old.every((line, index) => line === now[index] || (inTask(index) && withoutFields(line) === withoutFields(now[index])));
+    return old.length === now.length && old.every((line, index) => line === now[index] || (inTask(index) && withoutFields(line) === withoutFields(withoutAddedRed(line, now[index]))));
   };
   const planCheckPasses = () => spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' }).status === 0;
   const adoptRepair = (text, n) => {
@@ -352,10 +353,12 @@ async function main(argv) {
       return false;
     }
   };
+  const noRedProofHint = (report) => (report.includes('no red proof') ? ['The Proof passes without the production change: tighten the Proof first, and add `Red: none (<reason>)` only when no test can fail before the change.'] : []);
   const repairPrompt = (n, report) => [
     `Plan repair of task ${n} in ${planPath}, repository ${root}.`,
     `Read ${path.join(PLUGIN_ROOT, 'skills', 'build', 'drift-repairer-prompt.md')} and follow its prompt; the task list spec is ${path.join(PLUGIN_ROOT, 'skills', 'spec', 'references', 'task-list.md')}.`,
-    `Edit only the Files: or Proof: line of task ${n}; any other change is rejected.`,
+    `Edit only the Files: or Proof: line of task ${n}, or add \`Red: none (<reason>)\` to its field line; any other change is rejected.`,
+    ...noRedProofHint(report),
     `Drift report: ${report}`
   ].join('\n');
   const planInRoot = path.relative(root, fs.realpathSync(planPath));
@@ -385,7 +388,13 @@ async function main(argv) {
     say(`task ${n} repair rejected${breach === null ? '' : `: ${breach}`}`);
     return false;
   };
-  const repairedNote = (n, reason) => `\nThe previous attempt on task ${n} reported ${clip(reason, 120)}; the plan's Files: or Proof: line for it was repaired. Read the plan task again.`;
+  const repairedNote = (n, reason) => `\nThe previous attempt on task ${n} reported ${clip(reason, 120)}; the plan's field line for it was repaired. Read the plan task again.`;
+  const repairOrBlock = async (n, reason) => {
+    if (!(await repairTask(n, reason))) return blockedStop(n, reason);
+    retryNote = repairedNote(n, reason);
+    return undefined;
+  };
+  const noRedProofLine = (output) => output.split('\n').find((line) => line.includes('no red proof'))?.trim();
   const markLanded = (n, record, startedTask) => {
     stall = 0;
     retryNote = '';
@@ -419,9 +428,15 @@ async function main(argv) {
         continue;
       }
       say(`task ${n} not landed by the script: ${clip(lastLine(attempt.output), 80)}`);
+      const noRed = noRedProofLine(attempt.output);
+      if (noRed !== undefined) return { n, reason: noRed };
       retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${lastLine(attempt.output)}\nIts log: ${attempt.log}`;
       return;
     }
+  };
+  const landOrRepair = async (numbers, record, started) => {
+    const refused = landInOrder(numbers, record, started);
+    return refused === undefined ? undefined : repairOrBlock(refused.n, refused.reason);
   };
   if (stop === undefined && chosen.mode === 'plan' && order.length > 0) {
     stop = budgetStop() ?? undefined;
@@ -441,7 +456,7 @@ async function main(argv) {
       stop = unsafeStop(first, before, planTaskTrailer(planId, first), parsed, log) ?? undefined;
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
       if (stop === undefined && status !== null) stop = blockedStop(first, status[1] || last);
-      landInOrder(stop === undefined ? order : [], record, startedPlan);
+      stop = (await landOrRepair(stop === undefined ? order : [], record, startedPlan)) ?? stop;
       if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
         const { patch, failed } = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
         if (patch !== null) say(`plan session leftover saved to ${patch}`);
@@ -536,6 +551,12 @@ async function main(argv) {
     const attempt = outcome.timedOut ? null : landByScript(n);
     if (attempt?.landed) {
       markLanded(n, record, startedTask);
+      continue;
+    }
+    const noRed = attempt === null ? undefined : noRedProofLine(attempt.output);
+    if (noRed !== undefined) {
+      stop = await repairOrBlock(n, noRed);
+      if (stop !== undefined) break;
       continue;
     }
     const failure = attempt === null ? last : lastLine(attempt.output);
