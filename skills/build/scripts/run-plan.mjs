@@ -120,7 +120,7 @@ function setPhase(phase) {
   if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), { phase });
 }
 
-const STOP_PHASE = { 0: 'passed', 3: 'parked' };
+const STOP_PHASE = { 3: 'parked' };
 
 function noteTask(task) {
   const dir = process.env.EXO_RUN_DIR;
@@ -548,7 +548,9 @@ async function main(argv) {
     }
   }
   if (stop?.parked) exitCode = 3;
-  noteStop({ phase: STOP_PHASE[exitCode] ?? 'stopped', reason: stop.line });
+  // why: after a pass exo-cli still lands the branch and owns the final phase, so a pass records only the reason.
+  const stopPhase = STOP_PHASE[exitCode] ?? 'stopped';
+  noteStop(exitCode === 0 ? { reason: stop.line } : { phase: stopPhase, reason: stop.line });
   for (const line of averageLines(landedStats)) say(line);
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');

@@ -63,7 +63,7 @@ export function recordTask(root, id, { n, subject, landed, total }) {
 }
 
 export function recordStop(root, id, { phase, reason }) {
-  return updateRun(root, id, { phase, reason });
+  return updateRun(root, id, phase === undefined ? { reason } : { phase, reason });
 }
 
 const gatesFile =(dir) => path.join(dir, 'gates.md');

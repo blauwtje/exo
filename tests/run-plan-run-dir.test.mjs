@@ -21,9 +21,9 @@ async function phaseAfter(steps, { set = true } = {}) {
   return JSON.parse(await fs.readFile(state, 'utf8')).phase;
 }
 
-test('EXO_RUN_DIR: the run state ends stopped after a block and passed after the tail', async () => {
+test('EXO_RUN_DIR: the run state ends stopped after a block and stays verify after the tail', async () => {
   assert.equal(await phaseAfter([{ result: 'Task 1: BLOCKED nothing to do' }]), 'stopped');
-  assert.equal(await phaseAfter([land(1), land(2), { result: 'Verify done.' }]), 'passed');
+  assert.equal(await phaseAfter([land(1), land(2), { result: 'Verify done.' }]), 'verify');
 });
 
 async function runDirContext() {
@@ -121,12 +121,12 @@ test('EXO_RUN_DIR: state.json keeps the current task, the landed count and the s
   assert.match(state.reason, /^task 2 blocked: nothing to do/);
 });
 
-test('EXO_RUN_DIR: a finished run records passed and its done line', async () => {
+test('EXO_RUN_DIR: a finished run records its done line and leaves the final phase to exo run', async () => {
   const { context, dir } = await runDirContext();
   await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
   const state = JSON.parse(await fs.readFile(path.join(dir, 'state.json'), 'utf8'));
   assert.equal(state.landed, 2);
-  assert.equal(state.phase, 'passed');
+  assert.equal(state.phase, 'verify');
   assert.equal(state.reason, 'done, 2/2 tasks landed, gate PASS');
 });
 
