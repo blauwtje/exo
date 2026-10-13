@@ -82,6 +82,7 @@ test('sandbox: every process gets sandbox settings excluding only exo\'s gate sc
     const { sandbox } = settingsOf(call);
     assert.equal(sandbox.enabled, true);
     assert.equal(sandbox.allowUnsandboxedCommands, false);
+    assert.equal(Boolean(settingsOf(call).hooks?.PreToolUse), index < 2, 'the stall hook is set in task sessions only, not the tail');
     assert.equal(sandbox.failIfUnavailable, true);
     assert.deepEqual(sandbox.network, { allowedDomains: REGISTRY_DOMAINS });
     for (const command of [`node "${landTask}"`, `node ${landTask}`]) assert.ok(sandbox.excludedCommands.includes(command), command);
@@ -100,7 +101,7 @@ test('sandbox: run.json sandbox.enabled false keeps the plan allowlist, passes n
   await sandboxOff(context);
   const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
-  for (const call of result.calls) assert.equal(settingsOf(call), null);
+  for (const call of result.calls) assert.deepEqual(Object.keys(settingsOf(call)), ['hooks']);
   assertPlanAllowlist(result.calls[0]);
   assert.ok(!allowOf(result.calls[0]).some((rule) => rule.includes('next-task.mjs') || rule.includes('mcp-tool-call.mjs')));
   assert.doesNotMatch(result.calls[0].stdin, SANDBOX_RULE);
