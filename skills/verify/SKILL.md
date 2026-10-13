@@ -21,6 +21,7 @@ argument-hint: "[plan path] [--land]"
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask once for a `codex exec` second review of the same plan and diff, append its findings to the findings path before step 3; else say nothing.
    - `--land` → skip that offer.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.
+   - A `hazard` is repaired only after a failing test shows it; else it is reported as unproven, not asked.
    - `fix=0` → step 4, no `exo:fix-review` dispatch, rerun or fix commit.
    - Else after the dispatch → `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
