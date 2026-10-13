@@ -80,6 +80,37 @@ test('the plan file committed on the branch is the run\'s input, not a stray pat
   assert.ok(fromOutside.stdout.includes('PASS stray-paths\n'), fromOutside.stdout);
 });
 
+test('a committed CHANGELOG.md and docs md outside every Files print DOCS lines, not STRAY', async () => {
+  const plan = '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n';
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  const base = git(root, 'rev-parse', 'HEAD');
+  landTask(root, 1);
+  await mkdir(path.join(root, 'docs'));
+  await writeFile(path.join(root, 'docs', 'notes.md'), 'notes\n');
+  await writeFile(path.join(root, 'CHANGELOG.md'), '## Unreleased\n');
+  await writeFile(path.join(root, 'src', 'extra.js'), 'export const stray = 1;\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-m', 'chore: docs and extra');
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines.includes('DOCS CHANGELOG.md'), result.stdout);
+  assert.ok(lines.includes('DOCS docs/notes.md'), result.stdout);
+  assert.ok(lines.includes('STRAY src/extra.js'), result.stdout);
+  assert.ok(!lines.some((line) => line.startsWith('STRAY ') && line !== 'STRAY src/extra.js'), result.stdout);
+
+  const onlyDocs = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  const onlyBase = git(onlyDocs, 'rev-parse', 'HEAD');
+  landTask(onlyDocs, 1);
+  await writeFile(path.join(onlyDocs, 'CHANGELOG.md'), '## Unreleased\n');
+  git(onlyDocs, 'add', '-A');
+  git(onlyDocs, 'commit', '-m', 'chore: changelog');
+  const clean = await run(SCRIPT, ['--plan', 'plan.md', '--base', onlyBase, '--check-command', 'node check.js'], { cwd: onlyDocs });
+  assert.ok(clean.stdout.includes('DOCS CHANGELOG.md'), clean.stdout);
+  assert.ok(clean.stdout.includes('PASS stray-paths'), clean.stdout);
+  assert.equal(clean.code, 0, clean.stdout + clean.stderr);
+});
+
 test('--root points the gate at another checkout, not the caller\'s own cwd', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',

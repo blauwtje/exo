@@ -114,6 +114,10 @@ export function findStrayPaths(tasks, paths) {
   return paths.filter((path) => !declared.some((entry) => entry === path || (entry.endsWith('/') && path.startsWith(entry))));
 }
 
+function isPlanDoc(path) {
+  return path === 'CHANGELOG.md' || (path.startsWith('docs/') && path.endsWith('.md'));
+}
+
 function isTrailerlessFix({ subject, body }) {
   return /^fix(\([^)]*\))?!?:/.test(subject) && !/^Plan-task: /m.test(body);
 }
@@ -467,13 +471,17 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const changed = changedPaths({ base });
   const planFile = repoPathOf(planPath, root);
   const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
-  const { strays, fixOnly, lead } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
+  const split = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
+  const { fixOnly, lead } = split;
+  const docs = split.strays.filter(isPlanDoc);
+  const strays = split.strays.filter((stray) => !isPlanDoc(stray));
   if (strays.length === 0) {
     lines.push('PASS stray-paths');
   } else {
     for (const path of strays) lines.push(`STRAY ${path}`);
     failed = true;
   }
+  for (const path of docs) lines.push(`DOCS ${path}`);
   for (const { path, shas } of [...fixOnly].sort((a, b) => (a.path < b.path ? -1 : 1))) lines.push(`FIX-ONLY ${path} (${shas.join(',')})`);
   for (const { path, shas } of lead) lines.push(`LEAD ${path} (${shas.join(',')})`);
 
