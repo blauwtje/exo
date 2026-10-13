@@ -135,7 +135,7 @@ function addAgents(root, known, files, sources) {
   for (const [file, entry] of Object.entries(table.agents)) {
     add(`exo-${path.basename(file, '.md')}`, file, entry, table.kinds[entry.kind]);
   }
-  for (const [name, twin] of Object.entries(table.codexTwins)) {
+  for (const [name, twin] of Object.entries(table.codexTwins ?? {})) {
     add(name, twin.from, table.agents[twin.from], twin, twin.description);
   }
 }

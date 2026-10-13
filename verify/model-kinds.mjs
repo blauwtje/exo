@@ -143,7 +143,7 @@ function planKindWrites(root, table) {
     }
   }
 
-  for (const [file, entry] of Object.entries(table.skills)) {
+  for (const [file, entry] of Object.entries(table.skills ?? {})) {
     const plan = open(file);
     for (const field of entry.fields) {
       setField(file, plan, field, table.kinds[entry.kind][field]);

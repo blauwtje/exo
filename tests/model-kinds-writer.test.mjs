@@ -128,6 +128,16 @@ test('a dispatches line saying the prompt opens with its kind passes, and one fo
   assert.throws(() => findKindDrift(root, table), /holds no model word/);
 });
 
+test('a table with no skills map has no skill drift and the writer still runs', () => {
+  const table = structuredClone(TABLE);
+  delete table.skills;
+  table.dispatches = [];
+  const root = makeRoot();
+  assert.deepEqual(findKindDrift(root, table).filter((record) => record.file.startsWith('skills/')), []);
+  writeKinds(root, table);
+  assert.equal(read(root, 'skills/beta/SKILL.md'), FILES['skills/beta/SKILL.md']);
+});
+
 test('a second write changes no file', () => {
   const root = makeRoot();
   writeKinds(root, TABLE);
