@@ -9,6 +9,10 @@ Versions before 0.127.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+
+- The `budget` columns now follow benchmarks for the 5.5 models. Reviews run on Opus from `balanced` up, `quality` steps build and investigate to Opus medium instead of Sonnet at higher effort, lookup and research on Haiku get more effort, and `fast` runs peer roles on Sonnet instead of the session's model. No cell uses `max`.
+
 ## 0.132.2 - 2026-10-13
 
 ### Changed
