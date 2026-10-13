@@ -21,6 +21,28 @@ export function snapshot(root) {
 
 export const untrackedPaths = (root) => (gitOut(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }) ?? '').split('\0').filter(Boolean);
 
+function indexCopyEnv(root, scratch) {
+  const indexFile = path.resolve(root, gitOut(root, ['rev-parse', '--git-path', 'index']) ?? '.git/index');
+  const copy = path.join(scratch, 'index');
+  if (fs.existsSync(indexFile)) fs.copyFileSync(indexFile, copy);
+  return { ...process.env, GIT_INDEX_FILE: copy };
+}
+
+export function worktreeTree(root, skipFile) {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-tree-'));
+  try {
+    const env = indexCopyEnv(root, scratch);
+    const git = (args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env, maxBuffer: 64 * 1024 * 1024 });
+    if (git(['add', '-A', '--', '.']).status !== 0) return null;
+    const skipped = skipFile === null ? [SCRATCH_FOLDER] : [SCRATCH_FOLDER, skipFile];
+    if (git(['--literal-pathspecs', 'rm', '-r', '-q', '--cached', '--ignore-unmatch', '--', ...skipped]).status !== 0) return null;
+    const tree = git(['write-tree']);
+    return tree.status === 0 ? tree.stdout.trim() : null;
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
 export function shelveLeftover(root, patchFile, knownUntracked) {
   // why: git lists a nested repository as `dir/`, which would enter the patch as a bare commit id.
   const fresh = untrackedPaths(root).filter((file) => !knownUntracked.has(file) && !file.startsWith(`${SCRATCH_FOLDER}/`) && !file.endsWith('/'));
@@ -29,10 +51,7 @@ export function shelveLeftover(root, patchFile, knownUntracked) {
   const failure = (step, answer) => ({ patch: null, failed: `${step} failed: ${String(answer.error?.message ?? answer.stderr ?? '').trim().split('\n')[0] || `exit ${answer.status}`}` });
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-leftover-'));
   try {
-    const indexFile = path.resolve(root, gitOut(root, ['rev-parse', '--git-path', 'index']) ?? '.git/index');
-    const copy = path.join(scratch, 'index');
-    if (fs.existsSync(indexFile)) fs.copyFileSync(indexFile, copy);
-    const env = { ...process.env, GIT_INDEX_FILE: copy };
+    const env = indexCopyEnv(root, scratch);
     const tracked = git(['add', '-u', ...spec], { env });
     if (tracked.status !== 0) return failure('git add -u', tracked);
     const added = fresh.length === 0 ? tracked : git(['--literal-pathspecs', 'add', '--pathspec-from-file=-', '--pathspec-file-nul'], { env, input: fresh.join('\0') });

@@ -91,6 +91,23 @@ test('a repair that touches more than the task Files: or Proof: line is undone a
   assert.match(await fs.readFile(context.plan, 'utf8'), /Proof: node --version \| Red: none \(fixture\)\n### Task 2/);
 });
 
+test('a repair that also edits a file beyond the plan is rejected: the task does not run again and the run stops blocked', async () => {
+  const context = await setup();
+  const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: true };
+  const result = await runPlan(context, [{ ...blocked, edits: ['a.txt'] }, { result: 'Plan repaired.', edits: ['README.md', 'c.txt'] }, land(1), land(2), { result: 'Verify done.' }], rewrite);
+  assert.match(result.stop, /task 1 blocked/, result.stdout + result.stderr);
+  assert.match(result.stdout, /task 1 repair rejected: working tree changed beyond the plan/);
+  assert.equal(result.calls.length, 2);
+  assert.match(await fs.readFile(context.plan, 'utf8'), /Proof: node --version \| Red: none \(fixture\)\n### Task 2/);
+});
+
+test("a repair is judged on its own edits: the blocked attempt's leftover does not reject it", async () => {
+  const context = await setup();
+  const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: true };
+  const result = await runPlan(context, [{ ...blocked, edits: ['a.txt', 'c.txt'] }, { result: 'Plan repaired.' }, land(1), land(2), { result: 'Verify done.' }], rewrite);
+  assert.match(result.stdout, /task 1 plan repaired, task runs again/, result.stdout + result.stderr);
+});
+
 test('a task blocked again after its repair stops the run: one repair per task', async () => {
   const context = await setup();
   const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: true };

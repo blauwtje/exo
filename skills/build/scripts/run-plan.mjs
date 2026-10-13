@@ -18,7 +18,7 @@ import { phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
-import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths } from './run-worktree.mjs';
+import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { averageLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
@@ -358,16 +358,24 @@ async function main(argv) {
     `Edit only the Files: or Proof: line of task ${n}; any other change is rejected.`,
     `Drift report: ${report}`
   ].join('\n');
+  const planInRoot = path.relative(root, fs.realpathSync(planPath));
+  const treeBesidePlan = () => worktreeTree(root, planInRoot.startsWith('..') || path.isAbsolute(planInRoot) ? null : planInRoot);
+  const treeBreach = (treeBefore) => {
+    const treeAfter = treeBesidePlan();
+    if (treeBefore === null || treeAfter === null) return 'working tree unreadable';
+    return treeAfter === treeBefore ? null : 'working tree changed beyond the plan';
+  };
   const repairTask = async (n, report) => {
     if (repaired.has(n)) return false;
     repaired.add(n);
     const before = fs.readFileSync(planPath, 'utf8');
+    const treeBefore = treeBesidePlan();
     say(`task ${n} blocked, repair session: ${clip(report, 80)}`);
     const log = path.join(logDir, `iter-${iteration}-repair-${n}.log`);
     const session = await spawnOne({ prompt: repairPrompt(n, report), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
     if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
     const after = fs.readFileSync(planPath, 'utf8');
-    const breach = breachOf(root, session.before, { tail: true });
+    const breach = breachOf(root, session.before, { tail: true }) ?? treeBreach(treeBefore);
     if (breach === null && after !== before && onlyFieldsChanged(before, after, n) && planCheckPasses() && adoptRepair(after, n)) {
       planAtStart = planHash();
       say(`task ${n} plan repaired, task runs again`);
