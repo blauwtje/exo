@@ -4,6 +4,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBranch, frameOf, loopCommands, openPoints, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { derivedNames } from '#derivation';
+import { equalsLandGate } from '#land-gate';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { wholeSuiteKeys } from '#suite-command';
@@ -286,8 +287,7 @@ function checkRedGreen(plan) {
   if (repeat !== null && !(repeat.count >= 2 && repeat.count <= 5)) problems.push("the plan's Success criterion 'Repeat:' count is not 2 to 5: write 'Repeat: <2-5> (<reason>)'");
   else if (repeat !== null && repeat.reason === '') problems.push("the plan's Success criterion 'Repeat:' states no reason: write 'Repeat: <2-5> (<reason>)'");
   const command = (plan.frame['Success criterion'] ?? '').match(/`([^`]+)`/)?.[1].trim();
-  const gate = frameOf(plan.frame).landGate?.replace(/^`|`$/g, '').trim();
-  if (command !== undefined && command === gate && plan.successRed === null) {
+  if (equalsLandGate(command, frameOf(plan.frame).landGate) && plan.successRed === null) {
     problems.push(`the plan's Success criterion '${command}' equals the 'Land gate:' command, so it cannot fail where every task passed: name a command that checks the goal, or add 'Red: none (<reason>)' under it`);
   }
   return problems;

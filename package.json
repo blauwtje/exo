@@ -17,6 +17,7 @@
     "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",
     "#host": "./lib/host.mjs",
+    "#land-gate": "./lib/land-gate.mjs",
     "#mcp-tool-call": "./lib/mcp-tool-call.mjs",
     "#memory-store": "./lib/memory-store.mjs",
     "#model-kinds": "./lib/model-kinds.mjs",
