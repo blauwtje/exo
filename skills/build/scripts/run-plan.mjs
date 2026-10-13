@@ -400,6 +400,23 @@ async function main(argv) {
     }
   }
   const fix = (log) => `read ${log}, fix the cause, then run exo run again`;
+  const rebaseOntoMovedBase = () => {
+    const base = defaultBranch(root);
+    if (base === null || base === branch) return;
+    const hasBase = gitOut(root, ['rev-parse', '--verify', '--quiet', `refs/heads/${base}`]) !== null;
+    if (!hasBase) return;
+    const contained = spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', `refs/heads/${base}`, 'HEAD']).status === 0;
+    if (contained) return;
+    const dirty = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
+    if (dirty !== '') return;
+    const rebase = spawnSync('git', ['-C', root, 'rebase', `refs/heads/${base}`], { encoding: 'utf8' });
+    if (rebase.status === 0) {
+      say(`rebased onto ${base}`);
+      return;
+    }
+    spawnSync('git', ['-C', root, 'rebase', '--abort']);
+    say(`rebase onto ${base} failed, task runs on the old base`);
+  };
   while (stop === undefined) {
     const landed = landedTasks(plan.tasks, root, planId);
     if (landed.length === plan.tasks.length) break;
@@ -417,6 +434,7 @@ async function main(argv) {
     if (stop !== undefined) break;
     iteration += 1;
     const n = task.number;
+    if (retryNote === '') rebaseOntoMovedBase();
     const startedTask = Date.now();
     say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
     noteTask({ n, subject: taskSubject(task.title), landed: landed.length, total: plan.tasks.length });

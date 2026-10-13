@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fixture } from './harness.mjs';
+import { fixture, git } from './harness.mjs';
 import { setup, PLUGIN_ROOT, runPlan, allowOf, sandboxOff, land } from './run-plan-fixture.mjs';
 
 async function phaseAfter(steps, { set = true } = {}) {
@@ -128,6 +128,37 @@ test('EXO_RUN_DIR: a finished run records its done line and leaves the final pha
   assert.equal(state.landed, 2);
   assert.equal(state.phase, 'verify');
   assert.equal(state.reason, 'done, 2/2 tasks landed, gate PASS');
+});
+
+async function moveMain(root, file) {
+  git(root, 'switch', '-q', 'main');
+  await fs.writeFile(path.join(root, file), 'moved\n');
+  git(root, 'add', file);
+  git(root, 'commit', '-q', '-m', 'chore: move main');
+  git(root, 'switch', '-q', 'feat/run');
+}
+
+test('a clean run tree rebases onto a local default branch that moved before the task starts', async () => {
+  const context = await setup();
+  await moveMain(context.root, 'moved.txt');
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.match(result.stdout, /rebased onto main/);
+  assert.equal(git(context.root, 'merge-base', '--is-ancestor', 'main', 'HEAD') ?? '', '');
+  assert.equal(git(context.root, 'log', '-1', '--format=%s', 'main'), 'chore: move main');
+});
+
+test('a rebase conflict is aborted, noted once, and the task runs on the old base', async () => {
+  const context = await setup();
+  await fs.writeFile(path.join(context.root, 'a.txt'), 'branch\n');
+  git(context.root, 'add', 'a.txt');
+  git(context.root, 'commit', '-q', '-m', 'chore: branch a');
+  await moveMain(context.root, 'a.txt');
+  const before = git(context.root, 'rev-parse', 'HEAD');
+  const result = await runPlan(context, [{ result: 'Task 1: BLOCKED stop here' }]);
+  assert.equal((result.stdout.match(/rebase onto main failed/g) ?? []).length, 1);
+  assert.equal(result.calls.length, 1);
+  assert.equal(git(context.root, 'rev-parse', 'HEAD'), before);
+  assert.equal(git(context.root, 'status', '--porcelain', '--untracked-files=no'), '');
 });
 
 test('EXO_RUN_DIR unset: the run state stays as it was', async () => {
