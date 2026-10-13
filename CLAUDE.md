@@ -11,7 +11,10 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - `CHANGELOG.md` → only the lead writes it, so subagent branches never conflict on it; every plan here ends with a task writing its `## Unreleased` line, since `land-run` writes none.
 - Subagent → one concern; brief with two unrelated parts → two subagents.
 - `exo:spec` → lead runs it itself; code reading goes to `exo:locate-code`; the lead writes the brief itself.
-- Build → `node skills/build/scripts/exo-cli.mjs run <brief> --detach`, not `exo:build` in the lead session.
+- Build → `node skills/build/scripts/exo-cli.mjs run <brief> --detach`, not `exo:build` in the lead session; resume → `run --resume <run-id> --detach`.
+- Plan task → lands only through that detached loop; lead and subagents commit no plan task on the run branch.
+- Run task blocked → its partial work to a hint file such as `.exo/carry/task<n>-partial.patch`, run tree reset; not a commit on the run branch.
+- After that reset → lead fixes the plan (checked with `node skills/spec/scripts/plan-check.mjs --loop --plan <plan> --root <run worktree>`) or the cause in a worktree subagent, then resumes the run.
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's.
 - Handover between phases → the brief and `.exo/` files.
 - Land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; the plan's final task has already added the `CHANGELOG.md` lines.
