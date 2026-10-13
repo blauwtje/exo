@@ -92,6 +92,10 @@ function dispatchSlot(file, match, table) {
   return { pattern, render, renderEffort, withEffort };
 }
 
+function opensWithKind(match, kind) {
+  return new RegExp(`exo-kind: ${escapeRegExp(kind)}(?![\\w-])`).test(match);
+}
+
 function slotModel(text) {
   return text === INHERIT_CLAUSE ? INHERIT : text.replace(/^on `|`$/g, '');
 }
@@ -110,6 +114,11 @@ function planKindWrites(root, table) {
 
   function setField(file, plan, field, expected) {
     const actual = plan.before === null ? null : readField(plan.before, field);
+    if (field === 'model' || field === 'effort') {
+      if (actual !== null && actual !== expected) plan.drift.push({ file, field, expected, actual });
+      if (readField(plan.after, field) !== null) plan.after = writeField(plan.after, field, expected);
+      return;
+    }
     if (actual !== expected) plan.drift.push({ file, field, expected, actual });
     plan.after = writeField(plan.after, field, expected);
   }
@@ -143,6 +152,13 @@ function planKindWrites(root, table) {
 
   for (const { file, match, kind } of table.dispatches) {
     const plan = open(file);
+    if (opensWithKind(match, kind)) {
+      const hits = plan.after.split('\n').filter((line) => line.includes(match));
+      if (hits.length !== 1) {
+        throw new Error(`${file}: "${match}" matches ${hits.length} lines`);
+      }
+      continue;
+    }
     const { pattern, render, renderEffort, withEffort } = dispatchSlot(file, match, table);
     const lines = plan.after.split('\n');
     const hits = lines.flatMap((line, index) => (pattern.test(line) ? [index] : []));
@@ -193,6 +209,10 @@ export function findInheritanceGaps(root, table) {
   }
   const covered = new Map();
   for (const { file, match, kind } of table.dispatches) {
+    if (opensWithKind(match, kind)) {
+      covered.set(file, [...(covered.get(file) ?? []), new RegExp(escapeRegExp(match))]);
+      continue;
+    }
     const { pattern, withEffort } = dispatchSlot(file, match, table);
     if (!withEffort) gaps.push(`${file}: dispatches entry "${match}" names a bare model, not "on \`<model>\`" or "${INHERIT_CLAUSE}" with an effort clause, ${INHERITANCE_NOTE}`);
     if (table.kinds[kind].effort === null) gaps.push(`${file}: dispatches entry "${match}" has kind ${kind} with no effort, ${INHERITANCE_NOTE}`);

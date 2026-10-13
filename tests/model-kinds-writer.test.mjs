@@ -65,18 +65,14 @@ test('the drift list names each file, field, expected and actual value', () => {
     { file: 'agents/worker.md', field: 'effort', expected: 'high', actual: 'low' },
     { file: 'agents/finder.md', field: 'model', expected: 'haiku', actual: 'sonnet' },
     { file: 'agents/finder.md', field: 'effort', expected: null, actual: 'high' },
-    { file: 'agents/reviewer.md', field: 'effort', expected: 'high', actual: null },
-    { file: 'agents/reviewer-deep.md', field: 'name', expected: 'reviewer-deep', actual: null },
-    { file: 'agents/reviewer-deep.md', field: 'model', expected: 'opus', actual: null },
-    { file: 'agents/reviewer-deep.md', field: 'effort', expected: 'max', actual: null }
+    { file: 'agents/reviewer-deep.md', field: 'name', expected: 'reviewer-deep', actual: null }
   ]);
   assert.deepEqual(drift.filter((record) => record.file.startsWith('skills/')), [
     { file: 'skills/alpha/SKILL.md', field: 'effort', expected: 'high', actual: 'low' },
     { file: 'skills/alpha/SKILL.md', field: 'model', expected: 'opus', actual: 'sonnet' },
     { file: 'skills/alpha/SKILL.md', field: 'effort', expected: 'max', actual: null },
     { file: 'skills/alpha/SKILL.md', field: 'model', expected: 'sonnet', actual: 'opus' },
-    { file: 'skills/beta/SKILL.md', field: 'model', expected: 'opus', actual: 'haiku' },
-    { file: 'skills/beta/SKILL.md', field: 'effort', expected: 'max', actual: null }
+    { file: 'skills/beta/SKILL.md', field: 'model', expected: 'opus', actual: 'haiku' }
   ]);
 });
 
@@ -86,13 +82,50 @@ test('writing applies the table and leaves nothing to drift', () => {
   assert.deepEqual(findKindDrift(root, TABLE), []);
   assert.equal(read(root, 'agents/worker.md'), '---\nname: worker\nmodel: sonnet\neffort: high\ntools: Read\n---\n\nBody of worker.\n');
   assert.equal(read(root, 'agents/finder.md'), '---\nname: finder\nmodel: haiku\ntools: Read\n---\n\nBody of finder.\n');
-  assert.equal(read(root, 'agents/reviewer.md'), '---\nname: reviewer\nmodel: sonnet\neffort: high\ntools: Read\n---\n\nBody of reviewer.\n');
-  assert.equal(read(root, 'agents/reviewer-deep.md'), '---\nname: reviewer-deep\nmodel: opus\neffort: max\ntools: Read\n---\n\nBody of reviewer.\n');
+  assert.equal(read(root, 'agents/reviewer.md'), FILES['agents/reviewer.md']);
+  assert.equal(read(root, 'agents/reviewer-deep.md'), '---\nname: reviewer-deep\nmodel: opus\ntools: Read\n---\n\nBody of reviewer.\n');
   assert.equal(
     read(root, 'skills/alpha/SKILL.md'),
     '---\nname: alpha\neffort: high\n---\n\nRun it: delegate on `opus` at `max` effort for a fix, then `sonnet` for the rest.\n'
   );
-  assert.equal(read(root, 'skills/beta/SKILL.md'), '---\nname: beta\nmodel: opus\neffort: max\n---\n\nBeta.\n');
+  assert.equal(read(root, 'skills/beta/SKILL.md'), '---\nname: beta\nmodel: opus\n---\n\nBeta.\n');
+});
+
+test('an agent or table skill with no model or effort line passes, and the writer adds none', () => {
+  const files = {
+    'agents/worker.md': '---\nname: worker\ntools: Read\n---\n\nBody of worker.\n',
+    'skills/alpha/SKILL.md': '---\nname: alpha\n---\n\nRun it: delegate on `opus` at `max` effort for a fix, then `sonnet` for the rest.\n',
+    'skills/beta/SKILL.md': '---\nname: beta\n---\n\nBeta.\n'
+  };
+  const table = structuredClone(TABLE);
+  table.agents = { 'agents/worker.md': { kind: 'build' } };
+  const root = makeRoot(files);
+  assert.deepEqual(findKindDrift(root, table), []);
+  writeKinds(root, table);
+  for (const [file, text] of Object.entries(files)) assert.equal(read(root, file), text);
+});
+
+test('a pinned line is still held to the table', () => {
+  const table = structuredClone(TABLE);
+  table.agents = { 'agents/worker.md': { kind: 'build' } };
+  const root = makeRoot({ ...FILES, 'agents/worker.md': '---\nname: worker\nmodel: opus\n---\n\nBody.\n' });
+  const drift = findKindDrift(root, table).filter((record) => record.file === 'agents/worker.md');
+  assert.deepEqual(drift, [{ file: 'agents/worker.md', field: 'model', expected: 'sonnet', actual: 'opus' }]);
+});
+
+test('a dispatches line saying the prompt opens with its kind passes, and one for another kind is not found', () => {
+  const table = structuredClone(TABLE);
+  table.skills = {};
+  table.agents = {};
+  table.dispatches = [{ file: 'skills/beta/SKILL.md', match: 'a `general-purpose` delegate whose prompt opens with `exo-kind: build`', kind: 'build' }];
+  const beta = '---\nname: beta\n---\n\nSend a `general-purpose` delegate whose prompt opens with `exo-kind: build`.\n';
+  const root = makeRoot({ ...FILES, 'skills/beta/SKILL.md': beta });
+  assert.deepEqual(findKindDrift(root, table), []);
+  writeKinds(root, table);
+  assert.equal(read(root, 'skills/beta/SKILL.md'), beta);
+  assert.deepEqual(findInheritanceGaps(root, table).filter((gap) => gap.includes('skills/')), []);
+  table.dispatches[0].kind = 'lookup';
+  assert.throws(() => findKindDrift(root, table), /holds no model word/);
 });
 
 test('a second write changes no file', () => {
@@ -155,7 +188,8 @@ test('an entry description is written into its file, and a hand edit of it is dr
 test('a kind on inherit and xhigh is written into an agent file as those values', () => {
   const table = structuredClone(TABLE);
   table.kinds.review = { model: 'inherit', effort: 'xhigh' };
-  const root = makeRoot();
+  const pinned = '---\nname: reviewer\nmodel: sonnet\neffort: high\ntools: Read\n---\n\nBody of reviewer.\n';
+  const root = makeRoot({ ...FILES, 'agents/reviewer.md': pinned });
   writeKinds(root, table);
   assert.match(read(root, 'agents/reviewer.md'), /^---\nname: reviewer\nmodel: inherit\neffort: xhigh\n/);
   assert.deepEqual(findKindDrift(root, table), []);

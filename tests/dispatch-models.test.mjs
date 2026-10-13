@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
 const DISPATCH = '`general-purpose` delegate';
 const kindModels = new Set(Object.values(readKindTable().kinds).map((kind) => `\`${kind.model}\``));
-const MODEL_NAMES = [...kindModels, 'with `model` omitted', 'the model the skill under test runs on'];
+const MODEL_NAMES = [...kindModels, 'with `model` omitted', 'the model the skill under test runs on', 'exo-kind: '];
 
 function sentencesNamingDispatch(text) {
   return text
