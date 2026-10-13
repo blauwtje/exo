@@ -12,6 +12,25 @@ function planWith(root, files) {
     .replace('Repository: /tmp/fixture', `Repository: ${root}`);
 }
 
+function planWithProof(proof) {
+  const task = compactTask({ number: 1, title: 'fix(widget): round', files: ['src/widget.mjs'], proof });
+  return compactPlanFixture({ tasks: [task] });
+}
+
+test('plan-check flags a proof that diffs against a bare default branch, and passes one using the merge base', () => {
+  for (const ref of ['main', 'master']) {
+    const flagged = planCheckReport(planWithProof(`test -z "$(git diff ${ref} --name-only)"`));
+    const line = flagged.lines.find((entry) => entry.startsWith('Task 1:') && entry.includes(`bare \`${ref}\``));
+    assert.ok(line?.includes('$(git merge-base'), flagged.lines.join('; '));
+  }
+  const dotted = planCheckReport(planWithProof('git diff --quiet main..HEAD'));
+  assert.ok(dotted.lines.some((entry) => entry.includes('bare `main`')), dotted.lines.join('; '));
+  const fixed = planCheckReport(planWithProof('git diff --quiet $(git merge-base main HEAD) HEAD'));
+  assert.ok(!fixed.lines.some((entry) => entry.includes('bare')), fixed.lines.join('; '));
+  const plain = planCheckReport(planWithProof('node --test tests/main.test.mjs'));
+  assert.ok(!plain.lines.some((entry) => entry.includes('bare')), plain.lines.join('; '));
+});
+
 test('plan-check flags a source file whose task lists none of its existing tests, and passes with one listed', async () => {
   const root = await gitRepository({
     'src/widget.mjs': 'export const x = 1;\n',

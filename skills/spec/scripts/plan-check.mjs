@@ -313,6 +313,16 @@ function checkWholeSuiteProof(task) {
   return [`Task ${task.number}: 'Proof: ${task.proof}' runs the whole suite: name the one test file or script that shows this task alone landed`];
 }
 
+const MERGE_BASE_CALL = /\$\(\s*git merge-base[^)]*\)/g;
+const BARE_DEFAULT_DIFF = /\bgit\s+(?:diff|log|show|rev-list|diff-tree)\b[^;&|\n]*?(?<![\w/.-])(main|master)(?=\.\.|[\s"')]|$)/;
+
+function checkBareDefaultBranchProof(task) {
+  if (task.proof === null) return [];
+  const match = task.proof.replace(MERGE_BASE_CALL, '').match(BARE_DEFAULT_DIFF);
+  if (match === null) return [];
+  return [`Task ${task.number}: 'Proof: ${task.proof}' diffs against bare \`${match[1]}\`, which moves when the default branch moves: use \`$(git merge-base ${match[1]} HEAD)\` as the base`];
+}
+
 function checkCompactFields(task) {
   const problems = [];
   if (task.filesField === null) problems.push(`Task ${task.number}: field line lacks 'Files:'`);
@@ -320,7 +330,7 @@ function checkCompactFields(task) {
   if (task.risk !== null && !RISK_CATEGORIES.includes(task.risk)) {
     problems.push(`Task ${task.number}: 'Risk: ${task.risk}' is not one of ${RISK_CATEGORIES.join(', ')}`);
   }
-  return [...problems, ...checkWholeSuiteProof(task)];
+  return [...problems, ...checkWholeSuiteProof(task), ...checkBareDefaultBranchProof(task)];
 }
 
 const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
