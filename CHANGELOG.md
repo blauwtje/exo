@@ -87,6 +87,8 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 
 - The run watcher hook loads again (it took its arguments in the wrong order and `claude plugin validate` refused it), shows a run that was already running when the session started, and finds the run from a worktree session.
+- The release workflow's `npm run check` passes again on a runner with no git identity: the test harness gives every spawned script a stub author and committer.
+- A detached run under budget `off` no longer sets `CLAUDE_CODE_EFFORT_LEVEL` to the string `null` in its child sessions.
 - A refused, stopped or crashed run's `report.md` names its `Reason:`, and a refused detached run no longer falls back to building in the session.
 - A lead over its context limit may still use ToolSearch, SendMessage, TaskStop, Monitor and a one-line append, and the deny text tells it to wait on and relay its background work.
 - A dotnet command no longer hangs the run session (#120): registry domains are allowed in the run sandbox.
