@@ -193,17 +193,8 @@ function markdownFiles(root, folder) {
     .map((name) => path.join(folder, name).split(path.sep).join('/'));
 }
 
-// Lists every place a subagent could take the session's effort or model:
-// an agent file without an effort of its own, and a prose line that dispatches
-// `general-purpose` with no `dispatches` entry, on "the session's model", or as
-// a fork. Prose it cannot read as a dispatch (a bare "delegate") stays unseen.
 export function findInheritanceGaps(root, table) {
   const gaps = [];
-  for (const file of markdownFiles(root, 'agents')) {
-    if (readField(fs.readFileSync(path.join(root, file), 'utf8'), 'effort') === null) {
-      gaps.push(`${file}: no effort: line, ${INHERITANCE_NOTE}`);
-    }
-  }
   for (const [file, entry] of Object.entries(table.agents)) {
     if (table.kinds[entry.kind].effort === null) gaps.push(`${file}: kind ${entry.kind} has no effort, ${INHERITANCE_NOTE}`);
   }

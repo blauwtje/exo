@@ -1,8 +1,6 @@
 ---
 name: critique-ui
 description: "Judges one built visual surface. Dispatched by design-ui only."
-model: opus
-effort: high
 tools: Read, Write, Grep
 maxTurns: 12
 omitClaudeMd: true

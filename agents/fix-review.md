@@ -1,8 +1,6 @@
 ---
 name: fix-review
 description: "Repairs one branch review's fix findings. Dispatched by verify only."
-model: sonnet
-effort: high
 tools: Read, Edit, Write, Grep, Bash
 maxTurns: 40
 omitClaudeMd: true

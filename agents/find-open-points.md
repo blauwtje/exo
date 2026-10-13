@@ -1,8 +1,6 @@
 ---
 name: find-open-points
 description: "Finds guesses a brief leaves a builder. Dispatched by spec only."
-model: sonnet
-effort: high
 tools: Read, Glob, Grep, Bash
 maxTurns: 30
 ---

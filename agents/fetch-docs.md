@@ -1,8 +1,6 @@
 ---
 name: fetch-docs
 description: "Researches a pinned external library, API or service, or a document on disk, from first-party sources. Not for this repository's code."
-model: sonnet
-effort: medium
 tools: Read, Glob, Grep, WebSearch, WebFetch
 maxTurns: 20
 omitClaudeMd: true

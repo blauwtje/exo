@@ -1,8 +1,6 @@
 ---
 name: build-ui
 description: "Builds one design-ui scope. Dispatched by design-ui only."
-model: sonnet
-effort: high
 tools: Read, Edit, Write, Grep, Bash
 maxTurns: 60
 omitClaudeMd: true

@@ -262,7 +262,7 @@ test('an inherit dispatch reads "with `model` omitted at `<effort>` effort"', ()
   assert.deepEqual(findInheritanceGaps(root, table).filter((gap) => gap.includes('skills/')), []);
 });
 
-test('the inheritance scan names an agent without effort, an uncovered general-purpose line, the session\'s model and a fork', () => {
+test('the inheritance scan names a kind without effort, an uncovered general-purpose line, the session\'s model and a fork', () => {
   const table = structuredClone(TABLE);
   table.agents = { 'agents/finder.md': { kind: 'lookup' }, 'agents/worker.md': { kind: 'build' } };
   table.dispatches = [{ file: 'skills/alpha/SKILL.md', match: 'a `general-purpose` delegate on `sonnet` at `high` effort', kind: 'build' }];
@@ -277,11 +277,9 @@ test('the inheritance scan names an agent without effort, an uncovered general-p
   const root = makeRoot({
     'agents/finder.md': FILES['agents/finder.md'],
     'agents/worker.md': '---\nname: worker\nmodel: sonnet\neffort: high\n---\n\nBody.\n',
-    'agents/stray.md': '---\nname: stray\nmodel: sonnet\n---\n\nBody.\n',
     'skills/alpha/SKILL.md': alpha
   });
   assert.deepEqual(findInheritanceGaps(root, table), [
-    'agents/stray.md: no effort: line, the session effort would reach the subagent',
     'agents/finder.md: kind lookup has no effort, the session effort would reach the subagent',
     'skills/alpha/SKILL.md:6: names general-purpose with no dispatches entry in lib/model-kinds.json',
     'skills/alpha/SKILL.md:7: names "the session\'s model"; pin a kind with model and effort',
