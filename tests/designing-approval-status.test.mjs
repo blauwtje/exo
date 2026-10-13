@@ -1,4 +1,4 @@
-// context.mjs reports approval_status in its JSON (tested in ui-design-scripts.test.mjs);
+// context.mjs reports approval_status in its JSON (tested in ui-design-context.test.mjs);
 // this guards that the design-ui references actually read it instead of sending the
 // model into DESIGN.md's body to learn whether an identity is approved or a draft.
 
