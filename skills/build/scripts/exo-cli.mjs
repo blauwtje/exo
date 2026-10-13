@@ -247,7 +247,10 @@ async function buildRun(root, plan, flags, id) {
 
   const rootFlags = inTree ? ['--root', runRoot] : [];
   const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
-  const child = spawn(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
+  const child = spawn(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: ['inherit', 'pipe', 'pipe'], env });
+  // why: run-plan's lines pass through process.stdout.write and process.stderr.write, so teeToFile copies them to live.log.
+  child.stdout.on('data', (chunk) => process.stdout.write(chunk));
+  child.stderr.on('data', (chunk) => process.stderr.write(chunk));
   // why: a signal to this process does not reach run-plan unless it is forwarded, so run-plan can end its claude group.
   const forward = (signal) => child.kill(signal);
   const signals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
@@ -363,7 +366,8 @@ async function runCommand(argv, { approving = false } = {}) {
 
   const live = path.join(root, '.exo', 'run', 'live.log');
   if (!child) fs.appendFileSync(live, `=== ${new Date().toTimeString().slice(0, 8)} run ${id} ${path.basename(plan)} ===\n`);
-  if (child && detach) teeToFile(live);
+  // why: only the detach spawn passes --run-id, without --detach, so the child is the detached run.
+  if (child) teeToFile(live);
 
   if (approving && !child) {
     const approved = approveGates(runDir(root, id));

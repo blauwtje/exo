@@ -76,6 +76,7 @@ test('--detach returns one line at once, the child finishes the run and frees th
   assert.match(result.stdout, /live log \S*live\.log/);
   const live = await fs.readFile(path.join(context.root, '.exo', 'run', 'live.log'), 'utf8');
   assert.match(live, new RegExp(`^=== \\d\\d:\\d\\d:\\d\\d run ${line[1]} p\\.md ===\\n`));
+  assert.match(live, /^Provider: /m, 'a run-plan line reaches live.log');
   await assert.rejects(fs.access(path.join(context.root, '.exo', 'run', line[1])));
   await assert.rejects(fs.access(path.join(context.root, '.exo', 'run', 'lock')));
 });
