@@ -283,8 +283,20 @@ test('a doc under a task-listed folder is not a plan document', () => {
   assert.equal(git(f.root, 'status', '--porcelain', '--untracked-files=all').includes('docs/guide/x.md'), true);
 });
 
+test('an unreadable plan with a leftover doc parks and commits nothing', () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.runDir, 'state.json'), JSON.stringify({ plan: path.join(f.root, 'missing.md') }));
+  write(f.root, 'docs/specs/s.md', 's\n');
+  const r = f.land();
+  assert.equal(r.phase, 'parked');
+  assert.match(r.gate, /^cannot read plan for plan docs: /);
+  assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'feat');
+});
+
 test('leftover plan docs commit before the rebase and land; no leftovers make no docs commit', () => {
   const f = fixture({ origin: false });
+  write(f.root, 'plan.md', '# Plan\n\n### Task 1: x\nDepends on: none | Files: `b.txt` | Proof: true\n');
+  fs.writeFileSync(path.join(f.runDir, 'state.json'), JSON.stringify({ plan: path.join(f.root, 'plan.md') }));
   write(f.root, 'docs/plan.md', 'p\n');
   assert.equal(f.land().phase, 'landed');
   assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'docs: add plan documents');

@@ -54,22 +54,25 @@ function reviewProblem(runRoot, startedAt) {
 }
 
 function plannedPaths(root, runDir) {
-  try {
-    const state = JSON.parse(fs.readFileSync(path.join(runDir, 'state.json'), 'utf8'));
-    const { tasks } = parsePlan(fs.readFileSync(path.resolve(root, state.plan), 'utf8'));
-    return tasks.flatMap((task) => task.files.map((file) => file.path));
-  } catch {
-    return [];
-  }
+  const state = JSON.parse(fs.readFileSync(path.join(runDir, 'state.json'), 'utf8'));
+  const { tasks } = parsePlan(fs.readFileSync(path.resolve(root, state.plan), 'utf8'));
+  return tasks.flatMap((task) => task.files.map((file) => file.path));
 }
 
 function commitPlanDocs(root, runRoot, runDir) {
   const status = git(runRoot, 'status', '--porcelain', '-z', '--untracked-files=all').out;
-  const planned = plannedPaths(root, runDir);
-  const docs = status.split('\0').filter(Boolean).map((entry) => entry.slice(3))
-    .filter((file) => isPlanDoc(file) && !isCovered(planned, file));
-  if (docs.length === 0) return;
+  const candidates = status.split('\0').filter(Boolean).map((entry) => entry.slice(3)).filter(isPlanDoc);
+  if (candidates.length === 0) return null;
+  let planned;
+  try {
+    planned = plannedPaths(root, runDir);
+  } catch (error) {
+    return `cannot read plan for plan docs: ${error.message}`;
+  }
+  const docs = candidates.filter((file) => !isCovered(planned, file));
+  if (docs.length === 0) return null;
   if (git(runRoot, 'add', '--', ...docs).ok) git(runRoot, 'commit', '-q', '-m', 'docs: add plan documents', '--', ...docs);
+  return null;
 }
 
 export function landRun({ root, runRoot, branch, mode, runDir, success = '', startedAt }) {
@@ -84,7 +87,8 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
   const inPlace = path.resolve(runRoot) === path.resolve(root);
   const hasOrigin = git(root, 'remote', 'get-url', 'origin').ok;
 
-  commitPlanDocs(root, runRoot, runDir);
+  const docsProblem = commitPlanDocs(root, runRoot, runDir);
+  if (docsProblem) return parked(`restore the plan named in ${path.join(runDir, 'state.json')}`, docsProblem);
   if (git(runRoot, 'status', '--porcelain', '--untracked-files=no').out) {
     return parked(`commit or discard the tracked changes in ${runRoot}`, 'worktree dirty');
   }
