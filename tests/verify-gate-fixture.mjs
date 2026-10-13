@@ -23,8 +23,8 @@ export function landTask(root, number, line = `// task ${number}`) {
   git(root, 'commit', '--allow-empty', '-m', `chore: land task ${number}`, '-m', `Plan-task: plan/${number}`);
 }
 
-// The REVIEW line of task `number` landed by landTask, whose commit is HEAD.
-export const reviewLine = (root, number, reviewer) => `REVIEW Task ${number} ${git(root, 'rev-parse', 'HEAD')}: ${reviewer}`;
+// The one branch-wide REVIEW line, for a run with no --base unless `base` names one.
+export const reviewLine = (reviewer, base = 'main') => `REVIEW Branch ${base}..HEAD: ${reviewer}`;
 
 export const CLEAN_CHECK = "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n";
 
