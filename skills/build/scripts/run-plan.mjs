@@ -18,7 +18,7 @@ import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-confi
 import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
-import { clip, clock, deniedLines, detailLines, money, numbersText, summaryLines } from './run-report.mjs';
+import { averageLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
 
@@ -220,7 +220,7 @@ async function main(argv) {
   const writeTasks = () => appendLog(tasksFile, `${JSON.stringify(plan.tasks.map((task) => ({ number: task.number, title: task.title, passes: passes.has(task.number) })), null, 2)}\n`, fs.writeFileSync);
   fs.writeFileSync(progressFile, `# Progress\n\nPlan: ${planPath}\nBranch: ${branch}\n\n`);
   const say = (text) => {
-    const line = `[${clock(Date.now() - startedAt)}] ${text}`;
+    const line = `[${wallClock(new Date())}] ${text}`;
     appendLog(progressFile, `- ${line}\n`);
     process.stdout.write(`${line}\n`);
   };
@@ -251,9 +251,10 @@ async function main(argv) {
     const parsed = parseStream(outcome.text);
     spent += parsed.cost;
     appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
-    return { before, outcome, parsed };
+    return { before, outcome, parsed: { ...parsed, model: parsed.model ?? sessionModel } };
   };
 
+  const landedStats = [];
   let stall = 0;
   let retryNote = '';
   let iteration = 0;
@@ -313,7 +314,9 @@ async function main(argv) {
     passes.add(n);
     fs.rmSync(handoffFile(n), { force: true });
     writeTasks();
-    say(`task ${n} landed ${run.landings.get(n).sha.slice(0, 7)}, ${record.turns} turns, ${money(record.cost)}, ${Math.round((Date.now() - startedTask) / 1000)}s`);
+    const ms = Date.now() - startedTask;
+    landedStats.push({ ms, turns: record.turns, tokens: record.tokens, cost: record.cost });
+    say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, tokens: record.tokens, cost: record.cost }));
     for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
       const file = line.slice(3);
       if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
@@ -351,7 +354,7 @@ async function main(argv) {
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
       const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-      const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
+      const record = { iteration, task: first, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
       run.records.push(record);
       lastTask = first;
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
@@ -389,12 +392,12 @@ async function main(argv) {
     iteration += 1;
     const n = task.number;
     const startedTask = Date.now();
-    say(`task ${n} start${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
+    say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
     const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote + handoffNote(n)), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
+    const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
     run.records.push(record);
     lastTask = n;
 
@@ -531,6 +534,7 @@ async function main(argv) {
     }
   }
   if (stop?.parked) exitCode = 3;
+  for (const line of averageLines(landedStats)) say(line);
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
 

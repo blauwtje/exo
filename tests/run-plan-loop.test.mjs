@@ -54,14 +54,17 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const tasks = JSON.parse(await fs.readFile(path.join(logDir, 'tasks.json'), 'utf8'));
   assert.deepEqual(tasks.map((task) => [task.number, task.passes]), [[1, true], [2, true]]);
   const progress = await fs.readFile(path.join(logDir, 'progress.md'), 'utf8');
-  assert.match(progress, /^- \[\d\d:\d\d\] task 1 landed [0-9a-f]{7}, \d+ turns, \$\d+\.\d\d, \d+s$/m);
+  assert.match(progress, /^- \[\d\d:\d\d:\d\d\] task 1 landed [0-9a-f]{7} · \d+s · \d+ turns · \d+k tokens · \$\d+\.\d\d$/m);
+  assert.match(progress, /^- \[\d\d:\d\d:\d\d\] task 1 start: add a · \S+ \S+$/m);
+  assert.match(progress, /^- \[\d\d:\d\d:\d\d\] average per task: \d+s · \d+ turns · \d+k tokens · \$\d+\.\d\d$/m);
+  assert.match(progress, /^- \[\d\d:\d\d:\d\d\] total: \d+k tokens · \$\d+\.\d\d$/m);
   assert.equal(progress.trim().split('\n').at(-1), 'RUN COMPLETE');
   // Live lines: one per event, each prefixed with the elapsed time, then at most six summary lines.
   const live = result.stdout.trim().split('\n');
-  const events = live.filter((line) => /^\[\d\d:\d\d\] /.test(line)).map((line) => line.replace(/^\[\d\d:\d\d\] /, ''));
+  const events = live.filter((line) => /^\[\d\d:\d\d:\d\d\] /.test(line)).map((line) => line.replace(/^\[\d\d:\d\d:\d\d\] /, ''));
   assert.match(events[0], /^run start: .*plan\.md, branch feat\/run, 2 tasks \(2 to build\)$/);
-  assert.deepEqual(events.slice(1).map((line) => line.replace(/ [0-9a-f]{7},.*$/, '')), ['task 1 start', 'task 1 landed', 'task 2 start', 'task 2 landed', 'Red-green: skipped (Red: none (fixture))', 'all tasks landed, final review start', 'run done']);
-  const summaryPart = live.slice(live.findIndex((line) => !/^\[\d\d:\d\d\] /.test(line)));
+  assert.deepEqual(events.slice(1).map((line) => line.replace(/ [0-9a-f]{7} · .*$/, '').replace(/^(task \d start: .*?) · .*$/, '$1').replace(/^(average per task:|total:) .*$/, '$1')), ['task 1 start: add a', 'task 1 landed', 'task 2 start: add b', 'task 2 landed', 'Red-green: skipped (Red: none (fixture))', 'all tasks landed, final review start', 'average per task:', 'total:', 'run done']);
+  const summaryPart = live.slice(live.findIndex((line) => !/^\[\d\d:\d\d:\d\d\] /.test(line)));
   assert.ok(summaryPart.length <= 6, summaryPart.join('\n'));
   assert.equal(summaryPart[0], 'Landed 2 of 2 tasks: 1, 2.');
   assert.match(summaryPart.join('\n'), /^Next: review branch feat\/run, then push it or open a pull request/m);
@@ -180,7 +183,7 @@ test('denied: two runs with only denials and no landing stop on no progress', as
   assert.match(detail, /^Denied: 2 commands /m);
   assert.match(result.stdout, /^2 commands were refused by the permission rules; the detail file lists them\.$/m);
   assert.doesNotMatch(result.stdout, /left-pad/);
-  assert.match(result.stdout, /^\[\d\d:\d\d\] task 1 failed: /m);
+  assert.match(result.stdout, /^\[\d\d:\d\d:\d\d\] task 1 failed: /m);
   assert.match(result.stdout, /^Not landed: tasks 1, 2\. Task 1 did not land in 2 tries\.$/m);
 });
 
@@ -191,7 +194,7 @@ test('denied: a long denied command is cut to 120 characters in the detail file'
   const detail = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
   const line = detail.split('\n').find((entry) => entry.startsWith('  iteration 1, task 1: echo'));
   assert.ok(line.endsWith('...') && line.length < 160, line);
-  assert.match(result.stdout, /^\[\d\d:\d\d\] task 1 blocked: denied$/m);
+  assert.match(result.stdout, /^\[\d\d:\d\d:\d\d\] task 1 blocked: denied$/m);
 });
 
 test('denied: a denial is logged and the BLOCKED line it caused stops the run', async () => {
