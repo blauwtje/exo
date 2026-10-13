@@ -71,7 +71,14 @@ export function parseReviewLines(text) {
   return { review, overlaps };
 }
 
-const stopOf = (line, why, next) => ({ line, why, next });
+export function unprovenRisks(findings) {
+  if (!fs.existsSync(findings)) return [];
+  return fs.readFileSync(findings, 'utf8').split('\n')
+    .filter((line) => /\bhazard\b/.test(line) && /reported:\s*unproven\b/.test(line))
+    .map((line) => line.replace(/;?\s*reported:.*$/, '').trim());
+}
+
+const stopOf =(line, why, next) => ({ line, why, next });
 
 const BRANCH_QUESTIONS = [
   'Does the branch, taken as a whole, do what the plan Goal says?',
@@ -107,7 +114,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     const verdict = verdictOf(merged);
     const findings = path.join(exo, 'branch-review.md');
     if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
-    if (verdict === 'FINDINGS' && countOf(merged, 'fix') >= 1) {
+    if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'hazard') >= 1) {
       say('fix start');
       const session = await runSession({ kind: 'fix', task: null, model: null, prompt: fixerPrompt({ planPath, root, base: baseText, findings }) });
       if (session.stop !== undefined) return { stop: session.stop };
@@ -140,5 +147,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     }
   }
   const gate = node(SCRIPT.verify, gateArgs, root);
-  return { gate };
+  const unproven = unprovenRisks(path.join(exo, 'branch-review.md'));
+  if (unproven.length === 0) return { gate };
+  return { gate: { status: gate.status, stdout: `${gate.stdout ?? ''}${unproven.map((line) => `WARN Unproven risk: ${line}\n`).join('')}`, stderr: gate.stderr } };
 }
