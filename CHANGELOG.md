@@ -93,6 +93,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo run` lands a blocked task whose Proof the sandbox or permission rules refused when the script's own proof and gate pass.
 - A plan's `App:` start command may contain ` | `; only the first ` | Ready: ` splits it.
 - A task session reports a sandbox-refused proof as `not run`, so `land-task` runs the proof instead of refusing the report.
+- The `.csproj` run test commits `App.csproj` on `main` and asserts `gate PASS`; on the run branch the stray-path check failed its gate.
 
 ## 0.131.1 - 2026-10-11
 

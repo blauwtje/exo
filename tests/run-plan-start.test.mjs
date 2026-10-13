@@ -100,13 +100,17 @@ test('sandbox: every process gets sandbox settings excluding only exo\'s gate sc
 
 test('sandbox: a .csproj repo opens NuGet in the dry run and hands each session the dotnet env', async () => {
   const context = await setup();
+  git(context.root, 'switch', '-q', 'main');
   await fs.writeFile(path.join(context.root, 'App.csproj'), '<Project/>\n');
   git(context.root, 'add', '-A');
   git(context.root, 'commit', '-q', '-m', 'chore: add the project');
+  git(context.root, 'push', '-q', 'origin', 'main');
+  git(context.root, 'switch', '-q', 'feat/run');
+  git(context.root, 'merge', '-q', '--ff-only', 'main');
   const dry = await runPlan(context, [land(1)], ['--dry-run']);
   assert.ok(dry.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: api.nuget.org\n`), dry.stdout);
   const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
-  assert.match(result.stop, /^run-plan: stop: done, 2\/2 tasks landed/, result.stdout + result.stderr);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
   assert.ok(result.calls.length >= 2, 'both task sessions ran');
   for (const call of result.calls) {
     assert.deepEqual(settingsOf(call).sandbox.network, { allowedDomains: ['api.nuget.org'] });
