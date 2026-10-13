@@ -16,6 +16,8 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 6. **Route the return.**
 7. **The tail.** Read `references/tail.md`, then run `verify`, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
 
+- Run refused → fix the plan per `Reason:`, rerun `exo-cli.mjs run --detach`; never build in this session unless asked.
+
 ## No spec
 
 A decided change with no plan file follows `references/no-spec.md`. After a compaction, rebuild what landed from the working-tree diff, not memory.
@@ -28,17 +30,17 @@ A decided change with no plan file follows `references/no-spec.md`. After a comp
 | File | Read it when |
 |---|---|
 | `references/run-loop.md` | Steps 1-6, without `--task`. |
-| `references/run-loop-inline.md` | Never here: next-task prints it. |
+| `references/run-loop-inline.md` | Never here: next-task. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7; on `Route: inline`, only when its `Steps:` fall back. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
-| `references/rolling-window.md` | Never here: the unit reads it. |
-| `references/agent-cases.md` | Never here: the agents read it. |
-| `implementer-prompt.md` | Never here: the unit reads it. |
-| `drift-repairer-prompt.md` | Never here: the unit reads it. |
+| `references/rolling-window.md` | Never here: unit reads it. |
+| `references/agent-cases.md` | Never here: agents. |
+| `implementer-prompt.md` | Never here: unit reads it. |
+| `drift-repairer-prompt.md` | Never here: unit reads it. |
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |
 | `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
 | `references/design-tasks.md` | Step 4, `Design:` line. |
