@@ -93,6 +93,10 @@ export function parseStream(text) {
     const usage = event.message?.usage ?? {};
     return (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0);
   }));
+  const tokens = events.filter((event) => event.type === 'assistant').reduce((sum, event) => {
+    const usage = event.message?.usage ?? {};
+    return sum + (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0) + (Number(usage.output_tokens) || 0);
+  }, 0);
   const costs = results.map((result) => result.total_cost_usd).filter((cost) => typeof cost === 'number');
   return {
     init,
@@ -101,6 +105,8 @@ export function parseStream(text) {
     turns: results.reduce((sum, result) => sum + (Number(result.num_turns) || 0), 0),
     cost: costs.at(-1) ?? 0,
     peakContext,
+    model: typeof init?.model === 'string' ? init.model : null,
+    tokens,
     sessionId: init?.session_id ?? final?.session_id ?? null,
     hooks: events.filter((event) => event.type === 'system' && event.subtype === 'hook_started').length,
     denials: [...denials.values()].filter((denial) => !isRefusal(denial)),

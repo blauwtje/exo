@@ -144,6 +144,18 @@ test('parseStream keeps the largest assistant context across input, cache read a
   assert.equal(parseStream('').peakContext, 0);
 });
 
+test('parseStream reads the model from init and sums input, cache and output tokens', () => {
+  const usage = (counts) => ({ type: 'assistant', message: { usage: counts } });
+  const first = { input_tokens: 10, cache_read_input_tokens: 2000, cache_creation_input_tokens: 300, output_tokens: 40 };
+  const second = { input_tokens: 5, cache_read_input_tokens: 100, cache_creation_input_tokens: 0, output_tokens: 7 };
+  const events = [{ type: 'system', subtype: 'init', model: 'claude-opus-5-5' }, usage(first), usage(second)];
+  const parsed = parseStream(events.map((event) => JSON.stringify(event)).join('\n'));
+  assert.equal(parsed.model, 'claude-opus-5-5');
+  assert.equal(parsed.tokens, 2462);
+  assert.equal(parseStream('').model, null);
+  assert.equal(parseStream('').tokens, 0);
+});
+
 test('--max-run-usd: the ledger holds one line per session and the run stops before a session once the cap is spent', async () => {
   const context = await setup();
   const result = await runPlan(context, [{ ...land(1), hooks: 2 }, land(2)], ['--max-run-usd', '0.03']);
