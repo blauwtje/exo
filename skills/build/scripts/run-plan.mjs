@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
+import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
@@ -32,6 +33,9 @@ const STALL_LIMIT = 2;
 const DEFAULT_TIMEOUT_MINUTES = 60;
 
 class Refusal extends Error {}
+
+// why: the run's one app process; the entry point's `finally` kills its tree.
+let appPid = null;
 
 function chooseProvider(flags, home) {
   let config;
@@ -253,6 +257,19 @@ async function main(argv) {
   let retryNote = '';
   let iteration = 0;
   let stop;
+  const app = frameOf(plan.frame).app;
+  if (app !== null) {
+    say(`app start: ${clip(app.start, 80)}`);
+    const started = startDetached(app.start, { cwd: root, env: withoutRunVariables() });
+    appPid = started.pid ?? null;
+    const deadlineMs = environmentMs('EXO_APP_READY_MS', 120_000);
+    if (app.ready === null || !(await waitForUrl(app.ready, { deadlineMs, app: started }))) {
+      say('app not ready');
+      stop = { line: `app not ready: ${app.ready ?? 'no Ready: url'} did not answer within ${Math.round(deadlineMs / 1000)} s`, why: 'The plan App did not become ready', next: 'check the App: start command and Ready: url in the plan, then run exo run again' };
+    } else {
+      say(`app ready: ${app.ready}`);
+    }
+  }
   const takeParked = (name) => {
     const file = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'parked') : null;
     if (file === null || !fs.existsSync(file)) return null;
@@ -316,7 +333,7 @@ async function main(argv) {
       return;
     }
   };
-  if (chosen.mode === 'plan' && order.length > 0) {
+  if (stop === undefined && chosen.mode === 'plan' && order.length > 0) {
     stop = budgetStop() ?? undefined;
     const first = order[0];
     if (stop === undefined) {
@@ -493,15 +510,16 @@ async function main(argv) {
   return exitCode;
 }
 
-if (isMain(import.meta.url)) {
+async function entry(argv) {
   try {
-    process.exitCode = await main(process.argv.slice(2));
+    return await main(argv);
   } catch (error) {
-    if (error instanceof UsageError) {
-      process.stderr.write(`run-plan: ${error.message}\n`);
-      process.exitCode = 2;
-    } else {
-      throw error;
-    }
+    if (!(error instanceof UsageError)) throw error;
+    process.stderr.write(`run-plan: ${error.message}\n`);
+    return 2;
+  } finally {
+    if (appPid !== null) killTree(appPid);
   }
 }
+
+if (isMain(import.meta.url)) process.exitCode = await entry(process.argv.slice(2));
