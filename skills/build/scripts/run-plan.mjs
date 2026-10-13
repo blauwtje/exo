@@ -12,7 +12,7 @@ import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { recordStop, recordTask, updateRun } from './run-state.mjs';
+import { phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
@@ -119,8 +119,6 @@ function setPhase(phase) {
   const dir = process.env.EXO_RUN_DIR;
   if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), { phase });
 }
-
-const STOP_PHASE = { 3: 'parked' };
 
 function noteTask(task) {
   const dir = process.env.EXO_RUN_DIR;
@@ -551,8 +549,7 @@ async function main(argv) {
   }
   if (stop?.parked) exitCode = 3;
   // why: after a pass exo-cli still lands the branch and owns the final phase, so a pass records only the reason.
-  const stopPhase = STOP_PHASE[exitCode] ?? 'stopped';
-  noteStop(exitCode === 0 ? { reason: stop.line } : { phase: stopPhase, reason: stop.line });
+  noteStop(exitCode === 0 ? { reason: stop.line } : { phase: phaseForExit(exitCode), reason: stop.line });
   for (const line of averageLines(landedStats)) say(line);
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');

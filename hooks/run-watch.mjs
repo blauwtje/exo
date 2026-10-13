@@ -1,4 +1,5 @@
-const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
+// why: a mod cannot import, so this copy stays; tests/run-watch.test.mjs holds it equal to run-state.mjs FINAL_PHASES.
+export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 const TICK_MS = 5000;
 const REPORT_PHASES = ['landed', 'passed'];
 

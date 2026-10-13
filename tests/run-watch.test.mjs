@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { register } from '../hooks/run-watch.mjs';
+import { FINAL_PHASES as MOD_FINAL_PHASES, register } from '../hooks/run-watch.mjs';
+import { FINAL_PHASES, phaseForExit } from '../skills/build/scripts/run-state.mjs';
 
 function makeState(fields) {
   return { phase: 'build', task: { n: 2, subject: 'add log' }, landed: 1, total: 5, startedAt: '2026-10-13T10:00:00Z', updatedAt: '2999-01-01T00:00:00Z', ...fields };
@@ -89,4 +90,15 @@ test('a run last updated before the session started is ignored', async () => {
   const [{ tick }] = harness.calls.timers;
   await tick();
   assert.equal(harness.calls.statuses[0], undefined);
+});
+
+test('the mod copy of FINAL_PHASES equals run-state FINAL_PHASES', () => {
+  assert.deepEqual(MOD_FINAL_PHASES, FINAL_PHASES);
+});
+
+test('phaseForExit maps each run-plan exit code to one run phase', () => {
+  assert.equal(phaseForExit(0), 'passed');
+  assert.equal(phaseForExit(2), 'refused');
+  assert.equal(phaseForExit(3), 'parked');
+  assert.equal(phaseForExit(1), 'stopped');
 });

@@ -11,7 +11,7 @@ import { readDecisions } from '#run-decision';
 import { isMain } from '#script-flags';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
-import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
+import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, listRuns, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
 const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup';
 const CLI = fileURLToPath(import.meta.url);
@@ -364,7 +364,7 @@ async function runCommand(argv, { approving = false } = {}) {
     if (lock.stale) process.stdout.write(`exo: took over the lock of run ${lock.stale}, whose process is gone\n`);
   }
 
-  const live = path.join(root, '.exo', 'run', 'live.log');
+  const live = liveLogFile(root);
   if (!child) fs.appendFileSync(live, `=== ${new Date().toTimeString().slice(0, 8)} run ${id} ${path.basename(plan)} ===\n`);
   // why: only the detach spawn passes --run-id, without --detach, so the child is the detached run.
   if (child) teeToFile(live);
@@ -393,7 +393,7 @@ async function runCommand(argv, { approving = false } = {}) {
     else {
       const built = await buildRun(root, plan, flags, id);
       code = built.code ?? 1;
-      phase = code === 0 ? 'passed' : code === 2 ? 'refused' : code === 3 ? 'parked' : 'stopped';
+      phase = phaseForExit(code);
       if (code === 0 && built.land !== null) {
         updateRun(root, id, { phase: 'landing', stage: 'landing', runRoot: built.runRoot, branch: built.branch });
         result = landStage(root, id, plan);

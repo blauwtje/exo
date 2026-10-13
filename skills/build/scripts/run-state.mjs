@@ -7,6 +7,15 @@ export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused',
 
 const runsDir = (root) => path.join(root, '.exo', 'run');
 const lockFile = (root) => path.join(runsDir(root), 'lock');
+const EXIT_PHASE = { 0: 'passed', 2: 'refused', 3: 'parked' };
+
+export function phaseForExit(code) {
+  return EXIT_PHASE[code] ?? 'stopped';
+}
+
+export function liveLogFile(root) {
+  return path.join(runsDir(root), 'live.log');
+}
 
 export function runDir(root, id) {
   return path.join(runsDir(root), id);
