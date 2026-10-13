@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { checkSkillScriptBehavior } from '../verify/checks/skill-script-behavior.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -74,4 +74,27 @@ test('the skill script behavior check runs its tests without the run variables',
     }
     fs.rmSync(repository, { recursive: true, force: true });
   }
+});
+
+function gitConfigUnderPreload({ givenEnv, keys }) {
+  const inherited = Object.entries(process.env).filter(([name]) => !/^GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+)$/.test(name));
+  const env = { ...Object.fromEntries(inherited), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', ...givenEnv };
+  const readKeys = [
+    "const { execFileSync } = require('node:child_process');",
+    `for (const key of ${JSON.stringify(keys)}) console.log(key + '=' + execFileSync('git', ['config', key], { encoding: 'utf8' }).trim());`
+  ].join('\n');
+  const preload = pathToFileURL(path.join(ROOT, 'tests', 'clean-run-env.mjs')).href;
+  const run = spawnSync(process.execPath, ['--import', preload, '-e', readKeys], { cwd: os.tmpdir(), encoding: 'utf8', env });
+  assert.equal(run.status, 0, `${run.stdout}${run.stderr}`);
+  return run.stdout.trim().split('\n');
+}
+
+test('a child git under the preload reports maintenance.auto false', () => {
+  assert.deepEqual(gitConfigUnderPreload({ givenEnv: {}, keys: ['maintenance.auto'] }), ['maintenance.auto=false']);
+});
+
+test('the preload appends maintenance.auto after the git config entries the environment already holds', () => {
+  const givenEnv = { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'user.name', GIT_CONFIG_VALUE_0: 'kept' };
+  const keys = ['user.name', 'maintenance.auto'];
+  assert.deepEqual(gitConfigUnderPreload({ givenEnv, keys }), ['user.name=kept', 'maintenance.auto=false']);
 });
