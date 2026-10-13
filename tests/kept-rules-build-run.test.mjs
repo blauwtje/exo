@@ -39,7 +39,8 @@ test('build: a woken lead repairs a stopped run and resumes it; the wait loop is
   assert.ok(repair.includes('run --resume <id> --detach'), 'the run is resumed detached');
   assert.ok(repair.includes('after two repairs') && repair.includes('PushNotification'), 'a third stop notifies and asks');
   assert.ok(/`landed` or `passed`/.test(repair), 'a landed or passed wake reports the result');
-  assert.ok(handOff.includes('Session without the status line'), 'the wait loop is for sessions without the status line');
+  assert.ok(handOff.includes('Session without the status line → run the watch command the start line prints as one background Bash call'), 'a session without the status line runs the printed watch command');
+  assert.ok(!handOff.includes('sleep 40'), 'the hand-off carries no hand-written wait loop');
 });
 
 test('exo-cli: --help prints the usage and exits 0', () => {

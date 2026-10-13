@@ -8,7 +8,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, run } from './harness.mjs';
-import { acquireLock, createRun, readState, updateRun } from '../skills/build/scripts/run-state.mjs';
+import { acquireLock, createRun, keepRun, readState, updateRun } from '../skills/build/scripts/run-state.mjs';
 import { STUB, setup as planSetup } from './run-plan-fixture.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
@@ -67,6 +67,7 @@ test('--detach returns one line at once, the child finishes the run and frees th
   const line = /^exo: run (\S+) started in the background \(pid (\d+)\)/.exec(result.stdout);
   assert.ok(line, result.stdout);
   assert.equal(result.stdout.trim().split('\n').length, 1);
+  assert.ok(result.stdout.includes(`watch: run \`node "${CLI}" wait ${line[1]}\` as one background Bash call`), result.stdout);
   const state = await finalState(context.root, line[1]);
   assert.equal(state.phase, 'passed');
   assert.equal(state.detach, true);
@@ -170,6 +171,59 @@ test('status names a non-final run whose process is gone and the resume command'
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^dead {2}build {2}p\.md .*exo run --resume dead$/m);
   assert.doesNotMatch(result.stdout, /^done .*resume/m);
+});
+
+const DEAD_PID = 2 ** 22 + 12345;
+
+test('wait on a final run returns at once with the phase, the report path and exit 0 only on success', async () => {
+  const context = await setup();
+  createRun(context.root, { id: 'ok', plan: '/x/p.md', pid: DEAD_PID });
+  updateRun(context.root, 'ok', { phase: 'passed' });
+  keepRun(context.root, 'ok');
+  const passed = await exo(context, ['wait', 'ok']);
+  assert.equal(passed.code, 0, passed.stdout + passed.stderr);
+  assert.ok(passed.stdout.includes('passed'), passed.stdout);
+  assert.ok(passed.stdout.includes(path.join(context.root, '.exo', 'kept', 'ok', 'report.md')), passed.stdout);
+
+  createRun(context.root, { id: 'bad', plan: '/x/p.md', pid: DEAD_PID });
+  updateRun(context.root, 'bad', { phase: 'crashed' });
+  const crashed = await exo(context, ['wait', 'bad']);
+  assert.equal(crashed.code, 1, crashed.stdout + crashed.stderr);
+  assert.ok(crashed.stdout.includes('crashed'), crashed.stdout);
+  assert.ok(crashed.stdout.includes(path.join(context.root, '.exo', 'run', 'bad', 'report.md')), crashed.stdout);
+});
+
+test('wait returns once a running run turns final mid-poll', async () => {
+  const context = await setup();
+  createRun(context.root, { id: 'live', plan: '/x/p.md', pid: process.pid });
+  updateRun(context.root, 'live', { phase: 'build' });
+  const waiting = exo(context, ['wait', 'live']);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  updateRun(context.root, 'live', { phase: 'landed' });
+  keepRun(context.root, 'live');
+  const result = await waiting;
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.ok(result.stdout.includes('landed'), result.stdout);
+  assert.ok(result.stdout.includes(path.join(context.root, '.exo', 'kept', 'live', 'report.md')), result.stdout);
+});
+
+test('wait past its deadline exits non-zero with the phase and the command to keep waiting', async () => {
+  const context = await setup();
+  createRun(context.root, { id: 'slow', plan: '/x/p.md', pid: process.pid });
+  updateRun(context.root, 'slow', { phase: 'verify' });
+  const result = await run(CLI, ['wait', 'slow'], { cwd: context.root, env: { HOME: context.home, EXO_WAIT_MS: '200' } });
+  assert.notEqual(result.code, 0);
+  assert.ok(result.stdout.includes('verify'), result.stdout);
+  assert.ok(result.stdout.includes(`node "${CLI}" wait slow`), result.stdout);
+});
+
+test('wait on a non-final run whose process is gone exits 1 with the resume command', async () => {
+  const context = await setup();
+  createRun(context.root, { id: 'gone', plan: '/x/p.md', pid: DEAD_PID });
+  updateRun(context.root, 'gone', { phase: 'build' });
+  const result = await exo(context, ['wait', 'gone']);
+  assert.equal(result.code, 1, result.stdout + result.stderr);
+  assert.ok(result.stdout.includes('exo run --resume gone'), result.stdout);
 });
 
 test('status with no runs refuses', async () => {

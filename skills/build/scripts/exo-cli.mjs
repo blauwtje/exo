@@ -8,14 +8,18 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
 import { readDecisions } from '#run-decision';
-import { isMain } from '#script-flags';
+import { environmentMs, isMain } from '#script-flags';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
-import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, listRuns, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
+import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, keptDir, listRuns, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
-const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup';
+const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo run config [<key> <value>] | exo setup';
 const CLI = fileURLToPath(import.meta.url);
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
+// why: a plan run with several tasks and 30-minute gates can take hours; the deadline only ends a wait nobody reads.
+const WAIT_MS = 6 * 60 * 60 * 1000;
+const POLL_MS = 1000;
+const watchCommand = (id) => `node "${CLI}" wait ${id}`;
 
 class Refusal extends Error {}
 
@@ -381,7 +385,7 @@ async function runCommand(argv, { approving = false } = {}) {
     started.unref();
     fs.closeSync(fd);
     updateRun(root, id, { pid: started.pid });
-    process.stdout.write(`exo: run ${id} started in the background (pid ${started.pid}); exo status ${id}, log ${log}, live log ${live}\n`);
+    process.stdout.write(`exo: run ${id} started in the background (pid ${started.pid}); exo status ${id}, log ${log}, live log ${live}; watch: run \`${watchCommand(id)}\` as one background Bash call\n`);
     return 0;
   }
 
@@ -449,6 +453,47 @@ function statusCommand(args) {
   }
 }
 
+function findRun(root, id) {
+  try {
+    const dir = keptDir(root, id);
+    return { state: JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')), dir, kept: true };
+  } catch {
+    const state = readState(root, id);
+    return state === null ? null : { state, dir: runDir(root, id), kept: false };
+  }
+}
+
+async function waitCommand(args) {
+  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
+  const id = args[0];
+  if (id === undefined || args.length !== 1) throw new Refusal('usage: exo wait <id>');
+  const deadline = Date.now() + environmentMs('EXO_WAIT_MS', WAIT_MS);
+  for (;;) {
+    const found = findRun(root, id);
+    if (found === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
+    const { state, dir, kept } = found;
+    const final = FINAL_PHASES.includes(state.phase);
+    const alive = isAlive(state.pid);
+    // why: a run writes its final phase before report.md and the move to .exo/kept/, so the wait ends once the run is kept or its process is gone.
+    if (final && (kept || !alive)) {
+      process.stdout.write(`exo: run ${id} ${state.phase}; report ${path.join(dir, 'report.md')}\n`);
+      return ['passed', 'landed'].includes(state.phase) ? 0 : 1;
+    }
+    if (!final && !alive) {
+      process.stdout.write(`exo: run ${id} ${state.phase}; process gone, continue with: exo run --resume ${id}\n`);
+      return 1;
+    }
+    const left = deadline - Date.now();
+    if (left <= 0) {
+      process.stdout.write(`exo: run ${id} still ${state.phase} at the wait deadline; keep waiting with: ${watchCommand(id)}\n`);
+      // why: 124 is the exit code timeout(1) uses, so a deadline reads apart from a failed run.
+      return 124;
+    }
+    await new Promise((resolve) => setTimeout(resolve, Math.min(POLL_MS, left)));
+  }
+}
+
 async function dispatch(command, rest) {
   if (command === 'setup') return setupCommand();
   if (command === 'run' && rest[0] === 'config') return configCommand(rest.slice(1));
@@ -457,6 +502,10 @@ async function dispatch(command, rest) {
     return;
   }
   if (command === 'status') return statusCommand(rest);
+  if (command === 'wait') {
+    process.exitCode = await waitCommand(rest);
+    return;
+  }
   if (command === 'run') {
     process.exitCode = await runCommand(rest);
     return;
