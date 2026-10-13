@@ -24,6 +24,6 @@ test('the workspace step initialises a folder that holds only the plan docs', ()
 test('a plan for a new folder leaves no init step to the owner', () => {
   const basis = PLAN_SPEC.match(/^2\. `## Plan basis`: .+$/m);
   assert.ok(basis, 'the Plan basis rule exists');
-  assert.ok(basis[0].includes('the executor runs `git init -b main` there before the first task'));
-  assert.ok(basis[0].includes('never an init step for the owner'));
+  assert.ok(basis[0].includes('executor runs `git init -b main` before first task'));
+  assert.ok(basis[0].includes('never an owner init step'));
 });
