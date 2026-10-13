@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.127.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.127.1; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.127.0 - 2026-10-11
+
+### Added
+
+- `benchmarks/results/` now records the test-pollution value runs (seven `find-cause` versions) and the flow runs of 2026-10-11: exo never passed test-pollution, and on the four-task plan exo used 76% more weighted tokens than the baseline at equal quality.
 
 ## 0.126.0 - 2026-10-11
 

@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.127.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.127.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.132.3 - 2026-10-13
 
 ### Changed
 
@@ -178,9 +180,3 @@ Versions before 0.127.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 
 - The budget constants and `edit-skills` no longer say the session hook injects `route-skills` with a 518-token ceiling; it injects `hooks/session-routing.md`, and `route-skills` follows the normal skill ceiling.
-
-## 0.127.0 - 2026-10-11
-
-### Added
-
-- `benchmarks/results/` now records the test-pollution value runs (seven `find-cause` versions) and the flow runs of 2026-10-11: exo never passed test-pollution, and on the four-task plan exo used 76% more weighted tokens than the baseline at equal quality.
