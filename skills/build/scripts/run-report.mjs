@@ -27,6 +27,27 @@ export function clock(ms) {
   return total >= 3600 ? `${Math.floor(total / 3600)}:${two(Math.floor(total / 60) % 60)}:${two(total % 60)}` : `${two(Math.floor(total / 60))}:${two(total % 60)}`;
 }
 
+export function wallClock(date) {
+  const two = (value) => String(value).padStart(2, '0');
+  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
+}
+
+export const taskSubject = (heading) => heading.replace(/^\s*\w+(?:\([^)]*\))?!?:\s*/, '');
+
+export const startLine = ({ number, subject, model, effort }) => `task ${number} start: ${subject} · ${model} ${effort}`;
+
+export const landedLine = ({ number, sha, ms, turns, tokens, cost }) => `task ${number} landed ${sha.slice(0, 7)} · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(tokens)}k tokens · ${money(cost)}`;
+
+export function averageLines(landed) {
+  if (landed.length === 0) return [];
+  const sum = (field) => landed.reduce((total, entry) => total + entry[field], 0);
+  const mean = (field) => sum(field) / landed.length;
+  return [
+    `average per task: ${Math.round(mean('ms') / 1000)}s · ${Math.round(mean('turns'))} turns · ${thousands(mean('tokens'))}k tokens · ${money(mean('cost'))}`,
+    `total: ${thousands(sum('tokens'))}k tokens · ${money(sum('cost'))}`,
+  ];
+}
+
 function duration(ms) {
   const total = Math.round(ms / 1000);
   const two = (value) => String(value).padStart(2, '0');
