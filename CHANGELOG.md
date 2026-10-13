@@ -11,6 +11,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Highlights
 
+- **A plan now builds through the detached loop by default, its proofs run outside the sandbox, one review covers the branch, and small or clear work reaches build without questions.**
 - **`exo run` now builds a small plan in one session and lands it by script: in the flow benchmark it uses 1.23x the no-plugin baseline's tokens with the hidden check 4/4, against 1.76x for the `build` flow.**
 - **A plan task's Proof and a plan's Success must now fail before the change: on the test-pollution benchmark `exo run` with this red-green gate passed 5 of 5, against 1 of 35 for the no-plugin baseline.**
 - **exo now refuses new code comments at edit time and at landing, except a license header, a public doc comment, a link or a `why:` line; one capped `exo run` added 0 comment lines with the hidden check passing.**
@@ -32,9 +33,15 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `plan-check` refuses a task whose Proof or the `Allow:` list starts a nested claude, because `exo run`'s sandbox cannot; the measurement moves to the Success line.
 - A run that ends `landed`, `passed` or `refused` moves itself to `.exo/kept/<id>/`, so `.exo/run/` holds only live runs.
 - After `spec` starts a detached `exo run`, the session watches it and reports its end unprompted: phase, landed range, push target and the next step.
+- A plan's Plan basis may name `App:`, a start command and a ready URL; `exo run` starts it once before the first proof or the Success gate and stops its process tree when the run ends, and `plan-check` flags an `App:` with no ready URL.
 
 ### Changed
 
+- `build` on a plan starts the detached loop (`exo-cli.mjs run <plan> --detach`); the in-session unit route stays only for `--task` mode, a codex host, or no `claude` on `PATH`.
+- `exo run` runs each task's `Proof:` and `Land gate:` from its own process, outside the build session's sandbox and without a subagent.
+- `spec` asks no question for small or clear work and records each choice under `## Decisions` as closed by exo.
+- `verify` emits one `REVIEW Branch` line and `run-tail` runs one fresh review of the whole branch, flagging only correctness and requirement gaps; `run-unit` dispatches no per-task review.
+- `ship` asks no landing question when the plan's `Land:` names a mode.
 - `run-plan.mjs` is split into `run-session.mjs`, `run-worktree.mjs`, `run-prompts.mjs` and `run-report.mjs`, halving it to 29 kB so a plan task that edits it fits one session; behavior is unchanged.
 - The code standard is rewritten to four principles and bans comments except the allowed list.
 - `land-task` refuses a task whose added code breaks the code rules, and verify sends each such line to the review fixer as a `fix` finding.
