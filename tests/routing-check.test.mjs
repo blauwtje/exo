@@ -70,7 +70,8 @@ test('a negative sample that another skill outranks fails the rank-1 rate', (t) 
 
 test('a lock lower than the one on origin/main fails', (t) => {
   const root = fixture(t);
-  const git = (...args) => spawnSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
+  // why: without maintenance.auto=false the commit detaches a `git maintenance run --auto` that repacks .git while the cleanup removes it (ENOTEMPTY).
+  const git = (...args) => spawnSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'maintenance.auto=false', ...args], { encoding: 'utf8' });
   fs.writeFileSync(path.join(root, 'verify/budgets.mjs'), 'export const ROUTING_RANK_ONE_LOCK = 1.5;\n', 'utf8');
   git('init', '-q');
   git('add', '-A');
