@@ -7,7 +7,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { codexOffer, FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, taskReviewer, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { readKindTable } from '../lib/model-kinds.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const { light, deep } = REVIEWER_AGENTS;
@@ -32,11 +31,10 @@ test('touchesManifest reads a manifest or lockfile anywhere in the paths', () =>
   assert.equal(touchesManifest(['src/app.js']), false);
 });
 
-test('the light pick is an agent file and the deep pick is that agent with the review-deep call model and effort', async () => {
-  const { model, effort } = readKindTable().kinds['review-deep'];
+test('the light pick is an agent file and the deep pick is that agent with the review-deep kind, no model or effort', async () => {
   await fs.access(path.join(AGENTS_DIRECTORY, `${light}.md`));
   assert.equal(light, 'review-branch');
-  assert.equal(deep, `review-branch model=${model} effort=${effort}`);
+  assert.equal(deep, 'review-branch exo-kind: review-deep');
 });
 
 test('the command prints no reviewer, so verify.mjs holds the only pick', async () => {

@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readKindTable } from '#model-kinds';
+import { settingValue } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -25,7 +27,11 @@ const out = (answer) => `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
 
 const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN_ROOT).trim();
 
-const agentModel = () => fs.readFileSync(REVIEW_AGENT, 'utf8').match(/^---\n[\s\S]*?^model:\s*(\S+)\s*$[\s\S]*?\n---\n/m)?.[1] ?? null;
+function agentModel(kind = 'review') {
+  const budget = settingValue('budget');
+  if (budget === 'off') return null;
+  return readKindTable(undefined, { budget }).kinds[kind].model;
+}
 
 function fixerPrompt({ planPath, root, base, findings }) {
   const block = fs.readFileSync(FIXER_PROMPT, 'utf8').match(/```text\n([\s\S]*?)\n```/)[1];
@@ -57,8 +63,8 @@ export function parseReviewLines(text) {
   let review = null;
   const overlaps = [];
   for (const line of text.split('\n')) {
-    const branchLine = line.match(/^REVIEW Branch ([^:]*): (review-branch)(?: model=(\S+))?(?: effort=(\S+))?\s*$/);
-    if (branchLine !== null) review = { range: branchLine[1], model: branchLine[3] ?? null };
+    const branchLine = line.match(/^REVIEW Branch ([^:]*): (review-branch)(?: exo-kind: (\S+))?\s*$/);
+    if (branchLine !== null) review = { range: branchLine[1], kind: branchLine[3] ?? 'review' };
     const overlap = line.match(/^OVERLAP (?!none)(.+?) \(Tasks [^)]*\)$/);
     if (overlap !== null) overlaps.push(overlap[1]);
   }
@@ -80,7 +86,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const { review: branchReview, overlaps } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
   const reviewModel = agentModel();
   const dispatches = [
-    ...(branchReview === null ? [] : [{ task: null, name: 'branch', model: branchReview.model ?? reviewModel, findings: path.join(exo, 'review-branch.md'), scope: `branch ${branchReview.range}`, questions: BRANCH_QUESTIONS }]),
+    ...(branchReview === null ? [] : [{ task: null, name: 'branch', model: agentModel(branchReview.kind), findings: path.join(exo, 'review-branch.md'), scope: `branch ${branchReview.range}`, questions: BRANCH_QUESTIONS }]),
     ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', model: reviewModel, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
   const reports = dispatches.map((dispatch) => dispatch.findings);

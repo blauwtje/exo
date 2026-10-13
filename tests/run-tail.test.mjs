@@ -25,13 +25,13 @@ async function runSteps(steps) {
 
 test('parseReviewLines: the REVIEW Branch line, OVERLAP targets and no task lines', () => {
   const parsed = parseReviewLines([
-    'REVIEW Branch main..HEAD: review-branch model=opus effort=high',
+    'REVIEW Branch main..HEAD: review-branch exo-kind: review-deep',
     'REVIEW Task 2 1234567: review-branch',
     'OVERLAP lib/x.mjs (Tasks 1, 2)'
   ].join('\n'));
-  assert.deepEqual(parsed.review, { range: 'main..HEAD', model: 'opus' });
+  assert.deepEqual(parsed.review, { range: 'main..HEAD', kind: 'review-deep' });
   assert.deepEqual(parsed.overlaps, ['lib/x.mjs']);
-  assert.deepEqual(parseReviewLines('REVIEW Branch main..HEAD: review-branch').review, { range: 'main..HEAD', model: null });
+  assert.deepEqual(parseReviewLines('REVIEW Branch main..HEAD: review-branch').review, { range: 'main..HEAD', kind: 'review' });
   assert.equal(parseReviewLines('REVIEW Branch main..HEAD: none (inline route)').review, null);
   assert.deepEqual(parseReviewLines('OVERLAP none').overlaps, []);
 });

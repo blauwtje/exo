@@ -19,11 +19,10 @@ Prints the review effort for an uncommitted fix (default), whether to offer the 
 or the reviewer of one landed task (--task). Only risk facts and numbers move a pick.`;
 
 function reviewerAgents() {
-  const { agents, kinds } = readKindTable();
+  const { agents } = readKindTable();
   const [lightFile] = Object.entries(agents).find(([, entry]) => entry.kind === 'review');
   const light = basename(lightFile, '.md');
-  const { model, effort } = kinds['review-deep'];
-  return { light, deep: `${light} model=${model} effort=${effort}` };
+  return { light, deep: `${light} exo-kind: review-deep` };
 }
 
 export const REVIEWER_AGENTS = reviewerAgents();
