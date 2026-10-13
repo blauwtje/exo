@@ -16,10 +16,10 @@ This session reads the state only, never the plan's `## Visual direction` or the
 
 The session never reads this section; only the delegate does.
 
-1. Load `design-ui` and enter it at Route rung 2.
+1. Load `design-ui`; the plan names a `Contract:` → enter it at Route rung 2, else at its `## Detached run`.
    - Before entering, write the plan's `Contract:` to `$RUN/contract-selected.json` and the task's `Files:` lines to `$RUN/files.md` as `<path>:<first>-<last>`.
    - The plan names no `Contract:` → write only `$RUN/files.md`; `design-ui`'s run rule settles the direction and records it, so `BLOCKED` on no contract is wrong.
-   - The recorded direction outranks your own reading of the task; it was settled with the user.
+   - The recorded direction outranks your own reading of the task; the plan's `Contract:` or the run rule settled it.
 2. Once `design-ui` reports, run the task's `Proof:`, or a long task's `Run:`.
 3. Write `<command>: pass` over its last output lines, indented, to `<checkout>/.exo/implementer-<n>.md`.
 4. Land it with `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`; land-task refuses a compact task without that report.

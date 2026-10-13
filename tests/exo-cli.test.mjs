@@ -94,6 +94,19 @@ test('a run-plan refusal lands in report.md as Reason', async () => {
   assert.match(report, /^Reason: flag '--session' needs auto, task or plan$/m);
 });
 
+test('a run-plan preflight refusal on stdout lands in report.md as the bare Reason', async () => {
+  const context = await setup();
+  const plan = path.join(context.root, 'docs', 'specs', 'old.md');
+  await fs.writeFile(plan, (await fs.readFile(plan, 'utf8')).replace('Branch: feat/old', 'Branch: main'));
+  git(context.root, 'commit', '-q', '-am', 'docs: plan on the default branch');
+  const result = await exo(context, ['run', 'docs/specs/old.md', '--claude', context.stub]);
+  assert.equal(result.code, 2, result.stdout + result.stderr);
+  assert.match(result.stdout, /^run-plan: refused: Branch: main is the default branch$/m);
+  const report = await keptReport(context);
+  assert.match(report, /^Phase: refused$/m);
+  assert.match(report, /^Reason: Branch: main is the default branch$/m);
+});
+
 test('no plan exits 2 with the hint', async () => {
   const context = await setup();
   await fs.rm(path.join(context.root, 'docs'), { recursive: true });
