@@ -270,18 +270,30 @@ test('per-task Proofs overlap, at most 3 at once, and print in task order', asyn
 });
 
 test('the gate starts while a slow Proof runs, and the lines keep their order', async () => {
-  const slow = 'node -e "setTimeout(() => {}, 1500)"';
+  const markersOutsideCheckout = await mkdtemp(path.join(tmpdir(), 'verify-gate-'));
+  const proofStarted = path.join(markersOutsideCheckout, 'proof');
+  const gateStarted = path.join(markersOutsideCheckout, 'gate');
+  const markStartThenAwaitOther = [
+    "const fs = require('fs');",
+    'const [mine, theirs] = process.argv.slice(2);',
+    "fs.writeFileSync(mine, '');",
+    'let rounds = 0;',
+    'const poll = setInterval(() => {',
+    '  rounds += 1;',
+    '  if (fs.existsSync(theirs)) { clearInterval(poll); return; }',
+    `  if (rounds > 400) { console.error('never started: ' + theirs); process.exit(1); }`,
+    '}, 25);',
+    ''
+  ].join('\n');
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
-    'plan.md': `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none | Proof: ${slow}\n`,
-    'check.js': `setTimeout(() => console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0'), 1500);\n`
+    'plan.md': `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none | Proof: node await-other.js ${proofStarted} ${gateStarted}\n`,
+    'await-other.js': markStartThenAwaitOther,
+    'check.js': CLEAN_CHECK
   });
   landTask(root, 1);
 
-  const started = Date.now();
-  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
-  const elapsed = Date.now() - started;
-  assert.equal(result.code, 0, result.stderr);
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', `node await-other.js ${gateStarted} ${proofStarted} && node check.js`], { cwd: root });
+  assert.equal(result.code, 0, `${result.stdout}${result.stderr}`);
   assert.deepEqual(result.stdout.split('\n').slice(0, 2), ['PASS Task 1', 'PASS success-criterion']);
-  assert.ok(elapsed < 2900, `the two 1.5s commands overlapped (took ${elapsed}ms)`);
 });
