@@ -31,7 +31,7 @@ Full run starts only when the user asks for a survey, a critique or QA; it repla
 - Build hands `$RUN/files.md` to each builder as `FILES`, under `## Full run builders` of the `phase-build` reference.
 - Phase 3 rows of the skill's References table → read by the surface builder, not the main session, except the build row, which decides who builds.
 - Phase 4 follows `## The critique dispatch` after the build and the post-build checkpoint.
-- Phase 5 → a `general-purpose` delegate on `sonnet` at `high` effort runs `## QA`; this session reads only that section's last two bullets (close, ignore entry) and quotes qa.md.
+- Phase 5 → a `general-purpose` delegate whose prompt opens with `exo-kind: review` runs `## QA`; this session reads only that section's last two bullets (close, ignore entry) and quotes qa.md.
 
 ## The build floor
 
@@ -71,7 +71,7 @@ The floor checked before the critique is `## The build floor` of the `build-pass
 - Never quote a count this session filtered itself.
 - No stage called this skill → checks line also names each type-check, lint and test command run before check-ui, with its result.
 - Report lists each default the build fell back on that check-ui did not flag (stock font, template ground, row of identical cards) as a candidate rule for exo.
-- A `general-purpose` delegate on `sonnet` at `high` effort, dispatched with `RUN`, `SKILL` and `REPO`, reads and runs this section.
+- A `general-purpose` delegate whose prompt opens with `exo-kind: review`, dispatched with `RUN`, `SKILL` and `REPO`, reads and runs this section.
 - It writes `$RUN/qa.md`, at most 20 lines, and returns only the qa.md path and line 1.
 - Line 1 of qa.md is `qa=complete|incomplete|blocked`; line 2 is the checks line.
 - Line 3 is `dials density=<n> variance=<n> motion=<n>`, the contract's final numbers; the closing message repeats it.

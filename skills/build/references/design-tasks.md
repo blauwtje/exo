@@ -6,7 +6,7 @@ Route a `Design:` task by the direction state `next-task.mjs --block` prints on 
 
 This session reads the state only, never the plan's `## Visual direction` or the task:
 
-- **`direction named`.** Dispatch one `general-purpose` delegate with `model` omitted at `high` effort, silently, then end the turn; its completion notification resumes step 6.
+- **`direction named`.** Dispatch one `general-purpose` delegate whose prompt opens with `exo-kind: peer`, silently, then end the turn; its completion notification resumes step 6.
   - Name plan path, branch, checkout, `<skill>` (`${CLAUDE_SKILL_DIR}` resolved), the task number, and `<skill>/references/design-tasks.md` `## The delegate` as its steps.
   - Its one-line return routes as a unit's does.
 - **`direction pending at rung <n>`.** Build the task in this session under `design-ui`, from its Direction phase: the one step that reads the plan here, because only this session can ask.
