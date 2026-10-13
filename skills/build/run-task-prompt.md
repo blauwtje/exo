@@ -43,4 +43,6 @@ Report to: [[report]]
 Brief:
 [[brief]]
 
+[[stall]]
+
 Last line of the reply, nothing after it, always on Task [[first]]: `Task [[first]]: GREEN`, `Task [[first]]: BLOCKED <reason>` or `Task [[first]]: PLAN DRIFT <reason>`. Another task that does not go green → name its number in the reason.

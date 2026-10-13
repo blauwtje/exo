@@ -39,6 +39,7 @@
     "#session-record-path": "./lib/session-record-path.mjs",
     "#settings-store": "./lib/settings-store.mjs",
     "#size-facts": "./lib/size-facts.mjs",
+    "#stall-guard": "./lib/stall-guard.mjs",
     "#suite-command": "./lib/suite-command.mjs",
     "#token-weights": "./lib/token-weights.mjs"
   },

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { test } from 'node:test';
-import { MAX_TIMEOUT_MS, shellQuote, stallGuardInput } from '../hooks/run-stall-guard.mjs';
+import process from 'node:process';
+import { shellQuote, stallGuardInput } from '../hooks/run-stall-guard.mjs';
 import { claudeArgs } from '../skills/build/scripts/run-session.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -11,6 +12,18 @@ const GUARD = path.join(ROOT, 'lib', 'stall-guard.mjs');
 
 const bash = (tool_input) => ({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input });
 const updated = (output) => output.hookSpecificOutput.updatedInput;
+
+function withBashCap(value, body) {
+  const saved = process.env.BASH_MAX_TIMEOUT_MS;
+  if (value === undefined) delete process.env.BASH_MAX_TIMEOUT_MS;
+  else process.env.BASH_MAX_TIMEOUT_MS = value;
+  try {
+    return body();
+  } finally {
+    if (saved === undefined) delete process.env.BASH_MAX_TIMEOUT_MS;
+    else process.env.BASH_MAX_TIMEOUT_MS = saved;
+  }
+}
 
 test('shellQuote wraps in single quotes and escapes each embedded quote', () => {
   assert.equal(shellQuote('npm test'), "'npm test'");
@@ -23,12 +36,21 @@ test('the hook wraps a Bash command in the stall guard and keeps the other field
   assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(updated(output).command, `node "${GUARD}" -- 'npm test'`);
   assert.equal(updated(output).description, 'run tests');
-  assert.equal(updated(output).timeout, MAX_TIMEOUT_MS);
+  assert.equal(withBashCap(undefined, () => updated(stallGuardInput(bash({ command: 'npm test' }))).timeout), 600000);
 });
 
 test('the hook caps a longer timeout at 600000 and keeps a shorter one', () => {
-  assert.equal(updated(stallGuardInput(bash({ command: 'a', timeout: 3_600_000 }))).timeout, 600000);
-  assert.equal(updated(stallGuardInput(bash({ command: 'a', timeout: 30_000 }))).timeout, 30000);
+  withBashCap(undefined, () => {
+    assert.equal(updated(stallGuardInput(bash({ command: 'a', timeout: 3_600_000 }))).timeout, 600000);
+    assert.equal(updated(stallGuardInput(bash({ command: 'a', timeout: 30_000 }))).timeout, 30000);
+  });
+});
+
+test('BASH_MAX_TIMEOUT_MS sets the cap and the default timeout', () => {
+  withBashCap('120000', () => {
+    assert.equal(updated(stallGuardInput(bash({ command: 'a', timeout: 3_600_000 }))).timeout, 120000);
+    assert.equal(updated(stallGuardInput(bash({ command: 'a' }))).timeout, 120000);
+  });
 });
 
 test('the hook never decides permission, so the allow and deny rules still apply', () => {

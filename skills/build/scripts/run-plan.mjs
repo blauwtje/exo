@@ -199,7 +199,7 @@ async function main(argv) {
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
       'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
-      `First prompt: ${first === undefined ? 'none: every task has landed, the script runs the review tail' : chosen.mode === 'plan' ? planPrompt({ plan, planPath, numbers: order, root }) : buildPrompt(first)}`,
+      `First prompt: ${first === undefined ? 'none: every task has landed, the script runs the review tail' : chosen.mode === 'plan' ? planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }) : buildPrompt(first)}`,
       ''
     ].join('\n'));
     return 0;
@@ -367,7 +367,7 @@ async function main(argv) {
       const untrackedBefore = new Set(untrackedPaths(root));
       say(`plan session start: tasks ${numbersText(order)}`);
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
-      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
+      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
       const record = { iteration, task: first, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
       run.records.push(record);
