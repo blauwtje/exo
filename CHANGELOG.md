@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.127.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.128.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.132.4 - 2026-10-13
 
 ### Changed
 
@@ -182,14 +184,3 @@ Versions before 0.127.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 
 - `benchmarks/results/2026-10-11-test-pollution.md` now records the `value-export-mismatch` check (baseline 5 of 5, exo 4 of 5) and the dropped `find-cause-success` branch.
-
-## 0.127.1 - 2026-10-11
-
-### Changed
-
-- `score.mjs --publish` now publishes a value-only run and a flow run, so those results no longer need writing by hand; template publish is unchanged.
-- `benchmarks/sweep.mjs` records the plugin commit (`pluginCommits`, `pluginDirty`) in `meta.json`.
-
-### Fixed
-
-- The budget constants and `edit-skills` no longer say the session hook injects `route-skills` with a 518-token ceiling; it injects `hooks/session-routing.md`, and `route-skills` follows the normal skill ceiling.

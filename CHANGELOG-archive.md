@@ -1,6 +1,17 @@
 # Changelog archive
 
-Releases before 0.127.1; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.128.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.127.1 - 2026-10-11
+
+### Changed
+
+- `score.mjs --publish` now publishes a value-only run and a flow run, so those results no longer need writing by hand; template publish is unchanged.
+- `benchmarks/sweep.mjs` records the plugin commit (`pluginCommits`, `pluginDirty`) in `meta.json`.
+
+### Fixed
+
+- The budget constants and `edit-skills` no longer say the session hook injects `route-skills` with a 518-token ceiling; it injects `hooks/session-routing.md`, and `route-skills` follows the normal skill ceiling.
 
 ## 0.127.0 - 2026-10-11
 
