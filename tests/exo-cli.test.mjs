@@ -52,6 +52,12 @@ const exo = (context, args) => run(CLI, args, {
   env: { STUB_RECORD: context.record, HOME: context.home }
 });
 
+const keptReport = async (context) => {
+  const kept = path.join(context.root, '.exo', 'kept');
+  const [id] = await fs.readdir(kept);
+  return fs.readFile(path.join(kept, id, 'report.md'), 'utf8');
+};
+
 const calls = async (context) => (await fs.readFile(context.record, 'utf8').catch(() => '')).split('\n').filter(Boolean);
 
 test('no argument picks the newest plan, skips decisions files and creates a missing branch', async () => {
@@ -76,6 +82,16 @@ test('a dirty tree refuses with exit 2, names the files and spawns nothing', asy
   assert.match(result.stderr, /^exo: refused: uncommitted edits in README\.md; commit them, or discard with git restore --staged --worktree -- README\.md$/m);
   assert.equal(git(context.root, 'branch', '--show-current'), 'main');
   assert.deepEqual(await calls(context), []);
+  assert.match(await keptReport(context), /^Reason: refused: uncommitted edits in README\.md; /m);
+});
+
+test('a run-plan refusal lands in report.md as Reason', async () => {
+  const context = await setup();
+  const result = await exo(context, ['run', 'docs/specs/old.md', '--session', 'bogus', '--claude', context.stub]);
+  assert.equal(result.code, 2, result.stdout + result.stderr);
+  const report = await keptReport(context);
+  assert.match(report, /^Phase: refused$/m);
+  assert.match(report, /^Reason: flag '--session' needs auto, task or plan$/m);
 });
 
 test('no plan exits 2 with the hint', async () => {

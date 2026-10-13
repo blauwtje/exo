@@ -254,7 +254,11 @@ async function buildRun(root, plan, flags, id) {
   const child = spawn(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: ['inherit', 'pipe', 'pipe'], env });
   // why: run-plan's lines pass through process.stdout.write and process.stderr.write, so teeToFile copies them to live.log.
   child.stdout.on('data', (chunk) => process.stdout.write(chunk));
-  child.stderr.on('data', (chunk) => process.stderr.write(chunk));
+  let errTail = '';
+  child.stderr.on('data', (chunk) => {
+    process.stderr.write(chunk);
+    errTail = `${errTail}${chunk}`.slice(-4000);
+  });
   // why: a signal to this process does not reach run-plan unless it is forwarded, so run-plan can end its claude group.
   const forward = (signal) => child.kill(signal);
   const signals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
@@ -265,7 +269,10 @@ async function buildRun(root, plan, flags, id) {
   });
   for (const signal of signals) process.off(signal, forward);
   const preview = flags.some((flag) => flag === '--dry-run' || flag === '--help');
-  return { code: done.status ?? null, runRoot, branch, land: preview ? null : land };
+  // why: run-plan reports its own refusals on stderr as `run-plan: <message>`, other children as `exo: <message>`.
+  const reasonLine = errTail.split('\n').filter((line) => /^(exo|run-plan): /.test(line)).pop();
+  const reason = reasonLine === undefined ? null : reasonLine.replace(/^(exo|run-plan): /, '');
+  return { code: done.status ?? null, runRoot, branch, land: preview ? null : land, reason };
 }
 
 function planFrame(plan) {
@@ -287,7 +294,7 @@ function landStage(root, id, plan) {
   return result;
 }
 
-function writeReport(root, id, phase, result) {
+function writeReport(root, id, { phase, result, reason }) {
   const state = readState(root, id);
   let land = null;
   try {
@@ -299,6 +306,7 @@ function writeReport(root, id, phase, result) {
   const lines = [
     `# exo run ${id}`,
     `Phase: ${phase}`,
+    ...(reason && ['refused', 'stopped', 'crashed'].includes(phase) ? [`Reason: ${reason.replace(/\s*\n\s*/g, ' ')}`] : []),
     `Land: ${land ?? 'none'}`,
     `Branch: ${state.branch ?? 'none'}`,
     `Landed: ${result?.range ?? 'none'}`,
@@ -392,12 +400,14 @@ async function runCommand(argv, { approving = false } = {}) {
   let code = 1;
   let phase = 'crashed';
   let result = null;
+  let reason = null;
   try {
     if (readState(root, id).stage === 'landing') result = landStage(root, id, plan);
     else {
       const built = await buildRun(root, plan, flags, id);
       code = built.code ?? 1;
       phase = phaseForExit(code);
+      reason = built.reason;
       if (code === 0 && built.land !== null) {
         updateRun(root, id, { phase: 'landing', stage: 'landing', runRoot: built.runRoot, branch: built.branch });
         result = landStage(root, id, plan);
@@ -408,6 +418,7 @@ async function runCommand(argv, { approving = false } = {}) {
       code = phase === 'landed' ? 0 : 3;
     }
   } catch (error) {
+    reason = error.message;
     if (error instanceof Refusal) {
       phase = 'refused';
       code = 2;
@@ -417,7 +428,7 @@ async function runCommand(argv, { approving = false } = {}) {
     updateRun(root, id, { phase, exitCode: code });
     releaseLock(root, id);
     try {
-      writeReport(root, id, phase, result);
+      writeReport(root, id, { phase, result, reason });
     } catch (error) {
       process.stderr.write(`exo: report.md not written: ${error.message}\n`);
     }
