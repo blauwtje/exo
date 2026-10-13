@@ -58,13 +58,24 @@ test('the app is up while a proof runs and its tree is killed when the run ends'
   assert.ok(await waitGone(Number(await fs.readFile(pidFile, 'utf8'))), 'the app process outlived the run');
 });
 
-test('an app that never answers stops the run with one line before any session', async () => {
+test('an app that never answers lets the tasks run and stops the run before the Success criterion', async () => {
   const context = await setup();
   await withApp(context, { start: 'node -e "setInterval(() => {}, 1000)"', ready: 'http://127.0.0.1:1' });
   context.env = { EXO_APP_READY_MS: '1500' };
   const result = await runPlan(context, [land(1), land(2)]);
   assert.notEqual(result.code, 0, result.stdout);
-  assert.equal(result.calls.length, 0, 'no session starts without the app');
-  assert.match(result.stdout, /app not ready\n/);
+  assert.ok(result.calls.length > 0, 'a session starts although the app is not ready');
+  assert.match(result.stdout, /app not ready, app log ends: /);
   assert.match(result.stop, /app not ready: http:\/\/127\.0\.0\.1:1 did not answer within 2 s/);
+});
+
+test('an app that exits at once is reported with its log tail without waiting for the deadline', async () => {
+  const context = await setup();
+  await withApp(context, { start: 'echo boom-from-app; exit 1', ready: 'http://127.0.0.1:1' });
+  context.env = { EXO_APP_READY_MS: '60000' };
+  const started = Date.now();
+  const result = await runPlan(context, [land(1), land(2)]);
+  assert.ok(Date.now() - started < 30_000, 'the run waited for the deadline of a dead app');
+  assert.match(result.stdout, /app not ready, app log ends: boom-from-app/);
+  assert.match(result.stop, /app not ready: /);
 });

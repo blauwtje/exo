@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { realpathSync } from 'node:fs';
-import { killTree, runTreeSync } from '#process-tree';
+import { mkdtempSync, readFileSync, realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { killTree, runTreeSync, startDetached, waitForUrl } from '#process-tree';
 
 test('on Windows killTree runs taskkill with /T and /F on the pid', () => {
   const calls = [];
@@ -29,6 +31,21 @@ test('off Windows killTree kills the whole process group, grandchild included', 
   await closed;
   await new Promise((resolve) => setTimeout(resolve, 200));
   assert.throws(() => process.kill(grandchild, 0), { code: 'ESRCH' });
+});
+
+test('waitForUrl returns not-ready as soon as the app process exits', { skip: process.platform === 'win32' }, async () => {
+  const app = startDetached('exit 1', { cwd: process.cwd() });
+  const started = Date.now();
+  const ready = await waitForUrl('http://127.0.0.1:1', { deadlineMs: 30_000, app });
+  assert.equal(ready, false);
+  assert.ok(Date.now() - started < 10_000);
+});
+
+test('startDetached writes the output of the command to the log file', { skip: process.platform === 'win32' }, async () => {
+  const log = path.join(mkdtempSync(path.join(tmpdir(), 'exo-app-')), 'app.log');
+  const app = startDetached('echo from-app; echo oops >&2', { cwd: process.cwd(), log });
+  for (let round = 0; round < 50 && !app.exited(); round += 1) await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.match(readFileSync(log, 'utf8'), /from-app\noops\n/);
 });
 
 test('runTreeSync returns merged output and the exit status', () => {

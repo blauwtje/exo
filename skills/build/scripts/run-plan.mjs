@@ -242,6 +242,7 @@ async function main(argv) {
     ? `\nA previous session ran out of context and left a hand-off: read ${handoffFile(number)} first, then continue task ${number} from it.`
     : '');
   const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model }) => {
+    if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
     const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir }), {
@@ -260,18 +261,22 @@ async function main(argv) {
   let lastTask = null;
   const untrackedAtStart = new Set(untrackedPaths(root));
   const app = frameOf(plan.frame).app;
-  if (app !== null) {
-    say(`app start: ${clip(app.start, 80)}`);
-    const started = startDetached(app.start, { cwd: root, env: withoutRunVariables() });
-    appPid = started.pid ?? null;
-    const deadlineMs = environmentMs('EXO_APP_READY_MS', 120_000);
-    if (app.ready === null || !(await waitForUrl(app.ready, { deadlineMs, app: started }))) {
-      say('app not ready');
-      stop = { line: `app not ready: ${app.ready ?? 'no Ready: url'} did not answer within ${Math.round(deadlineMs / 1000)} s`, why: 'The plan App did not become ready', next: 'check the App: start command and Ready: url in the plan, then run exo run again' };
-    } else {
-      say(`app ready: ${app.ready}`);
+  const appLog = path.join(logDir, 'app.log');
+  const appDeadlineMs = environmentMs('EXO_APP_READY_MS', 120_000);
+  let appHandle = null;
+  let appIsReady = false;
+  const ensureApp = async () => {
+    if (app === null || (appIsReady && !appHandle.exited())) return true;
+    if (appHandle === null || appHandle.exited()) {
+      say(`app start: ${clip(app.start, 80)}`);
+      appHandle = startDetached(app.start, { cwd: root, env: withoutRunVariables(), log: appLog });
+      appPid = appHandle.pid ?? null;
     }
-  }
+    appIsReady = app.ready !== null && await waitForUrl(app.ready, { deadlineMs: appDeadlineMs, app: appHandle });
+    if (appIsReady) say(`app ready: ${app.ready}`);
+    return appIsReady;
+  };
+  const appTail = () => clip(lastLine(isFileOnDisk(appLog) ? fs.readFileSync(appLog, 'utf8') : '') || 'empty', 80);
   const takeParked = (name) => {
     const file = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'parked') : null;
     if (file === null || !fs.existsSync(file)) return null;
@@ -450,6 +455,10 @@ async function main(argv) {
 
   let exitCode = 1;
   if (stop === undefined) stop = budgetStop() ?? undefined;
+  if (stop === undefined && !(await ensureApp())) {
+    say('app not ready');
+    stop = { line: `app not ready: ${app.ready ?? 'no Ready: url'} did not answer within ${Math.round(appDeadlineMs / 1000)} s, app log ends: ${appTail()}`, why: 'The plan App did not become ready', next: `check the App: start command and Ready: url in the plan and ${appLog}, then run exo run again` };
+  }
   if (stop === undefined) {
     setPhase('verify');
     const base = defaultBranch(root);
