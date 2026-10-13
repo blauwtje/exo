@@ -37,4 +37,4 @@ argument-hint: "[plan path] [--land]"
 | `references/gate-lines.md` | Step 1, a line its pointer names. |
 | `references/plan-checks.md` | Never here: the reviewer reads it. |
 
-Report: `REPORT` file gets `Changed`, chores, `report` findings. Message: the session's report rule, three lines with the `REPORT` path as the pointer, `question` findings, one decision: `FAIL`, else `question`, else `ship`.
+Report: `REPORT` file gets `Changed`, chores, `report` findings. Message: the session's report rule, three lines with the `REPORT` path as the pointer, `question` findings, one decision: `FAIL`, else `question`, else `ship`. Say "file outside the plan" for `STRAY`, "unproven risk" for a hazard, each with what exo did.
