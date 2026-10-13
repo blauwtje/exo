@@ -34,8 +34,8 @@ test('other levels, agents and tools print nothing under off', () => {
   for (const level of ['low', 'medium', 'high', undefined, 'bogus']) assert.equal(agentEffort(input(level), 'off'), null, String(level));
   assert.equal(agentEffort(input('max', { tool_input: { ...toolInput, subagent_type: 'exo:other' } }), 'off'), null);
   assert.equal(agentEffort(input('max', { tool_input: { prompt: 'x' } }), 'off'), null);
-  assert.equal(agentEffort(input('max', { tool_name: 'Bash' }), 'low'), null);
-  assert.equal(agentEffort({}, 'low'), null);
+  assert.equal(agentEffort(input('max', { tool_name: 'Bash' }), 'fast'), null);
+  assert.equal(agentEffort({}, 'fast'), null);
 });
 
 test('off leaves a review dispatch unchanged', () => {
@@ -45,41 +45,41 @@ test('off leaves a review dispatch unchanged', () => {
 
 test('an agent name fills model and effort from the budget column', () => {
   const lookup = { subagent_type: 'exo:locate-code', prompt: 'find', description: 'd' };
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'low'), { ...lookup, model: 'haiku', effort: 'low' });
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'high'), { ...lookup, model: 'haiku', effort: 'medium' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'fast'), { ...lookup, model: 'haiku', effort: 'low' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'quality'), { ...lookup, model: 'haiku', effort: 'medium' });
 });
 
 test('a prompt opening exo-kind picks the kind for a general-purpose dispatch', () => {
   const general = { subagent_type: 'general-purpose', prompt: 'exo-kind: hardest\nsolve it', description: 'd' };
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: general }, 'low'), { ...general, model: 'opus', effort: 'medium' });
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: general }, 'high'), { ...general, model: 'opus', effort: 'xhigh' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: general }, 'fast'), { ...general, model: 'opus', effort: 'medium' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: general }, 'quality'), { ...general, model: 'opus', effort: 'xhigh' });
 });
 
 test('a model or effort the call already sets is kept', () => {
   const lookup = { subagent_type: 'exo:locate-code', prompt: 'find', description: 'd', model: 'sonnet' };
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'low'), { ...lookup, effort: 'low' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'fast'), { ...lookup, effort: 'low' });
   const both = { ...lookup, effort: 'high' };
-  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: both }, 'low'), null);
+  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: both }, 'fast'), null);
 });
 
 test('the raised effort counts as set and the model is still filled', () => {
-  const result = updated(input('max'), 'low');
+  const result = updated(input('max'), 'fast');
   assert.equal(result.effort, 'max');
   assert.ok(result.model);
 });
 
 test('inherit sets no model and a null effort sets none', () => {
   const handover = { subagent_type: 'general-purpose', prompt: 'exo-kind: handover\nwrite', description: 'd' };
-  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: handover }, 'medium'), null);
+  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: handover }, 'balanced'), null);
   const peer = { subagent_type: 'general-purpose', prompt: 'exo-kind: peer\nask', description: 'd' };
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: peer }, 'medium'), { ...peer, effort: 'high' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: peer }, 'balanced'), { ...peer, effort: 'high' });
 });
 
 test('an unknown agent, kind or budget returns null', () => {
   const other = { subagent_type: 'exo:other', prompt: 'x', description: 'd' };
-  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: other }, 'low'), null);
+  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: other }, 'fast'), null);
   const unknownKind = { subagent_type: 'general-purpose', prompt: 'exo-kind: nope\nx', description: 'd' };
-  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: unknownKind }, 'low'), null);
+  assert.equal(agentEffort({ tool_name: 'Agent', tool_input: unknownKind }, 'fast'), null);
   assert.equal(agentEffort({ tool_name: 'Agent', tool_input: { ...other, subagent_type: 'exo:locate-code' } }, 'bogus'), null);
 });
 
@@ -91,7 +91,7 @@ function projectWithBudget(budget) {
 }
 
 test('the script prints the output for max and nothing for garbage, empty input or an unknown agent', () => {
-  const env = { ...process.env, CLAUDE_PROJECT_DIR: projectWithBudget('low') };
+  const env = { ...process.env, CLAUDE_PROJECT_DIR: projectWithBudget('fast') };
   const run = (text) => execFileSync(process.execPath, [HOOK], { input: text, env }).toString();
   assert.equal(JSON.parse(run(JSON.stringify(input('max')))).hookSpecificOutput.updatedInput.effort, 'max');
   assert.ok(JSON.parse(run(JSON.stringify(input('high')))).hookSpecificOutput.updatedInput.model);

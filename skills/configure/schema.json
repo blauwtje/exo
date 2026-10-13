@@ -34,18 +34,18 @@
   },
   "budget": {
     "type": "string",
-    "options": ["off", "low", "medium", "high"],
-    "default": "medium",
-    "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. low, medium, high: a hook sets each dispatch's model and effort from the column of that name in the kind table in lib/model-kinds.json. The old names full, normal and lean still read as high, medium and low",
-    "aliases": { "full": "high", "normal": "medium", "lean": "low" },
+    "options": ["off", "fast", "balanced", "quality"],
+    "default": "balanced",
+    "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. fast, balanced, quality: a hook sets each dispatch's model and effort from the column of that name in the kind table in lib/model-kinds.json. The old names low, medium, high, lean, normal and full still read as fast, balanced or quality",
+    "aliases": { "low": "fast", "lean": "fast", "medium": "balanced", "normal": "balanced", "high": "quality", "full": "quality" },
     "label": "Effort",
     "about": "how much care and cost each task gets",
     "question": "How much effort should each task get?",
     "choices": {
       "off": { "label": "Off", "gives": "agents use your session's model" },
-      "high": { "label": "High", "gives": "best quality, slower and costlier" },
-      "medium": { "label": "Medium", "gives": "good quality at normal cost" },
-      "low": { "label": "Low", "gives": "cheaper and faster, a little less careful" }
+      "quality": { "label": "Quality", "gives": "best quality, slower and costlier" },
+      "balanced": { "label": "Balanced", "gives": "good quality at normal cost" },
+      "fast": { "label": "Fast", "gives": "cheaper and faster, a little less careful" }
     }
   },
   "ship": {
