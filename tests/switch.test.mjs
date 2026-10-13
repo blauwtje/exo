@@ -101,3 +101,17 @@ test('on a 60-character branch both pointers go first, named from the repository
   assert.ok(context.indexOf(memoryPointer) < context.indexOf('exo settings:'), 'the memory pointer comes before the settings line');
   assert.ok(context.length <= HOOK_OUTPUT_CAP.chars, `${context.length} characters`);
 });
+
+test('a handoff ending in a Resume line puts its prompt in the handoff pointer', async () => {
+  const configDirectory = await fixture();
+  const repository = await gitRepository({ 'README.md': 'fixture\n' });
+  const handoff = path.join(repository, '.git', 'exo', 'handoff', 'main.md');
+  await fs.mkdir(path.dirname(handoff), { recursive: true });
+  await fs.writeFile(handoff, '# Handoff\n\n## Next step\n\nRun the plan.\n\nResume: lees .git/exo/handoff/main.md en ga verder\n');
+  const result = await runHookIn({ CLAUDE_CONFIG_DIR: configDirectory }, repository);
+  assert.equal(result.code, 0, result.stderr);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  const pointer = context.slice(0, context.indexOf('\n\n'));
+  assert.ok(pointer.startsWith('A handoff for `main` sits at'), pointer);
+  assert.ok(pointer.endsWith(' To continue it, the user sends: lees .git/exo/handoff/main.md en ga verder'), pointer);
+});

@@ -43,8 +43,11 @@ Then these sections, in this order; each left out when the session has nothing t
 - `## Files touched`: path, then one clause of what changed there.
 - `## Proven`: one line per claim, `<claim>: <the command that proved it>, <its result>`.
 - `## Next step`: exactly one action, the first thing the fresh session does.
+- `## Then`: every later step through the report to the user, numbered, each with its full command; work driving a run or loop → also how to wait for it, what to do when it fails, and where to stop and report.
 - `## Open questions`: what is unresolved, and who can answer it.
 - `## Resume`: never left out, unlike the sections above.
+
+Last line of the file, after `## Resume`: `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue, such as `Resume: lees .git/exo/handoff/<branch>.md en ga verder`. The sections carry every step, so this one line suffices.
 
 In those sections:
 
@@ -73,4 +76,4 @@ Diff what `## Proven` and `## Files touched` already cover against what `## Next
 
 - File read this session outranks memory of it: confirm path, branch and commit with a command before writing them down.
 - Short true handoff outranks a full one that guesses; what the session does not know → `## Open questions`.
-- Turn ends naming the written path and saying to run `/clear`. Nothing else written; no work continues after.
+- Turn ends naming the written path, saying to run `/clear`, and quoting the `Resume:` prompt to paste after it. Nothing else written; no work continues after.

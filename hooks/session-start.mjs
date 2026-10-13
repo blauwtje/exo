@@ -35,7 +35,9 @@ function pointersFor(cwd) {
     : path.join(gitDirectory, 'exo', 'handoff', `${scope}.md`);
   if (fs.existsSync(handoffFile) && fs.statSync(handoffFile).isFile()) {
     const staleness = gitDirectory === null ? '' : ' Compare its `Written:` commit with `git rev-parse --short HEAD`.';
-    pointers += `A handoff for \`${scope}\` sits at ${located(handoffFile, top)}. Read it only when this session continues that work.${staleness}\n\n`;
+    const resumeLine = fs.readFileSync(handoffFile, 'utf8').split('\n').map((line) => line.trim()).filter((line) => line.startsWith('Resume: ')).pop();
+    const resume = resumeLine === undefined ? '' : ` To continue it, the user sends: ${resumeLine.slice('Resume: '.length, 'Resume: '.length + 300)}`;
+    pointers += `A handoff for \`${scope}\` sits at ${located(handoffFile, top)}. Read it only when this session continues that work.${staleness}${resume}\n\n`;
   }
   const commonDirectory = git(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir');
   const memoryFile = commonDirectory === null
