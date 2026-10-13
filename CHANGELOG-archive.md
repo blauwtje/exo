@@ -1,6 +1,16 @@
 # Changelog archive
 
-Releases before 0.125.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.126.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.125.0 - 2026-10-11
+
+### Added
+
+- `plan-check` now refuses an app plan whose Success criterion runs no product. A bin, a start script or an `mcp:` call must be the first backticked command, or the plan states `Product run: none (<reason>)`.
+
+### Fixed
+
+- A `package.json` holding `null` no longer counts as having an entry point.
 
 ## 0.124.4 - 2026-10-11
 

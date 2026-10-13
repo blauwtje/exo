@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.125.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.126.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.132.1 - 2026-10-13
 
 ### Fixed
 
@@ -182,13 +184,3 @@ Versions before 0.125.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 
 - On the inline route, `build` now runs `verify.mjs` once when the last task lands, with no `exo:verify` load, no tail reference read and no `--reviews-only` run; any line that is not clean, or `--land`, still falls back to the full `verify`. One 4-task flow run dropped from 15 to 13 calls and from 94.0k to 87.5k weighted tokens, hidden check passing.
-
-## 0.125.0 - 2026-10-11
-
-### Added
-
-- `plan-check` now refuses an app plan whose Success criterion runs no product. A bin, a start script or an `mcp:` call must be the first backticked command, or the plan states `Product run: none (<reason>)`.
-
-### Fixed
-
-- A `package.json` holding `null` no longer counts as having an entry point.
