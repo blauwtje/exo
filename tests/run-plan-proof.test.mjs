@@ -55,7 +55,7 @@ test('task mode: the prompt hands the proof to the script and warns off the sand
   const prompt = result.calls[0].stdin;
   assert.doesNotMatch(prompt, /^Land: /m, 'no land step');
   assert.ok(!prompt.includes('land-task.mjs'), 'no land command');
-  assert.match(prompt, /A test or command your sandbox refuses is not a block: never end `Task 1: BLOCKED` on one/);
+  assert.match(prompt, /A test or command your sandbox or permission rules refuse is not a block: never end `Task 1: BLOCKED` on one/);
   assert.match(prompt, /Write and Edit tools, not a heredoc/);
   assert.match(prompt, /the script proves and lands/);
 });
@@ -67,6 +67,15 @@ test('task mode: a session that ends BLOCKED is not landed by the script', async
   assert.notEqual(result.code, 0, result.stdout);
   const logs = await logsOf(context);
   assert.ok(!logs.some((name) => name.includes('land-task-')), logs.join());
+});
+
+test('task mode: a session that ends BLOCKED on a permission denial is landed when the script gate passes', async () => {
+  const context = await setup();
+  await useWriter(context);
+  const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'node --version' } };
+  const result = await runTaskMode(context, [{ result: "Task 1: BLOCKED Bash denied in don't-ask mode", denials: [denial] }, { result: 'Task 2: GREEN' }]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.match(git(context.root, 'log', '--format=%B'), /Plan-task: plan\/1/);
 });
 
 test('task mode: a failing proof leaves the task unlanded and the retry note names the land log', async () => {

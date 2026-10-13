@@ -411,6 +411,11 @@ async function main(argv) {
     const statusLine = new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`);
     const blocked = marker?.match(statusLine) ?? (outcome.timedOut ? null : last.match(statusLine));
     if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
+      const rescue = blocked !== null && !outcome.timedOut && parsed.denials.length > 0 ? landByScript(n) : null;
+      if (rescue?.landed) {
+        markLanded(n, record, startedTask);
+        continue;
+      }
       stop = blockedStop(n, blocked?.[1] || last);
       break;
     }
