@@ -26,7 +26,7 @@ Reject or revise a candidate showing:
 ## The sketch is the contract
 
 - Chosen sketch ships in the brief; the build implements it.
-- Not a throwaway prototype; a throwaway answer to one open question is a different, single-candidate model owned elsewhere.
+- Sketch is not a prototype; question only running code answers → throwaway script, answer into `## Decisions`, script deleted.
 - Re-sketch only on a repeated pattern of friction during the build, never on one edge case.
 - Repeated pattern = same workaround shape recurring, a type needing an escape hatch to compile, an unplanned lock appearing, or a caller needing the abstraction's internals.
 - Fold the friction in as a constraint from the start of the next sketch, not bolted onto the old one.
