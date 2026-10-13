@@ -6,7 +6,7 @@ import { exportSignatures } from '#export-signatures';
 import { runTreeSync, withoutRunVariables } from '#process-tree';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -34,8 +34,8 @@ function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
-  // why: git add refuses a path that matches neither the index nor the tree, so a path already staged as deleted stays out of it.
-  const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
+  // why: git add refuses a path that matches neither the index nor the tree, so a path already staged as deleted stays out of it; with rename detection off, the old path of a git mv counts as a staged deletion.
+  const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--no-renames', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
   const addArgs = task.files.filter((file) => !removed.has(file.path)).map((file) => shellQuote(file.path)).join(' ');
   const addLine = addArgs === '' ? '' : `git add ${addArgs}\n`;
   const drops = dropsOf(task);
@@ -411,6 +411,19 @@ function taskChangedPaths(root) {
   return paths;
 }
 
+const UNTAGGED_LOOKBACK = 20;
+
+function untaggedBaseNote(task, root) {
+  const files = task.files.map((file) => file.path);
+  if (files.length === 0) return '';
+  const base = defaultBase(root);
+  const range = base === null ? ['-n', String(UNTAGGED_LOOKBACK), 'HEAD'] : [`${base}..HEAD`];
+  const log = execFileSync('git', ['-C', root, 'log', '--no-merges', '--invert-grep', '--grep=^Plan-task: ', '--format=%h %s', ...range, '--', ...files], { encoding: 'utf8' });
+  const commits = log.split('\n').filter((line) => line !== '');
+  if (commits.length === 0) return '';
+  return `\nBase commits touching this task's files without a Plan-task trailer: ${commits.join(', ')}; the fix may already be on the base.`;
+}
+
 function redGreenLine(task, proofCommands, root, pending) {
   if (task.red !== null) return `Red: skipped: none (${task.red.reason})`;
   if (pending !== null) return 'Red: skipped: deferred MCP proof';
@@ -426,7 +439,7 @@ function redGreenLine(task, proofCommands, root, pending) {
     }
     if (base.status === 'red') return 'Red: proved';
   }
-  throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task`);
+  throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}`);
 }
 
 function refuseStrayPaths(task, root, planPath, siblingWork) {
