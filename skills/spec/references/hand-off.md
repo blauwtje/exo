@@ -18,6 +18,7 @@
 - Next action, first match wins:
   - Run changed a loaded plugin's source and landed → `/reload-plugins`.
   - `parked` → `exo approve <id>` after the open gates listed in `<run directory>/report.md`.
-  - `stopped`, `refused` or `crashed` → the reason: refused commands in `<run directory>/report.md`, else the last error in `<run directory>/run.log`.
+  - `stopped`, `refused` or `crashed` → the reason: `Reason:` in `<run directory>/report.md`, else the last error in `<run directory>/run.log`.
+  - Refused run → report its `Reason:`, fix the plan or cause in a worktree, rerun `exo-cli.mjs run <plan> --detach`; never build in the session.
   - Watch says `process gone` → `exo run --resume <id>`.
 - Watch exits 124 → report the run still running and the keep-waiting command it prints.

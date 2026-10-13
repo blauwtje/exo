@@ -3,20 +3,20 @@
 1. **Find the plan, start the detached run, else settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only`, plus `--plan <path>` for a named plan.
    - Zero or several matches → ask which plan.
    - No `--task`, no codex, `claude` on `PATH` → run `node "${CLAUDE_SKILL_DIR}/scripts/exo-cli.mjs" run <plan> --detach`, print its line, watch per the spec hand-off reference's `## Watching the run`, end. Else the unit route.
+   - Run refuses → fix the `Reason:` in `$RUN/report.md` in a worktree, rerun; never build here.
    - Settle where the run commits.
    - Take the plan's `Repository:` and `Branch:` from that output, never the plan.
    - Rerun `start-run.mjs --plan <path> --checkout <checkout>` once; its `run started` line ends step 1.
-   - Invoking build authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`, except under `--land`, which passes on to `ship`.
-2. **Leave the plan to the unit.**
-   - The unit reads the plan's frame sections, never the whole plan.
+   - Invoking build authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`, except under `--land`, which goes to `ship`.
+2. **Leave the plan to the unit,** which reads the frame sections, never the whole plan.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <plan> --root <checkout>`; `Next: none` goes to step 7.
    - `Route: inline` prints `Steps:` and each task's section: follow them, not steps 4-6.
    - Only a `Plan-task:` commit decides what landed, never memory.
-   - On a restart, once, write one line in the reply language naming the landed tasks and the next; later loops stay silent.
+   - On a restart, once, write one line naming the landed tasks and the next.
 4. **Take the block from the `Block:` line.**
    - A `Design:` line routes its task per the design tasks reference; step 3 repeats.
    - Open choice the user would miss → stop with a question; any other → rule it, record it in the commit.
-5. **Dispatch the unit.** Send the `Block:` tasks to the `exo:run-unit` agent, silently, then end the turn; its completion notification resumes it.
+5. **Dispatch the unit.** Send the `Block:` tasks to the `exo:run-unit` agent, then end the turn.
    - Name plan path, branch, checkout, `<skill>` (`${CLAUDE_SKILL_DIR}` resolved), task numbers, and any `model` and `effort` the budget rule sets for `exo:solve-hard`.
    - Never build a task here, and never call ScheduleWakeup, ListAgents, Monitor or sleep while the unit runs.
 6. **Route the return.** Each line reads `LANDED <n>` or `BLOCKED <n> <reason> <report path>`.
