@@ -359,9 +359,6 @@ function checkLoop(plan, root, planPath) {
     for (const run of task.runs.filter((entry) => entry.expectsPass && mcpToolCall(entry.command) !== null)) {
       problems.push(`loop: Task ${task.number}: 'Run: ${run.command}' is an MCP call, which only a session can run${SESSION_BUILD}`);
     }
-    if (task.design && !(basis.visualDirection ?? '').includes('contract-selected.json')) {
-      problems.push(`loop: Task ${task.number}: names 'Design:' but '## Visual direction' names no contract-selected.json${SESSION_BUILD}`);
-    }
     if (planFile !== null && task.files.some((file) => repoPath(file.path) === planFile)) {
       problems.push(`loop: Task ${task.number}: lists the plan file in Files:, which stops run-plan with 'plan changed'; move that edit to a session after the run`);
     }
