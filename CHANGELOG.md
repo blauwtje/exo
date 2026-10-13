@@ -14,7 +14,6 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **A plan now builds through the detached loop by default, its proofs run outside the sandbox, one review covers the branch, and small or clear work reaches build without questions.**
 - **`exo run` now builds a small plan in one session and lands it by script: in the flow benchmark it uses 1.23x the no-plugin baseline's tokens with the hidden check 4/4, against 1.76x for the `build` flow.**
 - **A plan task's Proof and a plan's Success must now fail before the change: on the test-pollution benchmark `exo run` with this red-green gate passed 5 of 5, against 1 of 35 for the no-plugin baseline.**
-- **exo now refuses new code comments at edit time and at landing, except a license header, a public doc comment, a link or a `why:` line; one capped `exo run` added 0 comment lines with the hidden check passing.**
 
 ### Added
 
@@ -34,6 +33,9 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A run that ends `landed`, `passed` or `refused` moves itself to `.exo/kept/<id>/`, so `.exo/run/` holds only live runs.
 - After `spec` starts a detached `exo run`, the session watches it and reports its end unprompted: phase, landed range, push target and the next step.
 - A plan's Plan basis may name `App:`, a start command and a ready URL; `exo run` starts it once before the first proof or the Success gate and stops its process tree when the run ends, and `plan-check` flags an `App:` with no ready URL.
+- `npm run validate:static` fails a test file over 40 kB.
+- `plan-check` flags a task that changes a source file with an existing `tests/<base>.test.mjs` or `tests/<base>-*.test.mjs` but lists none of them; one listed test is enough.
+- When a task's Proof shows no red, `land-task` names the untagged base commits that already touch the task's files.
 
 ### Changed
 
@@ -53,6 +55,8 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Comments in `skills/`, `lib/` and `hooks/` are removed, from 14.6% of lines to 0.0% disallowed; a comment on behavior forced by a library, browser, platform or protocol returns as a `// why:` line.
 - Every exo question keeps its options in a fixed A, B, C order; the recommendation is marked where it stands and never moves an option to the top.
 - A run's per-task reviews run up to three at a time instead of one after another.
+- The land-task, ui-design-scripts, run-plan and verify-gate tests are split into themed files under 20 kB.
+- `review-rules` and the verify pressure benchmark describe the one branch review and its single `.exo/review-branch.md` record.
 
 ### Fixed
 
@@ -72,6 +76,12 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A run's task session over the context limit writes a hand-off in its worktree, and the run continues the task in a fresh session instead of stopping.
 - The run report lists hook refusals apart from permission denials, and advises `Allow:` only for real denials.
 - Tests that start run scripts drop the run variables under bare `node --test`, so they never write a live run's state.
+- `land-task` lands a task that moved a listed file with `git mv`.
+- A plan `Files:` entry with a line range, such as `knip.config.ts:22-29`, reads as its path.
+- `exo run` saves a stopped task's leftover edits to `task-<n>-leftover.patch` in the run's log folder and resets the tree, so the next task starts clean.
+- `exo run` lands a blocked task whose Proof the sandbox or permission rules refused when the script's own proof and gate pass.
+- A plan's `App:` start command may contain ` | `; only the first ` | Ready: ` splits it.
+- A task session reports a sandbox-refused proof as `not run`, so `land-task` runs the proof instead of refusing the report.
 
 ## 0.131.1 - 2026-10-11
 
