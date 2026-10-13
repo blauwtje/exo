@@ -72,13 +72,21 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.doesNotMatch(off.stdout, /--settings/);
 });
 
+test('dry run sets no model and no effort when no budget is set', async () => {
+  const context = await setup();
+  context.env.CLAUDE_PROJECT_DIR = context.root;
+  const unset = await runPlan(context, [land(1)], ['--dry-run']);
+  assert.doesNotMatch(unset.stdout, /--model|--effort/);
+});
+
 test('dry run takes the build-task model and effort from the budget, and none under off', async () => {
   const context = await setup();
   context.env.CLAUDE_PROJECT_DIR = context.root;
+  await fs.mkdir(path.join(context.root, '.claude'), { recursive: true });
+  await fs.writeFile(path.join(context.root, '.claude', 'exo.json'), JSON.stringify({ budget: 'balanced' }));
   const medium = await runPlan(context, [land(1)], ['--dry-run']);
   assert.match(medium.stdout, /^Model: sonnet$/m);
   assert.match(medium.stdout, / --model sonnet --effort medium /);
-  await fs.mkdir(path.join(context.root, '.claude'), { recursive: true });
   await fs.writeFile(path.join(context.root, '.claude', 'exo.json'), JSON.stringify({ budget: 'off' }));
   const off = await runPlan(context, [land(1)], ['--dry-run']);
   assert.doesNotMatch(off.stdout, /--model|--effort/);

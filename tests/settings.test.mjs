@@ -41,22 +41,22 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), compression=low (default), budget=balanced (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), compression=low (default), budget=balanced (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), compression=low (default), budget=balanced (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), compression=low (default), budget=balanced (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('compression is low by default and off when the project sets it', async () => {
@@ -195,7 +195,7 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\), compression=low \(default\), budget=balanced \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), compression=low \(default\), budget=off \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\); .*exo\.json is not valid JSON/);
 });
 
 test('a value the schema does not allow is named in the context line, and the default compression rule still applies', async () => {
@@ -305,9 +305,9 @@ test('on Codex the compression rule is the same as on Claude Code', async () => 
   assert.ok((await settings(space, ['context'])).stdout.includes(TIGHT_RULE));
 });
 
-test('budget reads off, fast, balanced or quality, defaults to balanced and carries no rules', () => {
+test('budget reads off, fast, balanced or quality, defaults to off and carries no rules', () => {
   assert.deepEqual(SCHEMA.budget.options, ['off', 'fast', 'balanced', 'quality']);
-  assert.equal(SCHEMA.budget.default, 'balanced');
+  assert.equal(SCHEMA.budget.default, 'off');
   assert.equal(SCHEMA.budget.rules, undefined);
   assert.equal(SCHEMA.budget.codexRules, undefined);
 });

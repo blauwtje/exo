@@ -35,7 +35,7 @@
   "budget": {
     "type": "string",
     "options": ["off", "fast", "balanced", "quality"],
-    "default": "balanced",
+    "default": "off",
     "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. fast, balanced, quality: a hook sets each dispatch's model and effort from the column of that name in the kind table in lib/model-kinds.json. The old names low, medium, high, lean, normal and full still read as fast, balanced or quality",
     "aliases": { "low": "fast", "lean": "fast", "medium": "balanced", "normal": "balanced", "high": "quality", "full": "quality" },
     "label": "Effort",
