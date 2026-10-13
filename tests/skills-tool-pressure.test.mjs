@@ -410,18 +410,18 @@ function cellsFor(file) {
 test('--cells-for prints the kind\'s cell from each budget column as one --cells value', async () => {
   const critic = await cellsFor('agents/critique-ui.md');
   assert.equal(critic.code, 0, critic.stderr);
-  assert.equal(critic.stdout, 'sonnet:high,opus:medium,opus:high\n');
-  assert.equal((await cellsFor('agents/build-task.md')).stdout, 'sonnet:low,sonnet:medium,sonnet:high\n');
+  assert.equal(critic.stdout, 'opus:low,opus:high,opus:xhigh\n');
+  assert.equal((await cellsFor('agents/build-task.md')).stdout, 'sonnet:low,sonnet:medium,opus:medium\n');
 });
 
 test('--cells-for prints a column\'s cell once when two budget columns share it', async () => {
-  assert.equal((await cellsFor('agents/review-branch.md')).stdout, 'sonnet:medium,sonnet:high,opus:medium\n');
+  assert.equal((await cellsFor('agents/review-branch.md')).stdout, 'sonnet:medium,opus:medium,opus:high\n');
   assert.equal((await cellsFor('agents/solve-hard.md')).stdout, 'opus:medium,opus:high,opus:xhigh\n');
-  assert.equal((await cellsFor('agents/locate-code.md')).stdout, 'haiku:low,haiku:medium\n');
+  assert.equal((await cellsFor('skills/build/references/design-tasks.md')).stdout, 'sonnet:medium,inherit:high\n');
 });
 
 test('--cells-for prints a dispatches entry\'s kind for its file', async () => {
-  assert.equal((await cellsFor('skills/find-cause/fixer-prompt.md')).stdout, 'sonnet:medium,sonnet:high,opus:medium\n');
+  assert.equal((await cellsFor('skills/find-cause/fixer-prompt.md')).stdout, 'sonnet:medium,sonnet:high,opus:high\n');
 });
 
 test('--cells-for a file no kind lists is a usage error with an empty stdout', async () => {
