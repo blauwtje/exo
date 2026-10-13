@@ -50,6 +50,22 @@ test('a Proof that passes on the base is refused and nothing is committed', asyn
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
 });
 
+// A hand commit on the run branch without a Plan-task trailer can already hold the task's fix,
+// so the refusal names it instead of leaving the cause to guesswork.
+test('a Proof that passes on the base names the untagged base commit touching the task\'s files', async () => {
+  const proof = 'node tests/app.test.mjs';
+  const { root, plan, planPath } = await checkout(proof);
+  git(root, 'checkout', '-q', '-b', 'feat/run');
+  git(root, 'commit', '-q', '-am', 'fix(app): hand fix');
+  const hand = git(root, 'rev-parse', '--short=7', 'HEAD');
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {\n  return "hello"; // greeting\n}\n');
+  assert.throws(
+    () => landTask({ planPath, planText: plan, number: 1, root, reportText: reportFor(proof) }),
+    (error) => error instanceof LandingError
+      && new RegExp(`no red proof.*\\nBase commits touching this task's files without a Plan-task trailer: ${hand}[0-9a-f]* fix\\(app\\): hand fix; the fix may already be on the base\\.`, 's').test(error.message)
+  );
+});
+
 test('Red: none (refactor) lands a Proof that passes on the base and the record names the reason', async () => {
   const proof = 'node tests/other.test.mjs';
   const { root, plan, planPath } = await checkout(proof, ' | Red: none (refactor)');
