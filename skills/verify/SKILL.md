@@ -15,10 +15,10 @@ effort: high
    - `SKIP`, `WARN`, `FIX-ONLY` or `SESSION` line → read `references/gate-lines.md`.
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
    - Step 3 starts after the full run prints no `FAIL` or `STRAY`.
-2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
-   - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
-   - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
-   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, `REVIEWED` records and any `CODE-RULES` path included; its line is step 3's verdict.
+2. **Review the branch.** Skip the one `REVIEW Branch` line when its reviewer reads `none`.
+   - Else dispatch one `exo:review-branch` agent for it, setting `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
+   - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`, all in one message.
+   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, each `CODE-RULES` path included; its line is step 3's verdict.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask once for a `codex exec` second review of the same plan and diff, append its findings to the findings path before step 3; else say nothing.
    - `--land` → skip that offer.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.

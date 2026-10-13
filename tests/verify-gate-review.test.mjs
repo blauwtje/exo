@@ -1,13 +1,10 @@
-// verify.mjs prints one REVIEW line per landed task, or REVIEWED when a review
-// record with a verdict exists, and the OVERLAP lines.
-
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { git, run } from './harness.mjs';
-import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK, INLINE_PLAN } from './verify-gate-fixture.mjs';
+import { gitRepository, SCRIPT, landTask, CLEAN_CHECK, INLINE_PLAN } from './verify-gate-fixture.mjs';
 
 test('a landed task, a clean check and no stray paths print PASS lines and one REVIEW line', async () => {
   const root = await gitRepository({
@@ -19,7 +16,7 @@ test('a landed task, a clean check and no stray paths print PASS lines and one R
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', `REVIEW Branch main..HEAD: ${REVIEWER_AGENTS.light}`, 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 const RISK_PLAN = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none${risk}| Proof: node -e "process.exit(0)"\n`;
@@ -38,10 +35,9 @@ async function reviewRun(files, { commits = [], args = [] } = {}) {
   return { root, lines: result.stdout.split('\n') };
 }
 
-// The reviewer a task's REVIEW line names.
 async function reviewerOf(files, options) {
   const { lines } = await reviewRun(files, options);
-  return lines.find((line) => line.startsWith('REVIEW Task 1 '))?.replace(/^[^:]*: /, '');
+  return lines.find((line) => line.startsWith('REVIEW Branch '))?.replace(/^[^:]*: /, '');
 }
 
 test('REVIEW: a landed task with Risk: security boundary gets the deep reviewer, another Risk the light one', async () => {
@@ -69,41 +65,11 @@ test('REVIEW: a task whose commits merged in through a merge commit still gets i
   await writeFile(path.join(root, 'src', 'app.js'), 'y\n'.repeat(300));
   git(root, 'add', '-A');
   git(root, 'commit', '-m', 'feat: x', '-m', 'Plan-task: plan/1');
-  const sha = git(root, 'rev-parse', 'HEAD');
   git(root, 'checkout', '-');
   git(root, 'merge', '--no-ff', 'side', '-m', 'merge side');
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(result.stdout.includes(`REVIEW Task 1 ${sha}: ${REVIEWER_AGENTS.light}`), result.stdout);
+  assert.ok(result.stdout.includes(`REVIEW Branch ${base}..HEAD: ${REVIEWER_AGENTS.light}`), result.stdout);
   assert.ok(!result.stdout.includes('REVIEWER:'), result.stdout);
-});
-
-test('REVIEW: a recorded review with a verdict prints REVIEWED with the record path, one without stays REVIEW', async () => {
-  const { root, lines } = await reviewRun({ 'plan.md': RISK_PLAN(' ') }, { commits: [['feat: x', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]] });
-  const sha = git(root, 'rev-parse', 'HEAD');
-  assert.ok(lines.includes(`REVIEW Task 1 ${sha}: ${REVIEWER_AGENTS.light}`), lines.join('\n'));
-  const record = path.join(root, '.exo', `review-${sha.slice(0, 7)}.md`);
-  await mkdir(path.dirname(record), { recursive: true });
-  await writeFile(record, 'no verdict yet\n');
-  const open = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(open.stdout.includes(`REVIEW Task 1 ${sha}:`), open.stdout);
-  await writeFile(record, 'Verdict: CLEAN\n');
-  const done = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(done.stdout.split('\n').includes(`REVIEWED Task 1 ${record}`), done.stdout);
-  assert.ok(!done.stdout.includes('REVIEW Task 1'), done.stdout);
-});
-
-test('REVIEW: a record under an 8-character commit id prints REVIEWED, one whose id is not a prefix of the commit stays REVIEW', async () => {
-  const { root } = await reviewRun({ 'plan.md': RISK_PLAN(' ') }, { commits: [['feat: x', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]] });
-  const sha = git(root, 'rev-parse', 'HEAD');
-  await mkdir(path.join(root, '.exo'), { recursive: true });
-  const other = path.join(root, '.exo', `review-${sha[0] === '0' ? '1' : '0'}${sha.slice(1, 8)}.md`);
-  await writeFile(other, 'Verdict: CLEAN\n');
-  const open = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(open.stdout.includes(`REVIEW Task 1 ${sha}:`), open.stdout);
-  const record = path.join(root, '.exo', `review-${sha.slice(0, 8)}.md`);
-  await writeFile(record, 'Verdict: CLEAN\n');
-  const done = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(done.stdout.split('\n').includes(`REVIEWED Task 1 ${record}`), done.stdout);
 });
 
 test('REVIEW: the OVERLAP lines list a file two tasks changed, and OVERLAP none otherwise', async () => {
@@ -133,8 +99,8 @@ test('--reviews-only prints only the review lines, runs no proof or gate and rec
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--reviews-only', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   const lines = result.stdout.trim().split('\n');
-  assert.ok(lines.every((line) => /^(?:REVIEW|REVIEWED|OVERLAP) /.test(line)), result.stdout);
-  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ')), result.stdout);
+  assert.ok(lines.every((line) => /^(?:REVIEW|OVERLAP) /.test(line)), result.stdout);
+  assert.ok(lines.some((line) => line.startsWith('REVIEW Branch ')), result.stdout);
   const full = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.ok(full.stdout.includes('PASS success-criterion'), full.stdout);
   assert.ok(!full.stdout.includes('SKIP success-criterion'), 'the flag recorded no pass, so the full run still runs the gate');

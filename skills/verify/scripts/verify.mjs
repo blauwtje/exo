@@ -16,20 +16,21 @@ import { contextPeaks, HARD_LIMIT } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { isTestPath } from '#red-green';
-import { taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
+import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
 const USAGE = `Usage: node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
 Runs a plan's gate: each landed task's Proof, the Success criterion command and a stray-path check.
 Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check,
-then REVIEW (or REVIEWED) and OVERLAP lines, one DONE or OPEN line per task,
+then one REVIEW Branch line and the OVERLAP lines, one DONE or OPEN line per task,
 one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md line.
---reviews-only prints only the REVIEW, REVIEWED and OVERLAP lines and runs no proof or gate.
+--reviews-only prints only the REVIEW and OVERLAP lines and runs no proof or gate.
 --base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
 Exits 1 on any FAIL or STRAY line.`;
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
-const DEFAULT_LAND_GATE = 'npm run check';
+const DEFAULT_BASE = 'main';
+const DEFAULT_LAND_GATE ='npm run check';
 const TEST_SCRIPT_GATE = 'npm test';
 const TEST_SCRIPT_PASS = 'PASS success-criterion (npm test; no check script)';
 const PLAIN_SHELL_WORD = /^[\w@%+=:,./-]+$/;
@@ -357,25 +358,11 @@ async function mapLimited(items, limit, work) {
 function reviewLines(plan, landed, { root, planId, base }) {
   const lines = [];
   const route = planRoute(plan.tasks).route;
-  let exoNames = [];
-  try {
-    exoNames = fs.readdirSync(path.join(path.resolve(root ?? '.'), '.exo')).sort();
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
-  for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
-    const shas = taskCommits(task, root, planId);
-    const exoDir = path.join(path.resolve(root ?? '.'), '.exo');
-    const name = shas.length === 0 ? undefined : exoNames.find((entry) => {
-      const hex = /^review-([0-9a-f]{7,})\.md$/.exec(entry)?.[1];
-      return hex !== undefined && shas[0].startsWith(hex);
-    });
-    const record = name === undefined ? null : path.join(exoDir, name);
-    if (record !== null && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
-      lines.push(`REVIEWED Task ${task.number} ${record}`);
-    } else {
-      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId))}`);
-    }
+  const reviewers = plan.tasks.filter((entry) => landed.has(entry.number))
+    .map((task) => taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId)));
+  if (reviewers.length > 0) {
+    const reviewer = reviewers.find((entry) => entry === REVIEWER_AGENTS.deep) ?? reviewers.find((entry) => !entry.startsWith('none')) ?? reviewers[0];
+    lines.push(`REVIEW Branch ${base ?? DEFAULT_BASE}..HEAD: ${reviewer}`);
   }
   lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
   return lines;
