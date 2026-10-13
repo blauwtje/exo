@@ -30,6 +30,18 @@ test('build: step 1 starts the detached run and watches it; the unit route is on
   assert.ok(skill.includes('1. **Find the plan, then start its detached run.**'), 'SKILL.md step 1 starts the run');
 });
 
+test('build: a woken lead repairs a stopped run and resumes it; the wait loop is only for sessions without the status line', () => {
+  const skills = new URL('../skills/', import.meta.url);
+  const handOff = readFileSync(new URL('spec/references/hand-off.md', skills), 'utf8');
+  const repair = handOff.slice(handOff.indexOf('## Watching the run'));
+  assert.ok(repair.includes('task<n>-partial.patch'), 'partial work is saved as a carry patch');
+  assert.ok(repair.includes('plan-check.mjs'), 'the plan fix is checked');
+  assert.ok(repair.includes('run --resume <id> --detach'), 'the run is resumed detached');
+  assert.ok(repair.includes('after two repairs') && repair.includes('PushNotification'), 'a third stop notifies and asks');
+  assert.ok(/`landed` or `passed`/.test(repair), 'a landed or passed wake reports the result');
+  assert.ok(handOff.includes('Session without the status line'), 'the wait loop is for sessions without the status line');
+});
+
 test('exo-cli: --help prints the usage and exits 0', () => {
   const { status, stdout } = run(EXO_CLI, ['--help']);
   assert.equal(status, 0);
