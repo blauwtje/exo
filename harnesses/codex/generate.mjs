@@ -3,7 +3,6 @@
 //
 //   harnesses/codex/generated/skills/<name>/**/*.md      each skill Markdown file, rewritten by rules.mjs
 //   harnesses/codex/generated/skills/<name>/agents/openai.yaml   the policy of an explicit-only skill
-//   harnesses/codex/generated/agents/exo-<agent>.toml    one custom agent per `agents/*.md` entry and Codex twin
 //
 // An override in `harnesses/codex/overrides/<path under generated>` replaces one
 // generated file when its first line, `<!-- exo:override source-sha256=<hash> -->`,
@@ -116,27 +115,22 @@ function addAgents(root, known, files, sources) {
   const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'), { provider: 'codex' });
   const preamble = fs.readFileSync(path.join(root, 'harnesses', 'codex', 'agent-preamble.md'), 'utf8');
 
-  function add(name, file, entry, resolved, description) {
+  for (const [file, entry] of Object.entries(table.agents)) {
+    const name = `exo-${path.basename(file, '.md')}`;
+    const resolved = table.kinds[entry.kind];
     const text = fs.readFileSync(path.join(root, entry.generatedFrom ?? file), 'utf8');
     const { body } = splitFrontmatter(text);
     const own = splitFrontmatter(fs.readFileSync(path.join(root, file), 'utf8')).fields;
     const generated = path.posix.join(GENERATED, 'agents', `${name}.toml`);
     files.set(generated, renderAgent({
       name,
-      description: codexBody(file, description ?? entry.description ?? own.description, known),
+      description: codexBody(file, entry.description ?? own.description, known),
       instructions: `${preamble.trimEnd()}\n\n${codexBody(file, body.replace(/^\n+/, ''), known)}`,
       model: resolved.model,
       effort: resolved.effort,
       sandbox: READ_ONLY.includes(file) ? 'read-only' : 'workspace-write'
     }));
     sources.set(generated, entry.generatedFrom ?? file);
-  }
-
-  for (const [file, entry] of Object.entries(table.agents)) {
-    add(`exo-${path.basename(file, '.md')}`, file, entry, table.kinds[entry.kind]);
-  }
-  for (const [name, twin] of Object.entries(table.codexTwins ?? {})) {
-    add(name, twin.from, table.agents[twin.from], twin, twin.description);
   }
 }
 

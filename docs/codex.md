@@ -51,6 +51,7 @@ Codex has no equivalent for some Claude Code features, so exo drops or approxima
 | Feature | On Codex |
 |---|---|
 | Delegate budget | Dropped. Codex has a different transcript. |
+| `budget` setting | Applies on Claude Code only. Codex ignores `exo-kind:` and uses each agent's medium column. |
 | An agent's tool allowlist | Becomes a `read-only` or `workspace-write` sandbox. |
 | `maxTurns` | No field. |
 | Skill `model` and `effort` | Skills run at the session's model. |
