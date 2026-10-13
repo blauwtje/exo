@@ -18,7 +18,7 @@
 
 Applies to a task whose `Design:` is not `none`; `run-plan.mjs` prints it only then.
 
-- Build by steps 1-3 of `${CLAUDE_SKILL_DIR}/references/design-tasks.md` `## The delegate`, in this session, contract first, with `$RUN` as `<checkout>/.exo`.
+- Build by steps 1-3 of `${CLAUDE_SKILL_DIR}/references/design-tasks.md` `## The delegate`, in this session, contract first when the plan names one, else `design-ui`'s run rule settles the direction, with `$RUN` as `<checkout>/.exo`.
 - Its `Return:` lines do not apply: `## Finish` sets the last line.
 - Its `## Stop` conditions → `BLOCKED <reason>`, the report path in the reason.
 
