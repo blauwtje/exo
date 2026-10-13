@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
-import { criterionCommand, frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
+import { criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
@@ -111,11 +111,7 @@ function repoPathOf(planPath, root) {
 
 export function findStrayPaths(tasks, paths) {
   const declared = tasks.flatMap((task) => task.files.map((file) => file.path));
-  return paths.filter((path) => !declared.some((entry) => entry === path || (entry.endsWith('/') && path.startsWith(entry))));
-}
-
-function isPlanDoc(path) {
-  return path === 'CHANGELOG.md' || (path.startsWith('docs/') && path.endsWith('.md'));
+  return paths.filter((path) => !isCovered(declared, path));
 }
 
 function isTrailerlessFix({ subject, body }) {

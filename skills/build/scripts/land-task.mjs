@@ -6,7 +6,7 @@ import { exportSignatures } from '#export-signatures';
 import { runTreeSync, withoutRunVariables } from '#process-tree';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isCovered, isolatedCheckout, isPlanDoc, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -259,17 +259,9 @@ function changedPaths(root, planPath) {
     .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
-function isCovered(entries, changed) {
-  return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
-}
-
 function strayPaths(task, { root, planPath, siblingWork = () => false }) {
   const entries = task.files.map((file) => file.path);
   return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !siblingWork(changed));
-}
-
-function isPlanDoc(changed) {
-  return changed === 'CHANGELOG.md' || (changed.startsWith('docs/') && changed.endsWith('.md'));
 }
 
 function siblingWorkOf(plan, task, { root, planPath, landing }) {
