@@ -27,7 +27,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
       ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${path.join(runDir, 'decisions.md')}) and go on.`]
       : []),
     ...(sandbox
-      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. The script reruns the proof outside the sandbox and lands, so end when those are the only failures left.']
+      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. The script reruns the proof outside the sandbox and lands, so end when those are the only failures left. A command silent for 60 seconds is stopped.']
       : [])
   ].join('\n');
   const fields = {
