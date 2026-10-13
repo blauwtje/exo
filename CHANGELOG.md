@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.125.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.132.0 - 2026-10-13
 
 ### Highlights
 
@@ -184,9 +186,3 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 
 - A `package.json` holding `null` no longer counts as having an entry point.
-
-## 0.124.4 - 2026-10-11
-
-### Changed
-
-- Every session start, resume, clear and compaction now injects exo's routing rules after the settings line, so a clear bug report reaches `find-cause` and the `route-skills` description holds again.

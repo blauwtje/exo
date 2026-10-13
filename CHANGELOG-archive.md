@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.124.4; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.125.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.124.4 - 2026-10-11
+
+### Changed
+
+- Every session start, resume, clear and compaction now injects exo's routing rules after the settings line, so a clear bug report reaches `find-cause` and the `route-skills` description holds again.
 
 ## 0.124.3 - 2026-10-11
 
