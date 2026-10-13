@@ -64,6 +64,15 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A run's per-task reviews run up to three at a time instead of one after another.
 - The land-task, ui-design-scripts, run-plan and verify-gate tests are split into themed files under 20 kB.
 - `review-rules` and the verify pressure benchmark describe the one branch review and its single `.exo/review-branch.md` record.
+- The `budget` setting gains `off`: under `off` no exo dispatch sets a model or effort, so every agent inherits the session.
+- Under `low`, `medium` and `high` one hook sets each dispatch's model and effort from the budget's column of the per-kind table in `model-kinds.json`; agents and skills carry no `model:` or `effort:` line.
+- A detached `exo run` passes the budget's model and effort to its sessions, and none under `off`.
+- The Codex agents are generated from the medium column, one agent per role.
+- `CLAUDE.md` gains the AI-engineering principles, merged to stay within 60 lines.
+
+### Removed
+
+- The per-budget agent twins and the `budgets`, `skills` and `codexTwins` parts of the kind table.
 
 ### Fixed
 
