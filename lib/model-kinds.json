@@ -16,74 +16,74 @@
   },
   "kinds": {
     "build-task": {
-      "low": { "tier": "standard", "effort": "low" },
-      "medium": { "tier": "standard", "effort": "medium" },
-      "high": { "tier": "standard", "effort": "high" }
+      "fast": { "tier": "standard", "effort": "low" },
+      "balanced": { "tier": "standard", "effort": "medium" },
+      "quality": { "tier": "standard", "effort": "high" }
     },
     "build": {
-      "low": { "tier": "standard", "effort": "medium" },
-      "medium": { "tier": "standard", "effort": "high" },
-      "high": { "tier": "strong", "effort": "medium" }
+      "fast": { "tier": "standard", "effort": "medium" },
+      "balanced": { "tier": "standard", "effort": "high" },
+      "quality": { "tier": "strong", "effort": "medium" }
     },
     "hardest": {
-      "low": { "tier": "strong", "effort": "medium" },
-      "medium": { "tier": "strong", "effort": "high" },
-      "high": { "tier": "strong", "effort": "xhigh" }
+      "fast": { "tier": "strong", "effort": "medium" },
+      "balanced": { "tier": "strong", "effort": "high" },
+      "quality": { "tier": "strong", "effort": "xhigh" }
     },
     "review": {
-      "low": { "tier": "standard", "effort": "medium" },
-      "medium": { "tier": "standard", "effort": "high" },
-      "high": { "tier": "strong", "effort": "medium" }
+      "fast": { "tier": "standard", "effort": "medium" },
+      "balanced": { "tier": "standard", "effort": "high" },
+      "quality": { "tier": "strong", "effort": "medium" }
     },
     "review-deep": {
-      "low": { "tier": "standard", "effort": "high" },
-      "medium": { "tier": "strong", "effort": "medium" },
-      "high": { "tier": "strong", "effort": "high" }
+      "fast": { "tier": "standard", "effort": "high" },
+      "balanced": { "tier": "strong", "effort": "medium" },
+      "quality": { "tier": "strong", "effort": "high" }
     },
     "investigate": {
-      "low": { "tier": "standard", "effort": "low" },
-      "medium": { "tier": "standard", "effort": "medium" },
-      "high": { "tier": "standard", "effort": "high" }
+      "fast": { "tier": "standard", "effort": "low" },
+      "balanced": { "tier": "standard", "effort": "medium" },
+      "quality": { "tier": "standard", "effort": "high" }
     },
     "coordinate": {
-      "low": { "tier": "standard", "effort": "low" },
-      "medium": { "tier": "standard", "effort": "medium" },
-      "high": { "tier": "standard", "effort": "medium" }
+      "fast": { "tier": "standard", "effort": "low" },
+      "balanced": { "tier": "standard", "effort": "medium" },
+      "quality": { "tier": "standard", "effort": "medium" }
     },
     "research": {
-      "low": { "tier": "fast", "effort": "medium" },
-      "medium": { "tier": "standard", "effort": "low" },
-      "high": { "tier": "standard", "effort": "medium" }
+      "fast": { "tier": "fast", "effort": "medium" },
+      "balanced": { "tier": "standard", "effort": "low" },
+      "quality": { "tier": "standard", "effort": "medium" }
     },
     "lookup": {
-      "low": { "tier": "fast", "effort": "low" },
-      "medium": { "tier": "fast", "effort": "low" },
-      "high": { "tier": "fast", "effort": "medium" }
+      "fast": { "tier": "fast", "effort": "low" },
+      "balanced": { "tier": "fast", "effort": "low" },
+      "quality": { "tier": "fast", "effort": "medium" }
     },
     "prose": {
-      "low": { "tier": "standard", "effort": "medium" },
-      "medium": { "tier": "standard", "effort": "high" },
-      "high": { "tier": "strong", "effort": "medium" }
+      "fast": { "tier": "standard", "effort": "medium" },
+      "balanced": { "tier": "standard", "effort": "high" },
+      "quality": { "tier": "strong", "effort": "medium" }
     },
     "chore": {
-      "low": { "tier": "fast", "effort": "low" },
-      "medium": { "tier": "fast", "effort": "low" },
-      "high": { "tier": "standard", "effort": "low" }
+      "fast": { "tier": "fast", "effort": "low" },
+      "balanced": { "tier": "fast", "effort": "low" },
+      "quality": { "tier": "standard", "effort": "low" }
     },
     "peer": {
-      "low": { "tier": "inherit", "effort": "medium" },
-      "medium": { "tier": "inherit", "effort": "high" },
-      "high": { "tier": "inherit", "effort": "high" }
+      "fast": { "tier": "inherit", "effort": "medium" },
+      "balanced": { "tier": "inherit", "effort": "high" },
+      "quality": { "tier": "inherit", "effort": "high" }
     },
     "peer-review": {
-      "low": { "tier": "inherit", "effort": "low" },
-      "medium": { "tier": "inherit", "effort": "medium" },
-      "high": { "tier": "inherit", "effort": "high" }
+      "fast": { "tier": "inherit", "effort": "low" },
+      "balanced": { "tier": "inherit", "effort": "medium" },
+      "quality": { "tier": "inherit", "effort": "high" }
     },
     "handover": {
-      "low": { "tier": "inherit", "effort": null },
-      "medium": { "tier": "inherit", "effort": null },
-      "high": { "tier": "inherit", "effort": null }
+      "fast": { "tier": "inherit", "effort": null },
+      "balanced": { "tier": "inherit", "effort": null },
+      "quality": { "tier": "inherit", "effort": null }
     }
   },
   "stages": {
