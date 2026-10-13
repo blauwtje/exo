@@ -14,7 +14,7 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 1. No argument → print `/exo:prompt <rough prompt>`, run nothing, stop.
 2. Rewrite the argument with the rules below. Read no code, run no tool, start no helper, ask no question.
 3. Show the rewrite in one fenced block, opened with one more backtick than the longest backtick run inside it, then one line asking for ok to run it.
-4. Reply yes or ok → run the last shown block as the user's request in this session; routing picks a skill for it the usual way.
+4. Reply of plain yes or ok, nothing more → run the last shown block as the user's request in this session; routing picks a skill for it the usual way.
 5. Reply naming changes, such as "yes, but drop X" → revise, show again, ask again.
 6. Any other reply → stop and treat it as a normal message.
 
