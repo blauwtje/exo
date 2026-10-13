@@ -35,6 +35,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- `run-plan.mjs` is split into `run-session.mjs`, `run-worktree.mjs`, `run-prompts.mjs` and `run-report.mjs`, halving it to 29 kB so a plan task that edits it fits one session; behavior is unchanged.
 - The code standard is rewritten to four principles and bans comments except the allowed list.
 - `land-task` refuses a task whose added code breaks the code rules, and verify sends each such line to the review fixer as a `fix` finding.
 - Versions before 0.124.4 moved to `CHANGELOG-archive.md`.
