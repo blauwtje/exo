@@ -73,13 +73,19 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
   const problem = reviewProblem(runRoot, startedAt);
   if (problem && !takeApproved(runDir, LAND_ANYWAY)) return parked(LAND_ANYWAY, `review not clean: ${problem}`);
 
-  if (hasOrigin) {
-    const fetch = git(runRoot, 'fetch', 'origin');
-    if (!fetch.ok) return parked('git fetch origin', `fetch failed: ${fetch.err.split('\n')[0]}`);
+  {
+    let target = base;
+    if (hasOrigin) {
+      const fetch = git(runRoot, 'fetch', 'origin');
+      if (!fetch.ok) return parked('git fetch origin', `fetch failed: ${fetch.err.split('\n')[0]}`);
+      const localAhead = git(root, 'merge-base', '--is-ancestor', `origin/${base}`, base).ok
+        && git(root, 'rev-parse', base).out !== git(root, 'rev-parse', `origin/${base}`).out;
+      if (!localAhead) target = `origin/${base}`;
+    }
     const before = git(runRoot, 'rev-parse', 'HEAD').out;
-    if (!git(runRoot, 'rebase', `origin/${base}`).ok) {
+    if (!git(runRoot, 'rebase', target).ok) {
       git(runRoot, 'rebase', '--abort');
-      return parked(`rebase ${branch} onto origin/${base} yourself in ${runRoot}`, 'rebase conflict');
+      return parked(`rebase ${branch} onto ${target} yourself in ${runRoot}`, 'rebase conflict');
     }
     const check = /`([^`]+)`/.exec(success)?.[1];
     const moved = git(runRoot, 'rev-parse', 'HEAD').out !== before;

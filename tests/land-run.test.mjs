@@ -182,6 +182,19 @@ test('a rebase that moves the branch reruns the re-check; failure parks, approva
   assert.equal(f.land({ success: '`false`' }).phase, 'landed');
 });
 
+test('a local main ahead of origin main is the rebase target and keeps its commit', () => {
+  const f = fixture();
+  git(f.root, 'switch', '-q', 'main');
+  write(f.root, 'c.txt', 'c\n');
+  git(f.root, 'add', '.');
+  git(f.root, 'commit', '-qm', 'local ahead');
+  git(f.root, 'switch', '-q', 'feat');
+  const r = f.land();
+  assert.equal(r.phase, 'landed');
+  assert.ok(fs.existsSync(path.join(f.root, 'b.txt')));
+  assert.ok(fs.existsSync(path.join(f.root, 'c.txt')));
+});
+
 test('an unmoved branch skips the re-check', () => {
   const f = fixture();
   assert.equal(f.land({ success: '`false`' }).phase, 'landed');
