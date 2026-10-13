@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { test } from 'node:test';
 import { gateVerdict, stackOrder } from '../skills/ship/scripts/ship-gate.mjs';
+
+test('spec: small or clear work asks no question and exo closes each choice', () => {
+  const skill = fs.readFileSync(new URL('../skills/spec/SKILL.md', import.meta.url), 'utf8');
+  const brief = fs.readFileSync(new URL('../skills/spec/references/brief.md', import.meta.url), 'utf8');
+  assert.match(skill, /Diff fits one sentence[^\n]*code settles every point → no question/);
+  assert.match(skill, /only what to build/);
+  assert.match(brief, /closed by you, the code with its settling path, or exo/);
+});
 
 const open = { state: 'OPEN', mergeStateStatus: 'CLEAN', statusCheckRollup: [] };
 

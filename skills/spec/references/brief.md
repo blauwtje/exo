@@ -7,7 +7,7 @@ Brief = decided outcome, in fixed sections a later session resumes from. Section
 In this order:
 
 - **Goal:** the observable result, in one sentence.
-- **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with its settling path, or exo for a second "I don't know".
+- **Decisions:** every bin-1 decision with its answer, closed by you, the code with its settling path, or exo for a second "I don't know" or small work.
 - **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
 - **Acceptance:** the observable checks and the highest seam running them, the one closest to what the user does.
