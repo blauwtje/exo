@@ -25,7 +25,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 803, measured: '2026-10-11'
 export const INJECTED_CONTEXT_LOCK = { bytes: 665, measured: '2026-10-11' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
-export const HOOK_LINES_LOCK = { lines: 1228, measured: '2026-10-12' };
+export const HOOK_LINES_LOCK = { lines: 1260, measured: '2026-10-13' };
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
 // large test file is split before it lands.
 export const TEST_FILE_CAP = { bytes: 40 * 1024 };

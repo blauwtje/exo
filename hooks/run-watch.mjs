@@ -1,6 +1,8 @@
 // why: a mod cannot import, so this copy stays; tests/run-watch.test.mjs holds it equal to run-state.mjs FINAL_PHASES.
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 const TICK_MS = 5000;
+const STALE_MS = 3600000;
+const WORKTREES_MARK = '/.git/worktrees/';
 const REPORT_PHASES = ['landed', 'passed'];
 
 function parseState(text) {
@@ -19,21 +21,50 @@ async function readState($, file) {
   }
 }
 
-async function readRuns($, root) {
-  const base = `${root}/.exo/run`;
+async function readRuns($, base) {
   let entries;
   try {
     entries = await $.fs.list(base);
   } catch {
     return [];
   }
-  const dirs = entries.filter((entry) => entry.kind === 'dir').sort((a, b) => (a.name < b.name ? -1 : 1));
-  const runs = [];
-  for (const dir of dirs) {
-    const state = await readState($, `${base}/${dir.name}/state.json`);
-    if (state) runs.push({ id: dir.name, state });
+  const dirs = entries.filter((entry) => entry.kind === 'dir');
+  const runs = await Promise.all(dirs.map(async (dir) => ({ id: dir.name, dir: `${base}/${dir.name}`, state: await readState($, `${base}/${dir.name}/state.json`) })));
+  return runs.filter((run) => run.state);
+}
+
+async function mainRoot($, root) {
+  let text;
+  try {
+    text = await $.fs.read(`${root}/.git`);
+  } catch {
+    return root;
   }
-  return runs;
+  const gitdir = typeof text === 'string' && text.startsWith('gitdir:') ? text.slice('gitdir:'.length).trim() : '';
+  const at = gitdir.indexOf(WORKTREES_MARK);
+  return at >= 0 ? gitdir.slice(0, at) : root;
+}
+
+async function readAllRuns($, root) {
+  const main = await mainRoot($, root);
+  const own = await readRuns($, `${root}/.exo/run`);
+  const other = main === root ? [] : await readRuns($, `${main}/.exo/run`);
+  const ids = new Set(own.map((run) => run.id));
+  return [...own, ...other.filter((run) => !ids.has(run.id))].sort((a, b) => (a.id < b.id ? -1 : 1));
+}
+
+async function newestMtime($, dir) {
+  try {
+    const entries = await $.fs.list(dir);
+    return Math.max(0, ...entries.map((entry) => entry.mtimeMs ?? 0));
+  } catch {
+    return Date.now();
+  }
+}
+
+async function isLive($, run) {
+  if (FINAL_PHASES.includes(run.state.phase)) return true;
+  return Date.now() - (await newestMtime($, run.dir)) <= STALE_MS;
 }
 
 function statusLine(run, now) {
@@ -61,7 +92,9 @@ function wake($, seen, run) {
 
 async function tick($, context) {
   const root = await $.session.root();
-  const runs = (await readRuns($, root)).filter((run) => !(Date.parse(run.state.updatedAt) < context.startedAt));
+  const all = await readAllRuns($, root);
+  const flags = await Promise.all(all.map((run) => isLive($, run)));
+  const runs = all.filter((run, i) => flags[i]);
   for (const run of runs) {
     if (context.first && FINAL_PHASES.includes(run.state.phase)) context.seen.set(run.id, run.state.phase);
     else wake($, context.seen, run);
@@ -73,9 +106,9 @@ async function tick($, context) {
 }
 
 export function register(on) {
-  on('session.start', (e, $, next) => {
+  on('session.start', ($, e, next) => {
     if (!e.isInteractive) return next(e);
-    const context = { startedAt: Date.now(), first: true, seen: new Map() };
+    const context = { first: true, seen: new Map() };
     $.clock.every(TICK_MS, () => tick($, context));
     return next(e);
   });
