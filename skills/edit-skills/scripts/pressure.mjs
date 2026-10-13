@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { confineRefusal, confinedClaude } from '#confine-claude';
-import { readKindTable } from '#model-kinds';
+import { BUDGETS, readKindTable } from '#model-kinds';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
@@ -59,24 +59,14 @@ function readFlags(argv) {
 }
 
 function cellsFor(file) {
-  const table = readKindTable();
-  const tiers = table.providers[table.provider].tiers;
-  const entries = [table.agents[file], table.skills[file], ...table.dispatches.filter((dispatch) => dispatch.file === file)];
   const cells = new Set();
-  for (const entry of entries.filter(Boolean)) {
-    const { model, effort } = table.kinds[entry.kind];
-    const label = effort ?? 'session';
-    cells.add(`${model}:${label}`);
-    const tier = Object.keys(tiers).find((name) => tiers[name] === model);
-    for (const swaps of Object.values(table.budgets ?? {})) {
-      if (swaps[tier]) cells.add(`${tiers[swaps[tier]]}:${label}`);
+  for (const budget of BUDGETS) {
+    const table = readKindTable(undefined, { budget });
+    const entries = [table.agents[file], ...table.dispatches.filter((dispatch) => dispatch.file === file)];
+    for (const entry of entries.filter(Boolean)) {
+      const { model, effort } = table.kinds[entry.kind];
+      cells.add(`${model}:${effort ?? 'session'}`);
     }
-  }
-  const twins = Object.values(table.providers).flatMap((block) => Object.values(block.codexTwins ?? {}));
-  for (const twin of twins.filter((entry) => entry.from === file)) {
-    const { model, effort } = table.kinds[twin.kind];
-    const tier = Object.keys(tiers).find((name) => tiers[name] === model);
-    cells.add(`${twin.budget === undefined ? model : tiers[table.budgets[twin.budget][tier]]}:${effort ?? 'session'}`);
   }
   if (cells.size === 0) throw new UsageError(`no kind in lib/model-kinds.json lists '${file}'`);
   return [...cells].join(',');

@@ -72,6 +72,12 @@ test('with no --output-style no arm gets an outputStyle', skipWindows, async () 
   for (const [answer, value] of Object.entries(settings)) assert.ok(value === 'none' || !Object.hasOwn(value, 'outputStyle'), answer);
 });
 
+test('--cells-for prints one cell per budget column low, medium, high', async () => {
+  const outcome = await run(PRESSURE, ['--cells-for', 'agents/solve-hard.md'], { cwd: await fixture() });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout.trim(), 'opus:medium,opus:high,opus:xhigh');
+});
+
 // Runs the runner once against a stand-in `claude` that answers `answer`
 // without reading any file; returns the exit code and the arm line.
 async function citationRun(answer) {
