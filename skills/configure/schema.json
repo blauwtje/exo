@@ -34,23 +34,15 @@
   },
   "budget": {
     "type": "string",
-    "options": ["high", "medium", "low"],
+    "options": ["off", "low", "medium", "high"],
     "default": "medium",
-    "description": "high: medium, except the deep branch review, the design critique and the hardest work get the model and effort of their high kinds, set on each Agent call. medium: every agent dispatch uses the model its kind resolves to in lib/model-kinds.json. low: an agent whose kind resolves to a tier named under budgets in lib/model-kinds.json dispatches on that tier's replacement instead, except the hardest work, which keeps its model at medium effort. The old names full, normal and lean still read as high, medium and low",
-    "rules": {
-      "high": "Budget is high. When you dispatch exo:critique-ui or the deep review (exo:review-branch on a `REVIEWER:` line that prints a model), set the call's `model` to `{model:review-deep-high}` and `effort` to `{effort:review-deep-high}`. When you dispatch exo:solve-hard, set its `model` to `{model:hardest-high}` and `effort` to `{effort:hardest-high}`. These override the agent's and the `REVIEWER:` line's values; set no other dispatch's `model` or `effort`.",
-      "low": "Budget is low. When you dispatch exo:critique-ui or the deep review (exo:review-branch on a `REVIEWER:` line that prints a model), set the call's `model` to `{model:review-deep@low}` and `effort` to `{effort:review-deep}`. When you dispatch exo:solve-hard, set its `model` to `{model:hardest-low}` and `effort` to `{effort:hardest-low}`. These override the agent's and the `REVIEWER:` line's values. When you dispatch any other exo agent whose kind in lib/model-kinds.json resolves to model {from} (its agents entry names the kind, whose tier maps to a model under providers), set {to} as the Agent call's own `model` instead."
-    },
-    "codexRules": {
-      "high": "Budget is high: spawn exo-critique-ui-high in place of exo-critique-ui, exo-solve-hard-high in place of exo-solve-hard, and exo-review-branch-deep-high for a `REVIEWER:` line that prints a model, each with the same prompt.",
-      "medium": "Budget is medium: when a `REVIEWER:` line prints a model, spawn exo-review-branch-deep for that review, with the same prompt.",
-      "low": "Budget is low: spawn exo-critique-ui-low in place of exo-critique-ui, exo-solve-hard-low in place of exo-solve-hard, and exo-review-branch-deep-low for a `REVIEWER:` line that prints a model, each with the same prompt."
-    },
+    "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. low, medium, high: a hook sets each dispatch's model and effort from the column of that name in the kind table in lib/model-kinds.json. The old names full, normal and lean still read as high, medium and low",
     "aliases": { "full": "high", "normal": "medium", "lean": "low" },
     "label": "Effort",
     "about": "how much care and cost each task gets",
     "question": "How much effort should each task get?",
     "choices": {
+      "off": { "label": "Off", "gives": "agents use your session's model" },
       "high": { "label": "High", "gives": "best quality, slower and costlier" },
       "medium": { "label": "Medium", "gives": "good quality at normal cost" },
       "low": { "label": "Low", "gives": "cheaper and faster, a little less careful" }

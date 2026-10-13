@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
-import { readKindTable } from '#model-kinds';
 import {
   LOCAL_FILE,
   PROJECT_FILE,
@@ -30,34 +29,12 @@ const USAGE = [
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
 
-function filledRule(rule, value) {
-  if (!rule.includes('{')) return rule;
-  const table = readKindTable();
-  const { tiers } = table.providers[table.provider];
-  const kind = (name) => {
-    if (!table.kinds[name]) throw new Error(`budget rule names unknown kind ${name}`);
-    return table.kinds[name];
-  };
-  const swapped = (model, budget) => {
-    const pair = Object.entries(table.budgets[budget] ?? {}).find(([fromTier]) => tiers[fromTier] === model);
-    return pair ? tiers[pair[1]] : model;
-  };
-  const called = rule
-    .replace(/\{model:([a-z-]+)(?:@([a-z]+))?\}/g, (_, name, budget) => (budget ? swapped(kind(name).model, budget) : kind(name).model))
-    .replace(/\{effort:([a-z-]+)\}/g, (_, name) => kind(name).effort);
-  if (!called.includes('{from}')) return called;
-  return Object.entries(table.budgets[value]).map(([fromTier, toTier]) => {
-    if (!tiers[fromTier] || !tiers[toTier]) throw new Error(`budgets.${value}: ${fromTier} to ${toTier} names a tier the provider lacks`);
-    return called.replaceAll('{from}', tiers[fromTier]).replaceAll('{to}', tiers[toTier]);
-  }).join(' ');
-}
-
 function activeRules(values) {
   const onCodex = currentHost() === 'codex';
   return Object.entries(SCHEMA)
     .map(([key, entry]) => {
       const rules = (onCodex && entry.codexRules) || entry.rules;
-      return rules?.[values[key]] ? filledRule(rules[values[key]], values[key]) : '';
+      return rules?.[values[key]] ?? '';
     })
     .filter(Boolean)
     .join(' ');

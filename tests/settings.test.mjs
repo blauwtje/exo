@@ -10,9 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
-import { readKindTable } from '../lib/model-kinds.mjs';
 import { readFileSync } from 'node:fs';
-import { generateTree } from '../harnesses/codex/generate.mjs';
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const TIGHT_RULE = `. ${SCHEMA.compression.rules.low}`;
@@ -284,62 +282,22 @@ test('every schema key is a userConfig entry with the same type, options and def
   }
 });
 
-// A copy of the plugin files settings.mjs imports, with the provider's tiers
-// replaced, so a test can change a tier without touching the live table.
-async function pluginWithTiers(tiers) {
-  const copy = await fixture();
-  const source = fileURLToPath(new URL('..', import.meta.url));
-  await fs.cp(path.join(source, 'package.json'), path.join(copy, 'package.json'));
-  await fs.cp(path.join(source, 'lib'), path.join(copy, 'lib'), { recursive: true });
-  await fs.cp(path.join(source, 'skills', 'configure'), path.join(copy, 'skills', 'configure'), { recursive: true });
-  const tablePath = path.join(copy, 'lib', 'model-kinds.json');
-  const table = JSON.parse(readFileSync(tablePath, 'utf8'));
-  const provider = table.providers[table.provider];
-  provider.models = [...provider.models, ...Object.values(tiers)];
-  Object.assign(provider.tiers, tiers);
-  await writeJson(tablePath, table);
-  return path.join(copy, 'skills', 'configure', 'scripts', 'settings.mjs');
-}
-
-const KINDS = readKindTable().kinds;
-const callParameters = ({ model, effort }) => `\`model\` to \`${model}\` and \`effort\` to \`${effort}\``;
-
-test('the low rule names the provider models the kind table maps, and carries no placeholder', async () => {
-  const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
-  const [[fromTier, toTier]] = Object.entries(table.budgets.low);
-  const script = await pluginWithTiers({ [fromTier]: 'model-from', [toTier]: 'model-to' });
-  const space = await workspace({ project: { budget: 'low' } });
-  const result = await run(script, ['context'], { cwd: space.root, env: space.env });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /budget=low \(project\)/);
-  assert.ok(result.stdout.includes('resolves to model model-from ('), result.stdout);
-  assert.ok(result.stdout.includes("set model-to as the Agent call's own `model`"), result.stdout);
-  assert.ok(result.stdout.includes(callParameters({ model: 'model-to', effort: KINDS['review-deep'].effort })), result.stdout);
-  assert.doesNotMatch(result.stdout, /\{(from|to|model:|effort:)/);
-});
-
-test('each budget line names the Agent call model and effort for critique-ui, solve-hard and the deep review', async () => {
-  const lowDeep = { model: readKindTable().providers.claude.tiers.standard, effort: KINDS['review-deep'].effort };
-  const expected = {
-    high: { review: KINDS['review-deep-high'], hard: KINDS['hardest-high'] },
-    low: { review: lowDeep, hard: KINDS['hardest-low'] }
-  };
-  for (const [budget, { review, hard }] of Object.entries(expected)) {
+test('each budget, off included, sets and reads back without adding a rule to the context line', async () => {
+  for (const budget of SCHEMA.budget.options) {
     const space = await workspace({ project: { budget } });
     const line = (await run(SETTINGS, ['context'], { cwd: space.root, env: space.env })).stdout;
-    assert.ok(line.includes(`dispatch exo:critique-ui or the deep review (exo:review-branch on a \`REVIEWER:\` line that prints a model), set the call's ${callParameters(review)}`), line);
-    assert.ok(line.includes(`dispatch exo:solve-hard, set its ${callParameters(hard)}`), line);
-    assert.doesNotMatch(line, /exo:[a-z-]+-(high|low)\b|exo:review-branch-deep|\{(from|to|model:|effort:)/);
+    assert.match(line, new RegExp(`budget=${budget} \\(project\\)`));
+    assert.doesNotMatch(line, /Budget is|Agent call|exo:[a-z-]+-(high|low)\b|\{(from|to|model:|effort:)/);
+    assert.equal((await run(SETTINGS, ['get', 'budget'], { cwd: space.root, env: space.env })).stdout.trim(), budget);
   }
 });
 
-test('on Codex the budget rules spawn the generated twins by name', async () => {
-  const lines = {};
-  for (const budget of ['high', 'medium', 'low']) lines[budget] = (await settings(await codexWorkspace({ budget }), ['context'])).stdout;
-  for (const twin of ['exo-review-branch-deep-high', 'exo-critique-ui-high', 'exo-solve-hard-high']) assert.ok(lines.high.includes(twin), lines.high);
-  for (const twin of ['exo-review-branch-deep-low', 'exo-critique-ui-low', 'exo-solve-hard-low']) assert.ok(lines.low.includes(twin), lines.low);
-  assert.ok(lines.medium.includes('spawn exo-review-branch-deep for that review'), lines.medium);
-  for (const line of Object.values(lines)) assert.doesNotMatch(line, /\{(from|to|model:|effort:)|Agent call|exo:solve-hard/);
+test('on Codex no budget adds a rule to the context line', async () => {
+  for (const budget of SCHEMA.budget.options) {
+    const line = (await settings(await codexWorkspace({ budget }), ['context'])).stdout;
+    assert.match(line, new RegExp(`budget=${budget} \\(`));
+    assert.doesNotMatch(line, /Budget is|exo-[a-z-]+-(high|low)\b|Agent call|\{(from|to|model:|effort:)/);
+  }
 });
 
 test('on Codex the compression rule is the same as on Claude Code', async () => {
@@ -347,20 +305,17 @@ test('on Codex the compression rule is the same as on Claude Code', async () => 
   assert.ok((await settings(space, ['context'])).stdout.includes(TIGHT_RULE));
 });
 
-test('the Codex budget rules name only twins that exist as generated agent files', () => {
-  const tree = generateTree();
-  for (const rule of Object.values(SCHEMA.budget.codexRules)) {
-    for (const [name] of rule.matchAll(/exo-[a-z-]+/g)) assert.ok(tree.has(`harnesses/codex/generated/agents/${name}.toml`), name);
-  }
+test('budget reads off, low, medium or high, defaults to medium and carries no rules', () => {
+  assert.deepEqual(SCHEMA.budget.options, ['off', 'low', 'medium', 'high']);
+  assert.equal(SCHEMA.budget.default, 'medium');
+  assert.equal(SCHEMA.budget.rules, undefined);
+  assert.equal(SCHEMA.budget.codexRules, undefined);
 });
 
-test('the low rule text holds no model name of any provider', () => {
+test('the budget description holds no model name of any provider', () => {
   const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
   const models = Object.values(table.providers).flatMap((provider) => provider.models);
-  for (const model of models) {
-    assert.ok(!SCHEMA.budget.rules.low.includes(model), model);
-    assert.ok(!SCHEMA.budget.description.includes(model), model);
-  }
+  for (const model of models) assert.ok(!SCHEMA.budget.description.includes(model), model);
 });
 
 test('guards is on by default and off when the project sets it', async () => {
