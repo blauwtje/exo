@@ -22,6 +22,7 @@ Drift report: <the PLAN DRIFT report verbatim: the region looked for and what wa
 Read only the plan's `## Goal`, `## Decisions`, `## Plan basis` and the drifted task's section, not the whole plan.
 Re-read the working-tree regions that task names.
 Rewrite that task's field line (`Files:`, `Data:`, `Proof:`) against the current tree, or in a long-format task its step code, `Run:`, `Expected:` and `Commit:` paths.
+Inside a run, edit only that task's `Files:` or `Proof:` line: the run rejects any other change and stops.
 Leave every other task untouched.
 
 Return, and nothing else, in at most five lines: the plan path, the task number rewritten, and any fact that kept the task unrepaired.

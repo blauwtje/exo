@@ -16,12 +16,21 @@ const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.ur
 const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
 const handoff = (number = 1) => ({ edits: [`.exo/handoff-task-${number}.md`], result: `Hand-off written.\nTask ${number}: HANDOFF` });
 
-async function runPlan(context, steps) {
+const rewriteScript = ({ at, from, to, first }, planPath, record) => `
+const calls = fs.existsSync(${JSON.stringify(record)}) ? fs.readFileSync(${JSON.stringify(record)}, 'utf8').split('\\n').filter(Boolean).length : 0;
+if (calls === ${at}) {
+  const text = fs.readFileSync(${JSON.stringify(planPath)}, 'utf8');
+  fs.writeFileSync(${JSON.stringify(planPath)}, ${first ? 'text.replace' : 'text.replaceAll'}(${JSON.stringify(from)}, ${JSON.stringify(to)}));
+}
+`;
+
+async function runPlan(context, steps, rewrite = null) {
   const scenario = path.join(context.tools, 'scenario.json');
   const record = path.join(context.tools, 'calls.jsonl');
   const seen = path.join(context.tools, 'handoff-env.log');
   const wrapper = path.join(context.tools, 'wrapper.mjs');
-  await fs.writeFile(wrapper, `import fs from 'node:fs';\nfs.appendFileSync(${JSON.stringify(seen)}, (process.env.EXO_RUN_HANDOFF ?? '') + '\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
+  const rewriting = rewrite === null ? '' : rewriteScript(rewrite, context.plan, record);
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nfs.appendFileSync(${JSON.stringify(seen)}, (process.env.EXO_RUN_HANDOFF ?? '') + '\\n');\n${rewriting}await import(${JSON.stringify(context.stub)});\n`);
   await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps }));
   const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', wrapper, '--session', 'task'], {
     cwd: context.root,
@@ -60,6 +69,34 @@ test('hand-offs are no stall: two in a row, the stall limit, still reach the lan
   const result = await runPlan(context, [handoff(), handoff(), land(1), land(2), { result: 'Verify done.' }]);
   assert.doesNotMatch(result.lines.join('\n'), /no progress/i, result.stdout + result.stderr);
   assert.ok(result.calls.length >= 4, `${result.calls.length} sessions`);
+});
+
+const blocked = { result: 'Task 1: BLOCKED the proof cannot run' };
+
+test('a blocked task gets one plan repair of its Proof: line, then runs again and lands', async () => {
+  const context = await setup();
+  const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: true };
+  const result = await runPlan(context, [blocked, { result: 'Plan repaired.' }, land(1), land(2), { result: 'Verify done.' }], rewrite);
+  assert.doesNotMatch(result.lines.join('\n'), /blocked:|plan changed/i, result.stdout + result.stderr);
+  assert.match(result.calls[1].stdin, /Plan repair of task 1/);
+  assert.match(await fs.readFile(context.plan, 'utf8'), /Proof: node --help/);
+  assert.ok(result.calls.length >= 4, `${result.calls.length} sessions`);
+});
+
+test('a repair that touches more than the task Files: or Proof: line is undone and the run stops blocked', async () => {
+  const context = await setup();
+  const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: false };
+  const result = await runPlan(context, [blocked, { result: 'Plan repaired.' }, land(1)], rewrite);
+  assert.match(result.stop, /task 1 blocked/);
+  assert.match(await fs.readFile(context.plan, 'utf8'), /Proof: node --version \| Red: none \(fixture\)\n### Task 2/);
+});
+
+test('a task blocked again after its repair stops the run: one repair per task', async () => {
+  const context = await setup();
+  const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: true };
+  const result = await runPlan(context, [blocked, { result: 'Plan repaired.' }, blocked], rewrite);
+  assert.match(result.stop, /task 1 blocked/);
+  assert.equal(result.calls.length, 3);
 });
 
 test('a HANDOFF line without the file is a failed attempt, not a hand-off', async () => {

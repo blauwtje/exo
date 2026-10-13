@@ -252,7 +252,7 @@ async function main(argv) {
   say(`run start: ${path.relative(root, planPath) || planPath}, branch ${branch}, ${plan.tasks.length} tasks (${plan.tasks.length - landedAtStart.length} to build)`);
 
   const planHash = () => (isFileOnDisk(planPath) ? createHash('sha256').update(fs.readFileSync(planPath)).digest('hex') : 'missing');
-  const planAtStart = planHash();
+  let planAtStart = planHash();
   const planBreach = () => (planHash() === planAtStart ? null : 'plan changed');
 
   const ledgerFile = path.join(logDir, 'sessions.jsonl');
@@ -332,6 +332,51 @@ async function main(argv) {
     say(`task ${n} blocked: ${clip(reason, 80)}`);
     return { line: `task ${n} blocked: ${reason}; re-plan with exo:spec`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 're-plan with /exo:spec, then run exo run again' };
   };
+  const repaired = new Set();
+  const withoutFields = (line) => line.replace(/(?:Files|Proof):[^|]*/g, '');
+  const onlyFieldsChanged = (before, after, n) => {
+    const old = before.split('\n');
+    const now = after.split('\n');
+    const from = old.findIndex((line) => line.startsWith(`### Task ${n}:`));
+    const next = old.findIndex((line, index) => index > from && line.startsWith('#'));
+    const inTask = (index) => from >= 0 && index > from && (next === -1 || index < next);
+    return old.length === now.length && old.every((line, index) => line === now[index] || (inTask(index) && withoutFields(line) === withoutFields(now[index])));
+  };
+  const planCheckPasses = () => spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' }).status === 0;
+  const adoptRepair = (text, n) => {
+    try {
+      const fresh = parsePlan(text).tasks.find((entry) => entry.number === n);
+      Object.assign(plan.tasks.find((entry) => entry.number === n), fresh);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const repairPrompt = (n, report) => [
+    `Plan repair of task ${n} in ${planPath}, repository ${root}.`,
+    `Read ${path.join(PLUGIN_ROOT, 'skills', 'build', 'drift-repairer-prompt.md')} and follow its prompt; the task list spec is ${path.join(PLUGIN_ROOT, 'skills', 'spec', 'references', 'task-list.md')}.`,
+    `Edit only the Files: or Proof: line of task ${n}; any other change is rejected.`,
+    `Drift report: ${report}`
+  ].join('\n');
+  const repairTask = async (n, report) => {
+    if (repaired.has(n)) return false;
+    repaired.add(n);
+    const before = fs.readFileSync(planPath, 'utf8');
+    say(`task ${n} blocked, repair session: ${clip(report, 80)}`);
+    const log = path.join(logDir, `iter-${iteration}-repair-${n}.log`);
+    const session = await spawnOne({ prompt: repairPrompt(n, report), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
+    const after = fs.readFileSync(planPath, 'utf8');
+    const breach = breachOf(root, session.before, { tail: true });
+    if (breach === null && after !== before && onlyFieldsChanged(before, after, n) && planCheckPasses() && adoptRepair(after, n)) {
+      planAtStart = planHash();
+      say(`task ${n} plan repaired, task runs again`);
+      return true;
+    }
+    fs.writeFileSync(planPath, before);
+    say(`task ${n} repair rejected${breach === null ? '' : `: ${breach}`}`);
+    return false;
+  };
+  const repairedNote = (n, reason) => `\nThe previous attempt on task ${n} reported ${clip(reason, 120)}; the plan's Files: or Proof: line for it was repaired. Read the plan task again.`;
   const markLanded = (n, record, startedTask) => {
     stall = 0;
     retryNote = '';
@@ -463,13 +508,20 @@ async function main(argv) {
     }
     const statusLine = new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`);
     const blocked = marker?.match(statusLine) ?? (outcome.timedOut ? null : last.match(statusLine));
-    if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
-      const rescue = blocked !== null && !outcome.timedOut && parsed.denials.length > 0 ? landByScript(n) : null;
-      if (rescue?.landed) {
-        markLanded(n, record, startedTask);
-        continue;
-      }
-      stop = blockedStop(n, blocked?.[1] || last);
+    const stuck = blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'));
+    const reason = blocked?.[1] || last;
+    const rescue = stuck && blocked !== null && !outcome.timedOut && parsed.denials.length > 0 ? landByScript(n) : null;
+    if (rescue?.landed) {
+      markLanded(n, record, startedTask);
+      continue;
+    }
+    const repairNote = stuck && (await repairTask(n, reason)) ? repairedNote(n, reason) : null;
+    if (repairNote !== null) {
+      retryNote = repairNote;
+      continue;
+    }
+    if (stuck) {
+      stop = blockedStop(n, reason);
       break;
     }
     const attempt = outcome.timedOut ? null : landByScript(n);
