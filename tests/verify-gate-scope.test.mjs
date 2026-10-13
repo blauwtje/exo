@@ -166,7 +166,7 @@ test('a criterion failing only on an unlanded task\'s missing module prints SKIP
   const lines = result.stdout.trim().split('\n');
   assert.equal(lines[2], 'SKIP success-criterion (out of scope: exit 1 names only files of unlanded Task 3)');
   assert.ok(!result.stdout.includes('FAIL success-criterion'));
-  assert.deepEqual(lines.filter((line) => line.startsWith('REVIEW')), [reviewLine(REVIEWER_AGENTS.light)]);
+  assert.deepEqual(lines.filter((line) => line.startsWith('REVIEW ')), [reviewLine(REVIEWER_AGENTS.light)]);
   assert.ok(lines.includes('OPEN Task 3: feat(strings): add c'));
 });
 

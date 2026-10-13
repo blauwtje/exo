@@ -14,7 +14,7 @@ async function branchRun(plan, count, shared = false) {
   const root = await gitRepository(files);
   const base = git(root, 'rev-parse', 'HEAD');
   for (let number = 1; number <= count; number += 1) {
-    await writeFile(path.join(root, 'src', `t${shared ? 1 : number}.js`),`export const value = ${number};\n`);
+    await writeFile(path.join(root, 'src', `t${shared ? 1 : number}.js`), `export const value = ${number};\n`);
     git(root, 'add', '-A');
     git(root, 'commit', '-m', `feat: t${number}`, '-m', `Plan-task: plan/${number}`);
   }
