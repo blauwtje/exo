@@ -30,7 +30,7 @@ Exits 1 on any FAIL or STRAY line.`;
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
 const DEFAULT_BASE = 'main';
-const DEFAULT_LAND_GATE ='npm run check';
+const DEFAULT_LAND_GATE = 'npm run check';
 const TEST_SCRIPT_GATE = 'npm test';
 const TEST_SCRIPT_PASS = 'PASS success-criterion (npm test; no check script)';
 const PLAIN_SHELL_WORD = /^[\w@%+=:,./-]+$/;

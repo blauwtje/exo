@@ -6,7 +6,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { git, run } from './harness.mjs';
+import { run } from './harness.mjs';
 import { gitRepository, SCRIPT, landTask, CLEAN_CHECK } from './verify-gate-fixture.mjs';
 
 test('a relative --root names the checkout from the caller directory, not from inside it', async () => {
@@ -20,7 +20,7 @@ test('a relative --root names the checkout from the caller directory, not from i
   const result = await run(SCRIPT, ['--plan', path.join(root, 'plan.md'), '--root', path.basename(root), '--check-command', 'node check.js'], { cwd: path.dirname(root) });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /PASS Task 1/);
-  assert.match(result.stdout, new RegExp(`REVIEW Task 1 ${git(root, 'rev-parse', 'HEAD')}`));
+  assert.match(result.stdout, /^REVIEW Branch main\.\.HEAD: /m);
 });
 
 test('a landed task whose Proof fails prints FAIL and exits 1', async () => {

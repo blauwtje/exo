@@ -94,7 +94,7 @@ test('--root points the gate at another checkout, not the caller\'s own cwd', as
     { cwd: path.dirname(root) }
   );
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('missing --plan is rejected', async () => {
@@ -166,8 +166,7 @@ test('a criterion failing only on an unlanded task\'s missing module prints SKIP
   const lines = result.stdout.trim().split('\n');
   assert.equal(lines[2], 'SKIP success-criterion (out of scope: exit 1 names only files of unlanded Task 3)');
   assert.ok(!result.stdout.includes('FAIL success-criterion'));
-  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ') && line.endsWith(`: ${REVIEWER_AGENTS.light}`)));
-  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 2 ')));
+  assert.deepEqual(lines.filter((line) => line.startsWith('REVIEW ')), [reviewLine(REVIEWER_AGENTS.light)]);
   assert.ok(lines.includes('OPEN Task 3: feat(strings): add c'));
 });
 
@@ -249,5 +248,5 @@ test('claims-diff holds on the inline route, whose long-format task lists a Modi
   const { result, lines } = await claimsRun(INLINE_PLAN, { 'src/app.js': 'export const greet = () => "hello";\n' }, { 'src/app.js': 'export const greet = () => "hi";\n' });
   assert.equal(result.code, 0, result.stdout);
   assert.ok(lines.includes('PASS claims-diff'), result.stdout);
-  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ') && line.endsWith(': none (inline route)')), result.stdout);
+  assert.ok(lines.includes(reviewLine('none (inline route)')), result.stdout);
 });
