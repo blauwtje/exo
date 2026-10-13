@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import {
-  AGENT_SOFT_LIMIT, BYTES_PER_TOKEN, contextDecision, contextTokens, HARD_LIMIT, LEAD_SOFT_LIMIT, TASK_SPLIT_TOKENS
+  AGENT_SOFT_LIMIT, BYTES_PER_TOKEN, contextDecision, contextTokens, HARD_LIMIT, LEAD_LIGHT_TOOLS, LEAD_SOFT_LIMIT, TASK_SPLIT_TOKENS
 } from '../lib/context-limits.mjs';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-'));
@@ -73,7 +73,7 @@ test('lead over the hard limit keeps light tools and waits on background work', 
   const { deny } = at({ tool_name: 'Read' });
   assert.match(deny, /background/);
   assert.match(deny, /relay/);
-  assert.match(deny, /SendMessage/);
+  for (const tool of LEAD_LIGHT_TOOLS) assert.ok(deny.includes(tool), `deny names ${tool}`);
   const agent = at({ tool_name: 'ToolSearch', agent_id: 'x', agent_transcript_path: transcript('bg-ag.jsonl', [entry(120000)]) });
   assert.ok(agent.deny, 'subagent path unchanged');
   const agentBash = at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a' }, agent_id: 'x', agent_transcript_path: transcript('bg-ag2.jsonl', [entry(120000)]) });
