@@ -11,12 +11,13 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Highlights
 
-- **A plan now builds through the detached loop by default, its proofs run outside the sandbox, one review covers the branch, and small or clear work reaches build without questions.**
+- **A plan now builds through the detached loop by default, its proofs run outside the sandbox, one review covers the branch, and small or clear work reaches build without questions. A detached run is now watched: its progress shows under the prompt, and a blocked task wakes the lead to repair and resume it.**
 - **`exo run` now builds a small plan in one session and lands it by script: in the flow benchmark it uses 1.23x the no-plugin baseline's tokens with the hidden check 4/4, against 1.76x for the `build` flow.**
 - **A plan task's Proof and a plan's Success must now fail before the change: on the test-pollution benchmark `exo run` with this red-green gate passed 5 of 5, against 1 of 35 for the no-plugin baseline.**
 
 ### Added
 
+- A detached `exo run` writes one followable live log at `.exo/run/live.log` and shows task progress in a status line under the prompt; when a run stops, a watcher hook wakes the lead to repair and resume it.
 - `exo run` orchestrates a plan by script: a small plan with no shared step or design task runs as one plan session whose tasks the script lands, any other plan task by task, each session from one generated task brief with lean flags and the run's plugin; a plan session that stops short has its leftover saved as a patch in the run's log folder and the tree cleaned before the per-task fallback; `--session auto|task|plan` picks the mode, `--max-run-usd` caps the run from a per-run session ledger, a scripted tail reviews, fixes and verifies the branch, and `land-task` under a run pin prints at most 20 lines.
 - The flow benchmark gains a `flow-run` arm that measures `exo run` with confined child sessions and ranks it against `flow-base` (`benchmarks/results/2026-10-12-flow-run-4b.md`); the per-task `flow-run-task` arm was dropped at 2.7x.
 - `land-task` refuses a task whose Proof passes on the run's base with the task's tests overlaid, so each Proof proves red before green; a task that cannot fail first states `Red: none (<reason>)`, a flaky Proof `Repeat: <2-5> (<reason>)`, and the task's land record keeps the Red outcome.
@@ -39,6 +40,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- Lines in the run's live log now start with `[HH:MM:SS]` and read as plain text: task start, landed lines with duration, turns, tokens and cost, and the stop reason.
 - `build` on a plan starts the detached loop (`exo-cli.mjs run <plan> --detach`); the in-session unit route stays only for `--task` mode, a codex host, or no `claude` on `PATH`.
 - `exo run` runs each task's `Proof:` and `Land gate:` from its own process, outside the build session's sandbox and without a subagent.
 - `spec` asks no question for small or clear work and records each choice under `## Decisions` as closed by exo.
@@ -60,6 +62,9 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- A dotnet command no longer hangs the run session (#120): registry domains are allowed in the run sandbox.
+- A command that prints nothing for too long is stopped by the stall guard within seconds and reported, instead of being waited out for minutes.
+- The app named in a plan's `App:` line is started before each task and plan session, not only before the first proof, so a dead app no longer stalls the run.
 - `exo run` lands once its review fix lands with a clean fix review; before, the stale `fix=1` of the branch review parked it on `land anyway`.
 - A task's Proof and its red-green base run no longer see `EXO_RUN`, `EXO_RUN_DIR`, `EXO_RUN_TASK` or `EXO_DROPS`, so a Proof like `node --test <file>` inside `exo run` no longer fails or parks gates on the live run.
 - `exo run` now matches an unsandboxed exo script with its arguments, so `land-task` and `verify.mjs` run outside the sandbox with any flags.
