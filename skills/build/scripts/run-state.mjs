@@ -58,7 +58,15 @@ export function updateRun(root, id, patch) {
   return next;
 }
 
-const gatesFile = (dir) => path.join(dir, 'gates.md');
+export function recordTask(root, id, { n, subject, landed, total }) {
+  return updateRun(root, id, { task: { n, subject }, landed, total });
+}
+
+export function recordStop(root, id, { phase, reason }) {
+  return updateRun(root, id, { phase, reason });
+}
+
+const gatesFile =(dir) => path.join(dir, 'gates.md');
 const GATE_LINE = /^- (open|approved|used): ([^:]+): (.*) \(([^()]*)\)$/;
 
 export function readGates(dir) {

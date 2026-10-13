@@ -7,7 +7,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import {
   createRun, updateRun, readState, listRuns, acquireLock, releaseLock, newRunId, isAlive, runDir,
-  PHASES, FINAL_PHASES, openGate, readGates, approveGates, takeApproved, keepRun,
+  PHASES, FINAL_PHASES, openGate, readGates, approveGates, takeApproved, keepRun, recordTask, recordStop,
 } from '../skills/build/scripts/run-state.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'run-state-'));
@@ -38,6 +38,24 @@ test('updateRun changes phase and exitCode, keeps id, rejects unknown phase', ()
   assert.throws(() => updateRun(root, 'a', { phase: 'bogus' }));
   assert.throws(() => updateRun(root, 'missing', { phase: 'build' }));
   assert.equal(readState(root, 'missing'), null);
+});
+
+test('recordTask and recordStop patch state.json with task, landed, total and reason', () => {
+  const root = tmp();
+  createRun(root, { id: 'a', plan: 'p.md' });
+  recordTask(root, 'a', { n: 3, subject: 'add helper', landed: 2, total: 9 });
+  const s = readState(root, 'a');
+  assert.deepEqual(s.task, { n: 3, subject: 'add helper' });
+  assert.equal(s.landed, 2);
+  assert.equal(s.total, 9);
+  assert.equal(s.phase, 'starting');
+  recordStop(root, 'a', { phase: 'stopped', reason: 'Task 3 blocked' });
+  const t = readState(root, 'a');
+  assert.equal(t.phase, 'stopped');
+  assert.equal(t.reason, 'Task 3 blocked');
+  assert.deepEqual(t.task, { n: 3, subject: 'add helper' });
+  assert.throws(() => recordStop(root, 'a', { phase: 'bogus', reason: 'x' }));
+  assert.throws(() => recordTask(root, 'missing', { n: 1, subject: 's', landed: 0, total: 1 }));
 });
 
 test('listRuns returns runs oldest first and skips the lock file', () => {
