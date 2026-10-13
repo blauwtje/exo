@@ -9,6 +9,11 @@ Versions before 0.125.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+
+- The run watcher finds the main checkout from a worktree whose `.git` file holds a relative path (`worktree.useRelativePaths`) or backslashes.
+- Tests no longer fail at random with `ENOTEMPTY`: every test process runs git with `maintenance.auto=false`, so a background repack no longer races the cleanup of a temporary repository.
+
 ## 0.132.0 - 2026-10-13
 
 ### Highlights
