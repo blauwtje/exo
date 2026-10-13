@@ -233,11 +233,11 @@ export const SCENARIOS = [
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high') },
   { name: 'effort-max', check: 'model kinds', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max') },
-  { name: 'effort-bogus', check: 'YAML frontmatter', mutate: (root) =>
+  { name: 'effort-bogus', check: ['YAML frontmatter', 'model kinds'], mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: bogus') },
-  { name: 'model-bogus', check: 'YAML frontmatter', mutate: (root) =>
+  { name: 'model-bogus', check: ['YAML frontmatter', 'model kinds'], mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\nmodel: bogus') },
-  { name: 'effort-duplicate', check: 'YAML frontmatter', mutate: (root) =>
+  { name: 'effort-duplicate', check: ['YAML frontmatter', 'model kinds'], mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: xhigh\neffort: high') },
   // The Codex generator requires name and description too, so both checks reject it.
   { name: 'effort-without-name', check: ['YAML frontmatter', 'codex overrides'], mutate: (root) =>
