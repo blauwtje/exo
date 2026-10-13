@@ -5,6 +5,7 @@
 - **Progress.** No message between steps of a run except a block, a failed check or a question only the user can answer.
 - **Heartbeat.** Step that may pass two minutes → one progress line at least every minute; silence reads as a hang.
 - **Retries.** Two failed attempts at one problem → stop, summarize the evidence. Never rerun a failed command unchanged.
+- **Fresh start.** Unrelated next request in a long session → suggest a fresh session before starting it.
 - **Long commands.** Command that may pass one minute → background, timeout sized to it.
 - **Gate.** The gate (plan's `Land gate:`, default the fast `npm test`) runs once, by the lead; a delegate runs only its proof.
 - **Command output.** Output that may pass forty lines → log under `.exo/` or a temp directory outside git; read back only failing lines.
