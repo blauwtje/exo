@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { defaultBranch, isPlanDoc, parsePlan } from '#plan-tasks';
+import { defaultBranch, isCovered, isPlanDoc, parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
 
@@ -57,9 +57,9 @@ function plannedPaths(root, runDir) {
   try {
     const state = JSON.parse(fs.readFileSync(path.join(runDir, 'state.json'), 'utf8'));
     const { tasks } = parsePlan(fs.readFileSync(path.resolve(root, state.plan), 'utf8'));
-    return new Set(tasks.flatMap((task) => task.files.map((file) => file.path)));
+    return tasks.flatMap((task) => task.files.map((file) => file.path));
   } catch {
-    return new Set();
+    return [];
   }
 }
 
@@ -67,7 +67,7 @@ function commitPlanDocs(root, runRoot, runDir) {
   const status = git(runRoot, 'status', '--porcelain', '-z', '--untracked-files=all').out;
   const planned = plannedPaths(root, runDir);
   const docs = status.split('\0').filter(Boolean).map((entry) => entry.slice(3))
-    .filter((file) => isPlanDoc(file) && !planned.has(file));
+    .filter((file) => isPlanDoc(file) && !isCovered(planned, file));
   if (docs.length === 0) return;
   if (git(runRoot, 'add', '--', ...docs).ok) git(runRoot, 'commit', '-q', '-m', 'docs: add plan documents', '--', ...docs);
 }

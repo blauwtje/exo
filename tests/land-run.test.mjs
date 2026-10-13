@@ -272,6 +272,17 @@ test('leftover CHANGELOG.md and docs markdown land as one docs commit; a task-li
   assert.equal(git(f.root, 'status', '--porcelain', '--untracked-files=all').includes('docs/listed.md'), true);
 });
 
+test('a doc under a task-listed folder is not a plan document', () => {
+  const f = fixture();
+  write(f.root, 'plan.md', '# Plan\n\n### Task 1: x\nDepends on: none | Files: `docs/guide/` | Proof: true\n');
+  fs.writeFileSync(path.join(f.runDir, 'state.json'), JSON.stringify({ plan: path.join(f.root, 'plan.md') }));
+  write(f.root, 'CHANGELOG.md', '## Unreleased\n');
+  write(f.root, 'docs/guide/x.md', 'x\n');
+  assert.equal(f.land().phase, 'landed');
+  assert.equal(git(f.root, 'show', '--name-only', '--format=', 'HEAD'), 'CHANGELOG.md');
+  assert.equal(git(f.root, 'status', '--porcelain', '--untracked-files=all').includes('docs/guide/x.md'), true);
+});
+
 test('leftover plan docs commit before the rebase and land; no leftovers make no docs commit', () => {
   const f = fixture({ origin: false });
   write(f.root, 'docs/plan.md', 'p\n');
