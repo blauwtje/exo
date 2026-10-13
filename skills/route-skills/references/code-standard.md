@@ -24,6 +24,7 @@ Applies to written or changed code, not instruction files. Covers how code reads
 20. **Dead code**: remove only dead code, imports and variables your change orphaned; report other dead code.
 21. **Architecture boundaries**: behavior in the owning layer; dependencies toward established contracts.
 22. **No shortcuts**: no cycles, cross-layer shortcuts, duplicate sources of truth, mutable global state.
-23. **Conventions**: follow conventions for errors, cancellation, concurrency, resource lifetimes.
+23. **Conventions**: match the surrounding file's naming, layout and idioms unless a rule here forbids them; follow conventions for errors, cancellation, concurrency, resource lifetimes.
 24. **No inner guards**: no guard, fallback or try/catch for a state the code's own boundary already rules out; validate once at the trust boundary.
 25. **Types rule out invalid states**: types and data structures make an invalid state unrepresentable, not checked for.
+26. **No test-fitted code**: no hard-coded value or special case that only makes a test input pass; fix the cause.
