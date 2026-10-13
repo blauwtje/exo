@@ -87,6 +87,10 @@ Settle what the run needs before building: questions worth asking, where the run
 - After option B → each later visual choice decided from the picked contract as on option C, unless the user asks to see it.
 - Option C or exit 3 → the recommended contract is the selection.
 - After option C or exit 3 → no visual question for the rest of the session; decide each further visual choice from the contract and Phase 1 evidence.
+- `EXO_RUN` set → option C; skip the offer, the sketch round and every pick tab, ask nothing.
+- Run, `## Visual direction` keeps an existing identity → build on it, no direction round.
+- Run, identity open → freeze the recommended contract to `$RUN/contract-selected.json`.
+- Run choice made → record it: `node "<plugin>/lib/run-decision.mjs" design-ui "<contract title or existing identity>" "a run never asks which direction"`.
 - User then asks to see options → opens the tab, no second offer.
 - Each such choice → one line: the choice and its cost if wrong, never why.
 - Correction → apply without a question back.
