@@ -1,6 +1,16 @@
 # Changelog archive
 
-Releases before 0.126.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.127.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.126.0 - 2026-10-11
+
+### Added
+
+- `benchmarks/split.mjs` splits flow cells by token type, call count and context size, so a change to the build flow can be measured against earlier runs.
+
+### Changed
+
+- On the inline route, `build` now runs `verify.mjs` once when the last task lands, with no `exo:verify` load, no tail reference read and no `--reviews-only` run; any line that is not clean, or `--land`, still falls back to the full `verify`. One 4-task flow run dropped from 15 to 13 calls and from 94.0k to 87.5k weighted tokens, hidden check passing.
 
 ## 0.125.0 - 2026-10-11
 
