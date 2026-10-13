@@ -6,6 +6,7 @@ Settle what the run needs before building: questions worth asking, where the run
 
 - [Asking](#asking)
 - [The direction offer](#the-direction-offer)
+- [Detached run](#detached-run)
 - [The run directory](#the-run-directory)
 - [Symptoms](#symptoms)
 - [Settled identity](#settled-identity)
@@ -87,14 +88,20 @@ Settle what the run needs before building: questions worth asking, where the run
 - After option B → each later visual choice decided from the picked contract as on option C, unless the user asks to see it.
 - Option C or exit 3 → the recommended contract is the selection.
 - After option C or exit 3 → no visual question for the rest of the session; decide each further visual choice from the contract and Phase 1 evidence.
-- `EXO_RUN` set → option C; skip the offer, the sketch round and every pick tab, ask nothing.
-- Run, `## Visual direction` keeps an existing identity → build on it, no direction round.
-- Run, identity open → freeze the recommended contract to `$RUN/contract-selected.json`.
-- Run choice made → record it: `node "<plugin>/lib/run-decision.mjs" design-ui "<contract title or existing identity>" "a run never asks which direction"`.
+- `EXO_RUN` set → `## Detached run`, no offer.
 - User then asks to see options → opens the tab, no second offer.
 - Each such choice → one line: the choice and its cost if wrong, never why.
 - Correction → apply without a question back.
 - Before full live comps through `pick.mjs` → say in plain words each takes a few minutes; a sketch round needs no warning.
+
+## Detached run
+
+`EXO_RUN` set → this section replaces `## The direction offer`.
+
+- Direction → option C; no offer, sketch round, pick tab or question.
+- Plan's `## Visual direction` keeps an existing identity → build on it, no direction round.
+- Identity open → freeze the recommended contract to `$RUN/contract-selected.json`.
+- Each direction choice → record it: `node "<plugin>/lib/run-decision.mjs" design-ui "<contract title or existing identity>" "a run never asks which direction"`.
 
 ## The run directory
 
