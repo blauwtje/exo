@@ -83,7 +83,6 @@ export function envFileNames(names, pattern = ENV_NAME) {
   return names.filter((name) => pattern.test(name));
 }
 
-// why: only gitignored files are copied, so a tracked file is never overwritten and nothing is staged.
 export function copyEnvFiles(root, where, pattern = ENV_NAME) {
   const files = fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
   const copied = [];
