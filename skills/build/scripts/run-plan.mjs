@@ -257,6 +257,8 @@ async function main(argv) {
   let retryNote = '';
   let iteration = 0;
   let stop;
+  let lastTask = null;
+  const untrackedAtStart = new Set(untrackedPaths(root));
   const app = frameOf(plan.frame).app;
   if (app !== null) {
     say(`app start: ${clip(app.start, 80)}`);
@@ -283,7 +285,7 @@ async function main(argv) {
     const breach = planBreach() ?? breachOf(root, before, { trailer });
     if (breach !== null) {
       say(`task ${n} stopped: ${breach}`);
-      return { line: `breach in iteration ${iteration}: ${breach}`, why: `A session broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, undo what is wrong, then run exo run again` };
+      return { line: `breach in iteration ${iteration}: ${breach}`, why: `A session broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, undo what is wrong, then run exo run again`, breach: true };
     }
     const parked = takeParked(n);
     if (parked !== null) {
@@ -346,6 +348,7 @@ async function main(argv) {
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
       const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
       run.records.push(record);
+      lastTask = first;
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
       stop = unsafeStop(first, before, planTaskTrailer(planId, first), parsed, log) ?? undefined;
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
@@ -356,6 +359,7 @@ async function main(argv) {
         if (patch !== null) say(`plan session leftover saved to ${patch}`);
         if (failed !== undefined) {
           say(`plan session leftover not cleared: ${clip(failed, 80)}`);
+          lastTask = null;
           stop = { line: `plan session leftover not cleared: ${failed}`, why: 'The plan session left changes the script could not clear', next: `${patch === null ? 'commit or remove the leftover (git status)' : `the leftover is in ${patch}; restore the tree to HEAD`}, then run exo run again` };
         }
       }
@@ -387,6 +391,7 @@ async function main(argv) {
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
     run.records.push(record);
+    lastTask = n;
 
     const markerFile = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'blocked') : null;
     const marker = markerFile !== null && fs.existsSync(markerFile) ? fs.readFileSync(markerFile, 'utf8').trim() : null;
@@ -406,6 +411,11 @@ async function main(argv) {
     const statusLine = new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`);
     const blocked = marker?.match(statusLine) ?? (outcome.timedOut ? null : last.match(statusLine));
     if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
+      const rescue = blocked !== null && !outcome.timedOut && parsed.denials.length > 0 ? landByScript(n) : null;
+      if (rescue?.landed) {
+        markLanded(n, record, startedTask);
+        continue;
+      }
       stop = blockedStop(n, blocked?.[1] || last);
       break;
     }
@@ -423,6 +433,18 @@ async function main(argv) {
     if (stall >= STALL_LIMIT) {
       stop = { line: `no progress on task ${n} in ${STALL_LIMIT} iterations, log ${log}`, why: `Task ${n} did not land in ${STALL_LIMIT} tries`, next: fix(log) };
       break;
+    }
+  }
+
+  if (stop !== undefined && !stop.parked && !stop.breach && lastTask !== null) {
+    const { patch, failed } = shelveLeftover(root, path.join(logDir, `task-${lastTask}-leftover.patch`), untrackedAtStart);
+    if (patch !== null) {
+      say(`task ${lastTask} leftover saved to ${patch}`);
+      stop = { ...stop, next: `${stop.next}; task ${lastTask}'s edits are in ${patch}, git apply it to pick them up` };
+    }
+    if (failed !== undefined) {
+      say(`task ${lastTask} leftover not cleared: ${clip(failed, 80)}`);
+      stop = { ...stop, line: `${stop.line}; leftover not cleared: ${failed}` };
     }
   }
 

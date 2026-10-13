@@ -135,7 +135,27 @@ test('blocked: a last line Task 1: BLOCKED stops after one spawn', async () => {
   assert.equal(result.calls.length, 1);
 });
 
-const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
+test('blocked: a BLOCKED task\'s edits are saved to a patch and the tree is left clean', async () => {
+  const context = await setup();
+  const wrapper = path.join(context.tools, 'edits.mjs');
+  await fs.writeFile(wrapper, [
+    "import { execFileSync } from 'node:child_process';",
+    "import fs from 'node:fs';",
+    "fs.writeFileSync('a.txt', 'x\\n');",
+    "execFileSync('git', ['add', 'a.txt']);",
+    `await import(${JSON.stringify(context.stub)});`,
+    ''
+  ].join('\n'));
+  context.stub = wrapper;
+  const result = await runPlan(context, [{ result: 'Task 1: BLOCKED the data shape is open' }]);
+  assert.equal(result.stop, 'run-plan: stop: task 1 blocked: the data shape is open; re-plan with exo:spec');
+  assert.equal(git(context.root, 'status', '--porcelain', '--untracked-files=no'), '');
+  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
+  assert.match(await fs.readFile(path.join(logDir, 'task-1-leftover.patch'), 'utf8'), /a\.txt/);
+  assert.match(result.stdout, /task 1 leftover saved to .*task-1-leftover\.patch/);
+});
+
+const denial ={ tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
 
 const deniedLine = /^  iteration 1, task 1: npm install left-pad$/m;
 
