@@ -48,6 +48,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `context` suggests a fresh session when the next request is unrelated.
 - `ship` links the intent from the PR's Why section.
 - A parallel plan's first wave holds only its first task until one task has landed, so a bad first task stops the run before the rest start.
+- A detached `exo run` builds `Design:` tasks unattended: it picks the recommended direction itself, records it with `run-decision.mjs`, and writes a design contract only when the plan froze one.
 - `exo run` opens only the package registries of the ecosystems the repo or plan uses, plus the registries named in its `.npmrc`, `.yarnrc.yml`, `nuget.config` and `pip.conf`, and sets the dotnet variables only for .NET projects, under the user's own values.
 - The stall limit is set by `EXO_STALL_MS` (default 60 s) and the run prompts name the same limit; the stall hook caps timeouts at `BASH_MAX_TIMEOUT_MS`.
 - `run-state.mjs` holds the one exit-code-to-phase map for `exo run` and `exo-cli`, so exit 2 reads `refused` everywhere.
@@ -82,6 +83,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- A refused, stopped or crashed run's `report.md` names its `Reason:`, and a refused detached run no longer falls back to building in the session.
 - A lead over its context limit may still use ToolSearch, SendMessage, TaskStop, Monitor and a one-line append, and the deny text tells it to wait on and relay its background work.
 - A dotnet command no longer hangs the run session (#120): registry domains are allowed in the run sandbox.
 - A command that prints nothing for too long is stopped by the stall guard within seconds and reported, instead of being waited out for minutes.
