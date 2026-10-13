@@ -16,10 +16,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - A `Design:` task is returned `BLOCKED <n> Design: task`.
 3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message after `date +%s`.
   - A `Wave:` line → `<skill>/references/rolling-window.md`, worktrees per `<skill>/references/wave-worktrees.md`; `Next:` stays foreground.
-  - Add one `exo:review-branch` dispatch to that same message for each task landed since the last dispatch, unless `node "<skill>/../verify/scripts/pick-reviewer.mjs" --task <n> --plan <plan> --root <checkout>` reads `none`; foreground, its `model` and `effort`.
-  - Brief and resume per `<skill>/../verify/references/review-rules.md` `## Dispatch` with scope `task <shas>`.
-  - No build left → send the last landed task's review alone.
-  - Await review reports once, after the last build landed.
+  - A landed task goes straight to the next task; dispatch no review, verify's branch review is the only one.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A repair, a choice, a block or no dispatch tool → read `<skill>/references/agent-cases.md` `## run-unit` first.

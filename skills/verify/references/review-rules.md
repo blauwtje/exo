@@ -7,7 +7,6 @@ Branch reviewer follows these when the dispatch names this file.
 - Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
 - Pass: this file's path, plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`.
 - Pass: scope `task <shas>` from the `REVIEW` line, or `overlap` with the `OVERLAP` lines.
-- No `REVIEW` line (run-unit) → shas from `git log --format=%h --grep "^Plan-task: <plan id>/<n>$"`; the anchors keep `<n>` from matching `<n>0`..`<n>9`.
 - Pass: findings path, named as input to `merge-reviews.mjs`: scope `task` → `<checkout>/.exo/review-<sha7>.md`, sha7 from the line's first sha; scope `overlap` → `<checkout>/.exo/review-overlap.md`.
 - Scope `fix diff` → findings path `<checkout>/.exo/fix-review.md`, named as input to verify's repair step 3.
 - Scope `fix diff` → `merge-reviews.mjs` never reads that file: it would overwrite `<checkout>/.exo/branch-review.md`.

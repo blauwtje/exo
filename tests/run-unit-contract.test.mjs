@@ -36,7 +36,6 @@ test('the unit waits for every dispatched report with wait-report.mjs, at most s
   assert.ok(dispatchStep.includes('scripts/wait-report.mjs'));
   assert.ok(dispatchStep.includes('at most six runs'));
   assert.ok(dispatchStep.includes('never a `sleep` command'));
-  assert.ok(dispatchStep.includes('Await review reports once, after the last build landed.'));
 });
 
 test('the unit ends its turn only with every block task LANDED or BLOCKED', () => {
@@ -94,13 +93,10 @@ test('the run-unit agent has its own turn limit sized for an eight-task block', 
   assert.match(UNIT_AGENT, /^maxTurns: 90$/m);
 });
 
-test('run-unit sends a landed task\'s review in the same foreground message as its next build', () => {
+test('run-unit dispatches no review: a landed task goes straight to the next task', () => {
   const step = loopStep(3, UNIT_AGENT);
-  assert.ok(step.includes('Add one `exo:review-branch` dispatch to that same message for each task landed since the last dispatch'));
-  assert.ok(step.includes('pick-reviewer.mjs" --task <n> --plan <plan> --root <checkout>'));
-  assert.ok(step.includes('`run_in_background: false`'));
-  assert.ok(step.includes('review-rules.md` `## Dispatch` with scope `task <shas>`'));
-  assert.ok(step.includes('send the last landed task\'s review alone'));
+  assert.ok(step.includes('A landed task goes straight to the next task; dispatch no review'));
+  assert.doesNotMatch(UNIT_AGENT, /exo:review-branch|pick-reviewer|scope `task <shas>`|Await review reports/);
 });
 
 test('run-unit resumes a writer once for a missing report and sends any other landing refusal except PLAN DRIFT to a fresh writer at most twice', () => {
