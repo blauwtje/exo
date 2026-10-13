@@ -78,11 +78,11 @@ test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four 
   assert.ok(askStep.includes('Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines'));
   assert.ok(loopStep(2, UNIT_AGENT).includes("**Take the task from the script's output**, never the plan file"));
   const task = (number, path) => ({ number, dependsOn: [], design: false, files: path ? [{ path }] : [] });
-  const disjoint = [1, 2, 3, 4, 5].map((number) => task(number, `src/file-${number}.mjs`));
+  const disjoint = [1, 2, 3, 4, 5, 6].map((number) => task(number, `src/file-${number}.mjs`));
   assert.deepEqual(nextWave(disjoint, [], null).map((t) => t.number), [1], 'no `Worktree setup:`, no wave');
-  assert.deepEqual(nextWave(disjoint, [], 'npm ci').map((t) => t.number), [1, 2, 3, 4], 'four at most');
-  const shared = [task(1, 'src/a.mjs'), task(2, 'src/a.mjs'), task(3, 'src/b.mjs'), task(4, 'src/c.mjs')];
-  assert.deepEqual(nextWave(shared, [], 'npm ci').map((t) => t.number), [1, 3, 4], 'a task sharing a `Files:` path stays out');
+  assert.deepEqual(nextWave(disjoint, [1], 'npm ci').map((t) => t.number), [2, 3, 4, 5], 'four at most, after Task 1 landed');
+  const shared = [task(1, 'src/z.mjs'), task(2, 'src/a.mjs'), task(3, 'src/a.mjs'), task(4, 'src/b.mjs'), task(5, 'src/c.mjs')];
+  assert.deepEqual(nextWave(shared, [1], 'npm ci').map((t) => t.number), [2, 4, 5], 'a task sharing a `Files:` path stays out');
 });
 
 test('a unit wave builds in worktrees and keeps each green task per wave-worktrees.md', () => {
