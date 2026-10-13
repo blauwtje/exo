@@ -7,8 +7,8 @@ function makeState(fields) {
   return { phase: 'build', task: { n: 2, subject: 'add log' }, landed: 1, total: 5, startedAt: '2026-10-13T10:00:00Z', updatedAt: '2999-01-01T00:00:00Z', ...fields };
 }
 
-function makeFs({ root, gitText, states, mainStates, mtimeMs, lists }) {
-  const runBases = { '/repo/.exo/run': mainStates, [`${root}/.exo/run`]: states };
+function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists }) {
+  const runBases = { [`${main}/.exo/run`]: mainStates, [`${root}/.exo/run`]: states };
   return {
     list: async (path) => {
       lists.push(path);
@@ -28,13 +28,13 @@ function makeFs({ root, gitText, states, mainStates, mtimeMs, lists }) {
 }
 
 function makeHarness(states, options = {}) {
-  const { root = '/repo', gitText, mainStates = {}, mtimeMs = Date.now() } = options;
+  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now() } = options;
   const calls = { timers: [], statuses: [], prompts: [], lists: [] };
   const handlers = {};
   const $ = {
     clock: { every: (ms, tick) => calls.timers.push({ ms, tick }) },
     session: { root: async () => root },
-    fs: makeFs({ root, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
+    fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
     ui: { status: (text) => calls.statuses.push(text) },
     prompt: { submit: async (message) => calls.prompts.push(message.text) }
   };
@@ -130,6 +130,20 @@ test('a worktree session also reads the run state of the main checkout', async (
   assert.ok(harness.calls.lists.includes('/repo/.exo/run'));
   assert.match(harness.calls.statuses[0], /task 3\/5 from main/);
 });
+
+for (const { name, root, main, gitText } of [
+  { name: 'a backslash gitdir', root: 'C:/repo/.worktrees/x', main: 'C:/repo', gitText: 'gitdir: C:\\repo\\.git\\worktrees\\x\n' },
+  { name: 'a relative gitdir', root: '/repo/.worktrees/x', main: '/repo', gitText: 'gitdir: ../../.git/worktrees/x\n' }
+]) {
+  test(`a worktree session with ${name} reads the run state of the main checkout`, async () => {
+    const harness = makeHarness({}, { root, main, gitText, mainStates: { 'run-main': makeState({ task: { n: 3, subject: 'from main' } }) } });
+    await harness.start({ isInteractive: true });
+    const [{ tick }] = harness.calls.timers;
+    await tick();
+    assert.ok(harness.calls.lists.includes(`${main}/.exo/run`));
+    assert.match(harness.calls.statuses[0], /task 3\/5 from main/);
+  });
+}
 
 test('the mod copy of FINAL_PHASES equals run-state FINAL_PHASES', () => {
   assert.deepEqual(MOD_FINAL_PHASES, FINAL_PHASES);

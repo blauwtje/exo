@@ -33,6 +33,17 @@ async function readRuns($, base) {
   return runs.filter((run) => run.state);
 }
 
+// why: a mod cannot import node:path; a gitdir may be relative to the worktree (worktree.useRelativePaths) or use backslashes.
+function resolveFrom(base, path) {
+  if (/^([A-Za-z]:)?\//.test(path)) return path;
+  const parts = base.replace(/\\/g, '/').split('/');
+  for (const part of path.split('/')) {
+    if (part === '..') parts.pop();
+    else if (part && part !== '.') parts.push(part);
+  }
+  return parts.join('/');
+}
+
 async function mainRoot($, root) {
   let text;
   try {
@@ -40,7 +51,7 @@ async function mainRoot($, root) {
   } catch {
     return root;
   }
-  const gitdir = typeof text === 'string' && text.startsWith('gitdir:') ? text.slice('gitdir:'.length).trim() : '';
+  const gitdir = typeof text === 'string' && text.startsWith('gitdir:') ? resolveFrom(root, text.slice('gitdir:'.length).trim().replace(/\\/g, '/')) : '';
   const at = gitdir.indexOf(WORKTREES_MARK);
   return at >= 0 ? gitdir.slice(0, at) : root;
 }
