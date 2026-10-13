@@ -7,7 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { childEnv } from '../skills/build/scripts/run-plan.mjs';
+import { childEnv } from '../skills/build/scripts/run-session.mjs';
 import { run } from './harness.mjs';
 import { setup } from './run-plan-fixture.mjs';
 

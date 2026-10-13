@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { sandboxSettings } from '../skills/build/scripts/run-plan.mjs';
+import { sandboxSettings } from '../skills/build/scripts/run-session.mjs';
 
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
 const mode = { enabled: true, allowedDomains: [] };
