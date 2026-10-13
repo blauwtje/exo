@@ -33,6 +33,9 @@ const SETTINGS_VARIABLE = /^(CLAUDE_PROJECT_DIR|CLAUDE_PLUGIN_OPTION_.*)$/;
 // The task pin run-plan.mjs sets for each task session; inherited by a test run inside
 // one, it would make every spawned land-task refuse all but that task.
 const RUN_PIN_VARIABLE = 'EXO_RUN_TASK';
+// why: git refuses a commit on a host with no configured identity, such as a CI
+// runner, and the scripts under test commit through plain git.
+const GIT_IDENTITY = { GIT_AUTHOR_NAME: 'stub', GIT_AUTHOR_EMAIL: 'stub@example.com', GIT_COMMITTER_NAME: 'stub', GIT_COMMITTER_EMAIL: 'stub@example.com' };
 
 let emptyConfigDirectory;
 
@@ -47,7 +50,7 @@ async function isolatedEnv(overrides) {
   const inherited = Object.fromEntries(
     Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name) && name !== RUN_PIN_VARIABLE)
   );
-  return { ...inherited, CLAUDE_CONFIG_DIR: await emptyConfig(), ...overrides };
+  return { ...inherited, ...GIT_IDENTITY, CLAUDE_CONFIG_DIR: await emptyConfig(), ...overrides };
 }
 
 export async function run(file, args, options = {}) {
