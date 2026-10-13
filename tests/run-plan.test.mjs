@@ -178,7 +178,8 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const prompt = result.calls[0].stdin;
   const learnings = path.join(context.root, '.exo', 'run-plan', 'plan', 'learnings.md');
   assert.ok(prompt.includes('### Task 1: feat(a): add a\nDepends on: none | Files: `a.txt`'), 'the task section');
-  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- Run one command per Bash call/m, /^Land: /m]) assert.match(prompt, rule);
+  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- Run one command per Bash call/m, /^End: .*the script proves and lands\.$/m]) assert.match(prompt, rule);
+  assert.doesNotMatch(prompt, /^Land: /m, 'no land step in the session');
   assert.match(prompt, /^- `Task 1: GREEN`$/m);
   assert.match(prompt, /^- `Task 1: BLOCKED <reason>`/m);
   assert.match(prompt, /^- `Task 1: PLAN DRIFT <reason>`/m);
@@ -186,7 +187,7 @@ test('done: two task processes and the tail land the plan, the gate passes and t
     const lines = (await fs.readFile(path.join(PLUGIN_ROOT, file), 'utf8')).split('\n').filter((line) => line.startsWith('- '));
     assert.ok(lines.every((line) => !prompt.includes(line)), `${file} text is not pasted`);
   }
-  assert.ok(prompt.includes(`node "${path.join(SCRIPTS, 'land-task.mjs')}" --plan ${context.plan} --task 1 --root ${context.root}`), 'the land command');
+  assert.ok(!prompt.includes('land-task.mjs'), 'no land command: the script lands');
   assert.doesNotMatch(prompt, /^\/exo:build|## Design tasks|next-task\.mjs --plan|mcp-tool-call/m, 'no skill load, no design rule, no probe for a shell task');
   assert.equal(prompt.match(/### Task 1:/g).length, 1, 'the task section appears once');
   assert.ok(prompt.includes('Task 1: BLOCKED <file> is missing from the file list'));
@@ -410,7 +411,8 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.equal(result.code, 0, result.stdout + result.stderr);
   assert.equal(result.calls.length, 0);
   assert.match(result.stdout, /Order: Task 1, Task 2/);
-  assert.match(result.stdout, /--task 1/);
+  assert.match(result.stdout, /^First prompt: Land Task 1 of .*plan\.md in this session\./m);
+  assert.doesNotMatch(result.stdout, /land-task\.mjs" --plan .* --task 1/, 'the first prompt carries no land command');
   assert.match(result.stdout, /--tools Read,Edit,Write,Bash,Grep,Glob .*--disable-slash-commands --include-hook-events --allowedTools/);
   const withPlugin = await runPlan(context, [land(1)], ['--dry-run', '--plugin-dir', '/tmp/exo-plugin']);
   assert.match(withPlugin.stdout, /--plugin-dir \/tmp\/exo-plugin /);
