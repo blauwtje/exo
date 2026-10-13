@@ -48,7 +48,7 @@ await import('./session.mjs');
 const runDirOf = async (root) => {
   for (const where of ['run', 'kept']) {
     const names = await fs.readdir(path.join(root, '.exo', where)).catch(() => []);
-    const [id] = names.filter((name) => name !== 'lock');
+    const [id] = names.filter((name) => name !== 'lock' && name !== 'live.log');
     if (id !== undefined) return { id, dir: path.join(root, '.exo', where, id) };
   }
   throw new Error(`no run under ${root}/.exo`);
