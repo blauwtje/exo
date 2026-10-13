@@ -42,6 +42,12 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- `spec` asks the brief for a `Non-goals` section.
+- `spec`'s architecture sketch names the throwaway script that answers a question.
+- `code-standard` tells the writer to match the surrounding file and bans test-fitted code.
+- `context` suggests a fresh session when the next request is unrelated.
+- `ship` links the intent from the PR's Why section.
+- A parallel plan's first wave holds only its first task until one task has landed, so a bad first task stops the run before the rest start.
 - `exo run` opens only the package registries of the ecosystems the repo or plan uses, plus the registries named in its `.npmrc`, `.yarnrc.yml`, `nuget.config` and `pip.conf`, and sets the dotnet variables only for .NET projects, under the user's own values.
 - The stall limit is set by `EXO_STALL_MS` (default 60 s) and the run prompts name the same limit; the stall hook caps timeouts at `BASH_MAX_TIMEOUT_MS`.
 - `run-state.mjs` holds the one exit-code-to-phase map for `exo run` and `exo-cli`, so exit 2 reads `refused` everywhere.
