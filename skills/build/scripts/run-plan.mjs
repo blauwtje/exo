@@ -365,6 +365,7 @@ async function main(argv) {
     say(`task ${n} blocked, repair session: ${clip(report, 80)}`);
     const log = path.join(logDir, `iter-${iteration}-repair-${n}.log`);
     const session = await spawnOne({ prompt: repairPrompt(n, report), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
+    if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
     const after = fs.readFileSync(planPath, 'utf8');
     const breach = breachOf(root, session.before, { tail: true });
     if (breach === null && after !== before && onlyFieldsChanged(before, after, n) && planCheckPasses() && adoptRepair(after, n)) {

@@ -57,7 +57,8 @@ test('EXO_RUN_DIR: a stale blocked marker is removed at start and a fresh one na
   context.stub = wrapper;
   const result = await runPlan(context, [{ result: 'Worked on it.' }, { result: 'Worked on it.' }]);
   assert.equal(result.stop, 'run-plan: stop: task 1 blocked: which database?; re-plan with exo:spec');
-  assert.equal(result.calls.length, 1);
+  assert.equal(result.calls.length, 2);
+  assert.match(result.calls[1].stdin, /Plan repair of task 1/);
   await assert.rejects(fs.access(marker));
 });
 
@@ -156,7 +157,8 @@ test('a rebase conflict is aborted, noted once, and the task runs on the old bas
   const before = git(context.root, 'rev-parse', 'HEAD');
   const result = await runPlan(context, [{ result: 'Task 1: BLOCKED stop here' }]);
   assert.equal((result.stdout.match(/rebase onto main failed/g) ?? []).length, 1);
-  assert.equal(result.calls.length, 1);
+  assert.equal(result.calls.length, 2);
+  assert.match(result.calls[1].stdin, /Plan repair of task 1/);
   assert.equal(git(context.root, 'rev-parse', 'HEAD'), before);
   assert.equal(git(context.root, 'status', '--porcelain', '--untracked-files=no'), '');
 });
