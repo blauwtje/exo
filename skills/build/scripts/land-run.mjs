@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { defaultBranch } from '#plan-tasks';
+import { defaultBranch, parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
 
@@ -53,6 +53,25 @@ function reviewProblem(runRoot, startedAt) {
   return `branch review is ${verdict ?? 'unreadable'}${fix ? ` with fix=${fix}` : ''}`;
 }
 
+function plannedPaths(root, runDir) {
+  try {
+    const state = JSON.parse(fs.readFileSync(path.join(runDir, 'state.json'), 'utf8'));
+    const { tasks } = parsePlan(fs.readFileSync(path.resolve(root, state.plan), 'utf8'));
+    return new Set(tasks.flatMap((task) => task.files.map((file) => file.path)));
+  } catch {
+    return new Set();
+  }
+}
+
+function commitPlanDocs(root, runRoot, runDir) {
+  const status = git(runRoot, 'status', '--porcelain', '-z', '--untracked-files=all').out;
+  const planned = plannedPaths(root, runDir);
+  const docs = status.split('\0').filter(Boolean).map((entry) => entry.slice(3))
+    .filter((file) => (file === 'CHANGELOG.md' || (file.startsWith('docs/') && file.endsWith('.md'))) && !planned.has(file));
+  if (docs.length === 0) return;
+  if (git(runRoot, 'add', '--', ...docs).ok) git(runRoot, 'commit', '-q', '-m', 'docs: add plan documents', '--', ...docs);
+}
+
 export function landRun({ root, runRoot, branch, mode, runDir, success = '', startedAt }) {
   const parked = (action, reason) => {
     openGate(runDir, { source: 'land', action, reason });
@@ -65,6 +84,7 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
   const inPlace = path.resolve(runRoot) === path.resolve(root);
   const hasOrigin = git(root, 'remote', 'get-url', 'origin').ok;
 
+  commitPlanDocs(root, runRoot, runDir);
   if (git(runRoot, 'status', '--porcelain', '--untracked-files=no').out) {
     return parked(`commit or discard the tracked changes in ${runRoot}`, 'worktree dirty');
   }

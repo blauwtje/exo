@@ -258,6 +258,30 @@ test('tracked changes park as worktree dirty; no branch parks as no branch', () 
   assert.equal(fixture().land({ branch: null }).gate, 'no branch');
 });
 
+test('leftover CHANGELOG.md and docs markdown land as one docs commit; a task-listed doc and other files do not', () => {
+  const f = fixture();
+  write(f.root, 'plan.md', '# Plan\n\n### Task 1: x\nDepends on: none | Files: `docs/listed.md` | Proof: true\n');
+  fs.writeFileSync(path.join(f.runDir, 'state.json'), JSON.stringify({ plan: path.join(f.root, 'plan.md') }));
+  write(f.root, 'CHANGELOG.md', '## Unreleased\n');
+  write(f.root, 'docs/specs/s.md', 's\n');
+  write(f.root, 'docs/listed.md', 'l\n');
+  const r = f.land();
+  assert.equal(r.phase, 'landed', r.gate);
+  assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'docs: add plan documents');
+  assert.equal(git(f.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort().join(','), 'CHANGELOG.md,docs/specs/s.md');
+  assert.equal(git(f.root, 'status', '--porcelain', '--untracked-files=all').includes('docs/listed.md'), true);
+});
+
+test('leftover plan docs commit before the rebase and land; no leftovers make no docs commit', () => {
+  const f = fixture({ origin: false });
+  write(f.root, 'docs/plan.md', 'p\n');
+  assert.equal(f.land().phase, 'landed');
+  assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'docs: add plan documents');
+  const g = fixture({ origin: false });
+  assert.equal(g.land().phase, 'landed');
+  assert.equal(git(g.root, 'log', '-1', '--format=%s'), 'feat');
+});
+
 test('a .worktrees run lands in the main checkout and removes its worktree', () => {
   const f = fixture();
   git(f.root, 'switch', '-q', 'main');
