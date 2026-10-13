@@ -51,12 +51,33 @@ test('lead decisions', () => {
   assert.match(denied.deny, /general-purpose/);
   assert.match(denied.deny, /skills\/save-session\/SKILL\.md/);
   assert.match(denied.deny, /final report/);
-  for (const text of [soft, denied.deny]) assert.doesNotMatch(text, /stop|new session|\/clear|exo:save-session|tell the user/i);
+  for (const text of [soft, denied.deny]) assert.doesNotMatch(text, /\bstop\b|new session|\/clear|exo:save-session|tell the user/i);
   assert.equal(at(100000, { tool_name: 'Write' }), null);
   assert.equal(at(100000, { tool_name: 'Agent' }), null);
   assert.equal(at(100000, { tool_name: 'Write', agent_id: 'x', agent_transcript_path: transcript('ag.jsonl', [entry(100000)]) }), null);
   const agentDenied = at(100000, { tool_name: 'Agent', agent_id: 'x', agent_transcript_path: transcript('ag2.jsonl', [entry(100000)]) });
   assert.match(agentDenied.deny, /hard limit/);
+});
+
+test('lead over the hard limit keeps light tools and waits on background work', () => {
+  let count = 0;
+  const at = (extra) => contextDecision({ transcript_path: transcript(`bg${count++}.jsonl`, [entry(120000)]), cwd: dir, ...extra });
+  for (const tool_name of ['ToolSearch', 'SendMessage', 'TaskStop', 'Monitor', 'TaskOutput', 'Write', 'Agent']) assert.equal(at({ tool_name }), null, tool_name);
+  assert.equal(at({ tool_name: 'Bash', tool_input: { command: 'echo "- (8) note" >> .exo/progress.md' } }), null);
+  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'cat big.log' } }).deny);
+  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a; cat big.log' } }).deny);
+  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo $(cat big.log) >> a' } }).deny);
+  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo x > a' } }).deny);
+  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a\ncat big.log' } }).deny);
+  assert.ok(at({ tool_name: 'Edit' }).deny);
+  const { deny } = at({ tool_name: 'Read' });
+  assert.match(deny, /background/);
+  assert.match(deny, /relay/);
+  assert.match(deny, /SendMessage/);
+  const agent = at({ tool_name: 'ToolSearch', agent_id: 'x', agent_transcript_path: transcript('bg-ag.jsonl', [entry(120000)]) });
+  assert.ok(agent.deny, 'subagent path unchanged');
+  const agentBash = at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a' }, agent_id: 'x', agent_transcript_path: transcript('bg-ag2.jsonl', [entry(120000)]) });
+  assert.ok(agentBash.deny, 'subagent append unchanged');
 });
 
 test('hard-limit deny names the path handoff.mjs prints', () => {

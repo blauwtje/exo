@@ -32,7 +32,7 @@ test('over the soft limit it warns through additionalContext', () => {
   assert.match(output.additionalContext, /fresh subagent/);
 });
 
-test('over the hard limit it denies, except Write', () => {
+test('over the hard limit it denies, except the light tools', () => {
   const output = JSON.parse(run([entry(120000)]).stdout).hookSpecificOutput;
   assert.equal(output.permissionDecision, 'deny');
   assert.match(output.permissionDecisionReason, /hard limit/);
@@ -41,6 +41,8 @@ test('over the hard limit it denies, except Write', () => {
   assert.match(output.permissionDecisionReason, /one fresh general-purpose subagent/);
   assert.equal(run([entry(120000)], { tool_name: 'Write' }).stdout, '');
   assert.equal(run([entry(120000)], { tool_name: 'Agent' }).stdout, '');
+  assert.equal(run([entry(120000)], { tool_name: 'ToolSearch' }).stdout, '');
+  assert.match(output.permissionDecisionReason, /background/);
 });
 
 test('a subagent gets no note at 55k, a finish-and-report note at 65k, and Agent denied at 120k', () => {
