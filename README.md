@@ -71,7 +71,7 @@ The hooks need `bash` on `PATH`. On Windows, Git Bash runs them; support is best
 
 ## Use
 
-Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. Five skills never start from plain words and need their command typed: `edit-skills`, `write-docs`, `file-issues`, `configure` and `check-docs`. A feature runs `spec` → `build` → `verify` → `ship`, and each stage asks which one runs next. A bug goes to `find-cause` first.
+Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. Six skills never start from plain words and need their command typed: `edit-skills`, `write-docs`, `file-issues`, `configure`, `check-docs` and `prompt`. A feature runs `spec` → `build` → `verify` → `ship`, and each stage asks which one runs next. A bug goes to `find-cause` first.
 
 | You want to | Skill |
 |---|---|
@@ -87,6 +87,7 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 | File GitHub issues | `file-issues` |
 | Write a skill or agent | `edit-skills` |
 | See or change a setting | `configure` |
+| Rewrite a rough prompt | `prompt` |
 
 `/exo:run-plan <plan>` runs a plan's tasks as a cheap headless loop, one fresh process per task; `build` runs the same plan with subagents. `/exo:save-session` saves where a session is, for a fresh one after `/clear`. `/exo:remember` books a correction about the repository, or approves a claim two sessions have booked. Every skill has a page in [docs/skills/](docs/skills/).
 

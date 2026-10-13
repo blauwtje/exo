@@ -18,6 +18,7 @@ Ordered by how often people use each skill. **type it** marks a skill the model 
 | `save-session` **type it** | Saves where a session is, for a fresh one after `/clear` | Type `/exo:save-session`, then `/clear` |
 | `file-issues` **type it** | Files GitHub issues | Type `/exo:file-issues` |
 | `configure` **type it** | Shows or changes an exo setting | Type `/exo:configure` |
+| `prompt` **type it** | Rewrites a rough prompt for Claude, then runs it after you say yes | Type `/exo:prompt <rough prompt>` |
 | `remember` **type it** | Books a correction about this repository, or approves a claim two sessions have booked | Type `/exo:remember` |
 
 ## Rarely
