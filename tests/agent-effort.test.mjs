@@ -46,7 +46,7 @@ test('off leaves a review dispatch unchanged', () => {
 test('an agent name fills model and effort from the budget column', () => {
   const lookup = { subagent_type: 'exo:locate-code', prompt: 'find', description: 'd' };
   assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'fast'), { ...lookup, model: 'haiku', effort: 'low' });
-  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'quality'), { ...lookup, model: 'haiku', effort: 'medium' });
+  assert.deepEqual(updated({ tool_name: 'Agent', tool_input: lookup }, 'quality'), { ...lookup, model: 'haiku', effort: 'high' });
 });
 
 test('a prompt opening exo-kind picks the kind for a general-purpose dispatch', () => {

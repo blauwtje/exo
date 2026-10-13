@@ -32,7 +32,7 @@ test('every kind resolves through the claude block to a model and an effort or n
   ]);
   assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'high' });
   assert.deepEqual(table.kinds.build, { model: 'sonnet', effort: 'high' });
-  assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: 'low' });
+  assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: 'medium' });
   assert.deepEqual(table.kinds.peer, { model: 'inherit', effort: 'high' });
   assert.deepEqual(table.kinds.handover, { model: 'inherit', effort: null });
 });
@@ -55,7 +55,7 @@ test('the raw table names a tier and a neutral effort per kind, and the claude b
 
 test('the budget picks the column a kind resolves from, and balanced is the default', () => {
   assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'fast' }).kinds.build, { model: 'sonnet', effort: 'medium' });
-  assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'quality' }).kinds.build, { model: 'opus', effort: 'medium' });
+  assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'quality' }).kinds.build, { model: 'opus', effort: 'high' });
   assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'quality' }).kinds.hardest, { model: 'opus', effort: 'xhigh' });
   assert.deepEqual(readKindTable(TABLE_PATH, { budget: 'balanced' }).kinds, table.kinds);
   assert.throws(() => readKindTable(TABLE_PATH, { budget: 'off' }), /unknown budget off/);
@@ -72,7 +72,7 @@ test('the reader resolves a kind through whichever provider block is active', ()
     };
   })();
   assert.deepEqual(resolved.kinds.hardest, { model: 'big', effort: 'h' });
-  assert.deepEqual(resolved.kinds.lookup, { model: 'small', effort: 'l' });
+  assert.deepEqual(resolved.kinds.lookup, { model: 'small', effort: 'm' });
 });
 
 test('a tier on inherit, a kind on xhigh and a listed model no tier uses all load', () => {
@@ -80,7 +80,7 @@ test('a tier on inherit, a kind on xhigh and a listed model no tier uses all loa
     copy.providers.claude.tiers.fast = 'inherit';
     copy.kinds.build.balanced.effort = 'xhigh';
   })();
-  assert.deepEqual(loaded.kinds.lookup, { model: 'inherit', effort: 'low' });
+  assert.deepEqual(loaded.kinds.lookup, { model: 'inherit', effort: 'medium' });
   assert.deepEqual(loaded.kinds.build, { model: 'sonnet', effort: 'xhigh' });
   assert.ok(!Object.values(table.providers.claude.tiers).includes('fable'));
   assert.ok(table.providers.claude.models.includes('fable'));
@@ -159,14 +159,14 @@ test('the codex provider shifts a strong kind up one effort step, clamped at max
   const codex = readKindTable(TABLE_PATH, { provider: 'codex' });
   assert.equal(codex.provider, 'codex');
   assert.deepEqual(codex.kinds.build, { model: 'gpt-6.1-sol', effort: 'high' });
-  assert.deepEqual(codex.kinds.research, { model: 'gpt-6.1-sol', effort: 'low' });
-  assert.deepEqual(codex.kinds.lookup, { model: 'gpt-6-luna', effort: 'low' });
+  assert.deepEqual(codex.kinds.research, { model: 'gpt-6-luna', effort: 'high' });
+  assert.deepEqual(codex.kinds.lookup, { model: 'gpt-6-luna', effort: 'medium' });
   const nulled = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'table.json');
   const raw = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
   raw.kinds.lookup.balanced.effort = null;
   fs.writeFileSync(nulled, JSON.stringify(raw));
   assert.equal(readKindTable(nulled, { provider: 'codex' }).kinds.lookup.effort, 'medium');
-  assert.deepEqual(codex.kinds['review-deep'], { model: 'gpt-6.1-sol', effort: 'high' });
+  assert.deepEqual(codex.kinds['review-deep'], { model: 'gpt-6.1-sol', effort: 'xhigh' });
   assert.deepEqual(codex.kinds.hardest, { model: 'gpt-6.1-sol', effort: 'xhigh' });
   assert.deepEqual(codex.kinds.handover, { model: 'inherit', effort: null });
   assert.equal(codex.kinds.prose.effort, 'high');

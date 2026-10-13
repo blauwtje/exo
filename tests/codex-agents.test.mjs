@@ -63,10 +63,10 @@ test('model and effort resolve through the codex block, shifted up one step on t
   assert.equal(field(build, 'model_reasoning_effort'), 'medium');
   const critique = generated('exo-critique-ui');
   assert.equal(field(critique, 'model'), 'gpt-6.1-sol');
-  assert.equal(field(critique, 'model_reasoning_effort'), 'high');
+  assert.equal(field(critique, 'model_reasoning_effort'), 'xhigh');
   const lookup = generated('exo-locate-code');
   assert.equal(field(lookup, 'model'), 'gpt-6-luna');
-  assert.equal(field(lookup, 'model_reasoning_effort'), 'low');
+  assert.equal(field(lookup, 'model_reasoning_effort'), 'medium');
 });
 
 test('every agent keeps its source body', () => {
