@@ -58,7 +58,7 @@ test('every build goes to the implementer agent, and a design build with a named
   const designRoute = designTasks.match(/^- \*\*`direction named`\.\*\*.+$/m)[0];
   assert.ok(!designRoute.includes('`exo:build-task` agent'), 'a design build with a named direction does not go to the implementer agent');
   assert.ok(designRoute.includes('Dispatch one `general-purpose` delegate'), 'a design build with a named direction goes to one delegate');
-  assert.ok(designTasks.includes('Load `design-ui` and enter it at Route rung 2.'), 'the delegate enters design-ui at rung 2');
+  assert.ok(designTasks.includes('Load `design-ui`; the plan names a `Contract:` → enter it at Route rung 2, else at its `## Detached run`.'), 'the delegate enters design-ui at rung 2 with a contract, else at its detached run rule');
 });
 
 test('no line dispatching a brief-building agent names the strong tier model', () => {
