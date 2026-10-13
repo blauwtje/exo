@@ -9,6 +9,10 @@ Versions before 0.128.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Added
+
+- `/exo:prompt <rough prompt>` shows your prompt rewritten for Claude, adds nothing you did not write, and runs it only after you say yes.
+
 ## 0.132.4 - 2026-10-13
 
 ### Changed
