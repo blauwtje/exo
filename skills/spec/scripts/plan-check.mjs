@@ -283,6 +283,12 @@ function checkRedGreen(plan) {
     if (task.red !== null && task.red.reason === '') problems.push(`Task ${task.number}: 'Red: none' states no reason: write 'Red: none (<reason>)'`);
   }
   if (plan.successRed !== null && plan.successRed.reason === '') problems.push("the plan's Success criterion 'Red: none' states no reason: write 'Red: none (<reason>)'");
+  const landGate = frameOf(plan.frame).landGate;
+  for (const task of plan.tasks) {
+    if (task.red === null && equalsLandGate(task.proof ?? undefined, landGate)) {
+      problems.push(`Task ${task.number}: 'Proof: ${task.proof}' equals the 'Land gate:' command, so land will refuse it with "no red proof": name a Proof that fails before the task, or add 'Red: none (<reason>)'`);
+    }
+  }
   const repeat = plan.successRepeat;
   if (repeat !== null && !(repeat.count >= 2 && repeat.count <= 5)) problems.push("the plan's Success criterion 'Repeat:' count is not 2 to 5: write 'Repeat: <2-5> (<reason>)'");
   else if (repeat !== null && repeat.reason === '') problems.push("the plan's Success criterion 'Repeat:' states no reason: write 'Repeat: <2-5> (<reason>)'");
