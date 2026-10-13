@@ -124,6 +124,12 @@ test('the plugin registers seven hook commands, each under bash', () => {
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
+test('hooks.json lists the run-watch module beside hooks, and the file exists', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8'));
+  assert.deepEqual(manifest.modules, ['./run-watch.mjs']);
+  assert.ok(fs.statSync(path.join(REPOSITORY, 'hooks', 'run-watch.mjs')).isFile());
+});
+
 test('the session hook deletes the savings folder an earlier version left and keeps the rest', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-savings-'));
   const exoDirectory = path.join(configHome, 'exo');
