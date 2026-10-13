@@ -553,3 +553,8 @@ test('parsePlan leaves Red and Repeat null when absent and keeps a bare or malfo
   assert.equal(bare.successRepeat.count, NaN);
   assert.equal(bare.successRepeat.reason, '');
 });
+
+test('a Files: entry with a :line or :line-line suffix names the bare path', () => {
+  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'chore(app): trim', files: ['src/knip.config.ts:22-29', 'src/app.js:7', 'src/lib/'] })] });
+  assert.deepEqual(parsePlan(plan).tasks[0].files.map((file) => file.path), ['src/knip.config.ts', 'src/app.js', 'src/lib/']);
+});
