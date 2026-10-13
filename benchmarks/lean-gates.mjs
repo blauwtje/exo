@@ -60,15 +60,17 @@ const REPO_PLACEHOLDERS = ['@@REPO@@', '{{REPOSITORY}}'];
 
 // Every schema key, set in the project layer so the user's global exo options
 // (workspace=worktree, a compression level) never reach either version. Defaults,
-// except workspace and ship, which would otherwise ask, and budget, whose old name
-// medium every version reads as the same kind table column.
+// except workspace, ship and env, which would otherwise ask, and budget, whose old name
+// medium every version reads as the same kind table column. The fixture holds no
+// env file, so never and copy act alike here.
 export const EXO_SETTINGS = {
   specs: 'docs',
   compression: 'low',
   budget: 'medium',
   ship: 'local',
   workspace: 'branch',
-  guards: 'on'
+  guards: 'on',
+  env: 'never'
 };
 
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];
