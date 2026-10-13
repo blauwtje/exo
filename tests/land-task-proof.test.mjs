@@ -46,6 +46,20 @@ test('a compact task that removed a path with git rm lands the removal beside it
   assert.deepEqual(git(root, 'diff', '--name-status', 'HEAD~1', 'HEAD').split('\n'), ['M\tsrc/app.js', 'D\tsrc/old.mjs']);
 });
 
+test('a compact task that moved a listed path with git mv lands the rename beside its edit', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'src/old.mjs', 'src/new.mjs'], proof: 'node tests/app.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await fs.writeFile(path.join(root, 'src/old.mjs'), 'export const old = 1;\n');
+  git(root, 'add', 'src/old.mjs');
+  git(root, 'commit', '-m', 'add old');
+  git(root, 'mv', 'src/old.mjs', 'src/new.mjs');
+  const output = landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.deepEqual(git(root, 'diff', '--name-status', '--no-renames', 'HEAD~1', 'HEAD').split('\n'), ['M\tsrc/app.js', 'A\tsrc/new.mjs', 'D\tsrc/old.mjs']);
+});
+
 test('not done without proof: a compact task with no build report is refused', async () => {
   const { root, planPath } = await compactCheckout();
   await assertRefused(root, planPath, [], /no build report/);
