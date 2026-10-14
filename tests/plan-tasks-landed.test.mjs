@@ -1,6 +1,3 @@
-// plan-tasks.mjs landedTasks: which plan tasks a checkout's commits landed,
-// by trailer and subject, since the branch left the default branch.
-
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { landedTasks, parsePlan } from '#plan-tasks';

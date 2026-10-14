@@ -105,7 +105,7 @@ test('exo wait prints the reason and the next step of a stopped run', async () =
   const refused = await exo(context, ['wait', id]);
   assert.equal(refused.code, 1, refused.stdout + refused.stderr);
   assert.match(refused.stdout, /^Reason: refused: uncommitted edits in README\.md; /m);
-  assert.match(refused.stdout, /^Next: fix the cause, then rerun node ".*exo-cli\.mjs" run .*new\.md --detach$/m);
+  assert.match(refused.stdout, /^Next: fix the cause, then rerun node ".*exo-cli\.mjs" run ".*new\.md" --detach$/m);
   const statePath = path.join(context.root, '.exo', 'kept', id, 'state.json');
   const state = JSON.parse(await fs.readFile(statePath, 'utf8'));
   await fs.writeFile(statePath, JSON.stringify({ ...state, phase: 'stopped', reason: 'task 2 blocked' }));
@@ -420,4 +420,16 @@ test('SIGTERM to exo-cli alone leaves no live claude process', async () => {
   await until(() => !alive(stub));
   assert.ok(!alive(stub), 'the stub claude is gone');
   assert.notEqual(code, 0);
+});
+
+test('exo wait quotes a plan path with a space in the refused Next line', async () => {
+  const context = await setup();
+  await fs.writeFile(path.join(context.root, 'README.md'), 'edited\n');
+  await exo(context, ['run', '--claude', context.stub]);
+  const [id] = await fs.readdir(path.join(context.root, '.exo', 'kept'));
+  const statePath = path.join(context.root, '.exo', 'kept', id, 'state.json');
+  const state = JSON.parse(await fs.readFile(statePath, 'utf8'));
+  await fs.writeFile(statePath, JSON.stringify({ ...state, plan: '/tmp/a plan/new.md' }));
+  const refused = await exo(context, ['wait', id]);
+  assert.match(refused.stdout, /^Next: .* run "\/tmp\/a plan\/new\.md" --detach$/m);
 });

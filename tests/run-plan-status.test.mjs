@@ -1,6 +1,3 @@
-// run-plan.mjs task status: a capped run leaves every task unflipped in
-// tasks.json and writes no RUN COMPLETE to progress.md.
-
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';

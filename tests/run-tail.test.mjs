@@ -62,13 +62,14 @@ test('fix=1: one fix session, a clean fix-diff review and one fix commit, with n
 
 async function leftoverPatch(root) {
   const runs = path.join(root, '.exo', 'run-plan');
+  const candidates = [];
   for (const planId of await fs.readdir(runs)) {
-    for (const stamp of await fs.readdir(path.join(runs, planId))) {
-      const file = path.join(runs, planId, stamp, 'review-fix-leftover.patch');
-      if (await fs.stat(file).then(() => true, () => false)) return file;
-    }
+    for (const stamp of await fs.readdir(path.join(runs, planId))) candidates.push(path.join(runs, planId, stamp, 'review-fix-leftover.patch'));
   }
-  throw new Error('no review-fix-leftover.patch under the run log dir');
+  const present = await Promise.all(candidates.map((file) => fs.stat(file).then(() => true, () => false)));
+  const index = present.indexOf(true);
+  if (index === -1) throw new Error('no review-fix-leftover.patch under the run log dir');
+  return candidates[index];
 }
 
 test('a fix-diff review that still holds a fix finding leaves the fix uncommitted and stops the run', async () => {

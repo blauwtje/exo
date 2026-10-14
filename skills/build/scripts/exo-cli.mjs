@@ -464,7 +464,7 @@ async function runCommand(argv, { approving = false } = {}) {
     }
     throw error;
   } finally {
-    updateRun(root, id, { phase, exitCode: code, reason: reason?.replace(/\s*\n\s*/g, ' ') ?? null });
+    updateRun(root, id, { phase, exitCode: code, ...(reason ? { reason: reason.replace(/\s*\n\s*/g, ' ') } : {}) });
     releaseLock(root, id);
     try {
       writeReport(root, id, { phase, result, reason });
@@ -518,7 +518,7 @@ function finishWait(state, id, dir) {
   process.stdout.write(`exo: run ${id} ${state.phase}; report ${report}\n`);
   if (['passed', 'landed'].includes(state.phase)) return 0;
   const next = {
-    refused: `fix the cause, then rerun node "${CLI}" run ${state.plan} --detach`,
+    refused: `fix the cause, then rerun node "${CLI}" run "${state.plan}" --detach`,
     parked: `read ${report}, then node "${CLI}" approve ${id}`
   }[state.phase] ?? `read ${report}, repair, then node "${CLI}" run --resume ${id} --detach`;
   process.stdout.write(`${state.reason ? `Reason: ${state.reason}\n` : ''}Next: ${next}\n`);
