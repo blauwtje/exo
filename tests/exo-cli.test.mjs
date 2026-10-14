@@ -115,6 +115,19 @@ test('exo wait prints the reason and the next step of a stopped run', async () =
   assert.match(stopped.stdout, new RegExp(`^Next: read .*report\\.md, repair, then node ".*exo-cli\\.mjs" run --resume ${id} --detach$`, 'm'));
 });
 
+test('exo wait points a parked run to approve, not to a refused resume', async () => {
+  const context = await setup();
+  await fs.writeFile(path.join(context.root, 'README.md'), 'edited\n');
+  await exo(context, ['run', '--claude', context.stub]);
+  const [id] = await fs.readdir(path.join(context.root, '.exo', 'kept'));
+  const statePath = path.join(context.root, '.exo', 'kept', id, 'state.json');
+  const state = JSON.parse(await fs.readFile(statePath, 'utf8'));
+  await fs.writeFile(statePath, JSON.stringify({ ...state, phase: 'parked', reason: 'needs approval' }));
+  const parked = await exo(context, ['wait', id]);
+  assert.match(parked.stdout, new RegExp(`^Next: .*approve ${id}$`, 'm'));
+  assert.doesNotMatch(parked.stdout, /--resume/);
+});
+
 test('a run-plan refusal lands in report.md as Reason', async () => {
   const context = await setup();
   const result = await exo(context, ['run', 'docs/specs/old.md', '--session', 'bogus', '--claude', context.stub]);

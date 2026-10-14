@@ -517,9 +517,10 @@ function finishWait(state, id, dir) {
   const report = path.join(dir, 'report.md');
   process.stdout.write(`exo: run ${id} ${state.phase}; report ${report}\n`);
   if (['passed', 'landed'].includes(state.phase)) return 0;
-  const next = state.phase === 'refused'
-    ? `fix the cause, then rerun node "${CLI}" run ${state.plan} --detach`
-    : `read ${report}, repair, then node "${CLI}" run --resume ${id} --detach`;
+  const next = {
+    refused: `fix the cause, then rerun node "${CLI}" run ${state.plan} --detach`,
+    parked: `read ${report}, then node "${CLI}" approve ${id}`
+  }[state.phase] ?? `read ${report}, repair, then node "${CLI}" run --resume ${id} --detach`;
   process.stdout.write(`${state.reason ? `Reason: ${state.reason}\n` : ''}Next: ${next}\n`);
   return 1;
 }
