@@ -21,3 +21,31 @@ test('a no red proof refusal goes straight to one repair session, then stops blo
   assert.match(result.calls[1].stdin, /add `Red: none \(<reason>\)`/);
   assert.match(result.stdout, /Task 1 is blocked: .*no red proof/);
 });
+
+test('a repair that only adds the no-red reason lands the task by script, with no second task session', async () => {
+  const context = await setup();
+  const text = await fs.readFile(context.plan, 'utf8');
+  const withoutRed = text.replace('Proof: node --version | Red: none (fixture)', 'Proof: node --version');
+  await fs.writeFile(context.plan, withoutRed.slice(0, withoutRed.indexOf('### Task 2')));
+  git(context.root, 'commit', '-q', '-am', 'docs: drop the Red field and task 2');
+  await fs.appendFile(path.join(context.root, '.git', 'info', 'exclude'), '.exo/\n');
+  await fs.mkdir(path.join(context.root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(context.root, '.exo', 'implementer-1.md'), 'Landed: a.txt\nProof:\n- `node --version`: pass\nUnresolved: none\n');
+  const record = path.join(context.tools, 'calls.jsonl');
+  const wrapper = path.join(context.tools, 'wrapper.mjs');
+  const rewrite = [
+    "import fs from 'node:fs';",
+    `const calls = fs.existsSync(${JSON.stringify(record)}) ? fs.readFileSync(${JSON.stringify(record)}, 'utf8').split('\\n').filter(Boolean).length : 0;`,
+    'if (calls === 1) {',
+    `  const planText = fs.readFileSync(${JSON.stringify(context.plan)}, 'utf8');`,
+    `  fs.writeFileSync(${JSON.stringify(context.plan)}, planText.replace('Proof: node --version', 'Proof: node --version | Red: none (fixture)'));`,
+    '}',
+    `await import(${JSON.stringify(context.stub)});`,
+    ''
+  ].join('\n');
+  await fs.writeFile(wrapper, rewrite);
+  const result = await runPlan({ ...context, stub: wrapper }, [{ edits: ['a.txt'], result: 'Worked on it.' }, { result: 'Plan repaired.' }, { result: 'Unused.' }]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.equal(result.calls.length, 2, 'one task session and one repair session, no second task session');
+  assert.match(result.calls[1].stdin, /^Plan repair of task 1 /m);
+});

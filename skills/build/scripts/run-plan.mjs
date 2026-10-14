@@ -408,6 +408,12 @@ async function main(argv) {
     retryNote = repairedNote(n, reason);
     return undefined;
   };
+  const repairThenLand = async (n, reason, landing) => {
+    const stopped = await repairOrBlock(n, reason);
+    if (stopped !== undefined || !landByScript(n).landed) return stopped;
+    markLanded(n, landing.record, landing.started);
+    return undefined;
+  };
   const noRedProofLine = (output) => output.split('\n').find((line) => line.includes('no red proof'))?.trim();
   const markLanded = (n, record, startedTask) => {
     stall = 0;
@@ -450,7 +456,10 @@ async function main(argv) {
   };
   const landOrRepair = async (numbers, record, started) => {
     const refused = landInOrder(numbers, record, started);
-    return refused === undefined ? undefined : repairOrBlock(refused.n, refused.reason);
+    if (refused === undefined) return undefined;
+    const stopped = await repairThenLand(refused.n, refused.reason, { record, started });
+    if (stopped !== undefined || !passes.has(refused.n)) return stopped;
+    return landOrRepair(numbers.slice(numbers.indexOf(refused.n) + 1), record, started);
   };
   if (stop === undefined && chosen.mode === 'plan' && order.length > 0) {
     stop = budgetStop() ?? undefined;
@@ -572,7 +581,7 @@ async function main(argv) {
     }
     const noRed = attempt === null ? undefined : noRedProofLine(attempt.output);
     if (noRed !== undefined) {
-      stop = await repairOrBlock(n, noRed);
+      stop = await repairThenLand(n, noRed, { record, started: startedTask });
       continue;
     }
     const failure = attempt === null ? last : lastLine(attempt.output);
