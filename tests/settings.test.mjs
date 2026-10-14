@@ -67,7 +67,7 @@ test('compression is short by default and off when the project sets it', async (
 });
 
 test('a stored replies value reads as the compression level it maps to, and compression outranks it in the same layer', async () => {
-  for (const [replies, compression] of [['terse', 'short'], ['tight', 'short'], ['standard', 'off']]) {
+  for (const [replies, compression] of [['terse', 'shorter'], ['tight', 'short'], ['standard', 'off']]) {
     const space = await workspace({ project: { replies } });
     const result = await settings(space, ['context']);
     assert.equal(result.code, 0, result.stderr);
@@ -77,23 +77,33 @@ test('a stored replies value reads as the compression level it maps to, and comp
   const both = await workspace({ project: { replies: 'terse', compression: 'off' } });
   assert.equal((await settings(both, ['get', 'compression'])).stdout.trim(), 'off');
   const lower = await workspace({ project: { replies: 'terse' }, global: { compression: 'off' } });
-  assert.equal((await settings(lower, ['get', 'compression'])).stdout.trim(), 'short');
+  assert.equal((await settings(lower, ['get', 'compression'])).stdout.trim(), 'shorter');
 });
 
-test('a stored compression=low or high reads as short and injects the short rule', async () => {
-  for (const stored of ['low', 'high']) {
+test('a stored compression=low reads as short and high reads as shorter, each with its own rule', async () => {
+  for (const [stored, level] of [['low', 'short'], ['high', 'shorter']]) {
     const old = await workspace({ project: { compression: stored } });
     const oldResult = await settings(old, ['context']);
     assert.equal(oldResult.code, 0, oldResult.stderr);
-    assert.match(oldResult.stdout, /compression=short \(project\)/);
-    assert.ok(oldResult.stdout.trim().endsWith(TIGHT_RULE), oldResult.stdout);
-    assert.equal((await settings(old, ['get', 'compression'])).stdout.trim(), 'short');
+    assert.match(oldResult.stdout, new RegExp(`compression=${level} \\(project\\)`));
+    assert.ok(oldResult.stdout.trim().endsWith(`. ${SCHEMA.compression.rules[level]}`), oldResult.stdout);
+    assert.equal((await settings(old, ['get', 'compression'])).stdout.trim(), level);
   }
   const space = await workspace();
   const refused = await settings(space, ['set', 'compression', 'low']);
   assert.notEqual(refused.code, 0, refused.stdout);
-  assert.deepEqual(Object.keys(SCHEMA.compression.rules), ['short', 'off']);
-  assert.deepEqual(SCHEMA.compression.options, ['off', 'short']);
+  assert.deepEqual(Object.keys(SCHEMA.compression.rules), ['shorter', 'short', 'off']);
+  assert.deepEqual(SCHEMA.compression.options, ['off', 'short', 'shorter']);
+  const shorterRule = SCHEMA.compression.rules.shorter;
+  assert.match(shorterRule, /^Replies are short\. Say the answer first\. After the answer, write at most three more lines\./);
+  assert.match(shorterRule, /Every sentence adds a new fact\. Still write whole, simple sentences\. Do not cut words short\./);
+  assert.match(shorterRule, /small, everyday words a young child knows/);
+  assert.match(shorterRule, /If the user sends only `\?`, say your last reply again in full sentences/);
+  for (const kept of ['not', 'no', 'only', 'except']) assert.match(shorterRule, new RegExp(`\\b${kept}\\b`));
+  assert.match(shorterRule, /Write a security warning in full sentences/);
+  assert.match(shorterRule, /cannot be undone/);
+  assert.equal(SCHEMA.compression.choices.shorter.gives, 'just the answer and key facts, easy words');
+  assert.equal(SCHEMA.compression.aliases.high, 'shorter');
   const shortRule = SCHEMA.compression.rules.short;
   assert.match(shortRule, /^Replies are short\. Say the answer first\./);
   assert.match(shortRule, /small, everyday words a young child knows/);
@@ -215,7 +225,7 @@ test('a value the schema does not allow is named in the context line, and the de
   const space = await workspace({ project: { compression: 'verbose' } });
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /compression=short \(default\).*compression=verbose is not one of off, short/);
+  assert.match(result.stdout, /compression=short \(default\).*compression=verbose is not one of off, short, shorter/);
   assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
 });
 

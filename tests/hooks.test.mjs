@@ -217,3 +217,19 @@ test('the session hook with no exo settings injects the plain-text short compres
     fs.rmSync(configHome, { recursive: true, force: true });
   }
 });
+
+test('the session hook injects the shorter compression rule when the plugin option is shorter', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-shorter-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_OPTION_COMPRESSION: 'shorter' };
+  for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
+  try {
+    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
+    const context = output.hookSpecificOutput.additionalContext;
+    assert.ok(context.includes('compression=shorter'));
+    assert.ok(context.includes('Replies are short. Say the answer first. After the answer, write at most three more lines.'));
+    assert.ok(context.includes('Every sentence adds a new fact. Still write whole, simple sentences. Do not cut words short.'));
+  } finally {
+    fs.rmSync(configHome, { recursive: true, force: true });
+  }
+});
