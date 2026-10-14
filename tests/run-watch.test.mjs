@@ -154,6 +154,23 @@ test('a wait notification that names only its output file drops the pending stop
   assert.deepEqual(harness.calls.prompts, []);
 });
 
+test('a wait notification that names its output file with surrounding whitespace drops the pending stop', async () => {
+  const outputFile = '/tmp/tasks/wait.output';
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states, { outputs: { [outputFile]: 'waiting\nexo: run run-a stopped; report /repo/.exo/run/run-a/report.md\n' } });
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  await harness.fire('turn.start');
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  const text = `<task-notification><task-id>b1</task-id><tool-use-id>t1</tool-use-id><output-file>\n  ${outputFile}\n</output-file><status>failed</status><summary>Background command "Wait for the build run to finish" failed with exit code 1</summary></task-notification>`;
+  await harness.fire('prompt.submit', { origin: { kind: 'task-notification' }, text });
+  await harness.fire('turn.complete');
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
+});
+
 test('a stop seen while a subagent is live and that agent reports the run sends no stop prompt', async () => {
   const states = { 'run-a': makeState({}) };
   const harness = makeHarness(states);

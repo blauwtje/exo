@@ -152,7 +152,7 @@ async function tick($, context) {
 }
 
 async function noteNotification($, context, text) {
-  const file = /<output-file>([^<]+)<\/output-file>/.exec(text)?.[1];
+  const file = /<output-file>([^<]+)<\/output-file>/.exec(text)?.[1]?.trim();
   const output = file ? await $.fs.read(file).catch(() => '') : '';
   for (const id of context.seen.keys()) {
     if (!text.includes(id) && !new RegExp(`(^|\\n)exo: run ${id} `).test(output)) continue;
