@@ -172,7 +172,7 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.deepEqual(reviewer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'NotebookEdit', 'Agent'].includes(tool)), []);
   assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
   assert.doesNotMatch(reviewer.body, /run every Final verification|`fixed` or `reported`|`FIXED`/);
-  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
+  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
 });
 
 test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prompt.md', () => {
@@ -192,11 +192,11 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const fixCommit = repairAfter.indexOf('land-task.mjs" --fix');
   assert.ok(before.every((index) => index !== -1 && index < fixCommit), 'verify starts the gate rerun, the probes and the fix diff review together, before the fix commit');
   const stops = [
-    /A `FAIL` or `STRAY` line from `verify\.mjs` ends the turn[^\n]*fixes uncommitted/,
+    /A `FAIL` or `UNPLANNED` line from `verify\.mjs` ends the turn[^\n]*fixes uncommitted/,
     /A `FAIL probe` line ends the turn[^\n]*fixes uncommitted/,
     /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`[^\n]*fixes uncommitted/,
   ].map((pattern) => repairAfter.search(pattern));
-  assert.ok(stops.every((index) => index !== -1 && index < fixCommit), 'a FAIL or STRAY line, a FAIL probe line or a missing fix-review.md ends the turn with fixes uncommitted, before the fix commit');
+  assert.ok(stops.every((index) => index !== -1 && index < fixCommit), 'a FAIL or UNPLANNED line, a FAIL probe line or a missing fix-review.md ends the turn with fixes uncommitted, before the fix commit');
   assert.ok(Math.min(...stops) > Math.max(...before), 'verify checks the stops only after starting the rerun, the probes and the fix diff review');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
   assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'verify points to the report rule and ends on one decision');
@@ -294,7 +294,7 @@ test('the branch reviewer requires a Probe line under each fix finding and names
 test('the branch reviewer keeps each finding on one line and shows an example the merge parser reads', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.match(reviewer.body, /each on one line, no heading per finding/, 'a finding shares one line');
-  assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|hazard|question)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
+  assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|concern|question)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
 });
 
 test('the branch reviewer confirms with one test file or Probe command, never the full suite', () => {

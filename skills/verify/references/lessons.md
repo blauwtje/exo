@@ -1,6 +1,6 @@
 # Booking review defects
 
-Step 4, before the finish, when `<checkout>/.exo/branch-review.md` holds a `defect` line. Marked `fix` or `report`, each `defect` line is booked once; `hazard` and `question` lines are not.
+Step 4, before the finish, when `<checkout>/.exo/branch-review.md` holds a `defect` line. Marked `fix` or `report`, each `defect` line is booked once; `concern` and `question` lines are not.
 
 For each `defect` line run:
 
