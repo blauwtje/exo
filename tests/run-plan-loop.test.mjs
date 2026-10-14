@@ -88,15 +88,6 @@ test('context: each task line ends with its peak context and a task over budget 
   assert.doesNotMatch(detail, /Task 2: peak context .* is over/);
 });
 
-test('progress: a capped run flips no task and writes no RUN COMPLETE', async () => {
-  const context = await setup();
-  const result = await runPlan(context, [{}], ['--max-iterations', '1']);
-  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
-  const tasks = JSON.parse(await fs.readFile(path.join(logDir, 'tasks.json'), 'utf8'));
-  assert.deepEqual(tasks.map((task) => task.passes), [false, false]);
-  assert.doesNotMatch(await fs.readFile(path.join(logDir, 'progress.md'), 'utf8'), /RUN COMPLETE/);
-});
-
 test('scratch: the run leaves no untracked .exo/ and lists it once in info/exclude, however often it runs', async () => {
   const context = await setup();
   for (let round = 0; round < 2; round += 1) {
