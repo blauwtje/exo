@@ -60,6 +60,17 @@ test('fix=1: one fix session, a clean fix-diff review and one fix commit, with n
   assert.match(await fs.readFile(path.join(context.root, '.exo', 'branch-review.md'), 'utf8'), /^FINDINGS/);
 });
 
+async function leftoverPatch(root) {
+  const runs = path.join(root, '.exo', 'run-plan');
+  for (const planId of await fs.readdir(runs)) {
+    for (const stamp of await fs.readdir(path.join(runs, planId))) {
+      const file = path.join(runs, planId, stamp, 'review-fix-leftover.patch');
+      if (await fs.stat(file).then(() => true, () => false)) return file;
+    }
+  }
+  throw new Error('no review-fix-leftover.patch under the run log dir');
+}
+
 test('a fix-diff review that still holds a fix finding leaves the fix uncommitted and stops the run', async () => {
   const context = await runSteps([
     land(1), land(2),
@@ -70,7 +81,7 @@ test('a fix-diff review that still holds a fix finding leaves the fix uncommitte
   assert.match(context.stop, /^run-plan: stop: fix review FINDINGS$/);
   assert.ok(!context.subjects.some((subject) => subject.startsWith('fix(')));
   assert.equal(git(context.root, 'status', '--porcelain'), '');
-  const patch = path.join(context.root, '.exo', 'review-fix-leftover.patch');
+  const patch = await leftoverPatch(context.root);
   assert.match(await fs.readFile(patch, 'utf8'), /a\.txt/);
   assert.match(context.result.stdout, /review-fix-leftover\.patch/);
   assert.equal(context.result.code, 1);
@@ -84,7 +95,7 @@ test('a review fix that breaks the gate shelves its edits and leaves a clean tre
   ]);
   assert.match(context.stop, /^run-plan: stop: fix probe failed: FAIL probe \(no Probe line under a fixed finding\)/);
   assert.equal(git(context.root, 'status', '--porcelain'), '');
-  const patch = await fs.readFile(path.join(context.root, '.exo', 'review-fix-leftover.patch'), 'utf8');
+  const patch = await fs.readFile(await leftoverPatch(context.root), 'utf8');
   assert.match(patch, /a\.txt/);
   assert.match(context.result.stdout, /review-fix-leftover\.patch/);
   assert.equal(context.result.code, 1);

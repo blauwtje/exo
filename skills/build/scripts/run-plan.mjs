@@ -656,7 +656,7 @@ async function main(argv) {
     };
     const gateStop = await successGate();
     if (gateStop === null) say('all tasks landed, final review start');
-    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, say }) : { stop: gateStop };
+    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say }) : { stop: gateStop };
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
       const gate = tail.gate;
