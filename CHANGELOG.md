@@ -9,6 +9,9 @@ Versions before 0.133.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- The review fixer writes a `Probe:` line under every finding it marks fixed, including a concern, so a fixed concern no longer fails for a missing Probe line.
+
 ## 0.134.4 - 2026-10-14
 
 ### Fixed
