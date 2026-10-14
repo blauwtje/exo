@@ -9,6 +9,9 @@ Versions before 0.132.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- The branch review reads only the current plan's proof files, not a stale one from another plan.
+
 ## 0.134.1 - 2026-10-14
 
 ### Fixed
