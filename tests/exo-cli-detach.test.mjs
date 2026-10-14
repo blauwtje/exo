@@ -49,6 +49,40 @@ const exo = (context, args) => run(CLI, args, {
 
 const calls = async (context) => (await fs.readFile(context.record, 'utf8').catch(() => '')).split('\n').filter(Boolean);
 
+const GIT_SHIM = (log, realPath) => `#!${process.execPath}
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+const args = process.argv.slice(2);
+if (args.includes('status') && args.includes('--porcelain') && args.includes('--untracked-files=no')) fs.appendFileSync(${JSON.stringify(log)}, 'status\\n');
+const answer = spawnSync('git', args, { stdio: 'inherit', env: { ...process.env, PATH: ${JSON.stringify(realPath)} } });
+process.exit(answer.status ?? 1);
+`;
+
+async function finished(root) {
+  const kept = path.join(root, '.exo', 'kept');
+  for (let round = 0; round < 100; round += 1) {
+    const ids = await fs.readdir(kept).catch(() => []);
+    if (ids.length > 0) return ids[0];
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return null;
+}
+
+test('a detached dry run checks the tracked tree twice, not three times', async () => {
+  const context = await setup();
+  const shims = await fixture();
+  const log = path.join(shims, 'status.log');
+  await fs.writeFile(path.join(shims, 'git'), GIT_SHIM(log, process.env.PATH), { mode: 0o755 });
+  const result = await run(CLI, ['run', path.join(context.root, 'docs', 'specs', 'new.md'), '--detach', '--dry-run', '--claude', context.stub], {
+    cwd: context.root,
+    env: { STUB_RECORD: context.record, HOME: context.home, PATH: `${shims}${path.delimiter}${process.env.PATH}` }
+  });
+  assert.equal(result.code, 0);
+  assert.notEqual(await finished(context.root), null);
+  const statuses = (await fs.readFile(log, 'utf8')).split('\n').filter(Boolean);
+  assert.equal(statuses.length, 2);
+});
+
 test('a dirty tree refuses a detached run before it detaches', async () => {
   const context = await setup();
   await fs.writeFile(path.join(context.root, 'README.md'), 'edited\n');

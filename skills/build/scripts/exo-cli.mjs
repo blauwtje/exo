@@ -258,9 +258,12 @@ function refuseDirty(root) {
   }
 }
 
-async function buildRun(root, plan, flags, id) {
+function refuseDirtyUnlessChild(root, child) {
+  if (child) return;
   refuseDirty(root);
+}
 
+async function buildRun(root, plan, flags, id) {
   const { branch, land } = planFrame(plan);
   const base = defaultBranch(root);
   const chores = base !== null && !flags.some((flag) => flag === '--dry-run' || flag === '--help');
@@ -442,6 +445,7 @@ async function runCommand(argv, { approving = false } = {}) {
   try {
     if (readState(root, id).stage === 'landing') result = landStage(root, id, plan);
     else {
+      refuseDirtyUnlessChild(root, child);
       const built = await buildRun(root, plan, flags, id);
       code = built.code ?? 1;
       phase = phaseForExit(code);
