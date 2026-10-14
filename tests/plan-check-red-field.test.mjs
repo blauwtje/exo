@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import * as harness from './harness.mjs';
@@ -31,4 +33,17 @@ test('plan-check flags a refactor task with no Red field, and passes one with Re
   assert.ok(flagged('refactor: split the module'));
   assert.ok(!flagged('refactor(widget): split the module', 'none (no behavior change)'));
   assert.ok(!flagged('feat(widget): round'));
+});
+
+test('plan-check under --run skips the refactor-without-Red check of a task that already landed', async () => {
+  const root = await harness.gitRepository({ 'src/widget.mjs': 'export const x = 1;\n' });
+  harness.git(root, 'switch', '-q', '-c', 'feat/fixture');
+  harness.git(root, 'commit', '-q', '--allow-empty', '-m', 'refactor(widget): split the module', '-m', 'Plan-task: refactor-landed/1');
+  const planPath = path.join(await harness.fixture(), 'refactor-landed.md');
+  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'refactor(widget): split the module', files: ['src/widget.mjs'], proof: 'node --test tests/widget.test.mjs' })] });
+  fs.writeFileSync(planPath, plan);
+  const flagged = (report) => report.lines.some((line) => line.includes("refactor task has no 'Red:' field"));
+  assert.ok(flagged(planCheckReport(plan, { root, planPath })));
+  const resumed = planCheckReport(plan, { root, planPath, run: true });
+  assert.ok(!flagged(resumed), resumed.lines.join('; '));
 });

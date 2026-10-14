@@ -153,7 +153,7 @@ function checkProofTestsListed(task, root, byNumber) {
   const unlisted = (task.proof.match(/[\w./@-]+/g) ?? [])
     .map((token) => token.replace(/^\.\//, ''))
     .filter((token) => TEST_FILE_NAME.test(path.posix.basename(token)) && !isCovered(listed, token) && fs.existsSync(path.join(root, token)));
-  return [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add ${testPath} to Files: (its Proof runs it)`);
+  return [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add \`${testPath}\` to Files: (its Proof runs it)`);
 }
 
 function dependencyChainOf(byNumber, from) {
@@ -291,7 +291,7 @@ function checkProductRun(frame, root) {
 
 const REFACTOR_HEADING = /^refactor(?:\([^)]*\))?!?:/;
 
-function checkRedGreen(plan) {
+function checkRedGreen(plan, landed) {
   const problems = [];
   for (const task of plan.tasks) {
     if (task.red !== null && task.red.reason === '') problems.push(`Task ${task.number}: 'Red: none' states no reason: write 'Red: none (<reason>)'`);
@@ -302,7 +302,7 @@ function checkRedGreen(plan) {
     if (task.red !== null) continue;
     if (equalsLandGate(task.proof ?? undefined, landGate)) {
       problems.push(`Task ${task.number}: 'Proof: ${task.proof}' equals the 'Land gate:' command, so land will refuse it with "no red proof": name a Proof that fails before the task, or add 'Red: none (<reason>)'`);
-    } else if (REFACTOR_HEADING.test(task.title)) {
+    } else if (REFACTOR_HEADING.test(task.title) && !landed.includes(task.number)) {
       problems.push(`Task ${task.number}: a refactor task has no 'Red:' field, so land will refuse a Proof that passes before the change with "no red proof": add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead`);
     }
   }
@@ -442,7 +442,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
   const compactPlan = plan.tasks.every((task) => task.compact);
   const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
-  // why: a landed task's Files: grow after it lands, so a resumed or mid-run check measures only unlanded tasks.
+  // why: a landed task's Files: grow after it lands, and a landed task can no longer be fixed, so a resumed or mid-run check measures and flags only unlanded tasks.
   const landed = run && resolvedRoot !== undefined && resolvedRoot !== null && planPath !== undefined ? landedTasks(plan.tasks, resolvedRoot, planIdOf(planPath)) : [];
   const problems = [
     ...(compactPlan
@@ -452,7 +452,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
           ...openPoints(planText).map((entry) => `the plan's '## Open points' still holds an unanswered question: ${entry}`),
           ...checkLandGate(plan.frame, resolvedRoot),
           ...checkProductRun(plan.frame, resolvedRoot),
-          ...checkRedGreen(plan),
+          ...checkRedGreen(plan, landed),
           ...checkAcceptanceCitations(plan.frame),
           ...plan.tasks.flatMap((task) => checkCompactFields(task))
         ]
@@ -466,7 +466,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
         ])),
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot)),
     ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
-    ...plan.tasks.flatMap((task) => checkProofTestsListed(task, root, byNumber)),
+    ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkProofTestsListed(task, resolvedRoot, byNumber)),
     ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
     ...checkParallelForm(plan.frame),

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import * as harness from './harness.mjs';
@@ -65,15 +67,17 @@ test('plan-check flags a Proof test that exists under --root and no task in its 
     'tests/gauge-clamp.test.mjs': '// pins clamping\n'
   });
   const flagged = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }), { root });
-  assert.deepEqual(proofLines(flagged), ['Task 2: add tests/gauge-clamp.test.mjs to Files: (its Proof runs it)']);
+  assert.deepEqual(proofLines(flagged), ['Task 2: add `tests/gauge-clamp.test.mjs` to Files: (its Proof runs it)']);
   const offChain = planCheckReport(chainPlan(root, { dependsOn: 'none', proof: 'node --test tests/widget.test.mjs' }), { root });
   assert.deepEqual(proofLines(offChain), [
-    'Task 2: add tests/widget.test.mjs to Files: (its Proof runs it)',
-    'Task 3: add tests/widget.test.mjs to Files: (its Proof runs it)'
+    'Task 2: add `tests/widget.test.mjs` to Files: (its Proof runs it)',
+    'Task 3: add `tests/widget.test.mjs` to Files: (its Proof runs it)'
   ]);
+  const fromRepository = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }));
+  assert.deepEqual(proofLines(fromRepository), ['Task 2: add `tests/gauge-clamp.test.mjs` to Files: (its Proof runs it)']);
 });
 
-test('plan-check passes a Proof test a task in its Depends on chain lists, one absent under --root, and any without --root', async () => {
+test('plan-check passes a Proof test a task in its Depends on chain lists, one absent under the root, and any with no root', async () => {
   const root = await gitRepository({
     'src/widget.mjs': 'export const x = 1;\n',
     'src/gauge.mjs': 'export const y = 1;\n',
@@ -85,6 +89,18 @@ test('plan-check passes a Proof test a task in its Depends on chain lists, one a
   assert.deepEqual(proofLines(chained), [], chained.lines.join('; '));
   const absent = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-new.test.mjs' }), { root });
   assert.deepEqual(proofLines(absent), [], absent.lines.join('; '));
-  const noRoot = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }));
+  const noRoot = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }).replace(`Repository: ${root}`, 'Repository: /nonexistent/fixture'));
   assert.deepEqual(proofLines(noRoot), [], noRoot.lines.join('; '));
+});
+
+test('plan-check under --run skips the Proof-test check of a task that already landed', async () => {
+  const root = await gitRepository({ 'src/widget.mjs': 'export const x = 1;\n', 'tests/gauge-clamp.test.mjs': '// pins clamping\n' });
+  harness.git(root, 'switch', '-q', '-c', 'feat/fixture');
+  harness.git(root, 'commit', '-q', '--allow-empty', '-m', 'fix(gauge): clamp', '-m', 'Plan-task: proof-landed/2');
+  const planPath = path.join(await harness.fixture(), 'proof-landed.md');
+  const plan = chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' });
+  fs.writeFileSync(planPath, plan);
+  assert.deepEqual(proofLines(planCheckReport(plan, { root, planPath })), ['Task 2: add `tests/gauge-clamp.test.mjs` to Files: (its Proof runs it)']);
+  const resumed = planCheckReport(plan, { root, planPath, run: true });
+  assert.deepEqual(proofLines(resumed), [], resumed.lines.join('; '));
 });
