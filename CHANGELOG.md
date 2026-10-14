@@ -9,6 +9,13 @@ Versions before 0.132.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- A detached run refuses an uncommitted plan before it starts.
+- `exo wait` prints why a run stopped and what to do next.
+- A rewritten plan with the same file name builds its tasks instead of counting an earlier plan's commits as done.
+- The status line counts the plan's tasks from the start.
+- A review fix that stops the run leaves a clean tree and its edits in a patch.
+
 ## 0.134.2 - 2026-10-14
 
 ### Fixed
