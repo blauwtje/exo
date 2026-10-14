@@ -115,7 +115,6 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
     const verdict = verdictOf(merged);
     const findings = path.join(exo, 'branch-review.md');
-    if (verdict === 'CLEAN') recordPass(root, BRANCH_REVIEW_KEY, 0, reviewedTree);
     if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
     if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'hazard') >= 1) {
       say('fix start');
@@ -130,7 +129,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
       if (status.status === 0 && status.stdout.trim() === '') {
         say('fix review skipped: fixer changed nothing');
-        return finish();
+        return finish(reviewedTree);
       }
       const fixReview = path.join(exo, 'fix-review.md');
       fs.rmSync(fixReview, { force: true });
@@ -147,11 +146,13 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
       if (landed.status !== 0) return { stop: stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again') };
       say('fix landed');
+      return finish(workingTreeKey(root));
     }
   }
-  return finish();
+  return finish(reviewedTree);
 
-  function finish() {
+  function finish(reviewPassTree) {
+    if (reports.length > 0) recordPass(root, BRANCH_REVIEW_KEY, 0, reviewPassTree);
     const gate = node(SCRIPT.verify, gateArgs, root);
     const unproven = unprovenRisks(path.join(exo, 'branch-review.md'));
     if (unproven.length === 0) return { gate };

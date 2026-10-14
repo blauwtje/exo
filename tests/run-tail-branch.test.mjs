@@ -48,3 +48,18 @@ test('a CLEAN branch review is cached for the tree it reviewed', async () => {
   const context = await runBranch(2, { result: CLEAN_LINE, findings: 'CLEAN\n' });
   assert.notEqual(cachedPass(context.setupRoot, BRANCH_REVIEW_KEY), null, context.stdout + context.stderr);
 });
+
+test('a FINDINGS branch review whose fix lands is cached for the tree after the fix', async () => {
+  const context = await setup({ risk: 'security boundary' });
+  await useTasks(context, 2);
+  const findings = 'FINDINGS\n\nt1.txt:1-1; defect; swallowed failure; catch drops error; fix\n  Probe: node --version\n';
+  const steps = [
+    landTask(1), landTask(2),
+    { result: 'verdict=FINDINGS defect=1 hazard=0 question=0 fix=1 report=x', findings },
+    { result: 'fixed=1 reported=0 report=x', edits: ['t1.txt'] },
+    { result: CLEAN_LINE, findings: 'CLEAN\n' }
+  ];
+  const run = await runPlan(context, steps);
+  assert.match(run.stdout, /fix landed/, run.stdout + run.stderr);
+  assert.notEqual(cachedPass(context.root, BRANCH_REVIEW_KEY), null, run.stdout + run.stderr);
+});
