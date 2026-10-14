@@ -151,9 +151,11 @@ async function tick($, context) {
   if (!context.busy) await flush($, context);
 }
 
-function noteNotification(context, text) {
+async function noteNotification($, context, text) {
+  const file = /<output-file>([^<]+)<\/output-file>/.exec(text)?.[1];
+  const output = file ? await $.fs.read(file).catch(() => '') : '';
   for (const id of context.seen.keys()) {
-    if (!text.includes(id)) continue;
+    if (!text.includes(id) && !new RegExp(`(^|\\n)exo: run ${id} `).test(output)) continue;
     context.pending.delete(id);
     context.notified.add(id);
   }
@@ -175,8 +177,12 @@ export function register(on) {
     await flush($, context);
     return next(e);
   });
-  on('session.receive', ($, e, next) => {
-    if (e.origin.kind === 'task-notification') noteNotification(context, e.text);
+  on('session.receive', async ($, e, next) => {
+    if (e.origin.kind === 'task-notification') await noteNotification($, context, e.text);
+    return next(e);
+  });
+  on('prompt.submit', async ($, e, next) => {
+    if (e.origin?.kind === 'task-notification') await noteNotification($, context, e.text);
     return next(e);
   });
 }

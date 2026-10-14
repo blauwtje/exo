@@ -7,7 +7,7 @@ function makeState(fields) {
   return { phase: 'build', task: { n: 2, subject: 'add log' }, landed: 1, total: 5, startedAt: '2026-10-13T10:00:00Z', updatedAt: '2999-01-01T00:00:00Z', ...fields };
 }
 
-function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists }) {
+function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists, outputs }) {
   const runBases = { [`${main}/.exo/run`]: mainStates, [`${root}/.exo/run`]: states };
   return {
     list: async (path) => {
@@ -17,6 +17,7 @@ function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists }) {
       return [{ name: 'run.log', kind: 'file', mtimeMs }];
     },
     read: async (file) => {
+      if (file in outputs) return outputs[file];
       if (file.endsWith('/.git')) {
         if (gitText === undefined) throw new Error('ENOENT');
         return gitText;
@@ -28,14 +29,14 @@ function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists }) {
 }
 
 function makeHarness(states, options = {}) {
-  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now(), clockNow = () => Date.now() } = options;
+  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now(), clockNow = () => Date.now(), outputs = {} } = options;
   const calls = { timers: [], lines: [], prompts: [], lists: [] };
   const agents = [];
   const handlers = {};
   const $ = {
     clock: { every: (ms, tick) => calls.timers.push({ ms, tick }), now: async () => clockNow() },
     session: { root: async () => root },
-    fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
+    fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists, outputs }),
     ui: { status: (text) => calls.lines.push(text) },
     prompt: { submit: async (message) => calls.prompts.push(message.text) },
     agent: { list: async () => agents }
@@ -131,6 +132,23 @@ test('a stop a wait already reported while the lead is busy sends no stop prompt
   states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
   await tick();
   await harness.fire('session.receive', { origin: { kind: 'task-notification' }, text: 'exo: run run-a stopped; report /repo/.exo/run/run-a/report.md' });
+  await harness.fire('turn.complete');
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
+});
+
+test('a wait notification that names only its output file drops the pending stop', async () => {
+  const outputFile = '/tmp/tasks/wait.output';
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states, { outputs: { [outputFile]: 'waiting\nexo: run run-a stopped; report /repo/.exo/run/run-a/report.md\n' } });
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  await harness.fire('turn.start');
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  const text = `<task-notification><task-id>b1</task-id><tool-use-id>t1</tool-use-id><output-file>${outputFile}</output-file><status>failed</status><summary>Background command "Wait for the build run to finish" failed with exit code 1</summary></task-notification>`;
+  await harness.fire('prompt.submit', { origin: { kind: 'task-notification' }, text });
   await harness.fire('turn.complete');
   await tick();
   assert.deepEqual(harness.calls.prompts, []);
