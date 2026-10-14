@@ -14,7 +14,7 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 1. No argument → print `/exo:prompt <rough prompt>`, run nothing, stop.
 2. Read only what names a path, a test or build command, or a pattern file for the rewrite: Glob, Grep, Read, the package manifest. No edit, no test run, no helper.
 3. Two readings of the prompt lead to materially different work → ask one question, in the shape of `../route-skills/references/question.md`, one per message, at most 2 in all. Any other gap stays open in the rewrite, in the user's words.
-4. Rewrite with the rules below. Show it in one fenced block, opened with one more backtick than the longest backtick run inside it.
+4. Rewrite with the rules below. Show it in one fenced block, opened with at least three backticks and more than the longest backtick run inside it.
 5. After the block, the `Added:` line only when the rewrite has adds, then one line asking for ok to run it.
 6. Reply of plain yes or ok, nothing more → run the last shown block as the user's request in this session; routing picks a skill for it the usual way.
 7. Reply naming changes, such as "yes, but drop X" → revise, show again, ask again.

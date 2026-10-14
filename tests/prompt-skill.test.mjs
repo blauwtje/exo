@@ -132,3 +132,10 @@ test('the example states no fact the rough prompt lacks', () => {
 test('skill text carries no research ids', () => {
   assert.doesNotMatch(body, /\bR\d{1,2}\b/);
 });
+
+test('the fence opener has at least three backticks and outruns every inner run', () => {
+  const fence = section('Run').split('\n').find((line) => /fenced block/.test(line));
+  assert.ok(fence, 'no fenced block rule in ## Run');
+  assert.match(fence, /\b(at least|minimum of) (three|3) backticks\b/i, 'a fence needs at least three backticks');
+  assert.match(fence, /longest backtick run inside/, 'the opener must outrun every backtick run inside');
+});
