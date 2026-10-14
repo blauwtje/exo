@@ -549,7 +549,8 @@ function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean' });
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
-  if (pin !== null) quiet.file = proofRecordPath(root, pin.planId, pin.number);
+  const codeRulesOnly = flags['code-rules'] === true;
+  if (pin !== null && !codeRulesOnly) quiet.file = proofRecordPath(root, pin.planId, pin.number);
   if (flags.fix !== undefined) {
     process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null, pin }));
     return;
@@ -558,14 +559,14 @@ function main(argv) {
   if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
+  if (codeRulesOnly) {
+    process.stdout.write(checkCodeRules({ planText, number: Number(flags.task), root, planPath: flags.plan, pin }));
+    return;
+  }
   // The implementer prompt's `Report to:` path, so a wave's per-task worktree
   // finds its own report with no extra flag.
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
-  if (flags['code-rules'] === true) {
-    process.stdout.write(checkCodeRules({ planText, number: Number(flags.task), root, planPath: flags.plan, pin }));
-    return;
-  }
   const run = flags.check === true ? checkTask : landTask;
   const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
   process.stdout.write(pin === null ? output : quietText(output, true));

@@ -84,9 +84,10 @@ test('a function over 20 lines only warns and the task lands', async () => {
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-function runCodeRulesCli({ root, planPath }) {
+function runCodeRulesCli({ root, planPath, pin = null }) {
   const env = { ...process.env };
   delete env.EXO_RUN_TASK;
+  if (pin !== null) env.EXO_RUN_TASK = pin;
   return spawnSync('node', [LAND_TASK, '--code-rules', '--plan', planPath, '--task', '1', '--root', root], { encoding: 'utf8', env });
 }
 
@@ -120,4 +121,15 @@ test('checkCodeRules accepts another task of the pinned plan and still refuses a
     () => checkCodeRules({ planPath, planText: plan, number: 2, root, pin: { planId: 'other', number: 2 } }),
     (error) => error instanceof LandingError && /EXO_RUN_TASK pins this run/.test(error.message)
   );
+});
+
+const MANY_WIDE = Array.from({ length: 25 }, (_, i) => `export function greet${i}(a, b, c, d) {\n  return "hello";\n}\n`).join('');
+
+test('a pinned --code-rules prints every finding and writes no proof record', async () => {
+  const { root, planPath } = await checkout(MANY_WIDE);
+  const result = runCodeRulesCli({ root, planPath, pin: 'compact/1' });
+  assert.equal(result.status, 1);
+  assert.equal(result.stderr.match(/src\/app\.js:\d+ max-params/g)?.length, 25, result.stderr);
+  assert.doesNotMatch(result.stderr, /Full output:/);
+  await assert.rejects(fs.access(path.join(root, '.exo/proof-compact-task-1.txt')));
 });
