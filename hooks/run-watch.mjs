@@ -80,10 +80,10 @@ async function isLive($, run) {
 }
 
 function statusLine(run, now) {
-  const { task, landed, total, startedAt } = run.state;
+  const { landed = 0, total = 0, startedAt } = run.state;
   const minutes = Math.max(0, Math.floor((now - Date.parse(startedAt)) / 60000));
-  const subject = task?.subject ?? '';
-  return `exo ▸ task ${task?.n ?? 0}/${total ?? 0} ${subject} · ${landed ?? 0} landed · ${minutes}m`;
+  const filled = total ? Math.min(8, Math.floor((landed / total) * 8)) : 0;
+  return `${'▰'.repeat(filled)}${'▱'.repeat(8 - filled)}  ${landed} of ${total}  ·  ${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
 function wakeText(run) {
@@ -134,9 +134,9 @@ async function tick($, context) {
     else await wake($, context, run);
   }
   context.first = false;
-  const active = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase));
-  const newest = active[active.length - 1];
-  $.ui.status(newest ? statusLine(newest, Date.now()) : undefined);
+  const own = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase) && (run.dir.startsWith(`${root}/.exo/run/`) || run.state.runRoot === root));
+  context.run = own[own.length - 1];
+  $.ui.invalidate('ui.render');
   if (!context.busy) await flush($, context);
 }
 
@@ -164,6 +164,7 @@ export function register(on) {
     await flush($, context);
     return next(e);
   });
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => next(context.run ? { ...e, props: { ...e.props, tail: statusLine(context.run, await $.clock.now()) } } : e));
   on('session.receive', ($, e, next) => {
     if (e.origin.kind === 'task-notification') noteNotification(context, e.text);
     return next(e);

@@ -28,18 +28,32 @@ function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists }) {
 }
 
 function makeHarness(states, options = {}) {
-  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now() } = options;
-  const calls = { timers: [], statuses: [], prompts: [], lists: [] };
+  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now(), clockNow = () => Date.now() } = options;
+  const calls = { timers: [], lines: [], prompts: [], lists: [] };
   const handlers = {};
+  const matchers = {};
+  const renders = [];
+  const renderHint = async () => {
+    if (matchers['ui.render']?.component !== 'PromptHint') return undefined;
+    const drawn = await handlers['ui.render']($, { component: 'PromptHint', props: { isDraft: false, isWorking: false, hint: '? for shortcuts' } }, (event) => event);
+    return drawn.props.tail;
+  };
   const $ = {
-    clock: { every: (ms, tick) => calls.timers.push({ ms, tick }) },
+    clock: {
+      every: (ms, tick) => calls.timers.push({ ms, tick: async () => {
+        await tick();
+        calls.lines.push(...(await Promise.all(renders.splice(0))));
+      } }),
+      now: async () => clockNow()
+    },
     session: { root: async () => root },
     fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
-    ui: { status: (text) => calls.statuses.push(text) },
+    ui: { invalidate: (event) => event === 'ui.render' && renders.push(renderHint()) },
     prompt: { submit: async (message) => calls.prompts.push(message.text) }
   };
-  register((name, handler) => {
-    handlers[name] = handler;
+  register((name, ...args) => {
+    handlers[name] = args.at(-1);
+    if (args.length > 1) matchers[name] = args[0];
   });
   const fire = (name, e = {}) => handlers[name]?.($, e, (event) => event);
   return { calls, $, fire, start: (e) => handlers['session.start']($, e, (event) => event) };
@@ -58,16 +72,17 @@ test('an interactive session starts a five second tick and passes the event on',
   assert.deepEqual(harness.calls.timers.map((timer) => timer.ms), [5000]);
 });
 
-test('the status shows the newest active run, then clears', async () => {
+test('the prompt hint tail shows the newest active run, then clears', async () => {
   const states = { 'run-a': makeState({}) };
   const harness = makeHarness(states);
   await harness.start({ isInteractive: true });
   const [{ tick }] = harness.calls.timers;
   await tick();
-  assert.match(harness.calls.statuses[0], /^exo ▸ task 2\/5 add log · 1 landed · \d+m$/);
+  assert.match(harness.calls.lines[0], /^▰▱{7} {2}1 of 5 {2}· {2}\d+:\d{2}$/);
   states['run-a'] = makeState({ phase: 'passed' });
   await tick();
-  assert.equal(harness.calls.statuses[1], undefined);
+  assert.equal(harness.calls.lines.length, 2);
+  assert.equal(harness.calls.lines[1], undefined);
 });
 
 test('a run moving to a final phase wakes the lead once; a run final on the first tick does not', async () => {
@@ -157,49 +172,104 @@ test('a landed run asks the lead to report the result', async () => {
   assert.doesNotMatch(harness.calls.prompts[0], /run-loop/);
 });
 
-test('an active run updated before the session started still shows its status', async () => {
+test('an active run updated before the session started still shows its line', async () => {
   const harness = makeHarness({ 'run-a': makeState({ updatedAt: '2000-01-01T00:00:00Z' }) });
   await harness.start({ isInteractive: true });
   const [{ tick }] = harness.calls.timers;
   await tick();
-  assert.match(harness.calls.statuses[0], /^exo ▸ task 2\/5 add log/);
+  assert.match(harness.calls.lines[0], /^▰▱{7} {2}1 of 5/);
 });
 
-test('a non-final run whose run directory is over an hour old shows no status', async () => {
+test('a non-final run whose run directory is over an hour old shows no line', async () => {
   const harness = makeHarness({ 'run-a': makeState({}) }, { mtimeMs: Date.now() - 3600001 });
   await harness.start({ isInteractive: true });
   const [{ tick }] = harness.calls.timers;
   await tick();
-  assert.equal(harness.calls.statuses[0], undefined);
+  assert.deepEqual(harness.calls.lines, [undefined]);
 });
 
-test('a worktree session also reads the run state of the main checkout', async () => {
+test('a worktree session shows a main checkout run whose runRoot is that worktree', async () => {
   const harness = makeHarness({}, {
     root: '/repo/.worktrees/x',
     gitText: 'gitdir: /repo/.git/worktrees/x\n',
-    mainStates: { 'run-main': makeState({ task: { n: 3, subject: 'from main' } }) }
+    mainStates: { 'run-main': makeState({ landed: 3, runRoot: '/repo/.worktrees/x' }) }
   });
   await harness.start({ isInteractive: true });
   const [{ tick }] = harness.calls.timers;
   await tick();
   assert.ok(harness.calls.lists.includes('/repo/.worktrees/x/.exo/run'));
   assert.ok(harness.calls.lists.includes('/repo/.exo/run'));
-  assert.match(harness.calls.statuses[0], /task 3\/5 from main/);
+  assert.match(harness.calls.lines[0], /3 of 5/);
 });
 
 for (const { name, root, main, gitText } of [
   { name: 'a backslash gitdir', root: 'C:/repo/.worktrees/x', main: 'C:/repo', gitText: 'gitdir: C:\\repo\\.git\\worktrees\\x\n' },
   { name: 'a relative gitdir', root: '/repo/.worktrees/x', main: '/repo', gitText: 'gitdir: ../../.git/worktrees/x\n' }
 ]) {
-  test(`a worktree session with ${name} reads the run state of the main checkout`, async () => {
-    const harness = makeHarness({}, { root, main, gitText, mainStates: { 'run-main': makeState({ task: { n: 3, subject: 'from main' } }) } });
+  test(`a worktree session with ${name} shows a main checkout run whose runRoot is that worktree`, async () => {
+    const harness = makeHarness({}, { root, main, gitText, mainStates: { 'run-main': makeState({ landed: 3, runRoot: root }) } });
     await harness.start({ isInteractive: true });
     const [{ tick }] = harness.calls.timers;
     await tick();
     assert.ok(harness.calls.lists.includes(`${main}/.exo/run`));
-    assert.match(harness.calls.statuses[0], /task 3\/5 from main/);
+    assert.match(harness.calls.lines[0], /3 of 5/);
   });
 }
+
+// The run line format the user picked: an 8-cell bar, landed of total, elapsed H:MM.
+function expectedElapsed(minutes) {
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+function expectedLine({ landed, total, minutes }) {
+  const filled = Math.floor((landed / total) * 8);
+  return `${'▰'.repeat(filled)}${'▱'.repeat(8 - filled)}  ${landed} of ${total}  ·  ${expectedElapsed(minutes)}`;
+}
+
+const STARTED = Date.parse('2026-10-13T10:00:00Z');
+const SEVEN_OF_EIGHT = { landed: 7, total: 8, startedAt: new Date(STARTED).toISOString() };
+
+for (const minutes of [42, 648]) {
+  test(`the run line reads ${expectedLine({ landed: 7, total: 8, minutes })} after ${minutes} minutes, drawn as the prompt hint tail`, async () => {
+    const harness = makeHarness({ 'run-a': makeState(SEVEN_OF_EIGHT) }, { clockNow: () => STARTED + minutes * 60000 });
+    await harness.start({ isInteractive: true });
+    await harness.calls.timers[0].tick();
+    assert.deepEqual(harness.calls.lines, [expectedLine({ landed: 7, total: 8, minutes })]);
+  });
+}
+
+test('the elapsed time follows the session clock on each tick while the run state stays unchanged', async () => {
+  let now = STARTED + 42 * 60000;
+  const harness = makeHarness({ 'run-a': makeState(SEVEN_OF_EIGHT) }, { clockNow: () => now });
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  now += 61 * 60000;
+  await tick();
+  assert.deepEqual(harness.calls.lines.map((line) => line?.split('  ·  ').at(-1)), [expectedElapsed(42), expectedElapsed(103)]);
+});
+
+test('a worktree session does not show a main checkout run started for another root', async () => {
+  const harness = makeHarness({}, {
+    root: '/repo/.worktrees/x',
+    gitText: 'gitdir: /repo/.git/worktrees/x\n',
+    mainStates: { 'run-main': makeState({ landed: 3 }), 'run-y': makeState({ landed: 4, runRoot: '/repo/.worktrees/y' }) }
+  });
+  await harness.start({ isInteractive: true });
+  await harness.calls.timers[0].tick();
+  assert.deepEqual(harness.calls.lines, [undefined]);
+});
+
+test('a worktree session shows its own run, not a newer run of the main checkout', async () => {
+  const harness = makeHarness({ '20261013T100000-aaaa': makeState({ landed: 2 }) }, {
+    root: '/repo/.worktrees/x',
+    gitText: 'gitdir: /repo/.git/worktrees/x\n',
+    mainStates: { '20261013T110000-bbbb': makeState({ landed: 3 }) }
+  });
+  await harness.start({ isInteractive: true });
+  await harness.calls.timers[0].tick();
+  assert.match(harness.calls.lines[0] ?? '', / 2 of 5 /);
+});
 
 test('the mod copy of FINAL_PHASES equals run-state FINAL_PHASES', () => {
   assert.deepEqual(MOD_FINAL_PHASES, FINAL_PHASES);
