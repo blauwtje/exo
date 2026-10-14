@@ -11,7 +11,7 @@ Branch reviewer follows these when the dispatch names this file.
 - Scope `fix diff` → findings path `<checkout>/.exo/fix-review.md`, named as input to verify's repair step 3.
 - Scope `fix diff` → `merge-reviews.mjs` never reads that file: it would overwrite `<checkout>/.exo/branch-review.md`.
 - Scope `branch` → also pass three to five concrete questions, written from the plan's Goal and each task's `Data:`, `Risk:` and Acceptance line.
-- Reviewer reads only the plan, diff and `Red:` lines: `.exo/proof-*-task-<n>.txt` first, implementer reports when a task's proof file has none.
+- Reviewer reads only the plan, diff and `Red:` lines: `.exo/proof-<plan id>-task-<n>.txt` first (plan id = plan file's name without `.md`), implementer reports when a task's proof file has none.
 - Reviewer return with no file at its findings path, whatever its return line (`BLOCKED` and `CLEAN` included) → the dispatcher with SendMessage resumes it once, before any `BLOCKED` handling.
 - Resume message → names the path as input to `merge-reviews.mjs` (scope `fix diff`: to verify's repair step 3).
 - File still missing, scope `branch` or `overlap` → pass that path to `merge-reviews.mjs` anyway, which merges it as `BLOCKED`.

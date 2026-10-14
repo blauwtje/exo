@@ -26,9 +26,9 @@ test('the reviewer names its findings file as input to merge-reviews.mjs, never 
 });
 
 test('the reviewer and the rules read Red from land proof files before implementer reports', () => {
-  assert.match(reviewer, /\.exo\/proof-\*-task-<n>\.txt/, 'the reviewer names the proof files');
+  assert.match(reviewer, /\.exo\/proof-<plan id>-task-<n>\.txt/, 'the reviewer names the proof files');
   assert.match(reviewer, /proof files first/, 'the proof files are the first source');
-  assert.match(rules, /\.exo\/proof-\*-task-<n>\.txt/, 'the rules name the proof files');
+  assert.match(rules, /\.exo\/proof-<plan id>-task-<n>\.txt/, 'the rules name the proof files');
 });
 
 test('the fixer names its findings file as input to run-probes.mjs, not a report file', () => {
