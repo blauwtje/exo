@@ -2,7 +2,7 @@
 // and fails on any probe that still exits non-zero.
 
 import assert from 'node:assert/strict';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
@@ -51,6 +51,11 @@ test('fails a fixed finding that has no Probe line', async () => {
   const result = await probeRun('a.js:1; defect; r; e; fix; fixed\n');
   assert.equal(result.code, 1);
   assert.match(result.stdout, /no Probe line/);
+});
+
+test('the fixer prompt has it write a Probe line under each fixed finding, a concern included', async () => {
+  const prompt = await readFile(new URL('../skills/build/review-fixer-prompt.md', import.meta.url), 'utf8');
+  assert.match(prompt, /under each finding[^\n]*`fixed`[^\n]*including a `concern`[^\n]*Probe: </);
 });
 
 test('prints nothing and passes with no fixed finding', async () => {
