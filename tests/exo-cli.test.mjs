@@ -97,6 +97,24 @@ test('a dirty tree refuses a detached run before it detaches', async () => {
   assert.deepEqual(await calls(context), []);
 });
 
+test('exo wait prints the reason and the next step of a stopped run', async () => {
+  const context = await setup();
+  await fs.writeFile(path.join(context.root, 'README.md'), 'edited\n');
+  await exo(context, ['run', '--claude', context.stub]);
+  const [id] = await fs.readdir(path.join(context.root, '.exo', 'kept'));
+  const refused = await exo(context, ['wait', id]);
+  assert.equal(refused.code, 1, refused.stdout + refused.stderr);
+  assert.match(refused.stdout, /^Reason: refused: uncommitted edits in README\.md; /m);
+  assert.match(refused.stdout, /^Next: fix the cause, then rerun node ".*exo-cli\.mjs" run .*new\.md --detach$/m);
+  const statePath = path.join(context.root, '.exo', 'kept', id, 'state.json');
+  const state = JSON.parse(await fs.readFile(statePath, 'utf8'));
+  await fs.writeFile(statePath, JSON.stringify({ ...state, phase: 'stopped', reason: 'task 2 blocked' }));
+  const stopped = await exo(context, ['wait', id]);
+  assert.equal(stopped.code, 1, stopped.stdout + stopped.stderr);
+  assert.match(stopped.stdout, /^Reason: task 2 blocked$/m);
+  assert.match(stopped.stdout, new RegExp(`^Next: read .*report\\.md, repair, then node ".*exo-cli\\.mjs" run --resume ${id} --detach$`, 'm'));
+});
+
 test('a run-plan refusal lands in report.md as Reason', async () => {
   const context = await setup();
   const result = await exo(context, ['run', 'docs/specs/old.md', '--session', 'bogus', '--claude', context.stub]);

@@ -464,7 +464,7 @@ async function runCommand(argv, { approving = false } = {}) {
     }
     throw error;
   } finally {
-    updateRun(root, id, { phase, exitCode: code });
+    updateRun(root, id, { phase, exitCode: code, reason: reason?.replace(/\s*\n\s*/g, ' ') ?? null });
     releaseLock(root, id);
     try {
       writeReport(root, id, { phase, result, reason });
@@ -513,6 +513,17 @@ function findRun(root, id) {
   }
 }
 
+function finishWait(state, id, dir) {
+  const report = path.join(dir, 'report.md');
+  process.stdout.write(`exo: run ${id} ${state.phase}; report ${report}\n`);
+  if (['passed', 'landed'].includes(state.phase)) return 0;
+  const next = state.phase === 'refused'
+    ? `fix the cause, then rerun node "${CLI}" run ${state.plan} --detach`
+    : `read ${report}, repair, then node "${CLI}" run --resume ${id} --detach`;
+  process.stdout.write(`${state.reason ? `Reason: ${state.reason}\n` : ''}Next: ${next}\n`);
+  return 1;
+}
+
 async function waitCommand(args) {
   const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
@@ -527,8 +538,7 @@ async function waitCommand(args) {
     const alive = isAlive(state.pid);
     // why: a run writes its final phase before report.md and the move to .exo/kept/, so the wait ends once the run is kept or its process is gone.
     if (final && (kept || !alive)) {
-      process.stdout.write(`exo: run ${id} ${state.phase}; report ${path.join(dir, 'report.md')}\n`);
-      return ['passed', 'landed'].includes(state.phase) ? 0 : 1;
+      return finishWait(state, id, dir);
     }
     if (!final && !alive) {
       process.stdout.write(`exo: run ${id} ${state.phase}; process gone, continue with: exo run --resume ${id}\n`);
