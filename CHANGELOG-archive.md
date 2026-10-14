@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.131.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.131.1; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.131.0 - 2026-10-11
+
+### Added
+
+- An `exo run` lands itself per the plan's one approved `Land:` line (`local`, `push-main` or `pr`): after a green verify it rebases, rechecks, lands and cleans up; a review with fixes left, a conflict, a failed push or a guarded command in a run (force push, reset, publish, release, tag push, deploy) parks the run with a gate in `.exo/run/<id>/gates.md` instead, and `exo approve <id>` resumes it; spec plans now carry the `Land:` line.
 
 ## 0.130.0 - 2026-10-11
 

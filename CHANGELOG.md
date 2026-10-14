@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.131.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.131.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.133.3 - 2026-10-14
 
 ### Highlights
 
@@ -196,9 +198,3 @@ Versions before 0.131.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 
 - Inside an `exo run`, a task session that ends on `Task <n>: LANDED <sha>` is no longer blocked twice, a session that ends on a question followed by answer options (A/B) is now blocked, and a run that lands itself no longer tells the user to push or open a pull request.
-
-## 0.131.0 - 2026-10-11
-
-### Added
-
-- An `exo run` lands itself per the plan's one approved `Land:` line (`local`, `push-main` or `pr`): after a green verify it rebases, rechecks, lands and cleans up; a review with fixes left, a conflict, a failed push or a guarded command in a run (force push, reset, publish, release, tag push, deploy) parks the run with a gate in `.exo/run/<id>/gates.md` instead, and `exo approve <id>` resumes it; spec plans now carry the `Land:` line.
