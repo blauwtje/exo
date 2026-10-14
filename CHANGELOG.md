@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.5 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.14 - 2026-10-14
 
 ### Fixed
 - A detached run checks the tracked tree for changes twice, not three times, and run-plan preflight runs plan-check again after the plan-check script changes.
@@ -57,9 +59,3 @@ Versions before 0.134.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - The review fixer writes a `Probe:` line under every finding it marks fixed, including a concern, so a fixed concern no longer fails for a missing Probe line.
-
-## 0.134.4 - 2026-10-14
-
-### Fixed
-- A run stop the `exo wait` notification already reported no longer reaches the lead a second time.
-- A review-fix gate failure already on the branch before the fix is reported as such, not as the fix breaking the gate.
