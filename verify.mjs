@@ -17,6 +17,7 @@ import { checkAgentDescriptionBudgets, checkDescriptionBudgets } from './verify/
 import { checkRouting } from './verify/checks/routing.mjs';
 import { checkInjectedContext } from './verify/checks/injected-context.mjs';
 import { checkHookSize } from './verify/checks/hook-size.mjs';
+import { checkPluginValidate } from './verify/checks/plugin-validate.mjs';
 import { checkTestSize } from './verify/checks/test-size.mjs';
 import { checkSessionLoad } from './verify/checks/session-load.mjs';
 import { checkBannedText } from './verify/checks/banned-text.mjs';
@@ -85,6 +86,7 @@ checkAgentDescriptionBudgets(report, repository);
 checkRouting(report, repository);
 checkInjectedContext(report, repository);
 checkHookSize(report, repository);
+checkPluginValidate(report, repository);
 checkTestSize(report, repository);
 checkSessionLoad(report, repository);
 checkBannedText(report, repository);
