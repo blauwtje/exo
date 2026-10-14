@@ -7,6 +7,7 @@ import { readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { BRANCH_REVIEW_KEY, recordPass, workingTreeKey } from '#check-cache';
+import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
@@ -87,7 +88,7 @@ const BRANCH_QUESTIONS = [
   'Is any changed behavior wrong, whatever task it came from?'
 ];
 
-export async function runTail({ planPath, plan, root, base, branch, runSession, say = () => {} }) {
+export async function runTail({ planPath, plan, root, base, branch, runSession, logDir = path.join(root, SCRATCH_FOLDER), say = () => {} }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
   const baseText = base ?? 'HEAD';
@@ -111,43 +112,50 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const stopped = sessions.find((session) => session.stop !== undefined);
   if (stopped !== undefined) return { stop: stopped.stop };
 
-  if (reports.length > 0) {
-    const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
-    const verdict = verdictOf(merged);
-    const findings = path.join(exo, 'branch-review.md');
-    if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
-    if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) {
-      say('fix start');
-      const session = await runSession({ kind: 'fix', task: null, model: null, prompt: fixerPrompt({ planPath, root, base: baseText, findings }) });
-      if (session.stop !== undefined) return { stop: session.stop };
-      const gate = node(SCRIPT.verify, gateArgs, root);
-      const failing = out(gate).split('\n').find((line) => /^(FAIL|UNPLANNED)\b/.test(line));
-      if (failing !== undefined) return { stop: stopOf(`fix broke the gate: ${failing}`, 'The review fix failed the gate; its edits stay uncommitted', `read ${findings}, repair on the branch, then run exo run again`) };
-      const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
-      const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
-      if (failedProbe !== undefined) return { stop: stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe; the fix stays uncommitted', `read ${findings}, repair on the branch, then run exo run again`) };
-      const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
-      if (status.status === 0 && status.stdout.trim() === '') {
-        say('fix review skipped: fixer changed nothing');
-        return finish(reviewedTree);
-      }
-      const fixReview = path.join(exo, 'fix-review.md');
-      fs.rmSync(fixReview, { force: true });
-      say('fix review start');
-      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
-      if (second.stop !== undefined) return { stop: second.stop };
-      const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
-      const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
-      const fixCount = (text.match(/;\s*fix\s*$/gm) ?? []).length;
-      if (secondVerdict === 'BLOCKED' || (secondVerdict === 'FINDINGS' && fixCount > 0)) {
-        return { stop: stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}; the fix stays uncommitted`, `read ${fixReview}, then run exo run again`) };
-      }
-      const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
-      const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
-      if (landed.status !== 0) return { stop: stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again') };
-      say('fix landed');
-      return finish(workingTreeKey(root));
+  if (reports.length === 0) return finish(reviewedTree);
+  const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
+  const verdict = verdictOf(merged);
+  const findings = path.join(exo, 'branch-review.md');
+  if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
+  if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) {
+    const untrackedBefore = new Set(untrackedPaths(root));
+    const patchFile = path.join(logDir, 'review-fix-leftover.patch');
+    const shelved = (stop) => {
+      const { patch, failed } = shelveLeftover(root, patchFile, untrackedBefore);
+      if (patch !== null) return { stop: { ...stop, why: `${stop.why}; its edits are shelved in ${patch}`, next: `${stop.next}; the fix edits are in ${patch}` } };
+      if (failed !== undefined) return { stop: { ...stop, why: `${stop.why}; shelving the edits failed: ${failed}` } };
+      return { stop };
+    };
+    say('fix start');
+    const session = await runSession({ kind: 'fix', task: null, model: null, prompt: fixerPrompt({ planPath, root, base: baseText, findings }) });
+    if (session.stop !== undefined) return shelved(session.stop);
+    const gate = node(SCRIPT.verify, gateArgs, root);
+    const failing = out(gate).split('\n').find((line) => /^(FAIL|UNPLANNED)\b/.test(line));
+    if (failing !== undefined) return shelved(stopOf(`fix broke the gate: ${failing}`, 'The review fix failed the gate', `read ${findings}, repair on the branch, then run exo run again`));
+    const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
+    const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
+    if (failedProbe !== undefined) return shelved(stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe', `read ${findings}, repair on the branch, then run exo run again`));
+    const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
+    if (status.status === 0 && status.stdout.trim() === '') {
+      say('fix review skipped: fixer changed nothing');
+      return finish(reviewedTree);
     }
+    const fixReview = path.join(exo, 'fix-review.md');
+    fs.rmSync(fixReview, { force: true });
+    say('fix review start');
+    const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
+    if (second.stop !== undefined) return shelved(second.stop);
+    const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
+    const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
+    const fixCount = (text.match(/;\s*fix\s*$/gm) ?? []).length;
+    if (secondVerdict === 'BLOCKED' || (secondVerdict === 'FINDINGS' && fixCount > 0)) {
+      return shelved(stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}`, `read ${fixReview}, then run exo run again`));
+    }
+    const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
+    const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
+    if (landed.status !== 0) return shelved(stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again'));
+    say('fix landed');
+    return finish(workingTreeKey(root));
   }
   return finish(reviewedTree);
 

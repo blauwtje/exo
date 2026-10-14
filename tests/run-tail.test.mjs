@@ -11,7 +11,7 @@ import { git } from './harness.mjs';
 import { runPlan, setup } from './run-plan-fixture.mjs';
 
 // Task 1 carries a Risk:, so its commit adds a test file as the gate's test-first check wants.
-const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', also: number === 1 ? ['a.test.mjs'] : [], trailers: [`Plan-task: plan/${number}`] }] });
+const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', subject: number === 1 ? 'feat(a): add a' : 'feat(b): add b', also: number === 1 ? ['a.test.mjs'] : [], trailers: [`Plan-task: plan/${number}`] }] });
 const FINDING = 'FINDINGS\n\na.txt:1-1; defect; swallowed failure; catch drops error; fix\n  Probe: node --version\n';
 const FINDINGS_LINE = 'verdict=FINDINGS defect=1 concern=0 question=0 fix=1 report=x';
 const CLEAN_LINE = 'verdict=CLEAN defect=0 concern=0 question=0 fix=0 report=x';
@@ -69,7 +69,24 @@ test('a fix-diff review that still holds a fix finding leaves the fix uncommitte
   ]);
   assert.match(context.stop, /^run-plan: stop: fix review FINDINGS$/);
   assert.ok(!context.subjects.some((subject) => subject.startsWith('fix(')));
-  assert.match(git(context.root, 'status', '--porcelain'), /a\.txt/);
+  assert.equal(git(context.root, 'status', '--porcelain'), '');
+  const patch = path.join(context.root, '.exo', 'review-fix-leftover.patch');
+  assert.match(await fs.readFile(patch, 'utf8'), /a\.txt/);
+  assert.match(context.result.stdout, /review-fix-leftover\.patch/);
+  assert.equal(context.result.code, 1);
+});
+
+test('a review fix that breaks the gate shelves its edits and leaves a clean tree', async () => {
+  const context = await runSteps([
+    land(1), land(2),
+    { result: FINDINGS_LINE, findings: FINDING },
+    { result: 'fixed=1 reported=0 report=x', edits: ['a.txt'], appends: { '.exo/branch-review.md': 'a.txt:1-1; defect; swallowed failure; catch drops error; fix fixed\n' } }
+  ]);
+  assert.match(context.stop, /^run-plan: stop: fix probe failed: FAIL probe \(no Probe line under a fixed finding\)/);
+  assert.equal(git(context.root, 'status', '--porcelain'), '');
+  const patch = await fs.readFile(path.join(context.root, '.exo', 'review-fix-leftover.patch'), 'utf8');
+  assert.match(patch, /a\.txt/);
+  assert.match(context.result.stdout, /review-fix-leftover\.patch/);
   assert.equal(context.result.code, 1);
 });
 
