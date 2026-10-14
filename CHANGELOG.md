@@ -9,6 +9,9 @@ Versions before 0.132.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+- Compression now has three levels: off, short and shorter. Short is the new default and gives short replies in small, easy words. Shorter gives just the answer and key facts. Old settings keep working: low reads as short, and high reads as shorter.
+
 ## 0.133.4 - 2026-10-14
 
 ### Changed
