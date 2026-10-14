@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { childEnv } from '../skills/build/scripts/run-session.mjs';
 import { run } from './harness.mjs';
-import { setup } from './run-plan-fixture.mjs';
+import { allowOf, setup } from './run-plan-fixture.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
@@ -81,6 +81,16 @@ test('a blocked task gets one plan repair of its Proof: line, then runs again an
   assert.match(result.calls[1].stdin, /Plan repair of task 1/);
   assert.match(await fs.readFile(context.plan, 'utf8'), /Proof: node --help/);
   assert.ok(result.calls.length >= 4, `${result.calls.length} sessions`);
+});
+
+test('the repair session may Edit the plan file and the builder session may not', async () => {
+  const context = await setup();
+  const rewrite = { at: 1, from: 'Proof: node --version', to: 'Proof: node --help', first: true };
+  const result = await runPlan(context, [blocked, { result: 'Plan repaired.' }, land(1), land(2), { result: 'Verify done.' }], rewrite);
+  const planRule = `Edit(/${context.plan})`;
+  assert.match(result.calls[1].stdin, /Plan repair of task 1/);
+  assert.ok(allowOf(result.calls[1]).includes(planRule), allowOf(result.calls[1]).join('\n'));
+  for (const call of [result.calls[0], result.calls[2]]) assert.ok(!allowOf(call).includes(planRule), planRule);
 });
 
 test('a repair that touches more than the task Files: or Proof: line is undone and the run stops blocked', async () => {

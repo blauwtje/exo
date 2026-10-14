@@ -134,7 +134,9 @@ export function exoError(init, pluginRoot) {
 }
 
 const spellings = (file) => [...new Set([file, realpathOr(file)])];
-const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${tool}(/${spelling.split(path.sep).join('/')}/**)`);
+const ruleSpelling = (spelling) => `/${spelling.split(path.sep).join('/')}`;
+const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${tool}(${ruleSpelling(spelling)}/**)`);
+const fileRule = (tool, file) => spellings(file).map((spelling) => `${tool}(${ruleSpelling(spelling)})`);
 const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((spelling) => [`Bash(node "${spelling}" *)`, `Bash(node ${spelling} *)`]));
 
 const unsandboxedScripts = (tail) => (tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]);
@@ -213,11 +215,12 @@ export function sandboxSettings(mode, { tail = false } = {}) {
   };
 }
 
-export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT, sandbox = false, decisions = Boolean(process.env.EXO_RUN_DIR) }) {
+export function allowRules({ root, planPath, plan, tail = false, repair = false, pluginRoot = PLUGIN_ROOT, sandbox = false, decisions = Boolean(process.env.EXO_RUN_DIR) }) {
   const paths = [
     ...[root, pluginRoot, path.dirname(planPath)].flatMap((directory) => pathRule('Read', directory)),
     ...pathRule('Edit', root),
-    ...pathRule('Write', root)
+    ...pathRule('Write', root),
+    ...(repair ? fileRule('Edit', planPath) : [])
   ];
   if (sandbox) return [...new Set([...paths, ...scriptRules(unsandboxedScripts(tail))])];
   const scripts = [...(tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), ...(decisions ? [SCRIPT.runDecision] : [])];

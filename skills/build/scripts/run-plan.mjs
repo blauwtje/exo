@@ -188,6 +188,7 @@ async function main(argv) {
   const sandbox = provider.sandbox;
   const taskAllow = allowRules({ root, planPath, plan, sandbox: sandbox.enabled });
   const tailAllow = allowRules({ root, planPath, plan, tail: true, sandbox: sandbox.enabled });
+  const repairAllow = allowRules({ root, planPath, plan, repair: true, sandbox: sandbox.enabled });
   const taskSettings = sandboxSettings(sandbox);
   const tailSettings = sandboxSettings(sandbox, { tail: true });
   const learnings = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'learnings.md');
@@ -381,7 +382,7 @@ async function main(argv) {
     const treeBefore = treeBesidePlan();
     say(`task ${n} blocked, repair session: ${clip(report, 80)}`);
     const log = path.join(logDir, `iter-${iteration}-repair-${n}.log`);
-    const session = await spawnOne({ prompt: repairPrompt(n, report), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
+    const session = await spawnOne({ prompt: repairPrompt(n, report), allow: repairAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
     if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
     const after = fs.readFileSync(planPath, 'utf8');
     const breach = breachOf(root, session.before, { tail: true }) ?? treeBreach(treeBefore);

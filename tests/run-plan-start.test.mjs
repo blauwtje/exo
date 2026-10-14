@@ -167,6 +167,20 @@ test('sandbox: native Windows runs with the sandbox off and the same allowlist a
   assert.ok(!allowRules({ root, planPath, plan, sandbox: true }).includes('Bash(git status *)'));
 });
 
+test('allowRules: only a repair session may Edit the plan file outside the root, not its folder', () => {
+  const root = '/r';
+  const planPath = '/main/docs/plan.md';
+  const plan = parsePlan(planText(root));
+  for (const sandbox of [false, true]) {
+    const repair = allowRules({ root, planPath, plan, sandbox, repair: true });
+    assert.ok(repair.includes('Edit(//main/docs/plan.md)'), `sandbox ${sandbox}`);
+    assert.ok(!repair.some((rule) => /^(Edit|Write)\(\/\/main\/docs\/\*\*\)$/.test(rule)), `sandbox ${sandbox}`);
+    for (const rules of [allowRules({ root, planPath, plan, sandbox }), allowRules({ root, planPath, plan, sandbox, tail: true })]) {
+      assert.ok(!rules.some((rule) => /^(Edit|Write)\(\/\/main\//.test(rule)), `sandbox ${sandbox}`);
+    }
+  }
+});
+
 test('refused: a wrong branch names the git switch that fixes it, with -c when the branch is missing', async () => {
   const missing = await setup({ branch: 'feat/other' });
   const existing = await setup();
