@@ -4,6 +4,7 @@ const TICK_MS = 5000;
 const STALE_MS = 3600000;
 const WORKTREES_MARK = '/.git/worktrees/';
 const REPORT_PHASES = ['landed', 'passed'];
+const RUN_START = /run start:/;
 
 function parseState(text) {
   try {
@@ -92,12 +93,34 @@ function wakeText(run) {
   return `${head} Follow exo:build references/run-loop.md to repair and resume.`;
 }
 
-function wake($, seen, run) {
-  const before = seen.get(run.id);
-  seen.set(run.id, run.state.phase);
-  const final = FINAL_PHASES.includes(run.state.phase);
-  if (before !== undefined && !FINAL_PHASES.includes(before) && final) {
-    void $.prompt.submit({ text: wakeText(run) });
+async function readLog($, dir) {
+  try {
+    return await $.fs.read(`${dir}/run.log`);
+  } catch {
+    return '';
+  }
+}
+
+async function wake($, context, run) {
+  const before = context.seen.get(run.id);
+  context.seen.set(run.id, run.state.phase);
+  if (!FINAL_PHASES.includes(run.state.phase)) {
+    context.notified.delete(run.id);
+    return;
+  }
+  if (before === undefined || FINAL_PHASES.includes(before)) return;
+  if (context.notified.has(run.id)) return;
+  const log = await readLog($, run.dir);
+  context.pending.set(run.id, { dir: run.dir, logLength: log.length });
+}
+
+async function flush($, context) {
+  for (const [id, stop] of context.pending) {
+    context.pending.delete(id);
+    const state = await readState($, `${stop.dir}/state.json`);
+    if (context.notified.has(id) || !FINAL_PHASES.includes(state?.phase)) continue;
+    const log = await readLog($, stop.dir);
+    if (!RUN_START.test(log.slice(stop.logLength))) void $.prompt.submit({ text: wakeText({ id, state }) });
   }
 }
 
@@ -108,19 +131,41 @@ async function tick($, context) {
   const runs = all.filter((run, i) => flags[i]);
   for (const run of runs) {
     if (context.first && FINAL_PHASES.includes(run.state.phase)) context.seen.set(run.id, run.state.phase);
-    else wake($, context.seen, run);
+    else await wake($, context, run);
   }
   context.first = false;
   const active = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase));
   const newest = active[active.length - 1];
   $.ui.status(newest ? statusLine(newest, Date.now()) : undefined);
+  if (!context.busy) await flush($, context);
+}
+
+function noteNotification(context, text) {
+  for (const id of context.seen.keys()) {
+    if (!text.includes(id)) continue;
+    context.pending.delete(id);
+    context.notified.add(id);
+  }
 }
 
 export function register(on) {
+  const context = { first: true, busy: false, seen: new Map(), pending: new Map(), notified: new Set() };
   on('session.start', ($, e, next) => {
     if (!e.isInteractive) return next(e);
-    const context = { first: true, seen: new Map() };
     $.clock.every(TICK_MS, () => tick($, context));
+    return next(e);
+  });
+  on('turn.start', ($, e, next) => {
+    context.busy = true;
+    return next(e);
+  });
+  on('turn.complete', async ($, e, next) => {
+    context.busy = false;
+    await flush($, context);
+    return next(e);
+  });
+  on('session.receive', ($, e, next) => {
+    if (e.origin.kind === 'task-notification') noteNotification(context, e.text);
     return next(e);
   });
 }

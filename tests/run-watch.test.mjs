@@ -41,7 +41,8 @@ function makeHarness(states, options = {}) {
   register((name, handler) => {
     handlers[name] = handler;
   });
-  return { calls, $, start: (e) => handlers['session.start']($, e, (event) => event) };
+  const fire = (name, e = {}) => handlers[name]?.($, e, (event) => event);
+  return { calls, $, fire, start: (e) => handlers['session.start']($, e, (event) => event) };
 }
 
 test('no timer starts when the session is not interactive', async () => {
@@ -87,6 +88,61 @@ test('a run moving to a final phase wakes the lead once; a run final on the firs
   assert.match(harness.calls.prompts[0], /stopped/);
   assert.match(harness.calls.prompts[0], /task 2 blocked/);
   assert.match(harness.calls.prompts[0], /follow exo:build references\/run-loop\.md to repair and resume/i);
+});
+
+test('a stop seen while the lead is busy and resumed before the turn ends sends no stop prompt', async () => {
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states);
+  let runLog = '[09:30:00] run start: plan.md, branch exo/run-a, 5 tasks (4 to build)\n';
+  const readState = harness.$.fs.read;
+  harness.$.fs.read = async (file) => (file.endsWith('/run.log') ? runLog : readState(file));
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  await harness.fire('turn.start');
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  runLog += '[09:36:00] run stopped: task 2 blocked\n';
+  await tick();
+  runLog += '[09:37:22] run start: plan.md, branch exo/run-a, 5 tasks (3 to build)\n';
+  await harness.fire('turn.complete');
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
+});
+
+test('a stop a wait already reported while the lead is busy sends no stop prompt', async () => {
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states);
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  await harness.fire('turn.start');
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  await harness.fire('session.receive', { origin: { kind: 'task-notification' }, text: 'exo: run run-a stopped; report /repo/.exo/run/run-a/report.md' });
+  await harness.fire('turn.complete');
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
+});
+
+test('a real stop while idle prompts once; a real stop while busy prompts once after the turn ends', async () => {
+  const states = { 'run-a': makeState({}), 'run-b': makeState({}) };
+  const harness = makeHarness(states);
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  await tick();
+  assert.equal(harness.calls.prompts.length, 1);
+  assert.match(harness.calls.prompts[0], /run-a ended stopped: task 2 blocked/);
+  await harness.fire('turn.start');
+  states['run-b'] = makeState({ phase: 'stopped', reason: 'task 3 blocked' });
+  await tick();
+  assert.equal(harness.calls.prompts.length, 1);
+  await harness.fire('turn.complete');
+  await tick();
+  assert.equal(harness.calls.prompts.length, 2);
+  assert.match(harness.calls.prompts[1], /run-b ended stopped: task 3 blocked/);
 });
 
 test('a landed run asks the lead to report the result', async () => {
