@@ -64,7 +64,7 @@ test('landed counts only commits on this branch since it left the default branch
   ] }));
   for (const remote of [true, false]) {
     const root = await gitRepository({ 'a.txt': 'a\n' });
-    git(root, 'commit', '-q', '--allow-empty', '-m', 'chore: older plan', '-m', 'Plan-task: fixture/2');
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'Bare', '-m', 'Plan-task: fixture/2');
     git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
     if (remote) {
       git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
@@ -72,7 +72,7 @@ test('landed counts only commits on this branch since it left the default branch
     }
     git(root, 'switch', '-q', '-c', 'feat/fixture');
     assert.deepEqual(landedTasks(tasks, root, 'fixture'), [], `remote: ${remote}`);
-    git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): bare', '-m', 'Plan-task: fixture/2');
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'Bare', '-m', 'Plan-task: fixture/2');
     assert.deepEqual(landedTasks(tasks, root, 'fixture'), [2], `remote: ${remote}`);
   }
 });

@@ -6,11 +6,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, run } from './harness.mjs';
-import { setup } from './run-plan-fixture.mjs';
+import { land, setup, taskSubject } from './run-plan-fixture.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
-const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
 
 async function runPlan(context, steps) {
   const scenario = path.join(context.tools, 'scenario.json');
@@ -67,7 +66,7 @@ test('a resume with tasks landed and no start-commit file skips the gate, not a 
   for (const [number, file] of [[1, 'a.txt'], [2, 'b.txt']]) {
     await fs.writeFile(path.join(context.root, file), `${number}\n`);
     git(context.root, 'add', file);
-    git(context.root, 'commit', '-q', '-m', `feat: task ${number}`, '-m', `Plan-task: plan/${number}`);
+    git(context.root, 'commit', '-q', '-m', taskSubject(number), '-m', `Plan-task: plan/${number}`);
   }
   const result = await runPlan(context, [{ result: 'Verify done.' }]);
   const line = "Red-green: skipped (the run's start commit is unknown: tasks landed before start-commit was recorded)";

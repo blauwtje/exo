@@ -17,7 +17,7 @@ async function useTasks(context, count) {
   git(context.root, 'commit', '-q', '-am', 'docs: use review tasks');
 }
 
-const landTask = (number) => ({ commits: [{ file: `t${number}.txt`, also: [`t${number}.test.mjs`], trailers: [`Plan-task: plan/${number}`] }] });
+const landTask = (number) => ({ commits: [{ file: `t${number}.txt`, also: [`t${number}.test.mjs`], subject: `feat(t${number}): add t${number}`, trailers: [`Plan-task: plan/${number}`] }] });
 
 async function runBranch(count, reviewStep) {
   const context = await setup({ risk: 'security boundary' });

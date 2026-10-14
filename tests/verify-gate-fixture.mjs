@@ -12,7 +12,7 @@ export const gitRepository = (files) => seedRepository({ '.gitignore': '.exo/\n'
 
 export const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
 
-// The commit touches every path the task's `Files:` names, as a real landing does; `line` is what it appends to each.
+// The commit touches every path the task's `Files:` names under the subject the plan gives, as a real landing does; `line` is what it appends to each.
 export function landTask(root, number, line = `// task ${number}`) {
   const task = parsePlan(readFileSync(path.join(root, 'plan.md'), 'utf8')).tasks.find((entry) => entry.number === number);
   for (const { path: file } of task.files) {
@@ -20,7 +20,7 @@ export function landTask(root, number, line = `// task ${number}`) {
     appendFileSync(path.join(root, file), `${line}\n`);
   }
   git(root, 'add', '-A');
-  git(root, 'commit', '--allow-empty', '-m', `chore: land task ${number}`, '-m', `Plan-task: plan/${number}`);
+  git(root, 'commit', '--allow-empty', '-m', task.commitSubject ?? task.title, '-m', `Plan-task: plan/${number}`);
 }
 
 // The one branch-wide REVIEW line the gate prints when no --base is given.

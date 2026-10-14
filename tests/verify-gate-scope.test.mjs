@@ -221,7 +221,7 @@ async function claimsRun(plan, changes, seed = {}) {
   const root = await gitRepository({ 'src/a.js': 'a\n', 'tests/a.test.mjs': 'assert.ok(1);\n', 'check.js': CLEAN_CHECK, 'plan.md': plan, ...seed });
   for (const [file, content] of Object.entries(changes)) await writeFile(path.join(root, file), content);
   git(root, 'add', '-A');
-  git(root, 'commit', '--allow-empty', '-m', 'feat: task one', '-m', 'Plan-task: plan/1');
+  git(root, 'commit', '--allow-empty', '-m', plan.match(/^### Task 1: (.+)$/m)[1], '-m', 'Plan-task: plan/1');
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   return { result, lines: result.stdout.trim().split('\n') };
 }
@@ -244,7 +244,7 @@ test('claims-diff accepts a deleted path and a glob in Files', async () => {
   await writeFile(path.join(root, 'src/new.mjs'), 'new\n');
   git(root, 'rm', '-q', 'src/old.js');
   git(root, 'add', '-A');
-  git(root, 'commit', '-m', 'feat: task one', '-m', 'Plan-task: plan/1');
+  git(root, 'commit', '-m', 'refactor(app): x', '-m', 'Plan-task: plan/1');
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stdout);
   assert.ok(result.stdout.includes('PASS claims-diff'), result.stdout);

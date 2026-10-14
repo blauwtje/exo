@@ -17,7 +17,7 @@ async function branchRun(plan, count, shared = false) {
   for (let number = 1; number <= count; number += 1) {
     await writeFile(path.join(root, 'src', `t${shared ? 1 : number}.js`), `export const value = ${number};\n`);
     git(root, 'add', '-A');
-    git(root, 'commit', '-m', `feat: t${number}`, '-m', `Plan-task: plan/${number}`);
+    git(root, 'commit', '-m', `feat(app): t${number}`, '-m', `Plan-task: plan/${number}`);
   }
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
   return { root, base, lines: result.stdout.split('\n') };

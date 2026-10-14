@@ -26,7 +26,7 @@ test('a run writes ## Proofs, ## Checks and ## Manual checks and prints the path
     ].join('\n'),
     'check.js': "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n"
   });
-  git(root, 'commit', '--allow-empty', '-m', 'feat: land', '-m', 'Plan-task: plan/1');
+  git(root, 'commit', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: plan/1');
 
   const args = ['--plan', 'plan.md', '--check-command', 'node check.js'];
   const result = await run(SCRIPT, args, { cwd: root });
@@ -53,7 +53,7 @@ test('a run lists peak context per session and agent under ## Context, highest f
     'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
     'check.js': "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n"
   });
-  git(root, 'commit', '--allow-empty', '-m', 'feat: land', '-m', 'Plan-task: plan/1');
+  git(root, 'commit', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: plan/1');
   const config = mkdtempSync(path.join(os.tmpdir(), 'verify-config-'));
   const folder = transcriptFolder(root, config);
   const entry = (tokens) => `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`;

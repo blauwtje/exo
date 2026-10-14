@@ -165,6 +165,9 @@ export function assertPlanAllowlist(call) {
   for (const rule of ['Bash(sed *)', 'Bash(sed)', 'Bash(python3 *)', 'Bash(find *)']) assert.ok(!allow.includes(rule), rule);
 }
 
-export const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
+/** The commit subject a real run writes for fixture task <number>: its plan title. */
+export const taskSubject = (number) => (number === 1 ? 'feat(a): add a' : 'feat(b): add b');
+
+export const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', subject: taskSubject(number), trailers: [`Plan-task: plan/${number}`] }] });
 
 export const SPAWN_ONCE = ['--max-iterations', '1'];

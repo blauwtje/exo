@@ -5,11 +5,10 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createRun, runDir as runDirOf } from '../skills/build/scripts/run-state.mjs';
 import { run } from './harness.mjs';
-import { setup } from './run-plan-fixture.mjs';
+import { land, setup } from './run-plan-fixture.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
-const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
 const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
 
 async function runPlan(context, steps) {

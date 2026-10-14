@@ -9,11 +9,10 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { childEnv } from '../skills/build/scripts/run-session.mjs';
 import { run } from './harness.mjs';
-import { allowOf, setup } from './run-plan-fixture.mjs';
+import { allowOf, land, setup } from './run-plan-fixture.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
-const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
 const handoff = (number = 1) => ({ edits: [`.exo/handoff-task-${number}.md`], result: `Hand-off written.\nTask ${number}: HANDOFF` });
 
 const rewriteScript = ({ at, from, to, first }, planPath, record) => `

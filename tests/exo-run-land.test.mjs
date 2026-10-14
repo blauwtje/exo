@@ -7,7 +7,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, run } from './harness.mjs';
-import { STUB, setup } from './run-plan-fixture.mjs';
+import { STUB, setup, taskSubject } from './run-plan-fixture.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
@@ -30,7 +30,7 @@ if (${park} && index === 0) {
 }
 await import('./session.mjs');
 `);
-  const land = (file, number) => ({ commits: [{ file, trailers: [`Plan-task: plan/${number}`] }] });
+  const land = (file, number) => ({ commits: [{ file, subject: taskSubject(number), trailers: [`Plan-task: plan/${number}`] }] });
   const steps = [land('a.txt', 1), land('b.txt', 2), { result: 'Verify done.' }];
   if (park) steps.unshift({ result: 'Task 1: BLOCKED parked' });
   const scenario = path.join(c.tools, 'scenario.json');

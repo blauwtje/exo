@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, run } from './harness.mjs';
 import { acquireLock, createRun, keepRun, readState, updateRun } from '../skills/build/scripts/run-state.mjs';
-import { STUB, setup as planSetup } from './run-plan-fixture.mjs';
+import { STUB, setup as planSetup, taskSubject } from './run-plan-fixture.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
@@ -100,7 +100,7 @@ test('a detached run with a fake claude outlives its parent and ends landed', as
   const SESSION_MS = 1000;
   await fs.writeFile(path.join(context.tools, 'session.mjs'), STUB);
   await fs.writeFile(context.stub, `await new Promise((resolve) => setTimeout(resolve, ${SESSION_MS}));\nconst fs = await import('node:fs');\nfs.mkdirSync('.exo', { recursive: true });\nfs.writeFileSync('.exo/branch-review.md', 'CLEAN\\n\\nCount: fix=0\\n');\nawait import('./session.mjs');\n`);
-  const land = (file, number) => ({ commits: [{ file, trailers: [`Plan-task: plan/${number}`] }] });
+  const land = (file, number) => ({ commits: [{ file, subject: taskSubject(number), trailers: [`Plan-task: plan/${number}`] }] });
   const scenario = path.join(context.tools, 'scenario.json');
   await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps: [land('a.txt', 1), land('b.txt', 2)] }));
   const env = { HOME: context.home, STUB_SCENARIO: scenario, STUB_RECORD: path.join(context.tools, 'calls.jsonl') };

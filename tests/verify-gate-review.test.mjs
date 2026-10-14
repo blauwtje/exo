@@ -41,7 +41,7 @@ async function reviewerOf(files, options) {
 }
 
 test('REVIEW: a landed task with Risk: security boundary gets the deep reviewer, another Risk the light one', async () => {
-  const commits = [['feat: x', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]];
+  const commits = [['feat(app): greet', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]];
   assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' | Risk: security boundary ') }, { commits }), REVIEWER_AGENTS.deep);
   assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' | Risk: data loss ') }, { commits }), REVIEWER_AGENTS.light);
 });
@@ -49,13 +49,13 @@ test('REVIEW: a landed task with Risk: security boundary gets the deep reviewer,
 test('REVIEW: a Signature trailer, a manifest change or a fix commit no longer picks the deep reviewer', async () => {
   const plan = { 'plan.md': RISK_PLAN(' ') };
   const src = { 'src/app.js': 'export const greet = () => "hello";\n' };
-  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1\nSignature: a.js:f(x) -> (x, y)', src]] }), REVIEWER_AGENTS.light);
-  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1', src], ['fix: review', null, { 'src/app.js': 'export const greet = () => "yo";\n' }]] }), REVIEWER_AGENTS.light);
-  assert.equal(await reviewerOf({ ...plan, 'package.json': '{}\n' }, { commits: [['feat: x', 'Plan-task: plan/1', { ...src, 'package.json': '{"name":"a"}\n' }]] }), REVIEWER_AGENTS.light);
+  assert.equal(await reviewerOf(plan, { commits: [['feat(app): greet', 'Plan-task: plan/1\nSignature: a.js:f(x) -> (x, y)', src]] }), REVIEWER_AGENTS.light);
+  assert.equal(await reviewerOf(plan, { commits: [['feat(app): greet', 'Plan-task: plan/1', src], ['fix: review', null, { 'src/app.js': 'export const greet = () => "yo";\n' }]] }), REVIEWER_AGENTS.light);
+  assert.equal(await reviewerOf({ ...plan, 'package.json': '{}\n' }, { commits: [['feat(app): greet', 'Plan-task: plan/1', { ...src, 'package.json': '{"name":"a"}\n' }]] }), REVIEWER_AGENTS.light);
 });
 
 test('REVIEW: a task changing no script file gets none (text only)', async () => {
-  assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' ') }, { commits: [['docs: x', 'Plan-task: plan/1', { 'NOTES.md': 'x\n' }]] }), 'none (text only)');
+  assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' ') }, { commits: [['feat(app): greet', 'Plan-task: plan/1', { 'NOTES.md': 'x\n' }]] }), 'none (text only)');
 });
 
 test('REVIEW: a task whose commits merged in through a merge commit still gets its line', async () => {
@@ -64,7 +64,7 @@ test('REVIEW: a task whose commits merged in through a merge commit still gets i
   git(root, 'checkout', '-b', 'side');
   await writeFile(path.join(root, 'src', 'app.js'), 'y\n'.repeat(300));
   git(root, 'add', '-A');
-  git(root, 'commit', '-m', 'feat: x', '-m', 'Plan-task: plan/1');
+  git(root, 'commit', '-m', 'feat(app): greet', '-m', 'Plan-task: plan/1');
   git(root, 'checkout', '-');
   git(root, 'merge', '--no-ff', 'side', '-m', 'merge side');
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
@@ -82,8 +82,8 @@ test('REVIEW: the OVERLAP lines list a file two tasks changed, and OVERLAP none 
 });
 
 test('REVIEW: a plan on the inline route with no Risk prints none (inline route), even with a manifest change', async () => {
-  assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat: x', 'Plan-task: plan/1']] }), 'none (inline route)');
-  const manifest = await reviewerOf({ 'plan.md': INLINE_PLAN, 'package.json': '{}\n' }, { commits: [['feat: x', 'Plan-task: plan/1', { 'package.json': '{"name":"a"}\n' }]] });
+  assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat(app): greet', 'Plan-task: plan/1']] }), 'none (inline route)');
+  const manifest = await reviewerOf({ 'plan.md': INLINE_PLAN, 'package.json': '{}\n' }, { commits: [['feat(app): greet', 'Plan-task: plan/1', { 'package.json': '{"name":"a"}\n' }]] });
   assert.equal(manifest, 'none (inline route)');
 });
 
