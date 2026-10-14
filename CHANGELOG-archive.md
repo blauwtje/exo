@@ -1,6 +1,20 @@
 # Changelog archive
 
-Releases before 0.133.1; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.133.2; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.133.1 - 2026-10-14
+
+### Changed
+
+- Land reuses a cached `npm run check` pass for the same tree.
+- Verify skips the branch review for a tree the run already reviewed.
+- Spec bounds research to one `exo:fetch-docs` round and skips open points for small static plans.
+- Verify's gate lines explain the cached same-tree SKIP.
+
+### Fixed
+
+- plan-check flags a task whose Proof is the land gate and has no `Red:` line.
+- A run repair may add a `Red:` field; a no-red-proof refusal is not retried.
 
 ## 0.133.0 - 2026-10-13
 

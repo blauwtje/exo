@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.133.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.133.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.6 - 2026-10-14
 
 ### Changed
 - `/exo:prompt` now reads the code it needs, asks at most 2 questions, and rewrites a lazy prompt into a tagged prompt for the session's model, with an `Added:` line listing what it added.
@@ -84,17 +86,3 @@ Versions before 0.133.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A run skips the fix review when the fixer changed nothing.
 - A run records its branch review after a landed fix, so verify does not review the same tree again.
 - The branch reviewer reads `Red: proved` from land's proof files, not only implementer reports.
-
-## 0.133.1 - 2026-10-14
-
-### Changed
-
-- Land reuses a cached `npm run check` pass for the same tree.
-- Verify skips the branch review for a tree the run already reviewed.
-- Spec bounds research to one `exo:fetch-docs` round and skips open points for small static plans.
-- Verify's gate lines explain the cached same-tree SKIP.
-
-### Fixed
-
-- plan-check flags a task whose Proof is the land gate and has no `Red:` line.
-- A run repair may add a `Red:` field; a no-red-proof refusal is not retried.
