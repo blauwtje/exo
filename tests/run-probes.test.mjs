@@ -58,6 +58,11 @@ test('the fixer prompt has it write a Probe line under each fixed finding, a con
   assert.match(prompt, /under each finding[^\n]*`fixed`[^\n]*including a `concern`[^\n]*Probe: </);
 });
 
+test('the fixer prompt has it run the Probe command under every fixed finding', async () => {
+  const prompt = await readFile(new URL('../skills/build/review-fixer-prompt.md', import.meta.url), 'utf8');
+  assert.match(prompt, /Run the `Probe:` command under each finding you fixed[^\n]*exit 0/);
+});
+
 test('prints nothing and passes with no fixed finding', async () => {
   const result = await probeRun('CLEAN\n');
   assert.equal(result.code, 0);
