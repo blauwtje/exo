@@ -77,13 +77,13 @@ test('a fix session that changes nothing lands no fix commit and ends on the gat
   const context = await runSteps([
     land(1), land(2),
     { result: FINDINGS_LINE, findings: FINDING },
-    { result: 'fixed=0 reported=0 report=x' },
-    { result: CLEAN_LINE, findings: 'CLEAN\n' }
+    { result: 'fixed=0 reported=0 report=x' }
   ]);
   assert.equal(context.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', context.result.stdout + context.result.stderr);
-  assert.equal(context.calls.length, 5);
+  assert.equal(context.calls.length, 4);
   assert.ok(!context.subjects.some((subject) => subject.startsWith('fix(')));
-  assert.match(context.result.stdout, /fix landed: nothing to commit/);
+  assert.match(context.result.stdout, /fix review skipped: fixer changed nothing/);
+  assert.doesNotMatch(context.result.stdout, /fix review start/);
 });
 
 test('a review with no findings file merges as BLOCKED and stops before any fix session', async () => {
@@ -102,10 +102,9 @@ test('a hazard finding marked report still starts the fix session, whose prompt 
   const context = await runSteps([
     land(1), land(2),
     { result: 'verdict=FINDINGS defect=0 hazard=1 question=0 fix=0 report=x', findings: 'FINDINGS\n\na.txt:1-1; hazard; races; two writers; report\n' },
-    { result: 'fixed=0 reported=1 report=x' },
-    { result: CLEAN_LINE, findings: 'CLEAN\n' }
+    { result: 'fixed=0 reported=1 report=x' }
   ]);
-  assert.equal(context.calls.length, 5, context.result.stdout + context.result.stderr);
+  assert.equal(context.calls.length, 4,context.result.stdout + context.result.stderr);
   assert.match(context.calls[3].stdin, /^Review fix for /);
   assert.match(context.calls[3].stdin, /Each `hazard` finding → first write a test that fails on it/);
   assert.match(context.calls[3].stdin, /append `reported: unproven`/);
