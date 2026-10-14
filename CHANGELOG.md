@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.132.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.132.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.3 - 2026-10-14
 
 ### Fixed
 - A detached run refuses an uncommitted plan before it starts.
@@ -103,9 +105,3 @@ Versions before 0.132.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 - A task no longer stops the run for a file outside the plan when that file is `CHANGELOG.md` or a plan doc.
 - A plan Proof that names bare `main` after `git diff`, `git log` or `git show` now fails the plan check, since `main` may have moved.
-
-## 0.132.3 - 2026-10-13
-
-### Changed
-
-- The `budget` columns now follow benchmarks for the 5.5 models. Reviews run on Opus from `balanced` up, `quality` steps build and investigate to Opus medium instead of Sonnet at higher effort, lookup and research on Haiku get more effort, and `fast` runs peer roles on Sonnet instead of the session's model. No cell uses `max`.
