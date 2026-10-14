@@ -1,7 +1,8 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBase, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
@@ -95,9 +96,27 @@ function bytesUnder(target) {
   return fs.readdirSync(target).reduce((total, name) => total + bytesUnder(path.join(target, name)), 0);
 }
 
-function checkContextSize(task, root) {
+function bytesAtCommit(root, commit, target) {
+  const listing = spawnSync('git', ['-C', root, 'ls-tree', '-r', '-l', '-z', commit, '--', target], { encoding: 'utf8', maxBuffer: Infinity });
+  if (listing.status !== 0) return 0;
+  return listing.stdout
+    .split('\0')
+    .map((entry) => entry.match(/^\d+ blob \w+ +(\d+)\t/))
+    .filter((match) => match !== null)
+    .reduce((total, match) => total + Number(match[1]), 0);
+}
+
+function forkPointOf(root) {
+  const base = defaultBase(root);
+  if (base === null) return null;
+  const fork = spawnSync('git', ['-C', root, 'merge-base', base, 'HEAD'], { encoding: 'utf8' });
+  return fork.status === 0 ? fork.stdout.trim() : null;
+}
+
+function checkContextSize(task, root, forkPoint) {
   if (root === undefined || root === null) return [];
-  const bytes = Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + bytesUnder(path.join(root, file.path)), 0);
+  const sizeOf = (file) => (forkPoint === null ? bytesUnder(path.join(root, file.path)) : bytesAtCommit(root, forkPoint, file.path));
+  const bytes = Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + sizeOf(file), 0);
   const tokens = Math.ceil(bytes / BYTES_PER_TOKEN);
   if (tokens <= TASK_SPLIT_TOKENS) return [];
   return [`Task ${task.number}: split Task ${task.number} (about ${tokens} tokens of task text and Files:, over ${TASK_SPLIT_TOKENS})`];
@@ -444,6 +463,8 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
   // why: a landed task's Files: grow after it lands, and a landed task can no longer be fixed, so a resumed or mid-run check measures and flags only unlanded tasks.
   const landed = run && resolvedRoot !== undefined && resolvedRoot !== null && planPath !== undefined ? landedTasks(plan.tasks, resolvedRoot, planIdOf(planPath)) : [];
+  // why: earlier tasks of a run grow the Files: of later ones, so a mid-run check measures each Files: path at the commit the run branch forked from, the size spec checked.
+  const forkPoint = run && resolvedRoot !== undefined && resolvedRoot !== null ? forkPointOf(resolvedRoot) : null;
   const problems = [
     ...(compactPlan
       ? [
@@ -464,7 +485,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
           ...checkSize(task),
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
-    ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot)),
+    ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot, forkPoint)),
     ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkProofTestsListed(task, resolvedRoot, byNumber)),
     ...checkDerivedNames(planText, resolvedRoot),
