@@ -37,8 +37,8 @@ function verdict(root) {
   return { counts: report.counts(), detail: printed.join('\n') };
 }
 
-test('the lock is 709 words', () => {
-  assert.equal(SESSION_LOAD_LOCK.words, 796);
+test('the lock is 920 words', () => {
+  assert.equal(SESSION_LOAD_LOCK.words, 920);
 });
 
 test('this corpus loads within the lock', () => {
