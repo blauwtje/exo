@@ -259,7 +259,7 @@ function changedPaths(root, planPath) {
     .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
-function strayPaths(task, { root, planPath, siblingWork = () => false }) {
+function unplannedPaths(task, { root, planPath, siblingWork = () => false }) {
   const entries = task.files.map((file) => file.path);
   return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !siblingWork(changed));
 }
@@ -440,10 +440,10 @@ function redGreenLine(task, proofCommands, root, pending) {
   throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}`);
 }
 
-function refuseStrayPaths(task, options) {
-  const stray = strayPaths(task, options);
-  if (stray.length > 0) {
-    throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
+function refuseUnplannedPaths(task, options) {
+  const unplanned = unplannedPaths(task, options);
+  if (unplanned.length > 0) {
+    throw new LandingError(`Task ${task.number} changed a path outside Files: ${unplanned.map((file) => `\`${file}\``).join(', ')}`);
   }
 }
 
@@ -461,10 +461,12 @@ function checkReport(task, reportText, reportPath) {
   return { proofCommand, pending };
 }
 
-// The stray-path and report checks landTask runs first, then Lint and the Land
-// gate as landTask runs them, a failure refusing closed: nothing runs the
-// Proof or commits, so a builder can run it before it reports and fix a
-// trivial gate failure itself.
+/**
+ * The unplanned-path and report checks landTask runs first, then Lint and the Land
+ * gate as landTask runs them, a failure refusing closed: nothing runs the
+ * Proof or commits, so a builder can run it before it reports and fix a
+ * trivial gate failure itself.
+ */
 export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
   refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
@@ -472,7 +474,7 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseMcpProofUnderPin(pin, task);
-  refuseStrayPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }) });
+  refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }) });
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
@@ -489,7 +491,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseMcpProofUnderPin(pin, task);
-  refuseStrayPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
+  refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);

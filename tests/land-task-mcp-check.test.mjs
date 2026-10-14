@@ -91,7 +91,7 @@ test('an mcp: Proof refusal ends with the deferred layout and no output lines', 
   assertLayout(result.stderr, { deferred: true, command: 'mcp:run_playtest mode=play' });
 });
 
-test('--check validates the stray paths and the report, and commits nothing', async () => {
+test('--check validates the unplanned paths and the report, and commits nothing', async () => {
   const { root, planPath } = await compactCheckout();
   const head = git(root, 'rev-parse', 'HEAD');
   const check = (...extra) => run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--check', ...extra], { cwd: root });
@@ -106,9 +106,9 @@ test('--check validates the stray paths and the report, and commits nothing', as
   assert.match(git(root, 'status', '--porcelain'), /src\/app\.js/);
   await assert.rejects(fs.access(cacheFile(root)));
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
-  const stray = await check();
-  assert.equal(stray.code, 1);
-  assert.match(stray.stderr, /outside Files: `src\/extra\.js`/);
+  const unplanned = await check();
+  assert.equal(unplanned.code, 1);
+  assert.match(unplanned.stderr, /outside Files: `src\/extra\.js`/);
 });
 
 test('--check runs the Land gate and Lint, refusing a failure and returning a skip line before Report OK', async () => {
