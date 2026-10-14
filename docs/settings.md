@@ -11,7 +11,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 
 | Key | Values (default first) | Sets |
 |---|---|---|
-| `compression` | `low`, `off` | How compact chat replies are. `low` writes short plain text: no preamble, recap or filler, short questions, and every report opens with at most three plain lines with the details in a file. `off` is full prose. A stored `high` still reads as `low`, and a stored `replies` value still reads: `tight` and `terse` as `low`, `standard` as `off`. |
+| `compression` | `off`, `short`, `shorter` | How compact chat replies are. `short` (the default) gives short replies in small, easy words: no preamble, recap or filler, short questions, and every report opens with at most three plain lines with the details in a file. `shorter` gives just the answer and key facts, in easy words. `off` gives normal full replies. A stored `low` still reads as `short` and `high` as `shorter`. A stored `replies` value still reads: `tight` as `short`, `terse` as `shorter`, `standard` as `off`. |
 | `specs` | `docs`, `issues`, `both` | Where `spec` stores a brief: `docs/specs/`, a GitHub issue, or both. |
 | `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. A plan's `Land:` line comes from it: `local` lands `local`, `push` lands `push-main`, `open-pr` and `pr-merge` land `pr`; `ask` makes the spec grill ask, recommending `local`. `pr-merge` opens the pull request in the run and merges it outside the run. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |

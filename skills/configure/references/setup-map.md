@@ -28,6 +28,7 @@ Ask each setting with the plain texts its entry in `../schema.json` holds, never
 - Context → one sentence of at most 15 words: the `Or type` line; no `Or type` line → its `typed` line, when present.
 - (A) = current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a recommended answer that changed a value would turn `a` into a change the user never read. Value with no entry → shown as written.
 - (B) and (C) → the first two other `choices` entries, in schema order, as `- **(<letter>) <label>**: <gives>`.
+- `compression` → option A is `short`, recommended: short replies in small, easy words; B is `shorter`: just the answer and key facts, in easy words; C is `off`: normal full replies.
 - Every remaining `choices` entry, then `Keep the rest` → typed answers in the `Or type` line: ``Or type `<value>` for <label>, or `rest` to keep the rest.``
 - `Keep the rest` → keeps every setting not yet asked.
 - `scope` has no `Keep the rest`.
