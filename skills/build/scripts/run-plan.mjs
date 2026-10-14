@@ -112,7 +112,8 @@ function preflight(planArgument, flags) {
   const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
   if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
   const passFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planIdOf(planPath), 'plan-check-ok');
-  const passKey = `${createHash('sha256').update(fs.readFileSync(planPath)).digest('hex')} ${gitOut(root, ['rev-parse', 'HEAD'])}\n`;
+  const sha = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  const passKey = `${sha(planPath)} ${gitOut(root, ['rev-parse', 'HEAD'])} ${sha(SCRIPT.planCheck)}\n`;
   if (isFileOnDisk(passFile) && fs.readFileSync(passFile, 'utf8') === passKey) return { claude, planPath, root, plan, branch };
   const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
   if (check.status === 0) {
