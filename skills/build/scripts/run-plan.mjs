@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
+import { commitsOf, criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
@@ -182,7 +182,8 @@ async function main(argv) {
   const { model, effort } = provider;
   const pluginDir = flags['plugin-dir'] === undefined ? null : path.resolve(flags['plugin-dir']);
   const planId = planIdOf(planPath);
-  const landedAtStart = landedTasks(plan.tasks, root, planId);
+  const startCommits = commitsOf(root);
+  const landedAtStart = landedTasks(plan.tasks, startCommits, planId);
   const cap = maxIterations ?? 2 * (plan.tasks.length - landedAtStart.length);
   const chosen = sessionMode(sessionFlag, plan.tasks.filter((task) => !landedAtStart.includes(task.number)));
   if (chosen.refused !== undefined) {
@@ -240,7 +241,7 @@ async function main(argv) {
   const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [], elapsed: () => Date.now() - startedAt };
   for (const number of landedAtStart) {
     const task = plan.tasks.find((entry) => entry.number === number);
-    run.landings.set(number, { before: true, sha: (taskCommits(task, root, planId)[0] ?? '').slice(0, 12) });
+    run.landings.set(number, { before: true, sha: (taskCommits(task, startCommits, planId)[0] ?? '').slice(0, 12) });
   }
 
   const tasksFile = path.join(logDir, 'tasks.json');
