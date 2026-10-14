@@ -9,6 +9,9 @@ Versions before 0.134.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+- A retry after a failed land resumes that task's failed session with only the retry note, instead of a fresh session that rereads the plan, brief and files.
+
 ## 0.134.10 - 2026-10-14
 
 ### Fixed
