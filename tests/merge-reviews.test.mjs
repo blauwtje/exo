@@ -34,6 +34,7 @@ test('findings sum across reports and fix counts only fix findings', () => {
   assert.deepEqual(counts, { defect: 2, concern: 2, question: 0, fix: 2 });
   assert.match(text, /^FINDINGS\n/);
   assert.match(text, /## task-2/);
+  assert.match(text, /\nCount: defect=2 concern=2 question=0 fix=2\n$/);
 });
 
 test('one BLOCKED or unreadable report makes the merge BLOCKED', () => {

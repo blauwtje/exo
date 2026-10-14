@@ -21,7 +21,7 @@ const write = (dir, file, text) => {
 };
 
 // A bare origin, a main checkout on `main` and a run branch `feat` with one commit.
-function fixture({ review = 'CLEAN\n\nCount: defect=0 concern=0question=0 fix=0\n', origin = true } = {}) {
+function fixture({ review = 'CLEAN\n\nCount: defect=0 concern=0 question=0 fix=0\n', origin = true } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'land-run-'));
   const bare = path.join(dir, 'origin.git');
   const root = path.join(dir, 'work');
@@ -202,7 +202,7 @@ test('an unmoved branch skips the re-check', () => {
 
 test('review: FINDINGS with fix=0 lands; fix>=1, BLOCKED, missing and stale park', () => {
   const cases = [
-    ['FINDINGS\n\nCount: defect=0 concern=1question=0 fix=0\n', 'landed'],
+    ['FINDINGS\n\nCount: defect=0 concern=1 question=0 fix=0\n', 'landed'],
     ['FINDINGS\n\nCount: defect=1 concern=0 question=0 fix=1\n', 'parked'],
     ['BLOCKED\n', 'parked'],
     [null, 'parked'],
@@ -223,7 +223,7 @@ test('review: FINDINGS with fix=0 lands; fix>=1, BLOCKED, missing and stale park
 });
 
 test('review: a landed review fix with a clean fix review lands; a fix-bearing, BLOCKED or older one parks', () => {
-  const branchReview = 'FINDINGS\n\nCount: defect=1 concern=0question=0 fix=1\n';
+  const branchReview = 'FINDINGS\n\nCount: defect=1 concern=0 question=0 fix=1\n';
   const cases = [
     ['CLEAN\n', 1, 'landed'],
     ['FINDINGS\n\n- concern: x.txt:1 stale name; defer\n', 1, 'landed'],
