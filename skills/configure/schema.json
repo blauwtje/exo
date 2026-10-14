@@ -15,20 +15,20 @@
   },
   "compression": {
     "type": "string",
-    "options": ["off", "low"],
-    "default": "low",
-    "description": "how compact the session writes replies: low drops preamble, recap and filler; off keeps full prose. The old name high still reads as low",
-    "aliases": { "high": "low" },
-    "legacy": { "key": "replies", "values": { "terse": "low", "tight": "low", "standard": "off" } },
+    "options": ["off", "short"],
+    "default": "short",
+    "description": "how compact the session writes replies: short drops preamble, recap and filler; off keeps full prose. The old names low and high still read as short",
+    "aliases": { "low": "short", "high": "short" },
+    "legacy": { "key": "replies", "values": { "terse": "short", "tight": "short", "standard": "off" } },
     "rules": {
-      "low": "Compression is low: everything the user reads is short and plain. Sentences run about 15 words at most, in everyday words. Explain a needed term briefly, or drop it. No preamble, recap, filler, hedging or wall of text. A list holds at most about 5 items unless the user asks for more. No table or nested list unless the user asks for detail. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole. A security warning and a confirmation before an irreversible action are written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out. Every report to the user opens with at most three short plain lines: what happened, whether it worked, and what the user must do now, or that nothing is needed. Hashes, counts, paths, deviations and review notes go to the run report (`.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup), else to the file the work already wrote, behind one pointer line, and are not repeated. With neither file they wait until asked. A question to the user is one per message, in about 10 words, with at most one short context sentence. It offers 2-3 options of a few words in fixed order, the best marked in place, and the user answers with one letter or ok. It names no file, internal term or model unless the user picks between them. With more questions queued, its title shows progress like 1/3. Reply in the language the user writes in.",
+      "short": "Compression is low: everything the user reads is short and plain. Sentences run about 15 words at most, in everyday words. Explain a needed term briefly, or drop it. No preamble, recap, filler, hedging or wall of text. A list holds at most about 5 items unless the user asks for more. No table or nested list unless the user asks for detail. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole. A security warning and a confirmation before an irreversible action are written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out. Every report to the user opens with at most three short plain lines: what happened, whether it worked, and what the user must do now, or that nothing is needed. Hashes, counts, paths, deviations and review notes go to the run report (`.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup), else to the file the work already wrote, behind one pointer line, and are not repeated. With neither file they wait until asked. A question to the user is one per message, in about 10 words, with at most one short context sentence. It offers 2-3 options of a few words in fixed order, the best marked in place, and the user answers with one letter or ok. It names no file, internal term or model unless the user picks between them. With more questions queued, its title shows progress like 1/3. Reply in the language the user writes in.",
       "off": "Compression is off: full prose."
     },
     "label": "Compression",
     "about": "how compact I write to you",
     "question": "How compact should my replies be?",
     "choices": {
-      "low": { "label": "Low", "gives": "short replies with no preamble or recap" },
+      "short": { "label": "Short", "gives": "short replies with no preamble or recap" },
       "off": { "label": "Off", "gives": "normal full sentences" }
     }
   },

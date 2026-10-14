@@ -13,7 +13,7 @@ import { assertQuestionShape } from './question-shape.mjs';
 import { readFileSync } from 'node:fs';
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
-const TIGHT_RULE = `. ${SCHEMA.compression.rules.low}`;
+const TIGHT_RULE = `. ${SCHEMA.compression.rules.short}`;
 
 const SETTINGS = fileURLToPath(new URL('../skills/configure/scripts/settings.mjs', import.meta.url));
 
@@ -41,33 +41,33 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), compression=short (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), compression=short (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), compression=short (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), compression=low (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), compression=short (default), budget=off (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
-test('compression is low by default and off when the project sets it', async () => {
+test('compression is short by default and off when the project sets it', async () => {
   const unset = await workspace();
-  assert.equal((await settings(unset, ['get', 'compression'])).stdout.trim(), 'low');
+  assert.equal((await settings(unset, ['get', 'compression'])).stdout.trim(), 'short');
   const project = await workspace({ project: { compression: 'off' } });
   assert.equal((await settings(project, ['get', 'compression'])).stdout.trim(), 'off');
 });
 
 test('a stored replies value reads as the compression level it maps to, and compression outranks it in the same layer', async () => {
-  for (const [replies, compression] of [['terse', 'low'], ['tight', 'low'], ['standard', 'off']]) {
+  for (const [replies, compression] of [['terse', 'short'], ['tight', 'short'], ['standard', 'off']]) {
     const space = await workspace({ project: { replies } });
     const result = await settings(space, ['context']);
     assert.equal(result.code, 0, result.stderr);
@@ -77,19 +77,24 @@ test('a stored replies value reads as the compression level it maps to, and comp
   const both = await workspace({ project: { replies: 'terse', compression: 'off' } });
   assert.equal((await settings(both, ['get', 'compression'])).stdout.trim(), 'off');
   const lower = await workspace({ project: { replies: 'terse' }, global: { compression: 'off' } });
-  assert.equal((await settings(lower, ['get', 'compression'])).stdout.trim(), 'low');
+  assert.equal((await settings(lower, ['get', 'compression'])).stdout.trim(), 'short');
 });
 
-test('a stored compression=high reads as low and injects the low rule', async () => {
-  const space = await workspace({ project: { compression: 'high' } });
-  const result = await settings(space, ['context']);
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /compression=low \(project\)/);
-  assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
-  assert.equal((await settings(space, ['get', 'compression'])).stdout.trim(), 'low');
-  assert.deepEqual(Object.keys(SCHEMA.compression.rules), ['low', 'off']);
-  assert.deepEqual(SCHEMA.compression.options, ['off', 'low']);
-  assert.match(SCHEMA.compression.rules.low, /lone .\?. from the user asks for your previous reply restated in full sentences/);
+test('a stored compression=low or high reads as short and injects the short rule', async () => {
+  for (const stored of ['low', 'high']) {
+    const old = await workspace({ project: { compression: stored } });
+    const oldResult = await settings(old, ['context']);
+    assert.equal(oldResult.code, 0, oldResult.stderr);
+    assert.match(oldResult.stdout, /compression=short \(project\)/);
+    assert.ok(oldResult.stdout.trim().endsWith(TIGHT_RULE), oldResult.stdout);
+    assert.equal((await settings(old, ['get', 'compression'])).stdout.trim(), 'short');
+  }
+  const space = await workspace();
+  const refused = await settings(space, ['set', 'compression', 'low']);
+  assert.notEqual(refused.code, 0, refused.stdout);
+  assert.deepEqual(Object.keys(SCHEMA.compression.rules), ['short', 'off']);
+  assert.deepEqual(SCHEMA.compression.options, ['off', 'short']);
+  assert.match(SCHEMA.compression.rules.short, /lone .\?. from the user asks for your previous reply restated in full sentences/);
 });
 
 test('set writes the project file and rejects a value the schema does not allow', async () => {
@@ -195,14 +200,14 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\), compression=low \(default\), budget=off \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), compression=short \(default\), budget=off \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\);.*exo\.json is not valid JSON/);
 });
 
 test('a value the schema does not allow is named in the context line, and the default compression rule still applies', async () => {
   const space = await workspace({ project: { compression: 'verbose' } });
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /compression=low \(default\).*compression=verbose is not one of off, low/);
+  assert.match(result.stdout, /compression=short \(default\).*compression=verbose is not one of off, short/);
   assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
 });
 
@@ -214,7 +219,7 @@ test('an unreadable user settings file still shows the other layers and names th
   await fs.chmod(userSettings, 0o644);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^1\. Plans: GitHub issue {2}\(specs = issues, project\)$/m);
-  assert.match(result.stdout, /^2\. Compression: Low {2}\(compression = low, default\)$/m);
+  assert.match(result.stdout, /^2\. Compression: Short {2}\(compression = short, default\)$/m);
   assert.ok(result.stdout.includes(`${userSettings} could not be read (EACCES)`), result.stdout);
 });
 
@@ -301,7 +306,7 @@ test('on Codex no budget adds a rule to the context line', async () => {
 });
 
 test('on Codex the compression rule is the same as on Claude Code', async () => {
-  const space = await codexWorkspace({ compression: 'low' });
+  const space = await codexWorkspace({ compression: 'short' });
   assert.ok((await settings(space, ['context'])).stdout.includes(TIGHT_RULE));
 });
 
