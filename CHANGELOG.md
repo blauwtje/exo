@@ -9,6 +9,10 @@ Versions before 0.132.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- A run stop the `exo wait` notification already reported no longer reaches the lead a second time.
+- A review-fix gate failure already on the branch before the fix is reported as such, not as the fix breaking the gate.
+
 ## 0.134.3 - 2026-10-14
 
 ### Fixed
