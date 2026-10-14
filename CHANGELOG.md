@@ -9,8 +9,17 @@ Versions before 0.132.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Added
+- `npm run check` runs `claude plugin validate` when Claude Code is installed.
+
 ### Changed
 - Compression now has three levels: off, short and shorter. Short is the new default and gives short replies in small, easy words. Shorter gives just the answer and key facts. Old settings keep working: low reads as short, and high reads as shorter.
+
+### Fixed
+- The plan check flags a refactor task with no Red field, and a Proof test that no task in its chain lists in Files.
+- The plan check measures a running build's task size at the branch start, so growth from earlier tasks no longer refuses a resume.
+- A build run's repair session can edit the plan, so a task missing one file from its list is repaired instead of stopping the run.
+- The run watcher loads again and shows the run line beside a custom status line.
 
 ## 0.133.4 - 2026-10-14
 
