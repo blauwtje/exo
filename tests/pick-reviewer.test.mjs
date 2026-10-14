@@ -104,7 +104,7 @@ test('codexOffer holds only when codex is a file on PATH', async () => {
 
 test('review-branch reads implementer reports for their Red: lines only', async () => {
   const agent = await fs.readFile(path.join(AGENTS_DIRECTORY, `${light}.md`), 'utf8');
-  assert.match(agent, /Implementer reports: `Red:` lines only/);
+  assert.match(agent, /No `Red:` line in a task's proof file → implementer reports, `Red:` lines only/);
   assert.doesNotMatch(agent, /report quotes a passing run/);
 });
 
