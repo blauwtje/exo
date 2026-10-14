@@ -10,7 +10,7 @@ import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { git, run } from './harness.mjs';
 import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK, INLINE_PLAN, SCOPE_PASS } from './verify-gate-fixture.mjs';
 
-test('a change outside every declared Files prints a STRAY line and exits 1', async () => {
+test('a change outside every declared Files prints an UNPLANNED line and exits 1', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
     'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
@@ -21,10 +21,10 @@ test('a change outside every declared Files prints a STRAY line and exits 1', as
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.ok(result.stdout.includes('STRAY src/extra.js'));
+  assert.ok(result.stdout.includes('UNPLANNED src/extra.js'));
 });
 
-test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes; a task or non-fix commit on it stays STRAY', async () => {
+test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes; a task or non-fix commit on it stays UNPLANNED', async () => {
   const plan = '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n';
   const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
   const base = git(root, 'rev-parse', 'HEAD');
@@ -44,9 +44,9 @@ test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
   const lines = result.stdout.trim().split('\n');
   assert.equal(result.code, 1);
-  assert.ok(lines.includes('STRAY src/mixed.js'), result.stdout);
-  assert.ok(lines.includes('STRAY src/other.js'), result.stdout);
-  assert.ok(!lines.some((line) => line.startsWith('STRAY src/helper.js')), result.stdout);
+  assert.ok(lines.includes('UNPLANNED src/mixed.js'), result.stdout);
+  assert.ok(lines.includes('UNPLANNED src/other.js'), result.stdout);
+  assert.ok(!lines.some((line) => line.startsWith('UNPLANNED src/helper.js')), result.stdout);
   assert.ok(lines.includes(`FIX-ONLY src/helper.js (${second},${first})`), result.stdout);
 
   const only = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
@@ -59,7 +59,7 @@ test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes
   const clean = await run(SCRIPT, ['--plan', 'plan.md', '--base', onlyBase, '--check-command', 'node check.js'], { cwd: only });
   assert.ok(clean.stdout.includes(`FIX-ONLY src/helper.js (${sha})`), clean.stdout);
   assert.ok(clean.stdout.includes(SCOPE_PASS), clean.stdout);
-  assert.ok(!clean.stdout.includes('STRAY'), clean.stdout);
+  assert.ok(!clean.stdout.includes('UNPLANNED'), clean.stdout);
   assert.equal(clean.code, 0, clean.stdout + clean.stderr);
 });
 
@@ -80,7 +80,7 @@ test('the plan file committed on the branch is the run\'s input, not a stray pat
   assert.ok(fromOutside.stdout.includes(`${SCOPE_PASS}\n`), fromOutside.stdout);
 });
 
-test('a committed CHANGELOG.md and docs md outside every Files print DOCS lines, not STRAY', async () => {
+test('a committed CHANGELOG.md and docs md outside every Files print DOCS lines, not UNPLANNED', async () => {
   const plan = '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n';
   const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
   const base = git(root, 'rev-parse', 'HEAD');
@@ -96,8 +96,8 @@ test('a committed CHANGELOG.md and docs md outside every Files print DOCS lines,
   const lines = result.stdout.trim().split('\n');
   assert.ok(lines.includes('DOCS CHANGELOG.md'), result.stdout);
   assert.ok(lines.includes('DOCS docs/notes.md'), result.stdout);
-  assert.ok(lines.includes('STRAY src/extra.js'), result.stdout);
-  assert.ok(!lines.some((line) => line.startsWith('STRAY ') && line !== 'STRAY src/extra.js'), result.stdout);
+  assert.ok(lines.includes('UNPLANNED src/extra.js'), result.stdout);
+  assert.ok(!lines.some((line) => line.startsWith('UNPLANNED ') && line !== 'UNPLANNED src/extra.js'), result.stdout);
 
   const onlyDocs = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
   const onlyBase = git(onlyDocs, 'rev-parse', 'HEAD');

@@ -20,13 +20,13 @@ import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-rev
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
 const USAGE = `Usage: node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
-Runs a plan's gate: each landed task's Proof, the Success criterion command and a stray-path check.
-Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check,
+Runs a plan's gate: each landed task's Proof, the Success criterion command and an unplanned-path check.
+Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, UNPLANNED or FIX-ONLY line per check,
 then one REVIEW Branch line and the OVERLAP lines, one DONE or OPEN line per task,
 one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md line.
 --reviews-only prints only the REVIEW and OVERLAP lines and runs no proof or gate.
 --base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
-Exits 1 on any FAIL or STRAY line.`;
+Exits 1 on any FAIL or UNPLANNED line.`;
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
 const DEFAULT_BASE = 'main';
@@ -473,9 +473,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const docs = split.unplanned.filter(isPlanDoc);
   const unplanned = split.unplanned.filter((candidate) => !isPlanDoc(candidate));
   if (unplanned.length === 0) {
-    lines.push('PASS stray-paths');
+    lines.push('PASS unplanned-paths');
   } else {
-    for (const path of unplanned) lines.push(`STRAY ${path}`);
+    for (const path of unplanned) lines.push(`UNPLANNED ${path}`);
     failed = true;
   }
   for (const path of docs) lines.push(`DOCS ${path}`);
