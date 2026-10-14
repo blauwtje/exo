@@ -9,6 +9,12 @@ Versions before 0.134.5 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+- `npm run check` fails when a changelog line added since the last release sits under a released `## <version>` heading.
+
+### Fixed
+- A detached run's task session runs land-task's code-rule check through `--code-rules` on its task files before it ends, and fixes every finding.
+
 ## 0.134.14 - 2026-10-14
 
 ### Fixed
