@@ -106,6 +106,16 @@ test('example rewrites the three lazy inputs', () => {
   assert.doesNotMatch(example, /TS2345/);
 });
 
+test('the Added: line is not ordered after every block', () => {
+  const run = section('Run');
+  assert.doesNotMatch(run, /After the block, one `Added:` line, then/);
+  assert.match(run, /`Added:` line only when/);
+});
+
+test('the example states no fact the rough prompt lacks', () => {
+  assert.doesNotMatch(section('Example'), /Users report/);
+});
+
 test('skill text carries no research ids', () => {
   assert.doesNotMatch(body, /\bR\d{1,2}\b/);
 });
