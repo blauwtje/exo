@@ -1,6 +1,14 @@
 # Changelog archive
 
-Releases before 0.132.1; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.132.2; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.132.1 - 2026-10-13
+
+### Fixed
+
+- The run watcher finds the main checkout from a worktree whose `.git` file holds a relative path (`worktree.useRelativePaths`) or backslashes.
+- Tests no longer fail at random with `ENOTEMPTY`: every test process runs git with `maintenance.auto=false`, so a background repack no longer races the cleanup of a temporary repository.
+- The test that the gate overlaps a slow Proof no longer fails under load: it checks start markers instead of wall time.
 
 ## 0.132.0 - 2026-10-13
 

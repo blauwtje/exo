@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.132.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.132.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.1 - 2026-10-14
 
 ### Fixed
 - The mid-run plan repair check passes `--run`, so growth from earlier tasks no longer flags a task.
@@ -101,11 +103,3 @@ Versions before 0.132.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 
 - CI runs on `ubuntu-24.04` instead of `ubuntu-latest`, so GitHub's move of that label to Ubuntu 26 on 2026-10-19 cannot break a release unasked.
-
-## 0.132.1 - 2026-10-13
-
-### Fixed
-
-- The run watcher finds the main checkout from a worktree whose `.git` file holds a relative path (`worktree.useRelativePaths`) or backslashes.
-- Tests no longer fail at random with `ENOTEMPTY`: every test process runs git with `maintenance.auto=false`, so a background repack no longer races the cleanup of a temporary repository.
-- The test that the gate overlaps a slow Proof no longer fails under load: it checks start markers instead of wall time.
