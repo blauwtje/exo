@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { landedTasks, parsePlan, planIdOf } from '../lib/plan-tasks.mjs';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import * as harness from './harness.mjs';
 
@@ -23,4 +24,23 @@ test('plan-check flags a task whose text and Files: pass 50 kB', () => {
   assert.ok(over.lines.some((line) => line.includes('Task 1: split Task 1') && line.includes('tokens')), over.lines.join('; '));
   const under = report('src/under.js');
   assert.equal(under.ok, true, under.lines.join('; '));
+});
+
+// A landed task's Files: grow after it lands, so on a resumed run plan-check
+// must skip the read cost of each task whose Plan-task trailer is on the branch.
+test('plan-check skips the read cost of a task that already landed', async () => {
+  const root = await harness.gitRepository({ 'README.md': 'seed\n' });
+  harness.git(root, 'switch', '-q', '-c', 'feat/fixture');
+  const planPath = path.join(await harness.fixture(), 'landed-fixture.md');
+  harness.git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): grow', '-m', 'Plan-task: landed-fixture/1');
+  await harness.commitFiles(root, { 'src/landed.js': 'x'.repeat(60_000), 'src/open.js': 'x'.repeat(60_000) }, 'chore: grow both files');
+  const plan = withLand(compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): grow', files: ['src/landed.js'], proof: 'node --test tests/app.test.mjs' }),
+    compactTask({ number: 2, title: 'feat(app): open', dependsOn: 'Task 1', files: ['src/open.js'], proof: 'node --test tests/open.test.mjs' })
+  ] }));
+  fs.writeFileSync(planPath, plan);
+  const report = planCheckReport(plan, { root, planPath, run: true });
+  assert.deepEqual(landedTasks(parsePlan(plan).tasks, root, planIdOf(planPath)), [1]);
+  const split = report.lines.filter((line) => line.includes('split Task'));
+  assert.deepEqual(split.map((line) => line.split(':')[0]), ['Task 2'], report.lines.join('; '));
 });

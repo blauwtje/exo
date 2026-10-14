@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, defaultBranch, frameOf, loopCommands, openPoints, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBranch, frameOf, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
@@ -425,6 +425,8 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
   const compactPlan = plan.tasks.every((task) => task.compact);
   const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
+  // why: a landed task's Files: grow after it lands, so a resumed or mid-run check measures only unlanded tasks.
+  const landed = run && resolvedRoot !== undefined && resolvedRoot !== null && planPath !== undefined ? landedTasks(plan.tasks, resolvedRoot, planIdOf(planPath)) : [];
   const problems = [
     ...(compactPlan
       ? [
@@ -445,7 +447,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
           ...checkSize(task),
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
-    ...plan.tasks.flatMap((task) => checkContextSize(task, resolvedRoot)),
+    ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot)),
     ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
     ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
