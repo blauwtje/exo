@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.132.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.132.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.2 - 2026-10-14
 
 ### Fixed
 - The branch review reads only the current plan's proof files, not a stale one from another plan.
@@ -100,9 +102,3 @@ Versions before 0.132.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 
 - The `budget` columns now follow benchmarks for the 5.5 models. Reviews run on Opus from `balanced` up, `quality` steps build and investigate to Opus medium instead of Sonnet at higher effort, lookup and research on Haiku get more effort, and `fast` runs peer roles on Sonnet instead of the session's model. No cell uses `max`.
-
-## 0.132.2 - 2026-10-13
-
-### Changed
-
-- CI runs on `ubuntu-24.04` instead of `ubuntu-latest`, so GitHub's move of that label to Ubuntu 26 on 2026-10-19 cannot break a release unasked.

@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.132.2; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.132.3; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.132.2 - 2026-10-13
+
+### Changed
+
+- CI runs on `ubuntu-24.04` instead of `ubuntu-latest`, so GitHub's move of that label to Ubuntu 26 on 2026-10-19 cannot break a release unasked.
 
 ## 0.132.1 - 2026-10-13
 
