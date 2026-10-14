@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.130.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.131.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.133.2 - 2026-10-14
 
 ### Fixed
 
@@ -192,9 +194,3 @@ Versions before 0.130.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 
 - An `exo run` lands itself per the plan's one approved `Land:` line (`local`, `push-main` or `pr`): after a green verify it rebases, rechecks, lands and cleans up; a review with fixes left, a conflict, a failed push or a guarded command in a run (force push, reset, publish, release, tag push, deploy) parks the run with a gate in `.exo/run/<id>/gates.md` instead, and `exo approve <id>` resumes it; spec plans now carry the `Land:` line.
-
-## 0.130.0 - 2026-10-11
-
-### Added
-
-- Inside an `exo run`, a session never waits on the human: a hook denies `AskUserQuestion` and blocks an end without a status line, telling the session to decide from the spec and settings and log the choice in `.exo/run/<id>/decisions.md`; after two blocks the task ends BLOCKED, workspace, codex and ship choices fill themselves, and the run report lists the decisions.

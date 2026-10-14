@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.130.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.131.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.130.0 - 2026-10-11
+
+### Added
+
+- Inside an `exo run`, a session never waits on the human: a hook denies `AskUserQuestion` and blocks an end without a status line, telling the session to decide from the spec and settings and log the choice in `.exo/run/<id>/decisions.md`; after two blocks the task ends BLOCKED, workspace, codex and ship choices fill themselves, and the run report lists the decisions.
 
 ## 0.129.0 - 2026-10-11
 
