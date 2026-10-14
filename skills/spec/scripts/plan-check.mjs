@@ -277,6 +277,8 @@ function checkProductRun(frame, root) {
   return [`the plan's '## Success criterion' runs no product, though package.json names ${entries}: run one in the command, or add 'Product run: none (<reason>)' under it`];
 }
 
+const REFACTOR_HEADING = /^refactor(?:\([^)]*\))?!?:/;
+
 function checkRedGreen(plan) {
   const problems = [];
   for (const task of plan.tasks) {
@@ -285,8 +287,11 @@ function checkRedGreen(plan) {
   if (plan.successRed !== null && plan.successRed.reason === '') problems.push("the plan's Success criterion 'Red: none' states no reason: write 'Red: none (<reason>)'");
   const landGate = frameOf(plan.frame).landGate;
   for (const task of plan.tasks) {
-    if (task.red === null && equalsLandGate(task.proof ?? undefined, landGate)) {
+    if (task.red !== null) continue;
+    if (equalsLandGate(task.proof ?? undefined, landGate)) {
       problems.push(`Task ${task.number}: 'Proof: ${task.proof}' equals the 'Land gate:' command, so land will refuse it with "no red proof": name a Proof that fails before the task, or add 'Red: none (<reason>)'`);
+    } else if (REFACTOR_HEADING.test(task.title)) {
+      problems.push(`Task ${task.number}: a refactor task has no 'Red:' field, so land will refuse a Proof that passes before the change with "no red proof": add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead`);
     }
   }
   const repeat = plan.successRepeat;
