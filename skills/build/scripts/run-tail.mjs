@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { recordPass, workingTreeKey } from '#check-cache';
+import { BRANCH_REVIEW_KEY } from '../../verify/scripts/verify.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
@@ -90,6 +92,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
   const baseText = base ?? 'HEAD';
+  const reviewedTree = workingTreeKey(root);
   const { review: branchReview, overlaps } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
   const reviewModel = agentModel();
   const dispatches = [
@@ -113,6 +116,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
     const verdict = verdictOf(merged);
     const findings = path.join(exo, 'branch-review.md');
+    if (verdict === 'CLEAN') recordPass(root, BRANCH_REVIEW_KEY, 0, reviewedTree);
     if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
     if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'hazard') >= 1) {
       say('fix start');

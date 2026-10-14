@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
+import { cachedPass } from '../lib/check-cache.mjs';
+import { BRANCH_REVIEW_KEY } from '../skills/verify/scripts/verify.mjs';
 import { git } from './harness.mjs';
 import { runPlan, setup } from './run-plan-fixture.mjs';
 
@@ -22,7 +24,7 @@ async function runBranch(count, reviewStep) {
   const context = await setup({ risk: 'security boundary' });
   await useTasks(context, count);
   const steps = [...Array.from({ length: count }, (_, index) => landTask(index + 1)), reviewStep];
-  return runPlan(context, steps);
+  return { ...(await runPlan(context, steps)), setupRoot: context.root };
 }
 
 test('four landed tasks get one review session over the whole plan', async () => {
@@ -41,4 +43,9 @@ test('a branch review that stops the run stops it with that stop', async () => {
   const context = await runBranch(2, { pluginError: 'review stub stops' });
   assert.match(context.stop, /exo not loaded/);
   assert.equal(context.calls.length, 3);
+});
+
+test('a CLEAN branch review is cached for the tree it reviewed', async () => {
+  const context = await runBranch(2, { result: CLEAN_LINE, findings: 'CLEAN\n' });
+  assert.notEqual(cachedPass(context.setupRoot, BRANCH_REVIEW_KEY), null, context.stdout + context.stderr);
 });

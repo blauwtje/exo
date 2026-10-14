@@ -3,6 +3,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { BRANCH_REVIEW_KEY } from '../skills/verify/scripts/verify.mjs';
+import { recordPass } from '../lib/check-cache.mjs';
 import { git, run } from './harness.mjs';
 import { gitRepository, SCRIPT, CLEAN_CHECK } from './verify-gate-fixture.mjs';
 
@@ -47,4 +49,11 @@ test('the OVERLAP review stays beside the branch line', async () => {
   const { lines } = await branchRun(plan, 2, true);
   assert.ok(lines.some((line) => line.startsWith('REVIEW Branch ')), lines.join('\n'));
   assert.ok(lines.some((line) => line.startsWith('OVERLAP src/t1.js')), lines.join('\n'));
+});
+
+test('a branch review recorded on this same tree prints none instead of a reviewer', async () => {
+  const { root, base } = await branchRun(TASK(1), 1);
+  recordPass(root, BRANCH_REVIEW_KEY, 0);
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(result.stdout.includes(`REVIEW Branch ${base}..HEAD: none (reviewed on this same tree)`), result.stdout);
 });

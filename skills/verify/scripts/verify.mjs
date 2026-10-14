@@ -29,6 +29,7 @@ one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md lin
 Exits 1 on any FAIL or STRAY line.`;
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
+export const BRANCH_REVIEW_KEY = 'review-branch';
 const DEFAULT_BASE = 'main';
 const DEFAULT_LAND_GATE = 'npm run check';
 const TEST_SCRIPT_GATE = 'npm test';
@@ -362,7 +363,8 @@ function reviewLines(plan, landed, { root, planId, base }) {
     .map((task) => taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId)));
   if (reviewers.length > 0) {
     const reviewer = reviewers.find((entry) => entry === REVIEWER_AGENTS.deep) ?? reviewers.find((entry) => !entry.startsWith('none')) ?? reviewers[0];
-    lines.push(`REVIEW Branch ${base ?? DEFAULT_BASE}..HEAD: ${reviewer}`);
+    const range = `${base ?? DEFAULT_BASE}..HEAD`;
+    lines.push(cachedPass(root, BRANCH_REVIEW_KEY) === null ? `REVIEW Branch ${range}: ${reviewer}` : `REVIEW Branch ${range}: none (reviewed on this same tree)`);
   }
   lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
   return lines;
