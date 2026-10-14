@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.132.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.133.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.4 - 2026-10-14
 
 ### Fixed
 - A run stop the `exo wait` notification already reported no longer reaches the lead a second time.
@@ -94,18 +96,3 @@ Versions before 0.132.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 
 - `/exo:prompt <rough prompt>` shows your prompt rewritten for Claude, adds nothing you did not write, and runs it only after you say yes.
-
-## 0.132.4 - 2026-10-13
-
-### Changed
-
-- A detached run now rebases onto `main` when it moves, before each task and at landing, instead of stopping.
-- A run commits changes to `CHANGELOG.md` and plan docs that no task lists, and untracked files no longer park it.
-- A blocked task is repaired once inside the run when the plan error is small and the repair edits only the plan, before the run stops.
-- A hazard the review reports as unproven now starts the fixer, and the verify report names its lines in plain words.
-- A new `env` setting copies gitignored `.env` files into the run worktree; the spec asks once about it before the run starts.
-
-### Fixed
-
-- A task no longer stops the run for a file outside the plan when that file is `CHANGELOG.md` or a plan doc.
-- A plan Proof that names bare `main` after `git diff`, `git log` or `git show` now fails the plan check, since `main` may have moved.
