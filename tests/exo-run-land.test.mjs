@@ -100,6 +100,21 @@ test('report.md lists the refused commands', async () => {
   assert.match(report, /^  iteration 1, task 1: npm install left-pad$/m, report);
 });
 
+test('a run that stops after Task 1 landed reports the range it landed, not Landed: none', async () => {
+  const c = await context();
+  const scenario = JSON.parse(await fs.readFile(path.join(c.tools, 'scenario.json'), 'utf8'));
+  scenario.steps = [scenario.steps[0], { result: 'Task 2: BLOCKED the data shape is open' }, { result: 'Looked.' }];
+  await fs.writeFile(path.join(c.tools, 'scenario.json'), JSON.stringify(scenario));
+  const result = await c.exo(['run', c.plan, '--claude', c.stub]);
+  assert.notEqual(result.code, 0, result.stdout + result.stderr);
+  const { dir } = await runDirOf(c.root);
+  assert.equal((await readRun(c.root)).phase, 'stopped');
+  assert.match(git(c.root, 'log', '--format=%B', 'main..feat/run'), /^Plan-task: plan\/1$/m);
+  const report = (await fs.readFile(path.join(dir, 'report.md'), 'utf8')).split('\n');
+  assert.ok(report.includes('Phase: stopped'), report.join('\n'));
+  assert.ok(report.some((line) => /^Landed: [0-9a-f]{7}\.\.[0-9a-f]{7}$/.test(line)), report.join('\n'));
+});
+
 test('a passing run of an old plan with no Land: line ends at passed with the push-or-PR advice and lands nothing', async () => {
   const c = await context({ land: null });
   assert.doesNotMatch(await fs.readFile(c.plan, 'utf8'), /^Land:/m);

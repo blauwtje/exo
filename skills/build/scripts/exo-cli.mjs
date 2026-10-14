@@ -316,8 +316,19 @@ function landStage(root, id, plan) {
   return result;
 }
 
+function branchRange(root, state) {
+  const base = defaultBranch(root);
+  if (!state.branch || base === null) return null;
+  const head = gitOut(state.runRoot ?? root, ['rev-parse', '-q', '--verify', `refs/heads/${state.branch}`]);
+  const fork = head === null ? null : gitOut(state.runRoot ?? root, ['merge-base', base, head]);
+  if (fork === null || fork === head) return null;
+  return `${fork.slice(0, 7)}..${head.slice(0, 7)}`;
+}
+
 function writeReport(root, id, { phase, result, reason }) {
   const state = readState(root, id);
+  // why: a stopped, crashed or parked run never reaches landRun, yet its tasks may already be committed on the run branch.
+  const range = result?.range ?? (['stopped', 'crashed', 'parked'].includes(phase) ? branchRange(root, state) : null);
   let land = null;
   try {
     land = planFrame(state.plan).land;
@@ -331,7 +342,7 @@ function writeReport(root, id, { phase, result, reason }) {
     ...(reason && ['refused', 'stopped', 'crashed'].includes(phase) ? [`Reason: ${reason.replace(/\s*\n\s*/g, ' ')}`] : []),
     `Land: ${land ?? 'none'}`,
     `Branch: ${state.branch ?? 'none'}`,
-    `Landed: ${result?.range ?? 'none'}`,
+    `Landed: ${range ?? 'none'}`,
     `Pushed: ${result?.prUrl ?? result?.pushed ?? 'none'}`,
     `Open gates: ${open.length}`,
     ...open.slice(0, 4).map((gate) => `- ${gate.source}: ${gate.action} (${gate.reason})`),
@@ -430,8 +441,9 @@ async function runCommand(argv, { approving = false } = {}) {
       code = built.code ?? 1;
       phase = phaseForExit(code);
       reason = built.reason;
+      updateRun(root, id, { runRoot: built.runRoot, branch: built.branch });
       if (code === 0 && built.land !== null) {
-        updateRun(root, id, { phase: 'landing', stage: 'landing', runRoot: built.runRoot, branch: built.branch });
+        updateRun(root, id, { phase: 'landing', stage: 'landing' });
         result = landStage(root, id, plan);
       }
     }
