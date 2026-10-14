@@ -1,6 +1,15 @@
 # Changelog archive
 
-Releases before 0.134.3; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.4; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.3 - 2026-10-14
+
+### Fixed
+- A detached run refuses an uncommitted plan before it starts.
+- `exo wait` prints why a run stopped and what to do next, `exo approve` for a parked run.
+- A rewritten plan with the same file name builds its tasks instead of counting an earlier plan's commits as done.
+- The status line counts the plan's tasks from the start.
+- A review fix that stops the run leaves a clean tree and its edits in a patch in the run's log dir, and names any edits it could not clear.
 
 ## 0.134.2 - 2026-10-14
 

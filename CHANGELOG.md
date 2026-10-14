@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.13 - 2026-10-14
 
 ### Fixed
 - A run skips four repeated steps: a full task session after a no-red repair, a Proof rerun after the decisions file changes, repeated commit-log reads on resume, and a repeated preflight plan-check on an unchanged plan and HEAD.
@@ -58,12 +60,3 @@ Versions before 0.134.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 - A run stop the `exo wait` notification already reported no longer reaches the lead a second time.
 - A review-fix gate failure already on the branch before the fix is reported as such, not as the fix breaking the gate.
-
-## 0.134.3 - 2026-10-14
-
-### Fixed
-- A detached run refuses an uncommitted plan before it starts.
-- `exo wait` prints why a run stopped and what to do next, `exo approve` for a parked run.
-- A rewritten plan with the same file name builds its tasks instead of counting an earlier plan's commits as done.
-- The status line counts the plan's tasks from the start.
-- A review fix that stops the run leaves a clean tree and its edits in a patch in the run's log dir, and names any edits it could not clear.
