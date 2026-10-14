@@ -109,7 +109,7 @@ function repoPathOf(planPath, root) {
   return path.relative(top, fs.realpathSync(planPath)).split(path.sep).join('/');
 }
 
-export function findStrayPaths(tasks, paths) {
+export function findUnplannedPaths(tasks, paths) {
   const declared = tasks.flatMap((task) => task.files.map((file) => file.path));
   return paths.filter((path) => !isCovered(declared, path));
 }
@@ -123,7 +123,7 @@ function isLeadChangelog({ subject, body }) {
 }
 
 export function splitFixOnlyPaths(paths, commitsByPath) {
-  const strays = [];
+  const unplanned = [];
   const fixOnly = [];
   const lead = [];
   for (const path of paths) {
@@ -131,9 +131,9 @@ export function splitFixOnlyPaths(paths, commitsByPath) {
     const shas = commits.map((commit) => commit.sha.slice(0, 7));
     if (commits.length > 0 && commits.every(isTrailerlessFix)) fixOnly.push({ path, shas });
     else if (path === 'CHANGELOG.md' && commits.length > 0 && commits.every(isLeadChangelog)) lead.push({ path, shas });
-    else strays.push(path);
+    else unplanned.push(path);
   }
-  return { strays, fixOnly, lead };
+  return { unplanned, fixOnly, lead };
 }
 
 function commitsTouching(paths, root, base) {
@@ -467,15 +467,15 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   const changed = changedPaths({ base });
   const planFile = repoPathOf(planPath, root);
-  const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
+  const undeclared = findUnplannedPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
   const split = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
   const { fixOnly, lead } = split;
-  const docs = split.strays.filter(isPlanDoc);
-  const strays = split.strays.filter((stray) => !isPlanDoc(stray));
-  if (strays.length === 0) {
+  const docs = split.unplanned.filter(isPlanDoc);
+  const unplanned = split.unplanned.filter((candidate) => !isPlanDoc(candidate));
+  if (unplanned.length === 0) {
     lines.push('PASS stray-paths');
   } else {
-    for (const path of strays) lines.push(`STRAY ${path}`);
+    for (const path of unplanned) lines.push(`STRAY ${path}`);
     failed = true;
   }
   for (const path of docs) lines.push(`DOCS ${path}`);

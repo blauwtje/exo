@@ -1,30 +1,27 @@
-// The pure helpers verify.mjs exports: stray paths, proof and summary reads, task
-// states, blame and the claims-diff readers.
-
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
 import { criterionCommand } from '#plan-tasks';
-import { commandLine, filesUnderGlobs, findStrayPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
+import { commandLine, filesUnderGlobs, findUnplannedPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 
-test('findStrayPaths keeps only paths no task declared', () => {
+test('findUnplannedPaths keeps only paths no task declared', () => {
   const tasks = [
     { number: 1, files: [{ path: 'src/app.js' }] },
     { number: 2, files: [{ path: 'src/broken.js' }] }
   ];
-  assert.deepEqual(findStrayPaths(tasks, ['src/app.js', 'src/extra.js']), ['src/extra.js']);
-  assert.deepEqual(findStrayPaths(tasks, ['src/app.js', 'src/broken.js']), []);
+  assert.deepEqual(findUnplannedPaths(tasks, ['src/app.js', 'src/extra.js']), ['src/extra.js']);
+  assert.deepEqual(findUnplannedPaths(tasks, ['src/app.js', 'src/broken.js']), []);
 });
 
-test('findStrayPaths treats a Files: entry ending in / as covering every path under it', () => {
+test('findUnplannedPaths treats a Files: entry ending in / as covering every path under it', () => {
   const tasks = [{ number: 1, files: [{ path: 'src/lib/' }] }];
   assert.deepEqual(
-    findStrayPaths(tasks, ['src/lib/util.js', 'src/lib/deep/more.js', 'src/library.js', 'docs/readme.md']),
+    findUnplannedPaths(tasks, ['src/lib/util.js', 'src/lib/deep/more.js', 'src/library.js', 'docs/readme.md']),
     ['src/library.js', 'docs/readme.md']
   );
 });
 
-test('splitFixOnlyPaths moves a stray path only trailer-less fix commits touched to fixOnly', () => {
+test('splitFixOnlyPaths moves an unplanned path only trailer-less fix commits touched to fixOnly', () => {
   const fix = (sha, subject = 'fix(app): repair', body = subject) => ({ sha, subject, body });
   const commitsByPath = new Map([
     ['a.js', [fix('2222222222'), fix('1111111111', 'fix!: break')]],
@@ -33,7 +30,7 @@ test('splitFixOnlyPaths moves a stray path only trailer-less fix commits touched
     ['d.js', [fix('6666666666', 'fixup: nope', 'fixup: nope')]]
   ]);
   assert.deepEqual(splitFixOnlyPaths(['a.js', 'b.js', 'c.js', 'd.js', 'e.js'], commitsByPath), {
-    strays: ['b.js', 'c.js', 'd.js', 'e.js'],
+    unplanned: ['b.js', 'c.js', 'd.js', 'e.js'],
     fixOnly: [{ path: 'a.js', shas: ['2222222', '1111111'] }],
     lead: []
   });
@@ -42,11 +39,11 @@ test('splitFixOnlyPaths moves a stray path only trailer-less fix commits touched
 test('splitFixOnlyPaths reads CHANGELOG.md touched only by trailer-less docs(changelog) commits as the lead\'s', () => {
   const commit = (sha, subject, body = subject) => ({ sha, subject, body });
   const lead = new Map([['CHANGELOG.md', [commit('abcdef1234', 'docs(changelog): record x')]]]);
-  assert.deepEqual(splitFixOnlyPaths(['CHANGELOG.md'], lead), { strays: [], fixOnly: [], lead: [{ path: 'CHANGELOG.md', shas: ['abcdef1'] }] });
+  assert.deepEqual(splitFixOnlyPaths(['CHANGELOG.md'], lead), { unplanned: [], fixOnly: [], lead: [{ path: 'CHANGELOG.md', shas: ['abcdef1'] }] });
   const mixed = new Map([['CHANGELOG.md', [commit('abcdef1234', 'docs(changelog): record x'), commit('9999999999', 'feat: add', 'feat: add\n\nPlan-task: plan/1')]]]);
-  assert.deepEqual(splitFixOnlyPaths(['CHANGELOG.md'], mixed), { strays: ['CHANGELOG.md'], fixOnly: [], lead: [] });
+  assert.deepEqual(splitFixOnlyPaths(['CHANGELOG.md'], mixed), { unplanned: ['CHANGELOG.md'], fixOnly: [], lead: [] });
   const other = new Map([['NOTES.md', [commit('abcdef1234', 'docs(changelog): record x')]]]);
-  assert.deepEqual(splitFixOnlyPaths(['NOTES.md'], other).strays, ['NOTES.md']);
+  assert.deepEqual(splitFixOnlyPaths(['NOTES.md'], other).unplanned, ['NOTES.md']);
 });
 
 test('runnableProof reads a plain Proof as its command, and a backticked one as prose', () => {
