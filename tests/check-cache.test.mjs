@@ -59,6 +59,21 @@ test('an ignored file and the scratch folder do not change the key', () => {
   assert.equal(workingTreeKey(root), before);
 });
 
+test('a plan decisions file does not change the key, untracked or tracked', () => {
+  const { root, git } = repo();
+  recordPass(root, 'x', 5);
+  fs.mkdirSync(path.join(root, 'docs', 'specs'), { recursive: true });
+  const file = path.join(root, 'docs', 'specs', 'plan-decisions.md');
+  fs.writeFileSync(file, 'one\n');
+  assert.deepEqual(cachedPass(root, 'x'), { ms: 5 });
+  assert.deepEqual(codePass(root, 'x')?.ms, 5);
+  git('add', '-f', file);
+  git('commit', '-q', '-m', 'decisions');
+  assert.deepEqual(cachedPass(root, 'x'), { ms: 5 });
+  fs.writeFileSync(file, 'two\n');
+  assert.deepEqual(cachedPass(root, 'x'), { ms: 5 });
+});
+
 test('a pass is recorded only for the tree it ran on', () => {
   const { root } = repo();
   const before = workingTreeKey(root);
