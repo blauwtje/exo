@@ -9,6 +9,9 @@ Versions before 0.134.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- A land refused for a code rule now lists every code-rule limit, so a retry no longer fixes one rule and breaks another.
+
 ## 0.134.11 - 2026-10-14
 
 ### Changed
