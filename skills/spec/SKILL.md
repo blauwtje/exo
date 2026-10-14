@@ -13,26 +13,26 @@ argument-hint: <outcome to shape>
    - Spec always ends on a brief; with no open decision the brief still gets written.
    - An open decision is one the user would notice that neither request nor code settles.
    - Diff fits one sentence or code settles every point → no question, exo closes each choice; ask only what to build.
-   - Asked for options: list them, recommend one, no file.
+   - Asked for options → list them, recommend one, no file.
    - New wishes for briefed work reopen that brief.
 2. **Sort each point.**
    - Answerable by running or reading → record it, never ask.
    - Each open decision is a question, root first.
    - A decision the user left open stays open whatever the code suggests.
-   - Name the owning layer and a smaller alternative.
+   - Name the owning layer, a smaller alternative.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`; decide nothing silently.
-   - Recommend a loaded skill's prescribed pattern over an option it rules out.
+   - Recommend a loaded skill's pattern over an option it rules out.
    - `Land:` → plan approval approves only its mode; ask only when `ship` is `ask`.
-   - Close with up to three agreed lines; brief after the user's yes.
+   - Close with up to three agreed lines, brief after yes.
 4. **Map, then locate.**
-   - First run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
    - Range the map leaves unnamed → `exo:locate-code` in the foreground, at most eight ranges; read nothing it locates.
-   - Never `cat`, `head` or `sed`.
+   - Never `cat`, `head` or `sed`; outside facts → one `exo:fetch-docs` round, no gap-fill.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
-7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
-   - Learn plan-check's rules from its output, never its source.
+7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`, fixing flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
+   - Learn its rules from its output, never its source.
 8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7, leaving flagged `## Open points` entries unfixed.
 9. **Hand off** per `references/hand-off.md`: start the detached run, or print the `--fresh` output.
 
@@ -41,7 +41,7 @@ argument-hint: <outcome to shape>
 | File | Read it when |
 |---|---|
 | `references/stored-brief.md` | The request names or extends a brief, issue or plan. |
-| `../route-skills/references/question.md` | Steps 3, 8 and each reply. |
+| `../route-skills/references/question.md` | Each question. |
 | `references/brief.md` | Before writing the brief; step 8. |
 | `references/task-list.md` | Before writing the task list. |
 | `references/example-plan.md` | Once, before the first task. |

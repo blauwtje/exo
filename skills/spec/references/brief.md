@@ -34,13 +34,13 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Judgment
 
-- `## Open points` keeps that exact name.
-- `## Visual direction` (exact name; design-ui reads it) names an existing `contract-selected.json` → design-ui gets a decided direction; it resumes at Build and repeats no variant choice.
+- `## Visual direction` (exact name; design-ui reads it) names an existing `contract-selected.json` → design-ui resumes at Build, repeating no variant choice.
 
 ## Open points step
 
 Dispatch the `exo:find-open-points` agent once on the brief.
 
+- Plan of at most 3 tasks, all Proofs static → skip the agent.
 - `code` point → its answer under `## Assumptions`; ask nothing.
 - `assume` point → `## Assumptions`; ask nothing.
 - `user` point → ask it, one per message.
