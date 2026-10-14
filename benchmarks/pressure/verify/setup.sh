@@ -116,7 +116,7 @@ FINDINGS
 
 src/shout.js:1-3; defect; unchecked input; shout() calls `word.toUpperCase()` with no type check, so shout(null) throws a TypeError; report
 
-Count: defect=1 hazard=0 question=0
+Count: defect=1 concern=0 question=0
 Unread: none
 EOF2
 fi

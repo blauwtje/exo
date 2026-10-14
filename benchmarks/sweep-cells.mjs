@@ -19,8 +19,6 @@ export const REVIEW_EFFORTS = ['low', 'medium', 'high'];
 
 export const CELL_SETS = ['review', 'build', 'fixer', 'plan', 'flow'];
 
-// A seeded branch carries the fixture's defect; a control branch carries its
-// reference solution, so a defect or hazard reported there is a false alarm.
 const REVIEW_SOURCES = { seeded: 'seed', control: 'solution' };
 
 const PLAN_RUNS = [
