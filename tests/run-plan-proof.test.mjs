@@ -89,3 +89,38 @@ test('task mode: a failing proof leaves the task unlanded and the retry note nam
   assert.match(result.calls[1].stdin, /The previous attempt did not land task 1\. Its last result line: /);
   assert.match(result.calls[1].stdin, /land-task-1\.log/);
 });
+
+// Defect E: the sandbox stopped the builder's test, it ended GREEN with the proof `not run`,
+// and the script's proof failure then spent the task's one retry.
+const unprovenWriter = (stub, unproven) => `import fs from 'node:fs';
+const index = fs.existsSync(process.env.STUB_RECORD) ? fs.readFileSync(process.env.STUB_RECORD, 'utf8').split('\\n').filter(Boolean).length : 0;
+fs.writeFileSync('a.txt', 'x' + index + '\\n');
+fs.mkdirSync('.exo', { recursive: true });
+const outcome = index < ${unproven} ? 'not run (sandbox: SocketException (13): Permission denied)' : 'pass';
+fs.writeFileSync('.exo/implementer-1.md', 'Landed: x\\nProof:\\nnode -e "process.exit(1)": ' + outcome + '\\nUnresolved: none\\n');
+await import(${JSON.stringify(stub)});
+`;
+
+async function runUnproven(unproven) {
+  const context = await setup();
+  const text = (await fs.readFile(context.plan, 'utf8')).replace('Proof: node --version | Red: none (fixture)', 'Proof: node -e "process.exit(1)" | Red: none (fixture)');
+  await fs.writeFile(context.plan, text);
+  git(context.root, 'commit', '-q', '-am', 'docs: failing proof');
+  const wrapper = path.join(context.tools, 'unproven-writer.mjs');
+  await fs.writeFile(wrapper, unprovenWriter(context.stub, unproven));
+  context.stub = wrapper;
+  return runTaskMode(context, Array.from({ length: 5 }, () => ({ result: 'Task 1: GREEN' })));
+}
+
+test('task mode: a script proof failure after a sandbox-unproven GREEN spends no retry', async () => {
+  const result = await runUnproven(1);
+  assert.notEqual(result.code, 0, result.stdout);
+  assert.equal(result.calls.length, 3, `the unproven try is not a retry; one retry remains for the builder-proven failure\n${result.stdout}`);
+  assert.match(result.calls[1].stdin, /The script's proof and land output ended: /, 'the proof failure reaches the next try');
+});
+
+test('task mode: a second sandbox-unproven failure on the same task spends a retry', async () => {
+  const result = await runUnproven(5);
+  assert.notEqual(result.code, 0, result.stdout);
+  assert.equal(result.calls.length, 3, `only the first unproven try is free\n${result.stdout}`);
+});

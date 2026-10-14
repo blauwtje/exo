@@ -281,6 +281,12 @@ async function main(argv) {
 
   const landedStats = [];
   let stall = 0;
+  // why: a builder the sandbox kept from running its proof could not see the failure, so its first script proof failure is a free try; once per task, so it cannot loop.
+  const unprovenRetried = new Set();
+  const proofNotRun = (n) => {
+    const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
+    return isFileOnDisk(report) && /\bnot run\b/i.test(fs.readFileSync(report, 'utf8'));
+  };
   let retryNote = '';
   let iteration = 0;
   let stop;
@@ -562,7 +568,9 @@ async function main(argv) {
     retryNote = attempt === null
       ? `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`
       : `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nThe script's proof and land output ended: ${failure}\nIts log: ${attempt.log}`;
-    stall += 1;
+    const freeTry = attempt !== null && !unprovenRetried.has(n) && proofNotRun(n);
+    if (freeTry) unprovenRetried.add(n);
+    else stall += 1;
     say(`task ${n} failed: ${outcome.timedOut ? failure : clip(failure, 80)}`);
     if (stall >= STALL_LIMIT) {
       stop = { line: `no progress on task ${n} in ${STALL_LIMIT} iterations, log ${log}`, why: `Task ${n} did not land in ${STALL_LIMIT} tries`, next: fix(log) };
