@@ -94,7 +94,15 @@ test('a stored compression=low or high reads as short and injects the short rule
   assert.notEqual(refused.code, 0, refused.stdout);
   assert.deepEqual(Object.keys(SCHEMA.compression.rules), ['short', 'off']);
   assert.deepEqual(SCHEMA.compression.options, ['off', 'short']);
-  assert.match(SCHEMA.compression.rules.short, /lone .\?. from the user asks for your previous reply restated in full sentences/);
+  const shortRule = SCHEMA.compression.rules.short;
+  assert.match(shortRule, /^Replies are short\. Say the answer first\./);
+  assert.match(shortRule, /small, everyday words a young child knows/);
+  assert.match(shortRule, /If the user sends only `\?`, say your last reply again in full sentences/);
+  for (const kept of ['not', 'no', 'only', 'except']) assert.match(shortRule, new RegExp(`\\b${kept}\\b`));
+  assert.match(shortRule, /Write a security warning in full sentences/);
+  assert.match(shortRule, /cannot be undone/);
+  assert.equal(SCHEMA.compression.choices.short.gives, 'short replies in small, easy words');
+  assert.equal(SCHEMA.compression.choices.off.gives, 'normal full replies');
 });
 
 test('set writes the project file and rejects a value the schema does not allow', async () => {
