@@ -174,6 +174,16 @@ test('the query CLI prints pass with the time on a hit and miss otherwise, and w
   assert.equal(git('diff', '--cached', '--name-only'), '');
 });
 
+test('the query CLI answers when run through a symlinked path', () => {
+  const { root } = repo();
+  const script = fileURLToPath(new URL('../lib/check-cache.mjs', import.meta.url));
+  const link = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'check-cache-link-')), 'check-cache.mjs');
+  fs.symlinkSync(script, link);
+  const miss = spawnSync('node', [link, '--query', 'npm run check'], { cwd: root, encoding: 'utf8' });
+  assert.equal(miss.stdout, 'miss\n');
+  assert.equal(miss.status, 1);
+});
+
 test('SLOW_GATE_MS is one minute', () => {
   assert.equal(SLOW_GATE_MS, 60000);
 });

@@ -556,7 +556,6 @@ async function main(argv) {
     const noRed = attempt === null ? undefined : noRedProofLine(attempt.output);
     if (noRed !== undefined) {
       stop = await repairOrBlock(n, noRed);
-      if (stop !== undefined) break;
       continue;
     }
     const failure = attempt === null ? last : lastLine(attempt.output);
