@@ -89,7 +89,7 @@ test('EXO_RUN_DIR: a parked marker naming the tail stops the run after a review 
   const wrapper = path.join(context.tools, 'wrapper.mjs');
   await fs.writeFile(wrapper, `import fs from 'node:fs';\nif (fs.readFileSync(0, 'utf8').includes('## Inputs')) fs.writeFileSync(process.env.EXO_RUN_DIR + '/parked', 'Task tail: PARKED git push origin main\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
   context.stub = wrapper;
-  const result = await runPlan(context, [land(1), land(2), { result: 'verdict=CLEAN defect=0 hazard=0 question=0 fix=0 report=x' }]);
+  const result = await runPlan(context, [land(1), land(2), { result: 'verdict=CLEAN defect=0 concern=0 question=0 fix=0 report=x' }]);
   assert.equal(result.stop, 'run-plan: stop: parked: git push origin main');
   assert.equal(result.code, 3);
   await assert.rejects(fs.access(path.join(dir, 'parked')));

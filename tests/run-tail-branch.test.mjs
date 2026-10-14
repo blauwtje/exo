@@ -5,7 +5,7 @@ import { BRANCH_REVIEW_KEY, cachedPass } from '../lib/check-cache.mjs';
 import { git } from './harness.mjs';
 import { runPlan, setup } from './run-plan-fixture.mjs';
 
-const CLEAN_LINE = 'verdict=CLEAN defect=0 hazard=0 question=0 fix=0 report=x';
+const CLEAN_LINE = 'verdict=CLEAN defect=0 concern=0 question=0 fix=0 report=x';
 
 async function useTasks(context, count) {
   const text = await fs.readFile(context.plan, 'utf8');
@@ -55,7 +55,7 @@ test('a FINDINGS branch review whose fix lands is cached for the tree after the 
   const findings = 'FINDINGS\n\nt1.txt:1-1; defect; swallowed failure; catch drops error; fix\n  Probe: node --version\n';
   const steps = [
     landTask(1), landTask(2),
-    { result: 'verdict=FINDINGS defect=1 hazard=0 question=0 fix=1 report=x', findings },
+    { result: 'verdict=FINDINGS defect=1 concern=0 question=0 fix=1 report=x', findings },
     { result: 'fixed=1 reported=0 report=x', edits: ['t1.txt'] },
     { result: CLEAN_LINE, findings: 'CLEAN\n' }
   ];

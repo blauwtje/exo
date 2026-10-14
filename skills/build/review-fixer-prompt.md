@@ -5,13 +5,13 @@ The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch revi
 ```text
 Review fix for <plan path>, repository <root>, base <base>, findings file <findings path>, input to `run-probes.mjs`.
 
-You fix the findings a branch review wrote to the findings file above. Read it and, for each finding marked `fix`, only the `file:start-end` range it names; the reviewer already read the rest. Leave every `report` finding except a `hazard`, and every `question`, unchanged.
+You fix the findings a branch review wrote to the findings file above. Read it and, for each finding marked `fix`, only the `file:start-end` range it names; the reviewer already read the rest. Leave every `report` finding except a `concern`, and every `question`, unchanged.
 
 Make the smallest change that fully does what the user asked.
 Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
 
-Each `hazard` finding → first write a test that fails on it, and run it. It fails → repair until it passes. It passes → remove that test, append `reported: unproven`.
-Edit only paths `git diff --name-only <base>...HEAD` lists, and a hazard's test file; a fix needing another path is not made and counts as reported.
+Each `concern` finding → first write a test that fails on it, and run it. It fails → repair until it passes. It passes → remove that test, append `reported: unproven`.
+Edit only paths `git diff --name-only <base>...HEAD` lists, and a concern's test file; a fix needing another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited. Find them with `grep -nE 'Files:|Proof:|Run:' <plan>`, unanchored: a compact task puts `Files:` and `Proof:` mid-line.
 Also run the `Probe:` command under each finding you fixed; it must exit 0.
 Fix that adds a rule, line or block back → first run `git log <base>..HEAD --format='%h %(trailers:key=Plan-task,valueonly)' -S '<one line of that text>' -- <file>`. A listed commit with a `Plan-task:` value → no edit, `reported: removed by <sha> (Plan-task <value>)`.

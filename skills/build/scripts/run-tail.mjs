@@ -75,7 +75,7 @@ export function parseReviewLines(text) {
 export function unprovenRisks(findings) {
   if (!fs.existsSync(findings)) return [];
   return fs.readFileSync(findings, 'utf8').split('\n')
-    .filter((line) => /\bhazard\b/.test(line) && /reported:\s*unproven\b/.test(line))
+    .filter((line) => /\bconcern\b/.test(line) && /reported:\s*unproven\b/.test(line))
     .map((line) => line.replace(/;?\s*reported:.*$/, '').trim());
 }
 
@@ -116,12 +116,12 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     const verdict = verdictOf(merged);
     const findings = path.join(exo, 'branch-review.md');
     if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
-    if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'hazard') >= 1) {
+    if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) {
       say('fix start');
       const session = await runSession({ kind: 'fix', task: null, model: null, prompt: fixerPrompt({ planPath, root, base: baseText, findings }) });
       if (session.stop !== undefined) return { stop: session.stop };
       const gate = node(SCRIPT.verify, gateArgs, root);
-      const failing = out(gate).split('\n').find((line) => /^(FAIL|STRAY)\b/.test(line));
+      const failing = out(gate).split('\n').find((line) => /^(FAIL|UNPLANNED)\b/.test(line));
       if (failing !== undefined) return { stop: stopOf(`fix broke the gate: ${failing}`, 'The review fix failed the gate; its edits stay uncommitted', `read ${findings}, repair on the branch, then run exo run again`) };
       const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
       const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));

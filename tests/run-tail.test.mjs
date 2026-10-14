@@ -13,8 +13,8 @@ import { runPlan, setup } from './run-plan-fixture.mjs';
 // Task 1 carries a Risk:, so its commit adds a test file as the gate's test-first check wants.
 const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', also: number === 1 ? ['a.test.mjs'] : [], trailers: [`Plan-task: plan/${number}`] }] });
 const FINDING = 'FINDINGS\n\na.txt:1-1; defect; swallowed failure; catch drops error; fix\n  Probe: node --version\n';
-const FINDINGS_LINE = 'verdict=FINDINGS defect=1 hazard=0 question=0 fix=1 report=x';
-const CLEAN_LINE = 'verdict=CLEAN defect=0 hazard=0 question=0 fix=0 report=x';
+const FINDINGS_LINE = 'verdict=FINDINGS defect=1 concern=0 question=0 fix=1 report=x';
+const CLEAN_LINE = 'verdict=CLEAN defect=0 concern=0 question=0 fix=0 report=x';
 
 async function runSteps(steps) {
   const context = await setup({ risk: 'security boundary' });
@@ -93,32 +93,32 @@ test('a review with no findings file merges as BLOCKED and stops before any fix 
 });
 
 test('fix=0 findings run no fix session and end on the gate', async () => {
-  const context = await runSteps([land(1), land(2), { result: 'verdict=FINDINGS defect=1 hazard=0 question=0 fix=0 report=x', findings: 'FINDINGS\n\na.txt:1-1; defect; style; evidence; report\n' }]);
+  const context = await runSteps([land(1), land(2), { result: 'verdict=FINDINGS defect=1 concern=0 question=0 fix=0 report=x', findings: 'FINDINGS\n\na.txt:1-1; defect; style; evidence; report\n' }]);
   assert.equal(context.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', context.result.stdout);
   assert.equal(context.calls.length, 3);
 });
 
-test('a hazard finding marked report still starts the fix session, whose prompt asks for a failing test first', async () => {
+test('a concern finding marked report still starts the fix session, whose prompt asks for a failing test first', async () => {
   const context = await runSteps([
     land(1), land(2),
-    { result: 'verdict=FINDINGS defect=0 hazard=1 question=0 fix=0 report=x', findings: 'FINDINGS\n\na.txt:1-1; hazard; races; two writers; report\n' },
+    { result: 'verdict=FINDINGS defect=0 concern=1 question=0 fix=0 report=x', findings: 'FINDINGS\n\na.txt:1-1; concern; races; two writers; report\n' },
     { result: 'fixed=0 reported=1 report=x' }
   ]);
   assert.equal(context.calls.length, 4,context.result.stdout + context.result.stderr);
   assert.match(context.calls[3].stdin, /^Review fix for /);
-  assert.match(context.calls[3].stdin, /Each `hazard` finding → first write a test that fails on it/);
+  assert.match(context.calls[3].stdin, /Each `concern` finding → first write a test that fails on it/);
   assert.match(context.calls[3].stdin, /append `reported: unproven`/);
 });
 
-test('unprovenRisks: a hazard line ending reported: unproven becomes a risk line, nothing else does', async () => {
+test('unprovenRisks: a concern line ending reported: unproven becomes a risk line, nothing else does', async () => {
   const file = path.join(os.tmpdir(), `unproven-${process.pid}.md`);
   await fs.writeFile(file, [
     'FINDINGS', '',
-    'a.txt:1-1; hazard; races; two writers; report reported: unproven',
-    'b.txt:2-2; hazard; leak; open handle; fix fixed',
+    'a.txt:1-1; concern; races; two writers; report reported: unproven',
+    'b.txt:2-2; concern; leak; open handle; fix fixed',
     'c.txt:3-3; defect; typo; wrong name; fix reported: unproven'
   ].join('\n'));
-  assert.deepEqual(unprovenRisks(file), ['a.txt:1-1; hazard; races; two writers; report']);
+  assert.deepEqual(unprovenRisks(file), ['a.txt:1-1; concern; races; two writers; report']);
   await fs.rm(file);
   assert.deepEqual(unprovenRisks(file), []);
 });
