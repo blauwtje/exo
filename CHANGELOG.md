@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.133.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.133.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.8 - 2026-10-14
 
 ### Fixed
 - `/exo:prompt` puts the goal and code facts in a `<background>` block instead of `<context>`, since Claude Code drops a `<context>` block when you copy the rewrite from the terminal.
@@ -76,13 +78,3 @@ Versions before 0.133.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - On a resume, the plan check skips the size of tasks that already landed, so their grown files no longer refuse the run.
 - A stopped, crashed or parked run's report shows the range its tasks committed, not `Landed: none`.
 - A builder the sandbox kept from running its proof no longer spends one of the task's tries the first time the run's own proof fails it.
-
-## 0.133.3 - 2026-10-14
-
-### Highlights
-
-**The verify gate now says `UNPLANNED` instead of `STRAY`, and branch reviews say `concern` instead of `hazard`.**
-
-### Changed
-
-- The verify gate prints `UNPLANNED <path>` for paths outside the plan, and branch reviews weigh findings as `concern`.

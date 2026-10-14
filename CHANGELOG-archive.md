@@ -1,6 +1,16 @@
 # Changelog archive
 
-Releases before 0.133.3; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.133.4; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.133.3 - 2026-10-14
+
+### Highlights
+
+**The verify gate now says `UNPLANNED` instead of `STRAY`, and branch reviews say `concern` instead of `hazard`.**
+
+### Changed
+
+- The verify gate prints `UNPLANNED <path>` for paths outside the plan, and branch reviews weigh findings as `concern`.
 
 ## 0.133.2 - 2026-10-14
 
