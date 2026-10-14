@@ -12,6 +12,7 @@ test('--static prints no line for the suite, the plugin version or the self-test
     assert.ok(!out.includes(name), `${name} printed under --static`);
   }
   assert.match(out, /YAML frontmatter/);
+  assert.match(out, /changelog placement/);
   assert.match(out, /^SUMMARY /m);
 });
 
