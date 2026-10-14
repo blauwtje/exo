@@ -69,6 +69,22 @@ test('a gate failure already on the branch is not blamed on the review fix', asy
   assert.equal(git(context.root, 'status', '--porcelain'), '');
 });
 
+test('a review fix that breaks the gate and cannot be shelved is not rechecked on the dirty tree', async () => {
+  const context = await setup({ risk: 'security boundary', success: '`node t1.txt`' });
+  await useTasks(context, 2);
+  const findings = 'FINDINGS\n\nt1.txt:1-1; defect; swallowed failure; catch drops error; fix\n  Probe: node --version\n';
+  const steps = [
+    landTask(1), landTask(2),
+    { result: 'verdict=FINDINGS defect=1 concern=0 question=0 fix=1 report=x', findings },
+    { result: 'fixed=1 reported=0 report=x', edits: ['t1.txt'], lockRoot: true }
+  ];
+  const run = await runPlan(context, steps);
+  await fs.chmod(context.root, 0o755);
+  assert.match(run.stop, /^run-plan: stop: fix broke the gate: /, run.stdout + run.stderr);
+  assert.doesNotMatch(run.stdout, /already failed before the review fix/);
+  assert.match(run.stdout, /not cleared|shelving the edits failed/);
+});
+
 test('a FINDINGS branch review whose fix lands is cached for the tree after the fix', async () => {
   const context = await setup({ risk: 'security boundary' });
   await useTasks(context, 2);
