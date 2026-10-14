@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.133.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.133.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.5 - 2026-10-14
 
 ### Fixed
 - The review fixer writes a `Probe:` line under every finding it marks fixed, including a concern, so a fixed concern no longer fails for a missing Probe line.
@@ -93,9 +95,3 @@ Versions before 0.133.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 - plan-check flags a task whose Proof is the land gate and has no `Red:` line.
 - A run repair may add a `Red:` field; a no-red-proof refusal is not retried.
-
-## 0.133.0 - 2026-10-13
-
-### Added
-
-- `/exo:prompt <rough prompt>` shows your prompt rewritten for Claude, adds nothing you did not write, and runs it only after you say yes.
