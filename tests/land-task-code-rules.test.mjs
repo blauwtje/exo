@@ -18,8 +18,9 @@ const WIDE = `export function greet(${['a', 'b', 'c', 'd'].join(', ')}) {\n  ret
 const LAND_TASK = path.resolve('skills/build/scripts/land-task.mjs');
 const LONG =`export function greet() {\n${Array.from({ length: 25 }, (_, i) => `  const a${i} = ${i};\n`).join('')}  return "hello";\n}\n`;
 
-async function checkout(source) {
-  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: PROOF })] });
+async function checkout(source, taskCount = 1) {
+  const tasks = Array.from({ length: taskCount }, (_, index) => compactTask({ number: index + 1, title: `feat(app): greet ${index + 1}`, files: ['src/app.js'], proof: PROOF }));
+  const plan = compactPlanFixture({ tasks });
   const root = await gitRepository({
     'src/app.js': 'export function greet() {}\n',
     'docs/plans/compact.md': plan,
@@ -107,6 +108,16 @@ test('checkCodeRules refuses a task outside the pin', async () => {
   const { root, plan, planPath } = await checkout(CLEAN);
   assert.throws(
     () => checkCodeRules({ planPath, planText: plan, number: 1, root, pin: { planId: 'other', number: 1 } }),
+    (error) => error instanceof LandingError && /EXO_RUN_TASK pins this run/.test(error.message)
+  );
+});
+
+test('checkCodeRules accepts another task of the pinned plan and still refuses another plan', async () => {
+  const { root, plan, planPath } = await checkout(CLEAN, 2);
+  const output = checkCodeRules({ planPath, planText: plan, number: 2, root, pin: { planId: 'compact', number: 1 } });
+  assert.match(output, /^Code rules OK: Task 2$/m);
+  assert.throws(
+    () => checkCodeRules({ planPath, planText: plan, number: 2, root, pin: { planId: 'other', number: 2 } }),
     (error) => error instanceof LandingError && /EXO_RUN_TASK pins this run/.test(error.message)
   );
 });

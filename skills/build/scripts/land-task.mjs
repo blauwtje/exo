@@ -57,6 +57,12 @@ function refuseOutsidePin(pin, planPath, number) {
   }
 }
 
+function refuseOtherPlan(pin, planPath, number) {
+  if (pin !== null && pin.planId !== planIdOf(planPath)) {
+    throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; Task ${number} of ${planIdOf(planPath)} is refused`);
+  }
+}
+
 function refuseMcpProofUnderPin(pin, task) {
   if (pin !== null && mcpProofOf(task) !== null) {
     throw new LandingError(`EXO_RUN_TASK refuses Task ${task.number}: its Proof is an MCP call, which only an interactive session can run`);
@@ -484,7 +490,7 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
 }
 
 export function checkCodeRules({ planText, number, root, planPath, pin = null }) {
-  refuseOutsidePin(pin, planPath, number);
+  refuseOtherPlan(pin, planPath, number);
   const task = parsePlan(planText).tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   return `${runCodeRules(task.files.map((file) => file.path), root)}Code rules OK: Task ${number}\n`;
