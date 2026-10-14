@@ -122,7 +122,8 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     const patchFile = path.join(logDir, 'review-fix-leftover.patch');
     const shelved = (stop) => {
       const { patch, failed } = shelveLeftover(root, patchFile, untrackedBefore);
-      if (patch !== null) return { stop: { ...stop, why: `${stop.why}; its edits are shelved in ${patch}`, next: `${stop.next}; the fix edits are in ${patch}` } };
+      const notCleared = failed === undefined ? '' : `; leftover not cleared: ${failed}`;
+      if (patch !== null) return { stop: { ...stop, why: `${stop.why}; its edits are shelved in ${patch}${notCleared}`, next: `${stop.next}; the fix edits are in ${patch}` } };
       if (failed !== undefined) return { stop: { ...stop, why: `${stop.why}; shelving the edits failed: ${failed}` } };
       return { stop };
     };

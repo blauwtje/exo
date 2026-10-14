@@ -150,3 +150,14 @@ test('unprovenRisks: a concern line ending reported: unproven becomes a risk lin
   await fs.rm(file);
   assert.deepEqual(unprovenRisks(file), []);
 });
+
+test('a review fix stop names the edits it could not clear from the tree', async () => {
+  const context = await runSteps([
+    land(1), land(2),
+    { result: FINDINGS_LINE, findings: FINDING },
+    { result: 'fixed=1 reported=0 report=x', edits: ['a.txt'], lockRoot: true, appends: { '.exo/branch-review.md': 'a.txt:1-1; defect; swallowed failure; catch drops error; fix fixed\n' } }
+  ]);
+  await fs.chmod(context.root, 0o755);
+  assert.notEqual(git(context.root, 'status', '--porcelain'), '');
+  assert.match(context.result.stdout, /not cleared|git restore/);
+});

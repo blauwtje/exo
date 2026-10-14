@@ -38,6 +38,7 @@ for (const commit of step.commits ?? []) {
   git('commit', '-q', '-m', commit.subject ?? 'feat: stub', ...commit.trailers.flatMap((trailer) => ['-m', trailer]));
 }
 for (const edit of step.edits ?? []) fs.appendFileSync(edit, 'edited\\n');
+if (step.lockRoot) fs.chmodSync('.', 0o555);
 for (const [file, text] of Object.entries(step.appends ?? {})) fs.appendFileSync(file, text);
 const findings = step.findings === undefined ? null : stdin.match(/^- Findings path: (.+)$/m)?.[1];
 if (findings) { fs.mkdirSync(path.dirname(findings), { recursive: true }); fs.writeFileSync(findings, step.findings); }
