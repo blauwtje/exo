@@ -1,4 +1,4 @@
-// verify.mjs checks the branch against the plan: stray paths, the run's end,
+// verify.mjs checks the branch against the plan: unplanned paths, the run's end,
 // a criterion failing only on unlanded tasks, and the claims diff.
 
 import assert from 'node:assert/strict';
@@ -63,7 +63,7 @@ test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes
   assert.equal(clean.code, 0, clean.stdout + clean.stderr);
 });
 
-test('the plan file committed on the branch is the run\'s input, not a stray path', async () => {
+test('the plan file committed on the branch is the run\'s input, not an unplanned path', async () => {
   const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'check.js': CLEAN_CHECK });
   const base = git(root, 'rev-parse', 'HEAD');
   await mkdir(path.join(root, 'docs'));
