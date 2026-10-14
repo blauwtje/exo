@@ -11,7 +11,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { runOnBase, testPaths } from '#red-green';
-import { codeRuleFindings } from '#code-rules';
+import { CODE_RULE_LIMITS, codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
 export class LandingError extends Error {}
@@ -349,7 +349,7 @@ function runLint(lint, files, root) {
 function runCodeRules(files, root) {
   const { fails, warns } = codeRuleFindings({ root, base: 'HEAD', paths: files.filter((file) => !file.endsWith('/')) });
   if (fails.length > 0) {
-    throw new LandingError(`the added code breaks the code rules:\n${fails.join('\n')}\nRemove the comment or make the code clearer.`);
+    throw new LandingError(`the added code breaks the code rules:\n${fails.join('\n')}\nRemove the comment or make the code clearer.\nThe ${CODE_RULE_LIMITS}.`);
   }
   return warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
 }

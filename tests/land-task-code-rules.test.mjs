@@ -65,6 +65,14 @@ test('nesting deeper than 2 is refused', async () => {
   );
 });
 
+test('a refusal for one rule also names the parameter limit, so a retry does not trade depth for parameters', async () => {
+  const { root, plan, planPath } = await checkout(DEEP);
+  assert.throws(
+    () => landTask({ planPath, planText: plan, number: 1, root, reportText }),
+    (error) => error instanceof LandingError && /at most 3 parameters/.test(error.message) && /at most 2 deep/.test(error.message)
+  );
+});
+
 test('a function over 20 lines only warns and the task lands', async () => {
   const { root, plan, planPath } = await checkout(LONG);
   const output = landTask({ planPath, planText: plan, number: 1, root, reportText });
