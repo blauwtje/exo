@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.129.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.130.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.133.1 - 2026-10-14
 
 ### Changed
 
@@ -190,9 +192,3 @@ Versions before 0.129.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 
 - Inside an `exo run`, a session never waits on the human: a hook denies `AskUserQuestion` and blocks an end without a status line, telling the session to decide from the spec and settings and log the choice in `.exo/run/<id>/decisions.md`; after two blocks the task ends BLOCKED, workspace, codex and ship choices fill themselves, and the run report lists the decisions.
-
-## 0.129.0 - 2026-10-11
-
-### Added
-
-- After approval, `spec` starts `exo run <brief> --detach` itself: a background run whose phase sits in `.exo/run/<id>/state.json`, a lock refuses a second run in the same checkout, `exo status` shows each run, and `exo run --resume <id>` continues one whose process died; a brief in an issue or a refused start falls back to the `--fresh` command.

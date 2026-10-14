@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.129.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.130.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.129.0 - 2026-10-11
+
+### Added
+
+- After approval, `spec` starts `exo run <brief> --detach` itself: a background run whose phase sits in `.exo/run/<id>/state.json`, a lock refuses a second run in the same checkout, `exo status` shows each run, and `exo run --resume <id>` continues one whose process died; a brief in an issue or a refused start falls back to the `--fresh` command.
 
 ## 0.128.0 - 2026-10-11
 
