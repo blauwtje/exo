@@ -483,6 +483,13 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   return `${gateLine}Report OK: Task ${number}\n`;
 }
 
+export function checkCodeRules({ planText, number, root, planPath, pin = null }) {
+  refuseOutsidePin(pin, planPath, number);
+  const task = parsePlan(planText).tasks.find((entry) => entry.number === number);
+  if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
+  return `${runCodeRules(task.files.map((file) => file.path), root)}Code rules OK: Task ${number}\n`;
+}
+
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
   refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
@@ -533,7 +540,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean' });
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
   if (pin !== null) quiet.file = proofRecordPath(root, pin.planId, pin.number);
@@ -549,6 +556,10 @@ function main(argv) {
   // finds its own report with no extra flag.
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
+  if (flags['code-rules'] === true) {
+    process.stdout.write(checkCodeRules({ planText, number: Number(flags.task), root, planPath: flags.plan, pin }));
+    return;
+  }
   const run = flags.check === true ? checkTask : landTask;
   const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
   process.stdout.write(pin === null ? output : quietText(output, true));
