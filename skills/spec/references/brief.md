@@ -45,4 +45,4 @@ Dispatch the `exo:find-open-points` agent once on the brief.
 - `assume` point → `## Assumptions`; ask nothing.
 - `user` point → ask it, one per message.
 - Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
-- Unanswered `user` point → `## Open points`; no entry left → omit the section.
+- Unanswered `user` point → `## Open points` (exact name); no point left → omit it.

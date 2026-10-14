@@ -31,7 +31,7 @@ argument-hint: <outcome to shape>
    - Never `cat`, `head` or `sed`; outside facts → one `exo:fetch-docs` round, no gap-fill.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
-7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`, fixing flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
+7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`.
    - Learn its rules from its output, never its source.
 8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7, leaving flagged `## Open points` entries unfixed.
 9. **Hand off** per `references/hand-off.md`: start the detached run, or print `--fresh` output.
@@ -41,7 +41,7 @@ argument-hint: <outcome to shape>
 | File | Read it when |
 |---|---|
 | `references/stored-brief.md` | Request names or extends a brief, issue or plan. |
-| `../route-skills/references/question.md` | Each question. |
+| `../route-skills/references/question.md` | Each question and reply. |
 | `references/brief.md` | Before writing the brief; step 8. |
 | `references/task-list.md` | Before writing the task list. |
 | `references/example-plan.md` | Once, before the first task. |
