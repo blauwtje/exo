@@ -53,7 +53,7 @@ test('the Added: line lists each add with its basis', () => {
 });
 
 test('the five tags appear in order', () => {
-  const tags = ['<context>', '<pasted_content id=', '<instructions>', '<success_criteria>', '<output_format>'];
+  const tags = ['<background>', '<pasted_content id=', '<instructions>', '<success_criteria>', '<output_format>'];
   let at = -1;
   for (const tag of tags) {
     const next = body.indexOf(tag, at + 1);
@@ -68,6 +68,13 @@ test('the five tags appear in order', () => {
   assert.match(section('Example'), /<pasted_content id="ab12">\n[^\n]*\n<\/pasted_content id="ab12">/);
   assert.match(body, /<documents>/);
   assert.match(body, /<document_content>/);
+});
+
+test('output tags exclude context, a tag Claude Code drops on copy', () => {
+  const format = [...section('Format').matchAll(/`<([a-z_]+)/g)].map((match) => match[1]);
+  const example = [...section('Example').matchAll(/^<\/?([a-z_]+)/gm)].map((match) => match[1]);
+  assert.ok(format.includes('instructions') && example.includes('instructions'), 'no output tags found');
+  for (const tag of [...format, ...example]) assert.notEqual(tag, 'context', 'Claude Code drops a <context> block when the user copies it');
 });
 
 test('each kind rule is present', () => {
@@ -107,7 +114,7 @@ test('example rewrites the three lazy inputs', () => {
   assert.match(example, /fix the login bug/);
   assert.match(example, /make my landing page better/);
   assert.match(example, /research competitors and make a report/);
-  assert.match(example, /<context>/);
+  assert.match(example, /<background>/);
   assert.match(example, /^Added:/m);
   assert.doesNotMatch(example, /TS2345/);
 });

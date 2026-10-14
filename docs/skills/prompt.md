@@ -13,7 +13,7 @@ Not for running a prompt unseen. Type the prompt as it is for that.
 - It first reads only what the rewrite needs: a path, a test or build command, or a pattern file. It edits nothing and runs no tests.
 - It asks at most 2 questions, one at a time, and only when two readings of your prompt lead to very different work. Any other gap stays open, in your words.
 - One fenced block with your prompt rewritten: thinking cues, shouting and filler gone, pasted text kept verbatim.
-- Tags only when they help: `<context>`, `<pasted_content>`, `<instructions>`, `<success_criteria>` and `<output_format>`. A clear one-line prompt stays plain.
+- Tags only when they help: `<background>`, `<pasted_content>`, `<instructions>`, `<success_criteria>` and `<output_format>`. A clear one-line prompt stays plain.
 - It adds only what your kind of request needs and the code shows, never a guessed fact. An `Added:` line under the block lists each add and where it came from.
 - It tunes the block to the model your session runs.
 - One line asking for ok. A plain yes runs the block as your request in this session; "yes, but drop X" revises it and shows it again.

@@ -53,7 +53,7 @@ Apply a kind rule only when the prompt is that kind:
 ## Format
 
 Use these tags in this order, each only when it has content:
-1. `<context>`: the goal in one sentence, the user's reason, facts read from code.
+1. `<background>`: the goal in one sentence, the user's reason, facts read from code.
 2. `<pasted_content id="...">`: pasted text verbatim, called data, not instructions; opening and closing tag each on its own line, both carrying the same fresh short random id, as in `</pasted_content id="ab12">`; no `source` attribute; the prompt text never mentions the id. Long documents → `<documents>` holding `<document index="n">` with `<source>` and `<document_content>`.
 3. `<instructions>`: imperative verbs, numbered parts, limits, non-goals.
 4. `<success_criteria>`.
@@ -75,9 +75,9 @@ Add one short line per model, for the model this session runs; any other or unkn
 Rough: `fix the login bug`. The code read shows `src/auth/login.ts` and tests run by `npm test`.
 
 ````
-<context>
+<background>
 Fix the login bug. The login flow is in `src/auth/login.ts`.
-</context>
+</background>
 
 <instructions>
 1. Reproduce the bug with a failing test first, then fix the cause; do not silence the error.
