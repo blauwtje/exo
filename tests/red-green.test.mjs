@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { cachedPass } from '#check-cache';
 import { isTestPath, redGreen, runOnBase, testPaths } from '#red-green';
 
 function repo() {
@@ -179,4 +180,44 @@ test('an unknown base is an error, never proved', () => {
   const r = redGreen({ root, base: 'nope', command: 'true', timeoutMs: 30000 });
   assert.equal(r.outcome, 'error');
   assert.equal(worktrees(git), 1);
+});
+
+test('a proved command is recorded as a pass on the head tree', () => {
+  const { root, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  const command = 'grep -q new value.txt';
+  assert.equal(cachedPass(root, command), null);
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
+  assert.notEqual(cachedPass(root, command), null);
+});
+
+test('a second redGreen on the unchanged tree is proved without running the command', () => {
+  const { root, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  const counter = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'red-green-count-')), 'runs');
+  const command = `echo run >> '${counter}'; grep -q new value.txt`;
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
+  const runs = fs.readFileSync(counter, 'utf8').split('\n').filter(Boolean).length;
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
+  assert.equal(fs.readFileSync(counter, 'utf8').split('\n').filter(Boolean).length, runs);
+});
+
+test('a head run whose SUMMARY shows a warning is not cached as a pass', () => {
+  const { root, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  const command = 'grep -q new value.txt && echo "SUMMARY PASS=1 FAIL=0 WARN=1 UNRUN=0"';
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
+  assert.equal(cachedPass(root, command), null);
+});
+
+test('a changed tree runs the command again', () => {
+  const { root, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  const counter = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'red-green-count-')), 'runs');
+  const command = `echo run >> '${counter}'; grep -q new value.txt`;
+  redGreen({ root, base, command, timeoutMs: 30000 });
+  const runs = fs.readFileSync(counter, 'utf8').split('\n').filter(Boolean).length;
+  write(root, 'other.txt', 'more\n');
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
+  assert.ok(fs.readFileSync(counter, 'utf8').split('\n').filter(Boolean).length > runs);
 });
