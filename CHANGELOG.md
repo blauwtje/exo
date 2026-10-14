@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.11 - 2026-10-14
 
 ### Changed
 - A retry after a failed land resumes that task's failed session with only the retry note, instead of a fresh session that rereads the plan, brief and files.
@@ -62,8 +64,3 @@ Versions before 0.134.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - The branch review reads only the current plan's proof files, not a stale one from another plan.
-
-## 0.134.1 - 2026-10-14
-
-### Fixed
-- The mid-run plan repair check passes `--run`, so growth from earlier tasks no longer flags a task.
