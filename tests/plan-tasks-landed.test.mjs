@@ -29,7 +29,20 @@ test('a Plan-task: <plan-id>/<n> trailer lands only the task of the plan it name
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(other): more', '-m', 'Plan-task: other-plan/2');
   assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): a subject the plan does not give', '-m', 'Plan-task: fixture/2');
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): wave', '-m', 'Plan-task: fixture/2');
   assert.deepEqual(landedTasks(tasks, root, 'fixture'), [2]);
+});
+
+test('a rewritten plan with the same id builds its renumbered tasks again', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): wave', '-m', 'Plan-task: fixture/2');
+  const { tasks } = parsePlan(planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Parse', files: ['- Create: `a.js`'], subject: 'feat(app): parse' }),
+    taskSection({ number: 2, title: 'Greet', dependsOn: 'Task 1', files: ['- Create: `b.js`'], subject: 'feat(app): greet' })
+  ] }));
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
 });
 
 test('a legacy bare Plan-task: <n> lands a compact task only beside its heading subject', async () => {
