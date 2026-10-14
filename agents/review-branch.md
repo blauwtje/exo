@@ -16,7 +16,8 @@ Review one branch against plan and standard; fixer repairs from findings alone.
 - Plan-pasted code, scope `overlap` or no scope → read `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/plan-checks.md` first.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
-- Implementer reports: `Red:` lines only: `grep -n -A1 '^Red:' <implementer dir>/implementer-*.md`.
+- `Red:` source, proof files first: `grep -n '^Red:' <implementer dir>/proof-*-task-<n>.txt`, written by land as `.exo/proof-*-task-<n>.txt`.
+- No `Red:` line in a task's proof file → implementer reports, `Red:` lines only: `grep -n -A1 '^Red:' <implementer dir>/implementer-*.md`.
 - A task is test-first with `Risk:`, `Red:` line after `Test first: yes`, or heading type `fix` with test file in `Files:`.
 - Test-first task → `defect` marked `report`, when its commit adds no test observing changed behavior or `Red:` line reads `none` or is missing.
 - Write only findings file; no git or `gh` writes, no background session, ask nothing.

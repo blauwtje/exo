@@ -25,6 +25,12 @@ test('the reviewer names its findings file as input to merge-reviews.mjs, never 
   assert.doesNotMatch(reviewer, /report file|deliverable/i, 'the file is named as tool input, not as a report file or deliverable');
 });
 
+test('the reviewer and the rules read Red from land proof files before implementer reports', () => {
+  assert.match(reviewer, /\.exo\/proof-\*-task-<n>\.txt/, 'the reviewer names the proof files');
+  assert.match(reviewer, /proof files first/, 'the proof files are the first source');
+  assert.match(rules, /\.exo\/proof-\*-task-<n>\.txt/, 'the rules name the proof files');
+});
+
 test('the fixer names its findings file as input to run-probes.mjs, not a report file', () => {
   assert.match(fixer, /input to `run-probes\.mjs`/, 'the fixer file is input to the probe tool');
   assert.doesNotMatch(fixer, /report file/i, 'the fixer file is named as tool input, not as a report file');
