@@ -53,13 +53,19 @@ test('the Added: line lists each add with its basis', () => {
 });
 
 test('the five tags appear in order', () => {
-  const tags = ['<context>', '<pasted_content source=', '<instructions>', '<success_criteria>', '<output_format>'];
+  const tags = ['<context>', '<pasted_content id=', '<instructions>', '<success_criteria>', '<output_format>'];
   let at = -1;
   for (const tag of tags) {
     const next = body.indexOf(tag, at + 1);
     assert.ok(next > at, `${tag} missing or out of order`);
     at = next;
   }
+  assert.doesNotMatch(body, /<pasted_content source/);
+  assert.match(body, /<\/pasted_content id="ab12">/);
+  assert.match(body, /both carrying the same fresh short random id/);
+  assert.match(body, /each on its own line/);
+  assert.match(body, /prompt text never mentions the id/);
+  assert.match(section('Example'), /<pasted_content id="ab12">\n[^\n]*\n<\/pasted_content id="ab12">/);
   assert.match(body, /<documents>/);
   assert.match(body, /<document_content>/);
 });
