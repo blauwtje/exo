@@ -645,7 +645,7 @@ async function main(argv) {
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
       const gate = tail.gate;
-      run.verifyLines = `${gate.stdout ?? ''}`.split('\n').filter((line) => /^(FAIL|STRAY|WARN)\b/.test(line));
+      run.verifyLines = `${gate.stdout ?? ''}`.split('\n').filter((line) => /^(FAIL|UNPLANNED|WARN)\b/.test(line));
       const pass = gate.status === 0;
       const manual = (plan.frame['Manual checks'] ?? '').split('\n').filter((line) => line.startsWith('- ')).length;
       const land = process.env.EXO_RUN_DIR ? frameOf(plan.frame).land : null;
