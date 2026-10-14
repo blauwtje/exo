@@ -216,7 +216,7 @@ function branchReviewReport(task) {
     '',
     `${task.file}:${finding.range} defect: implement \`${task.file}\` as the plan's Goal asks. ${finding.evidence} fix`,
     '',
-    'Count: defect 1, hazard 0, question 0',
+    'Count: defect 1, concern 0, question 0',
     ''
   ].join('\n');
 }

@@ -18,10 +18,10 @@ function record(fields) {
 }
 
 test('parseReview reads the verdict and either order of the Count line', () => {
-  assert.deepEqual(parseReview('FIXED\n\nuploads.js:5 defect ...\nCount: 1 defect, 2 hazard, 0 question\n'),
-    { verdict: 'FIXED', counts: { defect: 1, hazard: 2, question: 0 } });
-  assert.deepEqual(parseReview('**CLEAN**\n**Count:** defect: 0, hazard: 0, question: 1\n'),
-    { verdict: 'CLEAN', counts: { defect: 0, hazard: 0, question: 1 } });
+  assert.deepEqual(parseReview('FIXED\n\nuploads.js:5 defect ...\nCount: 1 defect, 2 concern, 0 question\n'),
+    { verdict: 'FIXED', counts: { defect: 1, concern: 2, question: 0 } });
+  assert.deepEqual(parseReview('**CLEAN**\n**Count:** defect: 0, concern: 0, question: 1\n'),
+    { verdict: 'CLEAN', counts: { defect: 0, concern: 0, question: 1 } });
   assert.deepEqual(parseReview('BLOCKED\nno count here\n'), { verdict: 'BLOCKED', counts: null });
 });
 
@@ -80,7 +80,7 @@ test('the results state the false-alarm rate over control branches and gate C2 o
   ];
   const text = resultsMarkdown(META, records);
   assert.match(text, /\| review-a-seeded-low \| claude-opus-5-5 \| low \| 1 \| - \| 1000 \| 60s \| \$0\.500 \|/);
-  assert.match(text, /Reviewer false-alarm rate: 1\/2 control branches \(50%\) drew at least one defect or hazard finding \(low 1\/1, medium 0\/1, high 0\/0\)\. Plan 5 \(C2\) is gated on this rate\./);
+  assert.match(text, /Reviewer false-alarm rate: 1\/2 control branches \(50%\) drew at least one defect or concern finding \(low 1\/1, medium 0\/1, high 0\/0\)\. Plan 5 \(C2\) is gated on this rate\./);
   assert.match(text, /Unmeasured: 1 control cells left no report\./);
 });
 

@@ -187,8 +187,8 @@ function measureGreenFirst(review) {
 async function measureReview(cell, repository, review) {
   if (cell.variant === 'green-first') return measureGreenFirst(review);
   const check = await runSafeCheck(cell.task.id, repository);
-  const findings = review.counts === null ? null : review.counts.defect + review.counts.hazard;
-  const detail = `verdict ${review.verdict ?? 'none'}, ${findings ?? 'no counted'} defect or hazard findings, check after review: ${check.line}`;
+  const findings = review.counts === null ? null : review.counts.defect + review.counts.concern;
+  const detail = `verdict ${review.verdict ?? 'none'}, ${findings ?? 'no counted'} defect or concern findings, check after review: ${check.line}`;
   if (cell.variant === 'seeded') return { defectsFound: check.pass ? 1 : 0, falseAlarms: null, detail };
   return { defectsFound: null, falseAlarms: findings, detail };
 }

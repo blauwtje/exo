@@ -8,7 +8,7 @@ import { REVIEW_EFFORTS, SWEEP_MODELS } from './sweep-cells.mjs';
 
 const PLAN_SECTIONS = ['## Goal', '## Plan basis', '## Non-goals', '## Context', '## Tasks', '## Final verification'];
 const PLACEHOLDER = /\b(TODO|TBD|FIXME)\b|similar to Task \d/i;
-const COUNT_ENTRY = /(\d+)\s*(defect|hazard|question)s?|(defect|hazard|question)s?\s*[:=]?\s*(\d+)/g;
+const COUNT_ENTRY = /(\d+)\s*(defect|concern|question)s?|(defect|concern|question)s?\s*[:=]?\s*(\d+)/g;
 
 // The reviewer's report opens with its verdict and holds one `Count:` line,
 // read in either order: `1 defect` or `defect: 1`.
@@ -16,7 +16,7 @@ export function parseReview(text) {
   const verdict = /\b(CLEAN|FIXED|BLOCKED)\b/.exec(text)?.[1] ?? null;
   const countLine = text.split('\n').find((line) => /^\W*Count:/.test(line));
   if (countLine === undefined) return { verdict, counts: null };
-  const counts = { defect: 0, hazard: 0, question: 0 };
+  const counts = { defect: 0, concern: 0, question: 0 };
   for (const match of countLine.matchAll(COUNT_ENTRY)) {
     const weight = match[2] ?? match[3];
     counts[weight] = Number(match[1] ?? match[4]);
@@ -92,7 +92,7 @@ function falseAlarmLines(records) {
   });
   const percent = Math.round((100 * alarmed) / measured.length);
   return [
-    `Reviewer false-alarm rate: ${alarmed}/${measured.length} control branches (${percent}%) drew at least one defect or hazard finding (${perEffort.join(', ')}). Plan 5 (C2) is gated on this rate.`,
+    `Reviewer false-alarm rate: ${alarmed}/${measured.length} control branches (${percent}%) drew at least one defect or concern finding (${perEffort.join(', ')}). Plan 5 (C2) is gated on this rate.`,
     '',
     `Unmeasured: ${controls.length - measured.length} control cells left no report.`
   ];
@@ -151,7 +151,7 @@ export function resultsMarkdown(meta, records) {
     '',
     '- Each cell ran once, so a difference of one finding between two cells is within noise.',
     '- Defects found means, per kind: review seeded, the seeded defect fixed; build, the fixture check failing on the built code; plan, rule breaches; flow, defects the branch review reported.',
-    '- A seeded review cell counts its defect as found only when the fixture check passes after the reviewer fixed the branch; a control branch carries the reference solution, so every defect or hazard it draws counts as a false alarm.',
+    '- A seeded review cell counts its defect as found only when the fixture check passes after the reviewer fixed the branch; a control branch carries the reference solution, so every defect or concern it draws counts as a false alarm.',
     '- A plan cell counts the plan-spec rules a script can check; whether its code runs is not measured.',
     '- Tokens weigh input as token-weights.mjs does, summed over the main thread and every delegate; cost is the client-side list-price estimate.',
     ''
