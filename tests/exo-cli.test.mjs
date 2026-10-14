@@ -86,6 +86,17 @@ test('a dirty tree refuses with exit 2, names the files and spawns nothing', asy
   assert.match(await keptReport(context), /^Reason: refused: uncommitted edits in README\.md; /m);
 });
 
+test('a dirty tree refuses a detached run before it detaches', async () => {
+  const context = await setup();
+  await fs.writeFile(path.join(context.root, 'README.md'), 'edited\n');
+  const result = await exo(context, ['run', '--detach', '--claude', context.stub]);
+  assert.equal(result.code, 2);
+  assert.match(result.stderr, /^exo: refused: uncommitted edits in README\.md; commit them, or discard with git restore --staged --worktree -- README\.md$/m);
+  assert.doesNotMatch(result.stdout, /started in the background/);
+  assert.deepEqual(await fs.readdir(path.join(context.root, '.exo', 'run')).catch(() => []), []);
+  assert.deepEqual(await calls(context), []);
+});
+
 test('a run-plan refusal lands in report.md as Reason', async () => {
   const context = await setup();
   const result = await exo(context, ['run', 'docs/specs/old.md', '--session', 'bogus', '--claude', context.stub]);

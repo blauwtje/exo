@@ -250,12 +250,16 @@ function runOptions(argv) {
   return { ...options, rest };
 }
 
-async function buildRun(root, plan, flags, id) {
+function refuseDirty(root) {
   const files = dirtyFiles(root);
   if (files.length > 0) {
     const list = files.join(' ');
     throw new Refusal(`refused: uncommitted edits in ${list}; commit them, or discard with git restore --staged --worktree -- ${list}`);
   }
+}
+
+async function buildRun(root, plan, flags, id) {
+  refuseDirty(root);
 
   const { branch, land } = planFrame(plan);
   const base = defaultBranch(root);
@@ -396,6 +400,7 @@ async function runCommand(argv, { approving = false } = {}) {
   }
 
   const child = options.runId !== null;
+  if (detach && !child) refuseDirty(root);
   if (!child) {
     const log = detach ? path.join(runDir(root, id), 'run.log') : null;
     if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log });
