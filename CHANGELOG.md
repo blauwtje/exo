@@ -9,11 +9,13 @@ Versions before 0.134.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- A run skips four repeated steps: a full task session after a no-red repair, a Proof rerun after the decisions file changes, repeated commit-log reads on resume, and a repeated preflight plan-check on an unchanged plan and HEAD.
+
 ## 0.134.12 - 2026-10-14
 
 ### Fixed
 - A land refused for a code rule now lists every code-rule limit, so a retry no longer fixes one rule and breaks another.
-- A run skips four repeated steps: a full task session after a no-red repair, a Proof rerun after the decisions file changes, repeated commit-log reads on resume, and a repeated preflight plan-check on an unchanged plan and HEAD.
 
 ## 0.134.11 - 2026-10-14
 
