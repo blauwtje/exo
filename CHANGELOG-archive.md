@@ -1,6 +1,14 @@
 # Changelog archive
 
-Releases before 0.133.2; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.133.3; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.133.2 - 2026-10-14
+
+### Fixed
+
+- A run skips the fix review when the fixer changed nothing.
+- A run records its branch review after a landed fix, so verify does not review the same tree again.
+- The branch reviewer reads `Red: proved` from land's proof files, not only implementer reports.
 
 ## 0.133.1 - 2026-10-14
 

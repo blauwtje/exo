@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.133.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.133.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.7 - 2026-10-14
 
 ### Fixed
 - `/exo:prompt` wraps pasted text in `<pasted_content id="...">` tags with the same random id on both tags, as the Opus 5.5 prompting guide shows.
@@ -81,11 +83,3 @@ Versions before 0.133.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 
 - The verify gate prints `UNPLANNED <path>` for paths outside the plan, and branch reviews weigh findings as `concern`.
-
-## 0.133.2 - 2026-10-14
-
-### Fixed
-
-- A run skips the fix review when the fixer changed nothing.
-- A run records its branch review after a landed fix, so verify does not review the same tree again.
-- The branch reviewer reads `Red: proved` from land's proof files, not only implementer reports.
