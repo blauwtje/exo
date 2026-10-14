@@ -1,6 +1,11 @@
 # Changelog archive
 
-Releases before 0.134.2; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.3; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.2 - 2026-10-14
+
+### Fixed
+- The branch review reads only the current plan's proof files, not a stale one from another plan.
 
 ## 0.134.1 - 2026-10-14
 

@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.3 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.12 - 2026-10-14
 
 ### Fixed
 - A land refused for a code rule now lists every code-rule limit, so a retry no longer fixes one rule and breaks another.
@@ -62,8 +64,3 @@ Versions before 0.134.2 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A rewritten plan with the same file name builds its tasks instead of counting an earlier plan's commits as done.
 - The status line counts the plan's tasks from the start.
 - A review fix that stops the run leaves a clean tree and its edits in a patch in the run's log dir, and names any edits it could not clear.
-
-## 0.134.2 - 2026-10-14
-
-### Fixed
-- The branch review reads only the current plan's proof files, not a stale one from another plan.
