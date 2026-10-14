@@ -42,6 +42,20 @@ test('a command that keeps printing is not stopped and its output and code pass 
   assert.match(result.stdout, /tick1\ntick2\ntick3\n/);
 });
 
+test('the task and plan prompts name the code-rule check command, one per task in the plan prompt', () => {
+  const root = path.join(import.meta.dirname, '..');
+  const plan = parsePlan(planText(root));
+  const planPath = path.join(root, 'plan.md');
+  const command = (number) => `--code-rules --plan ${planPath} --task ${number} --root ${root}`;
+  const task = taskPrompt({ plan, planPath, number: 1, root, learnings: 'l.md', sandbox: false, runDir: '' });
+  assert.ok(task.includes(command(1)));
+  assert.match(task, /Code rules OK/);
+  const together = planPrompt({ plan, planPath, numbers: [1, 2], root, sandbox: false });
+  assert.ok(together.includes(command(1)));
+  assert.ok(together.includes(command(2)));
+  assert.match(together, /Code rules OK/);
+});
+
 test('the task and plan prompts of a sandboxed run name the stall limit the guard uses', () => {
   const root = path.join(import.meta.dirname, '..');
   const plan = parsePlan(planText(root));

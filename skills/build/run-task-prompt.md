@@ -24,6 +24,7 @@ Rules:
 - Ask nothing: a choice you cannot rule → `BLOCKED NEEDS ANSWER: <one short question>`; a reversible one → take the recommended option and write a `Decision: <clause>` report line.
 - A `PLAN DRIFT:` line in this prompt → end on `[[task]]: PLAN DRIFT <item>`.
 - Write the report, at most 25 lines, to the `Report to:` path: what landed, the proof output, `Unresolved:`.
+- After your last edit and before the report, run [[codeRules]] and fix every finding it prints until it prints `Code rules OK`.
 [[extra]]
 
 End: when the work is done and the report is written, end the reply; the script proves and lands.
@@ -42,6 +43,9 @@ Report to: [[report]]
 
 Brief:
 [[brief]]
+
+After your last edit to a task and before its report, run its command and fix every finding it prints until it prints `Code rules OK`:
+[[codeRules]]
 
 [[stall]]
 

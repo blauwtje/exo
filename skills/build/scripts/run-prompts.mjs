@@ -21,6 +21,8 @@ function sectionOf(text, heading) {
 
 const stallRules = (sandbox) => (sandbox ? [`- A command silent for ${stallSeconds()} seconds is stopped.`] : []);
 
+const codeRulesCommand = (planPath, number, root) => `node ${SCRIPT.landTask} --code-rules --plan ${planPath} --task ${number} --root ${root}`;
+
 export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, retryNote = '', runDir = process.env.EXO_RUN_DIR }) {
   const task = plan.tasks.find((entry) => entry.number === number);
   const extra = [
@@ -40,6 +42,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     root,
     report: path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`),
     brief: [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
+    codeRules: `\`${codeRulesCommand(planPath, number, root)}\``,
     extra,
     retry: retryNote
   };
@@ -59,6 +62,7 @@ export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
     plan: planPath,
     report: `${path.join(root, SCRATCH_FOLDER, 'implementer-<n>.md')}, one per task`,
     brief: ['Land nothing: the script lands each task after this session.', ...briefs].join('\n\n'),
+    codeRules: numbers.map((number) => `- Task ${number}: \`${codeRulesCommand(planPath, number, root)}\``).join('\n'),
     stall: stallRules(sandbox).join('\n')
   };
   return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Plan session').split('\n').slice(1).join('\n').trim()
