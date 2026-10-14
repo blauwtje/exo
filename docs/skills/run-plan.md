@@ -10,7 +10,7 @@ Not for a plan you want built with subagents in this session. Use `build` for th
 
 ## What you get
 
-- Each task lands in its own fresh process, so no context carries from one task to the next.
+- Each task lands in its own fresh process, so no context carries from one task to the next. A retry after a failed land resumes that task's failed session with only the retry note.
 - A script picks the task and checks git after each process; a process that lands anything else stops the run.
 - One verify process and the verify script run at the end.
 - Logs, `summary.txt`, `tasks.json` and `progress.md` under `.exo/run-plan/`.
