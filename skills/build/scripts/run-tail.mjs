@@ -82,6 +82,14 @@ export function unprovenRisks(findings) {
 
 const stopOf =(line, why, next) => ({ line, why, next });
 
+const gateFailures = (gate) => out(gate).split('\n').filter((line) => /^(FAIL|UNPLANNED)\b/.test(line));
+
+function gateStop(afterFix, withoutFix, findings) {
+  const broken = afterFix.find((line) => !withoutFix.includes(line));
+  if (broken !== undefined) return stopOf(`fix broke the gate: ${broken}`, 'The review fix failed the gate', `read ${findings}, repair on the branch, then run exo run again`);
+  return stopOf(`gate already failed before the review fix: ${afterFix[0]}`, 'The branch fails the gate without the review fix', 'repair the gate on the branch, then run exo run again');
+}
+
 const BRANCH_QUESTIONS = [
   'Does the branch, taken as a whole, do what the plan Goal says?',
   'Is any requirement of the plan missing or only half done?',
@@ -120,8 +128,9 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) {
     const untrackedBefore = new Set(untrackedPaths(root));
     const patchFile = path.join(logDir, 'review-fix-leftover.patch');
-    const shelved = (stop) => {
+    const shelved = (first, afterShelve) => {
       const { patch, failed } = shelveLeftover(root, patchFile, untrackedBefore);
+      const stop = afterShelve === undefined ? first : afterShelve();
       const notCleared = failed === undefined ? '' : `; leftover not cleared: ${failed}`;
       if (patch !== null) return { stop: { ...stop, why: `${stop.why}; its edits are shelved in ${patch}${notCleared}`, next: `${stop.next}; the fix edits are in ${patch}` } };
       if (failed !== undefined) return { stop: { ...stop, why: `${stop.why}; shelving the edits failed: ${failed}` } };
@@ -131,8 +140,8 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     const session = await runSession({ kind: 'fix', task: null, model: null, prompt: fixerPrompt({ planPath, root, base: baseText, findings }) });
     if (session.stop !== undefined) return shelved(session.stop);
     const gate = node(SCRIPT.verify, gateArgs, root);
-    const failing = out(gate).split('\n').find((line) => /^(FAIL|UNPLANNED)\b/.test(line));
-    if (failing !== undefined) return shelved(stopOf(`fix broke the gate: ${failing}`, 'The review fix failed the gate', `read ${findings}, repair on the branch, then run exo run again`));
+    const failing = gateFailures(gate);
+    if (failing.length > 0) return shelved(null, () => gateStop(failing, gateFailures(node(SCRIPT.verify, gateArgs, root)), findings));
     const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
     const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
     if (failedProbe !== undefined) return shelved(stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe', `read ${findings}, repair on the branch, then run exo run again`));
