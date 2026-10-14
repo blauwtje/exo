@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
+import { successCriterionPasses, summaryLine } from '#check-cache';
 import { criterionCommand } from '#plan-tasks';
-import { commandLine, filesUnderGlobs, findUnplannedPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
+import { commandLine, filesUnderGlobs, findUnplannedPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 
 test('findUnplannedPaths keeps only paths no task declared', () => {
   const tasks = [

@@ -7,7 +7,7 @@ import process from 'node:process';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
-import { BRANCH_REVIEW_KEY, cachedPass, recordPass } from '#check-cache';
+import { BRANCH_REVIEW_KEY, cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { codeRuleFindings } from '#code-rules';
 import { proofsReport } from '#proofs-report';
@@ -27,8 +27,6 @@ one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md lin
 --reviews-only prints only the REVIEW and OVERLAP lines and runs no proof or gate.
 --base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
 Exits 1 on any FAIL or UNPLANNED line.`;
-const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
-const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
 const DEFAULT_BASE = 'main';
 const DEFAULT_LAND_GATE = 'npm run check';
 const TEST_SCRIPT_GATE = 'npm test';
@@ -269,15 +267,6 @@ function codeRuleLines(plan, landed, { root, planId, base }) {
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, codeRulesReport([...fails], root));
   return [...lines, `CODE-RULES ${reportPath}`];
-}
-
-export function summaryLine(output) {
-  return output.match(SUMMARY_LINE)?.at(-1) ?? null;
-}
-
-export function successCriterionPasses({ ok, output }) {
-  const summary = summaryLine(output);
-  return ok && (summary === null || CLEAN_SUMMARY.test(summary));
 }
 
 function namesPath(line, file) {
