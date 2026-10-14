@@ -9,6 +9,9 @@ Versions before 0.132.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- The mid-run plan repair check passes `--run`, so growth from earlier tasks no longer flags a task.
+
 ## 0.134.0 - 2026-10-14
 
 ### Added
