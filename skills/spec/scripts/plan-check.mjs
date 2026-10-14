@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, defaultBranch, frameOf, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
@@ -142,6 +142,18 @@ function checkUnlistedTests(task, root) {
     problems.push(`Task ${task.number}: Files: \`${source.path}\` has existing tests ${tests.map((testPath) => `\`${testPath}\``).join(', ')} and lists none of them`);
   }
   return problems;
+}
+
+const TEST_FILE_NAME = /^(?:[\w.-]+[._](?:test|spec)|test_[\w.-]+)\.\w+$/;
+
+// why: a test that a task in the Depends on chain lists passes for this task too, and every flag here refuses the run start.
+function checkProofTestsListed(task, root, byNumber) {
+  if (task.proof === null || root === undefined || root === null) return [];
+  const listed = [task.number, ...dependencyChainOf(byNumber, task.number)].flatMap((number) => byNumber.get(number).files.map((file) => file.path));
+  const unlisted = (task.proof.match(/[\w./@-]+/g) ?? [])
+    .map((token) => token.replace(/^\.\//, ''))
+    .filter((token) => TEST_FILE_NAME.test(path.posix.basename(token)) && !isCovered(listed, token) && fs.existsSync(path.join(root, token)));
+  return [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add ${testPath} to Files: (its Proof runs it)`);
 }
 
 function dependencyChainOf(byNumber, from) {
@@ -454,6 +466,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
         ])),
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot)),
     ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
+    ...plan.tasks.flatMap((task) => checkProofTestsListed(task, root, byNumber)),
     ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
     ...checkParallelForm(plan.frame),

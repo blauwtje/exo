@@ -44,3 +44,47 @@ test('plan-check flags a source file whose task lists none of its existing tests
   const listed = planCheckReport(planWith(root, ['src/widget.mjs', 'tests/widget-round.test.mjs']));
   assert.ok(!listed.lines.some((entry) => entry.includes('has existing tests')), listed.lines.join('; '));
 });
+
+function chainPlan(root, { dependsOn, proof }) {
+  const tasks = [
+    compactTask({ number: 1, title: 'fix(widget): round', files: ['src/widget.mjs', 'tests/widget.test.mjs'], proof: 'node --test tests/widget.test.mjs' }),
+    compactTask({ number: 2, title: 'fix(gauge): clamp', dependsOn, files: ['src/gauge.mjs'], proof }),
+    compactTask({ number: 3, title: 'fix(dial): snap', dependsOn: '2', files: ['src/dial.mjs'], proof: 'node --test ./tests/widget.test.mjs' })
+  ];
+  return compactPlanFixture({ tasks }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
+}
+
+const proofLines = (report) => report.lines.filter((entry) => entry.includes('its Proof runs it'));
+
+test('plan-check flags a Proof test that exists under --root and no task in its Depends on chain lists', async () => {
+  const root = await gitRepository({
+    'src/widget.mjs': 'export const x = 1;\n',
+    'src/gauge.mjs': 'export const y = 1;\n',
+    'src/dial.mjs': 'export const z = 1;\n',
+    'tests/widget.test.mjs': '// pins x\n',
+    'tests/gauge-clamp.test.mjs': '// pins clamping\n'
+  });
+  const flagged = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }), { root });
+  assert.deepEqual(proofLines(flagged), ['Task 2: add tests/gauge-clamp.test.mjs to Files: (its Proof runs it)']);
+  const offChain = planCheckReport(chainPlan(root, { dependsOn: 'none', proof: 'node --test tests/widget.test.mjs' }), { root });
+  assert.deepEqual(proofLines(offChain), [
+    'Task 2: add tests/widget.test.mjs to Files: (its Proof runs it)',
+    'Task 3: add tests/widget.test.mjs to Files: (its Proof runs it)'
+  ]);
+});
+
+test('plan-check passes a Proof test a task in its Depends on chain lists, one absent under --root, and any without --root', async () => {
+  const root = await gitRepository({
+    'src/widget.mjs': 'export const x = 1;\n',
+    'src/gauge.mjs': 'export const y = 1;\n',
+    'src/dial.mjs': 'export const z = 1;\n',
+    'tests/widget.test.mjs': '// pins x\n',
+    'tests/gauge-clamp.test.mjs': '// pins clamping\n'
+  });
+  const chained = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/widget.test.mjs' }), { root });
+  assert.deepEqual(proofLines(chained), [], chained.lines.join('; '));
+  const absent = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-new.test.mjs' }), { root });
+  assert.deepEqual(proofLines(absent), [], absent.lines.join('; '));
+  const noRoot = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }));
+  assert.deepEqual(proofLines(noRoot), [], noRoot.lines.join('; '));
+});
