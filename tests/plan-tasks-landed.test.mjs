@@ -1,7 +1,21 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { landedTasks, parsePlan } from '#plan-tasks';
+import { commitsOf, landedTasks, parsePlan, taskCommits } from '#plan-tasks';
 import { compactTask, git, gitRepository, planFixture, taskSection } from './harness.mjs';
+
+test('landedTasks and taskCommits read a given commit list, and the same log without one', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  const { tasks } = parsePlan(planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Create: `a.js`'], subject: 'feat(app): greet' })
+  ] }));
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
+  const commits = commitsOf(root);
+  assert.equal(commits.length, 1);
+  assert.deepEqual(landedTasks(tasks, commits, 'fixture'), landedTasks(tasks, root, 'fixture'));
+  assert.deepEqual(taskCommits(tasks[0], commits, 'fixture'), taskCommits(tasks[0], root, 'fixture'));
+  assert.deepEqual(landedTasks(tasks, [], 'fixture'), []);
+  assert.deepEqual(taskCommits(tasks[0], [], 'fixture'), []);
+});
 
 test('a task lands with its trailer and its own commit subject, never with an earlier plan\'s trailer', async () => {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
