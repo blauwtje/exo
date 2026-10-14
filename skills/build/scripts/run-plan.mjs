@@ -273,11 +273,11 @@ async function main(argv) {
     : '');
   // why: the stall guard rewrites each Bash command, which then matches no Bash allow rule; only sandboxed sessions run Bash without one.
   const stallGuardOn = (kind) => sandbox.enabled && ['task', 'plan'].includes(kind);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, resume = null }) => {
     if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind) }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume }), {
       cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const parsed = parseStream(outcome.text);
@@ -290,6 +290,7 @@ async function main(argv) {
   let stall = 0;
   // why: a builder the sandbox kept from running its proof could not see the failure, so its first script proof failure is a free try; once per task, so it cannot loop.
   const unprovenRetried = new Set();
+  const failedSessions = new Map();
   const proofNotRun = (n) => {
     const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
     return isFileOnDisk(report) && /\bnot run\b/i.test(fs.readFileSync(report, 'utf8'));
@@ -522,7 +523,10 @@ async function main(argv) {
     noteTask({ n, subject: taskSubject(task.title), landed: landed.length, total: plan.tasks.length });
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
-    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote + handoffNote(n)), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
+    const resume = handoffNote(n) === '' ? failedSessions.get(n) ?? null : null;
+    failedSessions.delete(n);
+    const prompt = resume === null ? buildPrompt(n, retryNote + handoffNote(n)) : retryNote;
+    const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, resume });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
     run.records.push(record);
@@ -575,6 +579,7 @@ async function main(argv) {
     retryNote = attempt === null
       ? `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`
       : `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nThe script's proof and land output ended: ${failure}\nIts log: ${attempt.log}`;
+    if (attempt !== null && parsed.sessionId) failedSessions.set(n, parsed.sessionId);
     const freeTry = attempt !== null && !unprovenRetried.has(n) && proofNotRun(n);
     if (freeTry) unprovenRetried.add(n);
     else stall += 1;

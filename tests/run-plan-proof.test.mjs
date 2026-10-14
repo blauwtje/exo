@@ -90,6 +90,21 @@ test('task mode: a failing proof leaves the task unlanded and the retry note nam
   assert.match(result.calls[1].stdin, /land-task-1\.log/);
 });
 
+test('task mode: a retry after a failed land resumes the failed session with only the retry note', async () => {
+  const context = await setup();
+  const text = (await fs.readFile(context.plan, 'utf8')).replace('Proof: node --version | Red: none (fixture)', 'Proof: node -e "process.exit(require(\'fs\').existsSync(\'b.txt\')?0:1)" | Red: none (fixture)');
+  await fs.writeFile(context.plan, text);
+  git(context.root, 'commit', '-q', '-am', 'docs: proof needs b.txt');
+  await useWriter(context);
+  const result = await runTaskMode(context, [{ result: 'Task 1: GREEN' }, { result: 'Task 1: GREEN' }, { result: 'Task 2: GREEN' }]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  const { argv, stdin } = result.calls[1];
+  assert.equal(argv[argv.indexOf('--resume') + 1], 'session-1');
+  assert.match(stdin, /The previous attempt did not land task 1\./);
+  assert.doesNotMatch(stdin, /^Land Task 1 of /m);
+  assert.ok(!result.calls[0].argv.includes('--resume'), 'the first try is fresh');
+});
+
 // Defect E: the sandbox stopped the builder's test, it ended GREEN with the proof `not run`,
 // and the script's proof failure then spent the task's one retry.
 const unprovenWriter = (stub, unproven) => `import fs from 'node:fs';
