@@ -1,6 +1,17 @@
 # Changelog archive
 
-Releases before 0.133.4; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.133.4 - 2026-10-14
+
+### Changed
+- The run line under the prompt is now a bar, count and clock, such as `▰▰▰▰▰▰▰▱  7 of 8  ·  10:48`, with no warning sign or doubled `exo`; its time moves on every redraw and it shows only the current worktree's run.
+
+### Fixed
+- The run watcher no longer sends a stale stop prompt after a resume, or while a wait or a background agent already watches the run; a real stop still prompts once.
+- On a resume, the plan check skips the size of tasks that already landed, so their grown files no longer refuse the run.
+- A stopped, crashed or parked run's report shows the range its tasks committed, not `Landed: none`.
+- A builder the sandbox kept from running its proof no longer spends one of the task's tries the first time the run's own proof fails it.
 
 ## 0.133.3 - 2026-10-14
 

@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.133.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.9 - 2026-10-14
 
 ### Fixed
 - `exo:build` run reports count each model call's tokens once instead of once per content block, so per-task and total token figures no longer come out about 2.4x too high.
@@ -71,14 +73,3 @@ Versions before 0.133.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The plan check measures a running build's task size at the branch start, so growth from earlier tasks no longer refuses a resume.
 - A build run's repair session can edit the plan, so a task missing one file from its list is repaired instead of stopping the run.
 - The run watcher loads again and shows the run line beside a custom status line.
-
-## 0.133.4 - 2026-10-14
-
-### Changed
-- The run line under the prompt is now a bar, count and clock, such as `▰▰▰▰▰▰▰▱  7 of 8  ·  10:48`, with no warning sign or doubled `exo`; its time moves on every redraw and it shows only the current worktree's run.
-
-### Fixed
-- The run watcher no longer sends a stale stop prompt after a resume, or while a wait or a background agent already watches the run; a real stop still prompts once.
-- On a resume, the plan check skips the size of tasks that already landed, so their grown files no longer refuse the run.
-- A stopped, crashed or parked run's report shows the range its tasks committed, not `Landed: none`.
-- A builder the sandbox kept from running its proof no longer spends one of the task's tries the first time the run's own proof fails it.
