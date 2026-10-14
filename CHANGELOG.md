@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.10 - 2026-10-14
 
 ### Fixed
 - `exo:build` runs a plan's Success command once per tree when red-green is on: the final verify and a resume on an unchanged tree reuse red-green's recorded pass instead of running it again.
@@ -62,17 +64,3 @@ Versions before 0.134.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - The mid-run plan repair check passes `--run`, so growth from earlier tasks no longer flags a task.
-
-## 0.134.0 - 2026-10-14
-
-### Added
-- `npm run check` runs `claude plugin validate` when Claude Code is installed.
-
-### Changed
-- Compression now has three levels: off, short and shorter. Short is the new default and gives short replies in small, easy words. Shorter gives just the answer and key facts. Old settings keep working: low reads as short, and high reads as shorter.
-
-### Fixed
-- The plan check flags a refactor task with no Red field, and a Proof test that no task in its chain lists in Files.
-- The plan check measures a running build's task size at the branch start, so growth from earlier tasks no longer refuses a resume.
-- A build run's repair session can edit the plan, so a task missing one file from its list is repaired instead of stopping the run.
-- The run watcher loads again and shows the run line beside a custom status line.
