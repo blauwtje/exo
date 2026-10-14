@@ -23,7 +23,7 @@ test('reviewer-prompt.md exists and dispatches a review delegate', () => {
     'code-review',
     'references/critique.md',
     'batch-review.md',
-    'verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> report=<path>',
+    'verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> report=<path>',
     'Write no file but the report',
   ]) {
     assert.ok(block.includes(needle), `fenced block missing: ${needle}`);

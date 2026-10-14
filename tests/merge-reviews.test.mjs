@@ -11,27 +11,27 @@ import { run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/merge-reviews.mjs', import.meta.url));
 
-const CLEAN = 'CLEAN\n\nCount: defect=0 hazard=0 question=0\n';
+const CLEAN = 'CLEAN\n\nCount: defect=0 concern=0 question=0\n';
 const FINDINGS = [
   'FINDINGS',
   '',
   'a.mjs:3-4 defect missing guard; evidence here. fix',
   '  Probe: grep -q guard a.mjs',
-  'b.mjs:9 hazard swallowed error; evidence. report',
+  'b.mjs:9 concern swallowed error; evidence. report',
   '',
-  'Count: defect=1 hazard=1'
+  'Count: defect=1 concern=1'
 ].join('\n');
 
 test('all clean reports merge to CLEAN with zero counts', () => {
   const { verdict, counts } = mergeReviews([{ name: 'task-1', text: CLEAN }, { name: 'overlap', text: CLEAN }]);
   assert.equal(verdict, 'CLEAN');
-  assert.deepEqual(counts, { defect: 0, hazard: 0, question: 0, fix: 0 });
+  assert.deepEqual(counts, { defect: 0, concern: 0, question: 0, fix: 0 });
 });
 
 test('findings sum across reports and fix counts only fix findings', () => {
   const { verdict, counts, text } = mergeReviews([{ name: 'task-1', text: FINDINGS }, { name: 'task-2', text: FINDINGS }]);
   assert.equal(verdict, 'FINDINGS');
-  assert.deepEqual(counts, { defect: 2, hazard: 2, question: 0, fix: 2 });
+  assert.deepEqual(counts, { defect: 2, concern: 2, question: 0, fix: 2 });
   assert.match(text, /^FINDINGS\n/);
   assert.match(text, /## task-2/);
 });
@@ -49,7 +49,7 @@ test('the command writes .exo/branch-review.md and prints the return line', asyn
   await fs.writeFile(two, CLEAN);
   const result = await run(SCRIPT, ['--root', root, '--report', one, '--report', two]);
   const target = path.join(root, '.exo', 'branch-review.md');
-  assert.equal(result.stdout.trim(), `verdict=FINDINGS defect=1 hazard=1 question=0 fix=1 report=${target}`);
+  assert.equal(result.stdout.trim(), `verdict=FINDINGS defect=1 concern=1 question=0 fix=1 report=${target}`);
   assert.match(await fs.readFile(target, 'utf8'), /## task-1[\s\S]*## task-2/);
 });
 
@@ -115,12 +115,12 @@ test('the weight is the field after file:line, not a weight word in the evidence
   const text = [
     'FINDINGS',
     '',
-    'a.mjs:3; hazard; rule; evidence mentions (question 2); fix',
+    'a.mjs:3; concern; rule; evidence mentions (question 2); fix',
     '  Probe: grep -q x a.mjs',
-    'b.mjs:4; defect; rule; evidence mentions a hazard; report',
+    'b.mjs:4; defect; rule; evidence mentions a concern; report',
     ''
   ].join('\n');
   const { counts, unread } = mergeReviews([{ name: 'task-1', text }]);
-  assert.deepEqual(counts, { defect: 1, hazard: 1, question: 0, fix: 1 });
+  assert.deepEqual(counts, { defect: 1, concern: 1, question: 0, fix: 1 });
   assert.equal(unread, 0);
 });

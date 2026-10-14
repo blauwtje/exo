@@ -5,8 +5,8 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 
 const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
 const PROBE_LINE = /^\s*Probe:\s*\S/;
-const UNREAD = /\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
-const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
+const UNREAD = /\b(defect|concern|question)\b.*\b(fix|report)\W*$/;
+const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question)\b.*\b(fix|report)\W*$/;
 
 const USAGE = `Usage: node merge-reviews.mjs --root <checkout> --report <file> [--report <file> ...]
 Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line.`;
@@ -20,7 +20,7 @@ function verdictOf(text) {
 }
 
 export function mergeReviews(reports) {
-  const counts = { defect: 0, hazard: 0, question: 0, fix: 0 };
+  const counts = { defect: 0, concern: 0, question: 0, fix: 0 };
   let demoted = 0;
   let unread = 0;
   let unreadFix = 0;
@@ -51,9 +51,9 @@ export function mergeReviews(reports) {
     });
     sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
   }
-  if (verdict === 'CLEAN' && counts.defect + counts.hazard + counts.question + unread > 0) verdict = 'FINDINGS';
+  if (verdict === 'CLEAN' && counts.defect + counts.concern +counts.question + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
-  const tail = `Count: defect=${counts.defect} hazard=${counts.hazard} question=${counts.question} fix=${counts.fix}\n`;
+  const tail = `Count: defect=${counts.defect} concern=${counts.concern}question=${counts.question} fix=${counts.fix}\n`;
   return { verdict, counts, demoted, unread, unreadFix, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
@@ -70,7 +70,7 @@ function main(argv) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
   process.stdout.write(
-    `verdict=${verdict} defect=${counts.defect} hazard=${counts.hazard} question=${counts.question} fix=${counts.fix} report=${target}\n`
+    `verdict=${verdict} defect=${counts.defect} concern=${counts.concern} question=${counts.question} fix=${counts.fix} report=${target}\n`
   );
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe: line under them\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);

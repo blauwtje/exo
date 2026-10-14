@@ -23,7 +23,7 @@ test('fixedProbes reads only findings ending fixed', () => {
     'FINDINGS',
     'a.js:1-2; defect; rule; evidence; fix; fixed',
     '  Probe: test -f a.js',
-    'b.js:3-4; hazard; rule; evidence; fix; reported: needs c.js',
+    'b.js:3-4; concern; rule; evidence; fix; reported: needs c.js',
     '  Probe: test -f b.js',
     'c.js:5-6; defect; rule; evidence; fix; fixed'
   ].join('\n');

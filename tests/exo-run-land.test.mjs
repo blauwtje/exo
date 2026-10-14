@@ -23,7 +23,7 @@ import path from 'node:path';
 const record = process.env.STUB_RECORD;
 const index = fs.existsSync(record) ? fs.readFileSync(record, 'utf8').split('\\n').filter(Boolean).length : 0;
 fs.mkdirSync('.exo', { recursive: true });
-fs.writeFileSync('.exo/branch-review.md', 'CLEAN\\n\\nCount: defect=0 hazard=0 question=0 fix=0\\n');
+fs.writeFileSync('.exo/branch-review.md', 'CLEAN\\n\\nCount: defect=0 concern=0 question=0 fix=0\\n');
 if (${park} && index === 0) {
   fs.writeFileSync(path.join(process.env.EXO_RUN_DIR, 'parked'), 'Task 1: PARKED git push --force\\n');
   fs.appendFileSync(path.join(process.env.EXO_RUN_DIR, 'gates.md'), '- open: task 1: git push --force (denied)\\n');
