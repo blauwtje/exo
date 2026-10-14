@@ -14,7 +14,7 @@ import { VARIANTS } from '../benchmarks/variants.mjs';
 const SCHEMA = JSON.parse(fs.readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 
 test('compression-low arm prompts with the low rule from the schema, and no compression-high arm remains', () => {
-  assert.equal(ARMS['compression-low'].prompt, SCHEMA.compression.rules.low);
+  assert.equal(ARMS['compression-low'].prompt, SCHEMA.compression.rules[SCHEMA.compression.default]);
   assert.deepEqual(ARMS['compression-low'].pluginDirs, []);
   assert.equal(ARMS['compression-high'], undefined);
 });
