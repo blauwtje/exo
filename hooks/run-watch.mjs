@@ -116,7 +116,7 @@ async function wake($, context, run) {
 }
 
 async function flush($, context) {
-  if ((await $.agent.list()).some((agent) => LIVE_AGENT.includes(agent.status))) return;
+  if (((await $.agent?.list()) ?? []).some((agent) => LIVE_AGENT.includes(agent.status))) return;
   for (const [id, stop] of context.pending) {
     context.pending.delete(id);
     const state = await readState($, `${stop.dir}/state.json`);

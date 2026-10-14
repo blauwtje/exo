@@ -196,6 +196,20 @@ test('a real stop while idle prompts once; a real stop while busy prompts once a
   assert.match(harness.calls.prompts[1], /run-b ended stopped: task 3 blocked/);
 });
 
+test('a real stop on a host without agent listing prompts once', async () => {
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states);
+  delete harness.$.agent;
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  await tick();
+  assert.equal(harness.calls.prompts.length, 1);
+  assert.match(harness.calls.prompts[0], /run-a ended stopped: task 2 blocked/);
+});
+
 test('a landed run asks the lead to report the result', async () => {
   const states = { 'run-a': makeState({}) };
   const harness = makeHarness(states);
