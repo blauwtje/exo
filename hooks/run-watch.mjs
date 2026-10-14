@@ -137,8 +137,9 @@ async function tick($, context) {
   }
   context.first = false;
   const own = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase) && (run.dir.startsWith(`${root}/.exo/run/`) || run.state.runRoot === root));
-  context.run = own[own.length - 1];
-  $.ui.invalidate('ui.render');
+  const newest = own[own.length - 1];
+  // why: the engine draws no PromptHint row under a custom settings.statusLine; ui.status shows beside it.
+  $.ui.status(newest ? statusLine(newest, await $.clock.now()) : undefined);
   if (!context.busy) await flush($, context);
 }
 
@@ -166,7 +167,6 @@ export function register(on) {
     await flush($, context);
     return next(e);
   });
-  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => next(context.run ? { ...e, props: { ...e.props, tail: statusLine(context.run, await $.clock.now()) } } : e));
   on('session.receive', ($, e, next) => {
     if (e.origin.kind === 'task-notification') noteNotification(context, e.text);
     return next(e);

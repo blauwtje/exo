@@ -32,33 +32,20 @@ function makeHarness(states, options = {}) {
   const calls = { timers: [], lines: [], prompts: [], lists: [] };
   const agents = [];
   const handlers = {};
-  const matchers = {};
-  const renders = [];
-  const renderHint = async () => {
-    if (matchers['ui.render']?.component !== 'PromptHint') return undefined;
-    const drawn = await handlers['ui.render']($, { component: 'PromptHint', props: { isDraft: false, isWorking: false, hint: '? for shortcuts' } }, (event) => event);
-    return drawn.props.tail;
-  };
   const $ = {
-    clock: {
-      every: (ms, tick) => calls.timers.push({ ms, tick: async () => {
-        await tick();
-        calls.lines.push(...(await Promise.all(renders.splice(0))));
-      } }),
-      now: async () => clockNow()
-    },
+    clock: { every: (ms, tick) => calls.timers.push({ ms, tick }), now: async () => clockNow() },
     session: { root: async () => root },
     fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
-    ui: { invalidate: (event) => event === 'ui.render' && renders.push(renderHint()) },
+    ui: { status: (text) => calls.lines.push(text) },
     prompt: { submit: async (message) => calls.prompts.push(message.text) },
     agent: { list: async () => agents }
   };
   register((name, ...args) => {
     handlers[name] = args.at(-1);
-    if (args.length > 1) matchers[name] = args[0];
   });
   const fire = (name, e = {}) => handlers[name]?.($, e, (event) => event);
-  return { calls, agents, $, fire, start: (e) => handlers['session.start']($, e, (event) => event) };
+  const renderHint = async (e) => (handlers['ui.render'] ? handlers['ui.render']($, e, (event) => event) : e);
+  return { calls, agents, $, fire, renderHint, start: (e) => handlers['session.start']($, e, (event) => event) };
 }
 
 test('no timer starts when the session is not interactive', async () => {
@@ -74,7 +61,7 @@ test('an interactive session starts a five second tick and passes the event on',
   assert.deepEqual(harness.calls.timers.map((timer) => timer.ms), [5000]);
 });
 
-test('the prompt hint tail shows the newest active run, then clears', async () => {
+test('the plugin status line shows the newest active run, then clears', async () => {
   const states = { 'run-a': makeState({}) };
   const harness = makeHarness(states);
   await harness.start({ isInteractive: true });
@@ -85,6 +72,14 @@ test('the prompt hint tail shows the newest active run, then clears', async () =
   await tick();
   assert.equal(harness.calls.lines.length, 2);
   assert.equal(harness.calls.lines[1], undefined);
+});
+
+test('an active run leaves the prompt hint unchanged, so its line shows once', async () => {
+  const harness = makeHarness({ 'run-a': makeState({}) });
+  await harness.start({ isInteractive: true });
+  await harness.calls.timers[0].tick();
+  const hint = { component: 'PromptHint', props: { isDraft: false, isWorking: false, hint: '? for shortcuts' } };
+  assert.deepEqual(await harness.renderHint(hint), hint);
 });
 
 test('a run moving to a final phase wakes the lead once; a run final on the first tick does not', async () => {
@@ -280,7 +275,7 @@ const STARTED = Date.parse('2026-10-13T10:00:00Z');
 const SEVEN_OF_EIGHT = { landed: 7, total: 8, startedAt: new Date(STARTED).toISOString() };
 
 for (const minutes of [42, 648]) {
-  test(`the run line reads ${expectedLine({ landed: 7, total: 8, minutes })} after ${minutes} minutes, drawn as the prompt hint tail`, async () => {
+  test(`the run line reads ${expectedLine({ landed: 7, total: 8, minutes })} after ${minutes} minutes, drawn as the plugin status line`, async () => {
     const harness = makeHarness({ 'run-a': makeState(SEVEN_OF_EIGHT) }, { clockNow: () => STARTED + minutes * 60000 });
     await harness.start({ isInteractive: true });
     await harness.calls.timers[0].tick();
