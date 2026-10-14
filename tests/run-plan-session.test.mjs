@@ -163,6 +163,15 @@ test('parseStream reads the model from init and sums input, cache and output tok
   assert.equal(parseStream('').tokens, 0);
 });
 
+test('parseStream counts one model call once when its content blocks arrive as several assistant events', () => {
+  const block = (id, usage) => ({ type: 'assistant', message: { id, usage } });
+  const call = { input_tokens: 10, cache_read_input_tokens: 2000, cache_creation_input_tokens: 300, output_tokens: 40 };
+  const final = { ...call, output_tokens: 90 };
+  const other = { input_tokens: 5, cache_read_input_tokens: 100, cache_creation_input_tokens: 0, output_tokens: 7 };
+  const events = [block('msg_a', call), block('msg_a', call), block('msg_a', final), block('msg_b', other), block('msg_b', other)];
+  assert.equal(parseStream(events.map((event) => JSON.stringify(event)).join('\n')).tokens, 2400 + 112);
+});
+
 test('--max-run-usd: the ledger holds one line per session and the run stops before a session once the cap is spent', async () => {
   const context = await setup();
   const result = await runPlan(context, [{ ...land(1), hooks: 2 }, land(2)], ['--max-run-usd', '0.03']);

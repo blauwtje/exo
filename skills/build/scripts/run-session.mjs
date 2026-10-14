@@ -94,8 +94,11 @@ export function parseStream(text) {
     const usage = event.message?.usage ?? {};
     return (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0);
   }));
-  const tokens = events.filter((event) => event.type === 'assistant').reduce((sum, event) => {
-    const usage = event.message?.usage ?? {};
+  const usageByCall = new Map();
+  events.filter((event) => event.type === 'assistant' && event.message?.usage).forEach((event, index) => {
+    usageByCall.set(event.message.id ?? index, event.message.usage);
+  });
+  const tokens = [...usageByCall.values()].reduce((sum, usage) => {
     return sum + (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0) + (Number(usage.output_tokens) || 0);
   }, 0);
   const costs = results.map((result) => result.total_cost_usd).filter((cost) => typeof cost === 'number');
