@@ -3,8 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { BRANCH_REVIEW_KEY } from '../skills/verify/scripts/verify.mjs';
-import { recordPass } from '../lib/check-cache.mjs';
+import { BRANCH_REVIEW_KEY, recordPass } from '../lib/check-cache.mjs';
 import { git, run } from './harness.mjs';
 import { gitRepository, SCRIPT, CLEAN_CHECK } from './verify-gate-fixture.mjs';
 

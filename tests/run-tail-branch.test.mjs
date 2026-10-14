@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
-import { cachedPass } from '../lib/check-cache.mjs';
-import { BRANCH_REVIEW_KEY } from '../skills/verify/scripts/verify.mjs';
+import { BRANCH_REVIEW_KEY, cachedPass } from '../lib/check-cache.mjs';
 import { git } from './harness.mjs';
 import { runPlan, setup } from './run-plan-fixture.mjs';
 

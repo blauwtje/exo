@@ -6,8 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { recordPass, workingTreeKey } from '#check-cache';
-import { BRANCH_REVIEW_KEY } from '../../verify/scripts/verify.mjs';
+import { BRANCH_REVIEW_KEY, recordPass, workingTreeKey } from '#check-cache';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');

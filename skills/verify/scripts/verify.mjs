@@ -7,7 +7,7 @@ import process from 'node:process';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
-import { cachedPass, recordPass } from '#check-cache';
+import { BRANCH_REVIEW_KEY, cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { codeRuleFindings } from '#code-rules';
 import { proofsReport } from '#proofs-report';
@@ -29,7 +29,6 @@ one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md lin
 Exits 1 on any FAIL or STRAY line.`;
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
-export const BRANCH_REVIEW_KEY = 'review-branch';
 const DEFAULT_BASE = 'main';
 const DEFAULT_LAND_GATE = 'npm run check';
 const TEST_SCRIPT_GATE = 'npm test';
