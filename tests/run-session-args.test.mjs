@@ -29,3 +29,12 @@ test('claudeArgs keeps the other arguments when model and effort are both null',
   assert.ok(args.includes('--allowedTools'));
   assert.ok(args.includes('--strict-mcp-config'));
 });
+
+test('claudeArgs adds --resume with the session id when resume is set', () => {
+  const args = claudeArgs({ ...base, resume: 'session-9' });
+  assert.equal(args[args.indexOf('--resume') + 1], 'session-9');
+});
+
+test('claudeArgs leaves out --resume when resume is unset', () => {
+  assert.ok(!claudeArgs(base).includes('--resume'));
+});

@@ -248,10 +248,11 @@ function withStallGuard(settings) {
   return { ...(typeof settings === 'string' ? JSON.parse(settings) : settings), ...STALL_HOOK };
 }
 
-export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false }) {
+export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false, resume = null }) {
   const settings = stallGuard ? withStallGuard(base) : base;
   return [
-    '-p', '--permission-mode', 'dontAsk', '--permission-prompts', 'none',
+    '-p', ...(resume === null ? [] : ['--resume', resume]),
+    '--permission-mode', 'dontAsk', '--permission-prompts', 'none',
     '--output-format', 'stream-json', '--verbose',
     ...(model === null ? [] : ['--model', model]),
     ...(effort === null ? [] : ['--effort', effort]),
