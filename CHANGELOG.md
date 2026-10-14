@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.131.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.132.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.133.4 - 2026-10-14
 
 ### Changed
 - The run line under the prompt is now a bar, count and clock, such as `▰▰▰▰▰▰▰▱  7 of 8  ·  10:48`, with no warning sign or doubled `exo`; its time moves on every redraw and it shows only the current worktree's run.
@@ -201,9 +203,3 @@ Versions before 0.131.1 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A plan's `App:` start command may contain ` | `; only the first ` | Ready: ` splits it.
 - A task session reports a sandbox-refused proof as `not run`, so `land-task` runs the proof instead of refusing the report.
 - The `.csproj` run test commits `App.csproj` on `main` and asserts `gate PASS`; on the run branch the stray-path check failed its gate.
-
-## 0.131.1 - 2026-10-11
-
-### Fixed
-
-- Inside an `exo run`, a task session that ends on `Task <n>: LANDED <sha>` is no longer blocked twice, a session that ends on a question followed by answer options (A/B) is now blocked, and a run that lands itself no longer tells the user to push or open a pull request.

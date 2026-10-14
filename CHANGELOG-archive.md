@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.131.1; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.132.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.131.1 - 2026-10-11
+
+### Fixed
+
+- Inside an `exo run`, a task session that ends on `Task <n>: LANDED <sha>` is no longer blocked twice, a session that ends on a question followed by answer options (A/B) is now blocked, and a run that lands itself no longer tells the user to push or open a pull request.
 
 ## 0.131.0 - 2026-10-11
 
