@@ -5,6 +5,7 @@ const STALE_MS = 3600000;
 const WORKTREES_MARK = '/.git/worktrees/';
 const REPORT_PHASES = ['landed', 'passed'];
 const RUN_START = /run start:/;
+const LIVE_AGENT = ['pending', 'running', 'waiting'];
 
 function parseState(text) {
   try {
@@ -115,6 +116,7 @@ async function wake($, context, run) {
 }
 
 async function flush($, context) {
+  if ((await $.agent.list()).some((agent) => LIVE_AGENT.includes(agent.status))) return;
   for (const [id, stop] of context.pending) {
     context.pending.delete(id);
     const state = await readState($, `${stop.dir}/state.json`);

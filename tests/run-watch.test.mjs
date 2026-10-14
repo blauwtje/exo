@@ -30,6 +30,7 @@ function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists }) {
 function makeHarness(states, options = {}) {
   const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now(), clockNow = () => Date.now() } = options;
   const calls = { timers: [], lines: [], prompts: [], lists: [] };
+  const agents = [];
   const handlers = {};
   const matchers = {};
   const renders = [];
@@ -49,14 +50,15 @@ function makeHarness(states, options = {}) {
     session: { root: async () => root },
     fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists }),
     ui: { invalidate: (event) => event === 'ui.render' && renders.push(renderHint()) },
-    prompt: { submit: async (message) => calls.prompts.push(message.text) }
+    prompt: { submit: async (message) => calls.prompts.push(message.text) },
+    agent: { list: async () => agents }
   };
   register((name, ...args) => {
     handlers[name] = args.at(-1);
     if (args.length > 1) matchers[name] = args[0];
   });
   const fire = (name, e = {}) => handlers[name]?.($, e, (event) => event);
-  return { calls, $, fire, start: (e) => handlers['session.start']($, e, (event) => event) };
+  return { calls, agents, $, fire, start: (e) => handlers['session.start']($, e, (event) => event) };
 }
 
 test('no timer starts when the session is not interactive', async () => {
@@ -137,6 +139,40 @@ test('a stop a wait already reported while the lead is busy sends no stop prompt
   await harness.fire('turn.complete');
   await tick();
   assert.deepEqual(harness.calls.prompts, []);
+});
+
+test('a stop seen while a subagent is live and that agent reports the run sends no stop prompt', async () => {
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states);
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  harness.agents.push({ id: 'a1', description: 'watch run-a', type: 'general-purpose', status: 'running' });
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  await tick();
+  harness.agents[0].status = 'completed';
+  await harness.fire('session.receive', { origin: { kind: 'task-notification' }, text: 'Agent done: run run-a stopped at task 2, repaired and resumed' });
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
+});
+
+test('a stop seen while a subagent is live prompts once after it ends without naming the run', async () => {
+  const states = { 'run-a': makeState({}) };
+  const harness = makeHarness(states);
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  harness.agents.push({ id: 'a1', description: 'watch run-a', type: 'general-purpose', status: 'waiting' });
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
+  harness.agents[0].status = 'completed';
+  await harness.fire('session.receive', { origin: { kind: 'task-notification' }, text: 'Agent done: lint fixed' });
+  await tick();
+  await tick();
+  assert.equal(harness.calls.prompts.length, 1);
+  assert.match(harness.calls.prompts[0], /run-a ended stopped: task 2 blocked/);
 });
 
 test('a real stop while idle prompts once; a real stop while busy prompts once after the turn ends', async () => {
