@@ -136,6 +136,11 @@ function noteTask(task) {
   if (dir) recordTask(path.resolve(dir, '..', '..', '..'), path.basename(dir), task);
 }
 
+function noteCounts(counts) {
+  const dir = process.env.EXO_RUN_DIR;
+  if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), counts);
+}
+
 function noteStop(stop) {
   const dir = process.env.EXO_RUN_DIR;
   if (dir) recordStop(path.resolve(dir, '..', '..', '..'), path.basename(dir), stop);
@@ -249,6 +254,7 @@ async function main(argv) {
     process.stdout.write(`${line}\n`);
   };
   writeTasks();
+  noteCounts({ landed: landedAtStart.length, total: plan.tasks.length });
   if (process.env.EXO_RUN_DIR) for (const name of ['blocked', 'parked']) fs.rmSync(path.join(process.env.EXO_RUN_DIR, name), { force: true });
   say(`run start: ${path.relative(root, planPath) || planPath}, branch ${branch}, ${plan.tasks.length} tasks (${plan.tasks.length - landedAtStart.length} to build)`);
 
