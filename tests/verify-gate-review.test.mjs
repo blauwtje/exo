@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { git, run } from './harness.mjs';
-import { gitRepository, SCRIPT, landTask, CLEAN_CHECK, INLINE_PLAN } from './verify-gate-fixture.mjs';
+import { gitRepository, SCRIPT, landTask, CLEAN_CHECK, INLINE_PLAN, SCOPE_PASS } from './verify-gate-fixture.mjs';
 
 test('a landed task, a clean check and no stray paths print PASS lines and one REVIEW line', async () => {
   const root = await gitRepository({
@@ -16,7 +16,7 @@ test('a landed task, a clean check and no stray paths print PASS lines and one R
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', `REVIEW Branch main..HEAD: ${REVIEWER_AGENTS.light}`, 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', SCOPE_PASS,'PASS claims-diff', `REVIEW Branch main..HEAD: ${REVIEWER_AGENTS.light}`, 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 const RISK_PLAN = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none${risk}| Proof: node -e "process.exit(0)"\n`;

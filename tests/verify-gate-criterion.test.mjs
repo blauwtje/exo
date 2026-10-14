@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { memoryDirectory } from '#memory-store';
 import { git, run } from './harness.mjs';
-import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK } from './verify-gate-fixture.mjs';
+import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK, SCOPE_PASS } from './verify-gate-fixture.mjs';
 
 const FAILING_CHECK = "console.log('check failed'); process.exit(1);\n";
 
@@ -23,7 +23,7 @@ test('a failing check-command prints FAIL success-criterion', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', 'PASS claims-diff', reviewLine(REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', SCOPE_PASS,'PASS claims-diff', reviewLine(REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('a check that exits 0 and prints no SUMMARY line passes, under any gate command', async () => {
@@ -247,7 +247,7 @@ test('with a check script the gate stays npm run check and prints no Proof line'
   assert.deepEqual(lines.slice(0, 3), [
     'SKIP Task 1 (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)',
     'PASS success-criterion',
-    'PASS stray-paths'
+    SCOPE_PASS
   ]);
   assert.equal(lines.some((line) => line.startsWith('Proof:')), false);
   await assert.rejects(readFile(runs, 'utf8'), { code: 'ENOENT' });
@@ -263,7 +263,7 @@ test('with no check script a package with a bin or a start script passes on npm 
     assert.deepEqual(lines.slice(0, 3), [
       'SKIP Task 1 (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)',
       'PASS success-criterion (npm test; no check script)',
-      'PASS stray-paths'
+      SCOPE_PASS
     ]);
     assert.equal(lines.some((line) => line.startsWith('Proof:')), false);
     assert.equal(await readFile(runs, 'utf8'), 'run\n');

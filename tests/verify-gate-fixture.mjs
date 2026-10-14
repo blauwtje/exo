@@ -26,7 +26,9 @@ export function landTask(root, number, line = `// task ${number}`) {
 // The one branch-wide REVIEW line the gate prints when no --base is given.
 export const reviewLine = (reviewer) => `REVIEW Branch main..HEAD: ${reviewer}`;
 
-export const CLEAN_CHECK = "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n";
+export const SCOPE_PASS = 'PASS stray-paths';
+
+export const CLEAN_CHECK ="console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n";
 
 export const INLINE_PLAN = ['### Task 1: feat(app): greet', 'Depends on: none', '', 'Files:', '- Modify: `src/app.js`', '',
   '```js', 'export const greet = () => "hi";', '```', '', 'Commit:', '```bash', 'git commit -am "feat(app): greet" -m "Plan-task: plan/1"', '```', ''].join('\n');

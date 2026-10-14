@@ -8,7 +8,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { git, run } from './harness.mjs';
-import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK, INLINE_PLAN } from './verify-gate-fixture.mjs';
+import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK, INLINE_PLAN, SCOPE_PASS } from './verify-gate-fixture.mjs';
 
 test('a change outside every declared Files prints a STRAY line and exits 1', async () => {
   const root = await gitRepository({
@@ -58,7 +58,7 @@ test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes
   const sha = git(only, 'rev-parse', '--short', 'HEAD');
   const clean = await run(SCRIPT, ['--plan', 'plan.md', '--base', onlyBase, '--check-command', 'node check.js'], { cwd: only });
   assert.ok(clean.stdout.includes(`FIX-ONLY src/helper.js (${sha})`), clean.stdout);
-  assert.ok(clean.stdout.includes('PASS stray-paths'), clean.stdout);
+  assert.ok(clean.stdout.includes(SCOPE_PASS), clean.stdout);
   assert.ok(!clean.stdout.includes('STRAY'), clean.stdout);
   assert.equal(clean.code, 0, clean.stdout + clean.stderr);
 });
@@ -74,10 +74,10 @@ test('the plan file committed on the branch is the run\'s input, not a stray pat
   git(root, 'commit', '-am', 'feat(app): greet', '-m', 'Plan-task: plan/1');
 
   const fromRoot = await run(SCRIPT, ['--plan', 'docs/plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(fromRoot.stdout.includes('PASS stray-paths\n'), fromRoot.stdout);
+  assert.ok(fromRoot.stdout.includes(`${SCOPE_PASS}\n`), fromRoot.stdout);
   const outside = path.dirname(root);
   const fromOutside = await run(SCRIPT, ['--plan', path.relative(outside, path.join(root, 'docs', 'plan.md')), '--root', root, '--base', base, '--check-command', 'node check.js'], { cwd: outside });
-  assert.ok(fromOutside.stdout.includes('PASS stray-paths\n'), fromOutside.stdout);
+  assert.ok(fromOutside.stdout.includes(`${SCOPE_PASS}\n`), fromOutside.stdout);
 });
 
 test('a committed CHANGELOG.md and docs md outside every Files print DOCS lines, not STRAY', async () => {
@@ -107,7 +107,7 @@ test('a committed CHANGELOG.md and docs md outside every Files print DOCS lines,
   git(onlyDocs, 'commit', '-m', 'chore: changelog');
   const clean = await run(SCRIPT, ['--plan', 'plan.md', '--base', onlyBase, '--check-command', 'node check.js'], { cwd: onlyDocs });
   assert.ok(clean.stdout.includes('DOCS CHANGELOG.md'), clean.stdout);
-  assert.ok(clean.stdout.includes('PASS stray-paths'), clean.stdout);
+  assert.ok(clean.stdout.includes(SCOPE_PASS), clean.stdout);
   assert.equal(clean.code, 0, clean.stdout + clean.stderr);
 });
 
@@ -125,7 +125,7 @@ test('--root points the gate at another checkout, not the caller\'s own cwd', as
     { cwd: path.dirname(root) }
   );
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', SCOPE_PASS,'PASS claims-diff', reviewLine(REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('missing --plan is rejected', async () => {
