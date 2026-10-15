@@ -12,7 +12,16 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Highlights
 - **exo no longer blocks risky git commands or shell reads of secret files; set `permissions.deny` rules or the sandbox in your own settings to keep them blocked.**
 
+### Added
+- A detached run reports each session's cache read share and warns when turn 1 writes a large cache.
+- plan-check warns on adjacent tiny plan tasks.
+
 ### Changed
+- A headless run passes `--exclude-dynamic-system-prompt-sections` to each session, so the system prompt caches across sessions.
+- A headless run passes a per-kind `--max-turns` turn cap to each session, and verify's Opus review gets a tighter turn cap.
+- A headless build session's report comes from its final reply, not a separate file write.
+- `exo:run-unit` uses a 1-hour prompt cache.
+- A task that hits its turn cap stops as blocked, and its partial work goes to `.exo/carry/task<n>-partial.patch`.
 - A weekly scheduled run cuts a release when `## Unreleased` holds an entry.
 - A push to `main` cuts no release; `gh workflow run release.yml` cuts one on demand, with an optional `level` input.
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { averageLines, clock, landedLine, startLine, taskSubject, wallClock } from '../skills/build/scripts/run-report.mjs';
+import { averageLines, cacheLines, clock, landedLine, startLine, taskSubject, wallClock } from '../skills/build/scripts/run-report.mjs';
 
 test('wallClock gives local HH:MM:SS and clock stays as it was', () => {
   assert.equal(wallClock(new Date(2026, 9, 13, 9, 5, 7)), '09:05:07');
@@ -16,6 +16,12 @@ test('taskSubject drops the type(scope) prefix and keeps a heading without one',
 test('startLine and landedLine follow the log format', () => {
   assert.equal(startLine({ number: 3, subject: 'format log lines', model: 'sonnet', effort: 'medium' }), 'task 3 start: format log lines · sonnet medium');
   assert.equal(landedLine({ number: 3, sha: 'abcdef0123456', ms: 95400, turns: 12, tokens: 41500, cost: 0.5 }), 'task 3 landed abcdef0 · 95s · 12 turns · 42k tokens · $0.50');
+});
+
+test('cacheLines gives the read share and warns when turn 1 wrote over the bar', () => {
+  assert.deepEqual(cacheLines({ cacheRead: 90000, cacheWrite: 10000, firstCacheWrite: 9000 }, 20000), ['cache read 90% (90k read, 10k written)']);
+  assert.deepEqual(cacheLines({ cacheRead: 30000, cacheWrite: 30000, firstCacheWrite: 25000 }, 20000), ['cache read 50% (30k read, 30k written)', 'warning: turn 1 wrote 25k tokens to the cache, over the 20k bar']);
+  assert.deepEqual(cacheLines({ cacheRead: null, cacheWrite: null, firstCacheWrite: null }, 20000), []);
 });
 
 test('averageLines gives averages per landed task and totals, none for no tasks', () => {

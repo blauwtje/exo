@@ -101,16 +101,25 @@ export function parseStream(text) {
   const tokens = [...usageByCall.values()].reduce((sum, usage) => {
     return sum + (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0) + (Number(usage.output_tokens) || 0);
   }, 0);
+  const sumField = (field) => {
+    const values = [...usageByCall.values()].map((usage) => usage[field]).filter((value) => typeof value === 'number');
+    return values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0);
+  };
+  const firstCreation = events.find((event) => event.type === 'assistant' && event.message?.usage)?.message.usage.cache_creation_input_tokens;
   const costs = results.map((result) => result.total_cost_usd).filter((cost) => typeof cost === 'number');
   return {
     init,
     final,
     resultText: typeof final?.result === 'string' ? final.result : '',
+    subtype: typeof final?.subtype === 'string' ? final.subtype : null,
     turns: results.reduce((sum, result) => sum + (Number(result.num_turns) || 0), 0),
     cost: costs.at(-1) ?? 0,
     peakContext,
     model: typeof init?.model === 'string' ? init.model : null,
     tokens,
+    cacheRead: sumField('cache_read_input_tokens'),
+    cacheWrite: sumField('cache_creation_input_tokens'),
+    firstCacheWrite: typeof firstCreation === 'number' ? firstCreation : null,
     sessionId: init?.session_id ?? final?.session_id ?? null,
     hooks: events.filter((event) => event.type === 'system' && event.subtype === 'hook_started').length,
     denials: [...denials.values()].filter((denial) => !isRefusal(denial)),
@@ -241,6 +250,15 @@ export function allowRules({ root, planPath, plan, tail = false, repair = false,
 
 const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', fix: 'Read,Edit,Write,Bash,Grep,Glob', review: 'Read,Write,Glob,Grep,Bash' };
 
+const SESSION_AGENTS = { build: 'build-task', fix: 'fix-review', review: 'review-branch' };
+
+export function agentMaxTurns(kind, pluginRoot = PLUGIN_ROOT) {
+  const text = fs.readFileSync(path.join(pluginRoot, 'agents', `${SESSION_AGENTS[kind]}.md`), 'utf8');
+  const turns = Number(/^maxTurns:\s*(\d+)\s*$/m.exec(text)?.[1]);
+  if (!Number.isInteger(turns) || turns < 1) throw new Error(`agents/${SESSION_AGENTS[kind]}.md has no maxTurns`);
+  return turns;
+}
+
 const STALL_HOOK = { hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: `node "${path.join(PLUGIN_ROOT, 'hooks', 'run-stall-guard.mjs')}"` }] }] } };
 
 function withStallGuard(settings) {
@@ -248,7 +266,7 @@ function withStallGuard(settings) {
   return { ...(typeof settings === 'string' ? JSON.parse(settings) : settings), ...STALL_HOOK };
 }
 
-export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false, resume = null }) {
+export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false, resume = null, taskCount = 1 }) {
   const settings = stallGuard ? withStallGuard(base) : base;
   return [
     '-p', ...(resume === null ? [] : ['--resume', resume]),
@@ -261,6 +279,8 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
     '--strict-mcp-config',
     '--tools', SESSION_TOOLS[kind], '--disable-slash-commands',
     '--include-hook-events',
+    '--exclude-dynamic-system-prompt-sections',
+    '--max-turns', String(agentMaxTurns(kind) * (kind === 'build' ? taskCount : 1)),
     ...(pluginDir === null ? [] : ['--plugin-dir', pluginDir]),
     '--allowedTools', ...allow,
     '--disallowedTools', ...DENY_RULES, 'mcp__*'

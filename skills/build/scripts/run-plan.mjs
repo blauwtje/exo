@@ -17,10 +17,10 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
+import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
-import { averageLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
+import { averageLines, cacheLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
 
@@ -66,6 +66,7 @@ function chooseProvider(flags, home, project) {
     ...budgetPin(name, flags),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
     contextBudget: config.defaults.contextBudget,
+    cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
     sandbox: sandboxMode(config, project)
   };
 }
@@ -245,7 +246,7 @@ async function main(argv) {
   if (!isFileOnDisk(startFile) && landedAtStart.length === 0) fs.writeFileSync(startFile, `${gitOut(root, ['rev-parse', 'HEAD'])}\n`);
   const startCommit = isFileOnDisk(startFile) ? fs.readFileSync(startFile, 'utf8').trim() : null;
   const startedAt = Date.now();
-  const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [], elapsed: () => Date.now() - startedAt };
+  const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, cacheWriteBar: provider.cacheWriteBar, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [], elapsed: () => Date.now() - startedAt };
   for (const number of landedAtStart) {
     const task = plan.tasks.find((entry) => entry.number === number);
     run.landings.set(number, { before: true, sha: (taskCommits(task, startCommits, planId)[0] ?? '').slice(0, 12) });
@@ -282,11 +283,11 @@ async function main(argv) {
     : '');
   // why: the stall guard rewrites each Bash command, which then matches no Bash allow rule; only sandboxed sessions run Bash without one.
   const stallGuardOn = (kind) => sandbox.enabled && ['task', 'plan'].includes(kind);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, resume = null }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, resume = null, taskCount = 1 }) => {
     if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount }), {
       cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const reported = parseStream(outcome.text);
@@ -295,7 +296,7 @@ async function main(argv) {
     const parsed = { ...reported, cost: Math.max(0, reported.cost - earlierCost) };
     if (reported.sessionId) sessionCosts.set(reported.sessionId, reported.cost);
     spent += parsed.cost;
-    appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
+    appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite })}\n`);
     return { before, outcome, parsed: { ...parsed, model: parsed.model ?? sessionModel } };
   };
 
@@ -307,6 +308,17 @@ async function main(argv) {
   const proofNotRun = (n) => {
     const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
     return isFileOnDisk(report) && /\bnot run\b/i.test(fs.readFileSync(report, 'utf8'));
+  };
+  // why: a single-task build session carries its report in the reply above the last line; the script writes it where land-task and the run report read it. A report file this session wrote itself stays.
+  const writeReplyReport = (n, reply) => {
+    const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
+    const lines = reply.split(/\r?\n/);
+    while (lines.length > 0 && lines.at(-1).trim() === '') lines.pop();
+    lines.pop();
+    const body = lines.join('\n').trim();
+    if (body === '' || isFileOnDisk(report)) return;
+    fs.mkdirSync(path.dirname(report), { recursive: true });
+    fs.writeFileSync(report, `${body}\n`);
   };
   let retryNote = '';
   let iteration = 0;
@@ -415,6 +427,13 @@ async function main(argv) {
     say(`task ${n} repair rejected${breach === null ? '' : `: ${breach}`}`);
     return false;
   };
+  const shelvePartialWork = (n) => {
+    const carry = path.join(root, SCRATCH_FOLDER, 'carry');
+    fs.mkdirSync(carry, { recursive: true });
+    const { patch, failed } = shelveLeftover(root, path.join(carry, `task${n}-partial.patch`), untrackedAtStart);
+    if (patch !== null) say(`task ${n} partial work saved to ${patch}`);
+    if (failed !== undefined) say(`task ${n} partial work not cleared: ${clip(failed, 80)}`);
+  };
   const repairedNote = (n, reason) => `\nThe previous attempt on task ${n} reported ${clip(reason, 120)}; the plan's field line for it was repaired. Read the plan task again.`;
   const repairOrBlock = async (n, reason) => {
     if (!(await repairTask(n, reason))) return blockedStop(n, reason);
@@ -474,6 +493,11 @@ async function main(argv) {
     if (stopped !== undefined || !passes.has(refused.n)) return stopped;
     return landOrRepair(numbers.slice(numbers.indexOf(refused.n) + 1), record, started);
   };
+  const maxTurnsStop = (n, outcome, parsed, taskCount) => {
+    if (outcome.timedOut || parsed.subtype !== 'error_max_turns') return undefined;
+    shelvePartialWork(n);
+    return blockedStop(n, `hit --max-turns ${agentMaxTurns('build') * taskCount}`);
+  };
   if (stop === undefined && chosen.mode === 'plan' && order.length > 0) {
     stop = budgetStop() ?? undefined;
     const first = order[0];
@@ -483,15 +507,16 @@ async function main(argv) {
       const untrackedBefore = new Set(untrackedPaths(root));
       say(`plan session start: tasks ${numbersText(order)}`);
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
-      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
+      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first, taskCount: order.length });
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-      const record = { iteration, task: first, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
+      const record = { iteration, task: first, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
       run.records.push(record);
       lastTask = first;
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
       stop = unsafeStop(first, before, planTaskTrailer(planId, first), parsed, log) ?? undefined;
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
       if (stop === undefined && status !== null) stop = blockedStop(first, status[1] || last);
+      if (stop === undefined) stop = maxTurnsStop(first, outcome, parsed, order.length);
       stop = (await landOrRepair(stop === undefined ? order : [], record, startedPlan)) ?? stop;
       if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
         const { patch, failed } = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
@@ -548,9 +573,12 @@ async function main(argv) {
     const resume = handoffNote(n) === '' ? failedSessions.get(n) ?? null : null;
     failedSessions.delete(n);
     const prompt = resume === null ? buildPrompt(n, retryNote + handoffNote(n)) : retryNote;
+    // why: a report from an earlier try or run process would otherwise stay, and land-task would prove this try from it.
+    fs.rmSync(path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
     const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, resume });
-    const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-    const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, last, ...deniedFields(parsed) };
+    writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
+    const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
+    const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
     run.records.push(record);
     lastTask = n;
 
@@ -563,6 +591,11 @@ async function main(argv) {
     if (landedTasks(plan.tasks, root, planId).includes(n)) {
       markLanded(n, record, startedTask);
       continue;
+    }
+    if (!outcome.timedOut && parsed.subtype === 'error_max_turns') {
+      shelvePartialWork(n);
+      stop = blockedStop(n, `hit --max-turns ${agentMaxTurns('build')}`);
+      break;
     }
     if (!outcome.timedOut && new RegExp(`^Task ${n}: HANDOFF\\b`).test(last) && isFileOnDisk(handoffFile(n))) {
       say(`task ${n} handed off at the context limit`);
@@ -644,7 +677,7 @@ async function main(argv) {
       const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
       const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel });
       const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
-      run.records.push({ iteration: number, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [], refused: [] });
+      run.records.push({ iteration: number, task: null, kind, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, denied: [], refused: [] });
       const breach = planBreach() ?? breachOf(root, before, { tail: true });
       const parked = breach === null ? takeParked('tail') : null;
       const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
@@ -708,7 +741,10 @@ async function main(argv) {
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
 
-  appendLog(path.join(logDir, 'summary.txt'), `${detailLines(run, stop).join('\n')}\n`, fs.writeFileSync);
+  const detail = detailLines(run, stop);
+  const stopLine = detail.pop();
+  const cacheReport = run.records.flatMap((record) => cacheLines(record, run.cacheWriteBar).map((line) => `${record.task === null ? `Iteration ${record.iteration} ${record.kind}` : `Task ${record.task}`}: ${line}`));
+  appendLog(path.join(logDir, 'summary.txt'), `${[...detail, ...cacheReport, stopLine].join('\n')}\n`, fs.writeFileSync);
   const refused = deniedLines(run.records);
   if (process.env.EXO_RUN_DIR && refused.length > 0) appendLog(path.join(process.env.EXO_RUN_DIR, 'denied.txt'), `${refused.join('\n')}\n`);
   process.stdout.write(`${summaryLines(run, stop).join('\n')}\n`);

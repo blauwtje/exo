@@ -14,6 +14,8 @@ const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
+const TINY_TASK_TOKENS = 2000;
+const TINY_TASK_BYTES = TINY_TASK_TOKENS * 4;
 const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
@@ -113,10 +115,30 @@ function forkPointOf(root) {
   return fork.status === 0 ? fork.stdout.trim() : null;
 }
 
+function taskBytes(task, root, forkPoint) {
+  const sizeOf = (file) => (forkPoint === null ? bytesUnder(path.join(root, file.path)) : bytesAtCommit(root, forkPoint, file.path));
+  return Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + sizeOf(file), 0);
+}
+
+// why: two adjacent tiny tasks on the same files and one chain each pay a session start that one merged task would pay once.
+function warnTinyTasks(tasks, { root, forkPoint, landed }) {
+  if (root === undefined || root === null) return [];
+  const byNumber = new Map(tasks.map((task) => [task.number, task]));
+  const tiny = (task) => !landed.includes(task.number) && taskBytes(task, root, forkPoint) < TINY_TASK_BYTES;
+  const warnings = [];
+  for (let i = 0; i + 1 < tasks.length; i++) {
+    const [first, second] = [tasks[i], tasks[i + 1]];
+    const secondPaths = new Set(second.files.map((file) => file.path));
+    if (!first.files.some((file) => secondPaths.has(file.path))) continue;
+    if (!reachesThrough(byNumber, second.number, first.number)) continue;
+    if (tiny(first) && tiny(second)) warnings.push(`warning: Task ${first.number} and Task ${second.number} are both tiny (under ${TINY_TASK_TOKENS} tokens of task text and Files:) and share Files: and a Depends on chain: merge them into one task`);
+  }
+  return warnings;
+}
+
 function checkContextSize(task, root, forkPoint) {
   if (root === undefined || root === null) return [];
-  const sizeOf = (file) => (forkPoint === null ? bytesUnder(path.join(root, file.path)) : bytesAtCommit(root, forkPoint, file.path));
-  const bytes = Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + sizeOf(file), 0);
+  const bytes = taskBytes(task, root, forkPoint);
   const tokens = Math.ceil(bytes / BYTES_PER_TOKEN);
   if (tokens <= TASK_SPLIT_TOKENS) return [];
   return [`Task ${task.number}: split Task ${task.number} (about ${tokens} tokens of task text and Files:, over ${TASK_SPLIT_TOKENS})`];
@@ -496,12 +518,13 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     ...checkNestedClaude(plan, resolvedRoot),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
-  if (problems.length > 0) return { ok: false, lines: problems };
+  const warnings = warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed });
+  if (problems.length > 0) return { ok: false, lines: [...problems, ...warnings] };
   const largest = plan.tasks.reduce((best, task) => {
     const size = taskSize(task);
     return size.lines > best.lines ? { number: task.number, lines: size.lines } : best;
   }, { number: plan.tasks[0].number, lines: taskSize(plan.tasks[0]).lines });
-  return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`] };
+  return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`, ...warnings] };
 }
 
 function main(argv) {

@@ -1,6 +1,6 @@
 {
   "efforts": ["low", "medium", "high", "xhigh", "max"],
-  "defaults": { "provider": "claude", "effort": "medium", "contextBudget": 60000, "promptCacheTtl": "5m", "sandbox": { "enabled": true, "allowedDomains": [] } },
+  "defaults": { "provider": "claude", "effort": "medium", "contextBudget": 60000, "promptCacheTtl": "5m", "turnOneCacheWriteWarn": 20000,"sandbox": { "enabled": true, "allowedDomains": [] } },
   "providers": {
     "claude": {
       "model": "sonnet",

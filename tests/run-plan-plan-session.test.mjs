@@ -20,6 +20,7 @@ test('--session plan: one session builds both tasks, then the script lands each 
   assert.match(result.calls[0].stdin, /^Build Tasks 1, 2 of .*plan\.md in this session\./);
   assert.match(result.calls[0].stdin, /Land nothing/);
   assert.equal(result.calls[0].stdin.match(/### Task \d:/g).length, 2);
+  assert.equal(result.calls[0].argv[result.calls[0].argv.indexOf('--max-turns') + 1], '120', 'a plan session of 2 tasks gets 60 turns per task');
   const logs = await fs.readdir(path.join(context.root, '.exo', 'run-plan', 'plan'), { recursive: true });
   assert.ok(logs.some((name) => name.endsWith('land-task-1.log')) && logs.some((name) => name.endsWith('land-task-2.log')), logs.join());
   const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
@@ -52,7 +53,7 @@ test('--session plan: a stopped plan session leaves a clean tree and index, only
   const wrapper = path.join(context.tools, 'leftover.mjs');
   const seen = path.join(context.tools, 'seen.txt');
   await fs.appendFile(path.join(context.root, '.git', 'info', 'exclude'), 'build.log\n');
-  // First spawn: task 1's file and report, a staged failing test for task 2, a binary and an ignored file, then no result line. Later spawns note what they find.
+  // First spawn: task 1's file, report and a scratch note, a staged failing test for task 2, a binary and an ignored file, then no result line. Later spawns note what they find.
   await fs.writeFile(wrapper, [
     "import { execFileSync } from 'node:child_process';",
     "import fs from 'node:fs';",
@@ -64,9 +65,10 @@ test('--session plan: a stopped plan session leaves a clean tree and index, only
     "  fs.writeFileSync('build.log', 'ignored\\n');",
     "  fs.mkdirSync('.exo', { recursive: true });",
     "  fs.writeFileSync('.exo/implementer-1.md', 'Landed: x\\nProof:\\nnode --version: pass\\n  v1\\nUnresolved: none\\n');",
+    "  fs.writeFileSync('.exo/notes-1.md', 'kept\\n');",
     '} else {',
     "  const staged = execFileSync('git', ['diff', '--cached', '--name-only'], { encoding: 'utf8' }).trim() || 'none';",
-    `  fs.appendFileSync(${JSON.stringify(seen)}, [...['b.test.mjs', 'a.txt', 'logo.bin', 'notes.txt', 'build.log', '.exo/implementer-1.md'].map((file) => fs.existsSync(file)), staged].join(',') + '\\n');`,
+    `  fs.appendFileSync(${JSON.stringify(seen)}, [...['b.test.mjs', 'a.txt', 'logo.bin', 'notes.txt', 'build.log', '.exo/notes-1.md'].map((file) => fs.existsSync(file)), staged].join(',') + '\\n');`,
     '}',
     `await import(${JSON.stringify(context.stub)});`,
     ''
@@ -80,7 +82,7 @@ test('--session plan: a stopped plan session leaves a clean tree and index, only
   const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
   const patch = await fs.readFile(path.join(logDir, 'plan-leftover-1.patch'), 'utf8');
   for (const held of [/b\.test\.mjs/, /a\.txt/, /logo\.bin/, /GIT binary patch/]) assert.match(patch, held);
-  for (const kept of [/\.exo\/implementer/, /notes\.txt/, /build\.log/]) assert.doesNotMatch(patch, kept);
+  for (const kept of [/\.exo\//, /notes\.txt/, /build\.log/]) assert.doesNotMatch(patch, kept);
   assert.match(await fs.readFile(path.join(context.root, 'notes.txt'), 'utf8'), /mine/);
 });
 

@@ -11,10 +11,13 @@ const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.ur
 
 const writer = (stub) => `import fs from 'node:fs';
 const index = fs.existsSync(process.env.STUB_RECORD) ? fs.readFileSync(process.env.STUB_RECORD, 'utf8').split('\\n').filter(Boolean).length : 0;
-if (index < 2) {
-  fs.writeFileSync(index === 0 ? 'a.txt' : 'b.txt', 'x\\n');
+if (index < 3) {
+  const report = 'Landed: x\\nProof:\\nnode --version: pass\\n  v1\\nUnresolved: none\\n';
+  if (index < 2) fs.writeFileSync(index === 0 ? 'a.txt' : 'b.txt', 'x\\n');
   fs.mkdirSync('.exo', { recursive: true });
-  fs.writeFileSync('.exo/implementer-' + (index + 1) + '.md', 'Landed: x\\nProof:\\nnode --version: pass\\n  v1\\nUnresolved: none\\n');
+  fs.writeFileSync('.exo/implementer-' + Math.min(index + 1, 2) + '.md', report);
+  const write = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (chunk, ...rest) => write(String(chunk).replace('"result":"', '"result":"' + JSON.stringify(report).slice(1, -1)), ...rest);
 }
 await import(${JSON.stringify(stub)});
 `;
@@ -135,7 +138,10 @@ const index = fs.existsSync(process.env.STUB_RECORD) ? fs.readFileSync(process.e
 fs.writeFileSync('a.txt', 'x' + index + '\\n');
 fs.mkdirSync('.exo', { recursive: true });
 const outcome = index < ${unproven} ? 'not run (sandbox: SocketException (13): Permission denied)' : 'pass';
-fs.writeFileSync('.exo/implementer-1.md', 'Landed: x\\nProof:\\nnode -e "process.exit(1)": ' + outcome + '\\nUnresolved: none\\n');
+const report = 'Landed: x\\nProof:\\nnode -e "process.exit(1)": ' + outcome + '\\nUnresolved: none\\n';
+fs.writeFileSync('.exo/implementer-1.md', report);
+const write = process.stdout.write.bind(process.stdout);
+process.stdout.write = (chunk, ...rest) => write(String(chunk).replace('"result":"', '"result":"' + JSON.stringify(report).slice(1, -1)), ...rest);
 await import(${JSON.stringify(stub)});
 `;
 

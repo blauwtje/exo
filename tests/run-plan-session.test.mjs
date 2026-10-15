@@ -185,5 +185,5 @@ test('--max-run-usd: the ledger holds one line per session and the run stops bef
   assert.equal(stopped.stop, 'run-plan: stop: budget: $0.02 of $0.02');
   const logDir = path.dirname(stopped.stdout.match(/^Details: (.+)$/m)[1]);
   const lines = (await fs.readFile(path.join(logDir, 'sessions.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
-  assert.deepEqual(lines, [{ kind: 'task', task: 1, sessionId: 'session-1', costUsd: 0.02, hooks: 2 }]);
+  assert.deepEqual(lines, [{ kind: 'task', task: 1, sessionId: 'session-1', costUsd: 0.02, hooks: 2, cacheRead: null, cacheWrite: null, firstCacheWrite: null }]);
 });

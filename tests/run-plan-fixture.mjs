@@ -46,11 +46,11 @@ if (step.push) git('push', '-q', 'origin', 'HEAD');
 if (step.editPlan) fs.appendFileSync(scenario.planPath, '- Proof: node -e 1\\n');
 if (step.hang) setInterval(() => {}, 1000);
 else {
-  const result = (text, turns, cost, denials) => ({ type: 'result', subtype: 'success', is_error: false, num_turns: turns,
+  const result = ({ text, turns, cost, denials }) => ({ type: 'result', subtype: step.subtype ?? 'success', is_error: false, num_turns: turns,
     total_cost_usd: cost, permission_denials: denials, result: text, session_id: 'session-1' });
   if (step.usage) emit({ type: 'assistant', message: { usage: step.usage } });
-  if (step.background) emit(result('Started a background agent.', 1, 0.01, []));
-  emit(result(step.result ?? 'Worked on it.', 2, 0.02, step.denials ?? []));
+  if (step.background) emit(result({ text: 'Started a background agent.', turns: 1, cost: 0.01, denials: [] }));
+  emit(result({ text: step.result ?? 'Worked on it.', turns: 2, cost: 0.02, denials: step.denials ?? [] }));
 }
 `;
 

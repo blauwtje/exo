@@ -56,6 +56,17 @@ test('the task and plan prompts name the code-rule check command, one per task i
   assert.match(together, /Code rules OK/);
 });
 
+test('the build prompt asks for the report as the reply text, the plan prompt keeps its report files', () => {
+  const root = path.join(import.meta.dirname, '..');
+  const plan = parsePlan(planText(root));
+  const planPath = path.join(root, 'plan.md');
+  const task = taskPrompt({ plan, planPath, number: 1, root, learnings: 'l.md', sandbox: false, runDir: '' });
+  assert.doesNotMatch(task, /Report to:/);
+  assert.doesNotMatch(task, /implementer-/);
+  assert.match(task, /reply text above the last line/);
+  assert.match(planPrompt({ plan, planPath, numbers: [1, 2], root, sandbox: false }), /Report to: .*implementer-<n>\.md/);
+});
+
 test('the task and plan prompts of a sandboxed run name the stall limit the guard uses', () => {
   const root = path.join(import.meta.dirname, '..');
   const plan = parsePlan(planText(root));

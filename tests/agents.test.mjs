@@ -18,6 +18,7 @@ const skillsRoot = path.join(repositoryRoot, 'skills');
 const SUPPORTED_KEYS = [
   'name', 'description', 'model', 'effort', 'maxTurns', 'tools',
   'disallowedTools', 'skills', 'remember', 'background', 'omitClaudeMd', 'isolation',
+  'experimental',
 ];
 const KNOWN_TOOLS = [
   'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage',
@@ -56,6 +57,13 @@ test('every agent uses only the frontmatter keys a plugin agent supports', () =>
   for (const agent of agents) {
     const unsupported = Object.keys(agent.frontmatter).filter((key) => !SUPPORTED_KEYS.includes(key));
     assert.deepEqual(unsupported, [], `${agent.fileName} carries unsupported keys`);
+  }
+});
+
+test('only run-unit sets the one-hour prompt cache', () => {
+  for (const agent of agents) {
+    const expected = agent.fileName === 'run-unit.md' ? '{ cacheTtl: 1h }' : undefined;
+    assert.equal(agent.frontmatter.experimental, expected, `${agent.fileName} experimental key`);
   }
 });
 

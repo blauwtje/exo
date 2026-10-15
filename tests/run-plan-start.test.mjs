@@ -59,7 +59,7 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.match(result.stdout, /Order: Task 1, Task 2/);
   assert.match(result.stdout, /^First prompt: Land Task 1 of .*plan\.md in this session\./m);
   assert.doesNotMatch(result.stdout, /land-task\.mjs" --plan .* --task 1/, 'the first prompt carries no land command');
-  assert.match(result.stdout, /--tools Read,Edit,Write,Bash,Grep,Glob .*--disable-slash-commands --include-hook-events --allowedTools/);
+  assert.match(result.stdout, /--tools Read,Edit,Write,Bash,Grep,Glob .*--disable-slash-commands --include-hook-events --exclude-dynamic-system-prompt-sections --max-turns \d+ --allowedTools/);
   const withPlugin = await runPlan(context, [land(1)], ['--dry-run', '--plugin-dir', '/tmp/exo-plugin']);
   assert.match(withPlugin.stdout, /--plugin-dir \/tmp\/exo-plugin /);
   assert.ok(result.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: none\n`), result.stdout);

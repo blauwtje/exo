@@ -32,6 +32,13 @@ export function wallClock(date) {
   return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
 }
 
+export function cacheLines({ cacheRead, cacheWrite, firstCacheWrite }, bar) {
+  const lines = [];
+  if (cacheRead !== null && cacheWrite !== null && cacheRead + cacheWrite > 0) lines.push(`cache read ${Math.round((cacheRead / (cacheRead + cacheWrite)) * 100)}% (${thousands(cacheRead)}k read, ${thousands(cacheWrite)}k written)`);
+  if (firstCacheWrite !== null && firstCacheWrite > bar) lines.push(`warning: turn 1 wrote ${thousands(firstCacheWrite)}k tokens to the cache, over the ${thousands(bar)}k bar`);
+  return lines;
+}
+
 export const taskSubject = (heading) => heading.replace(/^\s*\w+(?:\([^)]*\))?!?:\s*/, '');
 
 export const startLine = ({ number, subject, model, effort }) => `task ${number} start: ${subject} · ${model} ${effort}`;

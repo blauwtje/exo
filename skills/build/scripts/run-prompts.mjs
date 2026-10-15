@@ -40,7 +40,6 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     task: `Task ${number}`,
     plan: planPath,
     root,
-    report: path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`),
     brief: [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
     codeRules: `\`${codeRulesCommand(planPath, number, root)}\``,
     extra,
