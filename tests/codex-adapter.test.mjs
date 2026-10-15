@@ -21,7 +21,7 @@ const TREE = generateTree(ROOT);
 const AGENT_DIRECTORY = 'harnesses/codex/generated/agents/';
 const AGENT_NAMES = [...TREE.keys()].filter((file) => file.startsWith(AGENT_DIRECTORY)).map((file) => file.slice(AGENT_DIRECTORY.length));
 const SKILL_NAMES = fs.readdirSync(path.join(ROOT, 'skills'), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
+  .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(ROOT, 'skills', entry.name, 'SKILL.md')))
   .map((entry) => entry.name);
 const SKILL = SKILL_NAMES.includes('build') ? 'build' : SKILL_NAMES[0];
 
