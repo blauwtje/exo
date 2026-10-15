@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { claudeArgs } from '../skills/build/scripts/run-session.mjs';
+import { childEnv, claudeArgs } from '../skills/build/scripts/run-session.mjs';
 
 const base = { model: 'sonnet', effort: 'high', allow: ['Read'] };
 
@@ -37,4 +37,18 @@ test('claudeArgs adds --resume with the session id when resume is set', () => {
 
 test('claudeArgs leaves out --resume when resume is unset', () => {
   assert.ok(!claudeArgs(base).includes('--resume'));
+});
+
+test('childEnv forces the 5-minute prompt cache for a claude 5m session and frees it for 1h', () => {
+  const claude = { name: 'claude', effort: 'high', env: {} };
+  assert.equal(childEnv(null, { ...claude, promptCacheTtl: '5m' }).FORCE_PROMPT_CACHING_5M, '1');
+  const before = process.env.FORCE_PROMPT_CACHING_5M;
+  process.env.FORCE_PROMPT_CACHING_5M = '1';
+  try {
+    assert.equal(childEnv(null, { ...claude, promptCacheTtl: '1h' }).FORCE_PROMPT_CACHING_5M, undefined);
+    assert.equal(childEnv(null, { name: 'zai', effort: 'high', env: {}, promptCacheTtl: '5m' }).FORCE_PROMPT_CACHING_5M, '1');
+  } finally {
+    if (before === undefined) delete process.env.FORCE_PROMPT_CACHING_5M;
+    else process.env.FORCE_PROMPT_CACHING_5M = before;
+  }
 });

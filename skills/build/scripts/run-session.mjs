@@ -275,6 +275,8 @@ export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {} } = 
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (handoff !== null) env.EXO_RUN_HANDOFF = handoff;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
+  if (provider.name === 'claude' && provider.promptCacheTtl === '5m') env.FORCE_PROMPT_CACHING_5M = '1';
+  if (provider.name === 'claude' && provider.promptCacheTtl === '1h') delete env.FORCE_PROMPT_CACHING_5M;
   return { ...ecosystemEnv, ...env, ...provider.env, ...(provider.effort === null ? {} : { CLAUDE_CODE_EFFORT_LEVEL: provider.effort }) };
 }
 
