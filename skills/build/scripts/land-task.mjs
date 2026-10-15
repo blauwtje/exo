@@ -242,7 +242,7 @@ function runProof(task, command, root, field) {
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${reason}):`, ...tail].join('\n'));
 }
 
-const TEST_FILE = /^tests\/[^/]+\.test\.mjs$/;
+const TEST_FILE = /^tests\/[\w.-]+\.test\.mjs$/;
 
 function namedTestFiles(task, proofCommands, { root, planPath }) {
   const named = [...changedPaths(root, planPath), ...task.files.map((file) => file.path)];

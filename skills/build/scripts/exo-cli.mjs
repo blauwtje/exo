@@ -411,7 +411,7 @@ async function runCommand(argv, { approving = false } = {}) {
     else createRun(root, { id, plan, flags, detach, log, ownerSession });
     const lock = acquireLock(root, id);
     if (!lock.ok) {
-      if (old !== null) updateRun(root, id, { phase: old.phase, exitCode: old.exitCode, pid: old.pid, log: old.log });
+      if (old !== null) updateRun(root, id, { phase: old.phase, exitCode: old.exitCode, pid: old.pid, log: old.log, ownerSession: old.ownerSession });
       else removeRun(root, id);
       throw new Refusal(`refused: run ${lock.holder} is still running in this checkout; exo status shows it`);
     }

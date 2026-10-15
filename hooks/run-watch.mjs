@@ -138,7 +138,8 @@ async function flush($, context) {
 async function tick($, context) {
   const root = await $.session.root();
   // why: the session id changes on /clear, so it is read on every tick.
-  context.sessionId = await $.session.id();
+  // why: a missing or throwing id counts as no match, so the status line still draws.
+  context.sessionId = await Promise.resolve().then(() => $.session.id()).catch(() => undefined);
   const all =await readAllRuns($, root);
   const flags = await Promise.all(all.map((run) => isLive($, run)));
   const runs = all.filter((run, i) => flags[i]);

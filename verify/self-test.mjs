@@ -140,7 +140,7 @@ export const SCENARIOS = [
   { name: 'expanded-banned-language', check: 'portable language', mutate: (root) =>
     beforeReport(root, 'skills/verify/SKILL.md', 'Use WebSearch when useful.') },
   { name: 'derived-name', check: 'derivation', mutate: (root) =>
-    beforeReport(root, 'skills/spec/SKILL.md', `${Buffer.from('d2F5ZmluZGVy', 'base64')}`) },
+    beforeReport(root, 'skills/verify/SKILL.md', `${Buffer.from('d2F5ZmluZGVy', 'base64')}`) },
   { name: 'derived-name-outside-shipped-files', check: 'derivation', mutate: (root) =>
     append(root, 'benchmarks/README.md', `\n${Buffer.from('cHN0YWNr', 'base64')}\n`) },
   { name: 'oversized-skill-body', check: 'skill body budgets', mutate: (root) =>
