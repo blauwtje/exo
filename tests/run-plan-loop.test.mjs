@@ -29,7 +29,7 @@ test('done: two task processes and the tail land the plan, the gate passes and t
     const lines = (await fs.readFile(path.join(PLUGIN_ROOT, file), 'utf8')).split('\n').filter((line) => line.startsWith('- '));
     assert.ok(lines.every((line) => !prompt.includes(line)), `${file} text is not pasted`);
   }
-  assert.ok(!prompt.includes('land-task.mjs'), 'no land command: the script lands');
+  assert.doesNotMatch(prompt, /land-task\.mjs(?! --code-rules)/, 'no land command, only the code-rules check: the script lands');
   assert.doesNotMatch(prompt, /^\/exo:build|## Design tasks|next-task\.mjs --plan|mcp-tool-call/m, 'no skill load, no design rule, no probe for a shell task');
   assert.equal(prompt.match(/### Task 1:/g).length, 1, 'the task section appears once');
   assert.ok(prompt.includes('Task 1: BLOCKED <file> is missing from the file list'));

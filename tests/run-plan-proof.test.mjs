@@ -54,7 +54,7 @@ test('task mode: the prompt hands the proof to the script and warns off the sand
   const result = await runTaskMode(context, [{ result: 'Task 1: BLOCKED stub' }]);
   const prompt = result.calls[0].stdin;
   assert.doesNotMatch(prompt, /^Land: /m, 'no land step');
-  assert.ok(!prompt.includes('land-task.mjs'), 'no land command');
+  assert.doesNotMatch(prompt, /land-task\.mjs(?! --code-rules)/, 'no land command, only the code-rules check');
   assert.match(prompt, /A test or command your sandbox or permission rules refuse is not a block: never end `Task 1: BLOCKED` on one/);
   assert.match(prompt, /Write and Edit tools, not a heredoc/);
   assert.match(prompt, /the script proves and lands/);
