@@ -54,7 +54,10 @@ function unattendedLine(after, artifact) {
   const file = after === 'spec' ? briefFile(artifact) : null;
   if (file === null) return null;
   const planCheck = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
-  const check = spawnSync(process.execPath, [planCheck, '--plan', file, '--loop'], { encoding: 'utf8' });
+  const toplevel = spawnSync('git', ['-C', path.dirname(path.resolve(file)), 'rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+  if (toplevel.error !== undefined) throw toplevel.error;
+  if (toplevel.status !== 0) return null;
+  const check = spawnSync(process.execPath, [planCheck, '--plan', file, '--root', toplevel.stdout.trim(), '--loop'], { encoding: 'utf8' });
   if (check.error !== undefined) throw check.error;
   if (check.status !== 0) return null;
   const script = fileURLToPath(new URL('../../build/scripts/run-plan.mjs', import.meta.url));

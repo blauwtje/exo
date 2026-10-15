@@ -97,7 +97,7 @@ test('after spec the fresh-chat lines name the runner command only when plan-che
   const redirecting = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs > out.log' })];
   // The harness fixture predates the required Land: line; add it after Branch:.
   const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
-  const root = await gitRepository({ 'docs/plans/loop.md': withLand(compactPlanFixture({ tasks })), 'docs/plans/plain.md': withLand(compactPlanFixture({ tasks: redirecting })) });
+  const root = await gitRepository({ 'docs/plans/loop.md': withLand(compactPlanFixture({ tasks })), 'docs/plans/plain.md': withLand(compactPlanFixture({ tasks: redirecting })), 'src/app.js': '' });
   const loopPath = path.join(root, 'docs/plans/loop.md');
   const plainPath = path.join(root, 'docs/plans/plain.md');
   const runner = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
@@ -105,6 +105,14 @@ test('after spec the fresh-chat lines name the runner command only when plan-che
   assert.ok(freshReport({ after: 'spec', artifact: loopPath }).endsWith(`\n${line}\n`));
   assert.ok(!freshReport({ after: 'spec', artifact: plainPath }).includes('Unattended'));
   assert.ok(!nextStageReport({ after: 'find-cause', artifact: loopPath }).includes('Unattended'));
+});
+
+test('after spec the runner line is withheld when the checkout holds a proof test the brief does not list', async () => {
+  const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
+  const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+  const root = await gitRepository({ 'docs/plans/gap.md': withLand(compactPlanFixture({ tasks })), 'src/app.js': '', 'tests/app.test.mjs': '' });
+  const gapPath = path.join(root, 'docs/plans/gap.md');
+  assert.ok(!freshReport({ after: 'spec', artifact: gapPath }).includes('Unattended'));
 });
 
 test('after spec a brief with open points gets no build route, only each entry to answer first', async () => {
