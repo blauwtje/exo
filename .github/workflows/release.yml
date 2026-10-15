@@ -1,6 +1,9 @@
 name: release
 
 on:
+  # The weekly run releases only when ## Unreleased holds an entry.
+  schedule:
+    - cron: '0 6 * * 1'
   workflow_dispatch:
     inputs:
       level:
@@ -12,7 +15,7 @@ on:
 permissions:
   contents: write
 
-# One release at a time: two dispatches running together would otherwise bump
+# One release at a time: two runs together would otherwise bump
 # the same version twice and race on the push to main.
 concurrency:
   group: release
@@ -37,7 +40,7 @@ jobs:
         run: npm run check
       - if: steps.pending.outputs.release == 'yes'
         env:
-          LEVEL: ${{ inputs.level }}
+          LEVEL: ${{ inputs.level || 'auto' }}
         run: npm run --silent bump -- "$LEVEL"
       - if: steps.pending.outputs.release == 'yes'
         id: version

@@ -22,7 +22,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Stash → subagent runs no `git stash`, all worktrees share one stash list; cleanup drops a stash made on a run branch once its content is on `main`, every other stash stays untouched.
 - Every shell wait loop, such as `until <condition>; do sleep N; done` → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
 - This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
-- Report that changed exo → action line tells user to run `/reload-plugins`.
+- Report that changed exo → exo loads in place from this checkout, so a new session runs it; action line tells user to run `/reload-plugins` only for the open session.
 
 ## Principles
 
@@ -49,7 +49,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 ## Release
 
 - Each change → one line under `## Unreleased` in `CHANGELOG.md`, in `### Added`, `### Changed`, `### Fixed` or `### Removed`; raise no version.
-- Release → only on user request: `gh workflow run release.yml`, optional `-f level=patch|minor|major`; a push to `main` releases nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand; a hand-cut version collides with the workflow's.
+- Release → weekly schedule in `.github/workflows/release.yml` cuts it when `## Unreleased` holds an entry; user asks for one sooner → lead runs `gh workflow run release.yml`, optional `-f level=patch|minor|major`. A push to `main` releases nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand; a hand-cut version collides with the workflow's.
 - Change user should read first → at most three bold lead sentences under `### Highlights` in `## Unreleased`, in the commit that records it, not in a release commit.
 
 ## Environment
