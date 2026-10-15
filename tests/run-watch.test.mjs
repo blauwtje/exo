@@ -4,7 +4,7 @@ import { FINAL_PHASES as MOD_FINAL_PHASES, register } from '../hooks/run-watch.m
 import { FINAL_PHASES, phaseForExit } from '../skills/build/scripts/run-state.mjs';
 
 function makeState(fields) {
-  return { phase: 'build', task: { n: 2, subject: 'add log' }, landed: 1, total: 5, startedAt: '2026-10-13T10:00:00Z', updatedAt: '2999-01-01T00:00:00Z', ...fields };
+  return { phase: 'build', task: { n: 2, subject: 'add log' }, landed: 1, total: 5, startedAt: '2026-10-13T10:00:00Z', ownerSession: 'session-a', updatedAt: '2999-01-01T00:00:00Z', ...fields };
 }
 
 function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists, outputs }) {
@@ -29,13 +29,13 @@ function makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists, outpu
 }
 
 function makeHarness(states, options = {}) {
-  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now(), clockNow = () => Date.now(), outputs = {} } = options;
+  const { root = '/repo', main = '/repo', gitText, mainStates = {}, mtimeMs = Date.now(), clockNow = () => Date.now(), outputs = {}, sessionId = 'session-a' } = options;
   const calls = { timers: [], lines: [], prompts: [], lists: [] };
   const agents = [];
   const handlers = {};
   const $ = {
     clock: { every: (ms, tick) => calls.timers.push({ ms, tick }), now: async () => clockNow() },
-    session: { root: async () => root },
+    session: { root: async () => root, id: async () => sessionId },
     fs: makeFs({ root, main, gitText, states, mainStates, mtimeMs, lists: calls.lists, outputs }),
     ui: { status: (text) => calls.lines.push(text) },
     prompt: { submit: async (message) => calls.prompts.push(message.text) },
@@ -101,6 +101,35 @@ test('a run moving to a final phase wakes the lead once; a run final on the firs
   assert.match(harness.calls.prompts[0], /stopped/);
   assert.match(harness.calls.prompts[0], /task 2 blocked/);
   assert.match(harness.calls.prompts[0], /follow exo:build references\/run-loop\.md to repair and resume/i);
+});
+
+test('two sessions on one root: only the session that launched the run is woken', async () => {
+  const states = { 'run-a': makeState({}) };
+  const owner = makeHarness(states, { sessionId: 'session-a' });
+  const other = makeHarness(states, { sessionId: 'session-b' });
+  await owner.start({ isInteractive: true });
+  await other.start({ isInteractive: true });
+  await owner.calls.timers[0].tick();
+  await other.calls.timers[0].tick();
+  states['run-a'] = makeState({ phase: 'stopped', reason: 'task 2 blocked' });
+  await owner.calls.timers[0].tick();
+  await owner.calls.timers[0].tick();
+  await other.calls.timers[0].tick();
+  await other.calls.timers[0].tick();
+  assert.equal(owner.calls.prompts.length, 1);
+  assert.deepEqual(other.calls.prompts, []);
+});
+
+test('a run without an owner session wakes no session', async () => {
+  const states = { 'run-a': makeState({ ownerSession: undefined }) };
+  const harness = makeHarness(states);
+  await harness.start({ isInteractive: true });
+  const [{ tick }] = harness.calls.timers;
+  await tick();
+  states['run-a'] = makeState({ phase: 'stopped', ownerSession: undefined });
+  await tick();
+  await tick();
+  assert.deepEqual(harness.calls.prompts, []);
 });
 
 test('a stop seen while the lead is busy and resumed before the turn ends sends no stop prompt', async () => {

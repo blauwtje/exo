@@ -111,6 +111,7 @@ async function wake($, context, run) {
   }
   if (before === undefined || FINAL_PHASES.includes(before)) return;
   if (context.notified.has(run.id)) return;
+  if (!context.sessionId || run.state.ownerSession !== context.sessionId) return;
   const log = await readLog($, run.dir);
   context.pending.set(run.id, { dir: run.dir, logLength: log.length });
 }
@@ -136,7 +137,9 @@ async function flush($, context) {
 
 async function tick($, context) {
   const root = await $.session.root();
-  const all = await readAllRuns($, root);
+  // why: the session id changes on /clear, so it is read on every tick.
+  context.sessionId = await $.session.id();
+  const all =await readAllRuns($, root);
   const flags = await Promise.all(all.map((run) => isLive($, run)));
   const runs = all.filter((run, i) => flags[i]);
   for (const run of runs) {
@@ -162,7 +165,7 @@ async function noteNotification($, context, text) {
 }
 
 export function register(on) {
-  const context = { first: true, busy: false, seen: new Map(), pending: new Map(), notified: new Set() };
+  const context = { first: true, busy: false, sessionId: undefined, seen: new Map(), pending: new Map(), notified: new Set() };
   on('session.start', ($, e, next) => {
     if (!e.isInteractive) return next(e);
     $.clock.every(TICK_MS, () => tick($, context));
