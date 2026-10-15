@@ -532,6 +532,12 @@ function main(argv) {
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
+  const root = flags.root ?? frameOf(parsePlan(planText).frame).repository ?? undefined;
+  if (root !== undefined && !fs.existsSync(root)) {
+    process.stdout.write(`Repository: ${root} does not exist\n`);
+    process.exitCode = 1;
+    return;
+  }
   const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true, planPath: flags.plan, run: flags.run === true });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;

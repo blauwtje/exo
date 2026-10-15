@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { test } from 'node:test';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
@@ -91,6 +92,19 @@ test('plan-check passes a Proof test a task in its Depends on chain lists, one a
   assert.deepEqual(proofLines(absent), [], absent.lines.join('; '));
   const noRoot = planCheckReport(chainPlan(root, { dependsOn: '1', proof: 'node --test tests/gauge-clamp.test.mjs' }).replace(`Repository: ${root}`, 'Repository: /nonexistent/fixture'));
   assert.deepEqual(proofLines(noRoot), [], noRoot.lines.join('; '));
+});
+
+const planCheckCli = path.join(import.meta.dirname, '..', 'skills', 'spec', 'scripts', 'plan-check.mjs');
+
+test('plan-check CLI exits 1 naming a missing root, from --root or from Repository:', async () => {
+  const planPath = path.join(await harness.fixture(), 'missing-root.md');
+  fs.writeFileSync(planPath, chainPlan('/nonexistent/fixture', { dependsOn: '1', proof: 'node --test tests/widget.test.mjs' }));
+  const fromRepository = spawnSync(process.execPath, [planCheckCli, '--plan', planPath], { encoding: 'utf8' });
+  assert.equal(fromRepository.status, 1, fromRepository.stdout + fromRepository.stderr);
+  assert.equal(fromRepository.stdout.trim(), 'Repository: /nonexistent/fixture does not exist');
+  const fromFlag = spawnSync(process.execPath, [planCheckCli, '--plan', planPath, '--root', '/nonexistent/flag'], { encoding: 'utf8' });
+  assert.equal(fromFlag.status, 1, fromFlag.stdout + fromFlag.stderr);
+  assert.equal(fromFlag.stdout.trim(), 'Repository: /nonexistent/flag does not exist');
 });
 
 test('plan-check under --run skips the Proof-test check of a task that already landed', async () => {
