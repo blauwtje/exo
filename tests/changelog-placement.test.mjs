@@ -70,3 +70,15 @@ test('no release commit passes with a detail', (t) => {
   assert.equal(counts.FAIL, 0, detail);
   assert.match(detail, /nothing to compare/);
 });
+
+test('a failing git diff fails with its stderr instead of passing', (t) => {
+  const root = releasedRepository(t);
+  const blob = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD:CHANGELOG.md'], { encoding: 'utf8' }).stdout.trim();
+  const object = path.join(root, '.git', 'objects', blob.slice(0, 2), blob.slice(2));
+  fs.chmodSync(object, 0o644);
+  fs.rmSync(object);
+  withBullet(root, '## 1.0.0 - 2026-01-01');
+  const { counts, detail } = verdict(root);
+  assert.equal(counts.FAIL, 1, detail);
+  assert.match(detail, /git diff against [0-9a-f]{8} failed: \S/);
+});

@@ -58,8 +58,12 @@ export function checkChangelogPlacement(report, repository) {
     report.result('PASS', NAME, `${release.note}; nothing to compare`);
     return;
   }
-  const diff = git(repository, ['diff', '--unified=0', release.sha, '--', 'CHANGELOG.md']).stdout ?? '';
-  const misplaced = misplacedLines(repository.lines(file), addedLineNumbers(diff));
+  const diff = git(repository, ['diff', '--unified=0', release.sha, '--', 'CHANGELOG.md']);
+  if (diff.status !== 0) {
+    report.result('FAIL', NAME, `git diff against ${release.sha.slice(0, 8)} failed: ${(diff.stderr ?? '').trim() || `exit ${diff.status}`}`);
+    return;
+  }
+  const misplaced = misplacedLines(repository.lines(file), addedLineNumbers(diff.stdout ?? ''));
   report.assert(
     misplaced.length === 0,
     NAME,
