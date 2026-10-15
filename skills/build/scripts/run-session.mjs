@@ -35,7 +35,9 @@ const SESSION_MARKERS = [
 export const DENY_RULES = [
   'Bash(git push *)', 'Bash(gh *)', 'Bash(git reset *)', 'Bash(git rebase *)', 'Bash(git cherry-pick *)',
   'Bash(git merge *)', 'Bash(git tag *)', 'Bash(git switch *)', 'Bash(git checkout *)', 'Bash(git branch -D *)',
-  'Bash(git commit *)', 'Bash(git stash *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(node *settings.mjs*)', 'Bash(node *memory.mjs*)'
+  'Bash(git commit *)', 'Bash(git stash *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(node *settings.mjs*)', 'Bash(node *memory.mjs*)',
+  'Bash(npm publish*)', 'Bash(npm *publish*)', 'Bash(vercel*)', 'Bash(npx vercel*)',
+  'Bash(netlify deploy*)', 'Bash(fly deploy*)', 'Bash(flyctl deploy*)'
 ];
 
 const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files'];

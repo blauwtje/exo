@@ -10,11 +10,12 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Highlights
-- **exo no longer blocks risky git commands or shell reads of secret files; set `permissions.deny` rules or the sandbox in your own settings to keep them blocked.**
+- **exo no longer blocks risky git commands, destructive shell commands or shell reads of secret files; set `permissions.deny` rules or the sandbox in your own settings to keep them blocked.**
 
 ### Added
 - A detached run reports each session's cache read share and warns when turn 1 writes a large cache.
 - plan-check warns on adjacent tiny plan tasks.
+- A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
 
 ### Changed
 - A headless run passes `--exclude-dynamic-system-prompt-sections` to each session, so the system prompt caches across sessions.
@@ -24,6 +25,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A task that hits its turn cap stops as blocked, and its partial work goes to `.exo/carry/task<n>-partial.patch`.
 - A weekly scheduled run cuts a release when `## Unreleased` holds an entry.
 - A push to `main` cuts no release; `gh workflow run release.yml` cuts one on demand, with an optional `level` input.
+- The context limit acts only on subagents and detached run sessions, not on the main session.
 
 ### Fixed
 - A finished detached run wakes only the session that launched the run; a run with no recorded owner wakes no one.
@@ -34,7 +36,8 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The unattended plan-check call passes `--root`, and plan-check fails when the plan's root does not exist.
 
 ### Removed
-- The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass; the destructive guard stays.
+- The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.
+- The destructive-command guard, the comment guard, the run gate hook and the `guards` setting.
 
 ## 0.135.0 - 2026-10-15
 

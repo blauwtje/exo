@@ -33,8 +33,8 @@ test('npm test arguments leave no gate in a run directory', () => {
     const run = spawnSync(process.execPath, [
       ...entryArguments(),
       '--test',
-      '--test-name-pattern=removing a container, a volume or the machine-wide leftovers is denied',
-      path.join(ROOT, 'tests', 'destructive-guard.test.mjs')
+      '--test-name-pattern=a command no step objects to produces no output',
+      path.join(ROOT, 'tests', 'dispatch-bash.test.mjs')
     ], {
       cwd: ROOT,
       encoding: 'utf8',

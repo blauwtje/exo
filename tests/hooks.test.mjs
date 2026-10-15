@@ -9,7 +9,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { dispatchBash, GUARDS } from '../hooks/dispatch-bash.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
@@ -100,16 +99,6 @@ test('no tool name matches more than one PreToolUse entry', () => {
   }
 });
 
-test('every shipped guard is a step of the Bash dispatcher and none has a hook of its own', () => {
-  const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
-  assert.deepEqual(guardFiles.sort(), ['destructive-guard.mjs']);
-  const dispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
-  for (const guardFile of guardFiles) {
-    assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(guardFile)), [], guardFile);
-    assert.ok(dispatcher.includes(`./guards/${guardFile}`), `${guardFile} is not imported by the Bash dispatcher`);
-  }
-});
-
 test('the session hook runs the Node file under bash', () => {
   const [entry] = hookEntries().filter((candidate) => candidate.event === 'SessionStart');
   assert.equal(entry.hook.shell, 'bash');
@@ -157,41 +146,6 @@ test('the session hook shows no welcome and writes no welcomed marker', () => {
     assert.equal(fs.existsSync(path.join(configHome, 'exo', 'welcomed')), false);
   } finally {
     fs.rmSync(configHome, { recursive: true, force: true });
-  }
-});
-
-test('no guard file is a process entry of its own', () => {
-  for (const name of fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards'))) {
-    const text = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'guards', name), 'utf8');
-    assert.doesNotMatch(text, /^#!|isMain|isProcessEntry|readHookText|process\.stdout/m, name);
-  }
-});
-
-// Each guard alone denies its sample: removing that one guard lets the sample through.
-const GUARD_SAMPLES = { 'destructive-guard': 'docker volume rm data' };
-
-test('each kept guard denies a sample that passes when that guard alone is removed (trust boundary)', async () => {
-  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-guards-'));
-  const saved = Object.fromEntries(['CLAUDE_CONFIG_DIR', 'CLAUDE_PROJECT_DIR', 'EXO_RUN', 'EXO_RUN_DIR'].map((key) => [key, process.env[key]]));
-  Object.assign(process.env, { CLAUDE_CONFIG_DIR: project, CLAUDE_PROJECT_DIR: project });
-  delete process.env.EXO_RUN;
-  delete process.env.EXO_RUN_DIR;
-  const decide = (command, guards) => dispatchBash({ tool_name: 'Bash', cwd: project, tool_input: { command } }, guards);
-  try {
-    assert.deepEqual(GUARDS.map((guard) => guard.name).sort(), Object.keys(GUARD_SAMPLES).sort());
-    for (const guard of GUARDS) {
-      const sample = GUARD_SAMPLES[guard.name];
-      const all = await decide(sample, GUARDS);
-      assert.equal(all?.hookSpecificOutput.permissionDecision, 'deny', sample);
-      assert.match(all.hookSpecificOutput.permissionDecisionReason, new RegExp(`^${guard.name}:`), sample);
-      assert.equal(await decide(sample, GUARDS.filter((other) => other !== guard)), null, `${sample} without ${guard.name}`);
-    }
-  } finally {
-    for (const [key, value] of Object.entries(saved)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-    fs.rmSync(project, { recursive: true, force: true });
   }
 });
 

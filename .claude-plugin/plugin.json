@@ -45,13 +45,6 @@
       "options": ["ask", "branch", "worktree", "current"],
       "default": "ask"
     },
-    "guards": {
-      "type": "string",
-      "title": "Safety guards",
-      "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything. Not sure? Keep on. A project overrides this in .claude/exo.json.",
-      "options": ["on", "off"],
-      "default": "on"
-    },
     "env": {
       "type": "string",
       "title": "Local env files in a run",

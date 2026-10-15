@@ -106,19 +106,21 @@ function transcript(tokens) {
   return file;
 }
 
-test('the context check joins the raise, the lead dispatches at the hard limit, and a subagent context deny beats the allow', () => {
-  const warned = agentHook(input('max', { transcript_path: transcript(65000) }), 'off').hookSpecificOutput;
-  assert.equal(warned.permissionDecision, 'allow');
-  assert.equal(warned.updatedInput.effort, 'max');
-  assert.match(warned.additionalContext, /fresh subagent/);
+test('the lead gets no context note or deny, and a subagent context check joins the raise with its deny beating the allow', () => {
   const lead = agentHook(input('max', { transcript_path: transcript(120000) }), 'off').hookSpecificOutput;
   assert.equal(lead.permissionDecision, 'allow');
   assert.equal(lead.updatedInput.effort, 'max');
+  assert.equal(lead.additionalContext, undefined);
+  assert.equal(agentHook(input('high', { transcript_path: transcript(65000) }), 'off'), null);
+  const warned = agentHook(input('max', { agent_id: 'a1', agent_transcript_path: transcript(65000) }), 'off').hookSpecificOutput;
+  assert.equal(warned.permissionDecision, 'allow');
+  assert.equal(warned.updatedInput.effort, 'max');
+  assert.match(warned.additionalContext, /Context use/);
   const denied = agentHook(input('max', { agent_id: 'a1', agent_transcript_path: transcript(120000) }), 'off').hookSpecificOutput;
   assert.equal(denied.permissionDecision, 'deny');
   assert.equal(denied.updatedInput, undefined);
-  const alone = agentHook(input('high', { transcript_path: transcript(65000) }), 'off').hookSpecificOutput;
+  const alone = agentHook(input('high', { agent_id: 'a1', agent_transcript_path: transcript(65000) }), 'off').hookSpecificOutput;
   assert.equal(alone.permissionDecision, undefined);
   assert.match(alone.additionalContext, /Context use/);
-  assert.equal(agentHook(input('high', { transcript_path: transcript(1000) }), 'off'), null);
+  assert.equal(agentHook(input('high', { agent_id: 'a1', agent_transcript_path: transcript(1000) }), 'off'), null);
 });

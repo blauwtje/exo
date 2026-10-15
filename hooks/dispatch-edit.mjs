@@ -3,11 +3,9 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { commentDecision } from './comment-guard.mjs';
 
 const STEPS = [
-  { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) },
-  { name: 'comment-guard', run: commentDecision }
+  { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) }
 ];
 
 function runStep(step, hookInput) {

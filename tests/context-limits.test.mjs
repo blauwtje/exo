@@ -2,10 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import {
-  AGENT_SOFT_LIMIT, BYTES_PER_TOKEN, contextDecision, contextTokens, HARD_LIMIT, LEAD_LIGHT_TOOLS, LEAD_SOFT_LIMIT, TASK_SPLIT_TOKENS
+  AGENT_SOFT_LIMIT, BYTES_PER_TOKEN, contextDecision, contextTokens, HARD_LIMIT, TASK_SPLIT_TOKENS
 } from '../lib/context-limits.mjs';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-'));
@@ -21,8 +20,8 @@ function transcript(name, lines) {
 }
 
 test('constants', () => {
-  assert.deepEqual([HARD_LIMIT, LEAD_SOFT_LIMIT, AGENT_SOFT_LIMIT, TASK_SPLIT_TOKENS, BYTES_PER_TOKEN],
-    [100000, 60000, 60000, 25000, 2]);
+  assert.deepEqual([HARD_LIMIT, AGENT_SOFT_LIMIT, TASK_SPLIT_TOKENS, BYTES_PER_TOKEN],
+    [100000, 60000, 25000, 2]);
 });
 
 test('contextTokens sums the last assistant usage and tolerates junk', () => {
@@ -41,78 +40,28 @@ test('contextTokens reads only the tail of a large file', () => {
   assert.equal(contextTokens(old), null);
 });
 
-test('lead decisions', () => {
-  const at = (n, extra = {}) => contextDecision({ transcript_path: transcript(`l${n}.jsonl`, [entry(n)]), cwd: dir, ...extra });
-  assert.equal(at(59000), null);
-  const soft = at(60000).additionalContext;
-  assert.match(soft, /fresh subagent/);
-  const denied = at(100000, { tool_name: 'Read' });
-  assert.match(denied.deny, /hand-off/);
-  assert.match(denied.deny, /general-purpose/);
-  assert.match(denied.deny, /skills\/save-session\/SKILL\.md/);
-  assert.match(denied.deny, /final report/);
-  for (const text of [soft, denied.deny]) assert.doesNotMatch(text, /\bstop\b|new session|\/clear|exo:save-session|tell the user/i);
-  assert.equal(at(100000, { tool_name: 'Write' }), null);
-  assert.equal(at(100000, { tool_name: 'Agent' }), null);
-  assert.equal(at(100000, { tool_name: 'Write', agent_id: 'x', agent_transcript_path: transcript('ag.jsonl', [entry(100000)]) }), null);
-  const agentDenied = at(100000, { tool_name: 'Agent', agent_id: 'x', agent_transcript_path: transcript('ag2.jsonl', [entry(100000)]) });
-  assert.match(agentDenied.deny, /hard limit/);
-});
-
-test('lead over the hard limit keeps light tools and waits on background work', () => {
-  let count = 0;
-  const at = (extra) => contextDecision({ transcript_path: transcript(`bg${count++}.jsonl`, [entry(120000)]), cwd: dir, ...extra });
-  for (const tool_name of ['ToolSearch', 'SendMessage', 'TaskStop', 'Monitor', 'TaskOutput', 'Write', 'Agent']) assert.equal(at({ tool_name }), null, tool_name);
-  assert.equal(at({ tool_name: 'Bash', tool_input: { command: 'echo "- (8) note" >> .exo/progress.md' } }), null);
-  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'cat big.log' } }).deny);
-  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a; cat big.log' } }).deny);
-  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo $(cat big.log) >> a' } }).deny);
-  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo x > a' } }).deny);
-  assert.ok(at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a\ncat big.log' } }).deny);
-  assert.ok(at({ tool_name: 'Edit' }).deny);
-  const { deny } = at({ tool_name: 'Read' });
-  assert.match(deny, /background/);
-  assert.match(deny, /relay/);
-  for (const tool of LEAD_LIGHT_TOOLS) assert.ok(deny.includes(tool), `deny names ${tool}`);
-  const agent = at({ tool_name: 'ToolSearch', agent_id: 'x', agent_transcript_path: transcript('bg-ag.jsonl', [entry(120000)]) });
-  assert.ok(agent.deny, 'subagent path unchanged');
-  const agentBash = at({ tool_name: 'Bash', tool_input: { command: 'echo x >> a' }, agent_id: 'x', agent_transcript_path: transcript('bg-ag2.jsonl', [entry(120000)]) });
-  assert.ok(agentBash.deny, 'subagent append unchanged');
-});
-
-test('hard-limit deny names the path handoff.mjs prints', () => {
-  const run = (command, args, cwd) => {
-    const result = spawnSync(command, args, { cwd, encoding: 'utf8' });
-    assert.equal(result.status, 0, result.stderr);
-    return result.stdout.trim();
-  };
-  const printed = (cwd) => run(process.execPath, ['skills/save-session/scripts/handoff.mjs', 'path', '--cwd', cwd]);
-  const denyAt = (cwd, name) => contextDecision({
-    transcript_path: transcript(name, [entry(100000)]), cwd, tool_name: 'Read'
-  }).deny;
-  const config = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-config-'));
-  const saved = process.env.CLAUDE_CONFIG_DIR;
-  process.env.CLAUDE_CONFIG_DIR = config;
+test('a main session outside a detached run is never limited', () => {
+  const saved = process.env.EXO_RUN_HANDOFF;
+  delete process.env.EXO_RUN_HANDOFF;
   try {
-    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-repo-'));
-    const git = (...args) => run('git', args, repo);
-    git('init', '-q', '-b', 'main');
-    git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'init');
-    const linked = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-wt-')), 'linked');
-    git('worktree', 'add', '-q', '-b', 'feature', linked);
-    const inWorktree = printed(linked);
-    assert.match(inWorktree, /worktrees[\\/]linked[\\/]exo[\\/]handoff[\\/]feature\.md$/);
-    assert.ok(denyAt(linked, 'wt.jsonl').includes(inWorktree));
-
-    const outside = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-out-')), 'plain');
-    fs.mkdirSync(outside);
-    const outsidePath = printed(outside);
-    assert.equal(outsidePath, path.join(config, 'exo', 'handoff', 'plain.md'));
-    assert.ok(denyAt(outside, 'out.jsonl').includes(outsidePath));
+    for (const tokens of [65000, 100000, 120000]) {
+      const input = { transcript_path: transcript(`main${tokens}.jsonl`, [entry(tokens)]), cwd: dir, tool_name: 'Read' };
+      assert.equal(contextDecision(input), null, String(tokens));
+    }
   } finally {
-    if (saved === undefined) delete process.env.CLAUDE_CONFIG_DIR;
-    else process.env.CLAUDE_CONFIG_DIR = saved;
+    if (saved !== undefined) process.env.EXO_RUN_HANDOFF = saved;
   }
+});
+
+test('a subagent keeps Write at the hard limit and is denied other tools', () => {
+  const at = (tool_name) => contextDecision({
+    transcript_path: transcript('unused.jsonl', [entry(1000)]),
+    agent_id: 'x',
+    agent_transcript_path: transcript(`ag-${tool_name}.jsonl`, [entry(100000)]),
+    tool_name
+  });
+  assert.equal(at('Write'), null);
+  assert.match(at('Agent').deny, /hard limit/);
 });
 
 test('subagent reads its own transcript', () => {
@@ -123,5 +72,6 @@ test('subagent reads its own transcript', () => {
   const own = transcript('own.jsonl', [entry(120000)]);
   assert.match(contextDecision({ ...input, agent_transcript_path: own }).deny, /report/);
   assert.equal(contextDecision({ transcript_path: main, agent_id: 'none' }), null);
+  assert.equal(contextDecision({ transcript_path: main, tool_name: 'Read' }), null);
   assert.equal(contextDecision({}), null);
 });

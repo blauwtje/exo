@@ -2,8 +2,9 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { CODE_EXTENSIONS, commentFindings } from '#code-comments';
-import { DENY_MARKER } from '../hooks/comment-guard.mjs';
 import { findTranscript } from './cell-usage.mjs';
+
+const DENY_MARKER = 'exo comment-guard:';
 
 function git(repository, args) {
   return execFileSync('git', args, { cwd: repository, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });

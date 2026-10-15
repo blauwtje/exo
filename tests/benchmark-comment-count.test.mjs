@@ -3,7 +3,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { commentStats, countCommentLines, countHookDenials, ledgerTranscripts } from '../benchmarks/comment-count.mjs';
-import { DENY_MARKER } from '../hooks/comment-guard.mjs';
 import { commitFiles, fixture, git, gitRepository } from './harness.mjs';
 
 test('a branch counts the comment lines it adds and not the ones the seed had', async () => {
@@ -34,9 +33,9 @@ test('denials are counted in the main and subagent transcripts', async () => {
   const main = path.join(directory, 'session.jsonl');
   const delegates = path.join(directory, 'session', 'subagents');
   await fs.mkdir(delegates, { recursive: true });
-  await fs.writeFile(main, `{"text":"${DENY_MARKER} a.js adds comment lines"}\n{"text":"fine"}\n`);
-  await fs.writeFile(path.join(delegates, 'agent-1.jsonl'), `{"text":"${DENY_MARKER} b.js"}\n{"text":"${DENY_MARKER} c.js"}\n`);
-  await fs.writeFile(path.join(delegates, 'agent-1.meta.json'), `${DENY_MARKER}`);
+  await fs.writeFile(main, '{"text":"exo comment-guard: a.js adds comment lines"}\n{"text":"fine"}\n');
+  await fs.writeFile(path.join(delegates, 'agent-1.jsonl'), '{"text":"exo comment-guard: b.js"}\n{"text":"exo comment-guard: c.js"}\n');
+  await fs.writeFile(path.join(delegates, 'agent-1.meta.json'), 'exo comment-guard:');
   assert.equal(countHookDenials([main]), 3);
 });
 
@@ -44,7 +43,7 @@ test('a missing ledger names no transcripts', () => {
   assert.deepEqual(ledgerTranscripts(null), []);
 });
 
-test('the stats carry the three counts of a cell', async () => {
+test('the stats carry the two counts of a cell', async () => {
   const repository = await gitRepository({ 'src/old.js': 'export const old = 1;\n' });
   git(repository, 'checkout', '-b', 'feat/work');
   await commitFiles(repository, { 'src/new.js': '// note\nexport const value = 2;\n' }, 'feat: add value');

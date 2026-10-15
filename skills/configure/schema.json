@@ -81,19 +81,6 @@
       "current": { "label": "Current branch", "gives": "straight onto the branch you are on" }
     }
   },
-  "guards": {
-    "type": "string",
-    "options": ["on", "off"],
-    "default": "on",
-    "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything",
-    "label": "Safety blocks",
-    "about": "whether I block risky commands and edits",
-    "question": "Should I block risky commands and edits?",
-    "choices": {
-      "on": { "label": "On", "gives": "risky commands and edits get blocked" },
-      "off": { "label": "Off", "gives": "nothing gets blocked" }
-    }
-  },
   "env": {
     "type": "string",
     "options": ["ask", "copy", "never"],

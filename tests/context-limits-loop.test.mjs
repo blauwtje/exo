@@ -49,7 +49,13 @@ test('loop session over the soft limit: no subagent advice', () => {
   });
 });
 
-test('outside a loop session the lead text is unchanged', () => {
-  assert.match(at(65000).additionalContext, /fresh subagent/);
-  assert.match(at(100000).deny, /general-purpose/);
+test('outside a loop session the main session gets no decision', () => {
+  const saved = process.env.EXO_RUN_HANDOFF;
+  delete process.env.EXO_RUN_HANDOFF;
+  try {
+    assert.equal(at(65000), null);
+    assert.equal(at(100000), null);
+  } finally {
+    if (saved !== undefined) process.env.EXO_RUN_HANDOFF = saved;
+  }
 });

@@ -60,6 +60,17 @@ test('claudeArgs multiplies the build cap by the task count of a plan session', 
   assert.equal(args[args.indexOf('--max-turns') + 1], '180');
 });
 
+test('claudeArgs disallows publish and deploy commands', () => {
+  const args = claudeArgs(base);
+  const disallowed = args.slice(args.indexOf('--disallowedTools') + 1);
+  for (const rule of [
+    'Bash(npm publish*)', 'Bash(npm *publish*)', 'Bash(vercel*)', 'Bash(npx vercel*)',
+    'Bash(netlify deploy*)', 'Bash(fly deploy*)', 'Bash(flyctl deploy*)'
+  ]) {
+    assert.ok(disallowed.includes(rule), `${rule} is disallowed`);
+  }
+});
+
 test('childEnv forces the 5-minute prompt cache for a claude 5m session and frees it for 1h', () => {
   const claude = { name: 'claude', effort: 'high', env: {} };
   assert.equal(childEnv(null, { ...claude, promptCacheTtl: '5m' }).FORCE_PROMPT_CACHING_5M, '1');

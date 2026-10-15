@@ -111,7 +111,7 @@ const MAX_PICKS = 2;
 const TOPICS = {
   work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['compression', 'budget'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code and finished work go', keys: ['specs', 'workspace', 'ship'] },
-  safety: { label: 'Safety', question: 'Which part of safety?', about: 'what I block', keys: ['guards', 'env'] }
+  safety: { label: 'Safety', question: 'Which part of safety?', about: 'what runs copy', keys: ['env'] }
 };
 
 function question(title, context, keep, picks, reason) {

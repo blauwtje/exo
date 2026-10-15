@@ -69,7 +69,6 @@ export const EXO_SETTINGS = {
   budget: 'medium',
   ship: 'local',
   workspace: 'branch',
-  guards: 'on',
   env: 'never'
 };
 
