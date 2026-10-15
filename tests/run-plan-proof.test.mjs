@@ -105,6 +105,29 @@ test('task mode: a retry after a failed land resumes the failed session with onl
   assert.ok(!result.calls[0].argv.includes('--resume'), 'the first try is fresh');
 });
 
+test('task mode: a resumed retry logs only its own cost, not the session total claude reports', async () => {
+  const context = await setup();
+  const text = (await fs.readFile(context.plan, 'utf8')).replace('Proof: node --version | Red: none (fixture)', 'Proof: node -e "process.exit(require(\'fs\').existsSync(\'b.txt\')?0:1)" | Red: none (fixture)');
+  await fs.writeFile(context.plan, text);
+  git(context.root, 'commit', '-q', '-am', 'docs: proof needs b.txt');
+  await useWriter(context);
+  const costs = [0.02, 0.05, 0.02];
+  const wrapper = path.join(context.tools, 'cost.mjs');
+  await fs.writeFile(wrapper, `import fs from 'node:fs';
+const index = fs.existsSync(process.env.STUB_RECORD) ? fs.readFileSync(process.env.STUB_RECORD, 'utf8').split('\\n').filter(Boolean).length : 0;
+const write = process.stdout.write.bind(process.stdout);
+process.stdout.write = (chunk, ...rest) => write(String(chunk).replace('"total_cost_usd":0.02', '"total_cost_usd":' + ${JSON.stringify(costs)}[index]), ...rest);
+await import(${JSON.stringify(context.stub)});
+`);
+  context.stub = wrapper;
+  const result = await runTaskMode(context, [{ result: 'Task 1: GREEN' }, { result: 'Task 1: GREEN' }, { result: 'Task 2: GREEN' }]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.ok(result.calls[1].argv.includes('--resume'), 'the second try resumes');
+  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
+  const ledger = (await fs.readFile(path.join(logDir, 'sessions.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line).costUsd);
+  assert.deepEqual(ledger.map((cost) => Number(cost.toFixed(6))), [0.02, 0.03, 0.02]);
+});
+
 // Defect E: the sandbox stopped the builder's test, it ended GREEN with the proof `not run`,
 // and the script's proof failure then spent the task's one retry.
 const unprovenWriter = (stub, unproven) => `import fs from 'node:fs';
