@@ -242,7 +242,28 @@ function runProof(task, command, root, field) {
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${reason}):`, ...tail].join('\n'));
 }
 
-const CHOICE_LINE = /^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
+const TEST_FILE = /^tests\/[^/]+\.test\.mjs$/;
+
+function namedTestFiles(task, proofCommands, { root, planPath }) {
+  const named = [...changedPaths(root, planPath), ...task.files.map((file) => file.path)];
+  return [...new Set(named)].filter((file) => TEST_FILE.test(file)
+    && fs.existsSync(path.join(root, file))
+    && !proofCommands.some((command) => command.includes(file)));
+}
+
+function runNamedTests(task, proofCommands, options) {
+  const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  for (const file of namedTestFiles(task, proofCommands, options)) {
+    const testRun = runTreeSync(`node --test ${file}`, { cwd: options.root, timeoutMs: deadlineMs, env: withoutRunVariables() });
+    if (quiet.file !== null) quiet.proofOutput += `node --test ${file}\n${testRun.output}\n`;
+    if (testRun.status === 0 && !testRun.timedOut) continue;
+    const reason = testRun.timedOut ? `timed out after ${deadlineMs / 1000}s` : `exit ${testRun.status}`;
+    const tail = testRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
+    throw new LandingError([`Task ${task.number}: the test file ${file} failed (${reason}):`, ...tail].join('\n'));
+  }
+}
+
+const CHOICE_LINE =/^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
 
 function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
   if (planPath === undefined || reportText === null || taskCount <= BLOCK_TASK_LIMIT) return;
@@ -510,6 +531,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
+  runNamedTests(task, proofCommands, { root, planPath });
   const redLine = redGreenLine(task, proofCommands, root, pending);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);

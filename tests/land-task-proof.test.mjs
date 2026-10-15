@@ -22,6 +22,33 @@ test('a failing Proof refuses the landing with its exit status and output, and c
   await assertRefused(root, planPath, [], /^land-task: Task 1: the Proof: command "node tests\/app\.test\.mjs" failed \(exit 1\):\n {2}# pass 2\n {2}✖ greet returns "hello", got "bye"$/m);
 });
 
+const OUTSIDE_TEST_RUNNER = { NODE_TEST_CONTEXT: undefined };
+
+test('a test file the Files: names but the Proof does not refuses the land when it fails', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'tests/greet.test.mjs'], proof: 'node tests/app.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await writeReport(root, PASS_REPORT);
+  await fs.writeFile(path.join(root, 'tests/greet.test.mjs'), "console.error('stale greet');\nprocess.exit(1);\n");
+  const head = git(root, 'rev-parse', 'HEAD');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: OUTSIDE_TEST_RUNNER });
+  assert.equal(result.code, 1, result.stderr);
+  assert.match(result.stderr, /^land-task: Task 1: the test file tests\/greet\.test\.mjs failed \(exit 1\):\n {2}stale greet/m);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+});
+
+test('a test file the Files: names lands when it passes', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'tests/greet.test.mjs'], proof: 'node tests/app.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await writeReport(root, PASS_REPORT);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: OUTSIDE_TEST_RUNNER });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Landed: 1$/m);
+});
+
 test('a compact task with no Commit: block lands on a derived commit and trailer', async () => {
   const { root, planPath } = await compactCheckout();
   const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT });
