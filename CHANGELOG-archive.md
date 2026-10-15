@@ -1,6 +1,11 @@
 # Changelog archive
 
-Releases before 0.134.5; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.6; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.5 - 2026-10-14
+
+### Fixed
+- The review fixer writes a `Probe:` line under every finding it marks fixed, including a concern, so a fixed concern no longer fails for a missing Probe line.
 
 ## 0.134.4 - 2026-10-14
 
