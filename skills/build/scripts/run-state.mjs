@@ -51,9 +51,10 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
-export function createRun(root, { id = newRunId(), plan, flags = [], detach = false, pid = process.pid, log = null }) {
+export function createRun(root, { id = newRunId(), plan, flags = [], detach = false, pid = process.pid, log = null, ownerSession }) {
   const now = new Date().toISOString();
   const state = { id, plan, root, flags, detach, pid, phase: 'starting', stage: 'build', log, startedAt: now, updatedAt: now, exitCode: null };
+  if (ownerSession) state.ownerSession = ownerSession;
   writeAtomic(path.join(runDir(root, id), 'state.json'), `${JSON.stringify(state, null, 2)}\n`);
   return state;
 }

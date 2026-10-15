@@ -28,6 +28,13 @@ test('createRun writes state.json with the documented fields', () => {
   assert.ok(fs.existsSync(path.join(runDir(root, 'a'), 'state.json')));
 });
 
+test('createRun records ownerSession when one is passed', () => {
+  const root = tmp();
+  const s = createRun(root, { id: 'a', plan: 'p.md', ownerSession: 'sess-1' });
+  assert.equal(s.ownerSession, 'sess-1');
+  assert.equal(readState(root, 'a').ownerSession, 'sess-1');
+});
+
 test('updateRun changes phase and exitCode, keeps id, rejects unknown phase', () => {
   const root = tmp();
   createRun(root, { id: 'a', plan: 'p.md' });
