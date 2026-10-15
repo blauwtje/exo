@@ -74,6 +74,11 @@ test('a passing run with Land: local lands itself, reports and notifies once', a
   assert.equal(git(c.root, 'rev-parse', '--abbrev-ref', 'HEAD'), 'main');
   await fs.access(path.join(c.root, 'a.txt'));
   await fs.access(path.join(c.root, 'b.txt'));
+  assert.equal(git(c.root, 'rev-list', '--count', 'HEAD~1..HEAD'), '1');
+  assert.equal(git(c.root, 'log', '-1', '--format=%s'), 'feat(fixture): add the fixture');
+  const body = git(c.root, 'log', '-1', '--format=%b');
+  assert.match(body, /^Plan-task: plan\/1$/m);
+  assert.match(body, /^Plan-task: plan\/2$/m);
   const report = (await fs.readFile(path.join(dir, 'report.md'), 'utf8')).split('\n');
   assert.ok(report.length <= 16);
   assert.ok(report.includes('Phase: landed'), report.join('\n'));

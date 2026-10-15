@@ -11,7 +11,7 @@ const { compactPlanFixture, compactTask, gitRepository } = harness;
 function planWith(root, files) {
   const task = compactTask({ number: 1, title: 'fix(widget): round', files, proof: 'node --test tests/widget.test.mjs' });
   return compactPlanFixture({ tasks: [task] })
-    .replace(/^(Branch: .+)$/m, '$1\nLand: local')
+    .replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture')
     .replace('Repository: /tmp/fixture', `Repository: ${root}`);
 }
 

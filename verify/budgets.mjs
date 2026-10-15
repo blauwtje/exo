@@ -72,7 +72,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/test-design.md': 925,
   'skills/build/references/wave-worktrees.md': 928,
   'skills/ship/references/pr-prep.md': 772,
-  'skills/spec/references/task-list.md': 823,
+  'skills/spec/references/task-list.md': 849,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in

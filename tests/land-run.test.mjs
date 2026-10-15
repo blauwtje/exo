@@ -49,7 +49,7 @@ function fixture({ review = 'CLEAN\n\nCount: defect=0 concern=0 question=0 fix=0
   const stubs = path.join(dir, 'bin');
   write(stubs, 'gh', '#!/bin/sh\necho "$@" >> "$GH_LOG"\n[ -n "$GH_FAIL" ] && { echo boom >&2; exit 1; }\necho https://example.test/pr/1\n');
   fs.chmodSync(path.join(stubs, 'gh'), 0o755);
-  const opts = { root, runRoot: root, branch: 'feat', mode: 'local', runDir, success: '`true`', startedAt };
+  const opts = { root, runRoot: root, branch: 'feat', mode: 'local', commit: 'feat(x): add x', runDir, success: '`true`', startedAt };
   const land = (patch = {}) => {
     const saved = { PATH: process.env.PATH, GH_LOG: process.env.GH_LOG, GH_FAIL: process.env.GH_FAIL };
     process.env.PATH = `${stubs}${path.delimiter}${saved.PATH}`;
@@ -74,6 +74,33 @@ test('local fast-forwards main in place, deletes the branch and pushes nothing',
   assert.ok(fs.existsSync(path.join(f.root, 'b.txt')));
   assert.ok(!gitOk(f.root, 'rev-parse', '--verify', 'feat'));
   assert.equal(f.refs(), before);
+});
+
+test('a commit subject squashes a local or push-main run into one commit with subjects and trailers', () => {
+  for (const mode of ['local', 'push-main']) {
+    const f = fixture();
+    git(f.root, 'commit', '-q', '--amend', '-m', 'feat', '-m', 'Plan-task: 1');
+    write(f.root, 'c.txt', 'c\n');
+    git(f.root, 'add', '.');
+    git(f.root, 'commit', '-qm', 'second', '-m', 'Plan-task: 2');
+    const r = f.land({ mode, commit: 'feat(x): add x' });
+    assert.equal(r.phase, 'landed', r.gate);
+    assert.equal(git(f.root, 'rev-list', '--count', 'main~1..main'), '1');
+    assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'feat(x): add x');
+    assert.equal(git(f.root, 'log', '-1', '--format=%b'), '- feat\n- second\n\nPlan-task: 1\nPlan-task: 2');
+    assert.ok(fs.existsSync(path.join(f.root, 'c.txt')));
+  }
+});
+
+test('a lone commit already titled by the commit subject keeps its body; pr stays unsquashed', () => {
+  const f = fixture();
+  git(f.root, 'commit', '-q', '--amend', '-m', 'feat(x): add x', '-m', 'kept body');
+  assert.equal(f.land({ commit: 'feat(x): add x' }).phase, 'landed');
+  assert.equal(git(f.root, 'log', '-1', '--format=%b'), 'kept body');
+  const g = fixture();
+  const before = git(g.root, 'rev-parse', 'HEAD');
+  assert.equal(g.land({ mode: 'pr', commit: 'feat(x): add x' }).phase, 'landed');
+  assert.equal(git(g.root, 'rev-parse', 'feat'), before);
 });
 
 test('local without origin lands and skips fetch', () => {
@@ -267,8 +294,8 @@ test('leftover CHANGELOG.md and docs markdown land as one docs commit; a task-li
   write(f.root, 'docs/listed.md', 'l\n');
   const r = f.land();
   assert.equal(r.phase, 'landed', r.gate);
-  assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'docs: add plan documents');
-  assert.equal(git(f.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort().join(','), 'CHANGELOG.md,docs/specs/s.md');
+  assert.match(git(f.root, 'log', '-1', '--format=%b'), /^- docs: add plan documents$/m);
+  assert.equal(git(f.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort().join(','), 'CHANGELOG.md,b.txt,docs/specs/s.md');
   assert.equal(git(f.root, 'status', '--porcelain', '--untracked-files=all').includes('docs/listed.md'), true);
 });
 
@@ -279,7 +306,7 @@ test('a doc under a task-listed folder is not a plan document', () => {
   write(f.root, 'CHANGELOG.md', '## Unreleased\n');
   write(f.root, 'docs/guide/x.md', 'x\n');
   assert.equal(f.land().phase, 'landed');
-  assert.equal(git(f.root, 'show', '--name-only', '--format=', 'HEAD'), 'CHANGELOG.md');
+  assert.equal(git(f.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort().join(','), 'CHANGELOG.md,b.txt');
   assert.equal(git(f.root, 'status', '--porcelain', '--untracked-files=all').includes('docs/guide/x.md'), true);
 });
 
@@ -299,10 +326,10 @@ test('leftover plan docs commit before the rebase and land; no leftovers make no
   fs.writeFileSync(path.join(f.runDir, 'state.json'), JSON.stringify({ plan: path.join(f.root, 'plan.md') }));
   write(f.root, 'docs/plan.md', 'p\n');
   assert.equal(f.land().phase, 'landed');
-  assert.equal(git(f.root, 'log', '-1', '--format=%s'), 'docs: add plan documents');
+  assert.match(git(f.root, 'log', '-1', '--format=%b'), /^- docs: add plan documents$/m);
   const g = fixture({ origin: false });
   assert.equal(g.land().phase, 'landed');
-  assert.equal(git(g.root, 'log', '-1', '--format=%s'), 'feat');
+  assert.doesNotMatch(git(g.root, 'log', '-1', '--format=%b'), /docs: add plan documents/);
 });
 
 test('a .worktrees run lands in the main checkout and removes its worktree', () => {
@@ -333,7 +360,7 @@ test('a .worktrees run parks when the main checkout is not on the default branch
 test('the CLI prints one line and exits 0 landed, 3 parked', () => {
   const f = fixture();
   const args = ['--root', f.root, '--run-root', f.root, '--branch', 'feat', '--mode', 'local', '--run-dir', f.runDir,
-    '--success', '`true`', '--started-at', f.opts.startedAt];
+    '--commit', 'feat(x): add x', '--success', '`true`', '--started-at', f.opts.startedAt];
   const ok = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' });
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /^land-run: landed \| .*\n$/);
@@ -342,4 +369,13 @@ test('the CLI prints one line and exits 0 landed, 3 parked', () => {
   assert.equal(parked.status, 3);
   assert.match(parked.stdout, /^land-run: parked \| gate: review not clean/);
   assert.equal(spawnSync(process.execPath, [SCRIPT], { encoding: 'utf8' }).status, 2);
+});
+
+test('a local or push-main run without a usable commit subject parks', () => {
+  for (const [commit, reason] of [['', 'no Commit: line'], ['nonsense', 'bad Commit: line']]) {
+    const f = fixture();
+    const r = f.land({ commit });
+    assert.equal(r.phase, 'parked');
+    assert.equal(r.gate, reason);
+  }
 });

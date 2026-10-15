@@ -7,6 +7,7 @@
    - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without it run builds one task at a time.
    - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass. Per task only if full check under 60 s, else verify runs it once.
    - `Land:` → `ship` setting; `push` → `push-main`; `open-pr`, `pr-merge` → `pr`; `ask` → recommend `local`.
+   - `Land:` `local` or `push-main` → `Commit: <type(scope): subject>`, the squash commit's subject.
    - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
    - Proofs need a running app → `App: <start command> | Ready: <url>`, else `none`; proofs run with it started.
    - `Allow:` → each backticked task command no other field names, else `none`.

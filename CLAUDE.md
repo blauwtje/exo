@@ -7,18 +7,18 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Main checkout stays on `main`; every edit runs in a worktree, because exo loads in place from this checkout.
 - Run start → `git pull --ff-only` on `main`, then remove every worktree and branch, local and remote, merged into `main`, each worktree per the removal bullet below. Also `git fetch --prune`, then delete each local branch whose upstream is gone (`git branch -vv` shows `: gone]`); `git branch --merged` misses squash merges.
 - Lead only orchestrates: every edit, fix and failed-check repair → worktree subagent, one concern each; independent parts in parallel; brief with two unrelated parts → two subagents.
-- `CHANGELOG.md` → only the lead writes it, so subagent branches never conflict on it; every plan here ends with a task writing its `## Unreleased` line, since `land-run` writes none.
+- `CHANGELOG.md` → outside a run, only the lead writes it, so subagent branches never conflict on it; every plan here ends with a task writing its `## Unreleased` line, so the line lands in the run's squash commit.
 - `exo:spec` → lead runs it itself; code reading goes to `exo:locate-code`; the lead writes the brief itself.
 - Build → `node skills/build/scripts/exo-cli.mjs run <brief> --detach`, not `exo:build` in the lead session; resume → `run --resume <run-id> --detach`. A plan task lands only through that loop; lead and subagents commit no plan task on the run branch.
+- Plans here → `Land: local` and `Commit: <type(scope): subject>`; `land-run` rebases, reruns the Success criterion and squashes the run onto `main` as that commit; lead reads the run report, then pushes `main` directly, no pull request.
 - Run task blocked → its partial work to a hint file such as `.exo/carry/task<n>-partial.patch`, run tree reset; not a commit on the run branch. After that reset, lead fixes the plan (checked with `node skills/spec/scripts/plan-check.mjs --loop --run --plan <plan> --root <run worktree>`) or the cause in a worktree subagent, then resumes the run.
+- Gate or Success criterion repair on run branch → `fix(<scope>):` commit, no `Plan-task:` trailer; else the verify gate flags its files `UNPLANNED <file>`.
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's; handover between phases → the brief and `.exo/` files.
-- Land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; the plan's final task has already added the `CHANGELOG.md` lines.
-- After rebase → every line of this run stays under `## Unreleased`.
-- Then → `node lib/check-cache.mjs --query "npm run check"` first, `pass` skips the check, `miss` runs `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; squash the run onto `main` as one Conventional Commit (`git merge --squash <branch>`, then `git commit`); push `main` directly, no pull request.
-- After push → remove every worktree and branch the run created, local and remote.
+- Non-run subagent work → land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; after rebase, every line of the change stays under `## Unreleased`.
+- Then → `node lib/check-cache.mjs --query "npm run check"` first, `pass` skips the check, `miss` runs `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; squash the branch onto `main` as one Conventional Commit (`git merge --squash <branch>`, then `git commit`); push `main` directly, no pull request.
+- After push → remove every worktree and branch the change created, local and remote; delete a branch with `git branch -D <name>`, in its own command.
 - Remove worktree → from main checkout, one command per worktree: `node skills/build/scripts/remove-worktree.mjs --kept --worktree .worktrees/<name> --run .`. Not plain `git worktree remove`: it deletes the excluded `.exo/` with exit 0.
 - `remove-worktree.mjs` → output not piped away, exit not masked; it refuses → leave that worktree and its branch in place, report 2-3 options to user; no `--force`.
-- Delete run branch → `git branch -D <name>` in its own command, only after a successful push.
 - Stash → subagent runs no `git stash`, all worktrees share one stash list; cleanup drops a stash made on a run branch once its content is on `main`, every other stash stays untouched.
 - Every shell wait loop, such as `until <condition>; do sleep N; done` → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
 - This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.

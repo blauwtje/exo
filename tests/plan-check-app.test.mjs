@@ -8,7 +8,7 @@ const { compactPlanFixture, compactTask } = harness;
 function planWith(appLine) {
   const task = compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' });
   const extra = appLine === null ? '' : `\n${appLine}`;
-  return compactPlanFixture({ tasks: [task] }).replace(/^(Branch: .+)$/m, `$1\nLand: local${extra}`);
+  return compactPlanFixture({ tasks: [task] }).replace(/^(Branch: .+)$/m, `$1\nLand: local\nCommit: feat(fixture): add the fixture${extra}`);
 }
 
 test('plan-check passes a plan with no App: line', () => {

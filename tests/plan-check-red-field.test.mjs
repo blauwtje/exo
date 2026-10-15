@@ -6,7 +6,7 @@ import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import * as harness from './harness.mjs';
 
 const { compactPlanFixture, compactTask } = harness;
-const withGate = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nLand gate: npm run validate:static');
+const withGate = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture\nLand gate: npm run validate:static');
 
 const promptTask = (proof) => compactTask({ number: 1, title: 'feat(prompt): add the skill', files: ['skills/prompt/SKILL.md'], proof });
 

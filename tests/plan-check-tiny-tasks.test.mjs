@@ -7,7 +7,7 @@ import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import * as harness from './harness.mjs';
 
 const { compactPlanFixture, compactTask } = harness;
-const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture');
 
 function reportFor(files, sizes) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-tiny-'));

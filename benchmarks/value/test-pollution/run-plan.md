@@ -9,6 +9,7 @@ The seed's test suite passes in any file order: no module under `src/` keeps sta
 Repository: /path/to/repository
 Branch: bench/test-pollution
 Land: local
+Commit: feat(fixture): add the fixture
 Lint: none
 Allow: none
 Worktree setup: none

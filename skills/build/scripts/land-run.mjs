@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { subjectProblem } from '#commit-text';
 import { defaultBranch, isCovered, isPlanDoc, parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
@@ -11,7 +12,8 @@ const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 
 const LAND_ANYWAY = 'land anyway';
 const USAGE = [
   'usage: land-run.mjs --root <checkout> --run-root <build checkout> --branch <name>',
-  '  --mode <local|push-main|pr> --run-dir <dir> [--success <text>] --started-at <ISO time>',
+  '  --mode <local|push-main|pr> --run-dir <dir> [--success <text>]',
+  '  [--commit <subject>] --started-at <ISO time>',
   'Prints one line; exit 0 landed, 3 parked, 2 bad argument.',
 ].join('\n');
 
@@ -75,13 +77,29 @@ function commitPlanDocs(root, runRoot, runDir) {
   return null;
 }
 
-export function landRun({ root, runRoot, branch, mode, runDir, success = '', startedAt }) {
+function squashRun(runRoot, target, commit) {
+  const range = `${target}..HEAD`;
+  const subjects = git(runRoot, 'log', '--reverse', '--format=%s', range).out.split('\n').filter(Boolean);
+  if (subjects.length === 0 || (subjects.length === 1 && subjects[0] === commit)) return null;
+  const trailers = git(runRoot, 'log', '--reverse', '--format=%B', range).out
+    .split('\n').filter((line) => line.startsWith('Plan-task:'));
+  const body = [subjects.map((subject) => `- ${subject}`).join('\n'), trailers.join('\n')].filter(Boolean).join('\n\n');
+  if (!git(runRoot, 'reset', '--soft', target).ok) return 'soft reset failed';
+  const made = git(runRoot, 'commit', '-q', '-m', commit, '-m', body);
+  return made.ok ? null : `squash commit failed: ${made.err.split('\n')[0]}`;
+}
+
+export function landRun({ root, runRoot, branch, mode, runDir, success = '', commit = '', startedAt }) {
   const parked = (action, reason) => {
     openGate(runDir, { source: 'land', action, reason });
     return { phase: 'parked', gate: reason, range: null, pushed: null, prUrl: null, cleanup: null };
   };
   if (!branch) return parked('set Branch: in the plan', 'no branch');
   if (!['local', 'push-main', 'pr'].includes(mode)) return parked('set Land: in the plan', `unknown Land mode ${mode}`);
+  if (mode !== 'pr') {
+    if (!commit) return parked('set Commit: in the plan', 'no Commit: line');
+    if (subjectProblem(commit)) return parked('set Commit: in the plan', 'bad Commit: line');
+  }
   const base = defaultBranch(root);
   if (!base) return parked('create a default branch', 'no default branch');
   const inPlace = path.resolve(runRoot) === path.resolve(root);
@@ -97,8 +115,8 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
   const problem = reviewProblem(runRoot, startedAt);
   if (problem && !takeApproved(runDir, LAND_ANYWAY)) return parked(LAND_ANYWAY, `review not clean: ${problem}`);
 
+  let target = base;
   {
-    let target = base;
     if (hasOrigin) {
       const fetch = git(runRoot, 'fetch', 'origin');
       if (!fetch.ok) return parked('git fetch origin', `fetch failed: ${fetch.err.split('\n')[0]}`);
@@ -118,6 +136,11 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
       && !takeApproved(runDir, LAND_ANYWAY)) {
       return parked(LAND_ANYWAY, `re-check failed after rebase: ${check}`);
     }
+  }
+
+  if (mode !== 'pr') {
+    const squashed = squashRun(runRoot, target, commit);
+    if (squashed) return parked(`squash ${branch} onto ${target} yourself in ${runRoot}`, squashed);
   }
 
   const head = git(runRoot, 'rev-parse', 'HEAD').out;
@@ -177,14 +200,14 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
 
 function main(argv) {
   const f = parseFlags(argv, {
-    root: 'value', 'run-root': 'value', branch: 'value', mode: 'value', 'run-dir': 'value', success: 'value', 'started-at': 'value',
+    root: 'value', 'run-root': 'value', branch: 'value', mode: 'value', 'run-dir': 'value', success: 'value', commit: 'value', 'started-at': 'value',
   }, { usage: USAGE });
   for (const k of ['root', 'run-root', 'branch', 'mode', 'run-dir', 'started-at']) {
     if (f[k] === undefined) throw new UsageError(`flag '--${k}' is required`);
   }
   const r = landRun({
     root: f.root, runRoot: f['run-root'], branch: f.branch, mode: f.mode, runDir: f['run-dir'],
-    success: f.success ?? '', startedAt: f['started-at'],
+    success: f.success ?? '', commit: f.commit ?? '', startedAt: f['started-at'],
   });
   const detail = r.phase === 'landed'
     ? [r.range, r.pushed && `pushed ${r.pushed}`, r.prUrl, r.cleanup].filter(Boolean).join(' | ')

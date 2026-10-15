@@ -64,6 +64,7 @@ export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gat
   `Repository: ${root}`,
   `Branch: ${branch}`,
   land,
+  ...(land === 'Land: local' || land === 'Land: push-main' ? ['Commit: feat(fixture): add the fixture'] : []),
   'Worktree setup: none',
   `Land gate: ${gate}`,
   'Lint: none',

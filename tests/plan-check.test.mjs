@@ -13,7 +13,7 @@ import * as harness from './harness.mjs';
 
 const { compactTask, gitRepository, taskSection } = harness;
 // The harness fixtures predate the required Land: line; add it after Branch:.
-const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture');
 const briefFixture = (options) => withLand(harness.briefFixture(options));
 const compactPlanFixture = (options) => withLand(harness.compactPlanFixture(options));
 const planFixture = (options) => withLand(harness.planFixture(options));
@@ -141,9 +141,9 @@ function compactTasks(count) {
 const ACCEPTANCE_BULLET = '- An overdue task shows a badge in the warning tone.';
 const ACCEPTANCE_BULLET_WITH_CITATION = `${ACCEPTANCE_BULLET} (Task 1)`;
 
-test('plan-check prints ok for a 62-line brief with tasks, past the old 30-line compact cap', () => {
+test('plan-check prints ok for a 63-line brief with tasks, past the old 30-line compact cap', () => {
   const brief = briefFixture({ tasks: compactTasks(17) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
-  assert.equal(brief.split('\n').length, 62);
+  assert.equal(brief.split('\n').length, 63);
   const report = planCheckReport(brief);
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok/);

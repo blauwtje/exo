@@ -26,6 +26,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A weekly scheduled run cuts a release when `## Unreleased` holds an entry.
 - A push to `main` cuts no release; `gh workflow run release.yml` cuts one on demand, with an optional `level` input.
 - The context limit acts only on subagents and detached run sessions, not on the main session.
+- A run with `Land: local` or `push-main` now lands on `main` as one squash commit titled by the plan's new `Commit:` line, its body listing the run's commits and `Plan-task:` trailers.
 
 ### Fixed
 - A finished detached run wakes only the session that launched the run; a run with no recorded owner wakes no one.

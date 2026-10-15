@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBase, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
+import { subjectProblem } from '#commit-text';
 import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -277,6 +278,11 @@ function checkPlanBasis(frame, run) {
   const landOptional = run && !/^Land:/m.test(basis);
   if (!landOptional && !/^Land: (local|pr|push-main)$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Land:' line, or it is not one of local, pr, push-main");
   if (frameOf(frame).app?.ready === null) problems.push("the plan's '## Plan basis' 'App:' line has no 'Ready:' URL: write 'App: <start command> | Ready: <url>' or 'App: none'");
+  if (/^Land: (local|push-main)$/m.test(basis)) {
+    const commit = frameOf(frame).commit;
+    const problem = commit === null ? 'it is missing' : subjectProblem(commit);
+    if (problem !== null) problems.push(`the plan's '## Plan basis' needs a 'Commit: <type>(<scope>): <subject>' line when Land is local or push-main: ${problem}`);
+  }
   return problems;
 }
 

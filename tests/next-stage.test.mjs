@@ -96,7 +96,7 @@ test('after spec the fresh-chat lines name the runner command only when plan-che
   const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
   const redirecting = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs > out.log' })];
   // The harness fixture predates the required Land: line; add it after Branch:.
-  const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+  const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture');
   const root = await gitRepository({ 'docs/plans/loop.md': withLand(compactPlanFixture({ tasks })), 'docs/plans/plain.md': withLand(compactPlanFixture({ tasks: redirecting })), 'src/app.js': '' });
   const loopPath = path.join(root, 'docs/plans/loop.md');
   const plainPath = path.join(root, 'docs/plans/plain.md');
@@ -109,7 +109,7 @@ test('after spec the fresh-chat lines name the runner command only when plan-che
 
 test('after spec the runner line is withheld when the checkout holds a proof test the brief does not list', async () => {
   const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
-  const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+  const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture');
   const root = await gitRepository({ 'docs/plans/gap.md': withLand(compactPlanFixture({ tasks })), 'src/app.js': '', 'tests/app.test.mjs': '' });
   const gapPath = path.join(root, 'docs/plans/gap.md');
   assert.ok(!freshReport({ after: 'spec', artifact: gapPath }).includes('Unattended'));

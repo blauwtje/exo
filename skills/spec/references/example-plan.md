@@ -14,6 +14,7 @@ Branch: due-date-badge
 Worktree setup: none
 Land gate: npm run typecheck
 Land: local
+Commit: feat(fixture): add the fixture
 Lint: npx eslint
 Allow: none
 

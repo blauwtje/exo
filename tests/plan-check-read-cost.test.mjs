@@ -11,7 +11,7 @@ import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import * as harness from './harness.mjs';
 
 const { compactPlanFixture, compactTask } = harness;
-const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture');
 
 test('plan-check flags a task whose text and Files: pass 50 kB', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-read-cost-'));

@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { commitsOf, landedTasks, parsePlan, taskCommits } from '#plan-tasks';
+import { commitsOf, frameOf, landedTasks, parsePlan, taskCommits } from '#plan-tasks';
 import { compactTask, git, gitRepository, planFixture, taskSection } from './harness.mjs';
+
+test('frameOf holds the Plan basis Commit: subject, or null without one', () => {
+  const withBasis = (lines) => parsePlan(['# Plan: fixture', '', '## Plan basis', '', ...lines, '', '## Goal', 'Ship.'].join('\n')).frame;
+  assert.equal(frameOf(withBasis(['Land: local', 'Commit: feat(app): greet'])).commit, 'feat(app): greet');
+  assert.equal(frameOf(withBasis(['Land: local'])).commit, null);
+  assert.equal(frameOf({}).commit, null);
+});
 
 test('landedTasks and taskCommits read a given commit list, and the same log without one', async () => {
   const root = await gitRepository({ 'a.txt': 'a\n' });

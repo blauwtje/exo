@@ -16,7 +16,7 @@ const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.ur
 
 const planText = (root) => [
   '# Plan: detach fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, 'Branch: feat/detach', 'Land: local', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
+  '## Plan basis', `Repository: ${root}`, 'Branch: feat/detach', 'Land: local', 'Commit: feat(fixture): add the fixture', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
   '## Success criterion', '`node --version`', '',
   '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
   '## Manual checks', '- Open the file.', '',
