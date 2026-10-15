@@ -14,6 +14,7 @@ Versions before 0.134.5 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - A detached run's task session runs land-task's code-rule check through `--code-rules` on its task files before it ends, and fixes every finding.
+- A pinned plan session can run `land-task.mjs --code-rules` on any task of its plan and sees every finding, and the changelog placement check fails when its `git diff` fails.
 
 ## 0.134.14 - 2026-10-14
 
