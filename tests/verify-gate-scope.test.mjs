@@ -6,9 +6,12 @@ import { appendFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { git, run } from './harness.mjs';
 import { gitRepository, SCRIPT, landTask, reviewLine, CLEAN_CHECK, INLINE_PLAN, SCOPE_PASS } from './verify-gate-fixture.mjs';
+
+const LAND_TASK = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
 
 test('a change outside every declared Files prints an UNPLANNED line and exits 1', async () => {
   const root = await gitRepository({
@@ -61,6 +64,22 @@ test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes
   assert.ok(clean.stdout.includes(SCOPE_PASS), clean.stdout);
   assert.ok(!clean.stdout.includes('UNPLANNED'), clean.stdout);
   assert.equal(clean.code, 0, clean.stdout + clean.stderr);
+});
+
+test('a commit made by land-task --fix is reported FIX-ONLY, not UNPLANNED', async () => {
+  const plan = '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n';
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  const base = git(root, 'rev-parse', 'HEAD');
+  landTask(root, 1);
+  await writeFile(path.join(root, 'src', 'helper.js'), 'export const h = 1;\n');
+  const fix = await run(LAND_TASK, ['--fix', 'fix(app): repair helper', '--root', root], { cwd: root });
+  assert.equal(fix.code, 0, fix.stdout + fix.stderr);
+  const sha = git(root, 'rev-parse', '--short', 'HEAD');
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(result.stdout.includes(`FIX-ONLY src/helper.js (${sha})`), result.stdout);
+  assert.ok(!result.stdout.includes('UNPLANNED'), result.stdout);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
 });
 
 test('the plan file committed on the branch is the run\'s input, not an unplanned path', async () => {
