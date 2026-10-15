@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createRun, runDir as runDirOf } from '../skills/build/scripts/run-state.mjs';
-import { run } from './harness.mjs';
+import { git, run } from './harness.mjs';
 import { land, setup } from './run-plan-fixture.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
@@ -30,6 +30,14 @@ test('a refused command lands in denied.txt in EXO_RUN_DIR', async () => {
   assert.notEqual(result.denied, null, result.stdout + result.stderr);
   assert.match(result.denied, /^Denied: 1 command /m);
   assert.match(result.denied, /^  iteration 1, task 1: npm install left-pad$/m);
+});
+
+test('a dirty tree after the Success criterion repair session lands through land-task --fix', async () => {
+  const context = await setup({ successRed: null });
+  await fs.appendFile(path.join(context.root, '.git', 'info', 'exclude'), '.exo/\n');
+  const result = await runPlan(context, [land(1), land(2), { edits: ['a.txt'], result: 'Repaired.' }, { result: 'Verify done.' }]);
+  assert.equal(git(context.root, 'log', '--format=%s', '--grep=repair the Success criterion').trim(), 'fix(a): repair the Success criterion', result.stdout + result.stderr);
+  assert.equal(git(context.root, 'status', '--porcelain').trim(), '', 'the repair edits are committed');
 });
 
 test('a run without denials writes no denied.txt', async () => {

@@ -686,6 +686,18 @@ async function main(argv) {
       if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
       return { resultText: outcome.timedOut ? '' : parsed.resultText };
     };
+    const landRepair = () => {
+      const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
+      if (status.status !== 0 || status.stdout.trim() === '') return null;
+      const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
+      const landed = spawnSync(process.execPath, [SCRIPT.landTask, '--fix', `fix${scope === undefined ? '' : `(${scope})`}: repair the Success criterion`, '--plan', planPath, '--root', root], { cwd: root, encoding: 'utf8' });
+      if (landed.status === 0) {
+        say('repair landed');
+        return null;
+      }
+      const last = `${landed.stdout ?? ''}${landed.stderr ?? ''}`.trim().split('\n').at(-1);
+      return { line: `repair landing failed: ${last}`, why: `Landing the Success criterion repair failed (${clip(last, 80)})`, next: 'repair on the branch, then run exo run again', gate: 'FAIL' };
+    };
     const successGate = async () => {
       const criterion = plan.frame['Success criterion'] ?? '';
       const command = criterionCommand(criterion);
@@ -706,8 +718,10 @@ async function main(argv) {
       let result = evaluate();
       if (result.outcome !== 'proved') {
         say(`red-green: ${result.outcome}, repair session`);
-        const session = await runSession({ kind: 'fix', prompt: `The Success criterion \`${command}\` must fail on the run's start commit ${startCommit.slice(0, 12)} (with the tests of this run laid over it) and pass on the head. The check found:\n${result.lines.join('\n')}\n\nChange the tests or the product so the command proves the work, commit it, and end on one line.` });
+        const session = await runSession({ kind: 'fix', prompt: `The Success criterion \`${command}\` must fail on the run's start commit ${startCommit.slice(0, 12)} (with the tests of this run laid over it) and pass on the head. The check found:\n${result.lines.join('\n')}\n\nChange the tests or the product so the command proves the work; do not commit, the run lands your edits; end on one line.` });
         if (session.stop !== undefined) return session.stop;
+        const landStop = landRepair();
+        if (landStop !== null) return landStop;
         result = evaluate();
       }
       run.redGreenLine = result.outcome === 'proved' ? 'Red-green: proved' : `Red-green: ${result.outcome}: ${result.lines[0]}`;
