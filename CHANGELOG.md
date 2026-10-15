@@ -25,6 +25,14 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A weekly scheduled run cuts a release when `## Unreleased` holds an entry.
 - A push to `main` cuts no release; `gh workflow run release.yml` cuts one on demand, with an optional `level` input.
 
+### Fixed
+- A finished detached run wakes only the session that launched the run; a run with no recorded owner wakes no one.
+- The red-green check runs the head side on the committed HEAD, so uncommitted edits no longer change its verdict.
+- A session that edits to repair the Success criterion lands its edits through `land-task --fix`, so the run judges committed work only.
+- Land runs every test file named in a task's diff or Files, so a stale test fails before the run ends.
+- `exo-cli.mjs run` passes the launching session to the run as its owner, on resume only when set.
+- The unattended plan-check call passes `--root`, and plan-check fails when the plan's root does not exist.
+
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass; the destructive guard stays.
 
