@@ -6,10 +6,8 @@ import { settingValue } from '#settings-store';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
-import { denialFor as gitDenial } from './guards/git-guard.mjs';
 import { innerCommands } from './guards/inner-commands.mjs';
 import { approvedPass, parkOutput, runGateReason } from './guards/run-gate.mjs';
-import { denialFor as secretDenial } from './guards/secret-guard.mjs';
 
 const INNER_DEPTH = 3;
 
@@ -39,15 +37,11 @@ export function guardDecision(hookInput, denialFor) {
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
 }
 
-export const GUARDS = [['git-guard', gitDenial, true], ['secret-guard', secretDenial, false], ['destructive-guard', destructiveDenial, true]]
-  .map(([name, denialFor, parks]) => ({
-    name,
-    guard: parks,
-    run: (hookInput) => {
-      const output = guardDecision(hookInput, denialFor);
-      return parks ? parkOutput(hookInput, output) : output;
-    }
-  }));
+export const GUARDS = [{
+  name: 'destructive-guard',
+  guard: true,
+  run: (hookInput) => parkOutput(hookInput, guardDecision(hookInput, destructiveDenial))
+}];
 
 export const RUN_GATE_STEP = {
   name: 'run-gate',

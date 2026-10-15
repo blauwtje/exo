@@ -1,7 +1,7 @@
-// The Bash dispatcher runs the three Bash guards in one process: it returns
-// the first deny, joins the contexts of the other steps, lets a faulting step
-// fall through, passes every other tool, and stands the guards down when the
-// guards setting is off.
+// The Bash dispatcher runs the Bash guard and the other Bash steps in one
+// process: it returns the first deny, joins the contexts of the other steps,
+// lets a faulting step fall through, passes every other tool, and stands the
+// guard down when the guards setting is off.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -35,9 +35,9 @@ const step = (name, result) => ({ name, run: () => result });
 const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
 const context = (text) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: text } });
 
-test('each guard denies through the dispatcher with its own text', async () => {
+test('the guard denies through the dispatcher with its own text', async () => {
   const cases = [
-    ['git reset --hard', /git-guard/]
+    ['docker volume rm data', /destructive-guard/]
   ];
   for (const [command, pattern] of cases) {
     const decision = await output(command);
@@ -48,10 +48,10 @@ test('each guard denies through the dispatcher with its own text', async () => {
 });
 
 test('a guard denies a command inside bash -c and eval through the dispatcher', async () => {
-  for (const command of [`bash -c "git reset --hard"`, `eval 'git reset --hard'`, `sh -c "bash -c 'git reset --hard'"`]) {
+  for (const command of [`bash -c "docker volume rm data"`, `eval 'docker volume rm data'`, `sh -c "bash -c 'docker volume rm data'"`]) {
     const decision = await output(command);
     assert.equal(decision.permissionDecision, 'deny', command);
-    assert.match(decision.permissionDecisionReason, /git-guard/, command);
+    assert.match(decision.permissionDecisionReason, /destructive-guard/, command);
   }
 });
 
@@ -64,7 +64,7 @@ test('the memory-booking command is no longer approved', async () => {
 });
 
 test('a call that is not a Bash command, and input that is not usable, produce no output', async () => {
-  const other = await dispatch({ tool_name: 'Read', tool_input: { command: 'git reset --hard' } });
+  const other = await dispatch({ tool_name: 'Read', tool_input: { command: 'docker volume rm data' } });
   assert.deepEqual([other.code, other.stdout], [0, '']);
   const empty = await dispatch(null, { input: '' });
   assert.deepEqual([empty.code, empty.stdout], [0, '']);
@@ -72,15 +72,10 @@ test('a call that is not a Bash command, and input that is not usable, produce n
   assert.deepEqual([broken.code, broken.stdout, broken.stderr], [0, '', '']);
 });
 
-test('the guards setting off stands the guards down', async () => {
-  const command = 'git reset --hard';
-  assert.match((await output(command, { env: { CLAUDE_PLUGIN_OPTION_GUARDS: 'on' } })).permissionDecisionReason, /git-guard/);
+test('the guards setting off stands the guard down', async () => {
+  const command = 'docker volume rm data';
+  assert.match((await output(command, { env: { CLAUDE_PLUGIN_OPTION_GUARDS: 'on' } })).permissionDecisionReason, /destructive-guard/);
   assert.equal(await output(command, { env: { CLAUDE_PLUGIN_OPTION_GUARDS: 'off' } }), null);
-});
-
-test('the first deny is returned when two guards deny', async () => {
-  const decision = await output('git reset --hard & sleep 1');
-  assert.match(decision.permissionDecisionReason, /git-guard/);
 });
 
 test('a deny wins over an allow, and contexts are joined in step order', async () => {
@@ -137,10 +132,10 @@ test('a Bash call inside a delegate 120k tokens deep is denied with the report i
   assert.match(decision.permissionDecisionReason, /end now with your report/);
 });
 
-test('on Codex every guard is kept', async () => {
-  const decision = await output('git reset --hard', { env: { EXO_HOST: 'codex' } });
+test('on Codex the guard is kept', async () => {
+  const decision = await output('docker volume rm data', { env: { EXO_HOST: 'codex' } });
   assert.equal(decision.permissionDecision, 'deny');
-  assert.match(decision.permissionDecisionReason, /git-guard/);
+  assert.match(decision.permissionDecisionReason, /destructive-guard/);
 });
 
 // A main-session transcript at 120k prompt tokens; `lastHandoff` holds the
@@ -180,9 +175,9 @@ test('a main-session Bash call between the soft and hard limit is allowed with t
 });
 
 test('a guard deny wins over the context deny at 120k tokens', async () => {
-  const decision = await mainSessionCall('git reset --hard');
+  const decision = await mainSessionCall('docker volume rm data');
   assert.equal(decision.permissionDecision, 'deny');
-  assert.match(decision.permissionDecisionReason, /git-guard/);
+  assert.match(decision.permissionDecisionReason, /destructive-guard/);
   assert.equal(decision.additionalContext, undefined);
 });
 

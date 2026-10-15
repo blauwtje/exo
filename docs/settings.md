@@ -30,13 +30,11 @@ A session hook loads these rules at startup, resume, clear and compaction. They 
 
 ## Bash guards
 
-A hook stops three kinds of command and says what to do instead.
+A hook stops one kind of command and says what to do instead.
 
 | Guard | Acts on |
 |---|---|
 | Destructive | A command that deletes a container, volume, database or credential. |
-| Git | A force push, `reset --hard`, `clean -f`, a stash drop, a force-delete of an unlanded branch, a whole-tree checkout or restore. |
-| Secrets | A shell read of a path your `Read(...)` deny entries protect. |
 
 A second hook reads each session's and agent's context size on every tool call: past the soft limit (60k tokens for the lead and for an agent) it asks it to finish its step and hand off, with the lead delegating further work to fresh subagents; past the hard limit (100k) it refuses the tool, and the lead hands all remaining work to one fresh subagent.
 How Codex differs is in [codex.md](codex.md).

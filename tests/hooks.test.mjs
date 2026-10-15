@@ -65,7 +65,7 @@ test('only SessionStart, PreToolUse and Stop have hooks, and the prompt dispatch
   }
 });
 
-test('one Bash hook runs the dispatcher for the three Bash guards', () => {
+test('one Bash hook runs the dispatcher for the Bash guard', () => {
   const bash = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Bash');
   assert.equal(bash.length, 1, JSON.stringify(bash.map((entry) => entry.hook.command)));
   assert.equal(bash[0].hook.shell, 'bash');
@@ -102,9 +102,7 @@ test('no tool name matches more than one PreToolUse entry', () => {
 
 test('every shipped guard is a step of the Bash dispatcher and none has a hook of its own', () => {
   const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
-  assert.deepEqual(guardFiles.sort(), [
-    'destructive-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs'
-  ]);
+  assert.deepEqual(guardFiles.sort(), ['destructive-guard.mjs']);
   const dispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   for (const guardFile of guardFiles) {
     assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(guardFile)), [], guardFile);
@@ -170,12 +168,10 @@ test('no guard file is a process entry of its own', () => {
 });
 
 // Each guard alone denies its sample: removing that one guard lets the sample through.
-const GUARD_SAMPLES = { 'git-guard': 'git reset --hard', 'secret-guard': 'cat .env', 'destructive-guard': 'docker volume rm data' };
+const GUARD_SAMPLES = { 'destructive-guard': 'docker volume rm data' };
 
 test('each kept guard denies a sample that passes when that guard alone is removed (trust boundary)', async () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-guards-'));
-  fs.mkdirSync(path.join(project, '.claude'));
-  fs.writeFileSync(path.join(project, '.claude', 'settings.json'), JSON.stringify({ permissions: { deny: ['Read(./.env)'] } }));
   const saved = Object.fromEntries(['CLAUDE_CONFIG_DIR', 'CLAUDE_PROJECT_DIR', 'EXO_RUN', 'EXO_RUN_DIR'].map((key) => [key, process.env[key]]));
   Object.assign(process.env, { CLAUDE_CONFIG_DIR: project, CLAUDE_PROJECT_DIR: project });
   delete process.env.EXO_RUN;

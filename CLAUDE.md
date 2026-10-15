@@ -18,7 +18,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - After push → remove every worktree and branch the run created, local and remote.
 - Remove worktree → from main checkout, one command per worktree: `node skills/build/scripts/remove-worktree.mjs --kept --worktree .worktrees/<name> --run .`. Not plain `git worktree remove`: it deletes the excluded `.exo/` with exit 0.
 - `remove-worktree.mjs` → output not piped away, exit not masked; it refuses → leave that worktree and its branch in place, report 2-3 options to user; no `--force`.
-- Delete run branch → its own `git branch -D <name>` with literal name, a separate command after a successful push, not in the same command as squash or push: git-guard checks the whole command before any part runs and refuses a name built through `$( )`.
+- Delete run branch → `git branch -D <name>` in its own command, only after a successful push.
 - Stash → subagent runs no `git stash`, all worktrees share one stash list; cleanup drops a stash made on a run branch once its content is on `main`, every other stash stays untouched.
 - Every shell wait loop, such as `until <condition>; do sleep N; done` → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
 - This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.

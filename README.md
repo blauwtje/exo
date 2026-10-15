@@ -95,11 +95,11 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 
 | When Claude | exo answers |
 |---|---|
-| tries `git push --force` | `git-guard: force push discards remote history. Use --force-with-lease, or ask the user to run it.` |
+| tries `docker volume rm data` | `destructive-guard: a volume holds the only copy of its data. Report the volume and ask the user.` |
 | opens a reply with "Great question, let me look into that" and closes with a recap | Under the default `compression=short`, the preamble, the recap and the filler are gone. |
 | gets a bug report | `find-cause` builds a reproduction that fails on demand and names one cause before anything is fixed. |
 
-These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. Three Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all six settings.
+These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. A Bash guard stops commands such as a volume removal. [docs/settings.md](docs/settings.md) describes the guard and all six settings.
 
 ## More
 

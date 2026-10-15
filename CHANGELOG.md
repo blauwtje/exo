@@ -9,9 +9,15 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Highlights
+- **exo no longer blocks risky git commands or shell reads of secret files; set `permissions.deny` rules or the sandbox in your own settings to keep them blocked.**
+
 ### Changed
 - A weekly scheduled run cuts a release when `## Unreleased` holds an entry.
 - A push to `main` cuts no release; `gh workflow run release.yml` cuts one on demand, with an optional `level` input.
+
+### Removed
+- The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass; the destructive guard stays.
 
 ## 0.135.0 - 2026-10-15
 

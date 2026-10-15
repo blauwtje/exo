@@ -1,7 +1,6 @@
-// In an exo run a git-guard or destructive-guard deny, or a run-gate match
-// (publish, release, tag push, deploy), opens a gate and parks the run; an
-// approved gate's exact command passes once; a secret-guard deny stays plain;
-// outside a run nothing changes.
+// In an exo run a destructive-guard deny, or a run-gate match (publish,
+// release, tag push, deploy), opens a gate and parks the run; an approved
+// gate's exact command passes once; outside a run nothing changes.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -28,7 +27,7 @@ async function call(command, { env = {}, dir = null } = {}) {
 const parked = (runDir) => fs.readFile(path.join(runDir, 'parked'), 'utf8').catch(() => null);
 
 test('a guard deny in a run opens a gate and writes the parked marker', async () => {
-  for (const command of ['git push --force origin main', 'docker volume rm data']) {
+  for (const command of ['docker rm web', 'docker volume rm data']) {
     const { runDir, decision } = await call(command, { env: { EXO_RUN_TASK: 'plan/3' } });
     assert.equal(decision.permissionDecision, 'deny', command);
     assert.match(decision.permissionDecisionReason, /Task 3: BLOCKED parked/, command);
@@ -52,29 +51,12 @@ test('without a task the tail names the marker', async () => {
   assert.equal(readGates(runDir)[0].source, 'task tail');
 });
 
-test('a secret-guard deny stays plain', async () => {
-  const directory = await fixture();
-  await fs.mkdir(path.join(directory, '.claude'), { recursive: true });
-  await fs.writeFile(path.join(directory, '.claude', 'settings.json'), JSON.stringify({ permissions: { deny: ['Read(./secret.txt)'] } }));
-  const runDir = path.join(directory, 'rundir');
-  const outcome = await run(DISPATCHER, [], {
-    cwd: directory,
-    input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'cat secret.txt' } }),
-    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, EXO_RUN: '1', EXO_RUN_DIR: runDir }
-  });
-  const decision = JSON.parse(outcome.stdout).hookSpecificOutput;
-  assert.equal(decision.permissionDecision, 'deny');
-  assert.match(decision.permissionDecisionReason, /secret-guard/);
-  assert.equal(await parked(runDir), null);
-  assert.deepEqual(readGates(runDir), []);
-});
-
 test('an approved gate passes its exact command once, then parks again', async () => {
-  const command = 'git push --force origin main';
+  const command = 'docker volume rm data';
   const env = { EXO_RUN_TASK: '1' };
   const { runDir } = await call(command, { env });
   assert.equal(approveGates(runDir), 1);
-  const other = await call('git push --force origin other', { env, dir: runDir });
+  const other = await call('docker volume rm other', { env, dir: runDir });
   assert.equal(other.decision.permissionDecision, 'deny');
   const first = await call(command, { env, dir: runDir });
   assert.equal(first.decision?.permissionDecision, 'allow');
@@ -84,8 +66,8 @@ test('an approved gate passes its exact command once, then parks again', async (
 });
 
 test('outside a run a guard deny is plain and nothing is written', async () => {
-  const { runDir, decision } = await call('git push --force origin main', { env: { EXO_RUN: '', EXO_RUN_DIR: '' } });
-  assert.match(decision.permissionDecisionReason, /git-guard/);
+  const { runDir, decision } = await call('docker volume rm data', { env: { EXO_RUN: '', EXO_RUN_DIR: '' } });
+  assert.match(decision.permissionDecisionReason, /destructive-guard/);
   assert.doesNotMatch(decision.permissionDecisionReason, /parked/);
   assert.equal(await parked(runDir), null);
   assert.equal((await call('npm publish', { env: { EXO_RUN: '', EXO_RUN_DIR: '' } })).decision, null);
