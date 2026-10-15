@@ -61,9 +61,9 @@ test('the task and plan prompts of a sandboxed run name the stall limit the guar
   const plan = parsePlan(planText(root));
   const shared = { plan, planPath: path.join(root, 'plan.md'), root };
   withStallMs('1000', () => {
-    assert.match(taskPrompt({ ...shared, number: 1, learnings: 'l.md', sandbox: true, runDir: '' }), /silent for 1 seconds is stopped/);
-    assert.match(planPrompt({ ...shared, numbers: [1, 2], sandbox: true }), /silent for 1 seconds is stopped/);
-    assert.doesNotMatch(taskPrompt({ ...shared, number: 1, learnings: 'l.md', sandbox: false, runDir: '' }), /silent for/);
-    assert.doesNotMatch(planPrompt({ ...shared, numbers: [1, 2], sandbox: false }), /silent for/);
+    assert.match(taskPrompt({ ...shared, number: 1, learnings: 'l.md', sandbox: true, runDir: '' }), /prints nothing for 1 seconds is stopped; each output line restarts the count/);
+    assert.match(planPrompt({ ...shared, numbers: [1, 2], sandbox: true }), /prints nothing for 1 seconds is stopped; each output line restarts the count/);
+    assert.doesNotMatch(taskPrompt({ ...shared, number: 1, learnings: 'l.md', sandbox: false, runDir: '' }), /prints nothing for/);
+    assert.doesNotMatch(planPrompt({ ...shared, numbers: [1, 2], sandbox: false }), /prints nothing for/);
   });
 });

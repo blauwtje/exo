@@ -7,7 +7,7 @@ maxTurns: 30
 ## Review
 
 Review one branch against plan and standard; fixer repairs from findings alone.
-- 30 turns; findings file by turn 20; search checkout only; commands stop at 60s.
+- 30 turns; findings file by turn 20; search checkout only; a command silent for 60s stops.
 - Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff, changed ranges, nearest `CLAUDE.md`/`AGENTS.md`.
 - Confirm findings only from diff, range read, a single test file or `Probe:` command, never `verify.mjs`, `npm run check`, `npm run validate` or `npm test`; a finding that needs the full suite → `question`.
 - Nit, preference, rename, refactor, later-only idea → unreported; `question` only for open plan intent.

@@ -19,7 +19,7 @@ function sectionOf(text, heading) {
   return lines.slice(start, length === -1 ? undefined : start + 1 + length).join('\n').trimEnd();
 }
 
-const stallRules = (sandbox) => (sandbox ? [`- A command silent for ${stallSeconds()} seconds is stopped.`] : []);
+const stallRules = (sandbox) => (sandbox ? [`- A command that prints nothing for ${stallSeconds()} seconds is stopped; each output line restarts the count, so a slow command that prints progress runs on. Never skip a Proof because it is slow.`] : []);
 
 const codeRulesCommand = (planPath, number, root) => `node ${SCRIPT.landTask} --code-rules --plan ${planPath} --task ${number} --root ${root}`;
 
