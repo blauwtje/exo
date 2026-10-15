@@ -13,12 +13,12 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Run task blocked → its partial work to a hint file such as `.exo/carry/task<n>-partial.patch`, run tree reset; not a commit on the run branch. After that reset, lead fixes the plan (checked with `node skills/spec/scripts/plan-check.mjs --loop --run --plan <plan> --root <run worktree>`) or the cause in a worktree subagent, then resumes the run.
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's; handover between phases → the brief and `.exo/` files.
 - Land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; the plan's final task has already added the `CHANGELOG.md` lines.
-- After rebase → every line of this run stays under `## Unreleased`; release workflow pushes a `chore(release)` commit after every push.
-- Then → `node lib/check-cache.mjs --query "npm run check"` first, `pass` skips the check, `miss` runs `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; fast-forward `main`; push `main` directly, no pull request.
+- After rebase → every line of this run stays under `## Unreleased`.
+- Then → `node lib/check-cache.mjs --query "npm run check"` first, `pass` skips the check, `miss` runs `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; squash the run onto `main` as one Conventional Commit (`git merge --squash <branch>`, then `git commit`); push `main` directly, no pull request.
 - After push → remove every worktree and branch the run created, local and remote.
 - Remove worktree → from main checkout, one command per worktree: `node skills/build/scripts/remove-worktree.mjs --kept --worktree .worktrees/<name> --run .`. Not plain `git worktree remove`: it deletes the excluded `.exo/` with exit 0.
 - `remove-worktree.mjs` → output not piped away, exit not masked; it refuses → leave that worktree and its branch in place, report 2-3 options to user; no `--force`.
-- Delete run branch → its own `git branch -D <name>` with literal name, a separate command after a successful push, not in the same command as fast-forward or push: git-guard checks the whole command before any part runs and refuses a name built through `$( )`.
+- Delete run branch → its own `git branch -D <name>` with literal name, a separate command after a successful push, not in the same command as squash or push: git-guard checks the whole command before any part runs and refuses a name built through `$( )`.
 - Stash → subagent runs no `git stash`, all worktrees share one stash list; cleanup drops a stash made on a run branch once its content is on `main`, every other stash stays untouched.
 - Every shell wait loop, such as `until <condition>; do sleep N; done` → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
 - This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
@@ -49,7 +49,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 ## Release
 
 - Each change → one line under `## Unreleased` in `CHANGELOG.md`, in `### Added`, `### Changed`, `### Fixed` or `### Removed`; raise no version.
-- Push to `main` cuts the release via `.github/workflows/release.yml`. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand; a hand-cut version collides with the next push.
+- Release → only on user request: `gh workflow run release.yml`, optional `-f level=patch|minor|major`; a push to `main` releases nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand; a hand-cut version collides with the workflow's.
 - Change user should read first → at most three bold lead sentences under `### Highlights` in `## Unreleased`, in the commit that records it, not in a release commit.
 
 ## Environment

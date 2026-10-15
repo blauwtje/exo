@@ -1,20 +1,26 @@
 name: release
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      level:
+        description: 'Version level; auto reads it off the ## Unreleased sections'
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
 
 permissions:
   contents: write
 
-# One release at a time: two merges landing together would otherwise bump the
-# same version twice and race on the push to main.
+# One release at a time: two dispatches running together would otherwise bump
+# the same version twice and race on the push to main.
 concurrency:
   group: release
 
 jobs:
   release:
+    # The job pushes HEAD:main, so it runs only on main.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -30,12 +36,13 @@ jobs:
       - if: steps.pending.outputs.release == 'yes'
         run: npm run check
       - if: steps.pending.outputs.release == 'yes'
-        run: npm run --silent bump
+        env:
+          LEVEL: ${{ inputs.level }}
+        run: npm run --silent bump -- "$LEVEL"
       - if: steps.pending.outputs.release == 'yes'
         id: version
         run: echo "version=$(node -p 'require("./.claude-plugin/plugin.json").version')" >> "$GITHUB_OUTPUT"
-      # The bot push carries GITHUB_TOKEN, which starts no further workflow run,
-      # so the release commit does not trigger this job again.
+      # The bot push carries GITHUB_TOKEN, which starts no further workflow run.
       - if: steps.pending.outputs.release == 'yes'
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -54,4 +61,4 @@ jobs:
           npm run --silent release-notes > "${RUNNER_TEMP}/release-notes.md"
           gh release create "v${VERSION}" --title "v${VERSION}" --notes-file "${RUNNER_TEMP}/release-notes.md"
       - if: steps.pending.outputs.release == 'no'
-        run: echo 'CHANGELOG.md records nothing under ## Unreleased, so this merge cuts no release.'
+        run: echo 'CHANGELOG.md records nothing under ## Unreleased, so this run cuts no release.'
