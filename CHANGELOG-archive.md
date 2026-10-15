@@ -1,6 +1,11 @@
 # Changelog archive
 
-Releases before 0.134.7; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.8; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.7 - 2026-10-14
+
+### Fixed
+- `/exo:prompt` wraps pasted text in `<pasted_content id="...">` tags with the same random id on both tags, as the Opus 5.5 prompting guide shows.
 
 ## 0.134.6 - 2026-10-14
 

@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.7 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.135.0 - 2026-10-15
 
 ### Added
 - run.json `promptCacheTtl` picks a 5-minute (default) or 1-hour prompt cache for detached run sessions.
@@ -64,8 +66,3 @@ Versions before 0.134.7 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - `/exo:prompt` puts the goal and code facts in a `<background>` block instead of `<context>`, since Claude Code drops a `<context>` block when you copy the rewrite from the terminal.
-
-## 0.134.7 - 2026-10-14
-
-### Fixed
-- `/exo:prompt` wraps pasted text in `<pasted_content id="...">` tags with the same random id on both tags, as the Opus 5.5 prompting guide shows.
