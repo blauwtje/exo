@@ -25,6 +25,11 @@ const write = (root, p, text) => {
   fs.writeFileSync(path.join(root, p), text);
 };
 
+const commit = (git) => {
+  git('add', '.');
+  git('commit', '-q', '-m', 'head');
+};
+
 test('testPaths keeps test directories and test file names', () => {
   assert.deepEqual(
     testPaths(['lib/a.mjs', 'tests/a.mjs', 'x/__tests__/b.js', 'a.test.js', 'b_test.go', 'test_c.py', 'spec/d_spec.rb', 'src/e.spec.ts', 'testing/f.js', 'skills/spec/scripts/plan-check.mjs', 'docs/specs/a.md']),
@@ -43,6 +48,7 @@ test('a test added with its change is proved', () => {
   const { root, git, base } = repo();
   write(root, 'value.txt', 'new\n');
   write(root, 'tests/v.test.sh', 'grep -q new value.txt\n');
+  commit(git);
   const r = redGreen({ root, base, command: 'sh tests/v.test.sh', overlay: ['tests/v.test.sh'], timeoutMs: 30000 });
   assert.equal(r.outcome, 'proved');
   assert.equal(worktrees(git), 1);
@@ -51,6 +57,7 @@ test('a test added with its change is proved', () => {
 test('a test that passes without the change has no red', () => {
   const { root, git, base } = repo();
   write(root, 'tests/v.test.sh', 'test -f value.txt\n');
+  commit(git);
   const r = redGreen({ root, base, command: 'sh tests/v.test.sh', overlay: ['tests/v.test.sh'], timeoutMs: 30000 });
   assert.equal(r.outcome, 'no-red');
   assert.equal(worktrees(git), 1);
@@ -67,6 +74,7 @@ test('a root-level overlay file is proved', () => {
   const { root, git, base } = repo();
   write(root, 'value.txt', 'new\n');
   write(root, 'a.test.sh', 'grep -q new value.txt\n');
+  commit(git);
   const r = redGreen({ root, base, command: 'sh a.test.sh', overlay: ['a.test.sh'], timeoutMs: 30000 });
   assert.equal(r.outcome, 'proved');
   assert.equal(worktrees(git), 1);
@@ -182,9 +190,20 @@ test('an unknown base is an error, never proved', () => {
   assert.equal(worktrees(git), 1);
 });
 
-test('a proved command is recorded as a pass on the head tree', () => {
-  const { root, base } = repo();
+test('an uncommitted edit that flips the outcome is not what the head run sees', () => {
+  const { root, git, base } = repo();
   write(root, 'value.txt', 'new\n');
+  const command = 'grep -q new value.txt';
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'not-green');
+  assert.equal(cachedPass(root, command), null);
+  commit(git);
+  assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
+});
+
+test('a proved command is recorded as a pass on the head tree', () => {
+  const { root, git, base } = repo();
+  write(root, 'value.txt', 'new\n');
+  commit(git);
   const command = 'grep -q new value.txt';
   assert.equal(cachedPass(root, command), null);
   assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
@@ -192,8 +211,9 @@ test('a proved command is recorded as a pass on the head tree', () => {
 });
 
 test('a second redGreen on the unchanged tree is proved without running the command', () => {
-  const { root, base } = repo();
+  const { root, git, base } = repo();
   write(root, 'value.txt', 'new\n');
+  commit(git);
   const counter = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'red-green-count-')), 'runs');
   const command = `echo run >> '${counter}'; grep -q new value.txt`;
   assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
@@ -203,16 +223,18 @@ test('a second redGreen on the unchanged tree is proved without running the comm
 });
 
 test('a head run whose SUMMARY shows a warning is not cached as a pass', () => {
-  const { root, base } = repo();
+  const { root, git, base } = repo();
   write(root, 'value.txt', 'new\n');
+  commit(git);
   const command = 'grep -q new value.txt && echo "SUMMARY PASS=1 FAIL=0 WARN=1 UNRUN=0"';
   assert.equal(redGreen({ root, base, command, timeoutMs: 30000 }).outcome, 'proved');
   assert.equal(cachedPass(root, command), null);
 });
 
 test('a changed tree runs the command again', () => {
-  const { root, base } = repo();
+  const { root, git, base } = repo();
   write(root, 'value.txt', 'new\n');
+  commit(git);
   const counter = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'red-green-count-')), 'runs');
   const command = `echo run >> '${counter}'; grep -q new value.txt`;
   redGreen({ root, base, command, timeoutMs: 30000 });

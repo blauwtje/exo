@@ -80,12 +80,12 @@ test('a resume with tasks landed and no start-commit file skips the gate, not a 
   assert.equal(start, null, 'no HEAD recorded as the start commit');
 });
 
-test('a run with red-green runs its Success command once on the head tree', async () => {
+test('a run with red-green runs its Success command in no live root, once on a head tree', async () => {
   const counter = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'run-plan-count-')), 'runs');
   const context = await setup({ success: `\`pwd -P | tee -a '${counter}'; test -f b.txt\``, successRed: null });
   const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
   assert.match(result.detail, /^Red-green: proved$/m, result.stdout + result.stderr);
   const root = await fs.realpath(context.root);
   const lines = (await fs.readFile(counter, 'utf8')).split('\n').filter((line) => line === root);
-  assert.equal(lines.length, 1);
+  assert.equal(lines.length, 0);
 });
