@@ -9,6 +9,9 @@ Versions before 0.134.6 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Fixed
+- A resumed retry adds only its own cost to the run budget and session log, not the first try's cost again.
+
 ## 0.134.15 - 2026-10-15
 
 ### Changed
