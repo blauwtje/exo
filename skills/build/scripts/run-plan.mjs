@@ -272,6 +272,7 @@ async function main(argv) {
 
   const ledgerFile = path.join(logDir, 'sessions.jsonl');
   let spent = 0;
+  const sessionCosts = new Map();
   const budgetStop = () => (runCap !== undefined && spent >= runCap
     ? { line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd, then run exo run again' }
     : null);
@@ -288,7 +289,11 @@ async function main(argv) {
     const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume }), {
       cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
-    const parsed = parseStream(outcome.text);
+    const reported = parseStream(outcome.text);
+    // why: claude reports a resumed session's cumulative cost, so only the part beyond the session's earlier figure belongs to this try.
+    const earlierCost = resume === null ? 0 : sessionCosts.get(resume) ?? 0;
+    const parsed = { ...reported, cost: Math.max(0, reported.cost - earlierCost) };
+    if (reported.sessionId) sessionCosts.set(reported.sessionId, reported.cost);
     spent += parsed.cost;
     appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
     return { before, outcome, parsed: { ...parsed, model: parsed.model ?? sessionModel } };
