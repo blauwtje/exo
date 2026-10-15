@@ -9,6 +9,12 @@ Versions before 0.134.7 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Added
+- run.json `promptCacheTtl` picks a 5-minute (default) or 1-hour prompt cache for detached run sessions.
+
+### Fixed
+- The sandboxed task prompt says any output restarts the 60-second silence count, so a slow Proof that prints progress runs.
+
 ## 0.134.16 - 2026-10-15
 
 ### Fixed
