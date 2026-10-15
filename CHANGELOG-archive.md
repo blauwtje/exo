@@ -1,6 +1,11 @@
 # Changelog archive
 
-Releases before 0.134.6; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.7; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.6 - 2026-10-14
+
+### Changed
+- `/exo:prompt` now reads the code it needs, asks at most 2 questions, and rewrites a lazy prompt into a tagged prompt for the session's model, with an `Added:` line listing what it added.
 
 ## 0.134.5 - 2026-10-14
 

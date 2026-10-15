@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.6 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.7 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.134.16 - 2026-10-15
 
 ### Fixed
 - A resumed retry adds only its own cost to the run budget and session log, not the first try's cost again.
@@ -61,8 +63,3 @@ Versions before 0.134.6 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - `/exo:prompt` wraps pasted text in `<pasted_content id="...">` tags with the same random id on both tags, as the Opus 5.5 prompting guide shows.
-
-## 0.134.6 - 2026-10-14
-
-### Changed
-- `/exo:prompt` now reads the code it needs, asks at most 2 questions, and rewrites a lazy prompt into a tagged prompt for the session's model, with an `Added:` line listing what it added.
