@@ -3,6 +3,8 @@ import path from 'node:path';
 
 const CATALOG = new URL('../../../lib/run-providers.json', import.meta.url);
 
+const CACHE_TTLS = ['5m', '1h'];
+
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -63,6 +65,10 @@ export function resolveProvider(config, name, keys, effort, home) {
   if (entry.key && !keys[entry.key]) {
     return { refused: `Missing key for ${name}. Add the line ${entry.key}=<your key> to ${path.join(configDir(home ?? '~'), 'keys.env')}.` };
   }
+  const promptCacheTtl = config.defaults.promptCacheTtl ?? '5m';
+  if (!CACHE_TTLS.includes(promptCacheTtl)) {
+    return { refused: `Bad promptCacheTtl ${JSON.stringify(promptCacheTtl)}. Allowed: ${CACHE_TTLS.map((ttl) => `"${ttl}"`).join(', ')}. Fix "defaults" in ${path.join(configDir(home ?? '~'), 'run.json')}.` };
+  }
   const env = {};
   for (const [variable, value] of Object.entries(entry.env ?? {})) {
     env[variable] = String(value).replace(/\$\{(\w+)\}/g, (_, ref) => keys[ref] ?? '');
@@ -73,5 +79,6 @@ export function resolveProvider(config, name, keys, effort, home) {
     model: entry.model,
     effort: mapEffort(wanted, entry.efforts, config.efforts),
     env,
+    promptCacheTtl,
   };
 }

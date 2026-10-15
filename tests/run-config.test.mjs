@@ -20,6 +20,7 @@ test('the catalog ships claude, deepseek and zai', () => {
   assert.deepEqual(Object.keys(config.providers), ['claude', 'deepseek', 'zai']);
   assert.equal(config.defaults.provider, 'claude');
   assert.equal(config.defaults.contextBudget, 60000);
+  assert.equal(config.defaults.promptCacheTtl, '5m');
   assert.deepEqual(config.defaults.sandbox, { enabled: true, allowedDomains: [] });
   assert.deepEqual(config.providers.claude.env, {});
   assert.deepEqual(config.providers.deepseek.efforts, ['high', 'max']);
@@ -85,4 +86,19 @@ test('resolveProvider refuses an unknown name and a missing key with a one-line 
   const missing = resolveProvider(config, 'zai', {}, 'medium', home);
   assert.match(missing.refused, /ZAI_API_KEY=/);
   assert.ok(missing.refused.includes(path.join(home, '.config', 'exo', 'keys.env')));
+});
+
+test('resolveProvider returns promptCacheTtl, defaulting to 5m, and refuses a bad value', () => {
+  const home = tempHome();
+  const config = loadRunConfig({ home });
+  assert.equal(resolveProvider(config, 'claude', {}, 'medium', home).promptCacheTtl, '5m');
+  const hour = { ...config, defaults: { ...config.defaults, promptCacheTtl: '1h' } };
+  assert.equal(resolveProvider(hour, 'claude', {}, 'medium', home).promptCacheTtl, '1h');
+  const bare = { ...config, defaults: { provider: 'claude', effort: 'medium' } };
+  assert.equal(resolveProvider(bare, 'claude', {}, 'medium', home).promptCacheTtl, '5m');
+  const bad = { ...config, defaults: { ...config.defaults, promptCacheTtl: '2h' } };
+  const refused = resolveProvider(bad, 'claude', {}, 'medium', home).refused;
+  assert.match(refused, /promptCacheTtl/);
+  assert.match(refused, /"2h"/);
+  assert.match(refused, /"5m", "1h"/);
 });
