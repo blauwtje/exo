@@ -406,8 +406,9 @@ async function runCommand(argv, { approving = false } = {}) {
   if (detach && !child) refuseDirty(root);
   if (!child) {
     const log = detach ? path.join(runDir(root, id), 'run.log') : null;
-    if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log });
-    else createRun(root, { id, plan, flags, detach, log });
+    const ownerSession = process.env.CLAUDE_CODE_SESSION_ID || undefined;
+    if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log, ...(ownerSession ? { ownerSession } : {}) });
+    else createRun(root, { id, plan, flags, detach, log, ownerSession });
     const lock = acquireLock(root, id);
     if (!lock.ok) {
       if (old !== null) updateRun(root, id, { phase: old.phase, exitCode: old.exitCode, pid: old.pid, log: old.log });

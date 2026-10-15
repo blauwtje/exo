@@ -233,6 +233,36 @@ test('status with no runs refuses', async () => {
   assert.match(result.stderr, /no runs/);
 });
 
+const withSession = (context, session) => ({ HOME: context.home, CLAUDE_CODE_SESSION_ID: session });
+
+async function keptStates(context) {
+  const ids = await fs.readdir(path.join(context.root, '.exo', 'kept'));
+  return ids.map((id) => readKept(context.root, id));
+}
+
+test('a run records the launching session as its owner and omits it when none is set', async () => {
+  const context = await setup();
+  const args = ['run', 'docs/specs/p.md', '--dry-run', '--claude', context.stub];
+  const first = await run(CLI, args, { cwd: context.root, env: withSession(context, 'session-one') });
+  assert.equal(first.code, 0, first.stdout + first.stderr);
+  assert.deepEqual((await keptStates(context)).map((state) => state.ownerSession), ['session-one']);
+  await fs.rm(path.join(context.root, '.exo', 'kept'), { recursive: true });
+  const bare = await run(CLI, args, { cwd: context.root, env: withSession(context, undefined) });
+  assert.equal(bare.code, 0, bare.stdout + bare.stderr);
+  const [unowned] = await keptStates(context);
+  assert.equal('ownerSession' in unowned, false);
+});
+
+test('--resume under a second session rewrites the owner', async () => {
+  const context = await setup();
+  const plan = path.join(context.root, 'docs', 'specs', 'p.md');
+  createRun(context.root, { id: 'dead', plan, flags: ['--dry-run', '--claude', context.stub], pid: 2 ** 22 + 12345, ownerSession: 'session-one' });
+  updateRun(context.root, 'dead', { phase: 'build' });
+  const resumed = await run(CLI, ['run', '--resume', 'dead'], { cwd: context.root, env: withSession(context, 'session-two') });
+  assert.equal(resumed.code, 0, resumed.stdout + resumed.stderr);
+  assert.equal(readRun(context.root, 'dead').ownerSession, 'session-two');
+});
+
 test('--resume continues a dead run with its stored plan and flags, and refuses missing, passed and live runs', async () => {
   const context = await setup();
   const plan = path.join(context.root, 'docs', 'specs', 'p.md');
