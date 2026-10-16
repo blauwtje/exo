@@ -26,9 +26,10 @@ import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { commentStats, ledgerTranscripts } from './comment-count.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
-import { claudeArguments, pluginVariants, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
-import { FLOW_BRANCH, FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
-import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
+import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
+import { claudeArguments, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
+import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
+import { countDriftReports, lintPlan, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
 import { applyVariant } from './variants.mjs';
@@ -84,7 +85,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS };
+  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1 };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
@@ -93,9 +94,13 @@ function parseArguments(argv) {
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else if (flag === '--out') options.out = argv[++index];
     else if (flag === '--results') options.results = argv[++index];
+    else if (flag === '--cases') options.cases = argv[++index];
+    else if (flag === '--models') options.models = argv[++index].split(',');
+    else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else throw new Error(`unknown flag ${flag}`);
   }
-  if (options.sets === null) throw new Error('name --set all, or a comma list of review, build, plan, flow');
+  if (options.sets === null) throw new Error('name --set all, or a comma list of review, build, plan, flow, replay');
+  if (options.sets.includes('replay') && options.cases === null) throw new Error('--set replay needs --cases <path>');
   return options;
 }
 
@@ -169,9 +174,8 @@ function runSafeCheck(taskId, directory) {
 
 // The report is copied into the cell directory, because the repository is
 // removed once the cell is measured.
-function readReview(repository, cellDirectory) {
-  const file = path.join(repository, '.git', 'branch-review.md');
-  if (!fs.existsSync(file)) return { verdict: null, counts: null };
+function readReview(repository, cellDirectory, file = path.join(repository, '.git', 'branch-review.md')) {
+  if (!fs.existsSync(file)) return { verdict: null, counts: null, findings: null };
   fs.copyFileSync(file, path.join(cellDirectory, 'branch-review.md'));
   return parseReview(fs.readFileSync(file, 'utf8'));
 }
@@ -186,11 +190,23 @@ function measureGreenFirst(review) {
 
 async function measureReview(cell, repository, review) {
   if (cell.variant === 'green-first') return measureGreenFirst(review);
-  const check = await runSafeCheck(cell.task.id, repository);
-  const findings = review.counts === null ? null : review.counts.defect + review.counts.concern;
-  const detail = `verdict ${review.verdict ?? 'none'}, ${findings ?? 'no counted'} defect or concern findings, check after review: ${check.line}`;
-  if (cell.variant === 'seeded') return { defectsFound: check.pass ? 1 : 0, falseAlarms: null, detail };
-  return { defectsFound: null, falseAlarms: findings, detail };
+  const fixes = review.findings === null ? null : review.findings.filter((finding) => finding.action === 'fix');
+  const detail = `verdict ${review.verdict ?? 'none'}, ${fixes?.length ?? 'no'} fix findings`;
+  if (cell.variant === 'seeded') {
+    const range = defectRange(cell.task);
+    return { defectsFound: fixes === null ? null : Number(fixes.some((finding) => overlaps(finding, range))), falseAlarms: null, detail };
+  }
+  return { defectsFound: null, falseAlarms: fixes === null ? null : fixes.length, detail };
+}
+
+function measureReplay(cell, review) {
+  const fixes = review.findings === null ? null : review.findings.filter((finding) => finding.action === 'fix');
+  const truth = cell.replay.findings;
+  if (fixes === null) return { defectsFound: null, falseAlarms: null, detail: 'no report', hits: null, truth: truth.length, extra: null };
+  const hits = truth.filter((range) => fixes.some((finding) => overlaps(finding, range))).length;
+  const extra = fixes.filter((finding) => !truth.some((range) => overlaps(finding, range))).length;
+  const detail = `verdict ${review.verdict ?? 'none'}, ${hits}/${truth.length} known defects hit, ${extra} other fix findings`;
+  return { defectsFound: hits, falseAlarms: extra, detail, hits, truth: truth.length, extra };
 }
 
 // Counted over every ref by trailer number, because a wave's commit reaches
@@ -249,6 +265,7 @@ function newestPlan(repository) {
 }
 
 async function measureCell(cell, repository, usage, cellDirectory) {
+  if (cell.kind === 'replay') return measureReplay(cell, readReview(repository, cellDirectory, replayFindings(repository)));
   const review = readReview(repository, cellDirectory);
   if (cell.kind === 'review') return measureReview(cell, repository, review);
   if (cell.kind === 'flow') return measureFlow(repository, review, usage);
@@ -261,6 +278,16 @@ async function measureCell(cell, repository, usage, cellDirectory) {
   fs.writeFileSync(path.join(cellDirectory, 'plan.md'), plan);
   const defects = lintPlan(plan);
   return { defectsFound: defects.length, falseAlarms: null, detail: defects.join('; ') || 'no rule breach' };
+}
+
+const replayFindings = (repository) => path.join(path.dirname(repository), 'branch-review.md');
+
+function addReplayWorktree(cell, repository) {
+  git(ROOT, ['worktree', 'add', '--detach', repository, cell.replay.head]);
+  const { plan, base, scope } = cell.replay;
+  // A `fix diff` review reads the uncommitted tree, so leave base..head uncommitted.
+  if (scope === 'fix diff') git(repository, ['reset', '--quiet', base]);
+  return { ...cell, prompt: reviewPrompt({ planPath: plan, root: repository, base, branch: cell.replay.head, scope, findings: replayFindings(repository) }) };
 }
 
 function prepareRepository(cell, repository, origin) {
@@ -285,10 +312,11 @@ async function runCell(cell, runDirectory, copies) {
   fs.mkdirSync(cellDirectory, { recursive: true });
   const cellRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `exo-sweep-${cell.id}-`)));
   const repository = path.join(cellRoot, 'repo');
-  fs.mkdirSync(repository);
+  if (cell.kind !== 'replay') fs.mkdirSync(repository);
   try {
-    prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
-    const outcome = await runClaude(cell, repository, cellRoot, cellDirectory, copies);
+    const started = cell.kind === 'replay' ? addReplayWorktree(cell, repository) : cell;
+    if (cell.kind !== 'replay') prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
+    const outcome = await runClaude(started, repository, cellRoot, cellDirectory, copies);
     if (stopping) return null;
     const result = readResult(cellDirectory);
     const usage = cell.runSession
@@ -317,6 +345,7 @@ async function runCell(cell, runDirectory, copies) {
     fs.writeFileSync(path.join(cellDirectory, 'record.json'), `${JSON.stringify(record, null, 2)}\n`);
     return record;
   } finally {
+    if (cell.kind === 'replay') git(ROOT, ['worktree', 'remove', '--force', repository]);
     fs.rmSync(cellRoot, { recursive: true, force: true });
   }
 }
@@ -369,7 +398,8 @@ function keepNamedCells(cells, ids) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  const cells = keepNamedCells(selectCells(sweepCells(), options.sets), options.cells);
+  const replay = options.cases === null ? [] : replayCells(JSON.parse(fs.readFileSync(options.cases, 'utf8')), options);
+  const cells = keepNamedCells(selectCells([...sweepCells(), ...replay], options.sets), options.cells);
   console.log(`${cells.length} claude -p calls planned, one per cell:`);
   for (const cell of cells) console.log(`  ${cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (!options.confirm) {

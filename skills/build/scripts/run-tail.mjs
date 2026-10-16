@@ -43,7 +43,7 @@ function fixerPrompt({ planPath, root, base, findings }) {
   return block.replace(/<plan path>/g, planPath).replace(/<root>/g, root).replace(/<base>/g, base).replace(/<findings path>/g, findings).replace(/<plan>/g, planPath);
 }
 
-function reviewPrompt({ planPath, root, base, branch, scope, findings, questions = [] }) {
+export function reviewPrompt({ planPath, root, base, branch, scope, findings, questions = [] }) {
   return [
     agentBody(),
     '',

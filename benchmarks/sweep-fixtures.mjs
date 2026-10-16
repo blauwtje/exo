@@ -209,6 +209,11 @@ const FIXER_FINDINGS = {
   'rate-limit': { range: '10-13', evidence: 'allow counts calls on one counter that never resets, so a key is blocked forever after maxCalls calls instead of per period.' }
 };
 
+export function defectRange(task) {
+  const [start, end] = FIXER_FINDINGS[task.id].range.split('-').map(Number);
+  return { file: task.file, start, end };
+}
+
 function branchReviewReport(task) {
   const finding = FIXER_FINDINGS[task.id];
   return [

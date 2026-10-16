@@ -109,4 +109,12 @@ node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against t
 node benchmarks/split.mjs <runDir>...                  # flow cells by token type, call count and context size, averaged over the run dirs
 ```
 
+The `replay` set is not in `all`: it replays past reviews per model.
+
+```bash
+node benchmarks/sweep.mjs --set replay --cases <path> --models opus,sonnet --repeat 2   # prints the calls; add --confirm to run
+```
+
+`--cases` names a JSON array of `{ id, scope, base, head, plan, findings }`: `scope` is `branch` or `fix diff`, `base` and `head` are refs of this clone, `plan` is the plan path the reviewer gets, and `findings` is the known defect lines as `{ file, start, end }`. `--models` (default `opus`) and `--repeat` (default 1) give one cell per case, model and repeat, `replay-<id>-<model>-<k>`, at the `review` kind's `balanced` effort. A cell checks out a detached worktree at `head`, runs the reviewer there with the prompt `run-tail.mjs` gives it, removes the worktree, and writes `hits`, `truth` and `extra` to `record.json`: the known defects a `fix` finding overlaps, the known defects, and the `fix` findings that overlap none. The results file adds a replay table with the hit rate per model.
+
 A review cell runs the body of the `review-branch` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or concern reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.

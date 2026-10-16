@@ -54,7 +54,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 ## Benchmarks
 
-`benchmarks/README.md` covers the paired headless runs that measure exo against a session without it.
+`benchmarks/README.md` covers the paired headless runs that measure exo against a session without it, and the `replay` set of `benchmarks/sweep.mjs`, which replays past branch and fix-diff reviews per model.
 
 ## How a skill dispatches work
 

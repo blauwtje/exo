@@ -8,20 +8,31 @@ import { REVIEW_EFFORTS, SWEEP_MODELS } from './sweep-cells.mjs';
 
 const PLAN_SECTIONS = ['## Goal', '## Plan basis', '## Non-goals', '## Context', '## Tasks', '## Final verification'];
 const PLACEHOLDER = /\b(TODO|TBD|FIXME)\b|similar to Task \d/i;
+const FINDING_LINE = /^\W*([\w./-]+):(\d+)(?:-(\d+))?\b.*\b(fixed|fix|report)\W*$/;
 const COUNT_ENTRY = /(\d+)\s*(defect|concern|question)s?|(defect|concern|question)s?\s*[:=]?\s*(\d+)/g;
 
 // The reviewer's report opens with its verdict and holds one `Count:` line,
 // read in either order: `1 defect` or `defect: 1`.
 export function parseReview(text) {
   const verdict = /\b(CLEAN|FIXED|BLOCKED)\b/.exec(text)?.[1] ?? null;
+  const findings = text.split('\n').flatMap((line) => {
+    const match = FINDING_LINE.exec(line);
+    if (match === null) return [];
+    const start = Number(match[2]);
+    return [{ file: match[1], start, end: match[3] === undefined ? start : Number(match[3]), action: match[4] === 'fixed' ? 'fix' : match[4] }];
+  });
   const countLine = text.split('\n').find((line) => /^\W*Count:/.test(line));
-  if (countLine === undefined) return { verdict, counts: null };
+  if (countLine === undefined) return { verdict, counts: null, findings };
   const counts = { defect: 0, concern: 0, question: 0 };
   for (const match of countLine.matchAll(COUNT_ENTRY)) {
     const weight = match[2] ?? match[3];
     counts[weight] = Number(match[1] ?? match[4]);
   }
-  return { verdict, counts };
+  return { verdict, counts, findings };
+}
+
+export function overlaps(finding, range) {
+  return finding.file === range.file && finding.start <= range.end && range.start <= finding.end;
 }
 
 // The plan-spec rules a script can see: the header sections, the Walkthrough
@@ -98,6 +109,21 @@ function falseAlarmLines(records) {
   ];
 }
 
+function replayLines(records) {
+  const replays = records.filter((record) => record.kind === 'replay');
+  if (replays.length === 0) return ['No replay cell ran.'];
+  const models = [...new Set(replays.map((record) => record.model))];
+  const rows = models.map((model) => {
+    const cells = replays.filter((record) => record.model === model && record.hits !== null);
+    const hits = cells.reduce((sum, record) => sum + record.hits, 0);
+    const truth = cells.reduce((sum, record) => sum + record.truth, 0);
+    const extra = cells.reduce((sum, record) => sum + record.extra, 0);
+    const rate = truth === 0 ? '-' : `${Math.round((100 * hits) / truth)}%`;
+    return `| ${model} | ${cells.length} | ${hits}/${truth} | ${rate} | ${extra} |`;
+  });
+  return ['| Model | Cells | Known defects hit | Hit rate | Other fix findings |', '|---|---|---|---|---|', ...rows];
+}
+
 function comparePlans(left, right) {
   if (left.defectsFound !== right.defectsFound) return left.defectsFound - right.defectsFound;
   return (left.tokens ?? Number.MAX_SAFE_INTEGER) - (right.tokens ?? Number.MAX_SAFE_INTEGER);
@@ -139,6 +165,10 @@ export function resultsMarkdown(meta, records) {
     '',
     ...falseAlarmLines(records),
     '',
+    '## Replayed reviews',
+    '',
+    ...replayLines(records),
+    '',
     '## Planning',
     '',
     planLine(records),
@@ -150,8 +180,8 @@ export function resultsMarkdown(meta, records) {
     '## Limitations',
     '',
     '- Each cell ran once, so a difference of one finding between two cells is within noise.',
-    '- Defects found means, per kind: review seeded, the seeded defect fixed; build, the fixture check failing on the built code; plan, rule breaches; flow, defects the branch review reported.',
-    '- A seeded review cell counts its defect as found only when the fixture check passes after the reviewer fixed the branch; a control branch carries the reference solution, so every defect or concern it draws counts as a false alarm.',
+    '- Defects found means, per kind: review seeded, a `fix` finding overlapping the seeded defect; build, the fixture check failing on the built code; plan, rule breaches; flow, defects the branch review reported.',
+    '- A seeded review cell counts its defect as found only when a `fix` finding overlaps the lines of the defect; a control branch carries the reference solution, so every `fix` finding it draws counts as a false alarm.',
     '- A plan cell counts the plan-spec rules a script can check; whether its code runs is not measured.',
     '- Tokens weigh input as token-weights.mjs does, summed over the main thread and every delegate; cost is the client-side list-price estimate.',
     ''

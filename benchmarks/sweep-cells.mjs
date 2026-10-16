@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readKindTable } from '#model-kinds';
 import { FLOW_BRANCH, FLOW_PLAN, FLOW_REQUEST } from './sweep-fixtures.mjs';
 import { NO_RUN, ROOT, SAFE_TASKS } from './tasks.mjs';
 
@@ -17,7 +18,7 @@ export const SWEEP_MODELS = {
 
 export const REVIEW_EFFORTS = ['low', 'medium', 'high'];
 
-export const CELL_SETS = ['review', 'build', 'fixer', 'plan', 'flow'];
+export const CELL_SETS = ['review', 'build', 'fixer', 'plan', 'flow', 'replay'];
 
 const REVIEW_SOURCES = { seeded: 'seed', control: 'solution' };
 
@@ -217,6 +218,27 @@ function flowCells() {
     },
     { ...shared, id: 'flow-run', runSession: 'plan', budgetUsd: '1', prompt: null }
   ];
+}
+
+export function replayCells(cases, { models = ['opus'], repeat = 1 } = {}) {
+  const effort = readKindTable().kinds.review.effort;
+  const unknown = models.filter((model) => !(model in SWEEP_MODELS));
+  if (unknown.length > 0) throw new Error(`unknown model ${unknown.join(', ')}; one of ${Object.keys(SWEEP_MODELS).join(', ')}`);
+  const repeats = Array.from({ length: repeat }, (_, index) => index + 1);
+  return models.flatMap((model) => cases.flatMap((replay) => repeats.map((k) => ({
+    id: `replay-${replay.id}-${model}-${k}`,
+    kind: 'replay',
+    task: null,
+    variant: null,
+    source: null,
+    replay,
+    model: SWEEP_MODELS[model],
+    effort,
+    prompt: null,
+    appendSystemPrompt: null, disallowedTools: [],
+    budgetUsd: '3',
+    timeoutMs: 20 * MINUTE_MS
+  }))));
 }
 
 export function sweepCells() {
