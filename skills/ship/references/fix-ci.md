@@ -6,6 +6,7 @@
 
 ## Rerun rules
 
+- `open-pr` or a merge request stops after three fix rounds, watch included.
 - Round limit reached → stop, hand back, summarize what is still broken.
 
 ## Flake and a stale base

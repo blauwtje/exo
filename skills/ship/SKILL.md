@@ -13,6 +13,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    - `Changed` and `Verified` lines go to the run report, left out when none exists.
    - Invoked by `verify` → its three lines replace the overview.
    - Run `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" propose --count`; above 0 adds the line `Lessons: <n> ready: /exo:remember`, beside the three lines; 0 or a failing command adds none.
+   - Follow-up the user names → add the line `Follow-up: <what>, no issue filed; say so to file one`, beside the three lines; no `gh issue create` before that yes.
 3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.
    - Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push.
    - A plan `Land:` handed over by `verify` sets the route with no question: `push-main` → `push`, `pr` → `open-pr`, `local` → no route.
@@ -24,9 +25,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    - Record or reuse a verdict per `references/pr-merge.md`.
 6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.
    - Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm.
-   - `DIRTY` exits 4, other stops 1, asking `(A) Resolve conflicts` or `(B) Stop`, leaving it open.
    - A fix → rerun step 5, never `--merge`.
-   - `open-pr` or a merge request stops after three fix rounds, watch included.
 7. **Merge.** List and verify each per `references/pr-merge.md`.
    - `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; a stop never halts others.
 8. **Comments and watching** per their references.

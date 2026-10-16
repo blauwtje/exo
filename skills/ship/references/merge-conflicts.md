@@ -1,5 +1,9 @@
 # Resolving merge conflicts
 
+## Stop
+
+- `DIRTY` exits 4, other stops 1, asking `(A) Resolve conflicts` or `(B) Stop`, leaving it open.
+
 ## Find every conflict
 
 - Before resolving → list every conflicting file from `git status` plus its in-file conflict markers; a missed file ships a marker.

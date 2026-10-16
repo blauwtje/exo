@@ -38,6 +38,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - plan-check refuses a red-less task whose Files are all tests, flags unlisted tests, locks and registries, and prints the token size of each task; the spec brief states its Acceptance citation rule and keeps stored plans uncommitted.
 
 ### Fixed
+- Ship offers to file a follow-up the user names as an issue, in place of only saving a memory note; it files nothing before a yes.
 - A finished detached run wakes only the session that launched the run; a run with no recorded owner wakes no one.
 - The red-green check runs the head side on the committed HEAD, so uncommitted edits no longer change its verdict.
 - A session that edits to repair the Success criterion lands its edits through `land-task --fix`, so the run judges committed work only.
