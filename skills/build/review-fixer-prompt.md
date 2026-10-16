@@ -13,7 +13,7 @@ Never cut correctness, security, data safety, accessibility or anything the user
 Each `concern` finding → first write a test that fails on it, and run it. It fails → repair until it passes. It passes → remove that test, append `reported: unproven`.
 Edit only paths `git diff --name-only <base>...HEAD` lists, and a concern's test file; a fix needing another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited. Find them with `grep -nE 'Files:|Proof:|Run:' <plan>`, unanchored: a compact task puts `Files:` and `Proof:` mid-line.
-Write under each finding you mark `fixed`, including a `concern`, a `  Probe: <command that fails before its edit and passes after>` line if it has none.
+Write under each finding you mark `fixed`, including a `concern`, a `  Probe: <command that fails before its edit and passes after>` line before you return, the reviewer's own kept.
 Run the `Probe:` command under each finding you fixed; it must exit 0.
 Fix that adds a rule, line or block back → first run `git log <base>..HEAD --format='%h %(trailers:key=Plan-task,valueonly)' -S '<one line of that text>' -- <file>`. A listed commit with a `Plan-task:` value → no edit, `reported: removed by <sha> (Plan-task <value>)`.
 After the fixes, run the plan's `Land gate:` command once, if the plan has one. It fails on a fix → revert that fix; it counts as reported, with the gate output.
@@ -24,7 +24,7 @@ Fix whose command or probe fails after two attempts → revert it; it counts as 
 
 Append `fixed` or `reported: <one-clause reason>` to each finding line in the findings file, not its `Probe:` line.
 Run no git command that writes; commit nothing.
-Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence. Report it with two or three options instead.
+Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence. Report two or three options instead.
 
-Return this one line: `fixed=<n> reported=<n> report=<path>`. Only a stop at a blocked state adds a second line naming it, so a return runs to at most two lines.
+Return this one line: `fixed=<n> reported=<n> report=<path>`. Only a stop at a blocked state adds a second line naming it, at most two lines.
 ```

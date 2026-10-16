@@ -6,6 +6,7 @@
   "private": true,
   "type": "module",
   "imports": {
+    "#attempt-fingerprint": "./lib/attempt-fingerprint.mjs",
     "#budgets": "./verify/budgets.mjs",
     "#check-cache": "./lib/check-cache.mjs",
     "#code-comments": "./lib/code-comments.mjs",

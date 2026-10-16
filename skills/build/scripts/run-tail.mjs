@@ -165,7 +165,7 @@ const BRANCH_QUESTIONS = [
   'Is any changed behavior wrong, whatever task it came from?'
 ];
 
-export async function runTail({ planPath, plan, root, base, branch, runSession, logDir = path.join(root, SCRATCH_FOLDER), say = () => {} }) {
+export async function runTail({ planPath, plan, root, base, branch, runSession, logDir = path.join(root, SCRATCH_FOLDER), say = () => {}, attemptsLeft = 1 }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
   const baseText = base ?? 'HEAD';
@@ -214,31 +214,39 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       if (failed !== undefined) return { stop: { ...stop, why: `${stop.why}; shelving the edits failed: ${failed}` } };
       return { stop };
     };
-    say('fix start');
-    const session = await runSession({ kind: 'fix', task: null, model: null, prompt: fixerPrompt({ planPath, root, base: baseText, findings }) });
-    if (session.stop !== undefined) return shelved(session.stop);
-    const gate = node(SCRIPT.verify, gateArgs, root);
-    const failing = gateFailures(gate);
-    if (failing.length > 0) return shelved(fixBrokeGate(failing[0], findings), () => gateStop(failing, gateFailures(node(SCRIPT.verify, gateArgs, root)), findings));
-    const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
-    const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
-    if (failedProbe !== undefined) return shelved(stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe', `read ${findings}, repair on the branch, then run exo run again`));
-    const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
-    if (status.status === 0 && status.stdout.trim() === '') {
-      say('fix review skipped: fixer changed nothing');
-      return finish(reviewedTree);
-    }
     const fixReview = path.join(exo, 'fix-review.md');
-    fs.rmSync(fixReview, { force: true });
-    say('fix review start');
-    const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
-    if (second.stop !== undefined) return shelved(second.stop);
-    const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
-    const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
-    const fixCount = (text.match(/;\s*fix\s*$/gm) ?? []).length;
-    if (secondVerdict === 'BLOCKED' || (secondVerdict === 'FINDINGS' && fixCount > 0)) {
-      return shelved(stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}`, `read ${fixReview}, then run exo run again`));
-    }
+    const fixAttempt = async (failedLine) => {
+      say(failedLine === null ? 'fix start' : 'fix retry start');
+      const note = failedLine === null ? '' : `\n\nThe previous fix failed: ${failedLine}\nThe tree holds that fix's edits; repair them so this check passes.`;
+      const session = await runSession({ kind: 'fix', task: null, model: null, prompt: `${fixerPrompt({ planPath, root, base: baseText, findings })}${note}` });
+      if (session.stop !== undefined) return { result: shelved(session.stop) };
+      const gate = node(SCRIPT.verify, gateArgs, root);
+      const failing = gateFailures(gate);
+      if (failing.length > 0) return { failure: { line: failing[0], stop: fixBrokeGate(failing[0], findings), recheck: () => gateStop(failing, gateFailures(node(SCRIPT.verify, gateArgs, root)), findings) } };
+      const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
+      const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
+      if (failedProbe !== undefined) return { failure: { line: failedProbe, stop: stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe', `read ${findings}, repair on the branch, then run exo run again`) } };
+      const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
+      if (status.status === 0 && status.stdout.trim() === '') {
+        say('fix review skipped: fixer changed nothing');
+        return { result: finish(reviewedTree) };
+      }
+      fs.rmSync(fixReview, { force: true });
+      say('fix review start');
+      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
+      if (second.stop !== undefined) return { result: shelved(second.stop) };
+      const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
+      const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
+      const fixLines = text.split('\n').filter((line) => /;\s*fix\s*$/.test(line));
+      const reviewStop = () => stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}`, `read ${fixReview}, then run exo run again`);
+      if (secondVerdict === 'BLOCKED') return { result: shelved(reviewStop()) };
+      if (secondVerdict === 'FINDINGS' && fixLines.length > 0) return { failure: { line: fixLines[0].trim(), stop: reviewStop() } };
+      return {};
+    };
+    let attempt = await fixAttempt(null);
+    if (attempt.failure !== undefined && attemptsLeft - 1 >= 1) attempt = await fixAttempt(attempt.failure.line);
+    if (attempt.result !== undefined) return attempt.result;
+    if (attempt.failure !== undefined) return shelved(attempt.failure.stop, attempt.failure.recheck);
     const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
     const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
     if (landed.status !== 0) return shelved(stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again'));

@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { attemptFingerprint, failingLine } from '#attempt-fingerprint';
 import { commitsOf, criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
@@ -31,7 +32,6 @@ const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh he
 Exit 0 done with gate PASS, 3 parked, 1 any other stop, 2 refusal or bad arguments.
 Logs, summary.txt, tasks.json and progress.md go to .exo/run-plan/<plan-id>/<UTC time>/.`;
 
-const STALL_LIMIT = 2;
 const DEFAULT_TIMEOUT_MINUTES = 60;
 
 class Refusal extends Error {}
@@ -59,6 +59,7 @@ function chooseProvider(flags, home, project) {
   const name = flags.provider ?? config.defaults.provider;
   const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
   if (provider.refused !== undefined) throw new Refusal(provider.refused);
+  if (!Number.isInteger(config.defaults.attemptCap) || config.defaults.attemptCap < 1) throw new Refusal(`run.json defaults.attemptCap must be a positive integer, got ${JSON.stringify(config.defaults.attemptCap)}`);
   return {
     ...provider,
     asked,
@@ -67,6 +68,7 @@ function chooseProvider(flags, home, project) {
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
     contextBudget: config.defaults.contextBudget,
     cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
+    attemptCap: config.defaults.attemptCap,
     sandbox: sandboxMode(config, project)
   };
 }
@@ -301,7 +303,18 @@ async function main(argv) {
   };
 
   const landedStats = [];
-  let stall = 0;
+  // why: a task keeps its tries while each failed attempt differs from its earlier ones; the first repeat is no progress.
+  const fingerprints = new Map();
+  let failedAttempts = 0;
+  const recordAttempt = (n, check, line) => {
+    const seen = fingerprints.get(n) ?? new Set();
+    const paths = (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean).map((entry) => entry.slice(3)).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
+    const fingerprint = attemptFingerprint({ check, line, paths });
+    if (seen.has(fingerprint)) return true;
+    fingerprints.set(n, seen.add(fingerprint));
+    return false;
+  };
+  const attemptsLeft = () => Math.max(0, provider.attemptCap - failedAttempts);
   // why: a builder the sandbox kept from running its proof could not see the failure, so its first script proof failure is a free try; once per task, so it cannot loop.
   const unprovenRetried = new Set();
   const failedSessions = new Map();
@@ -448,7 +461,7 @@ async function main(argv) {
   };
   const noRedProofLine = (output) => output.split('\n').find((line) => line.includes('no red proof'))?.trim();
   const markLanded = (n, record, startedTask) => {
-    stall = 0;
+    fingerprints.delete(n);
     retryNote = '';
     run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
     passes.add(n);
@@ -479,10 +492,10 @@ async function main(argv) {
         markLanded(n, record, started);
         continue;
       }
-      say(`task ${n} not landed by the script: ${clip(lastLine(attempt.output), 80)}`);
+      say(`task ${n} not landed by the script: ${clip(failingLine(attempt.output), 80)}`);
       const noRed = noRedProofLine(attempt.output);
       if (noRed !== undefined) return { n, reason: noRed };
-      retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${lastLine(attempt.output)}\nIts log: ${attempt.log}`;
+      retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${failingLine(attempt.output)}\nIts log: ${attempt.log}`;
       return;
     }
   };
@@ -566,7 +579,7 @@ async function main(argv) {
     const n = task.number;
     if (retryNote === '') rebaseOntoMovedBase();
     const startedTask = Date.now();
-    say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
+    say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${(fingerprints.get(n)?.size ?? 0) + 1})`}`);
     noteTask({ n, subject: taskSubject(task.title), landed: landed.length, total: plan.tasks.length });
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
@@ -630,17 +643,23 @@ async function main(argv) {
       stop = await repairThenLand(n, noRed, { record, started: startedTask });
       continue;
     }
-    const failure = attempt === null ? last : lastLine(attempt.output);
+    const failure = attempt === null ? last : failingLine(attempt.output);
     retryNote = attempt === null
       ? `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`
       : `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nThe script's proof and land output ended: ${failure}\nIts log: ${attempt.log}`;
     if (attempt !== null && parsed.sessionId) failedSessions.set(n, parsed.sessionId);
     const freeTry = attempt !== null && !unprovenRetried.has(n) && proofNotRun(n);
-    if (freeTry) unprovenRetried.add(n);
-    else stall += 1;
     say(`task ${n} failed: ${outcome.timedOut ? failure : clip(failure, 80)}`);
-    if (stall >= STALL_LIMIT) {
-      stop = { line: `no progress on task ${n} in ${STALL_LIMIT} iterations, log ${log}`, why: `Task ${n} did not land in ${STALL_LIMIT} tries`, next: fix(log) };
+    if (freeTry) unprovenRetried.add(n);
+    else failedAttempts += 1;
+    const repeated = freeTry ? false : recordAttempt(n, attempt === null ? 'session' : 'land-task', failure);
+    if (repeated) {
+      const tries = fingerprints.get(n).size + 1;
+      stop = { line: `no progress on task ${n} in ${tries} iterations, log ${log}`, why: `Task ${n} did not land in ${tries} tries`, next: fix(log) };
+      break;
+    }
+    if (failedAttempts >= provider.attemptCap) {
+      stop = { line: `attempt cap ${provider.attemptCap} reached`, why: `The run hit its limit of ${provider.attemptCap} failed attempts`, next: fix(log) };
       break;
     }
   }
@@ -730,7 +749,7 @@ async function main(argv) {
     };
     const gateStop = await successGate();
     if (gateStop === null) say('all tasks landed, final review start');
-    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say }) : { stop: gateStop };
+    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say, attemptsLeft: attemptsLeft(), attemptCap: provider.attemptCap }) : { stop: gateStop };
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
       const gate = tail.gate;

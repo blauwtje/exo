@@ -94,13 +94,26 @@ export function copyEnvFiles(root, where, pattern = ENV_NAME) {
   return copied;
 }
 
+function pluginPointer() {
+  try {
+    return fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo', 'plugin-root'), 'utf8').split('\n')[0];
+  } catch {
+    return null;
+  }
+}
+
 function isPluginCheckout(root) {
   try {
-    const pointer = fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo', 'plugin-root'), 'utf8').split('\n')[0];
-    return fs.realpathSync(pointer) === fs.realpathSync(root);
+    return fs.realpathSync(pluginPointer()) === fs.realpathSync(root);
   } catch {
     return false;
   }
+}
+
+export function refuseLoadedCheckout(root, script) {
+  const loaded = fs.realpathSync(path.resolve(path.dirname(script), '..', '..', '..'));
+  if (fs.realpathSync(root) !== loaded) return;
+  throw new Refusal(`refused: ${root} is the checkout exo loads from (${loaded}), and the plugin-root pointer is ${pluginPointer() ?? 'none'}; a run here would edit the code it runs, so run from a worktree or another checkout`);
 }
 
 function git(root, args) {
@@ -272,7 +285,10 @@ async function buildRun(root, plan, flags, id) {
   const inTree = branch !== null && isPluginCheckout(root);
   let runRoot = root;
   if (inTree) runRoot = worktreeFor(root, branch);
-  else if (branch !== null) putOnBranch(root, branch);
+  else {
+    refuseLoadedCheckout(root, CLI);
+    if (branch !== null) putOnBranch(root, branch);
+  }
   if (chores) cleanUp(root, base, [branch, gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
 
   const rootFlags = inTree ? ['--root', runRoot] : [];
