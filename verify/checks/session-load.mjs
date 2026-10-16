@@ -15,12 +15,12 @@ import { SESSION_LOAD_LOCK } from '../budgets.mjs';
 const words = (text) => text.split(/\s+/).filter((word) => word !== '').length;
 
 // The hook runs in an empty home and an empty folder, so no handoff, memory or
-// personal setting changes the count.
+// personal setting changes the count; EXO_RUN_DIR is cleared because the hook prints nothing in a detached run session.
 function sessionStartWords(repository) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-session-load-'));
   try {
     const env = { ...process.env, HOME: scratch, USERPROFILE: scratch };
-    for (const name of ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'EXO_HOST']) delete env[name];
+    for (const name of ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'EXO_HOST', 'EXO_RUN', 'EXO_RUN_DIR']) delete env[name];
     const run = spawnSync(process.execPath, [repository.join('hooks', 'session-start.mjs')], {
       env, input: JSON.stringify({ cwd: scratch, source: 'startup' }), encoding: 'utf8'
     });

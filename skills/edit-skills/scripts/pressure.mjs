@@ -102,7 +102,7 @@ function claudeArguments({ model, effort, promptText, settingSources, pluginFlag
   return args;
 }
 
-function parseStream(rawStdout) {
+export function parseStream(rawStdout) {
   let finalText;
   let firstAction = null;
   const skills = [];
@@ -132,18 +132,21 @@ function parseStream(rawStdout) {
     if (event.type === 'result') {
       finalText = typeof event.result === 'string' ? event.result : '';
       if (typeof event.total_cost_usd === 'number') cost = event.total_cost_usd;
-      if (event.usage && typeof event.usage === 'object') tokens = usageTokens(event.usage);
+      // why: modelUsage is cumulative over turns and holds subagents; usage is the lead's last turn only.
+      tokens = event.modelUsage && typeof event.modelUsage === 'object' ? modelUsageTokens(event.modelUsage) : undefined;
     }
   }
   return { cost, tokens, finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
 }
 
-function usageTokens(usage) {
-  const count = (key) => (typeof usage[key] === 'number' ? usage[key] : 0);
-  return {
-    input: count('input_tokens') + count('cache_creation_input_tokens') + count('cache_read_input_tokens'),
-    output: count('output_tokens')
-  };
+function modelUsageTokens(modelUsage) {
+  const tokens = { input: 0, output: 0 };
+  for (const usage of Object.values(modelUsage)) {
+    const count = (key) => (typeof usage?.[key] === 'number' ? usage[key] : 0);
+    tokens.input += count('inputTokens') + count('cacheReadInputTokens') + count('cacheCreationInputTokens');
+    tokens.output += count('outputTokens');
+  }
+  return tokens;
 }
 
 // why: The confined run with HOME set to the options-free mirror, so the session
@@ -202,6 +205,42 @@ async function runInSequence(planned, startRun) {
   return outcomes;
 }
 
+function runGit(cwd, args) {
+  const run = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  if (run.error) throw run.error;
+  if (run.status !== 0) throw new Error(`git ${args.join(' ')} failed in ${cwd}: ${run.stderr.trim()}`);
+  return run.stdout.trim();
+}
+
+function hostGitSetting(key, placeholder) {
+  const run = spawnSync('git', ['config', '--get', key], { encoding: 'utf8' });
+  const value = run.status === 0 ? run.stdout.trim() : '';
+  return value === '' ? placeholder : value;
+}
+
+function initRepository(scratch) {
+  // why: the session runs under an options-free HOME, so the commit identity is set in the repository itself.
+  const identity = { name: hostGitSetting('user.name', 'pressure'), email: hostGitSetting('user.email', 'pressure@localhost') };
+  runGit(scratch, ['init', '--quiet']);
+  runGit(scratch, ['config', 'user.name', identity.name]);
+  runGit(scratch, ['config', 'user.email', identity.email]);
+  runGit(scratch, ['-c', 'commit.gpgsign=false', 'commit', '--quiet', '--allow-empty', '-m', 'pressure start']);
+}
+
+export function makeRunFolder(armName, setupScript) {
+  const runFolder = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${armName}-`));
+  const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
+  for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
+  initRepository(scratch);
+  const roots = [scratch, tmp];
+  if (setupScript !== undefined) {
+    const runCase = caseFolder(setupScript);
+    fs.mkdirSync(runCase, { recursive: true });
+    roots.push(runCase);
+  }
+  return { scratch, tmp, roots };
+}
+
 async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir, home }) {
   const arms = [
     comparisonArm({ pluginId, mainDir }),
@@ -213,15 +252,7 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       const setup = runSetup(setupScript);
       if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
     }
-    const runFolder = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
-    const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
-    for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
-    const roots = [scratch, tmp];
-    if (setupScript !== undefined) {
-      const runCase = caseFolder(setupScript);
-      fs.mkdirSync(runCase, { recursive: true });
-      roots.push(runCase);
-    }
+    const { scratch, tmp, roots } = makeRunFolder(arm.name, setupScript);
     const settingsAt = arm.flags.indexOf('--settings');
     const armSettings = settingsAt === -1 ? undefined : JSON.parse(arm.flags[settingsAt + 1]);
     const settings = outputStyle === undefined ? armSettings : { ...armSettings, outputStyle };
