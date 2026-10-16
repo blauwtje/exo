@@ -20,7 +20,7 @@ maxTurns: 60
 
 - Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or `fix` with a test in `Files:` → `## Red before green` (long task: first `Run:`).
+- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks route by `Proof:` for risky, `Risk:`, or `fix` with a test in `Files:` (long task: first `Run:`).
 - Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
 - Changed line past `lib/code-rules.mjs:6-7` depth or params → early return, helper or object.
 - Run only the brief's `Proof:` or `Run:` in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.

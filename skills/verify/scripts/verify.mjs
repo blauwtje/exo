@@ -16,6 +16,7 @@ import { contextPeaks, HARD_LIMIT } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { isTestPath } from '#red-green';
+import { isTestLike } from '#suite-command';
 import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
@@ -156,7 +157,9 @@ export function unchangedFiles(files, changed) {
 }
 
 export function isTestFirst(task) {
-  return task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => isTestPath(file.path)));
+  const command = runnableProof(task.proof);
+  const runsTest = command !== null && (isTestLike(command) || command.split(/\s+/).some((word) => isTestPath(word.replace(/["'`]/g, ''))));
+  return runsTest && (task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => isTestPath(file.path))));
 }
 
 function testLineHits({ file, line, pattern, at }) {

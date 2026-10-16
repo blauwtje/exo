@@ -2,7 +2,7 @@ Read this when logic or public behavior changes, or an automated test is being a
 
 # Test design
 
-Prove the changed contract through its lowest stable observable boundary. The enemy is a green test coupled to the implementation that passes while user-visible behavior is wrong. The overcorrection is rebuilding an end-to-end environment for logic a repository test runner already exposes. Choose the nearest existing test level that observes the contract.
+Prove the changed contract through its lowest stable observable boundary. The overcorrection is rebuilding an end-to-end environment for logic a repository test runner already exposes.
 
 ## Risky or routine
 
@@ -16,7 +16,8 @@ Risky when any one holds:
 
 Else routine: proves itself the ordinary way.
 
-Risky → `## Red before green` as written, quoting failing output before the production edit and passing output after.
+Risky, `Proof:` names a test file or runs a test runner → `## Red before green` as written, quoting failing output before the production edit and passing output after.
+Risky, other `Proof:` → run it red before the production edit, green after; add no test outside `Files:`.
 
 ## Red before green
 

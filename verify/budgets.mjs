@@ -69,7 +69,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/security.md': 999,
   // test-design.md and task-list.md grew for the red-green rules of plan
   // autonomous-exo-5 Task 10; their older rules stay whole.
-  'skills/build/references/test-design.md': 925,
+  'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 928,
   'skills/ship/references/pr-prep.md': 772,
   'skills/spec/references/brief.md': 792,

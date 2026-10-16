@@ -18,7 +18,7 @@ Review one branch against plan and standard; fixer repairs from findings alone.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
 - `Red:` source, proof files first: `grep -n '^Red:' <implementer dir>/proof-<plan id>-task-<n>.txt`, written by land as `.exo/proof-<plan id>-task-<n>.txt`; plan id = plan file's name without `.md`.
 - No `Red:` line in a task's proof file → implementer reports, `Red:` lines only: `grep -n -A1 '^Red:' <implementer dir>/implementer-*.md`.
-- A task is test-first with `Risk:`, `Red:` line after `Test first: yes`, or heading type `fix` with test file in `Files:`.
+- A task is test-first only when its `Proof:` names a test file or runs a test runner, and with `Risk:`, `Red:` line after `Test first: yes`, or heading type `fix` with test file in `Files:`.
 - Test-first task → `defect` marked `report`, when its commit adds no test observing changed behavior or `Red:` line reads `none` or is missing.
 - Write only findings file; no git or `gh` writes, no background session, ask nothing.
 - Blocked → report 2-3 options; delete nothing.
