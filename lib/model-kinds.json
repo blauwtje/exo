@@ -100,6 +100,7 @@
     "build-no-spec": { "kind": "hardest" },
     "build": { "kind": "coordinate" }
   },
+  "unnamed": { "types": ["general-purpose", "claude"], "kind": "investigate" },
   "agents": {
     "agents/build-task.md": { "kind": "build-task" },
     "agents/build-ui.md": { "kind": "build" },

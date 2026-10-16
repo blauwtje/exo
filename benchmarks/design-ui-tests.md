@@ -1,6 +1,6 @@
 # design-ui tests
 
-Three fixed prompts check that design-ui keeps the quality and fullness of the best earlier run, looks unique per project and ends under 100k tokens of context. The user alone judges quality against the best run; no critic agent scores a test.
+Three fixed prompts check that design-ui keeps the quality and fullness of the best earlier run, looks unique per project and ends under `defaults.contextLimit` (`lib/run-providers.json`) tokens of context. The user alone judges quality against the best run; no critic agent scores a test.
 
 ## Setup
 
@@ -29,7 +29,7 @@ Three fixed prompts check that design-ui keeps the quality and fullness of the b
 - Every pass left its own numbered report and captures.
 - The check-ui summary reached the transcript as at most two lines.
 - The motion bar of `build-pass.md` is complete, reduced motion included.
-- `node benchmarks/design-run.mjs --transcript <session .jsonl> --run <run directory>` reports a final context under 100k tokens.
+- `node benchmarks/design-run.mjs --transcript <session .jsonl> --run <run directory>` reports a final context under `defaults.contextLimit` tokens.
 - On a run that showed looks to choose from, the same report gives a `firstPreviewMs` under 300000.
 
 ## Across the three runs

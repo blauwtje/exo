@@ -16,7 +16,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 | `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. A plan's `Land:` line comes from it: `local` lands `local`, `push` lands `push-main`, `open-pr` and `pr-merge` land `pr`; `ask` makes the spec grill ask, recommending `local`. `pr-merge` opens the pull request in the run and merges it outside the run. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |
 | `env` | `ask`, `copy`, `never` | Whether a run copies the local env files of the main checkout into its worktree. `ask` puts the question, `copy` copies them, `never` copies none. |
-| `budget` | `off`, `fast`, `balanced`, `quality` | Which model and effort each helper runs on, from one per-kind table. `off` sets none, so every helper inherits your session. `off` is the default. A stored `low`, `medium` or `high` still reads as `fast`, `balanced` or `quality`, and `lean`, `normal` or `full` read the same way. |
+| `budget` | `off`, `fast`, `balanced`, `quality` | Which model and effort each helper runs on, from one per-kind table. `off` sets none, so every helper inherits your session. `balanced` is the default. A `general-purpose` or `claude` helper with no model or effort set also gets one. A stored `low`, `medium` or `high` still reads as `fast`, `balanced` or `quality`, and `lean`, `normal` or `full` read the same way. |
 
 Every reply level keeps code, commands, paths, error text, numbers and every not, no, only and except whole. Only chat prose is shortened.
 
@@ -29,5 +29,5 @@ A session hook loads these rules at startup, resume, clear and compaction. They 
 
 ## Context limit
 
-A hook reads the context size of each subagent and detached run session on every tool call. Your own session is not limited. Past the soft limit it asks the agent to finish its step and hand off. Past the hard limit it refuses the tool.
+A hook reads the context size of each session on every tool call. Past the soft limit it asks the agent to finish its step and hand off. Past the hard limit it refuses the tool of a subagent or detached run session. Your own session is never refused: it gets one note at the soft limit and one at the hard limit, asking it to run `exo:save-session` and continue in a fresh session.
 How Codex differs is in [codex.md](codex.md).

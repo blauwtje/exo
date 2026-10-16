@@ -22,7 +22,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 4. **Commit a green task.** Done means `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
-  - `no build report at` refusal → SendMessage it verbatim to its writer, once.
+  - `no build report at` refusal → SendMessage it verbatim to its writer, once; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
   - Other refusal except `PLAN DRIFT` → fresh `exo:build-task` from `<skill>/implementer-prompt.md` plus refusal verbatim, at most twice; never rerun a proof.
   - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.
   - A `Wave:` slot lands per `rolling-window.md` step 3; a failed task returns to step 3.

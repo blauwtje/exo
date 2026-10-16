@@ -12,7 +12,7 @@ import { changedPaths } from '#size-facts';
 import { codeRuleFindings } from '#code-rules';
 import { proofsReport } from '#proofs-report';
 import { transcriptFolder } from '#confine-claude';
-import { contextPeaks, HARD_LIMIT } from '#context-limits';
+import { contextLimit, contextPeaks } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { isTestFirst, isTestPath, runnableProof } from '#red-green';
@@ -481,7 +481,8 @@ function contextSection(planPath, root) {
     const folders = new Set([fs.realpathSync(main), fs.realpathSync(root)]);
     const rows = [...folders].flatMap((folder) => contextPeaks({ folder: transcriptFolder(folder), since }));
     rows.sort((a, b) => b.peak - a.peak);
-    return rows.map(({ label, peak }) => `- ${label}: ${Math.round(peak / 1000)}k${peak >= HARD_LIMIT ? ' (over 100k)' : ''}`);
+    const limit = contextLimit();
+    return rows.map(({ label, peak }) => `- ${label}: ${Math.round(peak / 1000)}k${peak >= limit ? ` (over ${Math.round(limit / 1000)}k)` : ''}`);
   } catch (error) {
     return [`- not read: ${error.message.split('\n')[0]}`];
   }

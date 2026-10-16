@@ -6,7 +6,7 @@
 - `Task <n>: BLOCKED NEEDS ANSWER: <question>` parks that task: land the green siblings first, then ask each question after the wave, one per message, and redispatch `exo:build-task` with the answer in its dispatch prompt only, never in the plan file.
 - In a wave, a failed sibling never discards a green task.
 - That reference's step 4 saves each worktree's diff, then removes it.
-- Land-task refusal `no build report at` → SendMessage to the agent that wrote the build, once, with land-task's full refusal verbatim, to write the report.
+- Land-task refusal `no build report at` → SendMessage to the agent that wrote the build, once, with land-task's full refusal verbatim, to write the report; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
 - Land-task refusal about the report's content (no Proof command, a command listed as failing) → a fresh `exo:build-task` from `../implementer-prompt.md`, with land-task's full refusal added verbatim; this session reruns no proof to repair a report.
 - Build-task stopped at its turn limit before green → redispatch `exo:build-task` from `../implementer-prompt.md`, not an improvised prompt to another agent.
 - Any other land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `PLAN DRIFT` to `../drift-repairer-prompt.md`, `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.

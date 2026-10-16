@@ -43,10 +43,7 @@ Report to: [[report]]
 Brief:
 [[brief]]
 
-After your last edit to a task, run its command; fix every finding until it prints `Code rules OK`:
-[[codeRules]]
-
-Land nothing. Write each task's report, then run its check:
+Land nothing. Batch independent Writes. Write each task's report, then run its check (it runs code rules; fix every finding):
 [[checks]]
 
 A Lint, Land-gate or code-rule refusal → fix it, rerun the check. One you cannot fix, or the same twice → end on `Task [[first]]: PLAN DRIFT <reason>`.

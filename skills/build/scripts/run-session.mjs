@@ -40,7 +40,9 @@ export const DENY_RULES = [
   'Bash(netlify deploy*)', 'Bash(fly deploy*)', 'Bash(flyctl deploy*)'
 ];
 
-const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files'];
+const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files', 'grep', 'branch --show-current', 'worktree list'];
+
+export const SESSION_RULES = 'cwd is the run root: no `cd`. Chain Bash commands only when each part is allowed. Change files only with Edit/Write under the root, never a heredoc, python or `sed -i`. Record decisions only with the run-decision command.';
 const READ_ONLY_INSPECT = ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n'];
 
 export const isFileOnDisk = (file) => {
@@ -286,6 +288,7 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
     '--strict-mcp-config',
     '--tools', SESSION_TOOLS[kind], '--disable-slash-commands',
     '--include-hook-events',
+    '--append-system-prompt', SESSION_RULES,
     '--exclude-dynamic-system-prompt-sections',
     '--max-turns', String(agentMaxTurns(kind) * (kind === 'build' ? taskCount : 1)),
     ...(pluginDir === null ? [] : ['--plugin-dir', pluginDir]),

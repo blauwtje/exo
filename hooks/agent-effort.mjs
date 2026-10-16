@@ -16,7 +16,8 @@ function filled(input, budget) {
   if (!BUDGETS.includes(budget)) return input;
   const table = readKindTable(undefined, { budget });
   const agent = /^exo:(.+)$/.exec(input.subagent_type ?? '')?.[1];
-  const kind = table.kinds[/^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1] ?? table.agents[`agents/${agent}.md`]?.kind];
+  const unnamed = table.unnamed.types.includes(input.subagent_type ?? 'general-purpose') && input.model === undefined && input.effort === undefined;
+  const kind = table.kinds[/^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1] ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? table.unnamed.kind : undefined)];
   if (!kind) return input;
   const model = input.model ?? (kind.model === INHERIT ? undefined : kind.model);
   const effort = input.effort ?? kind.effort;

@@ -19,7 +19,7 @@ function sectionOf(text, heading) {
   return lines.slice(start, length === -1 ? undefined : start + 1 + length).join('\n').trimEnd();
 }
 
-const stallRules = (sandbox) => (sandbox ? [`- A command that prints nothing for ${stallSeconds()} seconds is stopped; each output line restarts the count, so a slow command that prints progress runs on. Never skip a Proof because it is slow.`] : []);
+const stallRules = (sandbox) => (sandbox ? [`- A command that prints nothing for ${stallSeconds()} seconds is stopped; each output line restarts the count, so a slow command that prints progress runs on. Never skip a Proof because it is slow, and never wrap a command in \`timeout\` (absent on macOS).`] : []);
 
 const codeRulesCommand = (planPath, number, root) => `node ${SCRIPT.landTask} --code-rules --plan ${planPath} --task ${number} --root ${root}`;
 
@@ -65,7 +65,6 @@ export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
     plan: planPath,
     report: `${path.join(root, SCRATCH_FOLDER, 'implementer-<n>.md')}, one per task`,
     brief: briefs.join('\n\n'),
-    codeRules: numbers.map((number) => `- Task ${number}: \`${codeRulesCommand(planPath, number, root)}\``).join('\n'),
     checks: numbers.map((number) => `- Task ${number}: \`${checkCommand(planPath, number, root)}\``).join('\n'),
     stall: stallRules(sandbox).join('\n')
   };

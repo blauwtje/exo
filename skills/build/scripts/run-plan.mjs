@@ -10,6 +10,7 @@ import process from 'node:process';
 import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
 import { commitsOf, criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable } from '#model-kinds';
+import { softLimit } from '#context-limits';
 import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { redGreen, testPaths } from '#red-green';
@@ -65,6 +66,7 @@ function chooseProvider(flags, home, project) {
   const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
   if (provider.refused !== undefined) throw new Refusal(provider.refused);
   if (!Number.isInteger(config.defaults.attemptCap) || config.defaults.attemptCap < 1) throw new Refusal(`run.json defaults.attemptCap must be a positive integer, got ${JSON.stringify(config.defaults.attemptCap)}`);
+  if (!Number.isInteger(config.defaults.contextLimit) || config.defaults.contextLimit < 1) throw new Refusal(`run.json defaults.contextLimit must be a positive integer, got ${JSON.stringify(config.defaults.contextLimit)}`);
   return {
     ...provider,
     asked,
@@ -72,7 +74,7 @@ function chooseProvider(flags, home, project) {
     ...budgetPin(name, flags),
     docPin: budgetPin(name, flags, 'doc-task'),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
-    contextBudget: config.defaults.contextBudget,
+    contextBudget: softLimit(config.defaults.contextLimit),
     cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
     attemptCap: config.defaults.attemptCap,
     sandbox: sandboxMode(config, project)

@@ -1,1 +1,5 @@
 - When a delete would unblock a state, report 2-3 options, because the state is often the only copy.
+- Reading across several files, edits and checks → subagents, one concern each, small enough to finish well under the agent context limit; independent ones in one message. Lead keeps decisions and the user dialogue, and does a small edit or single-fact lookup itself.
+- Brief → goal, pointers not pasted content, stop condition; agent writes findings to a named file under `.exo/<topic>/`, returns verdict and path in a few lines.
+- Agent call → set model and effort to fit: cheapest and low for lookups, mid for edits, strongest only for design or hard debugging; state them in one line.
+- Long task → plan and progress in `.exo/<topic>/progress.md` for a fresh session to resume.

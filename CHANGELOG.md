@@ -11,6 +11,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Highlights
 - **exo no longer blocks risky git commands, destructive shell commands or shell reads of secret files; set `permissions.deny` rules or the sandbox in your own settings to keep them blocked.**
+- **A new session now orchestrates efficiently and picks a fitting model and effort per agent by default; set `budget` to `off` to keep the old behavior.**
 
 ### Added
 - A detached run reports each session's cache read share and warns when turn 1 writes a large cache.
@@ -32,12 +33,18 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A task that hits its turn cap stops as blocked, and its partial work goes to `.exo/carry/task<n>-partial.patch`.
 - A weekly scheduled run cuts a release when `## Unreleased` holds an entry.
 - A push to `main` cuts no release; `gh workflow run release.yml` cuts one on demand, with an optional `level` input.
-- The context limit acts only on subagents and detached run sessions, not on the main session.
+- The context limit denies only subagents and detached run sessions; the main session gets a note at the soft limit and at the cap, never a deny.
+- The context cap is one setting, `defaults.contextLimit` in `lib/run-providers.json` or `~/.config/exo/run.json`; the soft limit is 60% of it and `contextBudget` is gone.
+- The `budget` setting defaults to `balanced`, so exo agents and general-purpose agents get a fitting model and effort without setup.
+- Each session's start rules say the lead orchestrates, briefs agents to write findings to a file, sets each agent's model and effort, and keeps a progress file for long work; about 170 more tokens per session.
+- A run's plan session writes files with batched Writes and no heredoc, and skips the separate code-rules step that `--check` already runs; in the flow benchmark exo fell from 66 s to 47.5 s and from $0.150 to $0.104 per cell (n=4).
 - A run with `Land: local` or `push-main` now lands on `main` as one squash commit titled by the plan's new `Commit:` line, its body listing the run's commits and `Plan-task:` trailers.
 - `exo:prompt` lists dropped user lines, keeps role lines that set a perspective, leaves visual detail to `exo:design-ui`, and adds test-first only when a test command exists.
 - plan-check refuses a red-less task whose Files are all tests, flags unlisted tests, locks and registries, and prints the token size of each task; the spec brief states its Acceptance citation rule and keeps stored plans uncommitted.
 
 ### Fixed
+- Detached run sessions get rules against `cd`, heredoc and `sed -i` edits and direct `decisions.md` writes, which caused 205 denied calls in 10 days, and may run `git grep`, `git branch --show-current` and `git worktree list`.
+- A skill step that resumes an agent with SendMessage dispatches a fresh agent when SendMessage is unavailable.
 - Pressure runs use a mirrored home with default exo options, so the user's own global options no longer change their results.
 - Ship offers to file a follow-up the user names as an issue, in place of only saving a memory note; it files nothing before a yes.
 - Benchmark cells under the macOS sandbox let git refresh its xcrun cache, so each git call no longer costs about 0.4 s.
