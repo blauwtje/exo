@@ -524,6 +524,12 @@ async function approveCommand(args) {
   return runCommand(['--resume', id], { approving: true });
 }
 
+const WAITING_PHASES = ['stopped', 'crashed', 'parked', 'refused'];
+
+function phaseText(state) {
+  return WAITING_PHASES.includes(state.phase) && state.updatedAt ? `${state.phase}, waiting since ${state.updatedAt}` : state.phase;
+}
+
 function statusCommand(args) {
   const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
@@ -532,7 +538,7 @@ function statusCommand(args) {
   for (const run of runs) {
     const gone = !FINAL_PHASES.includes(run.phase) && !isAlive(run.pid);
     const note = run.phase === 'parked' ? `; exo approve ${run.id}` : gone ? `; process gone, continue with: exo run --resume ${run.id}` : '';
-    process.stdout.write(`${run.id}  ${run.phase}  ${path.basename(run.plan)}  pid ${run.pid}${run.log ? `  log ${run.log}` : ''}${note}\n`);
+    process.stdout.write(`${run.id}  ${phaseText(run)}  ${path.basename(run.plan)}  pid ${run.pid}${run.log ? `  log ${run.log}` : ''}${note}\n`);
     for (const gate of readGates(runDir(root, run.id)).filter((g) => g.status === 'open')) {
       process.stdout.write(`  open gate: ${gate.source}: ${gate.action} (${gate.reason})\n`);
     }
@@ -551,7 +557,7 @@ function findRun(root, id) {
 
 function finishWait(state, id, dir) {
   const report = path.join(dir, 'report.md');
-  process.stdout.write(`exo: run ${id} ${state.phase}; report ${report}\n`);
+  process.stdout.write(`exo: run ${id} ${phaseText(state)}; report ${report}\n`);
   if (['passed', 'landed'].includes(state.phase)) return 0;
   const next = {
     refused: `fix the cause, then rerun node "${CLI}" run "${state.plan}" --detach`,

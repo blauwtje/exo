@@ -16,7 +16,7 @@ import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
+import { openGate, phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
@@ -584,22 +584,39 @@ async function main(argv) {
     }
   }
   const fix = (log) => `read ${log}, fix the cause, then run exo run again`;
+  let fetchNoted = false;
   const rebaseOntoMovedBase = () => {
     const base = defaultBranch(root);
     if (base === null || base === branch) return;
     const hasBase = gitOut(root, ['rev-parse', '--verify', '--quiet', `refs/heads/${base}`]) !== null;
     if (!hasBase) return;
-    const contained = spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', `refs/heads/${base}`, 'HEAD']).status === 0;
-    if (contained) return;
     const dirty = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
     if (dirty !== '') return;
-    const rebase = spawnSync('git', ['-C', root, 'rebase', `refs/heads/${base}`], { encoding: 'utf8' });
+    let target = `refs/heads/${base}`;
+    const noteFetch = (why) => {
+      if (fetchNoted) return;
+      fetchNoted = true;
+      say(`${why}, rebasing onto local ${base}`);
+    };
+    if (spawnSync('git', ['-C', root, 'remote', 'get-url', 'origin']).status !== 0) noteFetch('no origin remote');
+    else if (spawnSync('git', ['-C', root, 'fetch', 'origin'], { encoding: 'utf8' }).status !== 0) noteFetch('fetch origin failed');
+    else if (gitOut(root, ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${base}`]) === null) noteFetch(`origin/${base} missing`);
+    else {
+      const localAhead = spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', `origin/${base}`, base]).status === 0
+        && gitOut(root, ['rev-parse', base]) !== gitOut(root, ['rev-parse', `origin/${base}`]);
+      if (!localAhead) target = `origin/${base}`;
+    }
+    const contained = spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', target, 'HEAD']).status === 0;
+    if (contained) return;
+    const rebase = spawnSync('git', ['-C', root, 'rebase', target], { encoding: 'utf8' });
     if (rebase.status === 0) {
-      say(`rebased onto ${base}`);
+      say(`rebased onto ${target.replace('refs/heads/', '')}`);
       return;
     }
     spawnSync('git', ['-C', root, 'rebase', '--abort']);
-    say(`rebase onto ${base} failed, task runs on the old base`);
+    const shown = target.replace('refs/heads/', '');
+    say(`rebase onto ${shown} failed, task runs on the old base`);
+    return { conflict: shown };
   };
   while (stop === undefined) {
     const landed = landedTasks(plan.tasks, root, planId);
@@ -792,7 +809,14 @@ async function main(argv) {
       say(run.redGreenLine);
       return result.outcome === 'proved' ? null : { line: `red-green: ${result.outcome}: ${result.lines[0]}`, why: `The Success criterion is not proved red-green (${clip(result.lines[0], 80)})`, next: 'fix the Success criterion or add Red: none (<reason>), then run exo run again', gate: 'FAIL' };
     };
-    const gateStop = await successGate();
+    const reviewRebaseStop = () => {
+      const moved = rebaseOntoMovedBase();
+      if (moved === undefined || !process.env.EXO_RUN_DIR) return null;
+      const reason = 'rebase conflict';
+      openGate(process.env.EXO_RUN_DIR, { source: 'land', action: `rebase ${branch} onto ${moved.conflict} yourself in ${root}`, reason });
+      return { ...parkedStop(`${reason} onto ${moved.conflict}`, progressFile), gate: 'FAIL' };
+    };
+    const gateStop = (await successGate()) ?? reviewRebaseStop();
     if (gateStop === null) say('all tasks landed, final review start');
     const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say, attemptsLeft: attemptsLeft(), attemptCap: provider.attemptCap }) : { stop: gateStop };
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
