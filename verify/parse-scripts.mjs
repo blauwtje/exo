@@ -3,11 +3,13 @@
 // The syntax check calls it once instead of starting one node per script in turn.
 
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
 import os from 'node:os';
 import process from 'node:process';
 
-const files = fs.readFileSync(0, 'utf8').split('\n').filter((line) => line !== '');
+let input = '';
+process.stdin.setEncoding('utf8');
+for await (const chunk of process.stdin) input += chunk;
+const files = input.split('\n').filter((line) => line !== '');
 const failures = [];
 
 function parse(file) {

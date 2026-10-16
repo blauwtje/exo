@@ -18,6 +18,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
 
 ### Changed
+- CI pins each GitHub Action to a commit SHA.
 - The javascript syntax check parses scripts in parallel and skips git-ignored folders such as `tmp/`.
 - A headless run passes `--exclude-dynamic-system-prompt-sections` to each session, so the system prompt caches across sessions.
 - A headless run passes a per-kind `--max-turns` turn cap to each session, and verify's Opus review gets a tighter turn cap.
