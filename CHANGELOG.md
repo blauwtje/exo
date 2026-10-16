@@ -18,6 +18,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
 
 ### Changed
+- A headless run builds doc-only tasks one model tier lower, runs the overlap review on a standard-tier model, reruns a red Proof at most once per edit and logs the model of each session and the finding count of each review; the lead ends its turn after starting a detached run.
 - `npm run check` keeps only the tests that guard against real damage and drops the verifier self-test.
 - CI pins each GitHub Action to a commit SHA.
 - The javascript syntax check parses scripts in parallel and skips git-ignored folders such as `tmp/`.

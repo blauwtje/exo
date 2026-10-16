@@ -13,25 +13,26 @@ maxTurns: 60
 
 ## Git
 
-- Never create a worktree, never call a tool that enters or leaves a worktree, and run no `gh` command.
-- Run no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; `land-task.mjs` is the only committer.
+- Never create a worktree, never enter or leave one; run no `gh` command.
+- Run no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; only `land-task.mjs` commits.
 
 ## Build
 
-- Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
+- Compact task: build the `Files:` heading per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks route by `Proof:` for risky, `Risk:`, or `fix` with a test in `Files:` (long task: first `Run:`).
+- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks route by `Proof:` for risky, `Risk:` or `fix` with a test in `Files:` (long task: first `Run:`).
 - Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
-- Changed line past `lib/code-rules.mjs:6-7` depth or params → early return, helper or object.
+- Line past `lib/code-rules.mjs:6-7` depth or params → early return, helper or object.
 - Run only the brief's `Proof:` or `Run:` in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.
+- Red `Proof:` → rerun at most once per edit, read only its failing lines.
 
 ## Stop
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
 - Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:`.
-- Stop at green, a second test or `Run:` failure, or an open user-visible choice.
-- A point the brief does not settle, with no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
-- A safe default cheap to undo → use it and record it on the reversible-choice report line.
+- Stop at green, a second test or `Run:` failure, or an open user choice.
+- A point the brief does not settle, no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
+- A safe default cheap to undo → use it, record it on the reversible-choice report line.
 
 ## Report
 
@@ -50,8 +51,7 @@ Unresolved: none
 
 ## Return
 
-- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix report until `Report OK`, no proof rerun.
-- `--check` runs `Lint:` and `Land gate:` (Bash `timeout: 600000`).
+- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>` (Bash `timeout: 600000`); it runs `Lint:` and `Land gate:`; fix report until `Report OK`, no proof rerun.
 - With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
 
 Task <n>: GREEN | diff: <diff path> | log: <log path>

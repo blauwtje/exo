@@ -176,7 +176,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const reviewModel = agentModel();
   const dispatches = [
     ...(branchReview === null ? [] : [{ task: null, name: 'branch', key: BRANCH_REVIEW_KEY, model: agentModel(branchReview.kind), findings: path.join(exo, 'review-branch.md'), scope: `branch ${branchReview.range}`, questions: BRANCH_QUESTIONS }]),
-    ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: reviewModel, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
+    ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel('review-overlap'), findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
   const reports = dispatches.map((dispatch) => dispatch.findings);
   const review = async (dispatch) => {
@@ -184,7 +184,13 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     say(`review start: ${name}`);
     fs.rmSync(dispatch.findings, { force: true });
     const session = await runSession({ kind: 'review', task: dispatch.task, model: dispatch.model, prompt: reviewPrompt({ planPath, root, base: baseText, branch, ...dispatch }) });
-    if (session.stop === undefined) say(`review done: ${name}: ${verdictOf(session.resultText) ?? 'no verdict line'}`);
+    if (session.stop === undefined) {
+      const text = session.resultText ?? '';
+      const verdict = verdictOf(text);
+      const found = countOf(text, 'defect') + countOf(text, 'concern') + countOf(text, 'question');
+      const model = session.model ?? 'unpinned';
+      say(`review done: ${name}: ${verdict === null ? `no verdict line (${model})` : `${verdict} (${model}, ${found} findings)`}`);
+    }
     return session;
   };
   const fresh = dispatches.filter((dispatch) => !reusableReview(root, dispatch));

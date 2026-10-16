@@ -20,6 +20,11 @@
       "balanced": { "tier": "standard", "effort": "medium" },
       "quality": { "tier": "strong", "effort": "medium" }
     },
+    "doc-task": {
+      "fast": { "tier": "fast", "effort": "low" },
+      "balanced": { "tier": "fast", "effort": "medium" },
+      "quality": { "tier": "standard", "effort": "medium" }
+    },
     "build": {
       "fast": { "tier": "standard", "effort": "medium" },
       "balanced": { "tier": "standard", "effort": "high" },
@@ -33,6 +38,11 @@
     "review": {
       "fast": { "tier": "standard", "effort": "medium" },
       "balanced": { "tier": "strong", "effort": "medium" },
+      "quality": { "tier": "strong", "effort": "high" }
+    },
+    "review-overlap": {
+      "fast": { "tier": "standard", "effort": "medium" },
+      "balanced": { "tier": "standard", "effort": "medium" },
       "quality": { "tier": "strong", "effort": "high" }
     },
     "review-deep": {

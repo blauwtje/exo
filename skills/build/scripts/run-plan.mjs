@@ -39,13 +39,17 @@ class Refusal extends Error {}
 // why: the run's one app process; the entry point's `finally` kills its tree.
 let appPid = null;
 
-function budgetPin(name, flags) {
+function budgetPin(name, flags, kind = 'build-task') {
   if (name !== 'claude' || flags.model !== undefined || flags.effort !== undefined) return {};
   const budget = settingValue('budget');
   if (budget === 'off') return { model: null, effort: null };
-  const { model, effort } = readKindTable(undefined, { budget }).kinds['build-task'];
+  const { model, effort } = readKindTable(undefined, { budget }).kinds[kind];
   return { model: model === INHERIT ? null : model, effort };
 }
+
+// why: a task that edits only prose needs no build-task tier; code, skill, agent, rule, hook and CLAUDE.md files keep it.
+const DOC_EXCLUDED = /^(skills|agents|rules|hooks)\//;
+const isDocTask = (task) => task.files.length > 0 && task.files.every(({ path: file }) => file.endsWith('.md') && !DOC_EXCLUDED.test(file) && path.basename(file) !== 'CLAUDE.md');
 
 function chooseProvider(flags, home, project) {
   let config;
@@ -65,6 +69,7 @@ function chooseProvider(flags, home, project) {
     asked,
     model: flags.model ?? provider.model,
     ...budgetPin(name, flags),
+    docPin: budgetPin(name, flags, 'doc-task'),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
     contextBudget: config.defaults.contextBudget,
     cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
@@ -285,11 +290,11 @@ async function main(argv) {
     : '');
   // why: the stall guard rewrites each Bash command, which then matches no Bash allow rule; only sandboxed sessions run Bash without one.
   const stallGuardOn = (kind) => sandbox.enabled && ['task', 'plan'].includes(kind);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, resume = null, taskCount = 1, repair = false }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, sessionEffort = effort, resume = null, taskCount = 1, repair = false }) => {
     if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount, deny: ['task', 'plan'].includes(kind) ? denyRules({ planPath, repair }) : undefined }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort: sessionEffort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount, deny: ['task', 'plan'].includes(kind) ? denyRules({ planPath, repair }) : undefined }), {
       cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const reported = parseStream(outcome.text);
@@ -298,7 +303,7 @@ async function main(argv) {
     const parsed = { ...reported, cost: Math.max(0, reported.cost - earlierCost) };
     if (reported.sessionId) sessionCosts.set(reported.sessionId, reported.cost);
     spent += parsed.cost;
-    appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite })}\n`);
+    appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, model: parsed.model ?? sessionModel })}\n`);
     return { before, outcome, parsed: { ...parsed, model: parsed.model ?? sessionModel } };
   };
 
@@ -588,7 +593,8 @@ async function main(argv) {
     const prompt = resume === null ? buildPrompt(n, retryNote + handoffNote(n)) : retryNote;
     // why: a report from an earlier try or run process would otherwise stay, and land-task would prove this try from it.
     fs.rmSync(path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
-    const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, resume });
+    const taskPin = isDocTask(task) && provider.docPin.model !== undefined ? provider.docPin : { model, effort };
+    const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model, sessionEffort: taskPin.effort, resume });
     writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
     const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
@@ -703,7 +709,7 @@ async function main(argv) {
       if (breach !== null) return { stop: { line: `breach in iteration ${number}: ${breach}`, why: `The final review or fix session breached a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
       if (parked !== null) return { stop: { ...parkedStop(parked, log), gate: 'FAIL' } };
       if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
-      return { resultText: outcome.timedOut ? '' : parsed.resultText };
+      return { resultText: outcome.timedOut ? '' : parsed.resultText, model: parsed.model };
     };
     const landRepair = () => {
       const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
