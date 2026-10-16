@@ -39,6 +39,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - Ship offers to file a follow-up the user names as an issue, in place of only saving a memory note; it files nothing before a yes.
+- Benchmark cells under the macOS sandbox let git refresh its xcrun cache, so each git call no longer costs about 0.4 s.
 - A finished detached run wakes only the session that launched the run; a run with no recorded owner wakes no one.
 - The red-green check runs the head side on the committed HEAD, so uncommitted edits no longer change its verdict.
 - A session that edits to repair the Success criterion lands its edits through `land-task --fix`, so the run judges committed work only.
