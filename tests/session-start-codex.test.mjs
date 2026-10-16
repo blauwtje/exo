@@ -80,3 +80,14 @@ test('a Claude run gets the settings line, no Codex note and no welcome', () => 
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
+
+test('a headless run session gets no additionalContext, a plain session still does', () => {
+  const { output: plain } = run({});
+  assert.ok(plain.hookSpecificOutput.additionalContext.includes('exo settings:'), 'plain session lost its context');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-run-home-'));
+  const env = { ...process.env, HOME: home, EXO_RUN_DIR: path.join(home, 'run') };
+  delete env.CLAUDE_CONFIG_DIR;
+  const stdout = execFileSync(process.execPath, [HOOK], { env, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd: os.tmpdir() }) }).toString();
+  assert.ok(!stdout.includes('additionalContext'), stdout);
+  assert.equal(fs.readFileSync(path.join(home, '.claude', 'exo', 'plugin-root'), 'utf8'), `${REPOSITORY}\n`);
+});

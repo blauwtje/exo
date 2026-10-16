@@ -140,14 +140,6 @@ function commitsTouching(paths, root, base) {
   return commitsByPath;
 }
 
-export function unchangedFiles(files, changed) {
-  return files.map((file) => file.path.replace(/^\.\//, '')).filter((wanted) => {
-    if (wanted.includes('*')) return !changed.some((path) => globMatches(wanted, path));
-    if (wanted.endsWith('/')) return !changed.some((path) => path.startsWith(wanted));
-    return !changed.includes(wanted);
-  });
-}
-
 function testLineHits({ file, line, pattern, at }) {
   if (file === null || !isTestPath(file) || !pattern.test(line)) return [];
   return [{ file, at, text: line.slice(1).trim() }];
@@ -223,8 +215,6 @@ function claimLines(task, { root, planId, base }) {
   const shas = taskCommits(task, root, planId);
   const changed = taskPaths(task, root, planId);
   const lines = [];
-  const unchanged = unchangedFiles(task.files, changed);
-  if (unchanged.length > 0) lines.push(`WARN claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
   if (isTestFirst(task) && !changed.some(isTestPath)) {
     const repair = testRepairCommit(task, root, base);
     lines.push(repair === undefined
