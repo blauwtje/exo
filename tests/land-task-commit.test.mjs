@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { checkTask, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { git, gitRepository, planFixture, run } from './harness.mjs';
 import { taskSection, SCRIPT, PLAN, landingCheckout, editApp, withLint } from './land-task-fixture.mjs';
 
@@ -155,6 +155,20 @@ test('an untracked plan inside the checkout is never a stray, and the task lands
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Landed: 1$/m);
+});
+
+test('under a run pin, --check runs any task of the pinned plan while a landing stays on the pinned task', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const pin = { planId: 'fixture', number: 2 };
+  const output = checkTask({ planPath, planText: PLAN, number: 1, root, pin });
+  assert.match(output, /Report OK: Task 1\n$/);
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root, pin }), (error) => {
+    assert.ok(error instanceof LandingError);
+    assert.equal(error.message, 'EXO_RUN_TASK pins this run to fixture/2; Task 1 of fixture is refused');
+    return true;
+  });
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
 test('the command line lands a task, and a refusal leaves stdout empty', async () => {

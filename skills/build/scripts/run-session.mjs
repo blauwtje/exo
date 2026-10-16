@@ -250,6 +250,11 @@ export function allowRules({ root, planPath, plan, tail = false, repair = false,
   ])];
 }
 
+export function denyRules({ planPath, repair = false }) {
+  if (repair) return [...DENY_RULES];
+  return [...new Set([...DENY_RULES, ...fileRule('Edit', planPath), ...fileRule('Write', planPath)])];
+}
+
 const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', fix: 'Read,Edit,Write,Bash,Grep,Glob', review: 'Read,Write,Glob,Grep,Bash' };
 
 const SESSION_AGENTS = { build: 'build-task', fix: 'fix-review', review: 'review-branch' };
@@ -268,7 +273,7 @@ function withStallGuard(settings) {
   return { ...(typeof settings === 'string' ? JSON.parse(settings) : settings), ...STALL_HOOK };
 }
 
-export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false, resume = null, taskCount = 1 }) {
+export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false, resume = null, taskCount = 1, deny = DENY_RULES }) {
   const settings = stallGuard ? withStallGuard(base) : base;
   return [
     '-p', ...(resume === null ? [] : ['--resume', resume]),
@@ -285,7 +290,7 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
     '--max-turns', String(agentMaxTurns(kind) * (kind === 'build' ? taskCount : 1)),
     ...(pluginDir === null ? [] : ['--plugin-dir', pluginDir]),
     '--allowedTools', ...allow,
-    '--disallowedTools', ...DENY_RULES, 'mcp__*'
+    '--disallowedTools', ...deny, 'mcp__*'
   ];
 }
 

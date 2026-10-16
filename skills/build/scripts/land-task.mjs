@@ -373,10 +373,26 @@ function runLint(lint, files, root) {
   }
 }
 
+const CODE_RULE_FIXES = {
+  'max-depth': 'less nesting',
+  'max-params': 'one options object',
+  'no-nested-ternary': 'an if or a lookup',
+  'no-else-return': 'drop the else after return',
+  comment: 'remove it or make the code clearer',
+  suppression: 'remove it or make the code clearer',
+};
+
+function codeRuleHints(fails) {
+  return Object.entries(CODE_RULE_FIXES)
+    .filter(([rule]) => fails.some((fail) => fail.split(' ')[1] === rule))
+    .map(([rule, fix]) => `Fix for ${rule}: ${fix}.\n`)
+    .join('');
+}
+
 function runCodeRules(files, root) {
   const { fails, warns } = codeRuleFindings({ root, base: 'HEAD', paths: files.filter((file) => !file.endsWith('/')) });
   if (fails.length > 0) {
-    throw new LandingError(`the added code breaks the code rules:\n${fails.join('\n')}\nRemove the comment or make the code clearer.\nThe ${CODE_RULE_LIMITS}.`);
+    throw new LandingError(`the added code breaks the code rules:\n${fails.join('\n')}\n${codeRuleHints(fails)}The ${CODE_RULE_LIMITS}.`);
   }
   return warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
 }
@@ -495,7 +511,7 @@ function checkReport(task, reportText, reportPath) {
  * trivial gate failure itself.
  */
 export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
-  refuseOutsidePin(pin, planPath, number);
+  refuseOtherPlan(pin, planPath, number);
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
   const task = plan.tasks.find((entry) => entry.number === number);
@@ -572,7 +588,7 @@ function main(argv) {
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
   const codeRulesOnly = flags['code-rules'] === true;
-  if (pin !== null && !codeRulesOnly) quiet.file = proofRecordPath(root, pin.planId, pin.number);
+  if (pin !== null && !codeRulesOnly && flags.check !== true) quiet.file = proofRecordPath(root, pin.planId, pin.number);
   if (flags.fix !== undefined) {
     process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null, pin }));
     return;
@@ -591,7 +607,7 @@ function main(argv) {
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
   const run = flags.check === true ? checkTask : landTask;
   const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
-  process.stdout.write(pin === null ? output : quietText(output, true));
+  process.stdout.write(quiet.file === null ? output : quietText(output, true));
 }
 
 if (isMain(import.meta.url)) {

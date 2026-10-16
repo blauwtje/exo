@@ -23,6 +23,8 @@ const stallRules = (sandbox) => (sandbox ? [`- A command that prints nothing for
 
 const codeRulesCommand = (planPath, number, root) => `node ${SCRIPT.landTask} --code-rules --plan ${planPath} --task ${number} --root ${root}`;
 
+const checkCommand = (planPath, number, root) => `node ${SCRIPT.landTask} --check --plan ${planPath} --task ${number} --root ${root} --report ${path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`)}`;
+
 export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, retryNote = '', runDir = process.env.EXO_RUN_DIR }) {
   const task = plan.tasks.find((entry) => entry.number === number);
   const extra = [
@@ -32,16 +34,18 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
       ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${path.join(runDir, 'decisions.md')}) and go on.`]
       : []),
     ...(sandbox
-      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. The script reruns the proof outside the sandbox and lands, so end when those are the only failures left.']
+      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. The script reruns the proof outside the sandbox and lands, so end when those are the only failures left. A test that writes outside the run folder fails with EPERM here: do not rerun it; land-task\'s Proof runs it outside the sandbox.']
       : []),
     ...stallRules(sandbox)
   ].join('\n');
+  const landGate = frameOf(plan.frame).landGate?.trim().replace(/^`(.*)`$/, '$1') ?? 'none';
   const fields = {
     task: `Task ${number}`,
     plan: planPath,
     root,
     brief: [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
     codeRules: `\`${codeRulesCommand(planPath, number, root)}\``,
+    landGate: landGate === 'none' ? '' : `- After the code rules print \`Code rules OK\` and before "Task ${number} is done", run the plan's Land gate \`${landGate}\` and fix every failure it prints until it passes, except one that names only words in the task's \`Drops:\` line: land-task drops those.\n`,
     extra,
     retry: retryNote
   };
@@ -60,8 +64,9 @@ export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
     first: String(numbers[0]),
     plan: planPath,
     report: `${path.join(root, SCRATCH_FOLDER, 'implementer-<n>.md')}, one per task`,
-    brief: ['Land nothing: the script lands each task after this session.', ...briefs].join('\n\n'),
+    brief: briefs.join('\n\n'),
     codeRules: numbers.map((number) => `- Task ${number}: \`${codeRulesCommand(planPath, number, root)}\``).join('\n'),
+    checks: numbers.map((number) => `- Task ${number}: \`${checkCommand(planPath, number, root)}\``).join('\n'),
     stall: stallRules(sandbox).join('\n')
   };
   return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Plan session').split('\n').slice(1).join('\n').trim()

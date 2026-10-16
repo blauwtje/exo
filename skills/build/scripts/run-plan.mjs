@@ -18,7 +18,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, DENY_RULES, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
+import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { averageLines, cacheLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
@@ -223,10 +223,10 @@ async function main(argv) {
       sandbox.enabled
         ? `Sandbox: on, writes in ${root}, network: ${sandbox.allowedDomains.length === 0 ? 'none' : sandbox.allowedDomains.join(', ')}`
         : `Sandbox: off (${sandbox.reason})`,
-      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: sessionCap === undefined ? undefined : String(sessionCap), allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null, pluginDir }).join(' ')}`,
+      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: sessionCap === undefined ? undefined : String(sessionCap), allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null, pluginDir, deny: denyRules({ planPath }) }).join(' ')}`,
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
-      'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
+      'Deny:', ...denyRules({ planPath }).map((rule) => `  ${rule}`),
       `First prompt: ${first === undefined ? 'none: every task has landed, the script runs the review tail' : chosen.mode === 'plan' ? planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }) : buildPrompt(first)}`,
       ''
     ].join('\n'));
@@ -285,11 +285,11 @@ async function main(argv) {
     : '');
   // why: the stall guard rewrites each Bash command, which then matches no Bash allow rule; only sandboxed sessions run Bash without one.
   const stallGuardOn = (kind) => sandbox.enabled && ['task', 'plan'].includes(kind);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, resume = null, taskCount = 1 }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, resume = null, taskCount = 1, repair = false }) => {
     if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount, deny: ['task', 'plan'].includes(kind) ? denyRules({ planPath, repair }) : undefined }), {
       cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const reported = parseStream(outcome.text);
@@ -427,7 +427,7 @@ async function main(argv) {
     const treeBefore = treeBesidePlan();
     say(`task ${n} blocked, repair session: ${clip(report, 80)}`);
     const log = path.join(logDir, `iter-${iteration}-repair-${n}.log`);
-    const session = await spawnOne({ prompt: repairPrompt(n, report), allow: repairAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
+    const session = await spawnOne({ prompt: repairPrompt(n, report), allow: repairAllow, settings: taskSettings, pin: `${planId}/${n}`, log, repair: true });
     if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
     const after = fs.readFileSync(planPath, 'utf8');
     const breach = breachOf(root, session.before, { tail: true }) ?? treeBreach(treeBefore);
@@ -482,7 +482,7 @@ async function main(argv) {
       cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs
     });
     const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
-    appendLog(log, output, fs.writeFileSync);
+    appendLog(log, output);
     return { landed: answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n), output, log };
   };
   const landInOrder = (numbers, record, started) => {
