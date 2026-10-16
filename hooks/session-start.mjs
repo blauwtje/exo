@@ -58,7 +58,11 @@ try {
 
 try {
   fs.mkdirSync(configDirectory, { recursive: true });
-  fs.writeFileSync(path.join(configDirectory, 'plugin-root'), `${root}\n`);
+  // why: only the harness sets CLAUDE_PLUGIN_ROOT to the copy it loads; a hand run or a clone loaded by a pressure session must not repoint the real pointer.
+  const loadedRoot = process.env.CLAUDE_PLUGIN_ROOT;
+  if (loadedRoot && fs.existsSync(loadedRoot) && fs.realpathSync(loadedRoot) === fs.realpathSync(root)) {
+    fs.writeFileSync(path.join(configDirectory, 'plugin-root'), `${root}\n`);
+  }
   fs.rmSync(path.join(configDirectory, 'savings'), { recursive: true, force: true });
 } catch (error) {
   console.error(`exo: plugin-root pointer not written, ${error.message}`);

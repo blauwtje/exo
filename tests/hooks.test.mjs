@@ -81,7 +81,7 @@ test('the session hook points at a memory file only where one exists', () => {
 test('the session hook prints no book command', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-book-'));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   try {
     const output = execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString();
     assert.doesNotMatch(JSON.parse(output).hookSpecificOutput.additionalContext, /book --claim/);
@@ -124,7 +124,7 @@ test('the session hook deletes the savings folder an earlier version left and ke
   fs.writeFileSync(path.join(exoDirectory, 'savings', 'ledger.jsonl'), '{}\n');
   fs.mkdirSync(path.join(exoDirectory, 'handoff'), { recursive: true });
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   try {
     execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
     assert.equal(fs.existsSync(path.join(exoDirectory, 'savings')), false);
@@ -136,10 +136,26 @@ test('the session hook deletes the savings folder an earlier version left and ke
   }
 });
 
+test('the session hook writes no plugin-root when CLAUDE_PLUGIN_ROOT is unset or names another folder', () => {
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  for (const loaded of [undefined, os.tmpdir()]) {
+    const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-pointer-'));
+    const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+    delete env.CLAUDE_PLUGIN_ROOT;
+    if (loaded !== undefined) env.CLAUDE_PLUGIN_ROOT = loaded;
+    try {
+      execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+      assert.equal(fs.existsSync(path.join(configHome, 'exo', 'plugin-root')), false, String(loaded));
+    } finally {
+      fs.rmSync(configHome, { recursive: true, force: true });
+    }
+  }
+});
+
 test('the session hook shows no welcome and writes no welcomed marker', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-welcome-'));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   try {
     const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
     assert.equal(output.systemMessage, undefined);
@@ -155,7 +171,7 @@ const PLAIN_TEXT_LOW_RULE = 'Replies are short. Say the answer first. Use small,
 test('the session hook with no exo settings injects the plain-text short compression rule', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plain-'));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
   for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
   try {
@@ -171,7 +187,7 @@ test('the session hook with no exo settings injects the plain-text short compres
 test('the session hook injects the shorter compression rule when the plugin option is shorter', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-shorter-'));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_OPTION_COMPRESSION: 'shorter' };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY, CLAUDE_PLUGIN_OPTION_COMPRESSION: 'shorter' };
   for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
   try {
     const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());

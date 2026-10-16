@@ -15,7 +15,7 @@ const HOOK = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
 
 function run(extra, input = { session_id: 's1', source: 'startup', cwd: os.tmpdir() }) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-codex-home-'));
-  const env = { ...process.env, HOME: home, ...extra };
+  const env = { ...process.env, HOME: home, CLAUDE_PLUGIN_ROOT: REPOSITORY, ...extra };
   delete env.CLAUDE_CONFIG_DIR;
   delete env.CODEX_HOME;
   Object.assign(env, extra);
@@ -85,7 +85,7 @@ test('a headless run session gets no additionalContext, a plain session still do
   const { output: plain } = run({});
   assert.ok(plain.hookSpecificOutput.additionalContext.includes('exo settings:'), 'plain session lost its context');
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-run-home-'));
-  const env = { ...process.env, HOME: home, EXO_RUN_DIR: path.join(home, 'run') };
+  const env = { ...process.env, HOME: home, EXO_RUN_DIR: path.join(home, 'run'), CLAUDE_PLUGIN_ROOT: REPOSITORY };
   delete env.CLAUDE_CONFIG_DIR;
   const stdout = execFileSync(process.execPath, [HOOK], { env, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd: os.tmpdir() }) }).toString();
   assert.ok(!stdout.includes('additionalContext'), stdout);
