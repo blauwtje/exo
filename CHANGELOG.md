@@ -19,6 +19,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - plan-check flags a task that names a lock constant, such as `SESSION_LOAD_LOCK`, when its Files omit the file that defines it.
 - A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
 - A detached run saves the commit its branch review saw, as `pre-fix-head` and `pre-fix.patch` in the run log folder, before the review fix lands.
+- Land refuses a task whose `Data:` names a backticked string found nowhere in its change or the tree, unless the task sets `Literals: none (<reason>)`; the code rules fail on uneven spacing around `=` and a missing space after a comma.
 
 ### Changed
 - A detached run reviews the fix of its branch review on a standard-tier model at the `balanced` budget, like the overlap review.

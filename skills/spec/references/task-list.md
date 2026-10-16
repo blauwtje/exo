@@ -22,7 +22,7 @@
 ```
 ### Task <n>: <type>(<scope>): <subject>
 
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>][ | Red: none (<reason>)] | Proof: <one command>
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>][ | Red: none (<reason>)][ | Literals: none (<reason>)] | Proof: <one command>
 ```
 
 - `Files:` ending `/` → whole folder.

@@ -189,6 +189,25 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.match(noTrailer.stderr, /Plan-task: 2/);
 });
 
+const literalPlan = (data, escape = '') => compactPlanFixture({ tasks: [
+  `${compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], data, proof: 'node tests/app.test.mjs' })}${escape}`
+] }).replace('## Plan basis\n', '## Plan basis\nLand gate: true\n');
+
+test('a Data literal found nowhere in the change or the tree is refused, naming the string and the escape', async () => {
+  const { root, planPath } = await compactCheckout(literalPlan('names `zzqq_absent_literal` and `greet`'));
+  await writeReport(root, PASS_REPORT);
+  await assertRefused(root, planPath, [], /Data: names `zzqq_absent_literal`, .*Literals: none \(<reason>\)/);
+});
+
+test('a Data literal that is present, a path with a line suffix, a placeholder form or an escaped task lands', async () => {
+  const data = 'names `greet`, `src/app.js:1-2` and `greet(<arg>)`';
+  const present = await compactCheckout(literalPlan(data));
+  assert.match(landTask({ planPath: present.planPath, planText: literalPlan(data), number: 1, root: present.root, reportText: PASS_REPORT }), /^Committed: [0-9a-f]+ Task 1$/m);
+  const escapedPlan = literalPlan('names `zzqq_absent_literal`', ' | Literals: none (prose)');
+  const escaped = await compactCheckout(escapedPlan);
+  assert.match(landTask({ planPath: escaped.planPath, planText: escapedPlan, number: 1, root: escaped.root, reportText: PASS_REPORT }), /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
 test('a test-first task whose change touches no test file is refused before anything commits', async () => {
   const plan = compactPlanFixture({ tasks: [
     compactTask({ number: 1, title: 'fix(app): greet', files: ['src/app.js', 'tests/app.test.mjs'], proof: 'node tests/app.test.mjs' })

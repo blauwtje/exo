@@ -490,6 +490,40 @@ function refuseUntestedTestFirst(task, root) {
   }
 }
 
+const LINE_SUFFIX = /:\d+(?:-\d+)?$/;
+const FRAGMENT_MIN = 3;
+
+function gitLines(root, args) {
+  return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter((line) => line !== '');
+}
+
+function literalFinder(root, planPath) {
+  const diff = execFileSync('git', ['-C', root, 'diff', 'HEAD'], { encoding: 'utf8', maxBuffer: 1 << 28 });
+  const planRelative = planPath === null ? '..' : path.relative(root, planPath);
+  const excluded = planRelative.startsWith('..') ? [] : [`:(exclude)${planRelative}`];
+  const paths = gitLines(root, ['ls-files', '--cached', '--others', '--exclude-standard']);
+  const names = new Set([...paths, ...paths.map((file) => path.basename(file))]);
+  const inTree = (text) => spawnSync('git', ['-C', root, 'grep', '--untracked', '-F', '-q', '-e', text, '--', '.', ...excluded], { encoding: 'utf8' }).status === 0;
+  const present = (text) => diff.includes(text) || inTree(text);
+  return (literal) => {
+    const bare = literal.replace(LINE_SUFFIX, '');
+    if (names.has(bare) || present(literal)) return true;
+    const fragments = literal.replace(/<[^>]*>|\.\.\./g, ' ').split(/[^\w./-]+/).filter((fragment) => fragment.length >= FRAGMENT_MIN);
+    return fragments.every(present);
+  };
+}
+
+function refuseMissingLiterals(task, root, planPath = null) {
+  if (task.literals !== null || !task.data) return;
+  const literals = [...task.data.matchAll(/`([^`\n]+)`/g)].map((match) => match[1]);
+  if (literals.length === 0) return;
+  const found = literalFinder(root, planPath);
+  const missing = [...new Set(literals)].filter((literal) => !found(literal));
+  if (missing.length > 0) {
+    throw new LandingError(`Task ${task.number}: Data: names ${missing.map((literal) => `\`${literal}\``).join(', ')}, found in neither its change nor the tree; fix the string, or add \`Literals: none (<reason>)\` to the task if it is prose`);
+  }
+}
+
 function refuseUnplannedPaths(task, options) {
   const unplanned = unplannedPaths(task, options);
   if (unplanned.length > 0) {
@@ -550,6 +584,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   refuseMcpProofUnderPin(pin, task);
   refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
   refuseUntestedTestFirst(task, root);
+  refuseMissingLiterals(task, root, planPath);
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
