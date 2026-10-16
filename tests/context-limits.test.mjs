@@ -21,7 +21,7 @@ function transcript(name, lines) {
 
 test('constants', () => {
   assert.deepEqual([HARD_LIMIT, AGENT_SOFT_LIMIT, TASK_SPLIT_TOKENS, BYTES_PER_TOKEN],
-    [100000, 60000, 25000, 2]);
+    [100000, 60000, 25000, 4]);
 });
 
 test('contextTokens sums the last assistant usage and tolerates junk', () => {

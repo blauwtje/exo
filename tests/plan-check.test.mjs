@@ -518,7 +518,7 @@ test('plan-check flags a derived name with its line, only where the derivation c
 test('plan-check fails a task whose text and Files: bytes pass the context estimate', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-size-'));
   fs.mkdirSync(path.join(root, 'src'));
-  fs.writeFileSync(path.join(root, 'src', 'big.js'), 'x'.repeat(110_000));
+  fs.writeFileSync(path.join(root, 'src', 'big.js'), 'x'.repeat(220_000));
   fs.writeFileSync(path.join(root, 'src', 'small.js'), 'x');
   const report = (files) => planCheckReport(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files, proof: 'node --test tests/app.test.mjs' })] }), { root });
   const folder = report(['src/']);

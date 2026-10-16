@@ -16,7 +16,7 @@ const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
 const TINY_TASK_TOKENS = 2000;
-const TINY_TASK_BYTES = TINY_TASK_TOKENS * 4;
+const TINY_TASK_BYTES = TINY_TASK_TOKENS * BYTES_PER_TOKEN;
 const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
