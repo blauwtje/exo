@@ -18,6 +18,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - plan-check warns on adjacent tiny plan tasks.
 - plan-check flags a task that names a lock constant, such as `SESSION_LOAD_LOCK`, when its Files omit the file that defines it.
 - A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
+- A detached run saves the commit its branch review saw, as `pre-fix-head` and `pre-fix.patch` in the run log folder, before the review fix lands.
 
 ### Changed
 - A session sends each part of a request with two or more parts to its own agent, all in one message; a skill that matches one part takes only that part.

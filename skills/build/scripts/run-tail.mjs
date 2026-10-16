@@ -159,6 +159,20 @@ function recordReviews(root, { fresh, sessions, tree }) {
   });
 }
 
+export function savePreFix(root, base, logDir) {
+  const git = (...args) => spawnSync('git', args, { cwd: root, maxBuffer: 1 << 30 });
+  const head = git('rev-parse', 'HEAD');
+  const from = git('merge-base', base ?? 'HEAD', 'HEAD');
+  if (head.status !== 0 || from.status !== 0) return;
+  const headSha = head.stdout.toString('utf8').trim();
+  const fromSha = from.stdout.toString('utf8').trim();
+  const diff = git('diff', '--binary', fromSha, headSha);
+  if (diff.status !== 0) return;
+  fs.mkdirSync(logDir, { recursive: true });
+  fs.writeFileSync(path.join(logDir, 'pre-fix.patch'), diff.stdout);
+  fs.writeFileSync(path.join(logDir, 'pre-fix-head'), `head ${headSha}\nbase ${fromSha}\n`);
+}
+
 const BRANCH_QUESTIONS = [
   'Does the branch, taken as a whole, do what the plan Goal says?',
   'Is any requirement of the plan missing or only half done?',
@@ -251,6 +265,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       if (secondVerdict === 'FINDINGS' && fixLines.length > 0) return { failure: { line: fixLines[0].trim(), stop: reviewStop() } };
       return {};
     };
+    savePreFix(root, base, logDir);
     let attempt = await fixAttempt(null);
     if (attempt.failure !== undefined && attemptsLeft - 1 >= 1) attempt = await fixAttempt(attempt.failure.line);
     if (attempt.result !== undefined) return attempt.result;
