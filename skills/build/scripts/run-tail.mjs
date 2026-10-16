@@ -189,7 +189,8 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       const verdict = verdictOf(text);
       const found = countOf(text, 'defect') + countOf(text, 'concern') + countOf(text, 'question');
       const model = session.model ?? 'unpinned';
-      say(`review done: ${name}: ${verdict === null ? `no verdict line (${model})` : `${verdict} (${model}, ${found} findings)`}`);
+      const outcome = session.timedOut ? `timed out (${model})` : verdict === null ? `no verdict line (${model})` : `${verdict} (${model}, ${found} findings)`;
+      say(`review done: ${name}: ${outcome} (session ${session.sessionId ?? 'none'})`);
     }
     return session;
   };
@@ -243,6 +244,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       if (second.stop !== undefined) return { result: shelved(second.stop) };
       const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
       const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
+      say(`review done: fix diff: ${second.timedOut ? 'timed out' : secondVerdict} (session ${second.sessionId ?? 'none'})`);
       const fixLines = text.split('\n').filter((line) => /;\s*fix\s*$/.test(line));
       const reviewStop = () => stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}`, `read ${fixReview}, then run exo run again`);
       if (secondVerdict === 'BLOCKED') return { result: shelved(reviewStop()) };

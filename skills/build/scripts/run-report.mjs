@@ -39,6 +39,11 @@ export function cacheLines({ cacheRead, cacheWrite, firstCacheWrite }, bar) {
   return lines;
 }
 
+export function idleLine(wallMs, monotonicMs, barMs) {
+  const gap = wallMs - monotonicMs;
+  return gap > barMs ? `idle ${clock(gap)} (machine asleep)` : null;
+}
+
 export const taskSubject = (heading) => heading.replace(/^\s*\w+(?:\([^)]*\))?!?:\s*/, '');
 
 export const startLine = ({ number, subject, model, effort }) => `task ${number} start: ${subject} · ${model} ${effort}`;

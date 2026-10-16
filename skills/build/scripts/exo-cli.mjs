@@ -444,6 +444,14 @@ async function runCommand(argv, { approving = false } = {}) {
     if (!detach) process.stdout.write(`exo: approved ${approved} gate(s) of run ${id}; continuing\n`);
   }
 
+  if (!child) {
+    try {
+      writeReport(root, id, { phase: 'starting', result: null, reason: null });
+    } catch (error) {
+      process.stderr.write(`exo: report.md not written: ${error.message}\n`);
+    }
+  }
+
   if (detach && !child) {
     const log = path.join(runDir(root, id), 'run.log');
     const fd = fs.openSync(log, 'a');
@@ -453,6 +461,13 @@ async function runCommand(argv, { approving = false } = {}) {
     updateRun(root, id, { pid: started.pid });
     process.stdout.write(`exo: run ${id} started in the background (pid ${started.pid}); exo status ${id}, log ${log}, live log ${live}; watch: run \`${watchCommand(id)}\` as one background Bash call\n`);
     return 0;
+  }
+
+  if (process.platform === 'darwin') {
+    // why: caffeinate exits with this process, so the Mac stays awake through run-plan and the land step.
+    const awake = spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore' });
+    awake.on('error', () => {});
+    awake.unref();
   }
 
   let code = 1;

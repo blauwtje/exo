@@ -5,8 +5,9 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import process from 'node:process';
-import { attemptFingerprint, failingLine } from '#attempt-fingerprint';
+import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
 import { commitsOf, criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
@@ -21,7 +22,7 @@ import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-confi
 import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
-import { averageLines, cacheLines, clip, deniedLines, detailLines, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
+import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
 
@@ -269,6 +270,26 @@ async function main(argv) {
     appendLog(progressFile, `- ${line}\n`);
     process.stdout.write(`${line}\n`);
   };
+  let liveSessions = 0;
+  let lastLandOutput = '';
+  let lastLandTask = null;
+  let currentTask = null;
+  // why: a signal ends the process before the end of main, so the stop records are written here; a live session's own listener ends its claude group and exits.
+  const onStopSignal = (signal) => {
+    const landLine = currentTask !== null && lastLandTask === currentTask ? failureLine(lastLandOutput) : '';
+    const stop = { line: `stopped by ${signal}${landLine === '' ? '' : `; land-task: ${landLine.replace(/^land-task: /, '')}`}`, why: `stopped by ${signal}` };
+    noteStop({ phase: phaseForExit(1), reason: stop.line });
+    say(`run stopped: ${stop.why}`);
+    appendLog(path.join(logDir, 'summary.txt'), `${detailLines(run, stop).join('\n')}\n`, fs.writeFileSync);
+    process.stdout.write(`run-plan: stop: ${stop.line}\n`);
+    if (liveSessions === 0) process.exit(1);
+  };
+  const stopSignals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
+  const killApp = () => {
+    if (appPid !== null) killTree(appPid);
+  };
+  for (const signal of stopSignals) process.once(signal, onStopSignal);
+  process.on('exit', killApp);
   writeTasks();
   noteCounts({ landed: landedAtStart.length, total: plan.tasks.length });
   if (process.env.EXO_RUN_DIR) for (const name of ['blocked', 'parked']) fs.rmSync(path.join(process.env.EXO_RUN_DIR, name), { force: true });
@@ -290,13 +311,19 @@ async function main(argv) {
     : '');
   // why: the stall guard rewrites each Bash command, which then matches no Bash allow rule; only sandboxed sessions run Bash without one.
   const stallGuardOn = (kind) => sandbox.enabled && ['task', 'plan'].includes(kind);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, sessionEffort = effort, resume = null, taskCount = 1, repair = false }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, sessionEffort = effort, resume = null, taskCount = 1, repair = false, limitMs = timeoutMs }) => {
     if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort: sessionEffort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount, deny: ['task', 'plan'].includes(kind) ? denyRules({ planPath, repair }) : undefined }), {
-      cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
-    });
+    liveSessions += 1;
+    let outcome;
+    try {
+      outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort: sessionEffort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount, deny: ['task', 'plan'].includes(kind) ? denyRules({ planPath, repair }) : undefined }), {
+        cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs: limitMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
+      });
+    } finally {
+      liveSessions -= 1;
+    }
     const reported = parseStream(outcome.text);
     // why: claude reports a resumed session's cumulative cost, so only the part beyond the session's earlier figure belongs to this try.
     const earlierCost = resume === null ? 0 : sessionCosts.get(resume) ?? 0;
@@ -464,15 +491,21 @@ async function main(argv) {
     markLanded(n, landing.record, landing.started);
     return undefined;
   };
+  const markNow = () => ({ wall: Date.now(), mono: performance.now() });
+  const sayIdle = (started) => {
+    const line = idleLine(Date.now() - started.wall, performance.now() - started.mono, environmentMs('EXO_IDLE_MS', 60_000));
+    if (line !== null) say(line);
+  };
   const noRedProofLine = (output) => output.split('\n').find((line) => line.includes('no red proof'))?.trim();
   const markLanded = (n, record, startedTask) => {
+    lastLandOutput = '';
     fingerprints.delete(n);
     retryNote = '';
     run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
     passes.add(n);
     fs.rmSync(handoffFile(n), { force: true });
     writeTasks();
-    const ms = Date.now() - startedTask;
+    const ms = Math.round(performance.now() - startedTask.mono);
     landedStats.push({ ms, turns: record.turns, tokens: record.tokens, cost: record.cost });
     say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, tokens: record.tokens, cost: record.cost }));
     noteTask({ n, subject: taskSubject(plan.tasks.find((entry) => entry.number === n).title), landed: passes.size, total: plan.tasks.length });
@@ -488,6 +521,8 @@ async function main(argv) {
     });
     const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
     appendLog(log, output);
+    lastLandOutput = output;
+    lastLandTask = n;
     return { landed: answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n), output, log };
   };
   const landInOrder = (numbers, record, started) => {
@@ -521,11 +556,12 @@ async function main(argv) {
     const first = order[0];
     if (stop === undefined) {
       iteration += 1;
-      const startedPlan = Date.now();
+      const startedPlan = markNow();
       const untrackedBefore = new Set(untrackedPaths(root));
       say(`plan session start: tasks ${numbersText(order)}`);
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
       const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first, taskCount: order.length });
+      sayIdle(startedPlan);
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
       const record = { iteration, task: first, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
       run.records.push(record);
@@ -583,7 +619,9 @@ async function main(argv) {
     iteration += 1;
     const n = task.number;
     if (retryNote === '') rebaseOntoMovedBase();
-    const startedTask = Date.now();
+    if (currentTask !== n) lastLandOutput = '';
+    currentTask = n;
+    const startedTask = markNow();
     say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${(fingerprints.get(n)?.size ?? 0) + 1})`}`);
     noteTask({ n, subject: taskSubject(task.title), landed: landed.length, total: plan.tasks.length });
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
@@ -595,6 +633,7 @@ async function main(argv) {
     fs.rmSync(path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
     const taskPin = isDocTask(task) && provider.docPin.model !== undefined ? provider.docPin : { model, effort };
     const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model, sessionEffort: taskPin.effort, resume });
+    sayIdle(startedTask);
     writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
     const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
@@ -700,7 +739,7 @@ async function main(argv) {
       const number = iteration;
       const log = path.join(logDir, `tail-${sessions}-${kind}.log`);
       const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
-      const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel });
+      const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel, limitMs: kind === 'review' ? environmentMs('EXO_REVIEW_TIMEOUT_MS', timeoutMs) : timeoutMs });
       const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
       run.records.push({ iteration: number, task: null, kind, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, denied: [], refused: [] });
       const breach = planBreach() ?? breachOf(root, before, { tail: true });
@@ -709,7 +748,7 @@ async function main(argv) {
       if (breach !== null) return { stop: { line: `breach in iteration ${number}: ${breach}`, why: `The final review or fix session breached a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
       if (parked !== null) return { stop: { ...parkedStop(parked, log), gate: 'FAIL' } };
       if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
-      return { resultText: outcome.timedOut ? '' : parsed.resultText, model: parsed.model };
+      return { resultText: outcome.timedOut ? '' : parsed.resultText, model: parsed.model, sessionId: parsed.sessionId, timedOut: Boolean(outcome.timedOut) };
     };
     const landRepair = () => {
       const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
@@ -773,6 +812,7 @@ async function main(argv) {
       if (pass) exitCode = 0;
     }
   }
+  for (const signal of stopSignals) process.off(signal, onStopSignal);
   if (stop?.parked) exitCode = 3;
   // why: after a pass exo-cli still lands the branch and owns the final phase, so a pass records only the reason.
   noteStop(exitCode === 0 ? { reason: stop.line } : { phase: phaseForExit(exitCode), reason: stop.line });
