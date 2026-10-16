@@ -15,6 +15,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 - A detached run reports each session's cache read share and warns when turn 1 writes a large cache.
 - plan-check warns on adjacent tiny plan tasks.
+- plan-check flags a task that names a lock constant, such as `SESSION_LOAD_LOCK`, when its Files omit the file that defines it.
 - A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
 
 ### Changed

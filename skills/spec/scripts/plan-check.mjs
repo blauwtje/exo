@@ -237,6 +237,14 @@ function lockProblems(task, root, sources) {
     return sources
       .filter((source) => (lock === 'CONTRIBUTING.md' ? mentions(text, source.path) : namesEntry(text, source.path, source.others)))
       .map((source) => `Task ${task.number}: \`${lock}\` names Files: \`${source.path}\` and Files: does not list \`${lock}\``);
+  }).concat(lockConstantProblems(task, root, listed));
+}
+
+function lockConstantProblems(task, root, listed) {
+  const text = `${task.title}\n${task.section}`;
+  return LOCKS_AND_REGISTRIES.filter((lock) => !isCovered(listed, lock) && fs.existsSync(path.join(root, lock))).flatMap((lock) => {
+    const names = [...fs.readFileSync(path.join(root, lock), 'utf8').matchAll(/export const ([A-Z][A-Z0-9_]*_(?:LOCK|BUDGET|ALLOWLIST))\b/g)].map((match) => match[1]);
+    return names.filter((name) => mentions(text, name)).map((name) => `Task ${task.number}: names \`${name}\` from \`${lock}\` and Files: does not list \`${lock}\``);
   });
 }
 
