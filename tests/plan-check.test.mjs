@@ -50,7 +50,9 @@ test('plan-check prints ok for a plan whose task satisfies every rule', async ()
   const plan = planFixture({ tasks: [goodTask()] }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
   const report = planCheckReport(plan);
   assert.equal(report.ok, true);
-  assert.deepEqual(report.lines, ['plan-check: ok, 1 tasks, largest Task 1 (3 lines)']);
+  assert.equal(report.lines[0], 'plan-check: ok, 1 tasks, largest Task 1 (3 lines)');
+  assert.match(report.lines[1], /^Task 1: about \d+ tokens of task text and Files:$/);
+  assert.equal(report.lines.length, 2);
 });
 
 test('plan-check reports a Commit: block with no Plan-task: trailer', () => {

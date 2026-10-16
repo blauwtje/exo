@@ -48,6 +48,74 @@ test('plan-check flags a source file whose task lists none of its existing tests
   assert.ok(!listed.lines.some((entry) => entry.includes('has existing tests')), listed.lines.join('; '));
 });
 
+const problemsOf = (report) => report.lines.filter((entry) => entry.startsWith('Task 1:'));
+
+test('plan-check names a missing test of a source that is not an mjs file, and passes with it listed', async () => {
+  const root = await gitRepository({ 'lib/widget.json': '{}\n', 'tests/widget.test.mjs': '// pins the json\n' });
+  const flagged = problemsOf(planCheckReport(planWith(root, ['lib/widget.json'])));
+  assert.ok(flagged.some((entry) => entry.includes('`lib/widget.json`') && entry.includes('`tests/widget.test.mjs`')), flagged.join('; '));
+  const listed = problemsOf(planCheckReport(planWith(root, ['lib/widget.json', 'tests/widget.test.mjs'])));
+  assert.deepEqual(listed.filter((entry) => entry.includes('has existing tests')), []);
+});
+
+test('plan-check names an unlisted lock or registry that names a Files: entry, and passes with it listed', async () => {
+  const root = await gitRepository({
+    'src/widget.mjs': 'export const x = 1;\n',
+    'tests/widget.test.mjs': '// pins x\n',
+    'verify/budgets.mjs': "export const LOCKS = ['src/widget.mjs'];\n",
+    'CONTRIBUTING.md': 'The widget.mjs script rounds.\n'
+  });
+  const flagged = problemsOf(planCheckReport(planWith(root, ['src/widget.mjs', 'tests/widget.test.mjs']), { root }));
+  assert.ok(flagged.some((entry) => entry.includes('`verify/budgets.mjs`') && entry.includes('`src/widget.mjs`')), flagged.join('; '));
+  assert.ok(!flagged.some((entry) => entry.includes('CONTRIBUTING.md')), flagged.join('; '));
+  const listed = problemsOf(planCheckReport(planWith(root, ['src/widget.mjs', 'tests/widget.test.mjs', 'verify/budgets.mjs']), { root }));
+  assert.deepEqual(listed.filter((entry) => entry.includes('verify/budgets.mjs')), []);
+});
+
+test('plan-check names a basename mention only when no other file carries that basename', async () => {
+  const root = await gitRepository({
+    'a/SKILL.md': 'one\n',
+    'b/SKILL.md': 'two\n',
+    'verify/budgets.mjs': "export const LOCKS = ['SKILL.md'];\n",
+    'tests/other.test.mjs': '// unrelated\n'
+  });
+  const flagged = problemsOf(planCheckReport(planWith(root, ['a/SKILL.md']), { root }));
+  assert.ok(!flagged.some((entry) => entry.includes('verify/budgets.mjs')), flagged.join('; '));
+  const unique = problemsOf(planCheckReport(planWith(root, ['b/SKILL.md']), { root }));
+  assert.ok(!unique.some((entry) => entry.includes('verify/budgets.mjs')), unique.join('; '));
+  const lone = await gitRepository({ 'a/SKILL.md': 'one\n', 'verify/budgets.mjs': "export const LOCKS = ['SKILL.md'];\n", 'tests/other.test.mjs': '// unrelated\n' });
+  const named = problemsOf(planCheckReport(planWith(lone, ['a/SKILL.md']), { root: lone }));
+  assert.ok(named.some((entry) => entry.includes('verify/budgets.mjs')), named.join('; '));
+});
+
+test('plan-check names an unlisted test that reads the repository file of a Files: entry, not a copy', async () => {
+  const root = await gitRepository({
+    'src/widget.mjs': 'export const x = 1;\n',
+    'tests/widget.test.mjs': '// pins x\n',
+    'tests/reads.test.mjs': "const text = fs.readFileSync(new URL('../src/widget.mjs', import.meta.url), 'utf8');\n",
+    'tests/helper.mjs': "export const HOME = path.resolve(import.meta.dirname, '..');\n",
+    'tests/reads-home.test.mjs': "import { HOME } from './helper.mjs';\nconst text = fs.readFileSync(path.join(HOME, 'src/widget.mjs'), 'utf8');\n",
+    'tests/copies.test.mjs': "const copy = fs.readFileSync(path.join(dir, 'src/widget.mjs'), 'utf8');\n"
+  });
+  const flagged = problemsOf(planCheckReport(planWith(root, ['src/widget.mjs', 'tests/widget.test.mjs']), { root }));
+  assert.ok(flagged.some((entry) => entry.includes('`tests/reads.test.mjs`')), flagged.join('; '));
+  assert.ok(flagged.some((entry) => entry.includes('`tests/reads-home.test.mjs`')), flagged.join('; '));
+  assert.ok(!flagged.some((entry) => entry.includes('copies.test.mjs')), flagged.join('; '));
+  const listed = problemsOf(planCheckReport(planWith(root, ['src/widget.mjs', 'tests/']), { root }));
+  assert.deepEqual(listed.filter((entry) => entry.includes('reads')), []);
+});
+
+test('plan-check flags no reader for a lock entry and no C8 problem for a CHANGELOG.md entry', async () => {
+  const root = await gitRepository({
+    'verify/budgets.mjs': 'export const LOCKS = [];\n',
+    'CHANGELOG.md': '## Unreleased\n',
+    'tests/reads.test.mjs': "fs.readFileSync(new URL('../verify/budgets.mjs', import.meta.url));\nfs.readFileSync(new URL('../CHANGELOG.md', import.meta.url));\n",
+    'tests/changelog.test.mjs': '// pins the changelog\n'
+  });
+  const flagged = problemsOf(planCheckReport(planWith(root, ['verify/budgets.mjs', 'CHANGELOG.md']), { root }));
+  assert.deepEqual(flagged.filter((entry) => entry.includes('reads') || entry.includes('changelog.test')), []);
+});
+
 function chainPlan(root, { dependsOn, proof }) {
   const tasks = [
     compactTask({ number: 1, title: 'fix(widget): round', files: ['src/widget.mjs', 'tests/widget.test.mjs'], proof: 'node --test tests/widget.test.mjs' }),

@@ -8,7 +8,7 @@ import * as harness from './harness.mjs';
 const { compactPlanFixture, compactTask } = harness;
 const withGate = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local\nCommit: feat(fixture): add the fixture\nLand gate: npm run validate:static');
 
-const promptTask = (proof) => compactTask({ number: 1, title: 'feat(prompt): add the skill', files: ['skills/prompt/SKILL.md'], proof });
+const promptTask = (proof) => compactTask({ number: 1, title: 'feat(prompt): add the skill', files: ['skills/prompt/SKILL.md', 'verify/checks/reference-tables.mjs', 'tests/prompt-skill.test.mjs'], proof });
 
 test('plan-check flags a task whose Proof is the Land gate and has no Red line', () => {
   const plan = withGate(compactPlanFixture({ tasks: [promptTask('npm run validate:static')] }));
@@ -33,6 +33,16 @@ test('plan-check flags a refactor task with no Red field, and passes one with Re
   assert.ok(flagged('refactor: split the module'));
   assert.ok(!flagged('refactor(widget): split the module', 'none (no behavior change)'));
   assert.ok(!flagged('feat(widget): round'));
+});
+
+test('plan-check flags a task whose Files are all tests and has no Red field, and passes one with a source file or a Red field', () => {
+  const taskOf = (files, red = null) => compactTask({ number: 1, title: 'feat(widget): round', files, proof: 'node --test tests/widget.test.mjs' })
+    .replace(' | Proof:', red === null ? ' | Proof:' : ` | Red: ${red} | Proof:`);
+  const flagged = (files, red) => planCheckReport(compactPlanFixture({ tasks: [taskOf(files, red)] })).lines
+    .some((line) => line.startsWith('Task 1:') && line.includes('Files are all tests') && line.includes('Red: none (<reason>)'));
+  assert.ok(flagged(['tests/widget.test.mjs']));
+  assert.ok(!flagged(['src/widget.mjs', 'tests/widget.test.mjs']));
+  assert.ok(!flagged(['tests/widget.test.mjs'], 'none (the test covers existing behavior)'));
 });
 
 test('plan-check under --run skips the refactor-without-Red check of a task that already landed', async () => {

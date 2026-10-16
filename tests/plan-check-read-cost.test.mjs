@@ -26,6 +26,19 @@ test('plan-check flags a task whose text and Files: pass 100 kB', () => {
   assert.equal(under.ok, true, under.lines.join('; '));
 });
 
+test('a passing report prints each task\'s token size only when a root is given', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-read-size-'));
+  fs.mkdirSync(path.join(root, 'src'));
+  fs.writeFileSync(path.join(root, 'src', 'under.js'), 'x'.repeat(40_000));
+  const plan = withLand(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/under.js'], proof: 'node --test tests/app.test.mjs' })] }));
+  const sized = planCheckReport(plan, { root });
+  assert.equal(sized.ok, true, sized.lines.join('; '));
+  const sizeLines = sized.lines.filter((line) => /^Task 1: about \d+ tokens of task text and Files:$/.test(line));
+  assert.equal(sizeLines.length, 1, sized.lines.join('; '));
+  assert.ok(Number(sizeLines[0].match(/about (\d+)/)[1]) >= 10_000, sizeLines[0]);
+  assert.ok(sized.lines[0].startsWith('plan-check: ok'), sized.lines.join('; '));
+});
+
 // A landed task's Files: grow after it lands, so on a resumed run plan-check
 // must skip the read cost of each task whose Plan-task trailer is on the branch.
 test('plan-check skips the read cost of a task that already landed', async () => {

@@ -4,7 +4,7 @@ One outcome keeps one brief; new wishes edit it where it stands. The enemy is a 
 
 ## Steps
 
-1. **Find it** in the first source naming one: a `#<n>`, URL or path in the request; the branch's handoff; an open issue whose body opens `<!-- exo:spec -->`; a file under `docs/specs/` or `docs/plans/` whose title names the same outcome. List those issues with `gh issue list --state open --limit 200 --json number,title,body --jq '.[] | select(.body | startswith("<!-- exo:spec -->")) | "\(.number)\t\(.title)"'`.
+1. **Find it** in the first source naming one: a `#<n>`, URL or path in the request; the branch's handoff; an open issue whose body opens `<!-- exo:spec -->`; a `docs/specs/` or `docs/plans/` file that stays local and uncommitted, titled for that outcome. List those issues with `gh issue list --state open --limit 200 --json number,title,body --jq '.[] | select(.body | startswith("<!-- exo:spec -->")) | "\(.number)\t\(.title)"'`.
 2. **One match is the brief.**
    - One match → name it in one line above the first question.
    - Two or more → one question naming them, a new brief last.

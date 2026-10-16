@@ -8,6 +8,7 @@ import { subjectProblem } from '#commit-text';
 import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
 import { mcpToolCall } from '#mcp-tool-call';
+import { isTestPath } from '#red-green';
 import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { wholeSuiteKeys } from '#suite-command';
 
@@ -145,6 +146,11 @@ function checkContextSize(task, root, forkPoint) {
   return [`Task ${task.number}: split Task ${task.number} (about ${tokens} tokens of task text and Files:, over ${TASK_SPLIT_TOKENS})`];
 }
 
+function sizeLines(tasks, root, forkPoint) {
+  if (root === undefined || root === null) return [];
+  return tasks.map((task) => `Task ${task.number}: about ${Math.ceil(taskBytes(task, root, forkPoint) / BYTES_PER_TOKEN)} tokens of task text and Files:`);
+}
+
 function checkFilesExist(task, root, byNumber) {
   if (root === undefined || root === null) return [];
   const createdEarlier = new Set(
@@ -164,10 +170,88 @@ function checkFilesExist(task, root, byNumber) {
 }
 
 function existingTestsOf(sourcePath, testFiles) {
-  const base = path.basename(sourcePath, '.mjs');
+  const base = path.parse(sourcePath).name;
   return testFiles
     .filter((name) => name === `${base}.test.mjs` || (name.startsWith(`${base}-`) && name.endsWith('.test.mjs')))
     .map((name) => `tests/${name}`);
+}
+
+const LOCKS_AND_REGISTRIES = [
+  'verify/budgets.mjs',
+  'verify/model-kinds.mjs',
+  'lib/model-kinds.json',
+  'verify/checks/reference-tables.mjs',
+  'verify/instruction-density-allowlist.txt',
+  'CONTRIBUTING.md'
+];
+const REPO_PATH_ORIGIN = /import\.meta\.(?:url|dirname)/;
+
+function mentions(text, needle) {
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`).test(text);
+}
+
+function filesUnder(root) {
+  const listing = spawnSync('git', ['-C', root, 'ls-files', '-z'], { encoding: 'utf8', maxBuffer: Infinity });
+  if (listing.status === 0) return listing.stdout.split('\0').filter((name) => name !== '');
+  const walk = (directory) => fs.readdirSync(path.join(root, directory), { withFileTypes: true })
+    .filter((entry) => !entry.name.startsWith('.') && entry.name !== 'node_modules')
+    .flatMap((entry) => (entry.isDirectory() ? walk(path.posix.join(directory, entry.name)) : [path.posix.join(directory, entry.name)]));
+  return walk('');
+}
+
+function namesEntry(text, entryPath, otherBasenames) {
+  if (mentions(text, entryPath)) return true;
+  const base = path.posix.basename(entryPath);
+  return !otherBasenames.has(base) && mentions(text, base);
+}
+
+// why: a constant bound to import.meta.url or import.meta.dirname, in the test or a helper it imports, points at the repository; any other path is a temp-folder copy.
+function repoPathNames(testPath) {
+  let names = new Set();
+  const texts = [fs.readFileSync(testPath, 'utf8')];
+  for (const match of texts[0].matchAll(/from\s+'(\.[^']+\.mjs)'/g)) {
+    const helper = path.resolve(path.dirname(testPath), match[1]);
+    if (fs.existsSync(helper)) texts.push(fs.readFileSync(helper, 'utf8'));
+  }
+  const bindings = texts.flatMap((text) => [...text.matchAll(/(?:const|let)\s+(\w+)\s*=\s*([^;\n]*)/g)].map((match) => [match[1], match[2]]));
+  for (;;) {
+    const next = new Set(bindings.filter(([, value]) => pointsAtRepository(value, names)).map(([name]) => name));
+    if (next.size === names.size) return names;
+    names = next;
+  }
+}
+
+function pointsAtRepository(text, names) {
+  return REPO_PATH_ORIGIN.test(text) || [...names].some((name) => new RegExp(`\\b${name}\\b`).test(text));
+}
+
+function readsRepositoryFile(lines, entry, names) {
+  return lines.some((line) => /\breadFile(?:Sync)?\b/.test(line) && namesEntry(line, entry.path, entry.others) && pointsAtRepository(line, names));
+}
+
+function lockProblems(task, root, sources) {
+  const listed = task.files.map((file) => file.path);
+  return LOCKS_AND_REGISTRIES.filter((lock) => !isCovered(listed, lock) && fs.existsSync(path.join(root, lock))).flatMap((lock) => {
+    const text = fs.readFileSync(path.join(root, lock), 'utf8');
+    return sources
+      .filter((source) => (lock === 'CONTRIBUTING.md' ? mentions(text, source.path) : namesEntry(text, source.path, source.others)))
+      .map((source) => `Task ${task.number}: \`${lock}\` names Files: \`${source.path}\` and Files: does not list \`${lock}\``);
+  });
+}
+
+function readerProblems(task, root, sources) {
+  const testFiles = fs.readdirSync(path.join(root, 'tests'));
+  const listed = task.files.map((file) => file.path);
+  const readable = sources.filter((source) => !LOCKS_AND_REGISTRIES.includes(source.path));
+  return testFiles.filter((name) => name.endsWith('.test.mjs') && !isCovered(listed, `tests/${name}`)).flatMap((name) => {
+    const testPath = path.join(root, 'tests', name);
+    const lines = fs.readFileSync(testPath, 'utf8').split('\n');
+    const names = repoPathNames(testPath);
+    return readable
+      .filter((source) => readsRepositoryFile(lines, source, names))
+      .map((source) => `Task ${task.number}: \`tests/${name}\` reads Files: \`${source.path}\` and Files: does not list \`tests/${name}\``);
+  });
 }
 
 function checkUnlistedTests(task, root) {
@@ -175,15 +259,21 @@ function checkUnlistedTests(task, root) {
   const testsDir = path.join(root, 'tests');
   if (!fs.existsSync(testsDir)) return [];
   const testFiles = fs.readdirSync(testsDir);
-  const listed = new Set(task.files.map((file) => file.path));
-  const sources = task.files.filter((file) => file.kind !== 'Create' && file.path.endsWith('.mjs') && !file.path.endsWith('.test.mjs'));
+  const listed = task.files.map((file) => file.path);
+  const sources = task.files.filter((file) => file.kind !== 'Create' && !file.path.endsWith('/') && !file.path.endsWith('.test.mjs') && file.path !== 'CHANGELOG.md');
   const problems = [];
   for (const source of sources) {
     const tests = existingTestsOf(source.path, testFiles);
-    if (tests.length === 0 || tests.some((testPath) => listed.has(testPath))) continue;
+    if (tests.length === 0 || tests.some((testPath) => isCovered(listed, testPath))) continue;
     problems.push(`Task ${task.number}: Files: \`${source.path}\` has existing tests ${tests.map((testPath) => `\`${testPath}\``).join(', ')} and lists none of them`);
   }
-  return problems;
+  if (sources.length === 0) return problems;
+  const tracked = filesUnder(root);
+  const withOthers = sources.map((source) => ({
+    path: source.path,
+    others: new Set(tracked.filter((name) => name !== source.path).map((name) => path.posix.basename(name)))
+  }));
+  return [...problems, ...lockProblems(task, root, withOthers), ...readerProblems(task, root, withOthers)];
 }
 
 const TEST_FILE_NAME = /^(?:[\w.-]+[._](?:test|spec)|test_[\w.-]+)\.\w+$/;
@@ -351,6 +441,8 @@ function checkRedGreen(plan, landed) {
       problems.push(`Task ${task.number}: 'Proof: ${task.proof}' equals the 'Land gate:' command, so land will refuse it with "no red proof": name a Proof that fails before the task, or add 'Red: none (<reason>)'`);
     } else if (REFACTOR_HEADING.test(task.title) && !landed.includes(task.number)) {
       problems.push(`Task ${task.number}: a refactor task has no 'Red:' field, so land will refuse a Proof that passes before the change with "no red proof": add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead`);
+    } else if (!landed.includes(task.number) && task.files.length > 0 && task.files.every((file) => isTestPath(file.path))) {
+      problems.push(`Task ${task.number}: the Files are all tests and the task has no 'Red:' field, so its Proof passes before the change and land will refuse it with "no red proof": add a source file to Files, or add 'Red: none (<reason>)'`);
     }
   }
   const repeat = plan.successRepeat;
@@ -530,7 +622,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     const size = taskSize(task);
     return size.lines > best.lines ? { number: task.number, lines: size.lines } : best;
   }, { number: plan.tasks[0].number, lines: taskSize(plan.tasks[0]).lines });
-  return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`, ...warnings] };
+  return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`, ...sizeLines(plan.tasks.filter((task) => !landed.includes(task.number)), resolvedRoot, forkPoint), ...warnings] };
 }
 
 function main(argv) {
