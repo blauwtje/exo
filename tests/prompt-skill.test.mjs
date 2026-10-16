@@ -79,15 +79,16 @@ test('output tags exclude context, a tag Claude Code drops on copy', () => {
 
 test('each kind rule is present', () => {
   const rules = [
-    /reproduce it with a failing test first, then fix the cause; do not silence the error/,
+    /reproduce it with a failing test first/,
+    /fix the cause; do not silence the error/,
     /do not hard-code values that only make the tests pass/,
     /only make changes that are directly requested or clearly necessary/,
     /pattern file/,
-    /screenshot check/,
     /cross-check claims across sources and state confidence/,
     /explore broadly before acting/,
     /do not edit/,
     /keep working until every part is done; a closing summary that announces a next step is not done/,
+    /say plainly what is missing/,
   ];
   for (const rule of rules) assert.match(body, rule);
 });
@@ -97,7 +98,8 @@ test('strip rules keep ultrathink and drop emphasis, roles and prefill', () => {
   assert.match(strip, /`ultrathink`/);
   assert.match(strip, /"double-check"/);
   assert.match(strip, /CAPS/);
-  assert.match(strip, /[Rr]ole lines/);
+  assert.match(strip, /[Rr]ole line/);
+  assert.match(strip, /"try to"/);
   assert.match(strip, /start your answer with/);
   assert.match(strip, /briefly explain why/);
 });
@@ -107,12 +109,12 @@ test('one model line per model', () => {
   for (const name of ['Opus 5.5', 'Sonnet 5.5', 'Fable']) assert.match(model, new RegExp(name));
   assert.match(model, /any other or unknown model/i);
   assert.match(model, /keep working until every part is done/);
+  assert.match(model, /syntax-only/);
 });
 
-test('example rewrites the three lazy inputs', () => {
+test('example rewrites the two lazy inputs', () => {
   const example = section('Example');
   assert.match(example, /fix the login bug/);
-  assert.match(example, /make my landing page better/);
   assert.match(example, /research competitors and make a report/);
   assert.match(example, /<background>/);
   assert.match(example, /^Added:/m);
@@ -123,6 +125,7 @@ test('the Added: line is not ordered after every block', () => {
   const run = section('Run');
   assert.doesNotMatch(run, /After the block, one `Added:` line, then/);
   assert.match(run, /`Added:` line only when/);
+  assert.match(run, /`Dropped:` line only when/);
 });
 
 test('the example states no fact the rough prompt lacks', () => {
