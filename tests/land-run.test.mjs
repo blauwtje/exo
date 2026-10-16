@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { landRun } from '../skills/build/scripts/land-run.mjs';
 import { readGates, approveGates } from '../skills/build/scripts/run-state.mjs';
+import { recordPass } from '#check-cache';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-run.mjs', import.meta.url));
 const git = (cwd, ...args) => {
@@ -222,9 +223,30 @@ test('a local main ahead of origin main is the rebase target and keeps its commi
   assert.ok(fs.existsSync(path.join(f.root, 'c.txt')));
 });
 
-test('an unmoved branch skips the re-check', () => {
+test('an unmoved branch whose tree last passed the criterion skips the re-check', () => {
   const f = fixture();
+  recordPass(f.root, 'false', 1);
   assert.equal(f.land({ success: '`false`' }).phase, 'landed');
+  assert.equal(fixture().land({ success: '`mcp:browser check`' }).phase, 'landed');
+});
+
+test('a branch rebased by hand after its last criterion pass reruns the re-check', () => {
+  const f = fixture();
+  recordPass(f.root, 'false', 1);
+  const other = path.join(f.dir, 'other');
+  git(f.dir, 'clone', '-q', f.bare, other);
+  git(other, 'config', 'user.email', 't@t');
+  git(other, 'config', 'user.name', 't');
+  write(other, 'd.txt', 'd\n');
+  git(other, 'add', '.');
+  git(other, 'commit', '-qm', 'd');
+  git(other, 'push', '-q', 'origin', 'main');
+  git(f.root, 'fetch', '-q', 'origin');
+  git(f.root, 'rebase', '-q', 'origin/main');
+  const r = f.land({ success: '`false`' });
+  assert.equal(r.phase, 'parked');
+  assert.match(r.gate, /^re-check failed/);
+  assert.equal(git(f.root, 'rev-parse', 'main'), git(f.root, 'rev-parse', 'origin/main~1'));
 });
 
 test('review: FINDINGS with fix=0 lands; fix>=1, BLOCKED, missing and stale park', () => {

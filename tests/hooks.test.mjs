@@ -183,3 +183,12 @@ test('the session hook injects the shorter compression rule when the plugin opti
     fs.rmSync(configHome, { recursive: true, force: true });
   }
 });
+
+test('the Stop hook lets a repair session end without a task status line', async () => {
+  const { runNoWait } = await import('../hooks/run-no-wait.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'run-no-wait-'));
+  const env = { EXO_RUN: 'run', EXO_RUN_DIR: dir, EXO_RUN_TASK: 'plan/1', EXO_RUN_REPAIR: '1' };
+  const input = { hook_event_name: 'Stop', session_id: 's', last_assistant_message: 'Plan: docs/plan.md\nTask 1 rewritten: Files: line names lib/a.mjs.' };
+  assert.equal(runNoWait(input, { env }), null);
+  fs.rmSync(dir, { recursive: true, force: true });
+});

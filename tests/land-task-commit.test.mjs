@@ -9,8 +9,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { checkTask, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
-import { git, gitRepository, planFixture, run } from './harness.mjs';
-import { taskSection, SCRIPT, PLAN, landingCheckout, editApp, withLint } from './land-task-fixture.mjs';
+import { compactPlanFixture, git, gitRepository, planFixture, run } from './harness.mjs';
+import {
+  taskSection, SCRIPT, PLAN, landingCheckout, editApp, withLint, compactTask, compactCheckout, writeReport, PASS_REPORT, assertRefused
+} from './land-task-fixture.mjs';
 
 test('a green task lands with its trailer and the landed set grows', async () => {
   const { root, planPath } = await landingCheckout();
@@ -185,4 +187,13 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.equal(noTrailer.code, 1);
   assert.equal(noTrailer.stdout, '');
   assert.match(noTrailer.stderr, /Plan-task: 2/);
+});
+
+test('a test-first task whose change touches no test file is refused before anything commits', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'fix(app): greet', files: ['src/app.js', 'tests/app.test.mjs'], proof: 'node tests/app.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await writeReport(root, PASS_REPORT);
+  await assertRefused(root, planPath, [], /Task 1 is test-first, but its change adds or changes no test file/);
 });

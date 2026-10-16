@@ -319,7 +319,7 @@ async function main(argv) {
     let outcome;
     try {
       outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort: sessionEffort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir, stallGuard: stallGuardOn(kind), resume, taskCount, deny: ['task', 'plan'].includes(kind) ? denyRules({ planPath, repair }) : undefined }), {
-        cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv }), prompt, log, timeoutMs: limitMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
+        cwd: root, env: childEnv(pin, provider, { handoff: kind === 'task' && task !== null ? handoffFile(task) : null, ecosystemEnv, repair }), prompt, log, timeoutMs: limitMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
       });
     } finally {
       liveSessions -= 1;

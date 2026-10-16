@@ -15,8 +15,7 @@ import { transcriptFolder } from '#confine-claude';
 import { contextPeaks, HARD_LIMIT } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
-import { isTestPath } from '#red-green';
-import { isTestLike } from '#suite-command';
+import { isTestFirst, isTestPath, runnableProof } from '#red-green';
 import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
@@ -42,8 +41,6 @@ const FAIL_TAIL_LINES = 20;
 const FAIL_TAIL_LINE_LENGTH = 300;
 const PASS_REPORT_LINE = /^\s*(?:#\s*Subtest:|ok\b|pass\b|✔|✓)/i;
 const FAIL_REPORT_LINE = /^\s*(?:fail\b|not ok\b|✖|✗|×)/i;
-// why: a shell reads a backtick pair as command substitution, so a Proof with one is prose, not a command.
-const PROSE_PROOF = /`/;
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
 // why: a POSIX shell returns 127 for a command it cannot find.
 const COMMAND_NOT_FOUND = 127;
@@ -54,11 +51,6 @@ const PROSE_FILE = /\.(?:md|mdx|txt|rst)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*)$/;
 const WARN_TEXT_LENGTH = 100;
-
-export function runnableProof(proof) {
-  if (proof === null || PROSE_PROOF.test(proof)) return null;
-  return proof;
-}
 
 export function unmarkedMcpTool(command, { code, output }) {
   if (code !== COMMAND_NOT_FOUND) return null;
@@ -154,12 +146,6 @@ export function unchangedFiles(files, changed) {
     if (wanted.endsWith('/')) return !changed.some((path) => path.startsWith(wanted));
     return !changed.includes(wanted);
   });
-}
-
-export function isTestFirst(task) {
-  const command = runnableProof(task.proof);
-  const runsTest = command !== null && (isTestLike(command) || command.split(/\s+/).some((word) => isTestPath(word.replace(/["'`]/g, ''))));
-  return runsTest && (task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => isTestPath(file.path))));
 }
 
 function testLineHits({ file, line, pattern, at }) {

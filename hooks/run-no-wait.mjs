@@ -3,13 +3,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { readHookText } from '#hook-input';
 import { inRun } from '../lib/run-decision.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
 export const BLOCK_LIMIT = 2;
 
-const DECIDE = 'Do not wait for the user: decide from the spec and the exo settings, append `- <source>: <choice> (<reason>)` to';
+const RECORD = fileURLToPath(new URL('../lib/run-decision.mjs', import.meta.url));
+const DECIDE = `Do not wait for the user: decide from the spec and the exo settings, record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to`;
 const FINAL = 'If no decision is possible, end with `Task <n>: BLOCKED <question>`.';
 const OPTION = /^(?:[-*+]\s+)?[*_`]*(?:Option\s+(?:[A-Za-z]|\d{1,2})\b|(?:[A-Za-z]|\d{1,2})(?:\s*\([^)]*\))?[*_`]*\s*[):.])/;
 
@@ -42,7 +44,7 @@ function missingStatus(line, task, text) {
   return task ? !new RegExp(`^Task ${task.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: (GREEN|LANDED|BLOCKED|PLAN DRIFT|FAIL)\\b`).test(line) : openQuestion(text);
 }
 
-export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, task = env.EXO_RUN_TASK?.split('/').pop() } = {}) {
+export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, task = env.EXO_RUN_REPAIR ? null : env.EXO_RUN_TASK?.split('/').pop() } = {}) {
   if (!inRun(env) || !dir || !input) return null;
   const asking = input.tool_name === 'AskUserQuestion' && input.hook_event_name !== 'Stop';
   const text = asking ? input.tool_input?.questions?.[0]?.question ?? input.tool_input?.question : endText(input);

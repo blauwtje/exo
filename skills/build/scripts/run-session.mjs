@@ -153,7 +153,7 @@ const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${
 const fileRule = (tool, file) => spellings(file).map((spelling) => `${tool}(${ruleSpelling(spelling)})`);
 const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((spelling) => [`Bash(node "${spelling}" *)`, `Bash(node ${spelling} *)`]));
 
-const unsandboxedScripts = (tail) => (tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]);
+const unsandboxedScripts = (tail) => [...(tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), SCRIPT.runDecision];
 
 const ECOSYSTEMS = [
   { manifests: ECOSYSTEM_MANIFESTS.npm, domains: ['registry.npmjs.org'] },
@@ -294,11 +294,14 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
   ];
 }
 
-export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {} } = {}) {
+export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, repair = false } = {}) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   delete env.EXO_RUN_TASK;
   delete env.EXO_RUN_HANDOFF;
+  delete env.EXO_RUN_REPAIR;
+  // why: run-no-wait asks a repair session for no task status line; its plan edit is the result.
+  if (repair) env.EXO_RUN_REPAIR = '1';
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (handoff !== null) env.EXO_RUN_HANDOFF = handoff;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;

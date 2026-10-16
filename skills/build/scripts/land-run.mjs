@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { cachedPass } from '#check-cache';
 import { subjectProblem } from '#commit-text';
 import { defaultBranch, isCovered, isPlanDoc, parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
@@ -22,6 +23,15 @@ function run(cwd, cmd, args) {
   return { ok: r.status === 0, out: (r.stdout ?? '').trim(), err: `${r.stderr ?? ''}${r.error?.message ?? ''}`.trim() };
 }
 const git = (cwd, ...args) => run(cwd, 'git', args);
+
+// why: a branch rebased by hand moves nothing in this rebase, so only the cache's tree key shows the criterion never ran on it.
+function passedOnTree(runRoot, check) {
+  try {
+    return cachedPass(runRoot, check) !== null;
+  } catch {
+    return false;
+  }
+}
 
 function fixLanded(runRoot, branchMtime) {
   const file = path.join(runRoot, '.exo', 'fix-review.md');
@@ -129,10 +139,10 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', com
       git(runRoot, 'rebase', '--abort');
       return parked(`rebase ${branch} onto ${target} yourself in ${runRoot}`, 'rebase conflict');
     }
-    const check = /`([^`]+)`/.exec(success)?.[1];
+    const check = /`([^`]+)`/.exec(success)?.[1]?.replace(/^mcp:.*/s, '');
     const moved = git(runRoot, 'rev-parse', 'HEAD').out !== before;
     const pending = readGates(runDir).some((g) => g.source === 'land' && g.status !== 'used' && g.reason.startsWith('re-check failed'));
-    if (check && (moved || pending) && !run(runRoot, 'sh', ['-c', check]).ok
+    if (check && (moved || pending || !passedOnTree(runRoot, check)) && !run(runRoot, 'sh', ['-c', check]).ok
       && !takeApproved(runDir, LAND_ANYWAY)) {
       return parked(LAND_ANYWAY, `re-check failed after rebase: ${check}`);
     }

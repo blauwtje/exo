@@ -10,7 +10,7 @@ import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isCovered, iso
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
-import { runOnBase, testPaths } from '#red-green';
+import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { CODE_RULE_LIMITS, codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
@@ -483,6 +483,13 @@ function redGreenLine(task, proofCommands, root, pending) {
   throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}`);
 }
 
+// why: verify's claims-diff check refuses the same commit, but only at the end of the run.
+function refuseUntestedTestFirst(task, root) {
+  if (isTestFirst(task) && testPaths(taskChangedPaths(root)).length === 0) {
+    throw new LandingError(`Task ${task.number} is test-first, but its change adds or changes no test file; add the failing test the task names`);
+  }
+}
+
 function refuseUnplannedPaths(task, options) {
   const unplanned = unplannedPaths(task, options);
   if (unplanned.length > 0) {
@@ -542,6 +549,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseMcpProofUnderPin(pin, task);
   refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
+  refuseUntestedTestFirst(task, root);
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
