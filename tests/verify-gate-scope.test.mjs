@@ -279,6 +279,35 @@ test('claims-diff fails a test-first task whose commit changes no test file, and
   assert.ok(passing.lines.includes('PASS claims-diff'), passing.result.stdout);
 });
 
+test('claims-diff warns on a test-first task whose listed test changed only in a trailer-less fix commit, and fails without one', async () => {
+  const plan = '### Task 1: feat(app): x\nDepends on: none | Files: `src/a.js`, `tests/a.test.mjs` | Data: none | Risk: security boundary | Proof: node -e "process.exit(0)"\n';
+  const root = await gitRepository({ 'src/a.js': 'a\n', 'tests/a.test.mjs': 'assert.ok(1);\n', 'check.js': CLEAN_CHECK, 'plan.md': plan });
+  const base = git(root, 'rev-parse', 'HEAD');
+  const commit = async (file, ...messages) => {
+    await writeFile(path.join(root, file), `${messages[0]}\n`, { flag: 'a' });
+    git(root, 'add', '-A');
+    git(root, 'commit', ...messages.flatMap((message) => ['-m', message]));
+    return git(root, 'rev-parse', '--short', 'HEAD');
+  };
+  const gate = async () => {
+    const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+    return { result, lines: result.stdout.trim().split('\n') };
+  };
+  await commit('src/a.js', 'feat(app): x', 'Plan-task: plan/1');
+  await commit('tests/other.test.mjs', 'fix(app): repair a test the task does not list');
+  await commit('tests/a.test.mjs', 'test(app): change the listed test in a non-fix commit');
+  await commit('tests/a.test.mjs', 'fix(app): change the listed test under a trailer', 'Plan-task: plan/1');
+  const failing = await gate();
+  assert.equal(failing.result.code, 1, failing.result.stdout);
+  assert.ok(failing.lines.includes('FAIL claims-diff Task 1 (test-first, but its commit adds or changes no test file)'), failing.result.stdout);
+
+  const repair = await commit('tests/a.test.mjs', 'fix(app): add the missing test');
+  const passing = await gate();
+  assert.equal(passing.result.code, 0, passing.result.stdout);
+  assert.ok(passing.lines.includes(`WARN claims-diff Task 1 (test-first; its test changed only in repair commit ${repair})`), passing.result.stdout);
+  assert.ok(!passing.lines.some((line) => line.startsWith('FAIL ')), passing.result.stdout);
+});
+
 test('claims-diff warns, without failing, on a removed assertion and an added skip', async () => {
   const { result, lines } = await claimsRun(claimsPlan('feat(app): x', ''), { 'src/a.js': 'b\n', 'tests/a.test.mjs': "it.skip('x', () => {});\n" });
   assert.equal(result.code, 0, result.stdout);

@@ -41,6 +41,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The unattended plan-check call passes `--root`, and plan-check fails when the plan's root does not exist.
 - plan-check sizes a plan task at bytes / 4, as `task-list.md` says, not bytes / 2.
 - A run's tail now proves the Success criterion before it pays for a review, and a resumed run reuses a review of an unchanged tree.
+- verify warns instead of failing a test-first task whose commit adds no test when a later `fix` repair commit changes a test in its Files, so such a run can still pass.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.

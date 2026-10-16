@@ -224,7 +224,12 @@ export function silencedChecks(patch) {
   return findings;
 }
 
-function claimLines(task, root, planId) {
+function testRepairCommit(task, root, base) {
+  const listedTests = task.files.map((file) => file.path).filter(isTestPath);
+  return [...commitsTouching(listedTests, root, base).values()].flat().find(isTrailerlessFix);
+}
+
+function claimLines(task, { root, planId, base }) {
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
   const shas = taskCommits(task, root, planId);
   const changed = taskPaths(task, root, planId);
@@ -232,7 +237,10 @@ function claimLines(task, root, planId) {
   const unchanged = unchangedFiles(task.files, changed);
   if (unchanged.length > 0) lines.push(`WARN claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
   if (isTestFirst(task) && !changed.some(isTestPath)) {
-    lines.push(`FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`);
+    const repair = testRepairCommit(task, root, base);
+    lines.push(repair === undefined
+      ? `FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`
+      : `WARN claims-diff Task ${task.number} (test-first; its test changed only in repair commit ${repair.sha.slice(0, 7)})`);
   }
   for (const sha of shas) {
     const patch = git('-U0', '--no-color', '--no-ext-diff', sha);
@@ -471,7 +479,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   for (const { path, shas } of [...fixOnly].sort((a, b) => (a.path < b.path ? -1 : 1))) lines.push(`FIX-ONLY ${path} (${shas.join(',')})`);
   for (const { path, shas } of lead) lines.push(`LEAD ${path} (${shas.join(',')})`);
 
-  const claims = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => claimLines(task, root, planId));
+  const claims = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => claimLines(task, { root, planId, base }));
   lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));
   if (claims.some((line) => line.startsWith('FAIL '))) failed = true;
 
