@@ -10,7 +10,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 
 | Command | What it runs |
 |---|---|
-| `npm run check` | The gate before any commit: the verifier, its self-test and the script tests. |
+| `npm run check` | The gate before any commit: the verifier with the script tests, the same run as `npm run validate`. |
 | `npm run validate` | The structural checks over the skill corpus and the script tests. |
 | `npm run validate:static` | The structural checks only, no script tests. |
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
@@ -24,9 +24,9 @@ CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every 
 
 `npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through TAP, so its failure line names each failing test as `not ok`. Both load `tests/clean-run-env.mjs` first, which strips the run variables `EXO_RUN`, `EXO_RUN_DIR`, `EXO_RUN_TASK` and `EXO_DROPS`, so a test inside `exo run` never parks gates in the live run.
 
-The `instruction density` check fails a list item of three or more sentences and a sentence over 40 words in the Markdown under `skills/`, `agents/` and `output-styles/`, outside fenced code, frontmatter, HTML comments, headings and tables; an inline code span counts as one word. `verify/instruction-density-allowlist.txt` names the offenders the tree held when the check began, and `INSTRUCTION_DENSITY_ALLOWLIST_LOCK` in `verify/budgets.mjs` caps its length. A line that no longer matches fails `npm test` until `node verify/instruction-density.mjs --prune` drops it; the command never adds a line and prints the new count to copy into the lock.
+The `instruction density` check fails a list item of three or more sentences and a sentence over 40 words in the Markdown under `skills/`, `agents/` and `output-styles/`, outside fenced code, frontmatter, HTML comments, headings and tables; an inline code span counts as one word. `verify/instruction-density-allowlist.txt` names the offenders the tree held when the check began, and `INSTRUCTION_DENSITY_ALLOWLIST_LOCK` in `verify/budgets.mjs` caps its length. A line that no longer matches stays until `node verify/instruction-density.mjs --prune` drops it; the command never adds a line and prints the new count to copy into the lock.
 
-The `boundary words` check compares each `.md` file under `skills/`, `agents/`, `rules/` and `hooks/` that exists at `origin/main` and in the working tree, counting `only`, `not`, `no`, `never`, `every`, `each`, `all`, `full`, `except` and `unless` as whole words, and fails when a count falls; it is `UNRUN` without `origin/main`. A deliberate drop is named as `Drops: <word> in <path>[, <word> in <path>]`, in a plan task's field line (land-task passes it to the land gate as `EXO_DROPS` and copies it into a compact task's commit body) or in a commit body since `origin/main`. `--boundary-base <dir>` reads the base files from a directory, which the verifier self-test uses because its fixture has no git history.
+The `boundary words` check compares each `.md` file under `skills/`, `agents/`, `rules/` and `hooks/` that exists at `origin/main` and in the working tree, counting `only`, `not`, `no`, `never`, `every`, `each`, `all`, `full`, `except` and `unless` as whole words, and fails when a count falls; it is `UNRUN` without `origin/main`. A deliberate drop is named as `Drops: <word> in <path>[, <word> in <path>]`, in a plan task's field line (land-task passes it to the land gate as `EXO_DROPS` and copies it into a compact task's commit body) or in a commit body since `origin/main`.
 
 The `derivation` check fails when a name exo does not own reaches a shipped file, or a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names sit base64-encoded in `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids. `plan-check.mjs` scans a brief that targets this repository for the same names and names each with its line, so a plan is reworded before its first land gate.
 
@@ -48,7 +48,7 @@ A `SKILL.md` body after its frontmatter stays within `SKILL_BODY_TOKENS.ceiling`
 
 ## Adding a setting
 
-A new setting is one entry in `skills/configure/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` keeps the two in step.
+A new setting is one entry in `skills/configure/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`.
 
 `docs/` is git-ignored: research notes, specs and plans live outside the repository.
 

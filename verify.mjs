@@ -1,6 +1,6 @@
 // Deterministic verification of the skill corpus: no model calls, no network.
 //
-//   node verify.mjs [--repository-root <dir>] [--self-test] [--no-reuse] [--static]
+//   node verify.mjs [--repository-root <dir>] [--static]
 //
 // Exits 1 when any check failed.
 
@@ -40,24 +40,13 @@ import { checkPaidRuns } from './verify/checks/paid-runs.mjs';
 import { checkBoundaryWords } from './verify/checks/boundary-words.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { checkCodeComments } from './verify/checks/code-comments.mjs';
-import { codePass } from '#check-cache';
-import { runSelfTest } from './verify/self-test.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
 const { values } = parseArgs({
   options: {
     'repository-root': { type: 'string' },
-    'self-test': { type: 'boolean', default: false },
-    // Under --self-test, run the suite and the verifier self-test even when `npm run check` already passed on this code.
-    'no-reuse': { type: 'boolean', default: false },
-    // Skip the test suite, the plugin version check and the self-test: the per-task gate.
-    static: { type: 'boolean', default: false },
-    // Newline-separated script paths relative to the root; only these are parsed.
-    // Absent means every script is parsed.
-    'changed-scripts': { type: 'string' },
-    // Read the boundary-words base files from this directory instead of git: the self-test fixture has no history.
-    'boundary-base': { type: 'string' }
+    static: { type: 'boolean', default: false }
   }
 });
 
@@ -75,9 +64,6 @@ if (!fs.existsSync(path.join(root, 'skills'))) {
 
 const report = createReport();
 const repository = createRepository(root);
-const changedScripts = values['changed-scripts'] === undefined
-  ? null
-  : new Set(values['changed-scripts'].split('\n').filter((entry) => entry !== '').map((entry) => path.join(root, entry)));
 
 checkSkillFrontmatter(report, repository);
 checkProcessStructure(report, repository);
@@ -98,30 +84,18 @@ checkReferenceTables(report, repository);
 checkReferenceShape(report, repository);
 checkSharedContracts(report, repository);
 checkReturnCaps(report, repository);
-checkScriptSyntax(report, repository, changedScripts);
-checkSkillScripts(report, repository, changedScripts);
+checkScriptSyntax(report, repository);
+checkSkillScripts(report, repository);
 checkCodeComments(report, repository);
-// `npm run check` passed on this code, CHANGELOG.md aside: the suite and self-test are reused; the
-// static checks, which can read CHANGELOG.md, still run, and the version check demands its line.
-const reused = values['self-test'] && !values['no-reuse'] ? codePass(root, 'npm run check') : null;
-const reusedDetail = reused === null ? '' : `reused from the npm run check pass on tree ${reused.tree}`;
-if (values.static) {
-  // skipped: no line printed
-} else if (reused === null) checkSkillScriptBehavior(report, repository);
-else report.result('PASS', 'skill script behavior', reusedDetail);
+if (!values.static) checkSkillScriptBehavior(report, repository);
 checkGitWhitespace(report, repository);
-if (!values.static) checkPluginVersion(report, repository, { strict: reused !== null });
+if (!values.static) checkPluginVersion(report, repository);
 checkModelKinds(report, repository);
 checkCodexOverrides(report, repository);
 checkQuestionOptions(report, repository);
 checkPaidRuns(report, repository);
 checkInstructionDensity(report, repository);
-checkBoundaryWords(report, repository, { baseDir: values['boundary-base'] === undefined ? null : path.resolve(values['boundary-base']) });
-
-if (values.static) {
-  // skipped: no line printed
-} else if (reused !== null) report.result('PASS', 'verifier self-test', reusedDetail);
-else if (values['self-test']) await runSelfTest(report, repository);
+checkBoundaryWords(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);

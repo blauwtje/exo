@@ -125,7 +125,7 @@ const PINNED_SENTENCES = {
 // list is one the asset holds. The list is a run of backticked names joined
 // only by list separators that holds at least one asset name; other backticked
 // tokens in the section stand alone and are not checked. The asset is read
-// from the repository under check, so a self-test mutation of either side fails.
+// from the repository under check.
 const PINNED_LISTS = [
   { file: 'skills/design-ui/references/build-pass.md', section: '## Slop tropes',
     asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },

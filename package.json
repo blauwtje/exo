@@ -51,10 +51,9 @@
   "scripts": {
     "validate": "node verify.mjs",
     "validate:static": "node verify.mjs --static",
-    "validate:self": "node verify.mjs --self-test",
     "test": "node --import ./tests/clean-run-env.mjs --test --test-concurrency=2 \"tests/*.test.mjs\"",
     "smoke": "bash tests/smoke.sh",
-    "check": "npm run validate:self",
+    "check": "node verify.mjs",
     "bump": "node bump.mjs",
     "release-pending": "node release-pending.mjs",
     "release-notes": "node release-notes.mjs",

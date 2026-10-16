@@ -44,28 +44,15 @@ function isProse(file) {
   return file.endsWith('.md') && FOLDERS.includes(file.split('/')[0]);
 }
 
-export function checkBoundaryWords(report, repository, { baseDir = null, env = process.env } = {}) {
+export function checkBoundaryWords(report, repository, { env = process.env } = {}) {
   const root = repository.root;
-  let baseFiles;
-  let baseText;
-  if (baseDir !== null) {
-    baseFiles = FOLDERS.flatMap((folder) => {
-      const start = path.join(baseDir, folder);
-      if (!fs.existsSync(start)) return [];
-      return fs.readdirSync(start, { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile())
-        .map((entry) => path.relative(baseDir, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'));
-    });
-    baseText = (file) => fs.readFileSync(path.join(baseDir, file), 'utf8');
-  } else {
-    const listing = git(root, ['ls-tree', '-r', '--name-only', BASE_REF, '--', ...FOLDERS]);
-    if (listing.status !== 0) {
-      report.result('UNRUN', NAME, `${BASE_REF} is not available to compare against`);
-      return;
-    }
-    baseFiles = listing.stdout.split('\n').filter((file) => file !== '');
-    baseText = (file) => git(root, ['show', `${BASE_REF}:${file}`]).stdout;
+  const listing = git(root, ['ls-tree', '-r', '--name-only', BASE_REF, '--', ...FOLDERS]);
+  if (listing.status !== 0) {
+    report.result('UNRUN', NAME, `${BASE_REF} is not available to compare against`);
+    return;
   }
+  const baseFiles = listing.stdout.split('\n').filter((file) => file !== '');
+  const baseText = (file) => git(root, ['show', `${BASE_REF}:${file}`]).stdout;
 
   const allowed = allowances(root, env);
   const drops = [];

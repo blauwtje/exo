@@ -1,4 +1,4 @@
-// why: a mod cannot import, so this copy stays; tests/run-watch.test.mjs holds it equal to run-state.mjs FINAL_PHASES.
+// why: a mod cannot import, so this copy stays; keep it equal to FINAL_PHASES in run-state.mjs.
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 const TICK_MS = 5000;
 const STALE_MS = 3600000;

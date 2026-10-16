@@ -13,8 +13,8 @@ const PARSER = path.join(import.meta.dirname, '..', 'parse-scripts.mjs');
 const undotted = (target) => !path.basename(target).startsWith('.');
 
 // In a work tree, the scripts git tracks or would track: an ignored scratch folder
-// such as tmp/ can hold a thousand scripts the repository never ships. The self-test
-// fixture is a plain copy outside any work tree, so there the walk finds them.
+// such as tmp/ can hold a thousand scripts the repository never ships. Outside a work
+// tree, the walk finds every script.
 function scripts(repository, extension) {
   const listing = spawnSync('git', ['-C', repository.root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
     encoding: 'utf8',
@@ -28,9 +28,8 @@ function scripts(repository, extension) {
     .map((entry) => repository.join(entry));
 }
 
-// changedScripts is a Set of absolute paths that limits the parse, or null for every script.
-export function checkScriptSyntax(report, repository, changedScripts = null) {
-  const files = scripts(repository, '.mjs').filter((file) => !changedScripts || changedScripts.has(file));
+export function checkScriptSyntax(report, repository) {
+  const files = scripts(repository, '.mjs');
   const parse = spawnSync(process.execPath, [PARSER], { input: files.join('\n'), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   const javascriptErrors = parse.status === 0
     ? JSON.parse(parse.stdout).map(({ file, message }) => `${repository.relative(file)}: ${message}`)

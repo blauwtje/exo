@@ -43,8 +43,8 @@ export function createRepository(root) {
     return found.sort(comparePaths);
   }
 
-  // Every file git tracks under the root. The self-test fixture is a plain copy
-  // outside any work tree, so there every file under the root counts instead.
+  // Every file git tracks under the root. Outside a work tree,
+  // every file under the root counts instead.
   function trackedFiles() {
     const listing = spawnSync('git', ['-C', absoluteRoot, 'ls-files', '-z'], { encoding: 'utf8' });
     if (listing.status === 0) {

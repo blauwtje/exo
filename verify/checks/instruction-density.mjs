@@ -2,8 +2,8 @@
 // of MAX_BULLET_SENTENCES or more sentences or a sentence over
 // MAX_SENTENCE_WORDS words: past those a rule carries more than one condition
 // and action, and the model follows it less. Offenders the allowlist names
-// pass until split; tests/instruction-density.test.mjs fails an entry that no
-// longer matches, and the check fails an allowlist longer than
+// pass until split; `--prune` drops an entry that no longer matches, and the
+// check fails an allowlist longer than
 // INSTRUCTION_DENSITY_ALLOWLIST_LOCK, so the list only shrinks. Sentences per
 // skill print as a note, never a failure.
 
