@@ -37,6 +37,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo-cli.mjs run` passes the launching session to the run as its owner, on resume only when set.
 - The unattended plan-check call passes `--root`, and plan-check fails when the plan's root does not exist.
 - plan-check sizes a plan task at bytes / 4, as `task-list.md` says, not bytes / 2.
+- A run's tail now proves the Success criterion before it pays for a review, and a resumed run reuses a review of an unchanged tree.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.

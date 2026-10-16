@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { cachedPass, codePass, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
+import { cachedPass, codePass, recordPass, recordReview, reviewVerdict, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 
 function repo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'check-cache-'));
@@ -197,6 +197,19 @@ test('the query CLI answers when run through a symlinked path', () => {
   const miss = spawnSync('node', [link, '--query', 'npm run check'], { cwd: root, encoding: 'utf8' });
   assert.equal(miss.stdout, 'miss\n');
   assert.equal(miss.status, 1);
+});
+
+test('a FINDINGS review entry on the current tree is no pass, a CLEAN one is, and the reader returns the verdict', () => {
+  const { root } = repo();
+  recordReview(root, 'r', { verdict: 'FINDINGS' });
+  assert.equal(cachedPass(root, 'r'), null);
+  assert.deepEqual(reviewVerdict(root, 'r'), { ms: 0, verdict: 'FINDINGS' });
+  recordReview(root, 'r', { verdict: 'CLEAN' });
+  assert.deepEqual(cachedPass(root, 'r'), { ms: 0 });
+  assert.deepEqual(reviewVerdict(root, 'r'), { ms: 0, verdict: 'CLEAN' });
+  recordPass(root, 'x', 5);
+  assert.deepEqual(reviewVerdict(root, 'x'), { ms: 5, verdict: null });
+  assert.deepEqual(cachedPass(root, 'x'), { ms: 5 });
 });
 
 test('SLOW_GATE_MS is one minute', () => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
-import { BRANCH_REVIEW_KEY, cachedPass } from '../lib/check-cache.mjs';
+import { BRANCH_REVIEW_KEY, cachedPass, reviewVerdict } from '../lib/check-cache.mjs';
 import { git } from './harness.mjs';
 import { runPlan, setup } from './run-plan-fixture.mjs';
 
@@ -49,6 +49,34 @@ test('a CLEAN branch review is cached for the tree it reviewed', async () => {
   assert.notEqual(cachedPass(context.setupRoot, BRANCH_REVIEW_KEY), null, context.stdout + context.stderr);
 });
 
+const NEEDS_EDIT = '`node -e "process.exit(require(\'fs\').readFileSync(\'t1.txt\',\'utf8\').includes(\'edited\')?0:1)"`';
+const isReview = (call) => /^## Review/m.test(call.stdin);
+
+test('a red Success criterion is repaired once before any review', async () => {
+  const context = await setup({ risk: 'security boundary', success: NEEDS_EDIT });
+  await useTasks(context, 2);
+  const steps = [
+    landTask(1), landTask(2),
+    { result: 'fixed', edits: ['t1.txt'] },
+    { result: CLEAN_LINE, findings: 'CLEAN\n' }
+  ];
+  const run = await runPlan(context, steps);
+  assert.equal(run.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', run.stdout + run.stderr);
+  assert.equal(run.calls.length, 4);
+  assert.equal(isReview(run.calls[2]), false);
+  assert.equal(isReview(run.calls[3]), true);
+  assert.match(git(context.root, 'log', '-1', '--format=%s'), /^fix\(t1\): repair the Success criterion$/);
+});
+
+test('a Success criterion still red after one repair stops the run before any review', async () => {
+  const context = await setup({ risk: 'security boundary', success: NEEDS_EDIT });
+  await useTasks(context, 2);
+  const run = await runPlan(context, [landTask(1), landTask(2), { result: 'could not fix' }]);
+  assert.match(run.stdout, /The Success criterion is still red before the review: /, run.stdout + run.stderr);
+  assert.equal(run.calls.length, 3);
+  assert.equal(run.calls.filter(isReview).length, 0);
+});
+
 test('a gate failure already on the branch is not blamed on the review fix', async () => {
   const context = await setup({ risk: 'security boundary' });
   await useTasks(context, 2);
@@ -83,6 +111,25 @@ test('a review fix that breaks the gate and cannot be shelved is not rechecked o
   assert.match(run.stop, /^run-plan: stop: fix broke the gate: /, run.stdout + run.stderr);
   assert.doesNotMatch(run.stdout, /already failed before the review fix/);
   assert.match(run.stdout, /not cleared|shelving the edits failed/);
+});
+
+test('a FINDINGS branch review whose fix session stops is stored with its verdict', async () => {
+  const context = await setup({ risk: 'security boundary' });
+  await useTasks(context, 2);
+  const findings = 'FINDINGS\n\nt1.txt:1-1; defect; swallowed failure; catch drops error; fix\n  Probe: node --version\n';
+  const steps = [
+    landTask(1), landTask(2),
+    { result: 'verdict=FINDINGS defect=1 concern=0 question=0 fix=1 report=x', findings },
+    { pluginError: 'fix stub stops' }
+  ];
+  const run = await runPlan(context, steps);
+  assert.equal(reviewVerdict(context.root, BRANCH_REVIEW_KEY)?.verdict, 'FINDINGS', run.stdout + run.stderr);
+  assert.equal(cachedPass(context.root, BRANCH_REVIEW_KEY), null);
+});
+
+test('a branch review that stops without a verdict stores nothing', async () => {
+  const context = await runBranch(2, { pluginError: 'review stub stops' });
+  assert.equal(reviewVerdict(context.setupRoot, BRANCH_REVIEW_KEY), null);
 });
 
 test('a FINDINGS branch review whose fix lands is cached for the tree after the fix', async () => {

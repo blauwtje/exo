@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { BRANCH_REVIEW_KEY, recordPass } from '../lib/check-cache.mjs';
+import { BRANCH_REVIEW_KEY, recordPass, recordReview } from '../lib/check-cache.mjs';
 import { git, run } from './harness.mjs';
 import { gitRepository, SCRIPT, CLEAN_CHECK } from './verify-gate-fixture.mjs';
 
@@ -55,4 +55,11 @@ test('a branch review recorded on this same tree prints none instead of a review
   recordPass(root, BRANCH_REVIEW_KEY, 0);
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
   assert.ok(result.stdout.includes(`REVIEW Branch ${base}..HEAD: none (reviewed on this same tree)`), result.stdout);
+});
+
+test('a FINDINGS branch review on this same tree still prints the reviewer', async () => {
+  const { root, base } = await branchRun(TASK(1), 1);
+  recordReview(root, BRANCH_REVIEW_KEY, { verdict: 'FINDINGS' });
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(result.stdout.includes(`REVIEW Branch ${base}..HEAD: ${REVIEWER_AGENTS.light}`), result.stdout);
 });
