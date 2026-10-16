@@ -23,7 +23,7 @@ import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-confi
 import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
-import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
+import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, planLandedLine, planSessionLine, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
 
@@ -337,6 +337,7 @@ async function main(argv) {
   };
 
   const landedStats = [];
+  let planLandedCount = 0;
   // why: a task keeps its tries while each failed attempt differs from its earlier ones; the first repeat is no progress.
   const fingerprints = new Map();
   let failedAttempts = 0;
@@ -507,9 +508,14 @@ async function main(argv) {
     passes.add(n);
     fs.rmSync(handoffFile(n), { force: true });
     writeTasks();
-    const ms = Math.round(performance.now() - startedTask.mono);
-    landedStats.push({ ms, turns: record.turns, tokens: record.tokens, cost: record.cost });
-    say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, tokens: record.tokens, cost: record.cost }));
+    if (startedTask === null) {
+      planLandedCount += 1;
+      say(planLandedLine({ number: n, sha: run.landings.get(n).sha }));
+    } else {
+      const ms = Math.round(performance.now() - startedTask.mono);
+      landedStats.push({ count: 1, ms, turns: record.turns, tokens: record.tokens, cost: record.cost });
+      say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, tokens: record.tokens, cost: record.cost }));
+    }
     noteTask({ n, subject: taskSubject(plan.tasks.find((entry) => entry.number === n).title), landed: passes.size, total: plan.tasks.length });
     for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
       const file = line.slice(3);
@@ -548,6 +554,12 @@ async function main(argv) {
     if (stopped !== undefined || !passes.has(refused.n)) return stopped;
     return landOrRepair(numbers.slice(numbers.indexOf(refused.n) + 1), record, started);
   };
+  const notePlanSession = (record, startedPlan) => {
+    if (planLandedCount === 0) return;
+    const entry = { count: planLandedCount, ms: Math.round(performance.now() - startedPlan.mono), turns: record.turns, tokens: record.tokens, cost: record.cost };
+    landedStats.push(entry);
+    say(planSessionLine(entry));
+  };
   const maxTurnsStop = (n, outcome, parsed, taskCount) => {
     if (outcome.timedOut || parsed.subtype !== 'error_max_turns') return undefined;
     shelvePartialWork(n);
@@ -573,7 +585,8 @@ async function main(argv) {
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
       if (stop === undefined && status !== null) stop = blockedStop(first, status[1] || last);
       if (stop === undefined) stop = maxTurnsStop(first, outcome, parsed, order.length);
-      stop = (await landOrRepair(stop === undefined ? order : [], record, startedPlan)) ?? stop;
+      stop = (await landOrRepair(stop === undefined ? order : [], record, null)) ?? stop;
+      notePlanSession(record, startedPlan);
       if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
         const { patch, failed } = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
         if (patch !== null) say(`plan session leftover saved to ${patch}`);

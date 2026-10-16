@@ -50,10 +50,15 @@ export const startLine = ({ number, subject, model, effort }) => `task ${number}
 
 export const landedLine = ({ number, sha, ms, turns, tokens, cost }) => `task ${number} landed ${sha.slice(0, 7)} · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(tokens)}k tokens · ${money(cost)}`;
 
+export const planLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · (plan session)`;
+
+export const planSessionLine = ({ count, ms, turns, tokens, cost }) => `plan session: ${count} ${count === 1 ? 'task' : 'tasks'} landed · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(tokens)}k tokens · ${money(cost)}`;
+
 export function averageLines(landed) {
   if (landed.length === 0) return [];
   const sum = (field) => landed.reduce((total, entry) => total + entry[field], 0);
-  const mean = (field) => sum(field) / landed.length;
+  const count = landed.reduce((total, entry) => total + (entry.count ?? 1), 0);
+  const mean = (field) => sum(field) / count;
   return [
     `average per task: ${Math.round(mean('ms') / 1000)}s · ${Math.round(mean('turns'))} turns · ${thousands(mean('tokens'))}k tokens · ${money(mean('cost'))}`,
     `total: ${thousands(sum('tokens'))}k tokens · ${money(sum('cost'))}`,
