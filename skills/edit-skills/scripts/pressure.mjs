@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { confineRefusal, confinedClaude } from '#confine-claude';
+import { makeDefaultOptionsHome } from '#default-options-home';
 import { BUDGETS, readKindTable } from '#model-kinds';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags, isMain } from '#script-flags';
@@ -145,6 +146,12 @@ function usageTokens(usage) {
   };
 }
 
+// why: The confined run with HOME set to the options-free mirror, so the session
+// never reads the user's own exo options from ~/.claude/settings.json.
+export function withHome(run, home) {
+  return { ...run, env: { ...run.env, HOME: home } };
+}
+
 function runArm(run) {
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -195,7 +202,7 @@ async function runInSequence(planned, startRun) {
   return outcomes;
 }
 
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir }) {
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir, home }) {
   const arms = [
     comparisonArm({ pluginId, mainDir }),
     { name: 'with', pluginDir, flags: ['--plugin-dir', pluginDir] }
@@ -220,7 +227,7 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     const settings = outputStyle === undefined ? armSettings : { ...armSettings, outputStyle };
     const pluginFlags = settingsAt === -1 ? arm.flags : arm.flags.filter((_, at) => at !== settingsAt && at !== settingsAt + 1);
     const args = claudeArguments({ model, effort, promptText, settingSources, pluginFlags });
-    return runArm(confinedClaude({ args, roots, cwd: scratch, tmp, settings }));
+    return runArm(withHome(confinedClaude({ args, roots, cwd: scratch, tmp, settings }), home));
   };
   const outcomes = setupScript === undefined
     ? await Promise.all(planned.map(startRun))
@@ -304,9 +311,19 @@ async function main() {
     process.exitCode = 2;
     return;
   }
+  if (process.env.CLAUDE_CONFIG_DIR) {
+    console.error('usage: pressure.mjs: CLAUDE_CONFIG_DIR is set, but the default-options mirror covers only ~/.claude; unset it');
+    process.exitCode = 2;
+    return;
+  }
   console.log(`answers: ${outDir}`);
-  for (const cell of flags.cells) {
-    if (await runCell(cell, promptText, { ...flags, outDir })) process.exitCode = 1;
+  const home = makeDefaultOptionsHome();
+  try {
+    for (const cell of flags.cells) {
+      if (await runCell(cell, promptText, { ...flags, outDir, home })) process.exitCode = 1;
+    }
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
   }
 }
 

@@ -38,6 +38,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - plan-check refuses a red-less task whose Files are all tests, flags unlisted tests, locks and registries, and prints the token size of each task; the spec brief states its Acceptance citation rule and keeps stored plans uncommitted.
 
 ### Fixed
+- Pressure runs use a mirrored home with default exo options, so the user's own global options no longer change their results.
 - Ship offers to file a follow-up the user names as an issue, in place of only saving a memory note; it files nothing before a yes.
 - Benchmark cells under the macOS sandbox let git refresh its xcrun cache, so each git call no longer costs about 0.4 s.
 - A finished detached run wakes only the session that launched the run; a run with no recorded owner wakes no one.

@@ -14,6 +14,7 @@
     "#commit-text": "./lib/commit-text.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#context-limits": "./lib/context-limits.mjs",
+    "#default-options-home": "./lib/default-options-home.mjs",
     "#derivation": "./verify/checks/derivation.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",

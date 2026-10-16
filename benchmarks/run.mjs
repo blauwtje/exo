@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { confinedClaude } from '#confine-claude';
+import { makeDefaultOptionsHome } from '#default-options-home';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
@@ -196,43 +197,6 @@ function cellCommand(armName, task, model, effort, copies) {
 // tiers keep the environment their past results were measured in.
 function cellIsolation(task) {
   return OPEN_TIERS.has(task.tier) ? { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } : {};
-}
-
-// The user's settings.json with the options of every exo@ plugin config
-// removed, so exo falls back to its schema defaults.
-function withoutExoOptions(settingsText) {
-  const settings = JSON.parse(settingsText);
-  for (const [key, config] of Object.entries(settings.pluginConfigs ?? {})) {
-    if (key.startsWith('exo@')) delete config.options;
-  }
-  return `${JSON.stringify(settings, null, 2)}\n`;
-}
-
-// A HOME for every cell, so arms differ only by what they load and none picks
-// up the user's global exo options, whichever directory exo loads from: a
-// symlink to every entry of the real home except .claude, and a real .claude
-// holding a symlink to every entry of ~/.claude except settings.json, which is
-// a copy without exo's options. HOME, not
-// CLAUDE_CONFIG_DIR: a moved config directory loses the login (the keychain
-// entry keys on it) and moves the transcripts away from where findTranscript
-// in cell-usage.mjs looks; through the symlink they still land in the real
-// ~/.claude/projects.
-function makeDefaultOptionsHome() {
-  const home = os.homedir();
-  const realConfig = path.join(home, '.claude');
-  const mirror = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-home-'));
-  const mirrorConfig = path.join(mirror, '.claude');
-  for (const entry of fs.readdirSync(home)) {
-    if (entry !== '.claude') fs.symlinkSync(path.join(home, entry), path.join(mirror, entry));
-  }
-  fs.mkdirSync(mirrorConfig);
-  if (!fs.existsSync(realConfig)) return mirror;
-  for (const entry of fs.readdirSync(realConfig)) {
-    if (entry !== 'settings.json') fs.symlinkSync(path.join(realConfig, entry), path.join(mirrorConfig, entry));
-  }
-  const settingsFile = path.join(realConfig, 'settings.json');
-  if (fs.existsSync(settingsFile)) fs.writeFileSync(path.join(mirrorConfig, 'settings.json'), withoutExoOptions(fs.readFileSync(settingsFile, 'utf8')));
-  return mirror;
 }
 
 // The run is confined by #confine-claude to its cell root and its own
