@@ -22,7 +22,7 @@ export const DESCRIPTION_TOTAL_LOCK = { chars: 2542, measured: '2026-10-08' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 803, measured: '2026-10-11' };
 // The authored text of hooks/session-routing.md and hooks/session-rules.md, summed, which the session hook injects.
-export const INJECTED_CONTEXT_LOCK = { bytes: 1355, measured: '2026-10-16' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 1448, measured: '2026-10-16' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
@@ -32,7 +32,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Words every session loads before the first prompt: the session-start output,
 // each model-invocable skill's name and description, each agent's name and
 // description; verify/checks/session-load.mjs fails above it.
-export const SESSION_LOAD_LOCK = { words: 1034, measured: '2026-10-16' };
+export const SESSION_LOAD_LOCK = { words: 1058, measured: '2026-10-16' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };

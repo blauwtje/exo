@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
+import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { contextDecision, contextLimit, softLimit } from '../lib/context-limits.mjs';
 
 function homeWith(content) {
@@ -70,5 +72,43 @@ test('main session is warned again after it shrinks below the soft limit', () =>
     assert.ok(call(70_000));
   } finally {
     if (savedRun !== undefined) process.env.EXO_RUN_HANDOFF = savedRun;
+  }
+});
+
+test('Bash and Edit dispatchers give the main session one soft note at 61k, none at 59k, and a deny still wins', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-dispatch-'));
+  const at = (tokens) => {
+    const file = path.join(dir, `t${tokens}.jsonl`);
+    fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+    return file;
+  };
+  const saved = process.env.EXO_RUN_HANDOFF;
+  delete process.env.EXO_RUN_HANDOFF;
+  try {
+    const limit = contextLimit();
+    const soft = softLimit(limit) + 1000;
+    const below = softLimit(limit) - 1000;
+    const input = (tool_name, session_id, tokens) => ({ session_id, tool_name, transcript_path: at(tokens) });
+    const id = `d-${process.pid}-${Date.now()}`;
+
+    assert.equal(await dispatchBash(input('Bash', `${id}-b0`, below)), null);
+    const bash = await dispatchBash(input('Bash', `${id}-b1`, soft));
+    assert.match(bash.hookSpecificOutput.additionalContext, /exo:save-session/);
+    assert.equal(await dispatchBash(input('Bash', `${id}-b1`, soft)), null);
+
+    assert.equal(dispatchEdit(input('Edit', `${id}-e0`, below)), null);
+    const edit = dispatchEdit(input('Edit', `${id}-e1`, soft));
+    assert.match(edit.hookSpecificOutput.additionalContext, /exo:save-session/);
+    assert.equal(dispatchEdit(input('Edit', `${id}-e1`, soft)), null);
+
+    const deny = { name: 'deny', run: () => ({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'no' } }) };
+    const denied = await dispatchBash(input('Bash', `${id}-b2`, soft), [CONTEXT_STEP, deny]);
+    assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(denied.hookSpecificOutput.additionalContext, /exo:save-session/);
+
+    process.env.EXO_RUN_HANDOFF = path.join(dir, 'handoff.md');
+    assert.equal(dispatchEdit(input('Edit', `${id}-e2`, limit + 1000)).hookSpecificOutput.permissionDecision, 'deny');
+  } finally {
+    if (saved !== undefined) process.env.EXO_RUN_HANDOFF = saved; else delete process.env.EXO_RUN_HANDOFF;
   }
 });

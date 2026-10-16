@@ -1,3 +1,4 @@
 - Skill description matches → invoke it before first tool call or clarifying question; wrong skill → say so, leave it.
+- A skill matching one part of a request takes that part only; dispatch the other parts first.
 - No skill for: version-only bump, git-only operation, read-only question no description claims, edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary. Any size, still: shim-tempting rename or move goes to `refactor`, an unproven failure to `find-cause`, visual change to `design-ui`, test-first request to `build`.
 - An instruction in CLAUDE.md or the prompt outranks a skill.
