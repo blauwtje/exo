@@ -284,7 +284,18 @@ const replayFindings = (repository) => path.join(path.dirname(repository), 'bran
 
 function addReplayWorktree(cell, repository) {
   git(ROOT, ['worktree', 'add', '--detach', repository, cell.replay.head]);
-  const { plan, base, scope } = cell.replay;
+  const { base, scope } = cell.replay;
+  const source = path.resolve(ROOT, cell.replay.plan);
+  if (!fs.existsSync(source)) throw new Error(`replay case ${cell.replay.id}: plan ${source} does not exist`);
+  // The past head has no plan file, so the reviewer reads a copy under the checkout's excluded .exo/.
+  const plan = path.join(repository, '.exo', path.basename(source));
+  fs.mkdirSync(path.dirname(plan), { recursive: true });
+  fs.copyFileSync(source, plan);
+  if (cell.replay.reports) {
+    const kept = path.resolve(ROOT, cell.replay.reports);
+    if (!fs.existsSync(kept)) throw new Error(`replay case ${cell.replay.id}: reports ${kept} does not exist`);
+    for (const name of fs.readdirSync(kept).filter((entry) => /^(implementer-.*\.md|proof-.*\.txt)$/.test(entry))) fs.copyFileSync(path.join(kept, name), path.join(repository, '.exo', name));
+  }
   // A `fix diff` review reads the uncommitted tree, so leave base..head uncommitted.
   if (scope === 'fix diff') git(repository, ['reset', '--quiet', base]);
   return { ...cell, prompt: reviewPrompt({ planPath: plan, root: repository, base, branch: cell.replay.head, scope, findings: replayFindings(repository) }) };

@@ -14,7 +14,7 @@ const COUNT_ENTRY = /(\d+)\s*(defect|concern|question)s?|(defect|concern|questio
 // The reviewer's report opens with its verdict and holds one `Count:` line,
 // read in either order: `1 defect` or `defect: 1`.
 export function parseReview(text) {
-  const verdict = /\b(CLEAN|FIXED|BLOCKED)\b/.exec(text)?.[1] ?? null;
+  const verdict = /\b(CLEAN|FIXED|FINDINGS|BLOCKED)\b/.exec(text)?.[1] ?? null;
   const findings = text.split('\n').flatMap((line) => {
     const match = FINDING_LINE.exec(line);
     if (match === null) return [];

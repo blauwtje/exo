@@ -46,6 +46,7 @@ function reviewDispatch(task) {
     `Review the branch feat/${task.id} of the repository in the current directory.`,
     `Plan: docs/plans/${task.id}.md`,
     'Base: main, for git diff main...HEAD',
+    'Findings path: .git/branch-review.md',
     'Code standard: the checks below',
     `Final verification: \`node --check ${task.file}\` exits 0.`,
     NO_ANSWER
