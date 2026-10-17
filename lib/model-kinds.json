@@ -40,11 +40,6 @@
       "balanced": { "tier": "strong", "effort": "medium" },
       "quality": { "tier": "strong", "effort": "high" }
     },
-    "review-overlap": {
-      "fast": { "tier": "standard", "effort": "medium" },
-      "balanced": { "tier": "standard", "effort": "medium" },
-      "quality": { "tier": "strong", "effort": "high" }
-    },
     "review-deep": {
       "fast": { "tier": "strong", "effort": "low" },
       "balanced": { "tier": "strong", "effort": "high" },
