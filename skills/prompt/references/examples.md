@@ -59,7 +59,7 @@ Dropped: "double-check everything" (generic check); `npm test` is the named chec
 </example>
 
 <example>
-Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work. Both readings stay open and the reply asks nothing; `exo:spec` settles them after the ok. The rewrite keeps "clean up" in the user's words:
+Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work. Both readings stay open and the reply asks nothing; the user can name one in the ok reply; a plain ok runs "clean up" as written. The rewrite keeps "clean up" in the user's words:
 
 ````
 <background>
