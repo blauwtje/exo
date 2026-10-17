@@ -76,6 +76,9 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A task whose Proof runs no test, such as a grep, is no longer test-first, so verify, the branch reviewer and the builder no longer ask it for a new test.
 - Run sessions now check landing and the plan's Land gate before they report done, and task sessions can no longer edit the plan.
 - Pressure runs count tokens over every turn and subagent, and run each session in a git repository, so worktree Agent calls work.
+- The red check stops a base run that outlives the head run by `EXO_RED_BASE_MARGIN_MS` (default 60 s) and counts it as red, so a hung or slow base no longer waits 9 minutes or fails the task.
+- The run log shows weighted session tokens, cache reads at their price weight and output from the result usage, not every turn's whole context summed.
+- A build lead starts no extra session to wait on a run; the run hook wakes it.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.

@@ -5,6 +5,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { loopCommands } from '#plan-tasks';
 import { ECOSYSTEM_MANIFESTS } from '#size-facts';
+import { sumCounts, usageCounts } from '#token-weights';
 
 const KILL_GRACE_MS = 5000;
 const PARENT_POLL_MS = 5000;
@@ -102,9 +103,9 @@ export function parseStream(text) {
   events.filter((event) => event.type === 'assistant' && event.message?.usage).forEach((event, index) => {
     usageByCall.set(event.message.id ?? index, event.message.usage);
   });
-  const tokens = [...usageByCall.values()].reduce((sum, usage) => {
-    return sum + (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0) + (Number(usage.output_tokens) || 0);
-  }, 0);
+  // why: stream assistant events carry a partial output count; the result events' usage holds the real one.
+  const resultOutput = results.reduce((sum, result) => sum + (Number(result.usage?.output_tokens) || 0), 0);
+  const weightedTokens = sumCounts([...usageByCall.values()].map((usage) => ({ ...usageCounts(usage), output: 0 }))).weightedInput + resultOutput;
   const sumField = (field) => {
     const values = [...usageByCall.values()].map((usage) => usage[field]).filter((value) => typeof value === 'number');
     return values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0);
@@ -120,7 +121,7 @@ export function parseStream(text) {
     cost: costs.at(-1) ?? 0,
     peakContext,
     model: typeof init?.model === 'string' ? init.model : null,
-    tokens,
+    weightedTokens,
     cacheRead: sumField('cache_read_input_tokens'),
     cacheWrite: sumField('cache_creation_input_tokens'),
     firstCacheWrite: typeof firstCreation === 'number' ? firstCreation : null,

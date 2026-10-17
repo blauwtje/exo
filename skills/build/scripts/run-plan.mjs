@@ -517,8 +517,8 @@ async function main(argv) {
       say(planLandedLine({ number: n, sha: run.landings.get(n).sha }));
     } else {
       const ms = Math.round(performance.now() - startedTask.mono);
-      landedStats.push({ count: 1, ms, turns: record.turns, tokens: record.tokens, cost: record.cost });
-      say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, tokens: record.tokens, cost: record.cost }));
+      landedStats.push({ count: 1, ms, turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost });
+      say(landedLine({ number: n, sha: run.landings.get(n).sha, ms, turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost }));
     }
     noteTask({ n, subject: taskSubject(plan.tasks.find((entry) => entry.number === n).title), landed: passes.size, total: plan.tasks.length });
     for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
@@ -565,7 +565,7 @@ async function main(argv) {
   };
   const notePlanSession = (record, startedPlan) => {
     if (planLandedCount === 0) return;
-    const entry = { count: planLandedCount, ms: Math.round(performance.now() - startedPlan.mono), turns: record.turns, tokens: record.tokens, cost: record.cost };
+    const entry = { count: planLandedCount, ms: Math.round(performance.now() - startedPlan.mono), turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost };
     landedStats.push(entry);
     say(planSessionLine(entry));
   };
@@ -586,7 +586,7 @@ async function main(argv) {
       const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first, taskCount: order.length });
       sayIdle(startedPlan);
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-      const record = { iteration, task: first, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
+      const record = { iteration, task: first, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
       run.records.push(record);
       lastTask = first;
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
@@ -674,7 +674,7 @@ async function main(argv) {
     fs.rmSync(path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
     if (landedByChangelogScript(task)) {
       iteration -= 1;
-      markLanded(n, { byScript: true, iteration: 0, task: n, turns: 0, tokens: 0, cost: 0, peakContext: 0 }, null);
+      markLanded(n, { byScript: true, iteration: 0, task: n, turns: 0, weightedTokens: 0, cost: 0, peakContext: 0 }, null);
       continue;
     }
     const taskPin = isDocTask(task) && provider.docPin.model !== undefined ? provider.docPin : { model, effort };
@@ -682,7 +682,7 @@ async function main(argv) {
     sayIdle(startedTask);
     writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
     const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-    const record = { iteration, task: n, log, turns: parsed.turns, tokens: parsed.tokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
+    const record = { iteration, task: n, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
     run.records.push(record);
     lastTask = n;
 

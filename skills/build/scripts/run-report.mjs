@@ -48,13 +48,13 @@ export const taskSubject = (heading) => heading.replace(/^\s*\w+(?:\([^)]*\))?!?
 
 export const startLine = ({ number, subject, model, effort }) => `task ${number} start: ${subject} · ${model} ${effort}`;
 
-export const landedLine = ({ number, sha, ms, turns, tokens, cost }) => `task ${number} landed ${sha.slice(0, 7)} · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(tokens)}k tokens · ${money(cost)}`;
+export const landedLine = ({ number, sha, ms, turns, weightedTokens, cost }) => `task ${number} landed ${sha.slice(0, 7)} · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(weightedTokens)}k weighted tokens · ${money(cost)}`;
 
 export const planLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · (plan session)`;
 
 export const scriptLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · by script`;
 
-export const planSessionLine = ({ count, ms, turns, tokens, cost }) => `plan session: ${count} ${count === 1 ? 'task' : 'tasks'} landed · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(tokens)}k tokens · ${money(cost)}`;
+export const planSessionLine = ({ count, ms, turns, weightedTokens, cost }) => `plan session: ${count} ${count === 1 ? 'task' : 'tasks'} landed · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(weightedTokens)}k weighted tokens · ${money(cost)}`;
 
 export function averageLines(landed) {
   if (landed.length === 0) return [];
@@ -62,8 +62,8 @@ export function averageLines(landed) {
   const count = landed.reduce((total, entry) => total + (entry.count ?? 1), 0);
   const mean = (field) => sum(field) / count;
   return [
-    `average per task: ${Math.round(mean('ms') / 1000)}s · ${Math.round(mean('turns'))} turns · ${thousands(mean('tokens'))}k tokens · ${money(mean('cost'))}`,
-    `total: ${thousands(sum('tokens'))}k tokens · ${money(sum('cost'))}`,
+    `average per task: ${Math.round(mean('ms') / 1000)}s · ${Math.round(mean('turns'))} turns · ${thousands(mean('weightedTokens'))}k weighted tokens · ${money(mean('cost'))}`,
+    `total: ${thousands(sum('weightedTokens'))}k weighted tokens · ${money(sum('cost'))}`,
   ];
 }
 

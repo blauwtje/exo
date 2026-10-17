@@ -473,7 +473,7 @@ function redGreenLine(task, proofCommands, root, pending) {
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
   for (const command of proofCommands) {
-    const base = runOnBase({ root, base: 'HEAD', command, overlay, timeoutMs });
+    const base = runOnBase({ root, base: 'HEAD', command, overlay, timeoutMs, headMs: cachedPass(root, command)?.ms });
     sha = base.sha.slice(0, 7);
     if (base.status === 'error') {
       throw new LandingError(`Task ${task.number}: the red-green check of "${command}" on ${sha || 'HEAD'} failed to finish:\n${base.output.trim().split('\n').slice(-PROOF_TAIL_LINES).join('\n')}`);

@@ -8,6 +8,7 @@
 ## Watching the run
 
 - After `run --detach` → end the turn at once; the lead wakes only on park or finish, never to poll.
+- Waiting → start no other session, loop or watcher; the run-watch hook wakes this session.
 - Session with the exo status line → the status line shows progress and a wake prompt arrives when the run stops.
 - Wake names `landed` or `passed` → report the result from the run report.
 - Wake names another phase → read `<run directory>/report.md`; one worktree agent saves the blocked task's partial work to `.exo/carry/task<n>-partial.patch`, resets the run tree, fixes the plan (`node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --loop --run --plan <plan> --root <run worktree>`) or the cause.
