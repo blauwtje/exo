@@ -52,6 +52,8 @@ export const landedLine = ({ number, sha, ms, turns, tokens, cost }) => `task ${
 
 export const planLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · (plan session)`;
 
+export const scriptLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · by script`;
+
 export const planSessionLine = ({ count, ms, turns, tokens, cost }) => `plan session: ${count} ${count === 1 ? 'task' : 'tasks'} landed · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(tokens)}k tokens · ${money(cost)}`;
 
 export function averageLines(landed) {

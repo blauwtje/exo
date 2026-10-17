@@ -23,7 +23,8 @@ import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-confi
 import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
-import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, planLandedLine, planSessionLine, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
+import { landChangelogTask } from './changelog-task.mjs';
+import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, planLandedLine, planSessionLine, scriptLandedLine, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
 
@@ -352,6 +353,7 @@ async function main(argv) {
   const attemptsLeft = () => Math.max(0, provider.attemptCap - failedAttempts);
   // why: a builder the sandbox kept from running its proof could not see the failure, so its first script proof failure is a free try; once per task, so it cannot loop.
   const unprovenRetried = new Set();
+  const scriptTried = new Set();
   const failedSessions = new Map();
   const proofNotRun = (n) => {
     const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
@@ -508,7 +510,9 @@ async function main(argv) {
     passes.add(n);
     fs.rmSync(handoffFile(n), { force: true });
     writeTasks();
-    if (startedTask === null) {
+    if (record.byScript) {
+      say(scriptLandedLine({ number: n, sha: run.landings.get(n).sha }));
+    } else if (startedTask === null) {
       planLandedCount += 1;
       say(planLandedLine({ number: n, sha: run.landings.get(n).sha }));
     } else {
@@ -532,6 +536,11 @@ async function main(argv) {
     lastLandOutput = output;
     lastLandTask = n;
     return { landed: answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n), output, log };
+  };
+  const landedByChangelogScript = (task) => {
+    if (!isDocTask(task) || scriptTried.has(task.number)) return false;
+    scriptTried.add(task.number);
+    return landChangelogTask({ root, task, land: () => landByScript(task.number).landed });
   };
   const landInOrder = (numbers, record, started) => {
     for (const n of numbers) {
@@ -663,6 +672,11 @@ async function main(argv) {
     const prompt = resume === null ? buildPrompt(n, retryNote + handoffNote(n)) : retryNote;
     // why: a report from an earlier try or run process would otherwise stay, and land-task would prove this try from it.
     fs.rmSync(path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
+    if (landedByChangelogScript(task)) {
+      iteration -= 1;
+      markLanded(n, { byScript: true, iteration: 0, task: n, turns: 0, tokens: 0, cost: 0, peakContext: 0 }, null);
+      continue;
+    }
     const taskPin = isDocTask(task) && provider.docPin.model !== undefined ? provider.docPin : { model, effort };
     const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model, sessionEffort: taskPin.effort, resume });
     sayIdle(startedTask);
