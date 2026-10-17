@@ -169,10 +169,13 @@ function checkFilesExist(task, root, byNumber) {
   return problems;
 }
 
-function existingTestsOf(sourcePath, testFiles) {
+// why: `run-` also starts the names of tests of `run-session.mjs`, so a name match counts only when the test, or a helper it imports, names the source file.
+function existingTestsOf(sourcePath, testFiles, root) {
   const base = path.parse(sourcePath).name;
+  const fileName = path.posix.basename(sourcePath);
   return testFiles
     .filter((name) => name === `${base}.test.mjs` || (name.startsWith(`${base}-`) && name.endsWith('.test.mjs')))
+    .filter((name) => testTextsOf(path.join(root, 'tests', name)).some((text) => mentions(text, fileName)))
     .map((name) => `tests/${name}`);
 }
 
@@ -206,14 +209,19 @@ function namesEntry(text, entryPath, otherBasenames) {
   return !otherBasenames.has(base) && mentions(text, base);
 }
 
-// why: a constant bound to import.meta.url or import.meta.dirname, in the test or a helper it imports, points at the repository; any other path is a temp-folder copy.
-function repoPathNames(testPath) {
-  let names = new Set();
+function testTextsOf(testPath) {
   const texts = [fs.readFileSync(testPath, 'utf8')];
   for (const match of texts[0].matchAll(/from\s+'(\.[^']+\.mjs)'/g)) {
     const helper = path.resolve(path.dirname(testPath), match[1]);
     if (fs.existsSync(helper)) texts.push(fs.readFileSync(helper, 'utf8'));
   }
+  return texts;
+}
+
+// why: a constant bound to import.meta.url or import.meta.dirname, in the test or a helper it imports, points at the repository; any other path is a temp-folder copy.
+function repoPathNames(testPath) {
+  let names = new Set();
+  const texts = testTextsOf(testPath);
   const bindings = texts.flatMap((text) => [...text.matchAll(/(?:const|let)\s+(\w+)\s*=\s*([^;\n]*)/g)].map((match) => [match[1], match[2]]));
   for (;;) {
     const next = new Set(bindings.filter(([, value]) => pointsAtRepository(value, names)).map(([name]) => name));
@@ -271,7 +279,7 @@ function checkUnlistedTests(task, root) {
   const sources = task.files.filter((file) => file.kind !== 'Create' && !file.path.endsWith('/') && !file.path.endsWith('.test.mjs') && file.path !== 'CHANGELOG.md');
   const problems = [];
   for (const source of sources) {
-    const tests = existingTestsOf(source.path, testFiles);
+    const tests = existingTestsOf(source.path, testFiles, root);
     if (tests.length === 0 || tests.some((testPath) => isCovered(listed, testPath))) continue;
     problems.push(`Task ${task.number}: Files: \`${source.path}\` has existing tests ${tests.map((testPath) => `\`${testPath}\``).join(', ')} and lists none of them`);
   }
