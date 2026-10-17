@@ -491,8 +491,15 @@ async function main(argv) {
     return undefined;
   };
   const repairThenLand = async (n, reason, landing) => {
+    const redInputs = () => JSON.stringify((({ proof, runs, red }) => [proof, runs, red])(plan.tasks.find((entry) => entry.number === n)));
+    const inputsBefore = redInputs();
     const stopped = await repairOrBlock(n, reason);
-    if (stopped !== undefined || !landByScript(n).landed) return stopped;
+    if (stopped !== undefined) return stopped;
+    if (reason.includes('no red proof') && redInputs() === inputsBefore) {
+      say(`task ${n} land check skipped: the repair left Proof and Red unchanged`);
+      return undefined;
+    }
+    if (!landByScript(n).landed) return stopped;
     markLanded(n, landing.record, landing.started);
     return undefined;
   };
