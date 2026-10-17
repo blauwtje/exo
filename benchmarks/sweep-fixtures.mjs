@@ -171,7 +171,7 @@ export function reviewPlanText(task) {
     '',
     '## Context',
     '',
-    `- \`${task.file}\` is the only module of this repository.`,
+    `- \`${task.file}\` is the only module of this repository. main holds no code yet, so the branch adds the whole module, including the parts the Goal calls existing.`,
     '',
     '## Final verification',
     '',
