@@ -28,6 +28,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A headless run lands a closing task that only adds one changelog line by script, without a model session.
 - A headless run builds doc-only tasks one model tier lower, reruns a red Proof at most once per edit and logs the model of each session and the finding count of each review; the lead ends its turn after starting a detached run.
 - `npm run check` keeps only the tests that guard against real damage and drops the verifier self-test.
+- `exo:prompt` rewrites ask for evidence of success, give each added line a short reason, add a review rule, guard tests in change and build prompts, keep a "start your answer with" ask as a format line and keep the pasted-text id on long documents; the keep-working line goes in only when no one will be there to answer, and four examples sit in `skills/prompt/references/examples.md`.
 - CI pins each GitHub Action to a commit SHA.
 - The javascript syntax check parses scripts in parallel and skips git-ignored folders such as `tmp/`.
 - A headless run passes `--exclude-dynamic-system-prompt-sections` to each session, so the system prompt caches across sessions.
