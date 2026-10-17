@@ -36,7 +36,7 @@ const LIMITATIONS = [
   'Safe means the one adversarial input set in benchmarks/safe/<task>/check.mjs was refused; it is not a fuzzing guarantee.',
   'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell, main thread and subagents, from its usage.json; cost is Claude Code\'s client-side list-price estimate over every model; time is duration_ms.',
   'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.',
-  'A published ratio is 1 − E/B for arm means E and B, and its spread is its standard error √(sd_E²/n_E + (E/B)²·sd_B²/n_B) / B; a negative ratio means the exo arm used more than the baseline.',
+  'A published ratio is 1 − E/B for arm means E and B, and its spread is its spread over tasks √(Σ(E_t − R·B_t)² / (T·(T − 1))) / mean B_t for task means E_t and B_t and R = ΣE_t / ΣB_t; a negative ratio means the exo arm used more than the baseline.',
   'The line per arm counts the template cells whose session context carried the exo rules (exoLoaded in checks.json, counted over the cells that recorded it), and the cost per correct cell per model.'
 ];
 const VALUE_LIMITATIONS = [
@@ -49,7 +49,7 @@ const VALUE_LIMITATIONS = [
 const FLOW_LIMITATIONS = [
   'Hidden check is benchmarks/flow-check.mjs run against the branch the cell left; a record from before the hidden check drops out of the landed, hidden pass and defects figures only.',
   'Tokens are weighted as token-weights.mjs weights them; cost is costUsd and wall time wallMs of the cell\'s record.json. Cost per success is the arm\'s total cost over its hidden-check passes.',
-  'The pass-rate difference carries two standard errors and `exo better` is printed only when the difference exceeds them.',
+  'The pass-rate difference is judged by Agresti-Caffo, one pass and one fail added per arm; `exo better` is printed only when the adjusted difference exceeds its two standard errors.',
   'A flow meta.json names no plugin commit; the exo arms load the plugin from the checkout the sweep ran in.',
   'A flow run has no template cut to compute, so this file records no measured cuts.'
 ];
@@ -125,6 +125,12 @@ function subagentCells(cells) {
   return counts;
 }
 
+function taskMeans(cells, metric) {
+  const byTask = new Map();
+  for (const cell of cells) byTask.set(cell.task, [...(byTask.get(cell.task) ?? []), cellMetrics(cell)[metric]]);
+  return new Map([...byTask].map(([task, values]) => [task, meanAndSd(values).mean]));
+}
+
 // Tokens are read from usage.json only, so a cell without one stops the score
 // rather than falling back to the main thread's usage and mixing two bases.
 function summarizeArm(cells) {
@@ -134,6 +140,8 @@ function summarizeArm(cells) {
   const measured = measuredCells.map(cellMetrics);
   const summary = {};
   for (const metric of METRICS) summary[metric] = meanAndSd(measured.map((row) => row[metric]));
+  summary.taskMeans = {};
+  for (const metric of METRICS) summary.taskMeans[metric] = taskMeans(measuredCells, metric);
   const template = cells.filter((cell) => cell.checks.tier === 'template');
   const safe = cells.filter((cell) => cell.checks.tier === 'safe');
   // A safe-tier arm has no template cells; its passes are the cells that held `checks.safe`.
@@ -167,10 +175,23 @@ const FORMAT = {
   time: (value) => minutes(value)
 };
 
+function spreadDecimals(spread) {
+  if (spread === null || spread === 0) return 2;
+  const twoDigits = Number(spread.toPrecision(2));
+  return Math.max(2, 1 - Math.floor(Math.log10(twoDigits)));
+}
+
+function costWithSpread(mean, spread) {
+  const decimals = spreadDecimals(spread);
+  const text = mean.toFixed(decimals);
+  return spread === null ? `$${text}` : `$${text} ±${spread.toFixed(decimals)}`;
+}
+
 function absolute(metric, stat) {
   if (stat.mean === null) return '-';
-  const spread = metric === 'cost' ? stat.sd.toFixed(2) : FORMAT[metric](stat.sd);
-  return `${FORMAT[metric](stat.mean)} ±${spread}`;
+  if (stat.sd === null) return `${FORMAT[metric](stat.mean)} (n=1)`;
+  if (metric === 'cost') return costWithSpread(stat.mean, stat.sd);
+  return `${FORMAT[metric](stat.mean)} ±${FORMAT[metric](stat.sd)}`;
 }
 
 function relative(stat, baseline) {
@@ -185,7 +206,7 @@ function rate({ pass, total }) {
 
 // Every arm shows its mean and spread; an arm beside a baseline adds its change against it.
 function tableLines(meta, summaries) {
-  const header = `model ${meta.model} · Claude Code ${meta.claudeVersion} · fixture ${meta.fixture.name}@${meta.fixture.commit} · n=${meta.runs} · ${meta.date}`;
+  const header = `model ${meta.model} · Claude Code ${meta.claudeVersion} · fixture ${meta.fixture.name}@${meta.fixture.commit} · n=${meta.runs} · ${meta.date} · mean ±standard deviation`;
   const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct | cost / success |', '|---|---|---|---|---|---|---|---|'];
   const baseline = summaries.baseline;
   for (const [arm, summary] of Object.entries(summaries)) {
@@ -223,7 +244,8 @@ const VALUE_FORMAT = {
 
 function meanWithError(values) {
   const stat = meanAndSd(values.filter((value) => value !== null));
-  return stat.n === 0 ? null : { mean: stat.mean, error: stat.sd / Math.sqrt(stat.n) };
+  if (stat.n === 0) return null;
+  return { mean: stat.mean, error: stat.sd === null ? null : stat.sd / Math.sqrt(stat.n) };
 }
 
 // One row per task and arm. A cell whose check.mjs broke (harnessError) is a
@@ -245,7 +267,9 @@ function valueLines(meta, cells) {
     const scored = group.filter((cell) => cell.checks.harnessError === undefined);
     const columns = Object.entries(VALUE_METRICS).map(([metric, read]) => {
       const stat = meanWithError(scored.map(read));
-      return stat === null ? '-' : `${VALUE_FORMAT[metric](stat.mean)} ±${VALUE_FORMAT[metric](stat.error)}`;
+      if (stat === null) return '-';
+      if (metric === 'cost' && stat.error !== null) return costWithSpread(stat.mean, stat.error).replace(' ±', ' ±$');
+      return stat.error === null ? `${VALUE_FORMAT[metric](stat.mean)} (n=1)` : `${VALUE_FORMAT[metric](stat.mean)} ±${VALUE_FORMAT[metric](stat.error)}`;
     });
     lines.push(`| ${task} | ${arm} | ${scored.length} | ${group.length - scored.length} | ${columns.join(' | ')} | ${dollars(costPerSuccess(scored, (cell) => cell.checks.pass))} |`);
   }
@@ -256,11 +280,18 @@ function roundedCent(value) {
   return Math.round(value * 100) / 100;
 }
 
-// The standard error of 1 − E/B, from the standard errors of both arm means.
-function cutError(exo, baseline) {
-  const exoVariance = exo.sd ** 2 / exo.n;
-  const baselineVariance = (exo.mean / baseline.mean) ** 2 * baseline.sd ** 2 / baseline.n;
-  return Math.sqrt(exoVariance + baselineVariance) / baseline.mean;
+function roundedMilli(value) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function taskCut(exoTasks, baselineTasks) {
+  const pairs = [...exoTasks].filter(([task]) => baselineTasks.has(task)).map(([task, exo]) => [exo, baselineTasks.get(task)]);
+  const exoTotal = pairs.reduce((total, [exo]) => total + exo, 0);
+  const baselineTotal = pairs.reduce((total, [, baseline]) => total + baseline, 0);
+  const ratio = exoTotal / baselineTotal;
+  if (pairs.length < 2) return { cut: 1 - ratio, spread: null };
+  const squares = pairs.reduce((total, [exo, baseline]) => total + (exo - ratio * baseline) ** 2, 0);
+  return { cut: 1 - ratio, spread: Math.sqrt(squares / (pairs.length * (pairs.length - 1))) / (baselineTotal / pairs.length) };
 }
 
 // A negative cut is a measured cost of exo, so it is never floored at zero.
@@ -273,8 +304,9 @@ function ratiosFrom(summaries, meta, resultsFile) {
   const keys = { lines: 'loc', tokens: 'tokens', cost: 'cost', time: 'time' };
   for (const [name, metric] of Object.entries(keys)) {
     if (exo[metric].mean === null || baseline[metric].mean === null) throw new Error(`--publish needs correct template cells in both arms for ${metric}`);
-    ratios[name] = roundedCent(1 - exo[metric].mean / baseline[metric].mean);
-    spread[name] = roundedCent(cutError(exo[metric], baseline[metric]));
+    const { cut, spread: error } = taskCut(exo.taskMeans[metric], baseline.taskMeans[metric]);
+    ratios[name] = roundedCent(cut);
+    spread[name] = error === null ? null : roundedMilli(error);
   }
   ratios.spread = spread;
   const taskCount = new Set(meta.tasks).size;

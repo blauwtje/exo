@@ -81,7 +81,7 @@ The harness writes `.claude/exo.local.json` as `{ "workspace": "current", "ship"
 `checks.json` holds `pass`, `defects`, `total`, `detail`, `loc` (code lines added and removed against the start state, tests apart), `wallMs` and `worktreesLeft` (build worktrees a cut-off session left, removed and not scored), or `harnessError` in place of the verdict. A run keys cells by task, arm and run, so give each model its own `--out`.
 
 ```bash
-node benchmarks/run.mjs --tier value --arms baseline,exo --model sonnet --runs 2 --dry-run   # one argv line per cell, then the cell count and projected cost; no session
+node benchmarks/run.mjs --tier value --arms baseline,exo --model sonnet --runs 2 --dry-run   # one argv line per cell, then the cell count, projected cost and projected time; no session
 node benchmarks/run.mjs --tasks value-<slug> --arms baseline,exo --model sonnet --runs 4 --out benchmarks/runs/<dir>
 node benchmarks/score.mjs benchmarks/runs/<dir>   # one row per task and arm: pass rate, defects, LOC, tokens, cost and wall time, each mean with its standard error
 ```

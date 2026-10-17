@@ -47,7 +47,7 @@ The numbers are what `node benchmarks/score.mjs <dir>` prints for each run direc
 
 ## Limitations
 
-- n=5 per arm and version. A move from 0 of 5 to 1 of 5 is a 20-point change; nothing smaller than that can show.
+- n=5 per arm and version. A move from 0 of 5 to 1 of 5 is a 20-point change and within noise. At n=5 only an 80-point gap, such as 0 of 5 against 4 of 5, shows a difference by Agresti-Caffo at 2 SE.
 - One task, one fixture. `value-test-pollution` says nothing about other bugs.
 - The versions are not independent. They share the model, the fixture, the day, and mostly the same skill text; v3 to v7 are successive edits to the same skill, each run on this task.
 - The baseline arm is not a fixed control across runs: it passed 1 of 5 in v1 and 0 of 5 in v2 to v7, and its tokens and cost differ between runs, which is the noise level of this measure.

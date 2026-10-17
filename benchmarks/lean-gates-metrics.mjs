@@ -740,7 +740,7 @@ export function markdownTable(metrics) {
     for (const [metric, summary] of Object.entries(stats)) {
       if (metric === 'runs' || metric === 'excluded') continue;
       const show = format[metric] ?? ((value) => (value == null ? '-' : Number(value.toFixed(2)).toString()));
-      rows.push(`| ${version} | ${metric}${metric === 'wallMs' ? ' (min)' : metric === 'totalTokens' ? ' (M)' : ''} | ${show(summary.median)} | ${show(summary.min)}-${show(summary.max)} | ${show(summary.mean)} ± ${show(summary.sd)} | ${summary.n} |`);
+      rows.push(`| ${version} | ${metric}${metric === 'wallMs' ? ' (min)' : metric === 'totalTokens' ? ' (M)' : ''} | ${show(summary.median)} | ${show(summary.min)}-${show(summary.max)} | ${show(summary.mean)}${summary.n === 1 ? ' (n=1)' : ` ± ${show(summary.sd)}`} | ${summary.n} |`);
     }
     const { incomplete = [], transcriptMissing = [] } = stats.excluded ?? {};
     rows.push(`| ${version} | excluded | incomplete ${incomplete.length} (all metrics); transcript missing ${transcriptMissing.length} (tokens, $ transcript) | ${[...new Set([...incomplete, ...transcriptMissing])].join(', ') || '-'} | | |`);

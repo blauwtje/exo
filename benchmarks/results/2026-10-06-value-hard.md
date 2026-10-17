@@ -6,7 +6,7 @@ Measured on the two tasks left after piloting 13 value tasks against the baselin
 node benchmarks/run.mjs --tasks value-test-pollution,value-context-guards --arms baseline,exo --model sonnet --runs 5 --concurrency 2 --out benchmarks/runs/2026-10-06-value-phase2
 ```
 
-A cell passes when the task's hidden `check.mjs` finds no defect. `Tokens` is weighted input plus output from the cell's `usage.json`, weighted as `score.mjs` weights them. `Cost` is `total_cost_usd`. `Wall` is `wallMs` from `checks.json`. Tokens and wall are mean ± sample standard deviation over 5 runs. Cost is the mean per cell, because the scorer printed no standard deviation for it.
+A cell passes when the task's hidden `check.mjs` finds no defect. `Tokens` is weighted input plus output from the cell's `usage.json`, weighted as `score.mjs` weights them. `Cost` is `total_cost_usd`. `Wall` is `wallMs` from `checks.json`. Tokens and wall are mean ± sample standard deviation over 5 runs. Cost is the mean per cell, because the scorer printed only its standard error, rounded to cents.
 
 The decision rule was fixed before the run. On a task, exo counts as better only if its pass rate beats the baseline's by more than 2 standard errors of the difference. With the baseline at 0/5, exo needs at least 3/5.
 

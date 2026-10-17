@@ -104,14 +104,15 @@ function rank(id) {
   return id === BASELINE_ARM ? 1 : 2;
 }
 
-// The pass-rate difference between two arms with two standard errors of it.
 export function passDifference(exo, baseline) {
   if (exo === undefined || baseline === undefined || exo.checked === 0 || baseline.checked === 0) return null;
-  const exoRate = exo.passes / exo.checked;
-  const baselineRate = baseline.passes / baseline.checked;
-  const standardError = Math.sqrt(exoRate * (1 - exoRate) / exo.checked + baselineRate * (1 - baselineRate) / baseline.checked);
-  const difference = exoRate - baselineRate;
-  return { difference, twoStandardErrors: 2 * standardError, better: difference > 2 * standardError };
+  const exoRate = (exo.passes + 1) / (exo.checked + 2);
+  const baselineRate = (baseline.passes + 1) / (baseline.checked + 2);
+  const standardError = Math.sqrt(exoRate * (1 - exoRate) / (exo.checked + 2) + baselineRate * (1 - baselineRate) / (baseline.checked + 2));
+  const difference = exo.passes / exo.checked - baseline.passes / baseline.checked;
+  const adjustedDifference = exoRate - baselineRate;
+  const twoStandardErrors = 2 * standardError;
+  return { difference, adjustedDifference, twoStandardErrors, better: adjustedDifference > twoStandardErrors };
 }
 
 function fixed(value, digits) {
@@ -148,7 +149,7 @@ export function flowReport(records) {
   if (compared.length === 0) {
     lines.push(`Pass-rate difference (${EXO_ARM[0]} minus ${BASELINE_ARM}): not computable, an arm has no hidden-check result.`, 'not better');
   } else {
-    for (const [id, comparison] of compared) lines.push(`Pass-rate difference (${id} minus ${BASELINE_ARM}): ${fixed(comparison.difference, 3)}, 2 SE ${fixed(comparison.twoStandardErrors, 3)}`);
+    for (const [id, comparison] of compared) lines.push(`Pass-rate difference (${id} minus ${BASELINE_ARM}): ${fixed(comparison.difference, 3)}; Agresti-Caffo ${fixed(comparison.adjustedDifference, 3)}, 2 SE ${fixed(comparison.twoStandardErrors, 3)}`);
     lines.push(compared.some(([, comparison]) => comparison.better) ? 'exo better' : 'not better');
   }
   return lines.join('\n');

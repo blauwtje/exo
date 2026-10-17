@@ -221,23 +221,47 @@ export function linkedWorktrees(repo) {
 // run's meta.json records; a run whose meta.json has no effort key (an older
 // run) is left out, since its effort is unknown.
 function pastCellCosts(runsDirectory) {
-  const costs = new Map();
-  if (!fs.existsSync(runsDirectory)) return costs;
+  return pastCellMeans(runsDirectory, (checks, cellDirectory) => {
+    const resultFile = path.join(cellDirectory, 'result.json');
+    return fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')).total_cost_usd : undefined;
+  });
+}
+
+function pastCellWalls(runsDirectory) {
+  return pastCellMeans(runsDirectory, (checks) => checks.wallMs);
+}
+
+function pastCellMeans(runsDirectory, valueOf) {
+  const values = new Map();
+  if (!fs.existsSync(runsDirectory)) return values;
   for (const file of fs.readdirSync(runsDirectory, { recursive: true })) {
     if (path.basename(file) !== 'checks.json') continue;
-    const resultFile = path.join(runsDirectory, path.dirname(file), 'result.json');
-    if (!fs.existsSync(resultFile)) continue;
-    const cost = JSON.parse(fs.readFileSync(resultFile, 'utf8')).total_cost_usd;
-    if (typeof cost !== 'number') continue;
+    const checks = JSON.parse(fs.readFileSync(path.join(runsDirectory, file), 'utf8'));
+    const value = valueOf(checks, path.join(runsDirectory, path.dirname(file)));
+    if (typeof value !== 'number') continue;
     const metaFile = path.join(runsDirectory, file.split(path.sep)[0], 'meta.json');
     if (!fs.existsSync(metaFile)) continue;
     const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
     if (!('effort' in meta)) continue;
-    const checks = JSON.parse(fs.readFileSync(path.join(runsDirectory, file), 'utf8'));
     const key = `${checks.task}\t${checks.arm}\t${checks.model}\t${meta.effort}`;
-    costs.set(key, [...(costs.get(key) ?? []), cost]);
+    values.set(key, [...(values.get(key) ?? []), value]);
   }
-  return new Map([...costs].map(([key, values]) => [key, values.reduce((sum, value) => sum + value, 0) / values.length]));
+  return new Map([...values].map(([key, list]) => [key, list.reduce((sum, value) => sum + value, 0) / list.length]));
+}
+
+export function projectTime(cells, runsDirectory, effort) {
+  const past = pastCellWalls(runsDirectory);
+  const projection = { totalMs: 0, fromRuns: 0, unknown: 0 };
+  for (const { task, arm, modelId } of cells) {
+    const key = `${task.id}\t${arm}\t${modelId}\t${effort}`;
+    if (past.has(key)) {
+      projection.totalMs += past.get(key);
+      projection.fromRuns += 1;
+    } else {
+      projection.unknown += 1;
+    }
+  }
+  return projection;
 }
 
 // Each planned cell ({ task, arm, modelId }) costs the mean of its finished

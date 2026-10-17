@@ -31,9 +31,10 @@ import { exoLoaded, writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { confinedClaude } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { withoutParentSession } from './lean-gates.mjs';
+import { pluginDirty } from './plugin-state.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
-import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -368,7 +369,7 @@ function costGate(options, cellCount) {
 
 // Prints one line per cell: the environment additions, then the argv; then the
 // cell count and projected cost. Starts no session and builds no cell.
-function printDryRun(cells, effort) {
+function printDryRun(cells, effort, concurrency) {
   for (const cell of cells) {
     const environment = Object.entries(cellIsolation(cell.task)).map(([name, value]) => `${name}=${value}`);
     const arm = ARMS[cell.arm];
@@ -378,8 +379,12 @@ function printDryRun(cells, effort) {
     const { command, args } = cellCommand(cell.arm, cell.task, cell.model, effort, labels);
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, command, ...args.map((argument) => JSON.stringify(argument))].join(' ')}`);
   }
-  const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS, effort);
+  const planned = cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] }));
+  const projection = projectCost(planned, RUNS, effort);
   console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default); ${projection.fromFallback} cells use a fallback that does not match model and effort`);
+  const time = projectTime(planned, RUNS, effort);
+  const cellMinutes = time.totalMs / 60000;
+  console.log(`projected ${cellMinutes.toFixed(1)} min of cell time, about ${(cellMinutes / concurrency).toFixed(1)} min at --concurrency ${concurrency} (${time.fromRuns} from past runs, ${time.unknown} with no past time)`);
 }
 
 function requirePluginDirectories(arms) {
@@ -425,7 +430,7 @@ async function main() {
     runPlanPath(cell.task);
   }
   if (options.dryRun) {
-    printDryRun(cells, options.effort);
+    printDryRun(cells, options.effort, options.concurrency);
     return;
   }
   requirePluginDirectories(options.arms);
@@ -438,7 +443,8 @@ async function main() {
   fs.writeFileSync(path.join(runDirectory, 'meta.json'), `${JSON.stringify({
     date, mode: options.mode, model: MODELS[options.model], claudeVersion: claudeVersion(), node: process.version,
     fixture: FIXTURE, arms: options.arms, tasks: options.tasks, runs: options.runs, cells: cells.length,
-    effort: options.effort, pluginCommits: pluginCommits(options.arms)
+    effort: options.effort, pluginCommits: pluginCommits(options.arms),
+    pluginDirty: pluginDirty(Object.keys(pluginCommits(options.arms)))
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;

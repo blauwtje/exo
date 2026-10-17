@@ -80,6 +80,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The red check stops a base run that outlives the head run by `EXO_RED_BASE_MARGIN_MS` (default 60 s) and counts it as red, so a hung or slow base no longer waits 9 minutes or fails the task.
 - The run log shows weighted session tokens, cache reads at their price weight and output from the result usage, not every turn's whole context summed.
 - A build lead starts no extra session to wait on a run; the run hook wakes it.
+- Benchmark checks judge small samples soundly: Agresti-Caffo pass-rate gaps, no ±0 for one cell, a per-task cut spread and cost printed to its spread; dry-runs and the sweep plan project time and cost, and run meta records a dirty plugin tree.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.
