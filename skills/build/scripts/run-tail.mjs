@@ -187,6 +187,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   if (criterionStop !== null) return { stop: criterionStop };
   const reviewedTree = workingTreeKey(root);
   const { review: branchReview, overlaps } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
+  const reviewModel = agentModel();
   const dispatches = [
     ...(branchReview === null ? [] : [{ task: null, name: 'branch', key: BRANCH_REVIEW_KEY, model: agentModel(branchReview.kind), findings: path.join(exo, 'review-branch.md'), scope: `branch ${branchReview.range}`, questions: BRANCH_QUESTIONS }]),
     ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel('review-overlap'), findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
@@ -253,7 +254,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       }
       fs.rmSync(fixReview, { force: true });
       say('fix review start');
-      const second = await runSession({ kind: 'review', task: null, model: agentModel('review-overlap'), prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
+      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
       if (second.stop !== undefined) return { result: shelved(second.stop) };
       const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
       const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
