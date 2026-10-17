@@ -84,6 +84,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A build lead starts no extra session to wait on a run; the run hook wakes it.
 - Benchmark checks judge small samples soundly: Agresti-Caffo pass-rate gaps, no ±0 for one cell, a per-task cut spread and cost printed to its spread; dry-runs and the sweep plan project time and cost, and run meta records a dirty plugin tree.
 - The plan check pairs a file with a name-matched test only when the test names that file, so a `benchmarks/run.mjs` edit no longer demands the `run-session` tests.
+- Benchmark forecasts say unknown or at least, not $0.00 or 0.0 min, for cells with no past record, and a published cut with no task in both arms stops with an error.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.

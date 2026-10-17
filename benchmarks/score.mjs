@@ -284,8 +284,9 @@ function roundedMilli(value) {
   return Math.round(value * 1000) / 1000;
 }
 
-function taskCut(exoTasks, baselineTasks) {
+function taskCut(exoTasks, baselineTasks, metric) {
   const pairs = [...exoTasks].filter(([task]) => baselineTasks.has(task)).map(([task, exo]) => [exo, baselineTasks.get(task)]);
+  if (pairs.length === 0) throw new Error(`--publish needs a task with correct template cells in both arms for ${metric}`);
   const exoTotal = pairs.reduce((total, [exo]) => total + exo, 0);
   const baselineTotal = pairs.reduce((total, [, baseline]) => total + baseline, 0);
   const ratio = exoTotal / baselineTotal;
@@ -304,7 +305,7 @@ function ratiosFrom(summaries, meta, resultsFile) {
   const keys = { lines: 'loc', tokens: 'tokens', cost: 'cost', time: 'time' };
   for (const [name, metric] of Object.entries(keys)) {
     if (exo[metric].mean === null || baseline[metric].mean === null) throw new Error(`--publish needs correct template cells in both arms for ${metric}`);
-    const { cut, spread: error } = taskCut(exo.taskMeans[metric], baseline.taskMeans[metric]);
+    const { cut, spread: error } = taskCut(exo.taskMeans[metric], baseline.taskMeans[metric], metric);
     ratios[name] = roundedCent(cut);
     spread[name] = error === null ? null : roundedMilli(error);
   }

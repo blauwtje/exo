@@ -26,7 +26,7 @@ function pastRecords(runsRoot) {
 
 export function projectSweep(cellIds, runsRoot) {
   const past = pastRecords(runsRoot);
-  const projection = { costUsd: 0, wallMs: 0, fromRecords: 0, unknown: 0, unreadable: past.unreadable };
+  const projection = { costUsd: 0, wallMs: 0, fromRecords: 0, unknown: 0, costUnknown: 0, unreadable: past.unreadable };
   for (const id of cellIds) {
     const records = past.byId.get(id) ?? [];
     const cost = mean(records.map((record) => record.costUsd).filter((value) => typeof value === 'number'));
@@ -36,8 +36,16 @@ export function projectSweep(cellIds, runsRoot) {
       continue;
     }
     projection.fromRecords += 1;
+    if (cost === null) projection.costUnknown += 1;
     projection.costUsd += cost ?? 0;
     projection.wallMs += wall ?? 0;
   }
   return projection;
+}
+
+export function sweepProjectionLine(projection, cellCount) {
+  if (projection.fromRecords === 0) return `projected cost and time unknown: none of the ${cellCount} cells has a past record`;
+  const costBound = projection.unknown + projection.costUnknown > 0 ? 'at least ' : '';
+  const timeBound = projection.unknown > 0 ? 'at least ' : '';
+  return `projected ${costBound}$${projection.costUsd.toFixed(2)} and ${timeBound}${(projection.wallMs / 60000).toFixed(1)} min of cell time from past records (${projection.fromRecords} of ${cellCount} cells; ${projection.unknown} have no past record; ${projection.costUnknown} have no past cost; ${projection.unreadable} unreadable record.json skipped)`;
 }

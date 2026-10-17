@@ -264,6 +264,13 @@ export function projectTime(cells, runsDirectory, effort) {
   return projection;
 }
 
+export function projectedTimeLine(projection, cellCount, concurrency) {
+  if (projection.fromRuns === 0) return `projected time unknown: none of the ${cellCount} cells has a past time`;
+  const bound = projection.unknown > 0 ? 'at least ' : '';
+  const cellMinutes = projection.totalMs / 60000;
+  return `projected ${bound}${cellMinutes.toFixed(1)} min of cell time, about ${bound}${(cellMinutes / concurrency).toFixed(1)} min at --concurrency ${concurrency} (${projection.fromRuns} from past runs, ${projection.unknown} with no past time)`;
+}
+
 // Each planned cell ({ task, arm, modelId }) costs the mean of its finished
 // twins at the same effort (null for the default) under runsDirectory, else its
 // task's estimateUsd, else the default. fromFallback counts the cells priced by

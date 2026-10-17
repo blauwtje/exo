@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { projectCost, projectTime } from '../benchmarks/value.mjs';
+import { projectCost, projectedTimeLine, projectTime } from '../benchmarks/value.mjs';
 
 function writeCell(runs, run, { meta, cost, wallMs }) {
   const cell = path.join(runs, run, 'task-a', 'exo', '1');
@@ -37,4 +37,11 @@ test('projectTime sums past mean wallMs at the same effort and counts unknown ce
   const other = projectTime(cells, runs, 'high');
   assert.equal(other.totalMs, 0);
   assert.equal(other.unknown, 1);
+});
+
+test('projectedTimeLine says unknown with no past time and at least with some unknown', () => {
+  assert.equal(projectedTimeLine({ totalMs: 0, fromRuns: 0, unknown: 26 }, 26, 2), 'projected time unknown: none of the 26 cells has a past time');
+  const partial = projectedTimeLine({ totalMs: 120000, fromRuns: 1, unknown: 1 }, 2, 2);
+  assert.equal(partial, 'projected at least 2.0 min of cell time, about at least 1.0 min at --concurrency 2 (1 from past runs, 1 with no past time)');
+  assert.doesNotMatch(projectedTimeLine({ totalMs: 120000, fromRuns: 2, unknown: 0 }, 2, 2), /at least/);
 });

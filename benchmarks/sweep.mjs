@@ -30,7 +30,7 @@ import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
 import { claudeArguments, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
-import { projectSweep } from './sweep-projection.mjs';
+import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
 import { applyVariant } from './variants.mjs';
@@ -416,7 +416,7 @@ async function main() {
   for (const cell of cells) console.log(`  ${cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (!options.confirm) {
     const projection = projectSweep(cells.map((cell) => cell.id), RUNS);
-    console.log(`projected $${projection.costUsd.toFixed(2)} and ${(projection.wallMs / 60000).toFixed(1)} min of cell time from past records (${projection.fromRecords} of ${cells.length} cells; ${projection.unknown} have no past record; ${projection.unreadable} unreadable record.json skipped)`);
+    console.log(sweepProjectionLine(projection, cells.length));
     console.log('Every call is billed. Re-run with --confirm to start them.');
     process.exitCode = 2;
     return;

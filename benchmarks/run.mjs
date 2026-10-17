@@ -34,7 +34,7 @@ import { withoutParentSession } from './lean-gates.mjs';
 import { pluginDirty } from './plugin-state.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
-import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -383,8 +383,7 @@ function printDryRun(cells, effort, concurrency) {
   const projection = projectCost(planned, RUNS, effort);
   console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default); ${projection.fromFallback} cells use a fallback that does not match model and effort`);
   const time = projectTime(planned, RUNS, effort);
-  const cellMinutes = time.totalMs / 60000;
-  console.log(`projected ${cellMinutes.toFixed(1)} min of cell time, about ${(cellMinutes / concurrency).toFixed(1)} min at --concurrency ${concurrency} (${time.fromRuns} from past runs, ${time.unknown} with no past time)`);
+  console.log(projectedTimeLine(time, cells.length, concurrency));
 }
 
 function requirePluginDirectories(arms) {
