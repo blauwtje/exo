@@ -499,7 +499,11 @@ async function main(argv) {
       say(`task ${n} land check skipped: the repair left Proof and Red unchanged`);
       return undefined;
     }
-    if (!landByScript(n).landed) return stopped;
+    const rechecked = landByScript(n);
+    if (!rechecked.landed) {
+      say(`task ${n} not landed by the script: ${clip(failingLine(rechecked.output), 80)}`);
+      return stopped;
+    }
     markLanded(n, landing.record, landing.started);
     return undefined;
   };

@@ -49,6 +49,8 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:prompt` asks no questions before its rewrite; an unclear point stays open in your words, and your ok runs the rewrite as written, without `exo:spec`.
 
 ### Fixed
+- A run now logs `task <n> not landed by the script` when the land check it reruns after a plan repair fails, instead of saying nothing until the next session.
+- A benchmark flow-run's confined `claude` now ends when the process that started it dies without a signal, instead of running on under pid 1; the wrapper checks its parent every `EXO_PARENT_POLL_MS` (default 1000).
 - A run no longer repeats the red check after a no-red repair that left the Proof and `Red:` unchanged; the task runs again at once.
 - The benchmark dry-run projects cost per effort level and counts cells priced from a fallback that does not match model and effort.
 - A plan session that lands several tasks now counts once in the `total:` and `average per task` lines of a run, not once per task.

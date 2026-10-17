@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { confinedClaude } from '#confine-claude';
+import { environmentMs } from '#script-flags';
 
 // run-plan starts each session in `--permission-mode dontAsk` with Claude Code's
 // sandbox in `--settings`. confinedClaude picks its own permission mode and runs
@@ -18,6 +19,9 @@ import { confinedClaude } from '#confine-claude';
 // pairs are dropped; `--allowedTools` and the deny list stay, and the OS
 // profile is the only boundary.
 const DROPPED = new Set(['--permission-mode', '--settings']);
+
+// why: a parent killed by SIGKILL, or crashed, sends this wrapper no signal, so it polls for the parent's pid changing.
+const PARENT_POLL_MS = 1000;
 
 function withoutDropped(args) {
   const kept = [];
@@ -40,6 +44,10 @@ function main() {
   const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: 'inherit' });
   for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(signal, () => child.kill(signal));
   child.on('close', (code, signal) => process.exit(code ?? (signal === null ? 1 : 128)));
+  const parent = process.ppid;
+  setInterval(() => {
+    if (process.ppid !== parent) child.kill('SIGTERM');
+  }, environmentMs('EXO_PARENT_POLL_MS', PARENT_POLL_MS)).unref();
 }
 
 try {
