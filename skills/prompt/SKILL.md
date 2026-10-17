@@ -13,19 +13,18 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 
 1. No argument → print `/exo:prompt <rough prompt>`, run nothing, stop.
 2. Read only what names a path, a test or build command, or a pattern file for the rewrite: Glob, Grep, Read, the package manifest. No edit, no test run, no helper.
-3. Two readings of the prompt lead to materially different work → ask one question, in the shape of `../route-skills/references/question.md`, one per message, at most 2 in all. Any other gap stays open in the rewrite, in the user's words.
-4. Read `references/examples.md`, then rewrite with the rules below. Show it in one fenced block, opened with at least three backticks and more than the longest backtick run inside it.
-5. After the block, the `Added:` line only when the rewrite has adds, the `Dropped:` line only when a strip rule removed a user line that names a behavior, then one line asking for ok to run it.
-6. Reply of plain yes or ok, nothing more → run the last shown block as the user's request in this session; routing picks a skill for it the usual way.
-7. Reply naming changes, such as "yes, but drop X" → revise, show again, ask again.
-8. Any other reply → stop and treat it as a normal message.
+3. Read `references/examples.md`, then rewrite with the rules below. Show it in one fenced block, opened with at least three backticks and more than the longest backtick run inside it.
+4. After the block, the `Added:` line only when the rewrite has adds, the `Dropped:` line only when a strip rule removed a user line that names a behavior, then one line asking for ok to run it.
+5. Reply of plain yes or ok, nothing more → run the last shown block as the user's request in this session; routing picks a skill for it the usual way.
+6. Reply naming changes, such as "yes, but drop X" → revise, show again, ask again.
+7. Any other reply → stop and treat it as a normal message.
 
 ## Keep
 
 - Keep the intent, the deliverable and every stated requirement, limit and non-goal; reword, never change what is asked.
 - Copy pasted text and every name verbatim: errors, logs, code, paths, symbols, commands, URLs, issue numbers.
 - Keep a stated audience or experience level; carry the report shape or length asked for as one concrete line.
-- Unclear point → leave it unclear, in the user's words. A tension between two asks stays as written.
+- Unclear point, or two readings that lead to materially different work → leave it open, in the user's words; ask the user nothing, since `exo:spec` settles an open choice after the ok. A tension between two asks stays as written.
 - Clear prompt → pass through almost unchanged; exploratory question → leave open.
 
 ## Add
@@ -85,7 +84,7 @@ Add one short line per model, for the model this session runs; any other or unkn
 
 | File | Read it when |
 |---|---|
-| `references/examples.md` | Step 4, before every rewrite. |
+| `references/examples.md` | Step 3, before every rewrite. |
 
 ## Judgment
 

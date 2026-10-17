@@ -59,20 +59,20 @@ Dropped: "double-check everything" (generic check); `npm test` is the named chec
 </example>
 
 <example>
-Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work, so the reply is one question and no block:
+Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work. Both readings stay open and the reply asks nothing; `exo:spec` settles them after the ok. The rewrite keeps "clean up" in the user's words:
 
-```text
-**What should the cleanup do?**
-Both fit your words but change different things.
+````
+<background>
+Clean up the reports module in `src/reports/`.
+</background>
 
-- **(A) Remove unused code**: dead exports go, layout stays.
-- **(B) Split files**: the large file becomes smaller ones.
-- **(C) Both**: unused code goes, then files split.
+<instructions>
+Clean up the reports module.
+Only make changes that are directly requested or clearly necessary, since each extra change is more to review.
+</instructions>
+````
 
-Recommended: (A), because it is the smaller, safer change.
-```
-
-The rewrite comes only after the answer, carrying the picked reading.
+Added: `src/reports/` (path read); minimal-change line (kind rule).
 </example>
 
 <example>

@@ -46,6 +46,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A run with `Land: local` or `push-main` now lands on `main` as one squash commit titled by the plan's new `Commit:` line, its body listing the run's commits and `Plan-task:` trailers.
 - `exo:prompt` lists dropped user lines, keeps role lines that set a perspective, leaves visual detail to `exo:design-ui`, and adds test-first only when a test command exists.
 - plan-check refuses a red-less task whose Files are all tests, flags unlisted tests, locks and registries, and prints the token size of each task; the spec brief states its Acceptance citation rule and keeps stored plans uncommitted.
+- `exo:prompt` asks no questions before its rewrite; an unclear point stays open in your words, and `exo:spec` settles it after your ok.
 
 ### Fixed
 - A plan session that lands several tasks now counts once in the `total:` and `average per task` lines of a run, not once per task.

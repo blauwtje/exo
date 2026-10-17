@@ -11,7 +11,7 @@ Not for running a prompt unseen. Type the prompt as it is for that.
 ## What you get
 
 - It first reads only what the rewrite needs: a path, a test or build command, or a pattern file. It edits nothing and runs no tests.
-- It asks at most 2 questions, one at a time, and only when two readings of your prompt lead to very different work. Any other gap stays open, in your words.
+- It asks no questions. An unclear point stays open, in your words, and `exo:spec` settles it after your ok, if needed.
 - One fenced block with your prompt rewritten: thinking cues, shouting and filler gone, pasted text kept verbatim.
 - Tags only when they help: `<background>`, `<pasted_content>`, `<instructions>`, `<success_criteria>` and `<output_format>`. A clear one-line prompt stays plain.
 - It adds only what your kind of request needs and the code shows, never a guessed fact. An `Added:` line under the block lists each add and where it came from.
