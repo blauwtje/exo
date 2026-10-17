@@ -217,7 +217,9 @@ export function linkedWorktrees(repo) {
 }
 
 // The mean total_cost_usd of every finished cell under runsDirectory, keyed by
-// task, arm and model id as its checks.json records them.
+// task, arm and model id as its checks.json records them, and by the effort its
+// run's meta.json records; a run whose meta.json has no effort key (an older
+// run) is left out, since its effort is unknown.
 function pastCellCosts(runsDirectory) {
   const costs = new Map();
   if (!fs.existsSync(runsDirectory)) return costs;
@@ -227,29 +229,37 @@ function pastCellCosts(runsDirectory) {
     if (!fs.existsSync(resultFile)) continue;
     const cost = JSON.parse(fs.readFileSync(resultFile, 'utf8')).total_cost_usd;
     if (typeof cost !== 'number') continue;
+    const metaFile = path.join(runsDirectory, file.split(path.sep)[0], 'meta.json');
+    if (!fs.existsSync(metaFile)) continue;
+    const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+    if (!('effort' in meta)) continue;
     const checks = JSON.parse(fs.readFileSync(path.join(runsDirectory, file), 'utf8'));
-    const key = `${checks.task}\t${checks.arm}\t${checks.model}`;
+    const key = `${checks.task}\t${checks.arm}\t${checks.model}\t${meta.effort}`;
     costs.set(key, [...(costs.get(key) ?? []), cost]);
   }
   return new Map([...costs].map(([key, values]) => [key, values.reduce((sum, value) => sum + value, 0) / values.length]));
 }
 
 // Each planned cell ({ task, arm, modelId }) costs the mean of its finished
-// twins under runsDirectory, else its task's estimateUsd, else the default.
-export function projectCost(cells, runsDirectory) {
+// twins at the same effort (null for the default) under runsDirectory, else its
+// task's estimateUsd, else the default. fromFallback counts the cells priced by
+// estimateUsd or the default, neither of which matches model and effort.
+export function projectCost(cells, runsDirectory, effort) {
   const past = pastCellCosts(runsDirectory);
-  const projection = { total: 0, fromRuns: 0, fromTask: 0, fromDefault: 0 };
+  const projection = { total: 0, fromRuns: 0, fromTask: 0, fromDefault: 0, fromFallback: 0 };
   for (const { task, arm, modelId } of cells) {
-    const key = `${task.id}\t${arm}\t${modelId}`;
+    const key = `${task.id}\t${arm}\t${modelId}\t${effort}`;
     if (past.has(key)) {
       projection.total += past.get(key);
       projection.fromRuns += 1;
     } else if (typeof task.estimateUsd === 'number') {
       projection.total += task.estimateUsd;
       projection.fromTask += 1;
+      projection.fromFallback += 1;
     } else {
       projection.total += DEFAULT_ESTIMATE_USD;
       projection.fromDefault += 1;
+      projection.fromFallback += 1;
     }
   }
   return projection;

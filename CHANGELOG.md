@@ -49,6 +49,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:prompt` asks no questions before its rewrite; an unclear point stays open in your words, and your ok runs the rewrite as written, without `exo:spec`.
 
 ### Fixed
+- The benchmark dry-run projects cost per effort level and counts cells priced from a fallback that does not match model and effort.
 - A plan session that lands several tasks now counts once in the `total:` and `average per task` lines of a run, not once per task.
 - A hand-run of the session-start hook, or a pressure session on a clone, no longer points `~/.claude/exo/plugin-root` at that copy.
 - Detached run sessions get rules against `cd`, heredoc and `sed -i` edits and direct `decisions.md` writes, which caused 205 denied calls in 10 days, and may run `git grep`, `git branch --show-current` and `git worktree list`.

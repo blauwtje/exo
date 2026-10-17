@@ -378,8 +378,8 @@ function printDryRun(cells, effort) {
     const { command, args } = cellCommand(cell.arm, cell.task, cell.model, effort, labels);
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, command, ...args.map((argument) => JSON.stringify(argument))].join(' ')}`);
   }
-  const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS);
-  console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default)`);
+  const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS, effort);
+  console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default); ${projection.fromFallback} cells use a fallback that does not match model and effort`);
 }
 
 function requirePluginDirectories(arms) {
