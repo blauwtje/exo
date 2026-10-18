@@ -82,4 +82,43 @@ Rough: `explain what the retry option in src/http/client.ts does, without editin
 Explain what the `retry` option in `src/http/client.ts` does. Do not edit anything.
 ````
 </example>
+
+<example>
+Rough: `write me a prompt I can use in a new session to make an 8-week plan for learning Rust, for someone who knows Python`. The user runs it elsewhere, so the block is that prompt itself, as if typed there, not a prompt asking for one. The reply ends with a line asking for changes and offers no run:
+
+````
+<background>
+The learner already knows Python.
+</background>
+
+<instructions>
+Make an 8-week plan for learning Rust.
+Do not edit files, since the ask is an answer, not a change.
+</instructions>
+````
+
+Added: do-not-edit line (kind rule).
+</example>
+
+<example>
+Rough: `write a reply to Sam's last message` followed by 30 pasted lines of team chat. Only Sam's last two lines and one earlier fact bear on the reply; the rest is lunch plans. The two lines stay verbatim, the fact goes in one `<background>` line, the rest is left out:
+
+````
+<background>
+Reply to Sam's last message in a team chat. Earlier in the chat, Priya said the build server disk was resized on Monday.
+</background>
+
+<pasted_content id="w3n8">
+Sam: deploy failed again, any idea why?
+Sam: Error: ENOSPC: no space left on device
+</pasted_content id="w3n8">
+
+<instructions>
+Write a reply to Sam's last message.
+Do not edit files, since the ask is an answer, not a change.
+</instructions>
+````
+
+Added: do-not-edit line (kind rule).
+</example>
 </examples>
