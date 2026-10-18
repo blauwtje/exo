@@ -53,5 +53,6 @@ argument-hint: <outcome to shape>
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
 | `references/hand-off.md` | Step 9. |
 | `references/watching.md` | Step 9, run started. |
+| `references/measured-goal.md` | Goal is a measured score, cost or time on a task set. |
 
 Report: brief's location and next stage, or current question.

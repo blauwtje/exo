@@ -12,3 +12,4 @@ benchmarks/replay/**/runs/
 /runs/
 /tmp
 harnesses/codex/generated/
+__pycache__/

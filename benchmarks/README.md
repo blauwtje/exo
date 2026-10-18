@@ -120,3 +120,25 @@ node benchmarks/sweep.mjs --set replay --cases <path> --models opus,sonnet --rep
 `--cases` names a JSON array of `{ id, scope, base, head, plan, findings }`: `scope` is `branch` or `fix diff`, `base` and `head` are refs of this clone, `plan` is the plan path the reviewer gets, and `findings` is the known defect lines as `{ file, start, end }`. `--models` (default `opus`) and `--repeat` (default 1) give one cell per case, model and repeat, `replay-<id>-<model>-<k>`, at the `review` kind's `balanced` effort. A cell checks out a detached worktree at `head`, runs the reviewer there with the prompt `run-tail.mjs` gives it, removes the worktree, and writes `hits`, `truth` and `extra` to `record.json`: the known defects a `fix` finding overlaps, the known defects, and the `fix` findings that overlap none. The results file adds a replay table with the hit rate per model.
 
 A review cell runs the body of the `review-branch` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or concern reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.
+
+## Terminal-Bench runner
+
+`benchmarks/tbench/` runs Terminal-Bench 2.1 tasks through [Harbor](https://github.com/harbor-framework/harbor) (`uv tool install harbor`, Docker running) with Claude Code on a subscription OAuth token, and imports the result into `score.mjs --compare`. It starts nothing paid by itself.
+
+Token: run `claude setup-token` once and save `CLAUDE_CODE_OAUTH_TOKEN=...` to `~/.config/exo/tbench.env` (`chmod 600`). `exo_agent.py` reads it when a trial starts and sets `CLAUDE_FORCE_OAUTH=1`, so a host `ANTHROPIC_API_KEY` never decides the auth; it reaches the container only through the exec environment, not the job config.
+
+```bash
+# one job per arm; an arm without plugin_dir runs stock Claude Code 2.1.302
+PYTHONPATH=benchmarks/tbench harbor run -d terminal-bench/terminal-bench-2-1 -a exo_agent:ExoClaudeCode \
+  -m anthropic/claude-opus-5-5 -i 'terminal-bench/<task>' -n 2 -k 2 -o /tmp/tb-jobs --job-name exo-before \
+  --ak plugin_dir=/abs/path/to/plugin
+node benchmarks/tbench/watch.mjs --pid <harbor pid> --job /tmp/tb-jobs/exo-before --job /tmp/tb-jobs/cand-1 --limit 55
+node benchmarks/tbench/import.mjs --out /tmp/tb-runs --model claude-opus-5-5 --job /tmp/tb-jobs/exo-before=exo-before --job /tmp/tb-jobs/cand-1=cand-1
+node benchmarks/score.mjs /tmp/tb-runs --compare exo-before,cand-1
+```
+
+- The agent pins Claude Code 2.1.302, caps a trial at `max_turns=60` (override with `--ak max_turns=N`), uploads the plugin dir without `.git`, `benchmarks`, `docs` and `node_modules` to `/opt/exo-plugin`, and puts a `claude --plugin-dir /opt/exo-plugin` wrapper first on PATH.
+- The importer writes one value-tier cell per trial (`<task>/<arm>/<n>`). A rate-limit, authentication or other infrastructure error sets `harnessError`, so `score.mjs` leaves the cell out of every mean; `max_turns` and a timeout are fails. A task where an `exo-before` (`--control`) cell is infra drops from every arm. Cost is Claude Code's `total_cost_usd` (list prices, not billed on a subscription); tokens come from the stream's `modelUsage`; time is the agent execution span.
+- The watcher sums finished-trial cost, charges each running trial the job's highest finished cost (`--running`, $1.5 by default, until a trial in that job finishes), and at `--limit` (default $55) sends SIGTERM to Harbor. Harbor has no stop-starting mode, so running trials end too; the importer skips the `CancelledError` trials.
+- Task ids carry the dataset prefix, `-i 'terminal-bench/<task>'`. Run one watcher per Harbor job: `--pid` stops one process, and SIGTERM ends its running trials as well as the queued ones. Limits: the `max_turns` and 429 detection is tested against fixtures only, never against a live job; the agent downloads Node 22 once into `~/.cache/exo/tbench` (SHA256-checked) and reuses it. The `limitUsd` and `trialUsd` defaults and `EXO_TBENCH_POLL_MS` are in `CONTRIBUTING.md`.
+- First eval case, recorded and not run (no harness): `cand-unattended` plus the style block only against `exo-before`, 5 dev tasks x2, with the predicted output tokens within +-15%.

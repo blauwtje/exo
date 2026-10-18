@@ -36,3 +36,21 @@ export function nextRuns(cv) {
   const usable = Number.isFinite(cv) && cv > 0 ? cv : PLANNING_CV;
   return Math.min(MAX_RUNS, Math.max(2, Math.ceil(2 * ((RISE_Z + POWER_Z) * usable / SMALLEST_RISE) ** 2)));
 }
+
+export function signTest(pairs) {
+  const decided = pairs.filter(([before, after]) => after !== before);
+  const wins = decided.filter(([before, after]) => after > before).length;
+  const n = decided.length;
+  if (n === 0) return { wins, n, p: 1 };
+  let tail = 0;
+  let term = 1;
+  for (let k = 0; k <= n; k++) {
+    if (k >= wins) tail += term;
+    term = term * (n - k) / (k + 1);
+  }
+  return { wins, n, p: tail / 2 ** n };
+}
+
+export function minDetectableEffect({ rate, n }) {
+  return Math.min(1 - rate, (RISE_Z + POWER_Z) * Math.sqrt(2 * rate * (1 - rate) / n));
+}

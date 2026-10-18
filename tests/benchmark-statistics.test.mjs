@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { meanAndSd } from '../benchmarks/statistics.mjs';
+import { meanAndSd, minDetectableEffect, signTest } from '../benchmarks/statistics.mjs';
 import { summarize } from '../benchmarks/lean-gates-metrics.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
@@ -52,4 +52,20 @@ test('score prints (n=1) for one-cell arms in the template and value tables', ()
 
 test('lean-gates summarize keeps a null sd for one run', () => {
   assert.equal(summarize([3]).sd, null);
+});
+
+test('signTest gives the one-sided binomial p and drops ties', () => {
+  assert.equal(signTest([[0, 1], [0, 1], [0, 1], [0, 1], [0, 1]]).p, 1 / 32);
+  assert.deepEqual(signTest([[1, 1], [0, 1], [2, 1]]), { wins: 1, n: 2, p: 0.75 });
+  assert.equal(signTest([]).p, 1);
+});
+
+test('minDetectableEffect and the mde script agree', () => {
+  const effect = minDetectableEffect({ rate: 0.5, n: 100 });
+  assert.ok(Math.abs(effect - 2.84 * Math.sqrt(0.005)) < 1e-12);
+  assert.equal(minDetectableEffect({ rate: 0.5, n: 10 }), 0.5);
+  assert.ok(minDetectableEffect({ rate: 0.9, n: 2 }) <= 0.1 + 1e-9);
+  const run = spawnSync(process.execPath, [path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs'), '--rate', '0.5', '--n', '10'], { encoding: 'utf8' });
+  assert.equal(run.status, 0);
+  assert.match(run.stdout, /0\.500/);
 });
