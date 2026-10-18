@@ -84,7 +84,6 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/file-issues/SKILL.md': [
     'references/fields.md',
-    'references/examples.md',
   ],
   'skills/refactor/SKILL.md': [
     'references/behavior-pin.md',

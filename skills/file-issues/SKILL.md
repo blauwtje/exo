@@ -44,7 +44,6 @@ A plain request to file, open, write or split issues authorizes creating them, w
 | File | Read it when |
 |---|---|
 | `references/fields.md` | Steps 2 and 4, and before writing a Spec body. |
-| `references/examples.md` | Step 4, before writing a body. |
 
 ## Judgment
 
