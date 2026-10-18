@@ -31,10 +31,10 @@ import { exoLoaded, writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { confinedClaude } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { withoutParentSession } from './lean-gates.mjs';
+import { BEFORE_ARM, beforePluginProblem, buildCopies, copyKey, exoRootOf, loadsCopy, resolveDirectory, withBeforeArm } from './plugin-copies.mjs';
 import { pluginDirty } from './plugin-state.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
-import { applyVariant } from './variants.mjs';
-import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -44,6 +44,7 @@ const CELL_TIMEOUT_MS = 20 * 60 * 1000;
 const CELL_BUDGET_USD = '3';
 const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta.url));
 const EXO_COPY_LABEL = '<copy of this checkout without benchmarks/>';
+let armTable = ARMS;
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const FULL_RUNS = 4;
 const HEARTBEAT_MS = 60 * 1000;
@@ -61,7 +62,7 @@ function tierTasks(tier) {
 }
 
 function parseArguments(argv) {
-  const options = { mode: 'custom', tasks: null, tier: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, maxTotalUsd: null, confirm: false, out: null, effort: null, dryRun: false };
+  const options = { mode: 'custom', tasks: null, tier: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, maxTotalUsd: null, confirm: false, out: null, effort: null, dryRun: false, beforePlugin: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = () => argv[++index];
@@ -78,6 +79,7 @@ function parseArguments(argv) {
     else if (flag === '--out') options.out = value();
     else if (flag === '--effort') options.effort = value();
     else if (flag === '--dry-run') options.dryRun = true;
+    else if (flag === '--before-plugin') options.beforePlugin = value();
     else throw new Error(`unknown flag ${flag}`);
   }
   if (options.tier !== null) options.tasks = options.tasks ?? tierTasks(options.tier).map((task) => task.id);
@@ -89,7 +91,11 @@ function parseArguments(argv) {
   if (options.tasks === null) throw new Error('name --tasks or --tier, or pick --smoke or --full');
   if (options.tasks.length === 0) throw new Error(`tier ${options.tier} has no tasks`);
   if (!(options.model in MODELS)) throw new Error(`unknown model ${options.model}; one of ${Object.keys(MODELS).join(', ')}`);
-  for (const arm of options.arms) if (!(arm in ARMS)) throw new Error(`unknown arm ${arm}`);
+  const problem = beforePluginProblem(options.beforePlugin, options.arms);
+  if (problem !== null) throw new Error(problem);
+  if (options.beforePlugin !== null) options.beforePlugin = resolveDirectory(options.beforePlugin);
+  options.armTable = withBeforeArm(ARMS, options.beforePlugin);
+  for (const arm of options.arms) if (!(arm in options.armTable)) throw new Error(`unknown arm ${arm}`);
   return options;
 }
 
@@ -143,21 +149,11 @@ function workdirFor(task, fixtureDirectory) {
 // value task needs it to finish the job, so neither gets the Bash ban or NO_RUN.
 // A value task's exoPrompt replaces its prompt in the exo arm only, and its
 // exo arm loads a copy, not this checkout, which holds the task's hidden files.
-// The copy is the plain one, or the arm's variant of it; `copies` maps each to
-// its folder, and a template cell loads a copy only for a variant arm.
-function copyKey(arm) {
-  return arm.variant ?? 'plain';
-}
-
-function loadsCopy(arm, task) {
-  return arm.pluginDirs.includes(ROOT) && (task.tier === 'value' || arm.variant !== undefined);
-}
-
 function claudeArguments(armName, task, model, effort, copies) {
-  const arm = ARMS[armName];
+  const arm = armTable[armName];
   const open = OPEN_TIERS.has(task.tier);
   const systemPrompt = open ? arm.prompt : arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
-  const taskPrompt = arm.pluginDirs.includes(ROOT) && task.exoPrompt ? task.exoPrompt : task.prompt;
+  const taskPrompt = exoRootOf(arm) !== null && task.exoPrompt ? task.exoPrompt : task.prompt;
   const prompt = arm.promptSuffix === null ? taskPrompt : `${taskPrompt} ${arm.promptSuffix}`;
   const args = [
     '-p', prompt,
@@ -171,7 +167,7 @@ function claudeArguments(armName, task, model, effort, copies) {
   if (systemPrompt !== null) args.push('--append-system-prompt', systemPrompt);
   if (effort !== null) args.push('--effort', effort);
   for (const pluginDirectory of arm.pluginDirs) {
-    args.push('--plugin-dir', pluginDirectory === ROOT && loadsCopy(arm, task) ? copies[copyKey(arm)] : pluginDirectory);
+    args.push('--plugin-dir', pluginDirectory === exoRootOf(arm) && loadsCopy(arm, task) ? copies[copyKey(arm)] : pluginDirectory);
   }
   return args;
 }
@@ -179,8 +175,8 @@ function claudeArguments(armName, task, model, effort, copies) {
 // What a cell starts: `claude -p`, or for the exo-run arm `node exo-cli.mjs run`
 // on the task's plan, on the arm's copy of exo and through the confining child.
 function cellCommand(armName, task, model, effort, copies) {
-  if (!ARMS[armName].runPlan) return { command: 'claude', args: claudeArguments(armName, task, model, effort, copies) };
-  const copy = copies[copyKey(ARMS[armName])];
+  if (!armTable[armName].runPlan) return { command: 'claude', args: claudeArguments(armName, task, model, effort, copies) };
+  const copy = copies[copyKey(armTable[armName])];
   return {
     command: 'node',
     args: [
@@ -284,7 +280,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
     const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
     const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
     const environment = { ...cellIsolation(task), HOME: cellHome };
-    const runPlan = ARMS[arm].runPlan === true;
+    const runPlan = armTable[arm].runPlan === true;
     if (runPlan) writeRunPlan(task, workdir);
     const { args } = cellCommand(arm, task, model, effort, copies);
     const outcome = await runClaude(args, { workdir, cellRoot, tmp, runPlan }, cellDirectory, environment, timeoutMs);
@@ -372,14 +368,15 @@ function costGate(options, cellCount) {
 function printDryRun(cells, effort, concurrency) {
   for (const cell of cells) {
     const environment = Object.entries(cellIsolation(cell.task)).map(([name, value]) => `${name}=${value}`);
-    const arm = ARMS[cell.arm];
+    const arm = armTable[cell.arm];
     const missing = arm.pluginDirs.filter((directory) => !fs.existsSync(directory)).map((directory) => ` [missing: ${directory}]`);
     if (arm.missing) missing.push(` [missing: ${arm.missing}]`);
-    const labels = { [copyKey(arm)]: arm.variant ? `${EXO_COPY_LABEL} with variant ${arm.variant}` : EXO_COPY_LABEL };
+    const copyLabel = arm.exoRoot ? `<copy of ${arm.exoRoot} without benchmarks/>` : EXO_COPY_LABEL;
+    const labels = { [copyKey(arm)]: arm.variant ? `${copyLabel} with variant ${arm.variant}` : copyLabel };
     const { command, args } = cellCommand(cell.arm, cell.task, cell.model, effort, labels);
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, command, ...args.map((argument) => JSON.stringify(argument))].join(' ')}`);
   }
-  const planned = cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] }));
+  const planned = cells.map((cell) => ({ task: cell.task, arm: cell.arm === BEFORE_ARM ? 'exo' : cell.arm, modelId: MODELS[cell.model] }));
   const projection = projectCost(planned, RUNS, effort);
   console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default); ${projection.fromFallback} cells use a fallback that does not match model and effort`);
   const time = projectTime(planned, RUNS, effort);
@@ -388,8 +385,8 @@ function printDryRun(cells, effort, concurrency) {
 
 function requirePluginDirectories(arms) {
   for (const arm of arms) {
-    if (ARMS[arm].missing) throw new Error(`arm ${arm}: ${ARMS[arm].missing}`);
-    for (const directory of ARMS[arm].pluginDirs) {
+    if (armTable[arm].missing) throw new Error(`arm ${arm}: ${armTable[arm].missing}`);
+    for (const directory of armTable[arm].pluginDirs) {
       if (!fs.existsSync(directory)) throw new Error(`arm ${arm}: plugin directory ${directory} is missing; run node benchmarks/rivals.mjs first`);
     }
   }
@@ -399,7 +396,7 @@ function requirePluginDirectories(arms) {
 function pluginCommits(arms) {
   const commits = {};
   for (const arm of arms) {
-    for (const directory of ARMS[arm].pluginDirs) {
+    for (const directory of armTable[arm].pluginDirs) {
       commits[directory] = git(directory, ['rev-parse', 'HEAD']).trim();
     }
   }
@@ -412,6 +409,7 @@ function claudeVersion() {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
+  armTable = options.armTable;
   const date = new Date().toISOString().slice(0, 10);
   const runDirectory = options.out ?? path.join(RUNS, `${date}-${options.mode}`);
   const tasks = options.tasks.map(findTask);
@@ -424,7 +422,7 @@ async function main() {
     }
   }
   for (const cell of cells) {
-    if (!ARMS[cell.arm].runPlan) continue;
+    if (!armTable[cell.arm].runPlan) continue;
     if (cell.task.tier !== 'value') throw new Error(`arm ${cell.arm} runs value tasks only, not ${cell.task.id}`);
     runPlanPath(cell.task);
   }
@@ -443,7 +441,8 @@ async function main() {
     date, mode: options.mode, model: MODELS[options.model], claudeVersion: claudeVersion(), node: process.version,
     fixture: FIXTURE, arms: options.arms, tasks: options.tasks, runs: options.runs, cells: cells.length,
     effort: options.effort, pluginCommits: pluginCommits(options.arms),
-    pluginDirty: pluginDirty(Object.keys(pluginCommits(options.arms)))
+    pluginDirty: pluginDirty(Object.keys(pluginCommits(options.arms))),
+    ...(options.beforePlugin === null ? {} : { beforePlugin: options.beforePlugin })
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
@@ -451,14 +450,7 @@ async function main() {
   const skipped = [];
   const highestCost = {};
   const cellHome = makeDefaultOptionsHome();
-  // One copy per run and variant, made only for a cell that loads one.
-  const copies = {};
-  for (const cell of cells) {
-    const arm = ARMS[cell.arm];
-    if (!loadsCopy(arm, cell.task) || copyKey(arm) in copies) continue;
-    copies[copyKey(arm)] = copyPluginWithoutTasks(ROOT, fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-plugin-')));
-    if (arm.variant) applyVariant(arm.variant, copies[copyKey(arm)]);
-  }
+  const copies = buildCopies(cells, armTable);
   const heartbeat = setInterval(() => console.log(`running: ${done}/${cells.length} cells done`), HEARTBEAT_MS);
   try {
     await runPool(cells, options.concurrency, async (cell) => {

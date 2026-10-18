@@ -12,7 +12,7 @@ Every cell is one `claude -p --output-format json` call on a fresh checkout of `
 | `terse` | exo's terse-prose control prompt in `arms/terse.md`: short replies, with nothing said about code size. |
 | `compression-low` | The default (`short`) compression rule from `skills/configure/schema.json` as the prompt. |
 | `yagni-oneliner` | One sentence asking for YAGNI and one-liners. |
-| `exo` | This plugin, loaded from the working tree. |
+| `exo` | This plugin, loaded from the working tree (`exo-before`: of the `--before-plugin` dir). |
 | `skills-rival` | git tier only: a skills-only rival plugin, forced by naming its skill, as a second `--plugin-dir`. Its repository, tag, commit, plugin root and the user-prompt suffix that names the skill live in the git-ignored `benchmarks/fixtures/rivals.local.json`. |
 | `cc-safety-net` | git tier only: `kenryu42/cc-safety-net` at `v2.5.2`, default level. |
 | `prose-rules` | git tier only: a system-prompt line forbidding force push, `reset --hard`, `clean -f` and force-deleting an unmerged branch. |
@@ -65,7 +65,7 @@ Tasks a user would bring, each in `benchmarks/value/<slug>/`. A cell copies `see
 
 | File | What it holds |
 |---|---|
-| `task.json` | `id` (must be `value-<slug>`), `claim` (what the task measures, for readers), `timeoutMinutes` (positive, the session's wall-clock cap), optional `exoPrompt` (replaces `prompt.md` in the `exo` arm only), optional `estimateUsd` (cost per cell for the dry-run projection, default $1.50), optional `maxBudgetUsd` (the cell's `--max-budget-usd`, default 3), optional `scoring` (absent, or `"harm"` for a task whose check measures harm only and so passes on the untouched start; `"harm"` needs a `harm/` folder). |
+| `task.json` | `id` (must be `value-<slug>`), `claim` (what the task measures, for readers), `timeoutMinutes` (positive, the session's wall-clock cap), optional `exoPrompt` (replaces `prompt.md` in the exo arms only), optional `estimateUsd` (cost per cell for the dry-run projection, default $1.50), optional `maxBudgetUsd` (the cell's `--max-budget-usd`, default 3), optional `scoring` (absent, or `"harm"` for a task whose check measures harm only and so passes on the untouched start; `"harm"` needs a `harm/` folder). |
 | `prompt.md` | The prompt every arm gets. |
 | `seed/` | The starting repository. |
 | `setup.mjs` | Optional. Runs as `node setup.mjs <repo>` with the repository as the working directory after the seed commit; what it writes is starting state, not the session's work. |
@@ -84,6 +84,7 @@ The harness writes `.claude/exo.local.json` as `{ "workspace": "current", "ship"
 node benchmarks/run.mjs --tier value --arms baseline,exo --model sonnet --runs 2 --dry-run   # one argv line per cell, then the cell count, projected cost and projected time; no session
 node benchmarks/run.mjs --tasks value-<slug> --arms baseline,exo --model sonnet --runs 4 --out benchmarks/runs/<dir>
 node benchmarks/score.mjs benchmarks/runs/<dir>   # one row per task and arm: pass rate, defects, LOC, tokens, cost and wall time, each mean with its standard error
+node benchmarks/run.mjs --tasks value-<slug> --arms exo-before,exo --before-plugin <worktree at HEAD~1> --model sonnet --runs 4 --out benchmarks/runs/<dir>
 node benchmarks/score.mjs benchmarks/runs/<dir> --compare exo-before,exo   # per task: cost and wall time after − before, 2 SE_diff, rise/noise/fall, CV and next n
 ```
 
