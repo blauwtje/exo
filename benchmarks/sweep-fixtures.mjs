@@ -181,19 +181,20 @@ export function reviewPlanText(task) {
 }
 
 // main holds only the plan; the branch adds the fixture's seed or solution, so
-// `git diff main...HEAD` is exactly the code under review.
-export function prepareReviewBranch(repository, task, source) {
+// `git diff main...HEAD` is exactly the code under review. Only task.file is
+// copied, so a stray file in a fixture folder never reaches the reviewer.
+export function prepareReviewBranch(repository, task, source, safeRoot = SAFE) {
   git(repository, ['init', '-q', '-b', 'main']);
   writeFiles(repository, { 'README.md': `# ${task.id}\n`, [`docs/plans/${task.id}.md`]: reviewPlanText(task) });
   commitAll(repository, `docs: plan ${task.id}`);
   git(repository, ['switch', '-q', '-c', `feat/${task.id}`]);
-  fs.cpSync(path.join(SAFE, task.id, source), repository, { recursive: true });
+  fs.copyFileSync(path.join(safeRoot, task.id, source, task.file), path.join(repository, task.file));
   commitAll(repository, `feat: implement ${task.id}`);
 }
 
-export function prepareBuildRepository(repository, task) {
+export function prepareBuildRepository(repository, task, safeRoot = SAFE) {
   git(repository, ['init', '-q', '-b', 'main']);
-  fs.cpSync(path.join(SAFE, task.id, 'seed'), repository, { recursive: true });
+  fs.copyFileSync(path.join(safeRoot, task.id, 'seed', task.file), path.join(repository, task.file));
   commitAll(repository, 'chore: seed');
 }
 
