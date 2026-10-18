@@ -1,8 +1,8 @@
 // A boundary word in instruction prose (`only`, `never`, `unless`...) narrows what a rule
 // allows, and a rewrite can lose one without a test noticing. This check counts each word per
-// edited prose file against the base and fails when a count falls, unless a `Drops:` line names
-// the drop: `Drops: <word> in <path>[, <word> in <path>]`, in a commit body since origin/main
-// or in the EXO_DROPS environment variable.
+// edited prose file against the base, the merge base with origin/main, and fails when a count
+// falls, unless a `Drops:` line names the drop: `Drops: <word> in <path>[, <word> in <path>]`,
+// in a commit body since origin/main or in the EXO_DROPS environment variable.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,13 +46,15 @@ function isProse(file) {
 
 export function checkBoundaryWords(report, repository, { env = process.env } = {}) {
   const root = repository.root;
-  const listing = git(root, ['ls-tree', '-r', '--name-only', BASE_REF, '--', ...FOLDERS]);
+  const mergeBase = git(root, ['merge-base', 'HEAD', BASE_REF]);
+  const base = mergeBase.status === 0 ? mergeBase.stdout.trim() : '';
+  const listing = base === '' ? mergeBase : git(root, ['ls-tree', '-r', '--name-only', base, '--', ...FOLDERS]);
   if (listing.status !== 0) {
-    report.result('UNRUN', NAME, `${BASE_REF} is not available to compare against`);
+    report.result('UNRUN', NAME, `the merge base with ${BASE_REF} is not available to compare against`);
     return;
   }
   const baseFiles = listing.stdout.split('\n').filter((file) => file !== '');
-  const baseText = (file) => git(root, ['show', `${BASE_REF}:${file}`]).stdout;
+  const baseText = (file) => git(root, ['show', `${base}:${file}`]).stdout;
 
   const allowed = allowances(root, env);
   const drops = [];
@@ -68,7 +70,7 @@ export function checkBoundaryWords(report, repository, { env = process.env } = {
   report.assert(
     drops.length === 0,
     NAME,
-    `no prose file under ${FOLDERS.join(', ')} lost a boundary word against ${BASE_REF}`,
+    `no prose file under ${FOLDERS.join(', ')} lost a boundary word against the merge base with ${BASE_REF}`,
     `${drops.join('; ')}; restore the word, or name a deliberate drop as \`Drops: <word> in <path>\` in the plan task's field line or the commit body`
   );
 }
