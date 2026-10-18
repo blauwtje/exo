@@ -53,6 +53,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
 
 ### Fixed
+- Shell heredocs work in benchmark and pressure runs under the macOS sandbox; before, a heredoc left its target file empty, so older results may hold such failures. The `file-issues` stand-in `gh` now logs each issue body and fails like `gh` on a missing body file; that test's case a, which the skill always passed, is now a bug nobody has reproduced, and case c no longer requires `### Steps`.
 - A replay run started at the repository root no longer leaves its output, home paths included, where git would commit it; `/runs/` and every `runs/` under `benchmarks/replay/` are ignored, and the runner usage starts `node benchmarks/replay/runner.mjs` with `--out benchmarks/replay/runs/<name>`.
 - A run now logs `task <n> not landed by the script` when the land check it reruns after a plan repair fails, instead of saying nothing until the next session.
 - A benchmark flow-run's confined `claude` now ends when the process that started it dies without a signal, instead of running on under pid 1; the wrapper checks its parent every `EXO_PARENT_POLL_MS` (default 1000).
