@@ -14,7 +14,6 @@ argument-hint: <outcome to shape>
    - An open decision is one the user would notice that neither request nor code settles.
    - Diff fits one sentence or code settles every point → no question, exo closes each choice; ask only what to build.
    - Asked for options → list them, recommend one, no file.
-   - New wishes for briefed work reopen that brief.
 2. **Sort each point.**
    - Answerable by running or reading → record it, never ask.
    - Each open decision is a question, root first.
@@ -24,13 +23,14 @@ argument-hint: <outcome to shape>
    - Ask per `../route-skills/references/question.md`; decide nothing silently.
    - Recommend a loaded skill's pattern over an option it rules out.
    - `Land:` → plan approval approves only its mode; ask only when `ship` is `ask`.
-   - Close with up to three agreed lines, brief after yes.
+   - No git repo or `origin` → `Land: local`, no question.
+   - Last answer → brief at once, no recap, no yes question; at most three agreed lines follow.
 4. **Map, then locate.**
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
    - Range the map leaves unnamed → `exo:locate-code` in the foreground, at most eight ranges; read nothing it locates.
    - Never `cat`, `head` or `sed`; outside facts → one `exo:fetch-docs` round, no gap-fill.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
-6. **Store it** per `references/brief.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
+6. **Store it** per `references/brief.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`.
    - Read its output, never its source.
 8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7, leaving flagged `## Open points` entries unfixed.

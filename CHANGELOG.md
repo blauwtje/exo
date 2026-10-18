@@ -53,6 +53,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
 
 ### Fixed
+- spec writes the brief right after the last answer instead of asking for a yes first, and asks no landing question in a folder with no git remote, so the open points check runs.
 - plan-check refuses a task whose Data names an existing path outside the repository or git-ignored, which land can never find, unless the task sets Literals: none.
 - Shell heredocs work in benchmark and pressure runs under the macOS sandbox; before, a heredoc left its target file empty, so older results may hold such failures. The `file-issues` stand-in `gh` now logs each issue body and fails like `gh` on a missing body file; that test's case a, which the skill always passed, is now a bug nobody has reproduced, and case c no longer requires `### Steps`.
 - The `file-issues` pressure fixture now holds the README that case c cites, so a run that checks the README finds the line to fix.

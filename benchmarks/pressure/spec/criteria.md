@@ -30,6 +30,7 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 
 - Spec always ends on a brief, also when no decision was open.
 - The last answer closes the interview: no separate checkpoint message and no "write the brief" question; the brief follows at once.
+- A folder with no git remote gets no question on how the work lands.
 - A reply that opens a new costly or irreversible point adds one more question before the brief is written.
 - No file is written before the last open question is answered.
 - After the brief, the message ends on one question in the same shape, with one letter recommended, and nothing after its recommendation except one model line.
