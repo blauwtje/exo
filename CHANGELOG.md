@@ -16,7 +16,8 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 - `benchmarks/results/2026-10-18-ideas-baseline.md` records the first ideas baseline: 15 runs, 4 distinct shapes per run, mean originality 1.397 of 5, no option both original and fitting.
-- `benchmarks/variants.mjs` gains the `spec-cliches` (A3) and `spec-roles` (A1) ideas variants; their arms, in `benchmarks/results/2026-10-18-ideas-spec-*.md`, moved originality by 0.001 and 0.05 (noise), so spec stays unchanged.
+- The `spec-cliches` (A3) and `spec-roles` (A1) ideas arms, in `benchmarks/results/2026-10-18-ideas-spec-*.md`, moved originality by 0.001 and 0.05 (noise), so spec stays unchanged and `benchmarks/variants.mjs` drops both variants.
+- The ideas bench scores the recommended option's originality and fit, and each run's tokens and cost, subagents included; `benchmarks/variants.mjs` gains the `spec-seats` variant, three separate-context seats per options request.
 - `benchmarks/ideas.mjs` runs a neutral design request N times per case in fresh sessions, a blind calibrated judge scores each option, and the results file gives the minimum detectable effect per metric.
 - `exo:spec` carries a measured-goal method (calibrate, size, ablate, pair, class failures), and benchmarks/tbench/ lands as the runner it uses.
 - `architecture-sketch.md` sets 3-5 criteria before sketching, gives each candidate its own named constraint, redoes one when all share a shape, scores per criterion and grafts parts of two candidates.
@@ -135,6 +136,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.
 - The destructive-command guard, the comment guard, the run gate hook and the `guards` setting.
+- `skills/edit-skills/references/cut-log.md`; its two restored cuts now sit in step 3 of `exo:edit-skills`.
 
 ## 0.135.0 - 2026-10-15
 

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { HEADLESS_LINE, MAKER_LINE, makerArguments, makerPrompt, runFailure, scoreDirectory, wrongCopyDirs } from '../benchmarks/ideas.mjs';
+import { HEADLESS_LINE, MAKER_LINE, makerArguments, makerPrompt, runFailure, scoreDirectory, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
 import { JUDGE_ARGUMENTS, addRarity, calibration, compareMarkdown, decisions, modalShare, resultsMarkdown, runRecord } from '../benchmarks/ideas-score.mjs';
 
 const IDEAS = path.join(import.meta.dirname, '..', 'benchmarks', 'ideas.mjs');
@@ -156,6 +156,21 @@ test('judge calls skip user settings and load no plugin; maker calls load only t
   const maker = makerArguments({ prompt: 'p', plugin: '/arm/copy' });
   assert.equal(sources(maker), 'project,local');
   assert.deepEqual(maker.flatMap((arg, at) => (arg === '--plugin-dir' ? [maker[at + 1]] : [])), ['/arm/copy']);
+});
+
+test('the recommended option and the run cost are read from a fixture, absent as null', () => {
+  const scored = (originality, fit) => ({ title: 't', mechanism: 'm', scores: { originality, fit } });
+  const options = [scored(5, 4), scored(2, 5), scored(4, 3)];
+  const run = runRecord({ caseId: 'c', run: 1, options, shapes: [0, 0, 1], recommended: 2, tokens: 1530, costUsd: 0.5 });
+  assert.deepEqual([run.recommendedOriginality, run.recommendedFit, run.tokens, run.costUsd], [4, 3, 1530, 0.5]);
+  const bare = runRecord({ caseId: 'c', run: 2, options, shapes: [0, 0, 1], recommended: null });
+  assert.deepEqual([bare.recommendedOriginality, bare.recommendedFit, bare.tokens, bare.costUsd], [null, null, null, null]);
+  const result = (extra) => `{"type":"system"}\n${JSON.stringify({ type: 'result', ...extra })}`;
+  const usage = { input_tokens: 8, output_tokens: 1522, cache_creation_input_tokens: 10, cache_read_input_tokens: 100 };
+  const row = { inputTokens: 1, outputTokens: 2, cacheCreationInputTokens: 3, cacheReadInputTokens: 4 };
+  assert.deepEqual(usageOf(result({ usage, total_cost_usd: 0.25 })), { tokens: 1640, costUsd: 0.25 });
+  assert.deepEqual(usageOf(result({ usage, modelUsage: { a: row, b: row } })), { tokens: 20, costUsd: null });
+  assert.deepEqual(usageOf('{"type":"result"}'), { tokens: null, costUsd: null });
 });
 
 test('a metric with sd 0 prints no MDE, is named at a floor or ceiling, and a compare against it is not significant', () => {

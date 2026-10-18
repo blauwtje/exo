@@ -51,6 +51,25 @@ function finalText(stdout) {
   return stdout.split('\n').reduce((text, line) => resultOf(line) ?? text, '');
 }
 
+// Tokens (input + output + cache creation + cache read) and cost of a run's result event. modelUsage sums every model including subagents; usage is the main session only, the fallback. Absent parts give null, never 0.
+export function usageOf(stdout) {
+  const result = stdout.split('\n').reduce((found, line) => {
+    try {
+      const event = JSON.parse(line);
+      return event.type === 'result' ? event : found;
+    } catch {
+      return found;
+    }
+  }, null);
+  const sum = (rows) => (rows.length > 0 && rows.every((row) => row.every(Number.isFinite)) ? rows.reduce((total, row) => total + row.reduce((a, c) => a + c, 0), 0) : null);
+  const models = Object.values(result?.modelUsage ?? {});
+  const fromModels = sum(models.map((m) => [m.inputTokens, m.outputTokens, m.cacheCreationInputTokens, m.cacheReadInputTokens]));
+  const u = result?.usage;
+  const fromUsage = u ? sum([[u.input_tokens, u.output_tokens, u.cache_creation_input_tokens, u.cache_read_input_tokens]]) : null;
+  const cost = result?.total_cost_usd;
+  return { tokens: fromModels ?? fromUsage, costUsd: Number.isFinite(cost) ? cost : null };
+}
+
 export function wrongCopyDirs(stdout, pluginDir) {
   const dirs = [];
   for (const line of stdout.split('\n')) {
@@ -136,6 +155,10 @@ function failureOf(runDir) {
   return fs.existsSync(path.join(runDir, 'final.md')) ? null : 'no final.md';
 }
 
+function readOrEmpty(file) {
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+}
+
 function readRuns(armDir) {
   const runsByCase = {};
   const failed = [];
@@ -144,7 +167,7 @@ function readRuns(armDir) {
     runsByCase[caseId] = [];
     for (const run of fs.readdirSync(caseDir).sort((a, b) => a - b)) {
       const reason = failureOf(path.join(caseDir, run));
-      if (reason === null) runsByCase[caseId].push({ run: Number(run), finalText: fs.readFileSync(path.join(caseDir, run, 'final.md'), 'utf8') });
+      if (reason === null) runsByCase[caseId].push({ run: Number(run), finalText: fs.readFileSync(path.join(caseDir, run, 'final.md'), 'utf8'), ...usageOf(readOrEmpty(path.join(caseDir, run, 'stdout.json'))) });
       else failed.push(`${caseId}/${run} (${reason})`);
     }
   }

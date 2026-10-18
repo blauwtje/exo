@@ -11,7 +11,7 @@ const JUDGE_MODEL = 'claude-sonnet-5-5';
 const SCORE_CALLS = 3;
 const STRONG_MIN = 4;
 const CALIBRATION_SHARE = 0.8;
-export const METRICS = ['strong', 'options', 'shapes', 'duplicateShare', 'originality', 'fit', 'rare'];
+export const METRICS = ['strong', 'options', 'shapes', 'duplicateShare', 'originality', 'fit', 'rare', 'recommendedOriginality', 'recommendedFit', 'tokens', 'costUsd'];
 
 // why: user settings enable every installed plugin and HOME carries the global CLAUDE.md; skipping both keeps the judge blind to exo and the user's rules.
 export const JUDGE_ARGUMENTS = ['-p', '--model', JUDGE_MODEL, '--setting-sources', 'project,local', '--strict-mcp-config', '--tools', '', '--disable-slash-commands'];
@@ -101,9 +101,11 @@ export function calibration(controls) {
 
 const mean = (values) => (values.length === 0 ? null : meanAndSd(values).mean);
 
-export function runRecord({ caseId, run, options, shapes, recommended }) {
+export function runRecord({ caseId, run, options, shapes, recommended, tokens = null, costUsd = null }) {
   const shapeIds = new Set(options.map((_, index) => shapes[index]));
   const scored = options.filter((option) => option.scores);
+  // why: absent stays null, never 0, so a run without a recommended index, a score or usage drops out of that mean.
+  const picked = recommended === null ? undefined : options[recommended]?.scores;
   return {
     case: caseId,
     run,
@@ -114,7 +116,11 @@ export function runRecord({ caseId, run, options, shapes, recommended }) {
     fit: mean(scored.map((o) => o.scores.fit)),
     strong: scored.filter((o) => o.scores.originality >= STRONG_MIN && o.scores.fit >= STRONG_MIN).length,
     shapeSet: [...shapeIds],
-    recommendedShape: recommended === null ? null : shapes[recommended]
+    recommendedShape: recommended === null ? null : shapes[recommended],
+    recommendedOriginality: picked?.originality ?? null,
+    recommendedFit: picked?.fit ?? null,
+    tokens,
+    costUsd
   };
 }
 
@@ -164,7 +170,7 @@ const fixed = (value) => (value === null || value === undefined ? 'n/a' : Number
 export function summarizeMetrics(records) {
   const rows = {};
   for (const metric of METRICS) {
-    const values = records.map((record) => record[metric]).filter((value) => value !== null);
+    const values = records.map((record) => record[metric]).filter((value) => value !== null && value !== undefined);
     const { mean: avg, sd, n } = meanAndSd(values);
     rows[metric] = { mean: avg, sd, n, mde: sd === null ? null : minDetectableMeanEffect({ sd, n }) };
   }
@@ -186,15 +192,15 @@ export function resultsMarkdown({ arm, records, caseShares, verdict, unscored, f
   lines.push('Decision:', ...(verdict.passed ? decisions({ means, modal }).map((line) => `- ${line}`) : ['- none drawn, judge uncalibrated']), '');
   lines.push(`Failed runs, left out of every metric and n: ${failed.length === 0 ? 'none' : failed.join(', ')}`, '');
   lines.push(`Unscored items: ${unscored.length === 0 ? 'none' : unscored.join(', ')}`, '', '## Runs', '');
-  lines.push('| case | run | options | shapes | duplicateShare | originality | fit | strong | rare | recommendedShape |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-  for (const r of records) lines.push(`| ${r.case} | ${r.run} | ${r.options} | ${r.shapes} | ${fixed(r.duplicateShare)} | ${fixed(r.originality)} | ${fixed(r.fit)} | ${r.strong} | ${fixed(r.rare)} | ${r.recommendedShape ?? 'n/a'} |`);
+  lines.push('| case | run | options | shapes | duplicateShare | originality | fit | strong | rare | recommendedShape | recommendedOriginality | recommendedFit | tokens | costUsd |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const r of records) lines.push(`| ${r.case} | ${r.run} | ${r.options} | ${r.shapes} | ${fixed(r.duplicateShare)} | ${fixed(r.originality)} | ${fixed(r.fit)} | ${r.strong} | ${fixed(r.rare)} | ${r.recommendedShape ?? 'n/a'} | ${fixed(r.recommendedOriginality)} | ${fixed(r.recommendedFit)} | ${fixed(r.tokens)} | ${fixed(r.costUsd)} |`);
   return `${lines.join('\n')}\n`;
 }
 
 export function compareMarkdown({ left, right }) {
   const lines = ['| metric | diff | two SE | verdict |', '| --- | --- | --- | --- |'];
   for (const metric of METRICS) {
-    const pick = (records) => records.map((record) => record[metric]).filter((value) => value !== null);
+    const pick = (records) => records.map((record) => record[metric]).filter((value) => value !== null && value !== undefined);
     const result = compareMeans(pick(left), pick(right));
     lines.push(`| ${metric} | ${fixed(result.diff)} | ${fixed(result.twoSeDiff)} | ${result.verdict} |`);
   }
@@ -207,7 +213,7 @@ async function scoreCase({ judge, caseId, runs }) {
   for (const run of runs) {
     const got = await extractRun({ judge, finalText: run.finalText });
     if (got.failed) unscored.push(`${caseId}/${run.run} extract`);
-    extracted.push({ run: run.run, ...got });
+    extracted.push({ run: run.run, tokens: run.tokens ?? null, costUsd: run.costUsd ?? null, ...got });
   }
   const pooled = extracted.flatMap((entry) => entry.options.map((option) => ({ ...option, run: entry.run })));
   const shapes = pooled.length === 0 ? [] : await clusterOptions({ judge, options: pooled });
@@ -254,7 +260,7 @@ function recordsOf({ caseId, done }) {
     const shapes = done.shapes.slice(offset, offset + entry.options.length);
     offset += entry.options.length;
     const recommended = entry.recommended;
-    return runRecord({ caseId, run: entry.run, options: own, shapes, recommended });
+    return runRecord({ caseId, run: entry.run, options: own, shapes, recommended, tokens: entry.tokens, costUsd: entry.costUsd });
   });
   return addRarity(made);
 }
