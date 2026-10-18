@@ -9,12 +9,17 @@
 //   node benchmarks/score.mjs benchmarks/runs/<dir>
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>]
 //   node benchmarks/score.mjs benchmarks/runs/<flow dir>... [--publish [--results <file>]]
+//   node benchmarks/score.mjs benchmarks/runs/<dir> --compare <before-arm>,<after-arm>
 //
 // Value-tier cells get a table of their own: per task and arm, each mean with
 // its standard error; a run of value cells alone prints only that table.
 // A flow run (meta.json `sets` holds `flow`, no `arms`) prints what
 // flow-report.mjs reports over the record.json of its cells; it may name
 // several round directories.
+//
+// --compare prints, per task, cost and wall time of two arms of one value run:
+// after − before, 2 SE_diff and a rise/noise/fall verdict, then the CV and the
+// next run count (PROCEDURE step 5). It exits 0 whatever the verdict.
 //
 // --publish writes the printed text to a results file under a heading and
 // the limitations of its kind. A template run adds the measured cuts against
@@ -25,7 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { flowReport, readFlowRecords } from './flow-report.mjs';
-import { meanAndSd } from './statistics.mjs';
+import { compareMeans, meanAndSd, nextRuns, PLANNING_CV } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
 const METRICS = ['loc', 'tokens', 'cost', 'time'];
@@ -54,16 +59,27 @@ const FLOW_LIMITATIONS = [
   'A flow run has no template cut to compute, so this file records no measured cuts.'
 ];
 
+const COMPARE_USAGE = 'usage: score.mjs <runs directory> --compare <before-arm>,<after-arm>';
+const COMPARE_ALONE = '--compare takes one value run directory and does not publish';
+
+function compareArms(value) {
+  const names = (value ?? '').split(',');
+  if (names.length !== 2 || names.includes('') || names[0] === names[1]) throw new Error(COMPARE_USAGE);
+  return { before: names[0], after: names[1] };
+}
+
 function parseArguments(argv) {
-  const options = { directory: null, extraDirectories: [], publish: false, results: null };
+  const options = { directory: null, extraDirectories: [], publish: false, results: null, compare: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--publish') options.publish = true;
     else if (flag === '--results') options.results = argv[++index];
+    else if (flag === '--compare') options.compare = compareArms(argv[++index]);
     else if (options.directory === null) options.directory = path.resolve(flag);
     else options.extraDirectories.push(path.resolve(flag));
   }
   if (options.directory === null) throw new Error('usage: score.mjs <runs directory> [--publish] [--results <file>]');
+  if (options.compare && (options.publish || options.extraDirectories.length > 0)) throw new Error(COMPARE_ALONE);
   return options;
 }
 
@@ -276,6 +292,85 @@ function valueLines(meta, cells) {
   return lines;
 }
 
+const COMPARE_METRICS = {
+  cost: {
+    read: VALUE_METRICS.cost,
+    money: (value) => `$${value.toFixed(4)}`,
+    signed: (value) => `${value < 0 ? '-' : '+'}$${Math.abs(value).toFixed(4)}`
+  },
+  time: {
+    read: VALUE_METRICS.time,
+    money: (value) => `${(value / 1000).toFixed(1)} s`,
+    signed: (value) => `${value < 0 ? '-' : '+'}${Math.abs(value / 1000).toFixed(1)} s`
+  }
+};
+
+function armCell(stat, show) {
+  if (stat.n === 0) return '-';
+  if (stat.sd === null) return `${show.money(stat.mean)} (n=1)`;
+  return `${show.money(stat.mean)} ±${show.money(stat.sd / Math.sqrt(stat.n))}`;
+}
+
+function percentChange(diff, base) {
+  if (diff === null || !base) return '-';
+  const percent = Math.round(diff / base * 100);
+  return `${percent < 0 ? '-' : '+'}${Math.abs(percent)}%`;
+}
+
+function compareProblem(meta, cells, { before, after }, directory) {
+  for (const arm of [before, after]) {
+    if (!cells.some((cell) => cell.arm === arm)) throw new Error(`arm ${arm} has no cells in ${directory}`);
+  }
+  for (const cell of cells) {
+    if (cell.checks.tier !== 'value') throw new Error(`--compare reads value cells only; ${cell.task}/${cell.arm}/${cell.run} is ${cell.checks.tier}`);
+  }
+  for (const task of new Set(cells.map((cell) => cell.task))) {
+    for (const arm of [before, after]) {
+      if (!cells.some((cell) => cell.task === task && cell.arm === arm)) throw new Error(`task ${task} has no ${arm} cells`);
+    }
+  }
+}
+
+// Per task, cost and wall time of the two arms with a rise/noise/fall verdict,
+// then the CV (largest over both arms and both metrics) and the next run count.
+function compareLines(meta, allCells, arms, directory) {
+  const cells = allCells.filter((cell) => cell.arm === arms.before || cell.arm === arms.after);
+  compareProblem(meta, cells, arms, directory);
+  const lines = [
+    `compare ${arms.before} → ${arms.after} · value tier · model ${meta.model} · ${meta.date} · mean ±standard error`,
+    '',
+    '| task | metric | n before | n after | before | after | after − before | change | 2 SE_diff | verdict |',
+    '|---|---|---|---|---|---|---|---|---|---|'
+  ];
+  const verdicts = [];
+  const footer = [];
+  for (const task of [...new Set(cells.map((cell) => cell.task))].sort((left, right) => left.localeCompare(right))) {
+    const scored = cells.filter((cell) => cell.task === task && cell.checks.harnessError === undefined);
+    const cvs = [];
+    for (const [metric, show] of Object.entries(COMPARE_METRICS)) {
+      const values = (arm) => scored.filter((cell) => cell.arm === arm).map(show.read).filter((value) => value !== null);
+      const left = values(arms.before);
+      const right = values(arms.after);
+      const result = compareMeans(left, right);
+      const stats = [meanAndSd(left), meanAndSd(right)];
+      for (const stat of stats) if (stat.sd !== null && stat.mean > 0) cvs.push(stat.sd / stat.mean);
+      verdicts.push(result.verdict);
+      const diff = result.diff === null ? '-' : show.signed(result.diff);
+      const twoSe = result.twoSeDiff === null ? '-' : show.money(result.twoSeDiff);
+      lines.push(`| ${task} | ${metric} | ${stats[0].n} | ${stats[1].n} | ${armCell(stats[0], show)} | ${armCell(stats[1], show)} | ${diff} | ${percentChange(result.diff, stats[0].mean)} | ${twoSe} | ${result.verdict} |`);
+    }
+    const cv = cvs.length === 0 ? null : Math.max(...cvs);
+    footer.push(cv === null || cv <= 0
+      ? `${task}: CV - · next n ${nextRuns(null)} (planning CV ${PLANNING_CV.toFixed(2)})`
+      : `${task}: CV ${cv.toFixed(2)} (largest of cost and time, both arms) · next n ${nextRuns(cv)}`);
+  }
+  let overall = 'noise';
+  if (verdicts.includes('rise')) overall = 'rise';
+  else if (verdicts.includes('fall')) overall = 'fall';
+  else if (verdicts.includes('no SE')) overall = 'no verdict';
+  return [...lines, '', ...footer, `verdict: ${overall}`];
+}
+
 function roundedCent(value) {
   return Math.round(value * 100) / 100;
 }
@@ -360,11 +455,16 @@ function main() {
   const options = parseArguments(process.argv.slice(2));
   const meta = JSON.parse(fs.readFileSync(path.join(options.directory, 'meta.json'), 'utf8'));
   if (Array.isArray(meta.sets) && meta.sets.includes('flow') && !meta.arms) {
+    if (options.compare) throw new Error(COMPARE_ALONE);
     flowMain(options, meta);
     return;
   }
   if (options.extraDirectories.length > 0) throw new Error(`unknown argument ${options.extraDirectories[0]}`);
   const cells = readCells(options.directory);
+  if (options.compare) {
+    process.stdout.write(`${compareLines(meta, cells, options.compare, options.directory).join('\n')}\n`);
+    return;
+  }
   const valueCells = cells.filter((cell) => cell.checks.tier === 'value');
   if (valueCells.length > 0 && valueCells.length === cells.length) {
     const lines = valueLines(meta, valueCells);

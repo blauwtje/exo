@@ -84,6 +84,7 @@ The harness writes `.claude/exo.local.json` as `{ "workspace": "current", "ship"
 node benchmarks/run.mjs --tier value --arms baseline,exo --model sonnet --runs 2 --dry-run   # one argv line per cell, then the cell count, projected cost and projected time; no session
 node benchmarks/run.mjs --tasks value-<slug> --arms baseline,exo --model sonnet --runs 4 --out benchmarks/runs/<dir>
 node benchmarks/score.mjs benchmarks/runs/<dir>   # one row per task and arm: pass rate, defects, LOC, tokens, cost and wall time, each mean with its standard error
+node benchmarks/score.mjs benchmarks/runs/<dir> --compare exo-before,exo   # per task: cost and wall time after − before, 2 SE_diff, rise/noise/fall, CV and next n
 ```
 
 The projection takes each cell's cost from the mean of its finished twins under `benchmarks/runs/`, else the task's `estimateUsd`, else $1.50.

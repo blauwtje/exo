@@ -87,8 +87,6 @@ export function shelveLeftover(root, patchFile, knownUntracked) {
 
 const planTaskLines = (root, sha) => (gitOut(root, ['log', '-1', '--format=%B', sha]) ?? '').split('\n').filter((line) => /^Plan-task: /.test(line));
 
-const isAncestor = (root, ancestor, descendant) => spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', ancestor, descendant]).status === 0;
-
 function ownBranchMoved(root, before, after) {
   const names = gitOut(root, ['remote']);
   if (names === null) return JSON.stringify(after.remotes) !== JSON.stringify(before.remotes);
@@ -106,9 +104,13 @@ function remoteBreach(root, before, after) {
   for (const ref of changed) {
     const old = before.remotes[ref];
     const stops = old === undefined ? Object.values(before.remotes) : [old];
-    const owned = gitOut(root, ['rev-list', after.head, ...[...stops, ...others].map((sha) => `^${sha}`)]);
-    if (owned === null) return true;
-    if (owned.split('\n').filter(Boolean).some((sha) => isAncestor(root, sha, after.remotes[ref]))) return true;
+    const bases = spawnSync('git', ['-C', root, 'merge-base', '--all', after.head, after.remotes[ref]], { encoding: 'utf8' });
+    if (bases.status === 1 && bases.stdout.trim() === '') continue;
+    if (bases.status !== 0) return true;
+    const tips = bases.stdout.split('\n').filter(Boolean);
+    const exclusions = [...stops, ...others].map((sha) => `^${sha}`);
+    const owned = gitOut(root, ['rev-list', '--max-count=1', ...tips, ...exclusions]);
+    if (owned === null || owned !== '') return true;
   }
   return false;
 }

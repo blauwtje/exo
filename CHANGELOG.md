@@ -21,6 +21,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A detached run denies `npm publish`, Vercel, Netlify and Fly deploy commands.
 - A detached run saves the commit its branch review saw, as `pre-fix-head` and `pre-fix.patch` in the run log folder, before the review fix lands.
 - Land refuses a task whose `Data:` names a backticked string found nowhere in its change or the tree, unless the task sets `Literals: none (<reason>)`; the code rules fail on uneven spacing around `=` and a missing space after a comma.
+- `node benchmarks/score.mjs <dir> --compare <before>,<after>` compares two arms of one run: per task, cost and wall time after − before, 2 SE_diff, a rise, noise or fall verdict, the CV and the next run count.
 
 ### Changed
 - A repeated mistake in exo development now gets a check in `npm run check` or a fix on its code path, not a new hook, since each hook adds work to every session.
@@ -52,6 +53,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:prompt` asks no questions before its rewrite; an unclear point stays open in your words, and your ok runs the rewrite as written, without `exo:spec`.
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
 - spec ends on one question whether to start the build now; the background build starts only on your pick, and the option says how the work lands.
+- A run checks a moved remote ref with two git calls, not one per run commit, so the first fetch into a repo with no remote refs is no longer slow.
 
 ### Fixed
 - A detached run no longer stops when another session pushes or fetches; only a remote ref move the run caused counts as a breach.
