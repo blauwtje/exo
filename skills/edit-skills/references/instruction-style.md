@@ -54,6 +54,6 @@ Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: mod
 
 ## Enforcement
 
-- Must happen every time, no exception → hook or verifier, not prose.
+- Must happen every time, no exception → verifier in `npm run check`, not a new hook or prose; a hook adds overhead to every session.
 - Guard → deny or allow, command unchanged.
 - Hook → no command rewrite inside a pipeline.

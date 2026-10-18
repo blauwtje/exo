@@ -23,6 +23,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - A repeated mistake in exo development now gets a check in `npm run check` or a fix on its code path, not a new hook, since each hook adds work to every session.
+- The edit-skills style guide now enforces a rule that must always hold with a check in `npm run check`, not a new hook.
 - A session sends each part of a request with two or more parts to its own agent, all in one message; a skill that matches one part takes only that part.
 - A detached run's sessions get no session-start context, so each session caches about 900 fewer tokens.
 - verify no longer warns about a task's listed file that its commit leaves unchanged; that warning was 596 of 626 WARN lines in recent runs.
