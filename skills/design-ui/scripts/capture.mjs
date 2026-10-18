@@ -734,7 +734,9 @@ async function main(argv) {
   process.stderr.write(`ui-design: capture rung ${capability.rung} — ${capability.reason}\n`);
   const warning = engineWarning(capability.engine);
   if (warning) process.stderr.write(`ui-design: warning: ${warning}\n`);
-  for (const record of records) process.stdout.write(`${JSON.stringify(record)}\n`);
+  for (const { label, width, height, path, engine } of records) {
+    process.stdout.write(`${JSON.stringify({ label, width, height, path, engine })}\n`);
+  }
 }
 
 if (isMain(import.meta.url)) {
