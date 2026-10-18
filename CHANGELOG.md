@@ -59,6 +59,9 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - build-ui's comp and repair steps moved into the existing comp sections of direction-preview and phase-build, so a foundation or surface builder reads fewer lines.
 
 ### Fixed
+- A detached run's task and plan sessions can no longer commit or move a ref in the run's repo: git refuses the update and says the script lands each task after the session; a plan session's brief no longer copies the tasks' `Commit:` blocks.
+- In a sandboxed run session, a land-task or run-decision call inside a loop, variable or chain is refused with the bare `node "<path>"` form to run, instead of a don't-ask denial that stopped the run.
+- Benchmark cells no longer load the user's global `~/.claude/CLAUDE.md`; `makeDefaultOptionsHome({ withoutClaudeMd: true })` builds such a home for other harnesses.
 - A stopped detached run now tells the lead to send its repair to one worktree agent and edit no file itself; the two-repair cap counts only `task <n> blocked:` stop lines in `run.log`.
 - The land check skips an untracked path that is a registered git worktree, so a repair agent's worktree inside the checkout no longer blocks the resumed run.
 - A detached run no longer stops when another session pushes or fetches; only a remote ref move the run caused counts as a breach.

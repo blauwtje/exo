@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { driftOf, frameOf, INLINE_TASK_LIMIT } from '#plan-tasks';
+import { COMMIT_BLOCK, driftOf, frameOf, INLINE_TASK_LIMIT } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { stallSeconds } from '#stall-guard';
 import { taskBrief } from './next-task.mjs';
@@ -57,7 +57,9 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
 export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
   const briefs = numbers.map((number) => {
     const task = plan.tasks.find((entry) => entry.number === number);
-    return [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n');
+    // why: a plan session copied its tasks' Commit: blocks and committed them; the script lands each task after the session.
+    const unlanded = { ...task, section: task.section.replace(COMMIT_BLOCK, '').trimEnd() };
+    return [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(unlanded, frameOf(plan.frame), root).trimEnd()].join('\n');
   });
   const fields = {
     tasks: `${numbers.length === 1 ? 'Task' : 'Tasks'} ${numbers.join(', ')}`,

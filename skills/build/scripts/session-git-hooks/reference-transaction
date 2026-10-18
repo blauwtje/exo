@@ -1,0 +1,8 @@
+#!/bin/sh
+# why: git runs this hook on every ref update, and --no-verify does not skip it.
+cat >/dev/null
+[ "$1" = prepared ] || exit 0
+here=$(cd "$(git rev-parse --path-format=absolute --git-common-dir)" && pwd -P) || exit 0
+[ "$here" = "$EXO_RUN_GIT_DIR" ] || exit 0
+echo 'exo run session: git refuses this ref update; the run script commits and lands each task after this session ends.' >&2
+exit 1

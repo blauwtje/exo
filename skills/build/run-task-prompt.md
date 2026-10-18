@@ -44,11 +44,11 @@ Report to: [[report]]
 Brief:
 [[brief]]
 
-Land nothing. Batch independent Writes. Write each task's report, then run its check (it runs code rules; fix every finding):
+Commit nothing. Batch independent Writes. Write each task's report, then run its check (it runs code rules; fix every finding):
 [[checks]]
 
 A Lint, Land-gate or code-rule refusal → fix it, rerun the check. One you cannot fix, or the same twice → end on `Task [[first]]: PLAN DRIFT <reason>`.
 
 [[stall]]
 
-Last line of the reply, nothing after it, always on Task [[first]]: `Task [[first]]: GREEN`, `Task [[first]]: BLOCKED <reason>` or `Task [[first]]: PLAN DRIFT <reason>`. Another task not green → name its number in the reason.
+Last reply line, nothing after it, always on Task [[first]]: `Task [[first]]: GREEN`, `Task [[first]]: BLOCKED <reason>` or `Task [[first]]: PLAN DRIFT <reason>`. Another task not green → name its number in the reason.

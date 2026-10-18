@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { confinedClaude } from '#confine-claude';
-import { makeDefaultOptionsHome } from '#default-options-home';
+import { makeCellHome } from './cell-home.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { BEFORE_ARM, beforePluginProblem, buildCopies, copyKey, exoRootOf, loadsCopy, resolveDirectory, withBeforeArm } from './plugin-copies.mjs';
 import { pluginDirty } from './plugin-state.mjs';
@@ -449,7 +449,7 @@ async function main() {
   let spent = 0;
   const skipped = [];
   const highestCost = {};
-  const cellHome = makeDefaultOptionsHome();
+  const cellHome = makeCellHome();
   const copies = buildCopies(cells, armTable);
   const heartbeat = setInterval(() => console.log(`running: ${done}/${cells.length} cells done`), HEARTBEAT_MS);
   try {

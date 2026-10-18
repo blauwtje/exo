@@ -298,7 +298,22 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
   ];
 }
 
-export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, repair = false } = {}) {
+const SESSION_GIT_HOOKS = path.join(HERE, 'session-git-hooks');
+
+// why: config set through the env reaches every git the session starts, sandboxed or wrapped by the stall guard, yet not the script's land after the session.
+function refusingCommits(env, root) {
+  const count = Number(env.GIT_CONFIG_COUNT) || 0;
+  const common = spawnSync('git', ['-C', root, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).stdout.trim();
+  return {
+    ...env,
+    EXO_RUN_GIT_DIR: realpathOr(common),
+    GIT_CONFIG_COUNT: String(count + 1),
+    [`GIT_CONFIG_KEY_${count}`]: 'core.hooksPath',
+    [`GIT_CONFIG_VALUE_${count}`]: SESSION_GIT_HOOKS
+  };
+}
+
+export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, repair = false, refuseCommits = null } = {}) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   delete env.EXO_RUN_TASK;
@@ -311,7 +326,8 @@ export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, rep
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
   if (provider.name === 'claude' && provider.promptCacheTtl === '5m') env.FORCE_PROMPT_CACHING_5M = '1';
   if (provider.name === 'claude' && provider.promptCacheTtl === '1h') delete env.FORCE_PROMPT_CACHING_5M;
-  return { ...ecosystemEnv, ...env, ...provider.env, ...(provider.effort === null ? {} : { CLAUDE_CODE_EFFORT_LEVEL: provider.effort }) };
+  const merged = { ...ecosystemEnv, ...env, ...provider.env, ...(provider.effort === null ? {} : { CLAUDE_CODE_EFFORT_LEVEL: provider.effort }) };
+  return refuseCommits === null ? merged : refusingCommits(merged, refuseCommits);
 }
 
 export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {

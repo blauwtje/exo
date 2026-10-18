@@ -114,3 +114,27 @@ test('a pressure run spawns claude with HOME set to the mirror, whose settings h
     if (mirror) fs.rmSync(mirror, { recursive: true, force: true });
   }
 });
+
+test('with withoutClaudeMd the mirror has no CLAUDE.md and links the rest', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  let mirror;
+  try {
+    fs.mkdirSync(path.join(home, '.claude', 'projects'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', 'CLAUDE.md'), 'global\n');
+    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{}');
+    mirror = withHome(home, () => makeDefaultOptionsHome({ withoutClaudeMd: true }));
+    assert.equal(fs.lstatSync(path.join(mirror, '.claude', 'CLAUDE.md'), { throwIfNoEntry: false }), undefined);
+    assert.equal(fs.readFileSync(path.join(home, '.claude', 'CLAUDE.md'), 'utf8'), 'global\n');
+    assert.equal(fs.realpathSync(path.join(mirror, '.claude', 'projects')), fs.realpathSync(path.join(home, '.claude', 'projects')));
+    assert.equal(fs.existsSync(path.join(mirror, '.claude', 'settings.json')), true);
+    const kept = withHome(home, () => makeDefaultOptionsHome());
+    try {
+      assert.equal(fs.readFileSync(path.join(kept, '.claude', 'CLAUDE.md'), 'utf8'), 'global\n');
+    } finally {
+      fs.rmSync(kept, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+    if (mirror) fs.rmSync(mirror, { recursive: true, force: true });
+  }
+});
