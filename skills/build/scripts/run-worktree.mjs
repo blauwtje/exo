@@ -15,8 +15,20 @@ export function snapshot(root) {
   return {
     head: gitOut(root, ['rev-parse', 'HEAD']),
     branch: gitOut(root, ['symbolic-ref', '-q', 'HEAD']),
-    remotes: gitOut(root, ['for-each-ref', '--format=%(refname) %(objectname)', 'refs/remotes'])
+    remotes: refTips(root, 'refs/remotes'),
+    heads: refTips(root, 'refs/heads')
   };
+}
+
+function refTips(root, prefix) {
+  const listing = gitOut(root, ['for-each-ref', '--format=%(refname) %(objectname)', prefix]);
+  if (listing === null) return null;
+  const tips = {};
+  for (const line of listing.split('\n').filter(Boolean)) {
+    const space = line.lastIndexOf(' ');
+    tips[line.slice(0, space)] = line.slice(space + 1);
+  }
+  return tips;
 }
 
 export const untrackedPaths = (root) => (gitOut(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }) ?? '').split('\0').filter(Boolean);
@@ -75,9 +87,35 @@ export function shelveLeftover(root, patchFile, knownUntracked) {
 
 const planTaskLines = (root, sha) => (gitOut(root, ['log', '-1', '--format=%B', sha]) ?? '').split('\n').filter((line) => /^Plan-task: /.test(line));
 
+const isAncestor = (root, ancestor, descendant) => spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', ancestor, descendant]).status === 0;
+
+function ownBranchMoved(root, before, after) {
+  const names = gitOut(root, ['remote']);
+  if (names === null) return JSON.stringify(after.remotes) !== JSON.stringify(before.remotes);
+  const branch = before.branch.replace(/^refs\/heads\//, '');
+  return names.split('\n').filter(Boolean).some((name) => before.remotes[`refs/remotes/${name}/${branch}`] !== after.remotes[`refs/remotes/${name}/${branch}`]);
+}
+
+function remoteBreach(root, before, after) {
+  if (before.remotes === null || after.remotes === null || before.head === null || after.head === null) return JSON.stringify(after.remotes) !== JSON.stringify(before.remotes);
+  if (before.branch !== null && ownBranchMoved(root, before, after)) return true;
+  const changed = Object.keys(after.remotes).filter((ref) => before.remotes[ref] !== after.remotes[ref]);
+  if (changed.length === 0) return false;
+  if (before.heads === null) return true;
+  const others = Object.entries(before.heads).filter(([ref]) => ref !== before.branch).map(([, sha]) => sha);
+  for (const ref of changed) {
+    const old = before.remotes[ref];
+    const stops = old === undefined ? Object.values(before.remotes) : [old];
+    const owned = gitOut(root, ['rev-list', after.head, ...[...stops, ...others].map((sha) => `^${sha}`)]);
+    if (owned === null) return true;
+    if (owned.split('\n').filter(Boolean).some((sha) => isAncestor(root, sha, after.remotes[ref]))) return true;
+  }
+  return false;
+}
+
 export function breachOf(root, before, { trailer = null, tail = false } = {}) {
   const after = snapshot(root);
-  if (after.remotes !== before.remotes) return 'remote ref moved';
+  if (remoteBreach(root, before, after)) return 'remote ref moved';
   if (after.branch !== before.branch) return 'branch moved';
   if (after.head === before.head) return null;
   if (spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', before.head, after.head]).status !== 0) return 'branch moved';

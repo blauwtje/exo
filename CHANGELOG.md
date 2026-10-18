@@ -53,6 +53,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
 
 ### Fixed
+- A detached run no longer stops when another session pushes or fetches; only a remote ref move the run caused counts as a breach.
 - The boundary words check no longer fails a branch that is behind origin/main for words main added; it compares against the merge base.
 - Land no longer refuses a Data literal whose pieces name existing folders or path parts, such as a brace pattern over new files.
 - spec writes the brief right after the last answer instead of asking for a yes first, and asks no landing question in a folder with no git remote, so the open points check runs.
