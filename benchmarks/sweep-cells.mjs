@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
 import { FLOW_BRANCH, FLOW_PLAN, FLOW_REQUEST } from './sweep-fixtures.mjs';
 import { NO_RUN, ROOT, SAFE_TASKS } from './tasks.mjs';
+import { withoutParentSession } from './lean-gates.mjs';
 
 export const SWEEP_MODELS = {
   opus: 'claude-opus-5-5',
@@ -258,6 +259,12 @@ export function selectCells(cells, setNames) {
 // variant however many cells load it.
 export function pluginVariants(cells) {
   return [...new Set(cells.map((cell) => cell.pluginVariant).filter((name) => typeof name === 'string'))];
+}
+
+// A run arm's exo run refuses under a Claude Code session's CLAUDECODE, so it starts clean of the
+// parent session, as from a terminal; a claude cell keeps the environment its past results were measured in.
+export function cellEnvironment(cell, base, extra) {
+  return { ...(cell.runSession ? withoutParentSession(base) : base), ...extra };
 }
 
 // The `node` arguments of a run arm: exo run builds the fixed plan with one

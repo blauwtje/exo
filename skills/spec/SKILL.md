@@ -27,8 +27,8 @@ argument-hint: <outcome to shape>
    - Last answer → brief at once, no recap, no yes question; at most three agreed lines follow.
 4. **Map, then locate.**
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
-   - Range the map leaves unnamed → `exo:locate-code` in the foreground, at most eight ranges; read nothing it locates.
-   - Never `cat`, `head` or `sed`; outside facts → one `exo:fetch-docs` round, no gap-fill.
+   - Range the map leaves unnamed → `exo:locate-code`, at most eight ranges, read nothing it locates; outside facts → one `exo:fetch-docs` round, no gap-fill; both foreground, one message.
+   - Never `cat`, `head` or `sed`.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`.

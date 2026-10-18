@@ -27,7 +27,7 @@ import { commentStats, ledgerTranscripts } from './comment-count.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
-import { claudeArguments, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
+import { cellEnvironment, claudeArguments, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
@@ -127,7 +127,7 @@ function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
       : confinedClaude({ args: claudeArguments(cell, pluginDir), roots: [cellRoot], cwd: workdir, tmp });
     const child = spawn(run.command, run.args, {
       cwd: run.cwd,
-      env: { ...process.env, ...run.env },
+      env: cellEnvironment(cell, process.env, run.env),
       stdio: ['ignore', stdout, stderr],
       detached: process.platform !== 'win32'
     });

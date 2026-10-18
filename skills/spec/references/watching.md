@@ -1,5 +1,7 @@
 # Watching the run
 
+Scope: a run the user started in a terminal.
+
 - After `run --detach` → end the turn at once; the lead wakes only on park or finish, never to poll.
 - Waiting → start no other session, loop or watcher; the run-watch hook wakes this session.
 - Session with the exo status line → the status line shows progress and a wake prompt arrives when the run stops.
@@ -8,7 +10,7 @@
 - Reason → one agent repairs in one tree, and the lead's context stays free for the next wake.
 - Repair brief → the report path; the leftover patch the run saved, when it had edits, and the run tree it reset (`leftover saved to` or `partial work saved to` line in `<run directory>/run.log`), which the agent applies or discards; fix the plan (`node "${CLAUDE_SKILL_DIR}/../spec/scripts/plan-check.mjs" --loop --run --plan <plan> --root <run worktree>`) or the cause.
 - Repair lands where `run --resume` reads: the plan file at `plan` in `<run directory>/state.json`, committed in the checkout that holds it (resume refuses uncommitted edits there); a cause fix committed on the run branch (`Branch:` in the report). A commit left on the agent's own branch is not read.
-- Repair agent returns → `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" run --resume <id> --detach`, end the turn.
+- Repair agent returns → tell the user to run `exo run --resume <id> --detach` in a terminal, end the turn.
 - A task stops after two repairs → PushNotification tool if present, then ask the user. Repairs of a task = its earlier `task <n> blocked:` stop lines (colon directly after `blocked`; `task <n> blocked, repair session` lines do not count) in `<run directory>/run.log`, which every resume appends to.
 - Session without the status line → run the watch command the start line prints as one background Bash call.
 - While the watch runs → say nothing more.
@@ -18,6 +20,6 @@
   - Run changed a loaded plugin's source and landed → `/reload-plugins`.
   - `parked` → `exo approve <id>` after the open gates listed in `<run directory>/report.md`.
   - `stopped`, `refused` or `crashed` → the reason: `Reason:` in `<run directory>/report.md`, else the last error in `<run directory>/run.log`.
-  - Refused run → report its `Reason:`, fix the plan or cause in a worktree, rerun `exo-cli.mjs run <plan> --detach`; never build in the session.
+  - Refused run → report its `Reason:`, fix the plan or cause in a worktree, tell the user to rerun `exo run <plan> --detach` in a terminal.
   - Watch says `process gone` → `exo run --resume <id>`.
 - Watch exits 124 → report the run still running and the keep-waiting command it prints.

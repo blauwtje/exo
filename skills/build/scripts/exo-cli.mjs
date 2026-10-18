@@ -12,6 +12,7 @@ import { environmentMs, isMain } from '#script-flags';
 import { layers, resolve as resolveSetting } from '#settings-store';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
+import { SESSION_REFUSAL, insideClaudeCode } from './run-session.mjs';
 import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, keptDir, listRuns, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
 const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo run config [<key> <value>] | exo setup';
@@ -602,6 +603,7 @@ async function waitCommand(args) {
 async function dispatch(command, rest) {
   if (command === 'setup') return setupCommand();
   if (command === 'run' && rest[0] === 'config') return configCommand(rest.slice(1));
+  if ((command === 'run' || command === 'approve') && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
   if (command === 'approve') {
     process.exitCode = await approveCommand(rest);
     return;

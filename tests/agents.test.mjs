@@ -323,3 +323,26 @@ test('the open-points finder is read-only, runs the decisions check first and ca
   assert.ok(finder.body.includes('[code|assume|user]'));
   assert.ok(finder.body.includes('Under 1.5k tokens'));
 });
+
+// Wall time: a lookup that waits on another lookup it does not depend on costs a
+// whole delegate round trip, so independent opening calls share one message.
+const specSkill = fs.readFileSync(path.join(skillsRoot, 'spec/SKILL.md'), 'utf8');
+
+test('spec dispatches locate-code and fetch-docs in one message, and find-open-points opens with its reads together', () => {
+  const locate = specSkill.split('\n').find((line) => line.includes('`exo:locate-code`'));
+  assert.match(locate, /`exo:fetch-docs`/, 'locate-code and fetch-docs share one step line');
+  assert.match(locate, /one message/, 'spec sends both lookups in one message');
+  const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
+  assert.match(finder.body, /^- First message: Read the brief and run `node [^\n]*memory\.mjs" decisions` together\.$/m);
+  assert.doesNotMatch(finder.body, /before anything else/, 'no second opening call is ordered first');
+});
+
+test('build-task reads its brief and lean.md in its first message', () => {
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
+  assert.match(implementer.body, /^- First message: Read brief and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` once, never a `<checkout>` copy\.$/m);
+});
+
+test('review-branch reads its opening inputs together in its first message', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  assert.match(reviewer.body, /^- First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE\.md`\/`AGENTS\.md` together; then changed ranges\.$/m);
+});

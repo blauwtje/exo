@@ -57,6 +57,15 @@ test('a build session still commits in a repo other than the run root', () => {
   assert.notEqual(fixture.head(), before);
 });
 
+// why: a session runs its tasks' Proof, and those tests init repos, commit and add worktrees in temp fixture repos; a restriction in the session env reaches each of them.
+test('this repo\'s fixture-repo tests pass unchanged under a session env rooted at this repo', () => {
+  const root = spawnSync('git', ['-C', PLUGIN_ROOT, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).stdout.trim();
+  const env = childEnv('plan/1', PROVIDER, { refuseCommits: root });
+  delete env.NODE_TEST_CONTEXT;
+  const run = spawnSync(process.execPath, ['--test', 'tests/pressure-run-folder.test.mjs'], { cwd: root, env, encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stdout.split('\n').filter((line) => /not ok|✖|Error/.test(line)).join('\n'));
+});
+
 test('the script still commits outside the session env', () => {
   const { root, head } = seedRepo();
   const before = head();

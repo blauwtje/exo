@@ -33,6 +33,10 @@ const SESSION_MARKERS = [
   'CLAUDE_CODE_SESSION_ATTENDED', 'CLAUDE_CODE_SESSION_ID'
 ];
 
+// why: Claude Code sets CLAUDECODE in every Bash call; a session builds a plan with subagents through exo:build, so a headless run starts only from a terminal.
+export const SESSION_REFUSAL = 'exo run starts headless claude -p sessions and runs only from a terminal, not inside a Claude Code session; in the session run /exo:build <plan>, which builds with subagents';
+export const insideClaudeCode = (env = process.env) => Boolean(env.CLAUDECODE);
+
 export const DENY_RULES = [
   'Bash(git push *)', 'Bash(gh *)', 'Bash(git reset *)', 'Bash(git rebase *)', 'Bash(git cherry-pick *)',
   'Bash(git merge *)', 'Bash(git tag *)', 'Bash(git switch *)', 'Bash(git checkout *)', 'Bash(git branch -D *)',

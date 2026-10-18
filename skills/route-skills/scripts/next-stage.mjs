@@ -79,7 +79,7 @@ function unattendedLine(after, artifact) {
   if (check.error !== undefined) throw check.error;
   if (check.status !== 0) return null;
   const script = fileURLToPath(new URL('../../build/scripts/run-plan.mjs', import.meta.url));
-  return `Unattended, with Claude Code: node "${script}" ${path.resolve(file)}`;
+  return `Unattended, in a terminal outside Claude Code: node "${script}" ${path.resolve(file)}`;
 }
 
 export function nextStageReport({ after, artifact }) {

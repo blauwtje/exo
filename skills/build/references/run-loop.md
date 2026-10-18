@@ -1,9 +1,8 @@
 # The loop, steps 1-6
 
-1. **Find the plan, start the detached run, else settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only`, plus `--plan <path>` for a named plan.
+1. **Find the plan, then settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only`, plus `--plan <path>` for a named plan.
    - Zero or several matches → ask which plan.
-   - No `--task`, no codex, `claude` on `PATH` → run `node "${CLAUDE_SKILL_DIR}/scripts/exo-cli.mjs" run <plan> --detach`, print its line, watch per spec's watching reference, end. Else the unit route.
-   - Refused → fix the `Reason:` in `$RUN/report.md` in a worktree, rerun; never the unit route.
+   - Every session takes the unit route below; headless `exo run [plan]` starts only from the user's terminal and refuses inside a session.
    - Settle where the run commits.
    - Take `Repository:` and `Branch:` from that output, never the plan.
    - Rerun `start-run.mjs --plan <path> --checkout <checkout>` once; its `run started` line ends step 1.

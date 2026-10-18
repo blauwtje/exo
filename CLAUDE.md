@@ -9,9 +9,9 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Lead only orchestrates: every edit, fix and failed-check repair → worktree subagent, one concern each; independent parts in parallel; brief with two unrelated parts → two subagents.
 - `CHANGELOG.md` → outside a run, only the lead writes it, so subagent branches never conflict on it; every plan here ends with a task writing its `## Unreleased` line, so the line lands in the run's squash commit.
 - `exo:spec` → lead runs it itself; code reading goes to `exo:locate-code`; the lead writes the brief itself.
-- Build → `node skills/build/scripts/exo-cli.mjs run <brief> --detach`, not `exo:build` in the lead session; resume → `run --resume <run-id> --detach`; after either, the lead ends its turn and wakes only on park or finish. A plan task lands only through that loop; lead and subagents commit no plan task on the run branch.
-- Plans here → `Land: local` and `Commit: <type(scope): subject>`; `land-run` rebases, reruns the Success criterion and squashes the run onto `main` as that commit; lead reads the run report, then pushes `main` directly, no pull request.
-- Run task blocked → its partial work to a hint file such as `.exo/carry/task<n>-partial.patch`, run tree reset; not a commit on the run branch. After that reset, lead fixes the plan (checked with `node skills/spec/scripts/plan-check.mjs --loop --run --plan <plan> --root <run worktree>`) or the cause in a worktree subagent, then resumes the run.
+- Build → `exo:build <brief>` in the lead session, which lands each task through `exo:run-unit` subagents; resume → `exo:build <brief>` again, it reads landed tasks from `Plan-task:` commits. Headless `exo run` → only from the user's terminal; it refuses inside Claude Code. A plan task lands only through that loop; lead and subagents commit no plan task on the run branch.
+- Plans here → `Land: local` and `Commit: <type(scope): subject>`; after `verify` passes, lead squashes the run branch onto `main` as that commit per the `Then →` bullet, then pushes `main` directly, no pull request.
+- Run task blocked → its partial work to a hint file such as `.exo/carry/task<n>-partial.patch`, run tree reset; not a commit on the run branch. After that reset, lead fixes the plan (checked with `node skills/spec/scripts/plan-check.mjs --loop --run --plan <plan> --root <run worktree>`) or the cause in a worktree subagent, then reruns `exo:build`.
 - Gate or Success criterion repair on run branch → `fix(<scope>):` commit, no `Plan-task:` trailer; else the verify gate flags its files `UNPLANNED <file>`.
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's; handover between phases → the brief and `.exo/` files.
 - Non-run subagent work → land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; after rebase, every line of the change stays under `## Unreleased`.
@@ -29,7 +29,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Mistake recurs across runs or reviews → add a check to `npm run check` or a fix on its code path, not a new hook or another prose line; a hook adds overhead to every session.
 - Plan task mixes a no-behavior-change edit with a behavior change → split into two tasks, structural first.
 - Subagent report claims a passing check or a code fact → read the proof output line and cited file before accepting.
-- Detached run log shows looping, unrequested functionality or weakened tests → stop the run, repair the cause, then resume.
+- Run log or unit return shows looping, unrequested functionality or weakened tests → stop the run, repair the cause, then resume.
 - New skill, agent or run stage → add only after a recorded failure the existing parts cannot fix.
 - Subagent commit → one purpose, made only after its proof passes.
 - Brief leaves a choice open → subagent returns the competing readings to the lead, not a silent pick.

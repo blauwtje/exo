@@ -8,7 +8,7 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 
 ## The loop
 
-1. **Find the plan, then start its detached run.**
+1. **Find the plan, then settle the workspace.**
 2. **Leave the plan to the unit.** On `Route: unit`: After dispatch, read only script output and unit returns, no plan or diff.
 3. **Ask the branch what landed.**
 4. **Take the block.**
@@ -16,7 +16,7 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 6. **Route the return.**
 7. **The tail.** Read `references/tail.md`, then run `verify`, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
 
-- Run refused → fix the plan per `Reason:`, rerun `exo-cli.mjs run --detach`; never build in this session unless asked.
+- Headless run → only the user's terminal `exo run`, never this session.
 
 ## No spec
 

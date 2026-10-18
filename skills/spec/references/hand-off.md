@@ -12,6 +12,5 @@ First match wins:
 On the reply:
 
 - Start now or `ok`, setting `env` is `ask` and the main checkout holds gitignored .env files → first ask once: copy them into each run worktree, or never. Store the answer with `node "${CLAUDE_SKILL_DIR}/../configure/scripts/settings.mjs" set env <copy or never> --scope project`.
-- Start now or `ok` → run `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" run <brief path> --detach`, print its one line, then watch the run per the watching reference.
+- Start now or `ok` → invoke `exo:build` with the brief path in this session.
 - Later → print the `--fresh` output; build nothing.
-- Run command refuses (lock held, error) → ask nothing; print the `--fresh` output. Build starts in a new session with the brief path as its only input.

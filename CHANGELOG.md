@@ -10,10 +10,13 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Highlights
+- **Inside Claude Code, exo now builds a plan with subagents; a headless run starts only from the terminal `exo run`.**
 - **exo no longer blocks risky git commands, destructive shell commands or shell reads of secret files; set `permissions.deny` rules or the sandbox in your own settings to keep them blocked.**
 - **A new session now orchestrates efficiently and picks a fitting model and effort per agent by default; set `budget` to `off` to keep the old behavior.**
 
 ### Added
+- `architecture-sketch.md` sets 3-5 criteria before sketching, gives each candidate its own named constraint, redoes one when all share a shape, scores per criterion and grafts parts of two candidates.
+- A design question privately drafts at least 5 routes and shows the most distinct, at least one not first to mind.
 - Error-case replay: the saved cases, their runner and grader are tracked under benchmarks/replay/, with home paths redacted.
 - A detached run reports each session's cache read share and warns when turn 1 writes a large cache.
 - plan-check warns on adjacent tiny plan tasks.
@@ -25,6 +28,10 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/run.mjs --before-plugin <dir>` adds an `exo-before` arm that loads exo from another checkout, so one run compares a change with the commit before it.
 
 ### Changed
+- `exo-cli.mjs run`, `exo approve` and `run-plan.mjs` refuse to start inside a Claude Code session (exit 2); `/exo:run-plan` hands the plan to `exo:build`, and benchmark sweep cells still run.
+- spec sends locate-code and fetch-docs in one message; find-open-points, build-task and review-branch batch their opening reads, saving a serial turn each.
+- The main session cannot Read a whole saved oversized tool output; it reads a line range, greps or sends a subagent.
+- Session rules say the lead reads no file its brief points to.
 - A repeated mistake in exo development now gets a check in `npm run check` or a fix on its code path, not a new hook, since each hook adds work to every session.
 - The edit-skills style guide now enforces a rule that must always hold with a check in `npm run check`, not a new hook.
 - A session sends each part of a request with two or more parts to its own agent, all in one message; a skill that matches one part takes only that part.
@@ -60,6 +67,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - design-ui's `capture.mjs` prints only label, size, path and engine per render, so a builder reads about 310 fewer bytes per two-viewport call.
 
 ### Fixed
+- A test runs a real fixture-repo test under the run session env, so a session git block that reaches other repos fails `npm run check`.
 - `benchmarks/prices.mjs` prices Sonnet 5.5 cache reads at its list price of $0.10 per million tokens, not the Sonnet 5 rate of $0.20.
 - A detached run's task and plan sessions can no longer commit or move a ref in the run's repo: git refuses the update and says the script lands each task after the session; a plan session's brief no longer copies the tasks' `Commit:` blocks.
 - In a sandboxed run session, a land-task or run-decision call inside a loop, variable or chain is refused with the bare `node "<path>"` form to run, instead of a don't-ask denial that stopped the run.

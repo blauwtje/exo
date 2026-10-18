@@ -1,27 +1,22 @@
 ---
 name: run-plan
-description: Use when the user invokes it to run a plan's unlanded tasks in headless sessions, one task per process. Not for a plan built inside this session, which build owns, or a plan not yet written, which spec owns.
-argument-hint: "<plan path>"
+description: Use when the user invokes it to run a plan's unlanded tasks, which it hands to build, or to install the terminal `exo run`. Not for a plan built inside this session, which build owns, or a plan not yet written, which spec owns.
+argument-hint: "<plan path> | setup"
 disable-model-invocation: true
 ---
 
-# Run a plan headless
+# Run a plan
 
-Start the cheap loop on the plan the user invokes run-plan on: each unlanded task runs in a fresh `claude -p` process, then one verify process, no context carried between tasks. The enemy is a session that builds tasks itself while the script runs, so two writers race on one branch. The overcorrection is a session that adds flags or retries the script never asked for.
+Build the plan the user invokes run-plan on through `exo:build`, each task landed by agents in this session. The enemy is a session that starts the headless scripts itself, which refuse inside a session. The overcorrection is a session that builds tasks itself beside the build loop.
 
 ## Run
 
-Terminal route → `exo run [plan]`, installed once by `setup`.
-
 1. Argument `setup` → run `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" setup`, report its output, stop.
    - Else argument → one plan path; none → ask for it, run nothing.
-2. Run `node "${CLAUDE_SKILL_DIR}/../build/scripts/run-plan.mjs" <plan>` with Bash `run_in_background`; the run outlasts one foreground call.
-3. Pass only flags the user typed; the script holds the defaults.
-4. Exit → relay the summary the script prints at its end, including its `Details:` path. Exit 0 = done, gate passing; 1 = any other stop; 2 = refusal.
+2. Plan path → invoke `exo:build <plan>` with the flags the user typed that build takes.
+3. Report one line: the headless loop, each task in its own process, runs only from a terminal, as the user's `exo run <plan> --detach`.
 
 ## Judgment
 
-- While it runs → touch no task, branch or file the script owns.
-- Sessions → sandboxed: writes only inside the repo, no network; land-task and run-decision run outside the sandbox.
-- Exit 1 or 2 → report the summary or refusal line; rerun only when the user asks.
-- In-session loop wanted → official `/ralph-loop` plugin still works beside exo, which adds no Stop hook; this skill and `exo run` start a fresh session per task.
+- Run already live → touch no task, branch or file it owns.
+- In-session loop wanted → official `/ralph-loop` plugin still works beside exo, which adds no Stop hook.

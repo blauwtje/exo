@@ -108,3 +108,28 @@ test('wait on a stopped run points its Next line at the watching reference, and 
   assert.ok(pointer.endsWith(path.join('skills', 'spec', 'references', 'watching.md')), pointer);
   assert.ok((await fs.stat(pointer)).isFile());
 });
+
+const RUN_PLAN = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
+const SESSION_REFUSAL = /refused: .*only from a terminal, not inside a Claude Code session; .*\/exo:build/;
+
+test('exo run inside a Claude Code session refuses before it starts a headless session', async () => {
+  const context = await setup();
+  for (const args of [['run', '--detach', '--claude', context.stub], ['run', '--claude', context.stub], ['approve', 'any-run']]) {
+    const result = await run(CLI, args, { cwd: context.root, env: { STUB_RECORD: context.record, HOME: context.home, CLAUDECODE: '1' } });
+    assert.equal(result.code, 2, args.join(' '));
+    assert.match(result.stderr, new RegExp(`^exo: ${SESSION_REFUSAL.source}`, 'm'), args.join(' '));
+  }
+  assert.deepEqual(await fs.readdir(path.join(context.root, '.exo', 'run')).catch(() => []), []);
+  assert.deepEqual(await calls(context), []);
+});
+
+test('run-plan inside a Claude Code session refuses before it starts a headless session', async () => {
+  const context = await setup();
+  const plan = path.join(context.root, 'docs', 'specs', 'new.md');
+  const result = await run(RUN_PLAN, [plan, '--root', context.root, '--claude', context.stub], {
+    cwd: context.root, env: { STUB_RECORD: context.record, HOME: context.home, CLAUDECODE: '1' }
+  });
+  assert.equal(result.code, 2);
+  assert.match(result.stdout, new RegExp(`^run-plan: ${SESSION_REFUSAL.source}`, 'm'));
+  assert.deepEqual(await calls(context), []);
+});

@@ -20,7 +20,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { openGate, phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
+import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, SESSION_REFUSAL, insideClaudeCode, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { landChangelogTask } from './changelog-task.mjs';
@@ -179,6 +179,10 @@ async function main(argv) {
   const sessionCap = numberFlag(flags['max-budget-usd'], 'max-budget-usd');
   const runCap = numberFlag(flags['max-run-usd'], 'max-run-usd');
 
+  if (!flags['dry-run'] && insideClaudeCode()) {
+    process.stdout.write(`run-plan: refused: ${SESSION_REFUSAL}\n`);
+    return 2;
+  }
   let context;
   try {
     context = preflight(planArgument, flags);

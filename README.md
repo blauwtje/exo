@@ -89,7 +89,7 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 | See or change a setting | `configure` |
 | Rewrite a rough prompt | `prompt` |
 
-`/exo:run-plan <plan>` runs a plan's tasks as a cheap headless loop, one fresh process per task; `build` runs the same plan with subagents. `/exo:save-session` saves where a session is, for a fresh one after `/clear`. `/exo:remember` books a correction about the repository, or approves a claim two sessions have booked. Every skill has a page in [docs/skills/](docs/skills/).
+`build` runs a plan with subagents, the route every Claude Code session takes. The cheap headless loop, one fresh process per task, runs only from a terminal as `exo run <plan>`; `/exo:run-plan setup` installs `exo`, and `/exo:run-plan <plan>` hands the plan to `build`. `/exo:save-session` saves where a session is, for a fresh one after `/clear`. `/exo:remember` books a correction about the repository, or approves a claim two sessions have booked. Every skill has a page in [docs/skills/](docs/skills/).
 
 ## What changes
 

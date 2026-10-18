@@ -112,3 +112,20 @@ test('Bash and Edit dispatchers give the main session one soft note at 61k, none
     if (saved !== undefined) process.env.EXO_RUN_HANDOFF = saved; else delete process.env.EXO_RUN_HANDOFF;
   }
 });
+
+test('main session Read of a whole persisted tool output is denied; a range or another file passes', async () => {
+  const { persistedReadDecision } = await import('../lib/context-limits.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-persisted-'));
+  const transcript_path = path.join(dir, 'session.jsonl');
+  const persisted = path.join(dir, 'session', 'tool-results', 'b123.txt');
+  const read = (tool_input, extra = {}) => persistedReadDecision({ transcript_path, tool_name: 'Read', tool_input, ...extra });
+  assert.match(read({ file_path: persisted }).deny, /offset and limit/);
+  assert.equal(read({ file_path: persisted, offset: 40, limit: 30 }), null);
+  assert.equal(read({ file_path: path.join(dir, 'notes.md') }), null);
+  assert.equal(read({ file_path: persisted }, { agent_id: 'a1' }), null);
+  assert.equal(persistedReadDecision({ transcript_path, tool_name: 'Grep', tool_input: { path: persisted } }), null);
+  const hook = new URL('../hooks/context-limit.mjs', import.meta.url);
+  const { execFileSync } = await import('node:child_process');
+  const out = execFileSync(process.execPath, [hook.pathname], { input: JSON.stringify({ session_id: 'p', transcript_path, tool_name: 'Read', tool_input: { file_path: persisted } }), encoding: 'utf8' });
+  assert.equal(JSON.parse(out).hookSpecificOutput.permissionDecision, 'deny');
+});

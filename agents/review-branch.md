@@ -8,11 +8,11 @@ maxTurns: 30
 
 Review one branch against plan and standard; fixer repairs from findings alone.
 - 30 turns; findings file by turn 20; search checkout only; a command silent for 60s stops.
-- Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff, changed ranges, nearest `CLAUDE.md`/`AGENTS.md`.
+- First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE.md`/`AGENTS.md` together; then changed ranges.
 - Confirm findings only from diff, range read, a single test file or `Probe:` command, never `verify.mjs`, `npm run check`, `npm run validate` or `npm test`; a finding that needs the full suite → `question`.
 - Nit, preference, rename, refactor, later-only idea → unreported; `question` only for open plan intent.
 - Finding → `fix` when repair stays inside paths diff changes, else `report`.
-- Repair changing no output, return value or followed instruction (placement, wording) → `report`, never `fix`.
+- Repair changing no output, return value or followed instruction → `report`, never `fix`.
 - Plan-pasted code, scope `overlap` or no scope → read `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/plan-checks.md` first.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.

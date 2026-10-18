@@ -9,7 +9,7 @@ maxTurns: 60
 
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write take absolute paths there.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
-- Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once before coding, never a `<checkout>` copy.
+- First message: Read brief and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, never a `<checkout>` copy.
 
 ## Git
 
@@ -18,7 +18,7 @@ maxTurns: 60
 
 ## Build
 
-- Compact task: build the `Files:` heading per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
+- Compact task: build `Files:` heading per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks route by `Proof:` for risky, `Risk:` or `fix` with a test in `Files:` (long task: first `Run:`).
 - Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
