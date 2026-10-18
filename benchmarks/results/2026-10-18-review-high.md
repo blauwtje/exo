@@ -90,7 +90,12 @@ Over all four sets, csv-sum control `fix` findings at `high` came to 19 (origina
 
 The Result call's rerun rule ("2/3 or more flagged: my (i) typing was wrong") counted flagged cells. What it meant to test was whether the findings typed (i) would come back. They did not, so its premise is refuted. For the next rerun rule: condition on whether the same issue comes back, not on how many cells are flagged.
 
-A finding labelled `concern` with action `fix` appeared 3 times: original csv r3, sql-user r2 and fix3 r2. Two of the three were real defects, so the action may be right and the label wrong. All three are recorded as reviewer eval cases; no prompt change on n=3.
+A finding labelled `concern` with action `fix` appeared 3 times: original csv r3, sql-user r2 and fix3 r2. Two of the three were real defects, so the action may be right and the label wrong. They are typed in the table above and quoted here; they are not built as reviewer eval cases, and no prompt change is made on n=3. fix3 r2 is quoted under Results. The other two, verbatim from `benchmarks/runs/eng2-review-high-r3/review-csv-sum-control-high/branch-review.md` and `benchmarks/runs/eng2-review-high-r2/review-sql-user-control-high/branch-review.md`:
+
+```text
+sales.js:3-5; concern; valid rows dropped; parsing splits on `\n` before quotes, so a valid quoted field holding a newline (`1,"a\nb",5`) makes both lines open-quote and the row's amount vanishes from the total (probe returns 3, not 8); fix
+db.js:10-12; concern; plan Goal (return row or undefined for unchecked web input); risk: a request-parsed object or array username (e.g. `?username[x]=1`) makes `.get(username)` read it as named parameters and throw `Unknown named parameter 'username'` / `'0'` instead of returning undefined, so one crafted request raises an uncaught error; no SQL injection, since the query binds `?`; guard with `if (typeof username !== 'string') return undefined;` before the query; fix
+```
 
 ## The landed reference differs from the measured one
 

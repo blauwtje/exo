@@ -125,6 +125,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - ship removes a merged pull request's worktree with remove-worktree.mjs, so its `.exo/` run report is kept.
 - `score.mjs --compare` judges pass rate first, so an arm that fails fast no longer reads as cheaper.
 - The review benchmark's csv-sum control reference sums decimals exactly, reads quoted fields that span lines and keeps valid rows after a stray quote, and sweep cells copy only the task's file from its fixture folder; at `high`, the branch reviewer found 15 of 15 seeded defects and raised a `fix` on 1 of 12 control branches of the four tasks other than csv-sum (`benchmarks/results/2026-10-18-review-high.md`).
+- The review-at-`high` results file no longer says its three `concern` findings marked `fix` are reviewer eval cases, and quotes the two of them that were only in git-ignored run folders.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.
