@@ -26,7 +26,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 
 ## Principles
 
-- Mistake recurs across runs or reviews → add a check to `npm run check` or a hook, not another prose line.
+- Mistake recurs across runs or reviews → add a check to `npm run check` or a fix on its code path, not a new hook or another prose line; a hook adds overhead to every session.
 - Plan task mixes a no-behavior-change edit with a behavior change → split into two tasks, structural first.
 - Subagent report claims a passing check or a code fact → read the proof output line and cited file before accepting.
 - Detached run log shows looping, unrequested functionality or weakened tests → stop the run, repair the cause, then resume.
