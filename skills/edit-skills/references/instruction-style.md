@@ -12,7 +12,9 @@ Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: mod
 - Rule system prompt also states → keep; sessions switch models.
 - Comments (HTML too), sources, change history, opinions → cut.
 - Date → cut, except on a fact that will age; that fact → reference, with its date.
-- Example → cut unless rule fails without it.
+- Example → cut unless rule fails without it, or rule sets output format, tone or detail.
+- Format, tone or detail example → 3-5, varied, one edge case, beside the rule it shows; Claude copies examples closely, so one example sets a pattern.
+- Example of reasoning steps → cut; examples steer form, not reasoning, and few-shot hurt a reasoning model.
 - Reason → cut unless it sets the rule's boundary; then one clause.
 
 ## Compress

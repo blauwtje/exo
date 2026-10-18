@@ -26,3 +26,17 @@ Under 1.5k tokens and at most 25 lines, ranked by cost of a wrong guess, one lin
 `<n>. [code|assume|user] <point> → <recommended answer> (<path:line>)`
 
 No point → `none`.
+
+Example:
+
+```
+1. [user] Delete exported files after download, or keep them? → keep them; deleting cannot be undone (none)
+2. [code] Which module owns retries? → `lib/retry.mjs` (lib/retry.mjs:12)
+3. [assume] Page size when the brief names none → 20, one constant to change (lib/paginate.mjs:3)
+```
+
+Example when the brief leaves no guess:
+
+```
+none
+```
