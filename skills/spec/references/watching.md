@@ -4,7 +4,7 @@
 - Waiting → start no other session, loop or watcher; the run-watch hook wakes this session.
 - Session with the exo status line → the status line shows progress and a wake prompt arrives when the run stops.
 - Wake names `landed` or `passed` → report the result from the run report.
-- Wake names another phase → read `<run directory>/report.md`; one worktree agent saves the blocked task's partial work to `.exo/carry/task<n>-partial.patch`, resets the run tree, fixes the plan (`node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --loop --run --plan <plan> --root <run worktree>`) or the cause.
+- Wake names another phase → read `<run directory>/report.md`; one worktree agent saves the blocked task's partial work to `.exo/carry/task<n>-partial.patch`, resets the run tree, fixes the plan (`node "${CLAUDE_SKILL_DIR}/../spec/scripts/plan-check.mjs" --loop --run --plan <plan> --root <run worktree>`) or the cause.
 - Then → `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" run --resume <id> --detach`, end the turn.
 - A task stops after two repairs → PushNotification tool if present, then ask the user. Repairs of a task = its `task<n>-partial.patch` files plus your repair turns.
 - Session without the status line → run the watch command the start line prints as one background Bash call.

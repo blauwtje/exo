@@ -102,6 +102,8 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The plan check pairs a file with a name-matched test only when the test names that file, so a `benchmarks/run.mjs` edit no longer demands the `run-session` tests.
 - Benchmark forecasts say unknown or at least, not $0.00 or 0.0 min, for cells with no past record, and a published cut with no task in both arms stops with an error.
 - `exo:prompt` shows a prompt asked for use in another session as that finished prompt, with no offer to run it, and keeps from pasted chat history only the lines the task needs.
+- A stopped run's wait output and wake prompt point to spec's watching reference, which holds the repair cap, instead of build's step loop.
+- The watching reference's plan-check command finds spec's script when build reads it too.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.

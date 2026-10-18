@@ -91,7 +91,7 @@ function wakeText(run) {
   const { phase, reason } = run.state;
   const head = `exo run ${run.id} ended ${phase}${reason ? `: ${reason}` : ''}.`;
   if (REPORT_PHASES.includes(phase)) return `${head} Report the result to the user.`;
-  return `${head} Follow exo:build references/run-loop.md to repair and resume.`;
+  return `${head} Follow exo:spec references/watching.md to repair and resume.`;
 }
 
 async function readLog($, dir) {

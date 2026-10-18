@@ -20,6 +20,8 @@ const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
 // why: a plan run with several tasks and 30-minute gates can take hours; the deadline only ends a wait nobody reads.
 const WAIT_MS = 6 * 60 * 60 * 1000;
 const POLL_MS = 1000;
+// why: a stopped or crashed run needs the repair cap and carry rules, which live in spec's watching reference.
+const WATCHING = path.join(path.dirname(CLI), '..', '..', 'spec', 'references', 'watching.md');
 const watchCommand = (id) => `node "${CLI}" wait ${id}`;
 
 class Refusal extends Error {}
@@ -562,7 +564,7 @@ function finishWait(state, id, dir) {
   const next = {
     refused: `fix the cause, then rerun node "${CLI}" run "${state.plan}" --detach`,
     parked: `read ${report}, then node "${CLI}" approve ${id}`
-  }[state.phase] ?? `read ${report}, repair, then node "${CLI}" run --resume ${id} --detach`;
+  }[state.phase] ?? `read ${report}, repair per ${WATCHING}, then node "${CLI}" run --resume ${id} --detach`;
   process.stdout.write(`${state.reason ? `Reason: ${state.reason}\n` : ''}Next: ${next}\n`);
   return 1;
 }

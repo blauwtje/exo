@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -92,4 +93,18 @@ test('a dirty tree refuses a detached run before it detaches', async () => {
   assert.doesNotMatch(result.stdout, /started in the background/);
   assert.deepEqual(await fs.readdir(path.join(context.root, '.exo', 'run')).catch(() => []), []);
   assert.deepEqual(await calls(context), []);
+});
+
+test('wait on a stopped run points its Next line at the watching reference, and the file exists', async () => {
+  const context = await setup();
+  const dead = spawnSync(process.execPath, ['-e', '']).pid;
+  const dir = path.join(context.root, '.exo', 'run', 'stopped-run');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify({ phase: 'stopped', pid: dead, plan: 'plan.md' }));
+  const result = await exo(context, ['wait', 'stopped-run']);
+  const next = result.stdout.split('\n').find((line) => line.startsWith('Next:')) ?? '';
+  const pointer = next.match(/repair per (\S+watching\.md)/)?.[1];
+  assert.ok(pointer, `${result.stdout}${result.stderr}`);
+  assert.ok(pointer.endsWith(path.join('skills', 'spec', 'references', 'watching.md')), pointer);
+  assert.ok((await fs.stat(pointer)).isFile());
 });

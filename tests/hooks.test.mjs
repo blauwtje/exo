@@ -117,6 +117,11 @@ test('hooks.json lists the run-watch module beside hooks, and the file exists', 
   assert.ok(fs.statSync(path.join(REPOSITORY, 'hooks', 'run-watch.mjs')).isFile());
 });
 
+test('the run-watch wake prompt names the watching reference, and that reference exists', () => {
+  assert.ok(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'run-watch.mjs'), 'utf8').includes('exo:spec references/watching.md'));
+  assert.ok(fs.statSync(path.join(REPOSITORY, 'skills', 'spec', 'references', 'watching.md')).isFile());
+});
+
 test('the session hook deletes the savings folder an earlier version left and keeps the rest', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-savings-'));
   const exoDirectory = path.join(configHome, 'exo');
