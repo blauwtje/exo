@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { HEADLESS_LINE, MAKER_LINE, makerArguments, makerPrompt, runFailure, scoreDirectory, wrongCopyDirs } from '../benchmarks/ideas.mjs';
-import { JUDGE_ARGUMENTS, addRarity, calibration, decisions, modalShare, runRecord } from '../benchmarks/ideas-score.mjs';
+import { JUDGE_ARGUMENTS, addRarity, calibration, compareMarkdown, decisions, modalShare, resultsMarkdown, runRecord } from '../benchmarks/ideas-score.mjs';
 
 const IDEAS = path.join(import.meta.dirname, '..', 'benchmarks', 'ideas.mjs');
 const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'benchmarks', 'ideas', 'cases.json'), 'utf8'));
@@ -36,7 +36,16 @@ test('metrics, rarity and modal share compute on fixed options', () => {
   addRarity([a, b]);
   assert.equal(a.rare, 0.5);
   assert.equal(b.rare, 0);
-  assert.equal(modalShare({ records: [a, b], shapes: [0, 0, 1, 0] }), 1);
+  assert.equal(modalShare({ records: [a, b] }), 1);
+});
+
+test('modal share is the share of runs recommending the most common recommended shape', () => {
+  // notes baseline: shape 3 is recommended by all five runs but is not the most common shape over all options.
+  const notes = [1, 2, 3, 4, 5].map((run) => ({ recommendedShape: 3, run }));
+  assert.equal(modalShare({ records: notes }), 1);
+  const shopping = [0, 3, 0, 0, 0].map((recommendedShape) => ({ recommendedShape }));
+  assert.equal(modalShare({ records: shopping }), 0.8);
+  assert.equal(modalShare({ records: [{ recommendedShape: null }] }), null);
 });
 
 test('calibration passes at 80 percent within one and fails below', () => {
@@ -147,4 +156,17 @@ test('judge calls skip user settings and load no plugin; maker calls load only t
   const maker = makerArguments({ prompt: 'p', plugin: '/arm/copy' });
   assert.equal(sources(maker), 'project,local');
   assert.deepEqual(maker.flatMap((arg, at) => (arg === '--plugin-dir' ? [maker[at + 1]] : [])), ['/arm/copy']);
+});
+
+test('a metric with sd 0 prints no MDE, is named at a floor or ceiling, and a compare against it is not significant', () => {
+  const record = (strong, fit) => ({ case: 'c', run: 1, options: 4, shapes: 4, duplicateShare: 0, originality: 1, fit, strong, rare: 0, recommendedShape: 0 });
+  const base = [record(0, 3), record(0, 4), record(0, 3.5)];
+  const text = resultsMarkdown({ arm: 'base', records: base, caseShares: { c: 1 }, verdict: { share: 1, passed: true }, unscored: [] });
+  assert.match(text, /\| strong \| 0 \| 0 \| 3 \| n\/a \(sd 0\) \|/);
+  assert.doesNotMatch(text, /\| fit \|[^\n]*n\/a/);
+  assert.match(text, /At a floor or ceiling \(sd 0, no detectable effect\): strong 0, options 4, shapes 4, duplicateShare 0, originality 1, rare 0\n/);
+  const variant = [record(1, 3), record(1, 4), record(1, 3.5)];
+  const table = compareMarkdown({ left: base, right: variant });
+  assert.match(table, /\| strong \| 1 \| 0 \| no SE \(sd 0\) \|/);
+  assert.doesNotMatch(table, /\| strong \|[^\n]*rise/);
 });

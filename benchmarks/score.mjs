@@ -377,7 +377,7 @@ function compareLines(meta, allCells, arms, directory) {
   if (verdicts.includes('worse')) overall = 'worse';
   else if (verdicts.includes('rise')) overall = 'rise';
   else if (verdicts.includes('fall')) overall = 'fall';
-  else if (verdicts.includes('no SE')) overall = 'no verdict';
+  else if (verdicts.some((verdict) => verdict.startsWith('no SE'))) overall = 'no verdict';
   return [...lines, '', ...footer, `verdict: ${overall}`];
 }
 

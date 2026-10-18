@@ -81,6 +81,12 @@ test('P5 equal constant arms are noise at SE 0', () => {
   assert.equal(result.verdict, 'noise');
 });
 
+test('P5b different constant arms have no SE, not a rise', () => {
+  const result = compareMeans([0, 0], [1, 1]);
+  assert.equal(result.twoSeDiff, 0);
+  assert.equal(result.verdict, 'no SE (sd 0)');
+});
+
 test('P6 nextRuns sizes n from the CV, capped and floored', () => {
   assert.equal(nextRuns(0.2), 8);
   assert.equal(nextRuns(0.25), 12);

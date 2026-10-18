@@ -130,13 +130,15 @@ export function addRarity(records) {
   return records;
 }
 
-export function modalShare({ records, shapes }) {
+// First-idea convergence: share of a case's runs whose recommended shape is that case's most common recommended shape.
+export function modalShare({ records }) {
   const counts = new Map();
-  for (const shape of shapes) counts.set(shape, (counts.get(shape) ?? 0) + 1);
-  const modal = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0];
-  const recommending = records.filter((record) => record.recommendedShape !== null);
-  if (recommending.length === 0 || modal === undefined) return null;
-  return recommending.filter((record) => record.recommendedShape === modal).length / recommending.length;
+  for (const record of records) {
+    if (record.recommendedShape !== null) counts.set(record.recommendedShape, (counts.get(record.recommendedShape) ?? 0) + 1);
+  }
+  const recommending = [...counts.values()].reduce((sum, count) => sum + count, 0);
+  if (recommending === 0) return null;
+  return Math.max(...counts.values()) / recommending;
 }
 
 export function decisions({ means, modal }) {
@@ -176,7 +178,10 @@ export function resultsMarkdown({ arm, records, caseShares, verdict, unscored, f
   const lines = [`# Ideas results: ${arm}`, '', ...RULE_TEXT, ''];
   lines.push(`Judge calibration: ${fixed(verdict.share)} of control scores within 1 of the key, ${verdict.passed ? 'calibrated' : 'judge uncalibrated'}`, '');
   lines.push('| metric | mean | sd | n | minimum detectable effect |', '| --- | --- | --- | --- | --- |');
-  for (const metric of METRICS) lines.push(`| ${metric} | ${fixed(rows[metric].mean)} | ${fixed(rows[metric].sd)} | ${rows[metric].n} | ${fixed(rows[metric].mde)} |`);
+  const mde = (row) => (row.sd === 0 ? 'n/a (sd 0)' : fixed(row.mde));
+  for (const metric of METRICS) lines.push(`| ${metric} | ${fixed(rows[metric].mean)} | ${fixed(rows[metric].sd)} | ${rows[metric].n} | ${mde(rows[metric])} |`);
+  const flat = METRICS.filter((metric) => rows[metric].sd === 0).map((metric) => `${metric} ${fixed(rows[metric].mean)}`);
+  lines.push('', `At a floor or ceiling (sd 0, no detectable effect): ${flat.length === 0 ? 'none' : flat.join(', ')}`);
   lines.push('', `modalShare per case: ${Object.entries(caseShares).map(([id, share]) => `${id} ${fixed(share)}`).join(', ')}`, '');
   lines.push('Decision:', ...(verdict.passed ? decisions({ means, modal }).map((line) => `- ${line}`) : ['- none drawn, judge uncalibrated']), '');
   lines.push(`Failed runs, left out of every metric and n: ${failed.length === 0 ? 'none' : failed.join(', ')}`, '');
@@ -237,7 +242,7 @@ export async function scoreArm({ judge, cases, runsByCase }) {
     unscored.push(...queued.unscored);
     const caseRecords = recordsOf({ caseId, done });
     records.push(...caseRecords);
-    caseShares[caseId] = modalShare({ records: caseRecords, shapes: done.shapes });
+    caseShares[caseId] = modalShare({ records: caseRecords });
   }
   return { records, caseShares, verdict: calibration(controls), unscored };
 }

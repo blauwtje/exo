@@ -15,6 +15,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **A new session now orchestrates efficiently and picks a fitting model and effort per agent by default; set `budget` to `off` to keep the old behavior.**
 
 ### Added
+- `benchmarks/results/2026-10-18-ideas-baseline.md` records the first ideas baseline: 15 runs, 4 distinct shapes per run, mean originality 1.397 of 5, no option both original and fitting.
 - `benchmarks/ideas.mjs` runs a neutral design request N times per case in fresh sessions, a blind calibrated judge scores each option, and the results file gives the minimum detectable effect per metric.
 - `exo:spec` carries a measured-goal method (calibrate, size, ablate, pair, class failures), and benchmarks/tbench/ lands as the runner it uses.
 - `architecture-sketch.md` sets 3-5 criteria before sketching, gives each candidate its own named constraint, redoes one when all share a shape, scores per criterion and grafts parts of two candidates.
@@ -69,6 +70,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - design-ui's `capture.mjs` prints only label, size, path and engine per render, so a builder reads about 310 fewer bytes per two-viewport call.
 
 ### Fixed
+- `compareMeans` in `benchmarks/statistics.mjs` gives no verdict when both arms have sd 0, so a zero-spread baseline no longer claims any difference is detectable.
 - A test runs a real fixture-repo test under the run session env, so a session git block that reaches other repos fails `npm run check`.
 - `benchmarks/prices.mjs` prices Sonnet 5.5 cache reads at its list price of $0.10 per million tokens, not the Sonnet 5 rate of $0.20.
 - A detached run's task and plan sessions can no longer commit or move a ref in the run's repo: git refuses the update and says the script lands each task after the session; a plan session's brief no longer copies the tasks' `Commit:` blocks.

@@ -25,6 +25,8 @@ export function compareMeans(before, after) {
   if (left.n < 2 || right.n < 2) return { diff, twoSeDiff: null, verdict: 'no SE' };
   const seDiff = Math.sqrt((left.sd / Math.sqrt(left.n)) ** 2 + (right.sd / Math.sqrt(right.n)) ** 2);
   const twoSeDiff = RISE_Z * seDiff;
+  // why: both arms at sd 0 give SE 0, so any difference would read as a rise or fall with no spread behind it.
+  if (seDiff === 0 && diff !== 0) return { diff, twoSeDiff, verdict: 'no SE (sd 0)' };
   let verdict = 'noise';
   if (diff > twoSeDiff) verdict = 'rise';
   else if (diff < -twoSeDiff) verdict = 'fall';
