@@ -13,8 +13,26 @@ const USAGE = [
   'Prints the next-stage question, or with --fresh the lines the user types after picking the fresh-chat route.',
 ].join('\n');
 
+const START_TEXT = {
+  local: 'runs in the background, lands on this machine',
+  'push-main': 'runs in the background, then pushes to main',
+  pr: 'runs in background, then opens a pull request'
+};
+
+function startText(artifact) {
+  const file = briefFile(artifact);
+  const land = file === null ? null : frameOf(parsePlan(fs.readFileSync(file, 'utf8')).frame).land;
+  return START_TEXT[land ?? 'local'];
+}
+
 const NEXT_STAGE = {
-  'spec': { stage: 'build' },
+  'spec': {
+    stage: 'build',
+    title: 'Should I start the build now?',
+    context: () => 'The brief is written and checked.',
+    options: [['Start now', startText], ['Later', 'you get the lines to start it']],
+    reason: 'the brief is checked and complete'
+  },
   'find-cause': {
     title: 'Should I build the fix?',
     context: () => 'The cause is found.',
@@ -67,6 +85,7 @@ function unattendedLine(after, artifact) {
 export function nextStageReport({ after, artifact }) {
   const stage = NEXT_STAGE[after];
   if (stage === undefined) throw new UsageError(`no next stage known after '${after}'`);
+  if (after === 'spec' && openEntries(artifact).length > 0) return freshReport({ after, artifact });
   if (stage.title === undefined) throw new UsageError(`'${after}' asks no question; use --fresh`);
   const options = stage.options.map(([label, does], index) => {
     const text = typeof does === 'function' ? does(artifact) : does;

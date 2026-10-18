@@ -2,7 +2,7 @@
 
 1. **Find the plan, start the detached run, else settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only`, plus `--plan <path>` for a named plan.
    - Zero or several matches → ask which plan.
-   - No `--task`, no codex, `claude` on `PATH` → run `node "${CLAUDE_SKILL_DIR}/scripts/exo-cli.mjs" run <plan> --detach`, print its line, watch per spec hand-off reference's `## Watching the run`, end. Else the unit route.
+   - No `--task`, no codex, `claude` on `PATH` → run `node "${CLAUDE_SKILL_DIR}/scripts/exo-cli.mjs" run <plan> --detach`, print its line, watch per spec's watching reference, end. Else the unit route.
    - Refused → fix the `Reason:` in `$RUN/report.md` in a worktree, rerun; never the unit route.
    - Settle where the run commits.
    - Take `Repository:` and `Branch:` from that output, never the plan.

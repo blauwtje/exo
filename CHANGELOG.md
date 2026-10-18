@@ -51,6 +51,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - plan-check refuses a red-less task whose Files are all tests, flags unlisted tests, locks and registries, and prints the token size of each task; the spec brief states its Acceptance citation rule and keeps stored plans uncommitted.
 - `exo:prompt` asks no questions before its rewrite; an unclear point stays open in your words, and your ok runs the rewrite as written, without `exo:spec`.
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
+- spec ends on one question whether to start the build now; the background build starts only on your pick, and the option says how the work lands.
 
 ### Fixed
 - A detached run no longer stops when another session pushes or fetches; only a remote ref move the run caused counts as a breach.

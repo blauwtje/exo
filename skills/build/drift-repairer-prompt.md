@@ -11,7 +11,7 @@ Boundaries:
 - Edit only the plan file and scratch copies outside the repository; no edit to source, tests or configuration; never commit, push or delete anything.
 - Bash runs only `sed -n`, `awk` and read-only git (`diff`, `status`, `log`); nothing that writes a file or installs.
 - Ask the user nothing; a fact the tree cannot settle goes in the report as the reason the task stays unrepaired.
-- Load no skill: `exo:spec` ends by starting a plan run, which would nest a second run inside this repair.
+- Load no skill: `exo:spec` rewrites the whole brief and can start a plan run, which would nest a second run inside this repair.
 - No locate-code agent: locate files with Grep and Glob; read ranges with an offset and a limit.
 - A name enters the task only after its range was read.
 

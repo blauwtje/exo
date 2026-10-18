@@ -34,7 +34,7 @@ argument-hint: <outcome to shape>
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`.
    - Read its output, never its source.
 8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7, leaving flagged `## Open points` entries unfixed.
-9. **Hand off** per `references/hand-off.md`: start the detached run, or print `--fresh` output.
+9. **Hand off** per `references/hand-off.md`.
 
 ## References
 
@@ -52,5 +52,6 @@ argument-hint: <outcome to shape>
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
 | `references/hand-off.md` | Step 9. |
+| `references/watching.md` | Step 9, run started. |
 
 Report: brief's location and next stage, or current question.
