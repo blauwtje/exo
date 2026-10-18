@@ -16,6 +16,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 - `benchmarks/results/2026-10-18-ideas-baseline.md` records the first ideas baseline: 15 runs, 4 distinct shapes per run, mean originality 1.397 of 5, no option both original and fitting.
+- `benchmarks/variants.mjs` gains the `spec-cliches` (A3) and `spec-roles` (A1) ideas variants; their arms, in `benchmarks/results/2026-10-18-ideas-spec-*.md`, moved originality by 0.001 and 0.05 (noise), so spec stays unchanged.
 - `benchmarks/ideas.mjs` runs a neutral design request N times per case in fresh sessions, a blind calibrated judge scores each option, and the results file gives the minimum detectable effect per metric.
 - `exo:spec` carries a measured-goal method (calibrate, size, ablate, pair, class failures), and benchmarks/tbench/ lands as the runner it uses.
 - `architecture-sketch.md` sets 3-5 criteria before sketching, gives each candidate its own named constraint, redoes one when all share a shape, scores per criterion and grafts parts of two candidates.

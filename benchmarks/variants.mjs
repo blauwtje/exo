@@ -31,11 +31,35 @@ const POINTER_EDIT = {
 };
 const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: ', an unproven failure to `find-cause`', to: '' };
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
+const SPEC_FILE = 'skills/spec/SKILL.md';
+const OPTIONS_LINE = '   - Asked for options → list them, recommend one, no file.\n';
+const CLICHES_EDIT = {
+  file: SPEC_FILE,
+  from: OPTIONS_LINE,
+  to: [
+    OPTIONS_LINE.trimEnd(),
+    '     - Each option → ask "would I pick this for every similar brief?"; yes → a default, not a choice; keep it only for a reason this brief gives.',
+    '     - Defaults to question, none banned and none the replacement: new config flag, utils module, wrapper or manager around an existing call, fallback with a cache, new endpoint, table or background job per feature, plugin interface for one known case.',
+    '     - Swapping one default for another, or for a new habit, fails the same test.',
+    ''
+  ].join('\n')
+};
+const ROLES_EDIT = {
+  file: SPEC_FILE,
+  from: OPTIONS_LINE,
+  to: [
+    OPTIONS_LINE.trimEnd(),
+    '     - Roles options may draw from, none required: **Lateral**, another mechanism, data source or actor than the request implies; **Existing code**, do nothing or reuse what the code has, naming the gap left.',
+    ''
+  ].join('\n')
+};
 
 export const VARIANTS = {
   'session-pointer': { edits: [POINTER_EDIT], remove: [], swap: [] },
   'no-find-cause': { edits: [FIND_CAUSE_EDIT], remove: ['skills/find-cause'], swap: [] },
-  'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] }
+  'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] },
+  'spec-cliches': { edits: [CLICHES_EDIT], remove: [], swap: [] },
+  'spec-roles': { edits: [ROLES_EDIT], remove: [], swap: [] }
 };
 
 // Applies one variant to the plugin copy at `copy`; `source` is the checkout
