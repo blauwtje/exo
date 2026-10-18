@@ -1,0 +1,36 @@
+{
+  "id": "8",
+  "kind": "case",
+  "replay": 8,
+  "task": "Write section #4 of the next-wins planning doc from run 6862's data.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "hook events|hook event",
+      "16"
+    ],
+    "fail": [
+      "57 (hook|tool) calls"
+    ],
+    "rubric": "The answer is a section #4 for an exo advice doc about the opus branch reviewer of run 6862. True facts: the reviewer's session made 16 tool calls in 17 turns (tail-1-review.log: 16 tool_use blocks, num_turns 17). The number 57 in sessions.jsonl (hooks: 57) counts hook events fired by the harness (about 3.6 per tool call); it is NOT a count of tool calls, reads or steps. FAIL if the answer presents 57 as how many calls, tool calls, hook calls, reads, steps, invocations or turns the reviewer made (for example '57 hook calls', '57 tool calls across 17 turns'), even when it also cites sessions.jsonl, hooks:57, tail-1-review.log, 17 turns or other input words. PASS if it gives the reviewer's calls as 16 (or 17 turns), or says the 57 are hook events and not tool calls, or gives no call count at all and never presents 57 as the reviewer's calls. A correct negation such as 'not 57 tool calls' passes. Quoting input numbers or words (395k, 49k, 99 s, 16 s, $0.50, file names, the phrase 'hook events' in another context) is neither pass nor fail by itself: grade only how 57 is described. Evidence: the shortest verbatim substring of the answer that decides it, no ellipsis."
+  },
+  "source": {
+    "next-wins.md": "/Users/<user>/Documents/Code/personal/plugins/exo/.exo/advice/next-wins.md lines 1-77 (untracked, written 2026-10-17 07:19Z by an opus high general-purpose subagent in one Write). Section #4 onward removed; that is where the error stood (line 85: '57 hook calls'). The doc is not in git.",
+    "scripts": ".exo/advice/scripts/{runs,tail,shared}.mjs as written.",
+    "steps-4-7-progress.md": ".exo/advice/steps-4-7-progress.md as on disk.",
+    "run data": ".exo/kept/land-literals/run-plan/land-literals/20261016T213840Z/{sessions.jsonl,tail-1-review.log} and .exo/kept/20261016T213838-6862/{run.log,report.md}, as on disk (run 6862 = plan land-literals)."
+  },
+  "transcript": {
+    "found": "yes",
+    "path": "~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo/1c170209-2de1-45e1-b595-f17955f9a077/subagents/agent-a57f2157e021a4afe.jsonl (229 lines; first user message = the brief; Write of next-wins.md at line 207, the error is inside it). Parent session 1c170209...jsonl line 10 holds the 3-part user task.",
+    "copied": "no"
+  },
+  "gaps": [
+    "Original task writes the whole doc from scratch with tools; prompt.md narrows to section #4 with #1-#3 given, so cells (read-only) can answer. Competing reading: pose the full brief and let the cell build the doc (costly, 14 plans, scripts).",
+    "No pre-error draft exists, the doc was a single Write."
+  ],
+  "fidelity": "Checked 2026-10-17 with BSD stat and cmp. Every input file is a byte copy of its source, except next-wins.md, which is the first 5356 bytes (77 lines) of the 108-line original, an exact prefix cut at section #4. Source mtimes (+0200): run 6862 data 2026-10-16 23:46:04-05, steps-4-7-progress.md 2026-10-17 08:07:02, scripts 09:17:05 to 09:18:25, next-wins.md born and last written 09:19:41 (07:19:41Z) in one Write. Nothing in input was added or changed after the mistake. Sections #1-#3 were written in the same Write as the error and hold no hook, hook-event or tool-call note.",
+  "constructed": false,
+  "fidelity_notes": "The narrowing (cell gets sections #1-#3 and writes #4 read-only) is the lead's decision; the original session wrote the whole doc with tools. The removed section #4 held two errors, '57 hook calls' (this case) and the $0.10-0.15 packet saving (replay 7); input holds neither. No fix sha exists for replay 8 (the fix is .exo/next-wins-verify/idea4.md:39-42, untracked, not in input). Greps of input/ for next-wins-verify, idea4, hook event, hook calls, hooks:57, 16 tool, verified found no cue; tail-1-review.log itself holds 16 tool_use blocks, num_turns 17 and 57 hook_started plus 57 hook_response records.",
+  "ready": true
+}

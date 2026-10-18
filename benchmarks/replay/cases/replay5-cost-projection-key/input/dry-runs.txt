@@ -1,0 +1,11 @@
+$ node benchmarks/run.mjs --tasks value-context-guards,value-test-pollution,value-find-cause-decoy,value-fresh-eyes-review,value-proof-e2e,value-add-field-migration,value-export-mismatch,value-rename-propagation --arms exo --runs 6 --model opus --effort low --dry-run
+48 cells, projected $39.60 (0 from past runs, 48 from estimateUsd, 0 at the $1.50 default)
+
+$ node benchmarks/run.mjs --tasks value-context-guards,value-test-pollution,value-find-cause-decoy,value-fresh-eyes-review,value-proof-e2e,value-add-field-migration,value-export-mismatch,value-rename-propagation --arms exo --runs 6 --model opus --effort max --dry-run
+48 cells, projected $39.60 (0 from past runs, 48 from estimateUsd, 0 at the $1.50 default)
+
+$ node benchmarks/run.mjs --tasks value-context-guards,value-test-pollution,value-find-cause-decoy,value-fresh-eyes-review,value-proof-e2e,value-add-field-migration,value-export-mismatch,value-rename-propagation --arms exo --runs 6 --model haiku --effort low --dry-run
+48 cells, projected $39.60 (0 from past runs, 48 from estimateUsd, 0 at the $1.50 default)
+
+$ node benchmarks/run.mjs --tasks value-context-guards,value-test-pollution,value-find-cause-decoy,value-fresh-eyes-review,value-proof-e2e,value-add-field-migration,value-export-mismatch,value-rename-propagation --arms exo --runs 6 --model haiku --effort max --dry-run
+48 cells, projected $39.60 (0 from past runs, 48 from estimateUsd, 0 at the $1.50 default)

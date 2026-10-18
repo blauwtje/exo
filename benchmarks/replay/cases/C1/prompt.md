@@ -1,0 +1,1 @@
+The directory run/ holds the finished cells of one benchmark run: one folder per task, each with the exo arm's result.json, checks.json and diff.patch, plus meta.json. Compare the tasks and write the results summary for this run: per task the cost, turns and outcome, and what the numbers say about how the exo arm did.

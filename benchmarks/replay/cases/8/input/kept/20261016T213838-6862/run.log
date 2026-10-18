@@ -1,0 +1,32 @@
+[23:38:40] run start: ../../docs/specs/land-literals.md, branch land-literals, 5 tasks (5 to build)
+[23:38:42] task 1 start: parse a task's Data text and its Literals escape · sonnet medium
+[23:39:21] task 1 landed a4fed7f · 39s · 14 turns · 232k tokens · $0.09
+[23:39:23] task 2 start: refuse a task whose Data literal is missing from its change · sonnet medium
+[23:40:38] task 2 landed 44ab72a · 76s · 22 turns · 464k tokens · $0.22
+[23:40:40] task 3 start: fail the code rules on uneven spacing around an operator or after a comma · sonnet medium
+[23:41:40] task 3 landed 3260e59 · 60s · 13 turns · 195k tokens · $0.14
+[23:41:42] task 4 start: tell each builder to test the exact case it claims · sonnet medium
+[23:42:16] task 4 landed c4dc328 · 34s · 12 turns · 177k tokens · $0.08
+[23:42:17] task 5 start: record the land literal check and the spacing rule · sonnet medium
+[23:42:45] task 5 landed 70f5323 · 27s · 8 turns · 149k tokens · $0.01
+[23:42:45] Red-green: skipped (Red: none (each task's Proof proves its own red))
+[23:42:46] all tasks landed, final review start
+[23:43:04] review start: branch
+[23:43:04] review start: overlap
+[23:43:19] review done: overlap: CLEAN (claude-sonnet-5-5, 0 findings) (session 0d6bf0be-de74-45ef-ada1-bcc06c68570e)
+[23:44:44] review done: branch: FINDINGS (claude-opus-5-5, 2 findings) (session c0c698e7-e566-4a08-9a99-c2a2cd2a8b3a)
+[23:44:44] fix start
+[23:45:50] fix review start
+[23:46:01] review done: fix diff: CLEAN (session 25101765-5ac4-4ef6-867b-4c406f76ed06)
+[23:46:02] fix landed
+[23:46:03] average per task: 47s · 14 turns · 243k tokens · $0.11
+[23:46:03] total: 1217k tokens · $0.53
+[23:46:03] run done
+Landed 5 of 5 tasks: 1-5.
+Final check passed.
+1 command was refused by the permission rules; the detail file lists them.
+Decisions: 1, in /Users/<user>/Documents/Code/personal/plugins/exo/.exo/run/20261016T213838-6862/decisions.md
+Next: exo run lands branch land-literals per Land: local; 1 manual check are listed in the detail file
+Cost $1.30, time 7m 22s.
+Details: /Users/<user>/Documents/Code/personal/plugins/exo/.worktrees/land-literals/.exo/run-plan/land-literals/20261016T213840Z/summary.txt
+exo: landed 94289f1..989fd10

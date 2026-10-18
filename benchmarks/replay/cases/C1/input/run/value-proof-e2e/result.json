@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 44863,
+  "stop_reason": "end_turn",
+  "session_id": "35c959d0-d292-4a8a-bf84-920149a82aaa",
+  "total_cost_usd": 0.2886234,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 18016,
+    "cache_read_input_tokens": 178957,
+    "output_tokens": 5432,
+    "output_tokens_details": {
+      "thinking_tokens": 210
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 18016,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 350,
+        "cache_read_input_tokens": 29588,
+        "cache_creation_input_tokens": 223,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 223
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 5432,
+      "cacheReadInputTokens": 178957,
+      "cacheCreationInputTokens": 18016,
+      "webSearchRequests": 0,
+      "costUSD": 0.2886234,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 210,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 10,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "I added `--format json`, and it works.\nAll 17 tests pass.\nI saved it as a commit on this computer only. Nothing left this computer.\n\n- **Try it:** `expenses data/2024-q3.csv --format json | jq '.[0]'`\n- **Output:** stdout is only the JSON list. There is no header line before it.\n- **Same numbers:** totals match the text report. They are rounded to cents.\n- **Other options:** `--sort`, `--top` and `--category` work the same as in text. With `--top`, the list holds only the shown groups. It has no grand total line.\n- **No rows:** if no rows match, the output is `[]`.\n- **Bad format:** `--format xml` exits 2 and prints `expenses: --format must be one of text, json`.\n\nWith no `--format`, the text report is the same as before.\n\nThe changes are in `src/cli.mjs`, `src/render.mjs`, `test/cli.test.mjs` and `README.md`. The commit is `fb23644`.\n\nI skipped the full build steps: the plan run, check and review. The change was small.",
+  "ttft_ms": 1633,
+  "type": "result",
+  "duration_ms": 46472,
+  "uuid": "0800f5ad-97c7-4562-9d8c-310402bd1b37",
+  "ttft_stream_ms": 823,
+  "time_to_request_ms": 48,
+  "first_content_frame_ms": 823,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

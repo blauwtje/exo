@@ -1,0 +1,30 @@
+{
+  "task": "value-add-field-migration",
+  "tier": "value",
+  "arm": "exo",
+  "run": 1,
+  "model": "claude-opus-5-5",
+  "exitCode": 0,
+  "timedOut": false,
+  "wallMs": 62059,
+  "resultParsed": true,
+  "exoLoaded": true,
+  "worktreesLeft": 0,
+  "loc": {
+    "added": 19,
+    "removed": 4,
+    "testAdded": 21,
+    "files": [
+      "src/cli/format.mjs",
+      "src/db/migration-files.mjs",
+      "src/db/migrations/10_invoice_currency.mjs",
+      "src/http/serialize.mjs",
+      "src/models/invoice.mjs",
+      "src/services/invoices.mjs"
+    ]
+  },
+  "pass": true,
+  "defects": 0,
+  "total": 10,
+  "detail": []
+}

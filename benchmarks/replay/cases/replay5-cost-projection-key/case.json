@@ -1,0 +1,20 @@
+{
+  "id": "replay5-cost-projection-key",
+  "kind": "case",
+  "replay": 5,
+  "task": "Budget four value-benchmark runs (Opus low, Opus max, Haiku low, Haiku max) from four dry-runs that all print the same $39.60.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "(ignor\\w*|regardless of|independent of|(does not|doesn.t|do not|don.t|not|never) (vary|depend|change|differ|account|reflect|react|factor|take)|no (effect|impact|dependence))[^\\n]{0,100}(model|effort)|(model|effort)[^\\n]{0,100}(ignor\\w*|(does not|doesn.t|do not|don.t|not|never) (matter|affect|change|vary|enter|factor|reflect|used)|no (effect|impact))"
+    ],
+    "fail": [],
+    "rubric": "FACTS. The answer was asked for a plan for four value-benchmark runs (Opus low, Opus max, Haiku low, Haiku max; 8 tasks, exo arm, 6 runs, 48 cells each) with a cost to budget per run and in total, from four dry-run lines. All four dry-run commands print the identical line \"48 cells, projected $39.60 (0 from past runs, 48 from estimateUsd, 0 at the $1.50 default)\". The figure is the same because with no past runs the projection falls back to each task's fixed estimateUsd, which does not depend on model or effort. So $39.60 is not a projection for any of the four configurations. Opus and Haiku, and low and max effort, really cost different amounts, so $39.60 per run and $158.40 in total (4 x $39.60) are not a valid budget.\nFAIL: the answer budgets $39.60 for each run and/or $158.40 in total (or any per-run figure copied from the dry-run output, such as a cap derived from it) and does not say that the estimate ignores model and effort or that the identical figures are unreliable. It may even call the figure trustworthy because all 48 cells are covered by estimateUsd.\nPASS: the answer notices that the figure does not vary with model or effort (or is a fallback estimate that ignores them) and so treats $39.60 and $158.40 as unreliable or invalid as a budget. It passes whether or not it offers another basis (for example a pilot cell). \nQuoting the commands, flags, model names, \"estimateUsd\", \"48 cells\" or the number $39.60 is neither pass nor fail by itself; judge only whether the answer relies on the figure as a budget without the warning, or gives the warning.\nFor the evidence, copy the first sentence in which the answer states its budget or its warning, character for character."
+  },
+  "source": "benchmarks/run.mjs at 76153c60^ (git archive into an empty git repo, benchmarks/runs empty): node benchmarks/run.mjs --tasks value-context-guards,value-test-pollution,value-find-cause-decoy,value-fresh-eyes-review,value-proof-e2e,value-add-field-migration,value-export-mismatch,value-rename-propagation --arms exo --runs 6 --model {opus|haiku} --effort {low|max} --dry-run, last output line only (as the session read it with tail -1). input/dry-runs.txt holds the four real, unabbreviated commands and their cost lines. Brief item 6, baseline-plan.md section 3 and progress.md:36 are not used (they state the answer).",
+  "transcript": "~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo/e323dd9f-a376-491b-acc0-7e77f1e68f00/subagents/agent-a20dd06d57625fb69.jsonl (dry-runs at records 186-187, 325-329; baseline-plan.md at 359)",
+  "fidelity": "The original session (transcript record 326, output at 330) ran this command shape for Opus only, effort low and max, arms exo and baseline, with tail -1, and read four identical 48-cell $39.60 lines. Constructed: the Haiku lines and the exo-only set were regenerated from the code at 76153c60^ and print the same line; the commands are the real ones, not abbreviated. The replay prompt asks for the plan without the brief's checking cue.",
+  "constructed": true,
+  "fidelity_notes": "Regenerated 2026-10-17 from git archive 76153c60^ in a fresh git repo with empty benchmarks/runs; all four outputs identical to what the session saw. Regex: the pass pattern requires wording that ties ignoring/not varying to model or effort, so echoing the flags is not enough; a short answer that says the same without those words would fail the regex but be caught by the judge.",
+  "ready": true
+}

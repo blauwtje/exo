@@ -1,0 +1,9 @@
+{"kind":"task","task":1,"sessionId":"2373deaa-ea07-4eee-b80c-01f82f889963","costUsd":0.093051,"hooks":54,"cacheRead":212520,"cacheWrite":19178,"firstCacheWrite":9370,"model":"claude-sonnet-5-5"}
+{"kind":"task","task":2,"sessionId":"79bbf8e8-d30c-4f0f-ba73-5c7f1c877681","costUsd":0.2176445,"hooks":80,"cacheRead":423850,"cacheWrite":39383,"firstCacheWrite":9298,"model":"claude-sonnet-5-5"}
+{"kind":"task","task":3,"sessionId":"f15c49d9-220a-4b5a-b292-08bab9354874","costUsd":0.13774740000000002,"hooks":50,"cacheRead":170829,"cacheWrite":23481,"firstCacheWrite":9394,"model":"claude-sonnet-5-5"}
+{"kind":"task","task":4,"sessionId":"288b400d-c6ee-419e-a2e0-912191dc5c47","costUsd":0.079262,"hooks":49,"cacheRead":159660,"cacheWrite":17024,"firstCacheWrite":9120,"model":"claude-sonnet-5-5"}
+{"kind":"task","task":5,"sessionId":"800ff6ed-1b0b-4c09-b93a-d9288245b63e","costUsd":0.005324905,"hooks":34,"cacheRead":124488,"cacheWrite":24021,"firstCacheWrite":15817,"model":"claude-haiku-5-5"}
+{"kind":"review","task":null,"sessionId":"0d6bf0be-de74-45ef-ada1-bcc06c68570e","costUsd":0.0716685,"hooks":30,"cacheRead":87960,"cacheWrite":19921,"firstCacheWrite":8664,"model":"claude-sonnet-5-5"}
+{"kind":"review","task":null,"sessionId":"c0c698e7-e566-4a08-9a99-c2a2cd2a8b3a","costUsd":0.500882,"hooks":57,"cacheRead":395355,"cacheWrite":48891,"firstCacheWrite":14427,"model":"claude-opus-5-5"}
+{"kind":"fix","task":null,"sessionId":"9f9617a1-06d9-45db-9a33-650f61bf08dd","costUsd":0.13277419999999998,"hooks":70,"cacheRead":275872,"cacheWrite":22494,"firstCacheWrite":8175,"model":"claude-sonnet-5-5"}
+{"kind":"review","task":null,"sessionId":"25101765-5ac4-4ef6-867b-4c406f76ed06","costUsd":0.060802999999999996,"hooks":27,"cacheRead":84330,"cacheWrite":17452,"firstCacheWrite":8672,"model":"claude-sonnet-5-5"}

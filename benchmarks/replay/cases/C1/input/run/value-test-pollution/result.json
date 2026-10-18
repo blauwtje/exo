@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 26240,
+  "stop_reason": "end_turn",
+  "session_id": "6cafa047-c187-4c13-966c-597652189239",
+  "total_cost_usd": 0.15068299999999998,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 12232,
+    "cache_read_input_tokens": 119095,
+    "output_tokens": 1448,
+    "output_tokens_details": {
+      "thinking_tokens": 136
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 12232,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 385,
+        "cache_read_input_tokens": 23724,
+        "cache_creation_input_tokens": 303,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 303
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 1448,
+      "cacheReadInputTokens": 119095,
+      "cacheCreationInputTokens": 12232,
+      "webSearchRequests": 0,
+      "costUSD": 0.15068299999999998,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 136,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 7,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "The fix works. All tests pass in any order now.\nI changed one line of app code and no tests. Nothing else is needed from you.\n\n**Cause:** The bug is in `src/config/options.mjs`. `resolveOptions` used `Object.assign(DEFAULTS, overrides)`. That writes each tenant's options into the shared `DEFAULTS` object. Here is the chain:\n\n- An options test runs `globex`, whose `quoteTtlDays` is 30.\n- After that, every tenant gets 30 days, not 14.\n- The quote test then fails: `2026-04-01` came back, but `2026-03-16` was expected.\n- Run alone, nothing changes the defaults first, so it passes.\n\n**Fix:** It now builds a new object each time, so the defaults stay the same:\n\n```js\nreturn { ...DEFAULTS, ...overrides };\n```\n\n**Checks:**\n- `npm test` gives 46 pass, 0 fail.\n- Reverse file order gives 46 pass, 0 fail.\n- 8 random file orders all gave 0 fail.\n\nNothing is committed yet.",
+  "ttft_ms": 3744,
+  "type": "result",
+  "duration_ms": 27856,
+  "uuid": "57ae885a-b554-46d6-ada2-76975dd0b123",
+  "ttft_stream_ms": 2087,
+  "time_to_request_ms": 37,
+  "first_content_frame_ms": 2088,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

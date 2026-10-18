@@ -14,6 +14,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **A new session now orchestrates efficiently and picks a fitting model and effort per agent by default; set `budget` to `off` to keep the old behavior.**
 
 ### Added
+- Error-case replay: the saved cases, their runner and grader are tracked under benchmarks/replay/, with home paths redacted.
 - A detached run reports each session's cache read share and warns when turn 1 writes a large cache.
 - plan-check warns on adjacent tiny plan tasks.
 - plan-check flags a task that names a lock constant, such as `SESSION_LOAD_LOCK`, when its Files omit the file that defines it.

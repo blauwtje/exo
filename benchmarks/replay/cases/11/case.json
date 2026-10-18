@@ -1,0 +1,26 @@
+{
+  "id": "11",
+  "kind": "case",
+  "replay": 11,
+  "constructed": false,
+  "ready": true,
+  "task": "The directory input/ holds task 6 of a finished exo build run: run.log (the run log lines for the task), stream.jsonl (the task session's stream: assistant events with their usage, and the final result event). Write the token-usage paragraph for the run report on task 6: tokens used, turns, cost, and what they say about the task.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "\\b5[12](?:[.,]\\d)?\\s?(?:k|thousand)\\b|\\b5[12],?\\d{3}\\b"
+    ],
+    "fail": [
+      "(?<!(?:log|report|stream)\\b[^.\\n]{0,40}\\b(?:says?|said|reports?|reported|claims?|claimed|shows?|showed|lists?|listed|states?|stated|gives?|gave|puts?|has|had|records?|recorded)\\b[^.\\n]{0,30})\\b(?:used|uses|consumed|totall?ed|total of|came to|took|spent)\\s+(?:about |roughly |around |approximately |nearly |~)?(?:10[0-4](?:\\.\\d)?\\s?k\\b|10[0-4],\\d{3}\\b)"
+    ],
+    "rubric": "Facts. The task's stream has 6 assistant events but only 3 distinct message ids; events with the same id repeat the same usage. run.log's \"102k tokens\" is the sum over all 6 events, so it counts every model call about twice. The true input-side total is 51,363 tokens (6 + 12,220 + 39,137, equal to the result event's usage), about 51k, or about 52k with the 997 output tokens.\nDecide by the token figure the answer reports as the task's total use, not by how much of the input it quotes.\nPASS: the answer reports about 51k or 52k tokens (51,363, 52,360 or similar) as the task's use and does not present 102k as the task's use. It may mention run.log's 102k only to say it is too high or double counted.\nFAIL: the answer reports about 102k (100k to 104k, 101,805) as the task's token use, or leaves 102k as the headline figure. Quoting message ids, event counts, the 6 events or the usage numbers does not make an answer pass: an answer that quotes them but still reports 102k fails. Also FAIL if it gives neither figure.\nEvidence: copy one short clause of the answer, character for character, that states the token total."
+  },
+  "source": "Run 20261014T132252-f6e3 (before c517b3e4): run.log line for task 6 from .exo/run/20261014T132252-f6e3/run.log (the \"102k tokens\" is the pre-fix naive sum, 101,805 raw tokens = sum over the 6 events). stream.jsonl: .exo/kept/stello-run-failures/run-plan/stello-run-failures/20261014T132520Z/iter-7-task-6.log trimmed to assistant events (message.id, model, content block types and tool names, usage) and the result event (result text removed). Dedupe by message.id: 3 ids, 51,363 raw input-side tokens; result usage: input 6, cache creation 12,220, cache read 39,137, output 997. Ratio naive/real 1.98 (the changelog says about 2.4x over a run; this task is smaller).",
+  "fidelity_notes": [
+    "Trimmed: tool inputs, tool results, hook events removed. Usage fields unchanged.",
+    "The original session hit this while reading run.log against result usage; the prompt only asks for the usage paragraph.",
+    "Input path: the prompt and task say \"The directory input/ holds ...\"; the runner copies input/ as an input/ folder in each cell (lead decision), so the wording stays as written.",
+    "Grade: rubric judge (R3a); the regex fields stay as a cross-check. Fixtures review/fixtures/11 right, wrong, echo and right-silent graded as expected by regex and judge on 3 of 3 repeats."
+  ],
+  "transcript": "none found"
+}

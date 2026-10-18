@@ -1,0 +1,133 @@
+diff --git a/src/cli/format.mjs b/src/cli/format.mjs
+index 23a3cac..626ac1e 100644
+--- a/src/cli/format.mjs
++++ b/src/cli/format.mjs
+@@ -5,6 +5,7 @@ const SHOW_FIELDS = [
+   ['Status', (invoice) => invoice.status],
+   ['Issued', (invoice) => invoice.issuedAt],
+   ['Due', (invoice) => invoice.dueDate],
++  ['Currency', (invoice) => invoice.currency ?? '-'],
+   ['Total', (invoice) => formatMinor(invoice.totalMinor)],
+ ];
+
+diff --git a/src/db/migration-files.mjs b/src/db/migration-files.mjs
+index 5d60cfc..2a1dc37 100644
+--- a/src/db/migration-files.mjs
++++ b/src/db/migration-files.mjs
+@@ -10,7 +10,7 @@ const MIGRATION_FILE = /^\d+_[a-z0-9_]+\.mjs$/;
+ export function listMigrations(dir = MIGRATIONS_DIR) {
+   return fs.readdirSync(dir)
+     .filter((file) => MIGRATION_FILE.test(file))
+-    .sort()
++    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
+     .map((file) => ({ name: file.slice(0, -'.mjs'.length), file: path.join(dir, file) }));
+ }
+
+diff --git a/src/db/migrations/10_invoice_currency.mjs b/src/db/migrations/10_invoice_currency.mjs
+new file mode 100644
+index 0000000..c7b80f4
+--- /dev/null
++++ b/src/db/migrations/10_invoice_currency.mjs
+@@ -0,0 +1,12 @@
++import { currencyOf } from '../../models/account.mjs';
++
++export const description = 'invoices carry the currency of their account';
++
++export function up(db) {
++  for (const invoice of db.invoices) {
++    if (invoice.currency) continue;
++    const account = db.accounts.find((candidate) => candidate.id === invoice.accountId);
++    const org = account && db.orgs.find((candidate) => candidate.id === account.orgId);
++    invoice.currency = account && org ? currencyOf(account, org) : null;
++  }
++}
+diff --git a/src/http/serialize.mjs b/src/http/serialize.mjs
+index c5351fe..76dc6f0 100644
+--- a/src/http/serialize.mjs
++++ b/src/http/serialize.mjs
+@@ -1,6 +1,6 @@
+ import { currencyOf } from '../models/account.mjs';
+
+-const INVOICE_FIELDS = ['id', 'number', 'accountId', 'status', 'issuedAt', 'dueDate', 'lines', 'totalMinor'];
++const INVOICE_FIELDS = ['id', 'number', 'accountId', 'status', 'issuedAt', 'dueDate', 'currency', 'lines', 'totalMinor'];
+
+ export function serializeInvoice(invoice) {
+   const view = {};
+diff --git a/src/models/invoice.mjs b/src/models/invoice.mjs
+index 42c9259..f2a6e10 100644
+--- a/src/models/invoice.mjs
++++ b/src/models/invoice.mjs
+@@ -1,6 +1,6 @@
+ import { sumLines } from '../util/money.mjs';
+
+-export function buildInvoice({ sequence, account, lines, issuedAt, dueDate, notes }) {
++export function buildInvoice({ sequence, account, lines, issuedAt, dueDate, notes, currency }) {
+   return {
+     id: `inv_${sequence}`,
+     number: `${issuedAt.slice(0, 4)}-${String(sequence).padStart(4, '0')}`,
+@@ -8,6 +8,7 @@ export function buildInvoice({ sequence, account, lines, issuedAt, dueDate, note
+     status: 'open',
+     issuedAt,
+     dueDate,
++    currency,
+     lines,
+     totalMinor: sumLines(lines),
+     notes: notes ?? null,
+diff --git a/src/services/invoices.mjs b/src/services/invoices.mjs
+index fba55cc..a35655e 100644
+--- a/src/services/invoices.mjs
++++ b/src/services/invoices.mjs
+@@ -3,7 +3,7 @@ import { nextSequence } from '../db/store.mjs';
+ import { buildInvoice } from '../models/invoice.mjs';
+ import { addDays, isIsoDate, today } from '../util/dates.mjs';
+ import { invalid, notFound } from '../util/errors.mjs';
+-import { getAccount } from './accounts.mjs';
++import { accountCurrency, getAccount } from './accounts.mjs';
+
+ function normalizeLines(lines) {
+   if (!Array.isArray(lines) || lines.length === 0) throw invalid('an invoice needs at least one line');
+@@ -29,6 +29,7 @@ export function createInvoice(db, input) {
+     issuedAt,
+     dueDate,
+     notes: input.notes,
++    currency: accountCurrency(db, account.id),
+   });
+   db.invoices.push(invoice);
+   return invoice;
+diff --git a/test/migrate.test.mjs b/test/migrate.test.mjs
+index 5f8ddac..acf5fca 100644
+--- a/test/migrate.test.mjs
++++ b/test/migrate.test.mjs
+@@ -44,11 +44,31 @@ test('a migration edited after it was applied stops the run', async () => {
+ test('the shipped migrations build the current invoice shape on an empty database', async () => {
+   const db = emptyDatabase();
+   await migrate(db);
+-  assert.equal(db.migrations.length, 9);
++  assert.equal(db.migrations.length, 10);
++  assert.equal(db.migrations.at(-1).name, '10_invoice_currency');
+   assert.equal(db.orgs[0].id, 'org_default');
+   const [invoice] = db.invoices;
+   assert.equal(invoice.lines.length, 1);
+   assert.equal(invoice.totalMinor, 12500);
+   assert.equal(invoice.dueDate, '2026-02-01');
+   assert.equal(invoice.amountMinor, undefined);
++  assert.match(invoice.currency, /^[A-Z]{3}$/);
++});
++
++test('migrations sort by number, so 10 runs after 9', async () => {
++  const dir = migrationsDir({ '9_a.mjs': TRAIL('nine'), '10_b.mjs': TRAIL('ten'), '2_c.mjs': TRAIL('two') });
++  const db = emptyDatabase();
++  await migrate(db, { dir });
++  assert.deepEqual(db.trail, ['two', 'nine', 'ten']);
++});
++
++test('existing invoices take their account currency', async () => {
++  const { up } = await import('../src/db/migrations/10_invoice_currency.mjs');
++  const db = {
++    orgs: [{ id: 'org_1', defaultCurrency: 'EUR' }],
++    accounts: [{ id: 'acc_1', orgId: 'org_1', currency: 'usd' }, { id: 'acc_2', orgId: 'org_1' }],
++    invoices: [{ id: 'inv_1', accountId: 'acc_1' }, { id: 'inv_2', accountId: 'acc_2' }],
++  };
++  up(db);
++  assert.deepEqual(db.invoices.map((invoice) => invoice.currency), ['USD', 'EUR']);
+ });

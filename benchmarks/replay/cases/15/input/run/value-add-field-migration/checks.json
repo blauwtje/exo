@@ -1,0 +1,32 @@
+{
+  "task": "value-add-field-migration",
+  "tier": "value",
+  "arm": "exo",
+  "run": 1,
+  "model": "claude-opus-5-5",
+  "exitCode": 1,
+  "timedOut": false,
+  "wallMs": 61335,
+  "resultParsed": true,
+  "exoLoaded": true,
+  "worktreesLeft": 0,
+  "loc": {
+    "added": 17,
+    "removed": 3,
+    "testAdded": 0,
+    "files": [
+      "src/cli/format.mjs",
+      "src/db/migration-files.mjs",
+      "src/db/migrations/10_invoice_currency.mjs",
+      "src/http/serialize.mjs",
+      "src/models/invoice.mjs"
+    ]
+  },
+  "pass": false,
+  "defects": 2,
+  "total": 10,
+  "detail": [
+    "a new invoice over HTTP defaults to its account currency in both views: inv_9 over HTTP lacks EUR",
+    "a new invoice from the CLI defaults to its account currency in both views: show inv_9 prints no Currency line, expected EUR"
+  ]
+}

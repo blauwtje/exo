@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 45215,
+  "stop_reason": "end_turn",
+  "session_id": "6dcdbcba-dfd6-4ff1-8e2e-6466e2135d9d",
+  "total_cost_usd": 0.33057200000000003,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 25296,
+    "cache_read_input_tokens": 161640,
+    "output_tokens": 4791,
+    "output_tokens_details": {
+      "thinking_tokens": 67
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 25296,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 322,
+        "cache_read_input_tokens": 34441,
+        "cache_creation_input_tokens": 2650,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 2650
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 4791,
+      "cacheReadInputTokens": 161640,
+      "cacheCreationInputTokens": 25296,
+      "webSearchRequests": 0,
+      "costUSD": 0.33057200000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 67,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 12,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "Admins can now rename a product with `PATCH /products/:id`. `npm test` passes, 33 of 33. You don't need to do anything.\n\nAfter a rename, the new name shows here:\n- **The product itself and the product lists.** Saved copies of the old pages are cleared.\n- **Search.** The new name is found. The old name no longer finds it.\n- **Carts.**\n- **Wishlists.**\n\nPast orders keep the old name. `docs/orders.md` says order lines are never changed once an order exists.\n\nOther rules:\n- Only admins can rename.\n- A name already used by another product is refused with `409`.\n- Each rename is logged as `product.renamed`, with the old and new name.\n\nThe route is in `src/products/handlers.mjs`. I added `renameProduct` to `src/carts/store.mjs` and `src/wishlists/store.mjs`. I also added one test to `test/products.test.mjs`. Nothing is committed yet.",
+  "ttft_ms": 2233,
+  "type": "result",
+  "duration_ms": 46768,
+  "uuid": "a469f8b3-1dd5-4ea7-b2bb-6be099323871",
+  "ttft_stream_ms": 1710,
+  "time_to_request_ms": 43,
+  "first_content_frame_ms": 1710,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

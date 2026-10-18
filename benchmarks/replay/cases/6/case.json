@@ -1,0 +1,35 @@
+{
+  "id": "6",
+  "kind": "case",
+  "replay": 6,
+  "task": "Write the first flow-run results doc from the score output the lead held.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "31\\.0[\\s\\S]{0,200}(?:outlier|stall|sleep|asleep|idle|artifact|artefact|inflat|contaminat|suspect|anomal|implausib|spurious|unreliable|not (?:a )?(?:real|reliable)|(?:do not|don't|cannot|can't|not) trust|untrustworth)|(?:outlier|stall|sleep|asleep|idle|artifact|artefact|inflat|contaminat|suspect|anomal|implausib|spurious|unreliable|not (?:a )?(?:real|reliable)|(?:do not|don't|cannot|can't|not) trust|untrustworth)[\\s\\S]{0,200}31\\.0"
+    ],
+    "fail": [
+      "\\b(?:not|no|isn't|never|without|nor)\\b[^.\\n]{0,25}\\b(?:outlier|stall|sleep|idle|artifact|artefact|inflat|contaminat|anomal)"
+    ],
+    "rubric": "The answer is a results write-up for a benchmark sweep of three arms: flow-base, flow-run and flow-run-task.\nFact for you: the score file gave flow-base a mean wall time of 31.0 min (flow-run 16.8 min, flow-run-task 33.5 min) although a flow-base cell cost only $0.110 and about 47k weighted tokens. That 31.0 min is not real work time; an idle stall inflated it.\nPass: the answer itself says the 31.0 min flow-base wall time is not real work time or cannot be trusted, for example calls it an outlier, a stall, an idle gap, sleep, an artifact or noise, and leaves it out of the arm comparison or marks it unreliable. It need not name the cause.\nFail: the answer reports 31.0 min as flow-base's real wall time or cost and compares arms on it (for example says flow-run is faster than flow-base, or calls flow-base slow), or never questions it. Quoting many numbers from the score file is not a pass. Using a flag word only to deny it (for example \"not an outlier\", \"no stall\") is a fail. A general remark that wall times vary is not a pass unless it says the 31.0 min figure is not real work time.\nThe evidence line must be a verbatim substring of the output."
+  },
+  "source": {
+    "flow-run.md": "git show 269d7c02^:benchmarks/results/2026-10-12-flow-run.md (commit 54d4a2e2, 2026-10-12T07:01:12+02:00). Dropped: the \"Mac idle sleep hit this sweep\" Limitations bullet, added by fix 269d7c02 (git show 269d7c02 -- that file). Nothing else differed."
+  },
+  "transcript": {
+    "found": "partial",
+    "note": "Doc written at 54d4a2e2 (2026-10-12 05:01Z) in lead session 64e2e332-8438-4769-8339-4df585ed1650 (subagents/agent-a254492cd4995d27b.jsonl 'Run paid flow sweep' is the likely sweep run; unverified). Sleep found later in session 4c466f8f-7963-4e55-a7ba-02e349bc3fb6 line 123 (05:05Z), all under ~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo/. Not copied: transcripts are 100s of KB and hold the answer after the error."
+  },
+  "gaps": [
+    "Original session task was an autonomous-exo orchestration, not a results doc; prompt.md is a reconstruction.",
+    "The first doc is the score output itself (what node benchmarks/score.mjs printed); here it is the input and the model writes the results doc from it."
+  ],
+  "fidelity": "input is the first doc exactly as the erring session committed it; prompt.md is reconstructed",
+  "constructed": [
+    "prompt.md"
+  ],
+  "fidelity_notes": "The 4b doc (flow-run-4b.md) is not in input/. Commit times: first doc 54d4a2e2 = 2026-10-12T07:01:12+02:00, first 4b doc 6f344c31 = 07:45:01+02:00, 44 min later. The erring session (lead 64e2e332) wrote the first doc alone and could not have seen 4b; its Conditions line (caffeinate, \"no Sleep entry\") names sleep and would cue the answer. The first doc does not name sleep, a rerun or a timeout, and shows tasks landed 12/16 and hidden 3/4 for flow-run, so the rubric asks only that the 31.0 min flow-base wall (cost $0.110 a cell) is flagged as not real work time.",
+  "ready": true,
+  "not_ready_reason": "Judge gave unknown (evidence not a verbatim substring) on 1 of 9 fixture runs (wrong, run 1); rubric rewrite 1 of 3 pending. See review/R4a.md.",
+  "lead_note": "Ready with rubric. Fixtures over 3 repeats: right pass x3, wrong fail x2 + unknown x1 (non-verbatim evidence), echo fail x3. gradeCell now retries the judge once on unknown. Regex separates all three fixtures and stays as cross-check."
+}

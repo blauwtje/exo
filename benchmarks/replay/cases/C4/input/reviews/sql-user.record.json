@@ -1,0 +1,16 @@
+{
+  "id": "review-sql-user-control-medium",
+  "kind": "review",
+  "variant": "control",
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "exitCode": 0,
+  "timedOut": false,
+  "wallMs": 15526,
+  "costUsd": 0.11615980000000001,
+  "tokens": 30057,
+  "outputTokens": 661,
+  "defectsFound": null,
+  "falseAlarms": 0,
+  "detail": "verdict CLEAN, 0 fix findings"
+}

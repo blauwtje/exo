@@ -1,0 +1,36 @@
+{
+  "task": "value-test-pollution",
+  "tier": "value",
+  "arm": "exo",
+  "run": 1,
+  "model": "claude-opus-5-5",
+  "exitCode": 0,
+  "timedOut": false,
+  "wallMs": 31411,
+  "resultParsed": true,
+  "exoLoaded": true,
+  "worktreesLeft": 0,
+  "loc": {
+    "added": 1,
+    "removed": 1,
+    "testAdded": 0,
+    "files": [
+      "src/config/options.mjs"
+    ]
+  },
+  "pass": false,
+  "defects": 10,
+  "total": 15,
+  "detail": [
+    "order \"reversed\" fails: half a cent rounds up; a quarter share rounds to the nearest cent; a tenant without an override pays the base price",
+    "order \"pricing first\" fails: a tenant without an override pays the base price; half a cent rounds up; a quarter share rounds to the nearest cent",
+    "order \"pricing then credit-notes\" fails: half a cent rounds up; a quarter share rounds to the nearest cent; a tenant without an override pays the base price",
+    "order \"rotated by 3\" fails: a tenant without an override pays the base price",
+    "order \"rotated by 6\" fails: a tenant without an override pays the base price",
+    "order \"shuffled\" fails: a tenant without an override pays the base price",
+    "leak test fails: a price override of one tenant never reaches another",
+    "leak test fails: a cart is priced from its own tenant price list after another tenant priced it",
+    "leak test fails: the rounding mode of one tenant does not reach a credit note of another",
+    "leak test fails: interleaved requests of three tenants stay apart"
+  ]
+}

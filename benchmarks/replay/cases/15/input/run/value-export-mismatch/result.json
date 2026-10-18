@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 41564,
+  "stop_reason": "end_turn",
+  "session_id": "fed83ead-accf-4213-9fa7-0cf76385474b",
+  "total_cost_usd": 0.2935102,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 19591,
+    "cache_read_input_tokens": 260271,
+    "output_tokens": 4232,
+    "output_tokens_details": {
+      "thinking_tokens": 596
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 19591,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 494,
+        "cache_read_input_tokens": 31065,
+        "cache_creation_input_tokens": 321,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 321
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 4232,
+      "cacheReadInputTokens": 260271,
+      "cacheCreationInputTokens": 19591,
+      "webSearchRequests": 0,
+      "costUSD": 0.2935102,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 596,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 14,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "The export now shows Kestrel at EUR 10,386.77, the same as the dashboard.\n`npm test` passes: 37 of 37.\nNothing is needed from you unless you want the other rows checked.\n\n**What was wrong:** to pick the day's exchange rate, the export used the UTC date (world clock time). The dashboard uses the date in the customer's own time zone. Kestrel is in Los Angeles. Four of its USD payments came late in the evening there. In UTC that was already the next day, so the export used the wrong day's rate.\n\n**Fix:**\n- `src/export/normalize.mjs` now gets the date in the customer's time zone.\n- `src/export/pipeline.mjs` passes the customer list to it.\n- `test/normalize.test.mjs` has a new test for this case.\n- I rebuilt `exports/2026-03.csv`.\n\n**Other rows changed too:** the same fix moved C006, C007, C009, C012, C014, C015, C017, C018 and C021. Their totals now match the dashboard.\n\n**Still different:** C002 and C005 do not match the dashboard. Their transaction counts are different too. That is a different cause, maybe refunds or duplicate rows. I did not change that.\n\nShould I look into C002 and C005 next?\n- a) Yes, find the cause (best)\n- b) No, leave them",
+  "ttft_ms": 1485,
+  "type": "result",
+  "duration_ms": 43721,
+  "uuid": "213297c1-6d66-4a3e-97f8-813b50afd69d",
+  "ttft_stream_ms": 694,
+  "time_to_request_ms": 42,
+  "first_content_frame_ms": 695,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

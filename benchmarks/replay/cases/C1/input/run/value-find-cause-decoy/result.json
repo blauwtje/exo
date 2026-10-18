@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 18888,
+  "stop_reason": "end_turn",
+  "session_id": "1eb02718-5d75-4a5a-8cdf-6c609a4c472c",
+  "total_cost_usd": 0.1589726,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 12871,
+    "cache_read_input_tokens": 120783,
+    "output_tokens": 1590,
+    "output_tokens_details": {
+      "thinking_tokens": 306
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 12871,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 446,
+        "cache_read_input_tokens": 24406,
+        "cache_creation_input_tokens": 260,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 260
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 1590,
+      "cacheReadInputTokens": 120783,
+      "cacheCreationInputTokens": 12871,
+      "webSearchRequests": 0,
+      "costUSD": 0.1589726,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 306,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 7,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "I fixed it, and A-1042 now prints 193.98. All 29 tests pass.\n\n**The bug was not in `roundMoney()`.** That function rounds the right way. The fault was in `withRounding()` in `src/rounding.mjs`. When an order failed, it did not switch rounding back to normal. So every order after the failure kept using that order's rounding.\n\nIn the nightly run, quote A-1039 failed while it was set to round up. The next orders, including A-1042, kept rounding up.\n\n**The fix:** `withRounding()` now always sets the rounding back, even when an order fails. I did not change `docs/rounding-policy.md`. The fix makes the code follow its rule that \"the next operation starts at half-up again… including a failure.\"\n\n**Other totals changed too, not only A-1042.** Some went up by a cent and some went down. For example, A-1040 went from 187.49 to 187.50, and A-1046 went from 3.29 to 3.30. These now follow the policy, but finance may want to know.\n\nNothing is committed yet.",
+  "ttft_ms": 2376,
+  "type": "result",
+  "duration_ms": 20463,
+  "uuid": "ea21b281-5def-4bb6-8860-71f34ce0babe",
+  "ttft_stream_ms": 773,
+  "time_to_request_ms": 47,
+  "first_content_frame_ms": 773,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

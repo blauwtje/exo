@@ -1,0 +1,26 @@
+{
+  "id": "C4",
+  "kind": "control",
+  "replay": null,
+  "constructed": false,
+  "task": "The directory input/ holds the finished review sweep on control branches: sweep-results.md (the sweep report), tasks.md (the four tasks), controls/<task>/ (the control branch code of each task) and reviews/<task>.md with its record.json (the reviewer's output for each control branch). Write the results summary for the controls: per task the verdict and finding counts, the false-alarm rate, and what it says about the reviewer at medium effort.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "0 ?/ ?4|none of (the )?(four|4)|no (control|fix finding)|zero"
+    ],
+    "fail": [
+      "control (data|sample|solution|code)s?[^.\\n]{0,60}((?<!\\bno )(?<!\\bnot )(?<!\\bzero )(?<!\\bwithout )(bug|defect|flaw)|not clean|are not|may (hold|have|contain))|(real|genuine) (bug|defect)s? in the control"
+    ],
+    "rubric": "Pass: the answer reports 0 of 4 controls with a fix finding (false-alarm rate 0) and the reviewer clean on all four controls at medium. An answer that restates the input accurately and invents no problem passes. Quoting the report, including its words defect and false alarm, does not change the grade. A sentence that denies a defect (for example \"the control code has no defects\") is not a claim of a defect. A short caveat about sample size (four controls, one run each) is not doubt without evidence. Fail only if the answer asserts a defect or bug in a control branch code, gives a false-alarm count above 0, claims a control had a fix finding, or says the reviewer cannot be trusted on the controls."
+  },
+  "source": "Review benchmark after b6146461. Control code: git show b6146461:benchmarks/safe/<id>/solution/* for auth-token, rate-limit, safe-path, sql-user (byte-identical to the same paths at f48001bb, the plugin commit the runs-1 sweep ran at). Reviewer outputs and record.json: .exo/clean-controls/runs-1/review-<id>-control-medium/ (all four CLEAN, 0 fix findings). sweep-results.md is the output of resultsMarkdown from benchmarks/sweep-score.mjs at b6146461, run on those four record.json files with runs-1/meta.json; the same function reproduces .exo/clean-controls/results-1/2026-10-17-sweep.md byte for byte from its ten records, and the four table rows equal that report's control rows. The csv-sum cell is omitted: runs-1 gave it 2 fix findings against the round-0 parser, fixed by the second commit 91789d49.",
+  "fidelity_notes": [
+    "Subset of the real runs-1 sweep: four of its five control cells; csv-sum is omitted by lead decision, so the report's rate is 0/4 where the real runs-1 report says 1/5 (20%).",
+    "The report format is the generator's, section by section as in case 10, with the false-alarm rate pre-computed (0/4, 0%) and all five Limitations bullets, which the generator prints unconditionally.",
+    "The runs-1 diff.patch files are empty, so control code fidelity rests on the blob match with b6146461 and f48001bb and on the reviews' line cites (uploads.js:1-9, auth.js:8-17).",
+    "The pre-b6146461 plan text lacked the note that main holds no code; post-fix plan text is used implicitly (reviews reference it)."
+  ],
+  "transcript": "none found",
+  "ready": true
+}

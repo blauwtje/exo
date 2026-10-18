@@ -1,0 +1,153 @@
+diff --git a/README.md b/README.md
+index df9fb84..5eb96be 100644
+--- a/README.md
++++ b/README.md
+@@ -4,6 +4,7 @@ Summarize an expense CSV by category.
+
+     expenses data/2024-q3.csv
+     cat data/2024-q3.csv | expenses - --top 3
++    expenses data/2024-q3.csv --format json | jq '.[0]'
+
+ The input has a header row with `date`, `category`, `description` and `amount`
+ columns. Amounts may carry a thousands separator or a currency sign.
+@@ -15,6 +16,7 @@ columns. Amounts may carry a thousands separator or a currency sign.
+ | `--sort total\|name` | Order of the categories. Default `total`, largest first. |
+ | `--top N` | Show only the first N categories; the Total line still covers all. |
+ | `--category NAME` | Count only the rows of one category. |
++| `--format text\|json` | Output format. Default `text`. `json` prints an array of `{ "category", "count", "total" }` objects and honors `--sort`, `--top` and `--category`. |
+ | `-h`, `--help` | Show the usage text. |
+
+ Run it from a checkout with `node bin/expenses.mjs <file>`. Bad options exit 2
+diff --git a/src/cli.mjs b/src/cli.mjs
+index 3b47010..24a739a 100644
+--- a/src/cli.mjs
++++ b/src/cli.mjs
+@@ -1,10 +1,11 @@
+ import fs from 'node:fs/promises';
+ import { parseCsv } from './csv.mjs';
+-import { renderText } from './render.mjs';
++import { renderJson, renderText } from './render.mjs';
+ import { summarize } from './summary.mjs';
+
+ const SORTS = ['total', 'name'];
+-const VALUE_OPTIONS = ['--sort', '--top', '--category'];
++const FORMATS = ['text', 'json'];
++const VALUE_OPTIONS = ['--sort', '--top', '--category', '--format'];
+
+ export const USAGE = `Usage: expenses <file|-> [options]
+
+@@ -12,12 +13,13 @@ Options:
+   --sort total|name    order of the categories (default: total)
+   --top N              show only the first N categories
+   --category NAME      only count rows of one category
++  --format text|json   output format (default: text)
+   -h, --help           show this help
+ `;
+
+ // Value options accept "--name value" and "--name=value".
+ export function parseArgs(argv) {
+-  const opts = { file: null, sort: 'total', top: null, category: null, help: false };
++  const opts = { file: null, sort: 'total', top: null, category: null, format: 'text', help: false };
+   for (let i = 0; i < argv.length; i += 1) {
+     const arg = argv[i];
+     if (arg === '-h' || arg === '--help') {
+@@ -34,6 +36,9 @@ export function parseArgs(argv) {
+         const top = Number(value);
+         if (!Number.isInteger(top) || top < 1) throw new Error('--top must be a positive integer');
+         opts.top = top;
++      } else if (name === '--format') {
++        if (!FORMATS.includes(value)) throw new Error(`--format must be one of ${FORMATS.join(', ')}`);
++        opts.format = value;
+       } else {
+         opts.category = value;
+       }
+@@ -75,6 +80,10 @@ export async function main(argv, io) {
+
+   const wanted = opts.category?.toLowerCase();
+   const rows = parseCsv(text).filter((row) => wanted === undefined || row.category.trim().toLowerCase() === wanted);
++  if (opts.format === 'json') {
++    io.stdout.write(renderJson(summarize(rows, { sort: opts.sort }), { top: opts.top }));
++    return 0;
++  }
+   io.stdout.write(`Expenses from ${opts.file === '-' ? 'stdin' : opts.file} (${rows.length} rows)\n\n`);
+   if (rows.length === 0) {
+     io.stdout.write('No expenses match.\n');
+diff --git a/src/render.mjs b/src/render.mjs
+index 783bead..4991a5c 100644
+--- a/src/render.mjs
++++ b/src/render.mjs
+@@ -17,3 +17,11 @@ export function renderText(summary, { top = null } = {}) {
+   lines.push(`${'Total'.padEnd(width)}  ${String(summary.reduce((n, entry) => n + entry.count, 0)).padStart(5)}  ${formatAmount(grand).padStart(12)}`);
+   return `${lines.join('\n')}\n`;
+ }
++
++// The JSON report: one { category, count, total } object per shown category,
++// totals rounded to cents like the text report.
++export function renderJson(summary, { top = null } = {}) {
++  const shown = top === null ? summary : summary.slice(0, top);
++  const entries = shown.map(({ category, count, total }) => ({ category, count, total: Math.round(total * 100) / 100 }));
++  return `${JSON.stringify(entries, null, 2)}\n`;
++}
+diff --git a/test/cli.test.mjs b/test/cli.test.mjs
+index 0240e06..ff97295 100644
+--- a/test/cli.test.mjs
++++ b/test/cli.test.mjs
+@@ -1,9 +1,9 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+-import { parseArgs } from '../src/cli.mjs';
++import { main, parseArgs } from '../src/cli.mjs';
+
+ test('defaults', () => {
+-  assert.deepEqual(parseArgs(['data.csv']), { file: 'data.csv', sort: 'total', top: null, category: null, help: false });
++  assert.deepEqual(parseArgs(['data.csv']), { file: 'data.csv', sort: 'total', top: null, category: null, format: 'text', help: false });
+ });
+
+ test('value options take a space or an equals sign', () => {
+@@ -19,4 +19,46 @@ test('rejects bad values and unknown options', () => {
+   assert.throws(() => parseArgs(['a.csv', '--nope']), /unknown option --nope/);
+   assert.throws(() => parseArgs(['a.csv', 'b.csv']), /unexpected argument b.csv/);
+   assert.throws(() => parseArgs(['a.csv', '--sort']), /--sort needs a value/);
++  assert.throws(() => parseArgs(['a.csv', '--format', 'xml']), /--format must be one of text, json/);
++});
++
++async function run(argv, input) {
++  let stdout = '';
++  let stderr = '';
++  const io = {
++    stdout: { write: (s) => { stdout += s; } },
++    stderr: { write: (s) => { stderr += s; } },
++    stdin: [input]
++  };
++  const code = await main(argv, io);
++  return { code, stdout, stderr };
++}
++
++const CSV = 'date,category,description,amount\n2024-07-01,Food,a,0.10\n2024-07-02,Food,b,0.20\n2024-07-03,Travel,c,1000\n2024-07-04,Rent,d,500\n';
++
++test('--format json prints one object per category', async () => {
++  const { code, stdout } = await run(['-', '--format', 'json'], CSV);
++  assert.equal(code, 0);
++  assert.deepEqual(JSON.parse(stdout), [
++    { category: 'Travel', count: 1, total: 1000 },
++    { category: 'Rent', count: 1, total: 500 },
++    { category: 'Food', count: 2, total: 0.3 }
++  ]);
++});
++
++test('--format json honors --sort, --top and --category', async () => {
++  assert.deepEqual(JSON.parse((await run(['-', '--format=json', '--sort', 'name', '--top', '2'], CSV)).stdout).map((e) => e.category), ['Food', 'Rent']);
++  assert.deepEqual(JSON.parse((await run(['-', '--format=json', '--category', 'food'], CSV)).stdout), [{ category: 'Food', count: 2, total: 0.3 }]);
++  assert.deepEqual(JSON.parse((await run(['-', '--format=json', '--category', 'none'], CSV)).stdout), []);
++});
++
++test('--format text keeps the text report', async () => {
++  assert.equal((await run(['-', '--format', 'text'], CSV)).stdout, (await run(['-'], CSV)).stdout);
++});
++
++test('unknown --format exits 2', async () => {
++  const { code, stdout, stderr } = await run(['-', '--format', 'xml'], CSV);
++  assert.equal(code, 2);
++  assert.equal(stdout, '');
++  assert.equal(stderr, 'expenses: --format must be one of text, json\n');
+ });

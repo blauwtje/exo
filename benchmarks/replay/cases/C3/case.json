@@ -1,0 +1,27 @@
+{
+  "id": "C3",
+  "kind": "control",
+  "replay": null,
+  "constructed": false,
+  "ready": true,
+  "task": "The directory input/ holds task 13 of a finished exo build run: run.log (the run log lines for the task), stream.jsonl (the task session's stream: assistant events with their usage, and the final result event). Write the token-usage paragraph for the run report on task 13: tokens used, turns, cost, and what they say about the task.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "94k|9[34],?\\d{3}|93[.,]9|95,?7\\d{2}|\\b9[56](?:\\.\\d)?k\\b"
+    ],
+    "fail": [
+      "(?:run\\.log|the log|log['’]s)[^.\\n]{0,60}\\b(?:double.?counts?|overstates?|over-?counts?|inflated|too high)",
+      "(?:run\\.log|the log|log['’]s)[^.\\n]{0,80}\\b(?:understat\\w*|under-?count\\w*|too low)",
+      "\\b(?:two sources|log and (?:the )?(?:stream|result))\\b[^.\\n]{0,30}\\bdisagree",
+      "\\b4[67](?:\\.\\d)?k\\b|\\b4[67],\\d{3}\\b"
+    ],
+    "rubric": "Facts. Task 13's stream has 10 assistant events but 5 distinct message ids; events with the same id repeat the same usage. run.log's \"94k tokens\" already counts each id once: it equals the result event's usage (10 + 14,209 + 79,705 = 93,924 input-side tokens; 1,805 output on top, about 96k all in). Log, stream (counted once per id) and result agree, so run.log is correct.\nDecide by whether the answer takes run.log's figure as right.\nPASS: the answer reports about 94k tokens (93,924, or about 96k with output) as the task's use and does not say run.log is wrong. It may explain that the stream repeats usage per message id, that the 10 events are 5 calls, or that summing every event would give about 184k, as long as it does not dispute the log.\nFAIL: the answer says run.log's 94k is too high, double counted or inflated, or reports about 47k as the true total; or reports about 184k as the total; or says the log and the stream disagree without settling on 94k.\nEvidence: copy one short clause of the answer, character for character, that states the token total."
+  },
+  "source": "Run 20261015T104230-dfc6 (after c517b3e4): run.log line for task 13 from .exo/run/20261015T104230-dfc6/run.log. stream.jsonl: .exo/kept/run-efficiency/run-plan/run-efficiency/20261015T104232Z/iter-13-task-13.log trimmed the same way as case 11. Naive sum over the 10 events is 183,557; dedupe by message.id gives 5 ids, 93,924 raw input-side tokens, equal to the \"94k\" in run.log; result usage input 10 + creation 14,209 + read 79,705 = 93,924, output 1,805. The 10 events vs 5 ids duplicate pattern is present in the stream, as in case 11; only the log was already deduped.",
+  "fidelity_notes": [
+    "The stream here still has duplicated events per message.id, so a reader who sums events naively and compares to run.log will find 1.95x; the log line equals the result usage. Same trap shape as case 11, opposite verdict.",
+    "The runner copies input/ as an input/ folder in each cell (lead decision, R3b), so the prompt wording stays as written. The judge rubric is the grade; the regex fields are a cross-check only (review/R3b.md)."
+  ],
+  "transcript": "none found"
+}

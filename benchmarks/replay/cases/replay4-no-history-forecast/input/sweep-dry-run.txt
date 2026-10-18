@@ -1,0 +1,36 @@
+33 claude -p calls planned, one per cell:
+  review-safe-path-seeded-low: --model claude-opus-5-5 --effort low
+  review-safe-path-seeded-medium: --model claude-opus-5-5 --effort medium
+  review-safe-path-seeded-high: --model claude-opus-5-5 --effort high
+  review-safe-path-control-low: --model claude-opus-5-5 --effort low
+  review-safe-path-control-medium: --model claude-opus-5-5 --effort medium
+  review-safe-path-control-high: --model claude-opus-5-5 --effort high
+  review-sql-user-seeded-low: --model claude-opus-5-5 --effort low
+  review-sql-user-seeded-medium: --model claude-opus-5-5 --effort medium
+  review-sql-user-seeded-high: --model claude-opus-5-5 --effort high
+  review-sql-user-control-low: --model claude-opus-5-5 --effort low
+  review-sql-user-control-medium: --model claude-opus-5-5 --effort medium
+  review-sql-user-control-high: --model claude-opus-5-5 --effort high
+  review-auth-token-seeded-low: --model claude-opus-5-5 --effort low
+  review-auth-token-seeded-medium: --model claude-opus-5-5 --effort medium
+  review-auth-token-seeded-high: --model claude-opus-5-5 --effort high
+  review-auth-token-control-low: --model claude-opus-5-5 --effort low
+  review-auth-token-control-medium: --model claude-opus-5-5 --effort medium
+  review-auth-token-control-high: --model claude-opus-5-5 --effort high
+  review-csv-sum-seeded-low: --model claude-opus-5-5 --effort low
+  review-csv-sum-seeded-medium: --model claude-opus-5-5 --effort medium
+  review-csv-sum-seeded-high: --model claude-opus-5-5 --effort high
+  review-csv-sum-control-low: --model claude-opus-5-5 --effort low
+  review-csv-sum-control-medium: --model claude-opus-5-5 --effort medium
+  review-csv-sum-control-high: --model claude-opus-5-5 --effort high
+  review-rate-limit-seeded-low: --model claude-opus-5-5 --effort low
+  review-rate-limit-seeded-medium: --model claude-opus-5-5 --effort medium
+  review-rate-limit-seeded-high: --model claude-opus-5-5 --effort high
+  review-rate-limit-control-low: --model claude-opus-5-5 --effort low
+  review-rate-limit-control-medium: --model claude-opus-5-5 --effort medium
+  review-rate-limit-control-high: --model claude-opus-5-5 --effort high
+  review-green-first-low: --model claude-opus-5-5 --effort low
+  review-green-first-medium: --model claude-opus-5-5 --effort medium
+  review-green-first-high: --model claude-opus-5-5 --effort high
+projected $0.00 and 0.0 min of cell time from past records (0 of 33 cells; 33 have no past record; 0 unreadable record.json skipped)
+Every call is billed. Re-run with --confirm to start them.

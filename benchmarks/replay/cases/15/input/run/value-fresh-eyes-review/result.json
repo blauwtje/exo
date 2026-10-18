@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 56609,
+  "stop_reason": "end_turn",
+  "session_id": "44bdd9af-cf0c-4da1-940e-a6fa199a937b",
+  "total_cost_usd": 0.3621577999999999,
+  "usage": {
+    "input_tokens": 20,
+    "cache_creation_input_tokens": 23366,
+    "cache_read_input_tokens": 254849,
+    "output_tokens": 6209,
+    "output_tokens_details": {
+      "thinking_tokens": 162
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23366,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 458,
+        "cache_read_input_tokens": 33170,
+        "cache_creation_input_tokens": 1991,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1991
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 20,
+      "outputTokens": 6209,
+      "cacheReadInputTokens": 254849,
+      "cacheCreationInputTokens": 23366,
+      "webSearchRequests": 0,
+      "costUSD": 0.3621577999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 162,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 17,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "Deleting a task now keeps it, and `npm test` passes: 20 tests, 0 fail. Nothing is committed. You need to do nothing, unless you want a commit.\n\n- **What delete does now:** `store.delete(id)` stamps the task with `deletedAt` instead of removing it. It also sets `updatedAt`.\n- **Data file:** `save` still writes deleted tasks, so support can bring them back by hand.\n- **Deleted means gone:** `get`, `update`, a second `delete` and `show` all fail with \"no task\". `list`, `count`, search, tags, stats, both exports and reminders skip deleted tasks. The last four now read their tasks through `store.list()`.\n- **Two choices I made for you:**\n  - A new task never gets the id of a deleted one.\n  - `update` ignores any `deletedAt` you pass, so it cannot set or clear the stamp.\n- **No restore yet:** there is no \"undelete\" command. Bringing a task back means removing `deletedAt` from the file by hand.\n\nThe new tests are in `test/store.test.js`, `test/views.test.js` and `test/cli.test.js`. They cover the stamp, the saved file, ids not being reused, and every view skipping deleted tasks.\n\nI did not run the full plan checks or a code review. This change had no plan file to check against.",
+  "ttft_ms": 1471,
+  "type": "result",
+  "duration_ms": 58293,
+  "uuid": "2d3b49e8-d858-43e9-8d6f-f0f977b4709c",
+  "ttft_stream_ms": 689,
+  "time_to_request_ms": 50,
+  "first_content_frame_ms": 689,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

@@ -1,0 +1,1 @@
+The directory input/ holds task 13 of a finished exo build run: run.log (the run log lines for the task), stream.jsonl (the task session's stream: assistant events with their usage, and the final result event). Write the token-usage paragraph for the run report on task 13: tokens used, turns, cost, and what they say about the task.

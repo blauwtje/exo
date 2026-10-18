@@ -1,0 +1,16 @@
+{
+  "id": "review-rate-limit-control-medium",
+  "kind": "review",
+  "variant": "control",
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "exitCode": 0,
+  "timedOut": false,
+  "wallMs": 25011,
+  "costUsd": 0.1494594,
+  "tokens": 35666,
+  "outputTokens": 1626,
+  "defectsFound": null,
+  "falseAlarms": 1,
+  "detail": "verdict FINDINGS, 1 fix findings"
+}

@@ -1,0 +1,75 @@
+diff --git a/src/cli/format.mjs b/src/cli/format.mjs
+index 23a3cac..626ac1e 100644
+--- a/src/cli/format.mjs
++++ b/src/cli/format.mjs
+@@ -5,6 +5,7 @@ const SHOW_FIELDS = [
+   ['Status', (invoice) => invoice.status],
+   ['Issued', (invoice) => invoice.issuedAt],
+   ['Due', (invoice) => invoice.dueDate],
++  ['Currency', (invoice) => invoice.currency ?? '-'],
+   ['Total', (invoice) => formatMinor(invoice.totalMinor)],
+ ];
+
+diff --git a/src/db/migration-files.mjs b/src/db/migration-files.mjs
+index 5d60cfc..2a1dc37 100644
+--- a/src/db/migration-files.mjs
++++ b/src/db/migration-files.mjs
+@@ -10,7 +10,7 @@ const MIGRATION_FILE = /^\d+_[a-z0-9_]+\.mjs$/;
+ export function listMigrations(dir = MIGRATIONS_DIR) {
+   return fs.readdirSync(dir)
+     .filter((file) => MIGRATION_FILE.test(file))
+-    .sort()
++    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
+     .map((file) => ({ name: file.slice(0, -'.mjs'.length), file: path.join(dir, file) }));
+ }
+
+diff --git a/src/db/migrations/10_invoice_currency.mjs b/src/db/migrations/10_invoice_currency.mjs
+new file mode 100644
+index 0000000..c7b80f4
+--- /dev/null
++++ b/src/db/migrations/10_invoice_currency.mjs
+@@ -0,0 +1,12 @@
++import { currencyOf } from '../../models/account.mjs';
++
++export const description = 'invoices carry the currency of their account';
++
++export function up(db) {
++  for (const invoice of db.invoices) {
++    if (invoice.currency) continue;
++    const account = db.accounts.find((candidate) => candidate.id === invoice.accountId);
++    const org = account && db.orgs.find((candidate) => candidate.id === account.orgId);
++    invoice.currency = account && org ? currencyOf(account, org) : null;
++  }
++}
+diff --git a/src/http/serialize.mjs b/src/http/serialize.mjs
+index c5351fe..76dc6f0 100644
+--- a/src/http/serialize.mjs
++++ b/src/http/serialize.mjs
+@@ -1,6 +1,6 @@
+ import { currencyOf } from '../models/account.mjs';
+
+-const INVOICE_FIELDS = ['id', 'number', 'accountId', 'status', 'issuedAt', 'dueDate', 'lines', 'totalMinor'];
++const INVOICE_FIELDS = ['id', 'number', 'accountId', 'status', 'issuedAt', 'dueDate', 'currency', 'lines', 'totalMinor'];
+
+ export function serializeInvoice(invoice) {
+   const view = {};
+diff --git a/src/models/invoice.mjs b/src/models/invoice.mjs
+index 42c9259..f2a6e10 100644
+--- a/src/models/invoice.mjs
++++ b/src/models/invoice.mjs
+@@ -1,6 +1,6 @@
+ import { sumLines } from '../util/money.mjs';
+
+-export function buildInvoice({ sequence, account, lines, issuedAt, dueDate, notes }) {
++export function buildInvoice({ sequence, account, lines, issuedAt, dueDate, notes, currency }) {
+   return {
+     id: `inv_${sequence}`,
+     number: `${issuedAt.slice(0, 4)}-${String(sequence).padStart(4, '0')}`,
+@@ -8,6 +8,7 @@ export function buildInvoice({ sequence, account, lines, issuedAt, dueDate, note
+     status: 'open',
+     issuedAt,
+     dueDate,
++    currency,
+     lines,
+     totalMinor: sumLines(lines),
+     notes: notes ?? null,

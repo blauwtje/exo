@@ -1,0 +1,26 @@
+{
+  "id": "C1",
+  "kind": "control",
+  "replay": null,
+  "constructed": false,
+  "task": "The directory run/ holds the finished cells of one benchmark run: one folder per task, each with the exo arm's result.json, checks.json and diff.patch, plus meta.json. Compare the tasks and write the results summary for this run: per task the cost, turns and outcome, and what the numbers say about how the exo arm did.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "proof-e2e|add-field-migration"
+    ],
+    "fail": [
+      "(cost|budget) cap (was |were )?(hit|reached|exceeded)|(?<!no cell )(?<!not )hit (a|the) (cost|budget) (cap|limit)|truncated by|probably (truncated|capped)|were (capped|cut off|truncated)|(looks?|seem\\w*) like the run was cut off|run was cut off by"
+    ],
+    "rubric": "The answer summarizes one benchmark run of 8 cells (Opus 5.5, effort low, one exo-arm cell per task, tasks value-find-cause-decoy, value-test-pollution, value-context-guards, value-proof-e2e, value-export-mismatch, value-rename-propagation, value-fresh-eyes-review, value-add-field-migration). True facts about the input: no cell was cut by any cost or budget cap. All eight cells ended with subtype success, terminal_reason completed, stop_reason end_turn and is_error false; costs run from 0.15 to 0.39 USD (value-add-field-migration 0.3857 is the highest, value-test-pollution 0.1507 the lowest) and turns from 7 to 17. Six cells pass their checks; value-export-mismatch (4 of 9 defects) and value-test-pollution (10 of 15 defects) fail their checks for real, which is a genuine result and not a run-data problem. FAIL: the answer claims a run-level problem the inputs do not show: that any cell was capped, cut off, budget-stopped, truncated or timed out, that the run was stopped, or that some numbers cannot be trusted or must be rerun, or it invents another defect in the run data. PASS: an accurate per-task summary of cost, turns and outcome. These are accurate and count for pass: saying an agent stopped early or finished early after a partial fix, or with a wrong done-claim (the agent ended normally with end_turn); noting that meta.json names a fixture (full-stack-fastapi-template) that does not match the JS task projects, even with a guess that it is stale or wrong (the inputs show the mismatch); noting that many diff.patch files are empty while checks.json shows changed lines, even with a guess why; a sentence that DENIES a problem (nothing was capped, cut off or truncated); quoting words such as success, subtype, or saying the budget cap was not reached. Rounding or omissions do not matter. Quoting input numbers or words is neither pass nor fail by itself: judge whether the answer claims a problem that is not in the data."
+  },
+  "source": "Real run: benchmarks/runs/opus55-main-76153c60-pilot-low (Opus 5.5, effort low, 8 value cells, one exo arm, run 1). Copied per cell: exo/1/result.json, checks.json, diff.patch, and the run meta.json; stdout.json, usage.json and stderr.log are not copied. meta.json has pluginCommits removed (it held the fix sha); the real file has no cap field (run.mjs writes none), so none was added. Real cap mechanics: run.mjs passes --max-budget-usd (task.json maxBudgetUsd 1.5, else 3) to each cell. Input equals case 15 input except the value-add-field-migration cell (real here, cap stop there). All eight cells ended subtype success, stop_reason end_turn, is_error false; two cells (export-mismatch, test-pollution) have genuinely failing checks, not a cap stop.",
+  "transcript": "none",
+  "fidelity": "real: eight pilot-low cells unedited, meta.json minus pluginCommits",
+  "fidelity_notes": {
+    "real": "All cell files and meta.json (minus pluginCommits) as the run wrote them.",
+    "edited": "Only meta.json: pluginCommits removed.",
+    "assumed": "Nothing."
+  },
+  "ready": true
+}

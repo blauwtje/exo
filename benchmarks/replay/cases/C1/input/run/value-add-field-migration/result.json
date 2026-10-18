@@ -1,0 +1,99 @@
+{
+  "duration_api_ms": 58102,
+  "stop_reason": "end_turn",
+  "session_id": "7b9e7918-376c-4734-a702-19f4cfea892e",
+  "total_cost_usd": 0.38569679999999995,
+  "usage": {
+    "input_tokens": 28,
+    "cache_creation_input_tokens": 24192,
+    "cache_read_input_tokens": 386644,
+    "output_tokens": 5736,
+    "output_tokens_details": {
+      "thinking_tokens": 482
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 24192,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 416,
+        "cache_read_input_tokens": 35590,
+        "cache_creation_input_tokens": 397,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 397
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 28,
+      "outputTokens": 5736,
+      "cacheReadInputTokens": 386644,
+      "cacheCreationInputTokens": 24192,
+      "webSearchRequests": 0,
+      "costUSD": 0.38569679999999995,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 482,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 15,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "Invoices now have a `currency` field, and it worked when I ran it. Nothing is needed from you.\n\n- **Old invoices:** a new step, `10_invoice_currency`, fills in each invoice's currency from its account. This step changes the saved data; such steps are called migrations.\n- **New invoices:** they get the account's currency when they are made.\n- **Showing it:** `GET /invoices/:id` returns `\"currency\":\"EUR\"`, and `show` prints a `Currency` line.\n- **Fixed a hidden bug:** migrations ran in text order, so `10` would have run before `2` on a new, empty database. They now run in number order. Migrations 1–9 were not edited, so production's saved records of them still match.\n- **Check:** I set up a database on migration 9 with the old code. Then I ran the new code. It ran only migration 10. `show inv_1` and the HTTP call both showed `EUR`. All 21 tests pass.\n\nOld code ignores the new field, so rolling back is safe. The work is one commit, `9852415`, on a new local branch `invoice-currency`. I did not push it.",
+  "ttft_ms": 2051,
+  "type": "result",
+  "duration_ms": 61270,
+  "uuid": "9ba090dd-9349-4d4b-900a-67bea16a72bd",
+  "ttft_stream_ms": 860,
+  "time_to_request_ms": 44,
+  "first_content_frame_ms": 860,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

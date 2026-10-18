@@ -1,0 +1,4 @@
+{
+  "cue": "Before you report any number, check how it was measured. For each problem you find, say whether the number shows an agent error, a measurement error, or no problem.",
+  "audit": "`input/audit.md` holds flags from a measurement-audit script; read it first. Before you report any number, check how it was measured. For each problem you find, say whether the number shows an agent error, a measurement error, or no problem."
+}

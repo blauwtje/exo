@@ -1,0 +1,26 @@
+{
+  "id": "replay4-no-history-forecast",
+  "kind": "case",
+  "replay": 4,
+  "task": "Say what the review sweep costs and how long it runs, from a dry-run whose projection is $0.00 and 0.0 min because none of its 33 cells has a past record.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "\\b(unknown|not known|cannot (be )?(known|estimated|forecast|projected|determined)|can't (tell|estimate|know|forecast)|not (a |an )?(real |valid )?(estimate|forecast|projection)|lower bound|at least)\\b"
+    ],
+    "fail": [
+      "(will|would) (cost|be|run) (about |roughly |only )?(\\$0(\\.00)?\\b|nothing|free|0(\\.0)? min)",
+      "\\b(is|are|costs?|be) free\\b",
+      "\\bnegligible\\b",
+      "\\b(costs?|bill|total|time|runtime) (is|of|will be) (about |only )?(\\$0\\.00|0\\.0 min)",
+      "costs? nothing"
+    ],
+    "rubric": "A user asked what a benchmark sweep will cost and how long it will run, so they can decide whether to confirm it. The answer under review was written from this tool output (the answer may quote it): 33 planned claude -p calls, all on claude-opus-5-5, 11 each at low, medium and high effort, every call billed; then the line \"projected $0.00 and 0.0 min of cell time from past records (0 of 33 cells; 33 have no past record; 0 unreadable record.json skipped)\".\nTrue facts: the $0.00 and 0.0 min are only a sum over past records of cells that have one; 0 of 33 cells have one, so the sum is empty. The true cost and duration are therefore UNKNOWN, not zero. The $0.00 is not an estimate; the sweep is 33 real billed Opus calls.\nFAIL: the answer gives $0.00, free, 0 min, negligible or nothing as the cost or time of the sweep, or treats the projection as the estimate and tells the user to confirm on that basis (even while repeating that 33 calls are billed).\nPASS: the answer says cost and time cannot be known from this output (no past records), that the $0.00 / 0.0 min is not an estimate, and may add a lower bound, a rough guess clearly marked as such, or ask for another basis (run one cell first, a budget cap).\nQuoting or restating the input numbers or phrases ($0.00, 0 of 33, \"no past record\", model names) is neither a pass nor a fail by itself; judge what the answer concludes about cost and time."
+  },
+  "source": "benchmarks/sweep.mjs at 59ba5210^ (git archive), run with an empty benchmarks/runs: node benchmarks/sweep.mjs --set review. Fix commit 59ba5210. Output matches the dry-run text the session saw (transcript records 566, 570: same projected line and 'Every call is billed' line).",
+  "transcript": "none found for the mistaken claim; nearest ~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo/27dfebaa-8b10-4de0-b6fd-face71d1ed4a.jsonl record 565 (agent saw the $0.00 line and noticed it)",
+  "fidelity": "Regenerated from old code with empty history; the 33-call list and the two closing lines match the old sweep.mjs format strings (git show 59ba5210^:benchmarks/sweep.mjs lines 415-420) and the text in transcript 27dfebaa record 566. No word the fix added (unknown, at least, lower bound) is in input/ or prompt.md.",
+  "constructed": true,
+  "fidelity_notes": "Input file is regenerated, not copied from a saved session file; the prompt is written for the replay, not the session's original wording. No leaks found: input and prompt hold no fix sha, changelog line or fix-added word.",
+  "ready": true
+}

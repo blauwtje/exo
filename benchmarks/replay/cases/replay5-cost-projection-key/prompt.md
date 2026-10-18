@@ -1,0 +1,1 @@
+I am planning four runs of the value benchmark, all with the same 8 tasks, the exo arm and 6 runs each: Opus at low effort, Opus at max effort, Haiku at low effort and Haiku at max effort. The file `dry-runs.txt` holds the command and the cost line of each dry run. Write a short plan for these four runs with the cost I should budget for each run and the total.

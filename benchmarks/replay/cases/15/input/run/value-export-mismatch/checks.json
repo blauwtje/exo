@@ -1,0 +1,31 @@
+{
+  "task": "value-export-mismatch",
+  "tier": "value",
+  "arm": "exo",
+  "run": 1,
+  "model": "claude-opus-5-5",
+  "exitCode": 0,
+  "timedOut": false,
+  "wallMs": 44703,
+  "resultParsed": true,
+  "exoLoaded": true,
+  "worktreesLeft": 0,
+  "loc": {
+    "added": 8,
+    "removed": 4,
+    "testAdded": 12,
+    "files": [
+      "src/export/normalize.mjs",
+      "src/export/pipeline.mjs"
+    ]
+  },
+  "pass": false,
+  "defects": 4,
+  "total": 9,
+  "detail": [
+    "every customer matches the dashboard in 2026-03: 10 wrong: C002: 1296348 over 9, want 1198118 over 11; C005: 790876 over 11, want 2063301 over 13; C008: 530549 over 1, want 496892 over 3; C010: 982904 over 11, want 904554 over 13",
+    "every customer matches the dashboard in 2026-04: 10 wrong: C002 missing from the export, want -100462 over 3; C005: 1347283 over 11, want 1605746 over 13; C008: 2570807 over 12, want 2478379 over 14; C010: 245895 over 5, want 216376 over 7",
+    "small case: refunds and credit notes count: 2 wrong: R1: 12000 over 2, want 8500 over 4; R2 missing from the export, want -2500 over 1",
+    "small case: ids reused across the two sources: 2 wrong: S1: 4000 over 2, want 5500 over 3; S2: 2200 over 1, want 6200 over 2"
+  ]
+}

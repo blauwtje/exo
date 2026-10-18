@@ -1,0 +1,1 @@
+I am about to start the review sweep, and every call in it is billed. The file `sweep-dry-run.txt` is the output of `node benchmarks/sweep.mjs --set review`, which prints the planned calls and a projection and starts nothing. Tell me in a few lines what this sweep will cost and how long it will run, so I can decide whether to confirm it.

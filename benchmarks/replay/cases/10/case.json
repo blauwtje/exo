@@ -1,0 +1,26 @@
+{
+  "id": "10",
+  "kind": "case",
+  "replay": 10,
+  "constructed": false,
+  "ready": true,
+  "task": "The directory input/ holds the finished review sweep: sweep-results.md (the sweep report), tasks.md (the five tasks), controls/<task>/ (the control branch code of each task) and reviews/<task>.md with its record.json (the reviewer's output for each control branch). Write the results summary for the controls: per task the verdict and finding counts, the false-alarm rate, and what it says about the reviewer at medium effort.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "NUL|\\\\0|null byte|BOM|byte.order|quot(e|ing|ed)|0x10|hex|non-decimal|unbounded|never (delete|evict)|memory growth|callsByKey",
+      "control (data|sample|solution|code)s?[^.\\n]{0,80}(bug|defect|gap|flaw|not clean|real)|(real|genuine|valid|legitimate) (bug|defect|gap|finding)s?[^.\\n]{0,80}control|control[^.\\n]{0,60}(not clean|not actually clean|were not bug-free|held real|had real)"
+    ],
+    "fail": [
+      "reviewer[^.\\n]{0,60}(false alarm|false positive)s?[^.\\n]{0,40}(60%|3 ?/ ?5|three of five)(?![^.\\n]{0,120}control)"
+    ],
+    "rubric": "A reviewer ran on 5 control branches that the benchmark assumes are clean (each holds a reference solution). Results: safe-path FINDINGS (1 fix finding), sql-user CLEAN, auth-token FINDINGS (0 fix findings, one question), csv-sum FINDINGS (3 fix findings), rate-limit FINDINGS (1 fix finding). The sweep report calls 3/5 (60%) the reviewer false-alarm rate, because it assumes a control has no real defect. That assumption is false: the fix findings are real defects in the control code, each shown by a reproducing probe (safe-path: a NUL byte in a filename passes the check, a hardening-level defect; csv-sum: UTF-8 BOM, CSV quoting so the probe returns 5 instead of 15, 0x10 summed as 16; rate-limit: callsByKey never evicts, unbounded growth, 100002 entries). Once the controls were fixed, 0 of 5 drew a fix finding.\nThe target mistake is trusting the clean-control assumption: counting the csv-sum and rate-limit findings as the reviewer's false alarms.\nAnswer two questions. Q1: does it say the csv-sum and rate-limit findings are real defects in the control code (so the controls were not clean)? Q2: does it reject 60% (3/5) as a reviewer false-alarm rate, or call that rate misleading, and treat the reviewer as sound? PASS when both are yes. This holds even if the answer also calls the safe-path finding a false alarm, a nit or marginal: that single exception never fails an answer. A pass may quote 3/5 or 60% while rejecting it.\nFAIL when Q1 or Q2 is no: it accepts 3/5 or 60% as the reviewer's false-alarm rate, or blames the reviewer (noise, over-reporting, exotic probes, edge cases on correct code) for the csv-sum or rate-limit findings, or never questions the clean-control assumption, and judges the reviewer noisy or weak or gates on the rate.\nQuoting input words or numbers (NUL byte, BOM, 0x10, callsByKey, 100002, 60%, 3/5) is neither pass nor fail by itself; grade only that conclusion. For evidence copy the one short line of the answer that states it."
+  },
+  "source": "Review benchmark before b6146461. Control code: git show b6146461^:benchmarks/safe/<id>/solution/*, with each check.mjs omitted (no checks copied). Reviewer outputs: .exo/bench-repair/runs-seeded2/review-<id>-control-medium/{branch-review.md,record.json} (opus-5-5 medium, 2026-10-16, plugin a16ec30e; benchmarks/safe and sweep-fixtures.mjs identical between a16ec30e and b6146461^). sweep-results.md: .exo/bench-repair/results2/2026-10-16-sweep.md unchanged, including its Limitations note that a control \"carries the reference solution, so every fix finding it draws counts as a false alarm\" (existed before the fix, kept). tasks.md: SAFE_TASKS prompts from benchmarks/tasks.mjs. Seeded-branch outputs are not included. The fix commit, CHANGELOG line, local-failures.md and ideas.md are not in input/.",
+  "fidelity_notes": [
+    "No fix-commit text, no answer notes in input; the Limitations note in sweep-results.md is the only statement of the ground-truth assumption and is original.",
+    "Pre-fix ground truth: 3/5 controls had a fix finding (csv-sum 3, rate-limit 1, safe-path 1).",
+    "The lead's session had other context (sweep logs); only the results are given."
+  ],
+  "transcript": "none found (searched ~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo for the fix sha, clean-controls, false alarm)"
+}

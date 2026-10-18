@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-17",
+  "mode": "custom",
+  "model": "claude-opus-5-5",
+  "claudeVersion": "2.1.302 (Claude Code)",
+  "node": "v24.22.0",
+  "fixture": {
+    "name": "full-stack-fastapi-template",
+    "repo": "https://github.com/tiangolo/full-stack-fastapi-template.git",
+    "commit": "cd83fc1"
+  },
+  "arms": [
+    "exo"
+  ],
+  "tasks": [
+    "value-context-guards",
+    "value-test-pollution",
+    "value-find-cause-decoy",
+    "value-fresh-eyes-review",
+    "value-proof-e2e",
+    "value-add-field-migration",
+    "value-export-mismatch",
+    "value-rename-propagation"
+  ],
+  "runs": 1,
+  "cells": 8,
+  "effort": "low"
+}

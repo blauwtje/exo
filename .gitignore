@@ -8,5 +8,6 @@ docs/*
 !docs/settings.md
 benchmarks/fixtures/
 benchmarks/runs/
+benchmarks/replay/runs/
 /tmp
 harnesses/codex/generated/
