@@ -4,9 +4,12 @@
 - Waiting → start no other session, loop or watcher; the run-watch hook wakes this session.
 - Session with the exo status line → the status line shows progress and a wake prompt arrives when the run stops.
 - Wake names `landed` or `passed` → report the result from the run report.
-- Wake names another phase → read `<run directory>/report.md`; one worktree agent saves the blocked task's partial work to `.exo/carry/task<n>-partial.patch`, resets the run tree, fixes the plan (`node "${CLAUDE_SKILL_DIR}/../spec/scripts/plan-check.mjs" --loop --run --plan <plan> --root <run worktree>`) or the cause.
-- Then → `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" run --resume <id> --detach`, end the turn.
-- A task stops after two repairs → PushNotification tool if present, then ask the user. Repairs of a task = its `task<n>-partial.patch` files plus your repair turns.
+- Wake names another phase → read `<run directory>/report.md`, then dispatch one worktree agent (its own git worktree) to repair; the lead edits no file itself, even a one-line plan fix.
+- Reason → one agent repairs in one tree, and the lead's context stays free for the next wake.
+- Repair brief → the report path; the leftover patch the run saved, when it had edits, and the run tree it reset (`leftover saved to` or `partial work saved to` line in `<run directory>/run.log`), which the agent applies or discards; fix the plan (`node "${CLAUDE_SKILL_DIR}/../spec/scripts/plan-check.mjs" --loop --run --plan <plan> --root <run worktree>`) or the cause.
+- Repair lands where `run --resume` reads: the plan file at `plan` in `<run directory>/state.json`, committed in the checkout that holds it (resume refuses uncommitted edits there); a cause fix committed on the run branch (`Branch:` in the report). A commit left on the agent's own branch is not read.
+- Repair agent returns → `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" run --resume <id> --detach`, end the turn.
+- A task stops after two repairs → PushNotification tool if present, then ask the user. Repairs of a task = its earlier `task <n> blocked:` stop lines (colon directly after `blocked`; `task <n> blocked, repair session` lines do not count) in `<run directory>/run.log`, which every resume appends to.
 - Session without the status line → run the watch command the start line prints as one background Bash call.
 - While the watch runs → say nothing more.
 - Run directory → the directory of the `report` path the watch prints, else `.exo/run/<id>/`.

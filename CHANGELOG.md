@@ -59,6 +59,8 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - build-ui's comp and repair steps moved into the existing comp sections of direction-preview and phase-build, so a foundation or surface builder reads fewer lines.
 
 ### Fixed
+- A stopped detached run now tells the lead to send its repair to one worktree agent and edit no file itself; the two-repair cap counts only `task <n> blocked:` stop lines in `run.log`.
+- The land check skips an untracked path that is a registered git worktree, so a repair agent's worktree inside the checkout no longer blocks the resumed run.
 - A detached run no longer stops when another session pushes or fetches; only a remote ref move the run caused counts as a breach.
 - The boundary words check no longer fails a branch that is behind origin/main for words main added; it compares against the merge base.
 - Land no longer refuses a Data literal whose pieces name existing folders or path parts, such as a brace pattern over new files.

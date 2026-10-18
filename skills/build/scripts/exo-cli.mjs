@@ -564,7 +564,7 @@ function finishWait(state, id, dir) {
   const next = {
     refused: `fix the cause, then rerun node "${CLI}" run "${state.plan}" --detach`,
     parked: `read ${report}, then node "${CLI}" approve ${id}`
-  }[state.phase] ?? `read ${report}, repair per ${WATCHING}, then node "${CLI}" run --resume ${id} --detach`;
+  }[state.phase] ?? `read ${report}, one worktree agent repairs per ${WATCHING} (the lead edits no file), then node "${CLI}" run --resume ${id} --detach`;
   process.stdout.write(`${state.reason ? `Reason: ${state.reason}\n` : ''}Next: ${next}\n`);
   return 1;
 }

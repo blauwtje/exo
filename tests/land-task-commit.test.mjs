@@ -67,6 +67,19 @@ test('a stray path outside Files: is refused before anything stages or commits',
   assert.match(git(root, 'status', '--porcelain'), /extra\.js/);
 });
 
+test('a git worktree nested in the checkout is skipped, a plain untracked directory beside it is still refused', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'agents', 'agent-1'));
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/gone', path.join(root, 'agents', 'agent-gone'));
+  await fs.rm(path.join(root, 'agents', 'agent-gone'), { recursive: true }); // prunable: still listed, directory gone
+  await fs.mkdir(path.join(root, 'stray'));
+  await fs.writeFile(path.join(root, 'stray', 'file.txt'), 'x\n');
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), (error) => /changed a path outside Files: `stray\/file\.txt`/.test(error.message) && !error.message.includes('agent-1'));
+  await fs.rm(path.join(root, 'stray'), { recursive: true });
+  assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
 test('a task whose changes match every Files: path lands clean', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

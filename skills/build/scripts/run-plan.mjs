@@ -419,7 +419,7 @@ async function main(argv) {
   };
   const blockedStop = (n, reason) => {
     say(`task ${n} blocked: ${clip(reason, 80)}`);
-    return { line: `task ${n} blocked: ${reason}; re-plan with exo:spec`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 're-plan with /exo:spec, then run exo run again' };
+    return { line: `task ${n} blocked: ${reason}`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 'repair per exo:spec references/watching.md, then run exo run again' };
   };
   const repaired = new Set();
   const withoutFields = (line) => line.replace(/(?:Files|Proof):[^|]*/g, '');

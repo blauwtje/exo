@@ -103,7 +103,7 @@ test('wait on a stopped run points its Next line at the watching reference, and 
   await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify({ phase: 'stopped', pid: dead, plan: 'plan.md' }));
   const result = await exo(context, ['wait', 'stopped-run']);
   const next = result.stdout.split('\n').find((line) => line.startsWith('Next:')) ?? '';
-  const pointer = next.match(/repair per (\S+watching\.md)/)?.[1];
+  const pointer = next.match(/worktree agent repairs per (\S+watching\.md)/)?.[1];
   assert.ok(pointer, `${result.stdout}${result.stderr}`);
   assert.ok(pointer.endsWith(path.join('skills', 'spec', 'references', 'watching.md')), pointer);
   assert.ok((await fs.stat(pointer)).isFile());

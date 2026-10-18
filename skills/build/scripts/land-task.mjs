@@ -275,8 +275,20 @@ function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
   if (choices.length > 0) fs.appendFileSync(decisionsPathOf(planPath), choices.join(''));
 }
 
+// why: a git worktree nested in the checkout is another checkout, not task output.
+function nestedWorktrees(root) {
+  const listed = spawnSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
+  if (listed.status !== 0) return new Set();
+  return new Set(listed.stdout.split('\n').filter((line) => line.startsWith('worktree ')).flatMap((line) => {
+    try { return [realpathSync(line.slice('worktree '.length))]; } catch { return []; } // why: a prunable worktree is listed after its directory is gone.
+  }));
+}
+
 function untrackedPaths(root) {
-  return execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' }).split('\n');
+  const worktrees = nestedWorktrees(root);
+  const top = realpathSync(root);
+  return execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' }).split('\n')
+    .filter((file) => file === '' || !worktrees.has(path.join(top, file.replace(/\/$/, ''))));
 }
 
 function changedPaths(root, planPath) {
