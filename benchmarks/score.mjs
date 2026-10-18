@@ -244,7 +244,8 @@ function detailLine(arm, summary) {
 // A value cell's measures; a cell without result.json or usage.json drops out
 // of the cost or tokens mean only.
 const VALUE_METRICS = {
-  pass: (cell) => (cell.checks.pass ? 1 : 0),
+  // A timed-out cell, or one without result.json, is a failure whatever its tree checks as.
+  pass: (cell) => (cell.checks.pass && !cell.checks.timedOut && cell.result != null ? 1 : 0),
   defects: (cell) => cell.checks.defects,
   loc: (cell) => cell.checks.loc.added,
   tokens: (cell) => (cell.usage?.counts == null ? null : cell.usage.counts.weightedInput + cell.usage.counts.output),
@@ -292,7 +293,14 @@ function valueLines(meta, cells) {
   return lines;
 }
 
+// pass is judged by its mean alone, ahead of the other rows, and stays out of the CV.
 const COMPARE_METRICS = {
+  pass: {
+    read: VALUE_METRICS.pass,
+    money: VALUE_FORMAT.pass,
+    signed: (value) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value * 100))} pp`,
+    judge: (diff) => (diff === null || diff === 0 ? 'same' : diff < 0 ? 'worse' : 'better')
+  },
   cost: {
     read: VALUE_METRICS.cost,
     money: (value) => `$${value.toFixed(4)}`,
@@ -331,7 +339,7 @@ function compareProblem(meta, cells, { before, after }, directory) {
   }
 }
 
-// Per task, cost and wall time of the two arms with a rise/noise/fall verdict,
+// Per task, pass rate, cost and wall time of the two arms (a pass-rate drop reads worse, the others rise/noise/fall),
 // then the CV (largest over both arms and both metrics) and the next run count.
 function compareLines(meta, allCells, arms, directory) {
   const cells = allCells.filter((cell) => cell.arm === arms.before || cell.arm === arms.after);
@@ -352,8 +360,9 @@ function compareLines(meta, allCells, arms, directory) {
       const left = values(arms.before);
       const right = values(arms.after);
       const result = compareMeans(left, right);
+      if (show.judge) result.verdict = show.judge(result.diff);
       const stats = [meanAndSd(left), meanAndSd(right)];
-      for (const stat of stats) if (stat.sd !== null && stat.mean > 0) cvs.push(stat.sd / stat.mean);
+      if (!show.judge) for (const stat of stats) if (stat.sd !== null && stat.mean > 0) cvs.push(stat.sd / stat.mean);
       verdicts.push(result.verdict);
       const diff = result.diff === null ? '-' : show.signed(result.diff);
       const twoSe = result.twoSeDiff === null ? '-' : show.money(result.twoSeDiff);
@@ -365,7 +374,8 @@ function compareLines(meta, allCells, arms, directory) {
       : `${task}: CV ${cv.toFixed(2)} (largest of cost and time, both arms) · next n ${nextRuns(cv)}`);
   }
   let overall = 'noise';
-  if (verdicts.includes('rise')) overall = 'rise';
+  if (verdicts.includes('worse')) overall = 'worse';
+  else if (verdicts.includes('rise')) overall = 'rise';
   else if (verdicts.includes('fall')) overall = 'fall';
   else if (verdicts.includes('no SE')) overall = 'no verdict';
   return [...lines, '', ...footer, `verdict: ${overall}`];

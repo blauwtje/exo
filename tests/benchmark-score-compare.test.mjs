@@ -32,11 +32,11 @@ function makeRun(cells) {
   return runs;
 }
 
-// Three cells per arm; `after.pass` lets one after cell fail.
-function arms(before, after, times = TIMES) {
+// Three cells per arm; `failing` is the index of an after cell that fails.
+function arms(before, after, times = TIMES, failing = -1) {
   return [
     ...before.map((cost, index) => ({ arm: 'exo-before', cost, wallMs: times[index] })),
-    ...after.map((cost, index) => ({ arm: 'exo', cost, wallMs: times[index], pass: index !== 0 }))
+    ...after.map((cost, index) => ({ arm: 'exo', cost, wallMs: times[index], pass: index !== failing }))
   ];
 }
 
@@ -164,4 +164,19 @@ test('C8 a task with one arm only is refused', () => {
   const output = compare([...arms(BEFORE, AFTER), { task: 'u', arm: 'exo', cost: 1 }]);
   assert.equal(output.status, 1);
   assert.match(output.stderr, /score: task u has no exo-before cells/);
+});
+
+test('C9 a pass-rate drop reads worse ahead of a cost fall', () => {
+  const output = compare(arms(AFTER, BEFORE, TIMES, 0));
+  assert.match(output.stdout, /\| t \| pass \| 3 \| 3 \| 100% ±0% \| 67% ±33% \| -33 pp \| -33% \| .* \| worse \|/);
+  assert.match(output.stdout, /verdict: worse/);
+  assert.match(output.stdout, /CV 0\.20 /);
+});
+
+test('C10 a timed-out or result-less cell counts as a failure', () => {
+  const cells = arms(BEFORE, BEFORE);
+  cells[3] = { ...cells[3], cost: null };
+  const output = compare(cells);
+  assert.match(output.stdout, /\| t \| pass \| 3 \| 3 \| 100% .* \| 67% .* \| worse \|/);
+  assert.match(output.stdout, /verdict: worse/);
 });

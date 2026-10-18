@@ -76,17 +76,17 @@ The parts below run only when the user's own words ask for them; a page's size, 
 | `references/direction-preview.md` | Live comps on request only: after `--check` reports ok, before the first comp. |
 | `references/composition.md` | Phase 1 `## Inventory before layout`; Phase 2 `## Turn subject evidence into a system`, `## Choose structures from relationships`, `## Write a composition contract`; full run Phase 3 `## Build density without clutter`, `## Surface obligations`, `## Responsive recomposition`. |
 | `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list`, `## Pairing`; preview: `## Pairing`; full run Phase 3 the rest. |
-| `references/controls.md` | Full run, before styling a control: `## Tactile hierarchy`, `## Labels`, plus `## Anatomy of the composite controls` for a composite. |
-| `references/implementation.md` | Full run, before writing CSS or component code: `## Where code lives`, `## One styling mechanism`, `## Tokens and palette derivation`, `## Responsive type and layout`, `## Banned patterns`, `## Finish — browser surfaces`. |
+| `references/controls.md` | Full run Phase 3: `## Tactile hierarchy`, `## Labels`, `## Anatomy of the composite controls`. |
+| `references/implementation.md` | Full run Phase 3: `## Where code lives`, `## One styling mechanism`, `## Tokens and palette derivation`, `## Responsive type and layout`, `## Banned patterns`, `## Finish — browser surfaces`. |
 | `references/motion.md` | Builder alone on the one pass; else before the first animation: `## Motion thesis`, `## Job gate`, `## Timing`, `## Reduced motion`; full run Phase 3 `## Materials`; `## Scroll and view transitions` or `## Continuity contract` when the build uses one, `## Judgment` for an animation library. |
-| `references/interaction-qa.md` | Full run Phase 3 for controls, flows, disclosure or reachable states, but `## Pre-ship interaction sweep`, Phase 5 alone. |
-| `references/feedback-and-status.md` | Full run Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
+| `references/interaction-qa.md` | Full run Phase 3; `## Pre-ship interaction sweep`, Phase 5 alone. |
+| `references/feedback-and-status.md` | Full run Phase 3; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Opt-in Phase 4: `exo:critique-ui` step 1's sections. |
-| `references/craft-recipes.md` | Full run, before the first CSS of a ground, surface, motion, or type treatment. |
+| `references/craft-recipes.md` | Full run Phase 3. |
 | `references/component-system.md` | Phase 1 `## Adopt before authoring` when the repository ships a component layer; full run Phase 3 before a control, field or surface the design repeats: `## Anatomy`, `## The state row`, `## Scales, not values`, plus `## Composite patterns` for a composite. |
 | `references/tokens.md` | Phase 2: `## Tiers`; then the section matching a DTCG pipeline, a second theme or brand, or a ramp derived from target contrast. |
-| `references/icons-and-imagery.md` | Full run Phase 3 when the build draws or extends an icon set, places a raster or chart, or the inventory names imagery. |
-| `references/accessibility.md` | Full run Phase 3 before a composite widget: `## Keyboard contracts` alone; Phase 5 `## Sweep` alone. |
+| `references/icons-and-imagery.md` | Full run Phase 3. |
+| `references/accessibility.md` | Full run Phase 3: `## Keyboard contracts` alone; Phase 5 `## Sweep` alone. |
 | `references/performance-budget.md` | Full run Phase 3 the sections matching an added hero raster, unloaded font or persistent effect; Phase 5 `## Outcome thresholds` and `## Hard failures` alone. |
 | `references/internationalization.md` | Phase 1 when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script. |
 

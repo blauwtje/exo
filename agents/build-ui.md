@@ -71,25 +71,9 @@ Read these and nothing else before writing, one batch where files are independen
 - No `URL`, or capture exits non-zero → skip those steps, report the capture as blocked.
 - Write `$RUN/build-<SCOPE>.md`, at most 20 lines: paths written, faults the capture showed with `fixed` or `open`, inventory items covered and any missing, primitives needed but missing from the foundation.
 
-**Comp scope (`comp:<n>`).**
+**Comp scopes (`comp:<n>`, `comp:focal`).**
 
-- Build direction `<n>` as its first screen with the `FILES` content, per `## What the comp owes the screen` of `direction-preview`.
-- Write only inside the folder `CHECK` names; the direction entry, the app's own files and every other direction's folder belong to the session.
-
-Check and repair:
-
-1. Run the `CHECK` command.
-2. Read both captures it prints and its `check-ui.json`; list each fault `## Before the picker` of `direction-preview` names.
-3. Fix every listed fault in one pass (repair once), then run step 1 again and read the new captures; no second repair.
-
-- Check exits 2 or 3 → report its message as blocked.
-- Write `$RUN/comp-<n>.md`, at most 8 lines: paths written, both capture paths, each fault left after the re-check as `open` (fixed ones as `fixed`), one sentence on what sets this direction apart as built.
-
-**Comp scope (`comp:focal`).**
-
-- Build the chosen direction's focal region as a local page in `$RUN/comp/` from `$RUN/plan.md` and the `FILES` content; no app file is edited.
-- Run the `capture.mjs` command of `## The comp` in `phase-build` with `$URL`; read both captures, repair faults in one pass.
-- Write `$RUN/comp.md`, at most 8 lines: paths written, both capture paths, the focal region's name, each named sub-region.
+- Build, check, repair and report as the section your Reads line names says, at the report size it states.
 
 **Repair scope (`repair:<surface>`).**
 

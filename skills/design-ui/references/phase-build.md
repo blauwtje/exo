@@ -81,6 +81,8 @@ Full redesign only; a bounded redesign, tweak, sketch and new piece write none, 
 - The comp = the chosen direction's focal region as a local page in `$RUN/comp/`, with `$RUN/comp.md` listing each region.
 - The `comp:focal` call passes `URL=file://$RUN/comp/index.html`, `FILES` the content ranges the session read, and `REFERENCES` the files under `$SKILL/references/` the plan names; the capture's `<url>` is that `URL`.
 - The builder renders it with `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label comp --out "$RUN/renders"`.
+- The builder writes the page from `$RUN/plan.md` and the `FILES` content, edits no app file, reads both captures and repairs faults in one pass.
+- It writes `$RUN/comp.md`, at most 8 lines: paths written, both capture paths, the focal region's name, each named sub-region.
 - The page, foundation and surface builders get `COMP=$RUN/comp/`.
 
 ## The sketch path

@@ -29,7 +29,14 @@ Full run starts only when the user asks for a survey, a critique or QA; it repla
 - Surface renders → this session first takes the baseline pair under `## The critique dispatch`.
 - The `exo:survey-ui` agent, dispatched with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`, collects the baseline record, content inventory and at least three subject observations into `$RUN/inventory.md` and `$RUN/files.md`.
 - Build hands `$RUN/files.md` to each builder as `FILES`, under `## Full run builders` of the `phase-build` reference.
-- Phase 3 rows of the skill's References table → read by the surface builder, not the main session, except the build row, which decides who builds.
+- Phase 3 rows → read by the surface builder, not this session, except the build row; `REFERENCES` takes a row on:
+  - `controls`: before a control; composite section: composite.
+  - `implementation`: before CSS or component code.
+  - `interaction-qa`: controls, flows, disclosure, reachable states.
+  - `feedback-and-status`: network waits, optimistic changes, status outside the change.
+  - `craft-recipes`: before CSS of a ground, surface, motion or type treatment.
+  - `icons-and-imagery`: icons, raster or chart, inventory images.
+  - `accessibility`: before a composite widget.
 - Phase 4 follows `## The critique dispatch` after the build and the post-build checkpoint.
 - Phase 5 → a `general-purpose` delegate whose prompt opens with `exo-kind: review` runs `## QA`; this session reads only that section's last two bullets (close, ignore entry) and quotes qa.md.
 

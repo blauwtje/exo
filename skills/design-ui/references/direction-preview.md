@@ -21,7 +21,9 @@ This file owns the live comps that ask for a direction on request; the `sketch-t
 - `pick.mjs --check` renders each comp full page at 390 and 1440 wide through the capture and check-ui scripts, and writes the PNGs and a `check-ui.json` under each variant's `checked/`.
 - The comp builder reads every capture at both widths and its `check-ui.json` with the Read tool; a capture nobody viewed checks nothing. The lead reads `comp-<n>.md` only.
 - Fix each fault they show: horizontal overflow, a section cut off or missing, overlapping text, unreadable contrast, an empty band, a broken image or font.
-- Repair once, re-check and read the new captures, then report every fault left in `comp-<n>.md`; no second repair.
+- Repair once in one pass, re-check and read the new captures; no second repair. `pick.mjs --check` exits 2 or 3 → report its message as blocked.
+- Write only inside the folder the `CHECK` command names; the direction entry, the app's own files and every other direction's folder belong to the session.
+- Write `$RUN/comp-<n>.md`, at most 8 lines: paths written, both capture paths, each fault left after the re-check as `open` (fixed ones as `fixed`), one sentence on what sets this direction apart as built.
 - The picker refuses to start, exit 2, while a variant lacks a capture at 390 or 1440 newer than its own files, so any edit after a check needs another check.
 - Only then write the labels file and start `pick.mjs` under the Bash tool's `run_in_background`.
 - When `pick.mjs --check` exits 3, no capture engine exists: start the picker with `--unchecked` and tell the user in one line that the comps were not checked.

@@ -55,6 +55,8 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
 - spec ends on one question whether to start the build now; the background build starts only on your pick, and the option says how the work lands.
 - A run checks a moved remote ref with two git calls, not one per run commit, so the first fetch into a repo with no remote refs is no longer slow.
+- design-ui's References table keeps only phase and section names for the full-run rows; their conditions moved to phase-detail's Full run, read only on a full run.
+- build-ui's comp and repair steps moved into the existing comp sections of direction-preview and phase-build, so a foundation or surface builder reads fewer lines.
 
 ### Fixed
 - A detached run no longer stops when another session pushes or fetches; only a remote ref move the run caused counts as a breach.
@@ -104,6 +106,9 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:prompt` shows a prompt asked for use in another session as that finished prompt, with no offer to run it, and keeps from pasted chat history only the lines the task needs.
 - A stopped run's wait output and wake prompt point to spec's watching reference, which holds the repair cap, instead of build's step loop.
 - The watching reference's plan-check command finds spec's script when build reads it too.
+- run-unit no longer reads the lead-only run loop; the frame it needs comes in its brief file.
+- ship removes a merged pull request's worktree with remove-worktree.mjs, so its `.exo/` run report is kept.
+- `score.mjs --compare` judges pass rate first, so an arm that fails fast no longer reads as cheaper.
 
 ### Removed
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.
