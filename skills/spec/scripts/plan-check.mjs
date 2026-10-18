@@ -5,6 +5,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBase, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { subjectProblem } from '#commit-text';
+import { dataLiterals, literalFinder, literalFragments } from '#data-literals';
 import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -580,6 +581,29 @@ function checkNestedClaude(plan, root) {
     .map(({ entry, part }) => `${entry.field}${entry.task === null ? '' : ` of Task ${entry.task}`}: '${part}' starts a nested claude: ${NESTED_CLAUDE}`);
 }
 
+function hasHead(root) {
+  return spawnSync('git', ['-C', root, 'rev-parse', '--verify', '-q', 'HEAD'], { stdio: 'ignore' }).status === 0;
+}
+
+// why: land searches names relative to the run worktree, so an absolute, outside or ignored path is one it can never find.
+function namesUnsearchablePath(fragment, root) {
+  const target = path.resolve(root, fragment);
+  if (!fs.existsSync(target)) return false;
+  const relative = path.relative(root, fs.realpathSync(target));
+  if (path.isAbsolute(fragment) || relative.startsWith('..') || path.isAbsolute(relative)) return true;
+  return spawnSync('git', ['-C', root, 'check-ignore', '-q', '--', relative], { stdio: 'ignore' }).status === 0;
+}
+
+function checkDataLiterals(task, root, planPath) {
+  if (task.literals !== null || !task.data || !hasHead(root)) return [];
+  const candidates = [...new Set(dataLiterals(task.data))].filter((literal) => literalFragments(literal).some((fragment) => namesUnsearchablePath(fragment, root)));
+  if (candidates.length === 0) return [];
+  const found = literalFinder(root, planPath);
+  const flagged = candidates.filter((literal) => !found(literal) && literalFragments(literal).some((fragment) => namesUnsearchablePath(fragment, root) && !found(fragment)));
+  if (flagged.length === 0) return [];
+  return [`Task ${task.number}: Data: names ${flagged.map((literal) => `\`${literal}\``).join(', ')}, a path the land check cannot search (absolute, outside the repository or git-ignored); name it relative to the repository, or add \`Literals: none (<reason>)\``];
+}
+
 function checkDerivedNames(planText, resolvedRoot) {
   if (resolvedRoot === undefined || !fs.existsSync(path.join(resolvedRoot, 'verify/checks/derivation.mjs'))) return [];
   const names = derivedNames();
@@ -624,6 +648,9 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot, forkPoint)),
     ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkProofTestsListed(task, resolvedRoot, byNumber)),
+    ...(resolvedRoot === undefined || resolvedRoot === null || !fs.existsSync(resolvedRoot)
+      ? []
+      : plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkDataLiterals(task, realPath(resolvedRoot), planPath === undefined ? null : realPath(planPath)))),
     ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
     ...checkParallelForm(plan.frame),
