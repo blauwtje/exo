@@ -121,6 +121,25 @@ node benchmarks/sweep.mjs --set replay --cases <path> --models opus,sonnet --rep
 
 A review cell runs the body of the `review-branch` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or concern reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.
 
+## Ideas set
+
+`node benchmarks/ideas.mjs` measures how original and varied the design options `spec` offers. Each case (`fx-tide-export`, `fx-shopping-share`, `fx-notes-export`, listed in `benchmarks/ideas/cases.json`) sends one neutral request, `/exo:spec <feature> Which designs could do this? Recommend one.`, in a fresh `claude -p` session on a fresh copy of the fixture, with maker model `opus` at effort `high`. Baseline is 5 runs per case.
+
+Methods: fluency, flexibility and originality from divergent-thinking tests (Guilford, Torrance); the Consensual Assessment Technique with an LLM judge rating each option alone on anchored 1-5 scales; creativity as novelty and usefulness, so originality and fit are rated apart. A blind judge (`claude-sonnet-5-5`, no plugin, no tools) extracts options from the final message, clusters all options of a case into shapes, then scores each option three times and keeps the median. Hidden control options with known keys calibrate it: under 80% of control scores within 1 of the key marks the results `judge uncalibrated` and draws no decision.
+
+Metrics: `strong` (options per run with originality and fit both >= 4, primary), `options`, `shapes`, `duplicateShare`, `originality`, `fit`, `rare` (share of a run's shapes no other run of that case and arm has) and per case `modalShare` (share of runs recommending the most common shape). The results file prints the minimum detectable effect beside each mean.
+
+Decision rule, written into the results file before any score: variant A1 (wider sketch) is worth an arm when mean `shapes` < 3 or `originality` < 3; A2 (one subagent per candidate) when `duplicateShare` >= 0.2; A3 (code-cliché list) when `modalShare` >= 0.6 or `rare` < 0.2. Adopting a variant still needs it to beat baseline by more than the minimum detectable effect.
+
+```bash
+node benchmarks/ideas.mjs --arm base --n 5               # prints the planned cells and spends nothing
+node benchmarks/ideas.mjs --arm base --n 5 --confirm     # runs them, writing benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/
+node benchmarks/ideas.mjs --score <dir>                  # judges a run dir, writes benchmarks/results/<date>-ideas-<arm>.md
+node benchmarks/ideas.mjs --compare <dirA> <dirB>        # compareMeans per metric between two arms
+```
+
+Every paid run waits for the user to request it; agents run the dry mode and the tests only.
+
 ## Terminal-Bench runner
 
 `benchmarks/tbench/` runs Terminal-Bench 2.1 tasks through [Harbor](https://github.com/harbor-framework/harbor) (`uv tool install harbor`, Docker running) with Claude Code on a subscription OAuth token, and imports the result into `score.mjs --compare`. It starts nothing paid by itself.

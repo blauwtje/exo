@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { meanAndSd, minDetectableEffect, signTest } from '../benchmarks/statistics.mjs';
+import { meanAndSd, minDetectableEffect, minDetectableMeanEffect, signTest } from '../benchmarks/statistics.mjs';
 import { summarize } from '../benchmarks/lean-gates-metrics.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
@@ -68,4 +68,9 @@ test('minDetectableEffect and the mde script agree', () => {
   const run = spawnSync(process.execPath, [path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs'), '--rate', '0.5', '--n', '10'], { encoding: 'utf8' });
   assert.equal(run.status, 0);
   assert.match(run.stdout, /0\.500/);
+});
+
+test('minDetectableMeanEffect scales with spread and shrinks with runs', () => {
+  assert.ok(Math.abs(minDetectableMeanEffect({ sd: 1, n: 2 }) - 2.84) < 1e-9);
+  assert.ok(Math.abs(minDetectableMeanEffect({ sd: 0.5, n: 8 }) - 2.84 * 0.5 * 0.5) < 1e-9);
 });

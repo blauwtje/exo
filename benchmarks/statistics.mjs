@@ -54,3 +54,7 @@ export function signTest(pairs) {
 export function minDetectableEffect({ rate, n }) {
   return Math.min(1 - rate, (RISE_Z + POWER_Z) * Math.sqrt(2 * rate * (1 - rate) / n));
 }
+
+export function minDetectableMeanEffect({ sd, n }) {
+  return (RISE_Z + POWER_Z) * sd * Math.sqrt(2 / n);
+}

@@ -1,0 +1,32 @@
+{
+  "tide": {
+    "fixture": "fx-tide-export",
+    "feature": "Add an export for tide alerts so harbour masters can get them out of the app.",
+    "controls": [
+      { "title": "CSV download", "mechanism": "A button writes the current alerts to a CSV file the harbour master saves from the app.", "originality": 1, "fit": 5 },
+      { "title": "Email digest", "mechanism": "The app emails the day's alerts as a plain list to an address the harbour master sets once.", "originality": 2, "fit": 4 },
+      { "title": "Radio-ready script", "mechanism": "The app renders each alert as a short spoken-style line, in the order a harbour master would read it out on the VHF channel, and offers it as a printable card or a text-to-speech clip.", "originality": 5, "fit": 4 },
+      { "title": "Berth-board overlay", "mechanism": "The app exports each alert as a time-stamped strip keyed to berth numbers, so the harbour office can lay it over its own wall chart or tide table without retyping.", "originality": 4, "fit": 4 }
+    ]
+  },
+  "shopping": {
+    "fixture": "fx-shopping-share",
+    "feature": "Let people share their shopping lists with family.",
+    "controls": [
+      { "title": "Share by link", "mechanism": "A button creates a link to the list that family members open to see and tick items.", "originality": 1, "fit": 5 },
+      { "title": "Invite by email", "mechanism": "The owner enters family email addresses and each person gets an invitation to join the list.", "originality": 2, "fit": 4 },
+      { "title": "Aisle-split claiming", "mechanism": "Sharing splits the list by store section, and each family member who is in the shop claims a section, so nobody buys the same item twice.", "originality": 5, "fit": 4 },
+      { "title": "Household standing list", "mechanism": "The family shares one always-open household list; any member who finishes an item at the till clears it for everyone, and the list learns which items recur each week.", "originality": 4, "fit": 4 }
+    ]
+  },
+  "notes": {
+    "fixture": "fx-notes-export",
+    "feature": "Add a way to export a note to PDF.",
+    "controls": [
+      { "title": "Print to PDF", "mechanism": "An export button renders the note body with the page's print style and saves it as a PDF.", "originality": 1, "fit": 5 },
+      { "title": "Server-side render", "mechanism": "The note is sent to a service that converts it to a PDF and returns the file for download.", "originality": 2, "fit": 4 },
+      { "title": "Shareable page set", "mechanism": "The export lays the note out as a booklet with a cover, a contents page built from its headings, and page breaks chosen at heading boundaries, ready to print and fold.", "originality": 4, "fit": 4 },
+      { "title": "Living PDF", "mechanism": "The exported PDF embeds the note's source and a version stamp, so opening it in the app again restores the editable note and shows what changed since the export.", "originality": 5, "fit": 4 }
+    ]
+  }
+}
