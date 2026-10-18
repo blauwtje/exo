@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds the file-issues fixture under /tmp/exo-pressure/file-issues/: app, a
-# one-commit repository with a GitHub origin URL, and bin/gh, the stand-in gh
-# from the ship cases. The prompts put bin/ first on PATH; the stand-in logs
+# Builds the file-issues fixture under /tmp/exo-pressure/file-issues/: app (a README.md
+# that case c cites, plus src), a one-commit repository with a GitHub origin URL,
+# and bin/gh, the stand-in gh from the ship cases. The prompts put bin/ first on PATH; the stand-in logs
 # every call to gh-calls.log beside app, so grading sees which issues were created
 # and what body each `gh issue create` call carried. A `--body-file` that names no
 # readable file fails like gh and logs nothing.
@@ -50,6 +50,13 @@ export function exportOrders(orders) {
   return orders.map((o) => `${o.id},${o.total}`).join('\n');
 }
 J
+cat > README.md <<'R'
+# app
+
+Order tooling.
+
+- Export writes tab-separated text
+R
 git add -A
 git commit -q -m "chore: seed the export module"
 echo "file-issues fixture ready: $root/app, stand-in gh in $root/bin"
