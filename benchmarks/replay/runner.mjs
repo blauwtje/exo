@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // replay/runner.mjs
 // Runs replay cells: claude-opus-5-5, read-only tools, one temp copy of the case's input/ per cell.
-//   node runner.mjs --cases a,b [--runs k] --out runs/<name> [--effort medium] [--concurrency 2]
+//   node runner.mjs --cases a,b [--runs k] --out benchmarks/replay/runs/<name> [--effort medium] [--concurrency 2]
 //                   [--cases-dir cases] [--max-budget-usd 2] [--max-total-usd n] [--cell-timeout-min 30]
 //                   [--arm baseline|cue|audit] [--audit-script path] [--dry-run]
 // --arm: cells go to <out>/<id>/<arm>/<k>/; cue and audit append the arm paragraph (arm1/arms.json) to prompt.md after a blank line;
@@ -39,7 +39,7 @@ function parseFlags(argv) {
     flags[key] = argv[i + 1];
   }
   for (const key of ['concurrency', 'runs', 'maxBudget', 'maxTotal', 'timeoutMin']) flags[key] = Number(flags[key]);
-  if (flags.cases === null || flags.out === null) throw new Error('usage: node runner.mjs --cases a,b [--runs k] --out runs/<name> [--effort e] [--concurrency n]');
+  if (flags.cases === null || flags.out === null) throw new Error('usage: node runner.mjs --cases a,b [--runs k] --out benchmarks/replay/runs/<name> [--effort e] [--concurrency n]');
   if (!ARM_NAMES.includes(flags.arm)) throw new Error(`bad --arm ${flags.arm} (baseline|cue|audit)`);
   flags.auditScript = path.resolve(flags.auditScript);
   flags.cases = flags.cases.split(',');

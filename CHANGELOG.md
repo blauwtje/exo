@@ -53,6 +53,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Skills gained worked examples where format matters: a rule that sets output format, tone or detail keeps 3-5 varied examples, and `find-open-points` carries them.
 
 ### Fixed
+- A replay run started at the repository root no longer leaves its output, home paths included, where git would commit it; `/runs/` is ignored and the runner usage names `benchmarks/replay/runs/<name>`.
 - A run now logs `task <n> not landed by the script` when the land check it reruns after a plan repair fails, instead of saying nothing until the next session.
 - A benchmark flow-run's confined `claude` now ends when the process that started it dies without a signal, instead of running on under pid 1; the wrapper checks its parent every `EXO_PARENT_POLL_MS` (default 1000).
 - A run no longer repeats the red check after a no-red repair that left the Proof and `Red:` unchanged; the task runs again at once.

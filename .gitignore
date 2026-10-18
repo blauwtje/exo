@@ -9,5 +9,6 @@ docs/*
 benchmarks/fixtures/
 benchmarks/runs/
 benchmarks/replay/runs/
+/runs/
 /tmp
 harnesses/codex/generated/
