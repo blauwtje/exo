@@ -10,6 +10,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-19-build-profile.md` profiles 45 saved flow-unit runs: build-task is the largest and most variable step (65.2 s, 31.7% of wall); the review fix loop explains about 44% of wall variance, ran in 10 of 45 runs, adds about 75 s and $0.23, and every loop repairs one `max < 3` input the plan leaves undefined, which hidden tests never grade.
+- `benchmarks/results/2026-10-19-speed-round4.md` tests a batch-independent-tool-calls line in agent prompts at n=15 per arm; it does not land: wall -4.7% not supported (CI [-43.3, +23.4] s, p=0.389), cost -8.8% (p=0.016) mostly from fewer fix loops, hidden tests 255/255 in both arms.
 - `benchmarks/results/2026-10-19-speed-round3.md` reruns script-owned fan-out against base at n=15 per arm; fan-out is slower (wall +24.8%, CI [+12.2, +83.9] s, p=0.037), cost +2.7% within noise, hidden tests 17/17 in every run, so it does not land.
 - `benchmarks/results/2026-10-19-speed-round2.md` measures two build-speed ideas at n=5 per arm; neither lands: reviewer kind from the script (wall -1.7%, cost +1.7%) and script-owned fan-out (wall -11.7%, cost -8.3%, p=0.31); hidden tests 17/17 in every run.
 - `benchmarks/speed-ledger.md` lists every build-speed idea that did not land, with its evidence and when to retry it.
