@@ -24,6 +24,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 - `land-task` no longer prints a `Next: Task <n>` line that looks ready to dispatch without a brief; it points at `next-task.mjs`, which writes the brief.
 - `/exo:prompt` no longer turns on maximum thinking on every run or adds that keyword to a rewrite the user never asked for; the skill named the keyword literally, and Claude Code read it as typed by the user.
+- The compression pressure case's judge line no longer fails a correct answer that names `toCents` flooring the float product as the cause.
 
 ## 0.136.0 - 2026-10-19
 
