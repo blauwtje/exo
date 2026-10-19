@@ -14,6 +14,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- Routing is measured by a paid model run, `benchmarks/routing.mjs`, and `npm run check` fails when a skill description or `hooks/session-routing.md` changed after the last recorded result.
 - `npm run check` runs `claude plugin validate --strict --json` and fails on any warning or error; the project notes moved so strict validate passes.
 - `edit-skills` counts a stored result as evidence only when it covers the last edit, and tells the editor to name it in an `Evidence:` trailer.
 - `plan-check` and the `edit evidence` check share one set of wording-path and evidence-value rules in `lib/evidence-rules.mjs`; a result path with a space now fails as a malformed value.

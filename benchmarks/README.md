@@ -121,6 +121,12 @@ node benchmarks/sweep.mjs --set replay --cases <path> --models opus,sonnet --rep
 
 A review cell runs the body of the `review-branch` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or concern reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.
 
+## Routing eval
+
+`node benchmarks/routing.mjs` measures which exo skill a real session picks per prompt. It sends every prompt of `benchmarks/routing/prompts.json` (a train and a held-out split) in a fresh `claude -p` session per cell, arm (`hook`, or `no-hook` with all hooks disabled) and run, and writes per-arm, per-split, per-skill recall and false-trigger rate, plus a hash of each model-invocable skill description and of `hooks/session-routing.md`, to `benchmarks/results/routing.json`. Flags: `--cells <model:effort,...>` (default `sonnet:low`), `--runs` (default 3), `--arms`, `--split`, `--concurrency` (default 4), `--out`. `--smoke` runs one known-good prompt and exits 1 on a miss. The run is paid and local: it never runs inside `npm run check` or `npm test`.
+
+`npm run check` has a `routing` check that compares the recorded hashes with the current files. It fails with `routing result is stale for <name> (changed)` after a description or `hooks/session-routing.md` edit, and the fix is to rerun `node benchmarks/routing.mjs` and commit the result.
+
 ## Ideas set
 
 `node benchmarks/ideas.mjs` measures how original and varied the design options `spec` offers. Each case (`fx-tide-export`, `fx-shopping-share`, `fx-notes-export`, listed in `benchmarks/ideas/cases.json`) sends one neutral request, `/exo:spec <feature> Which designs could do this? Recommend one.`, in a fresh `claude -p` session on a fresh copy of the fixture, with maker model `opus` at effort `high`. Baseline is 5 runs per case.

@@ -1,123 +1,32 @@
-// A skill is chosen from its description alone, so a description that a user's
-// plain request matches better in another skill's text misroutes. Each
-// model-invocable skill has two user-worded sample prompts in
-// verify/routing-samples.json; every description is ranked against a prompt by
-// the number of distinct non-stopword words they share, and a sample whose own
-// skill is not strictly first FAILs, naming the skill that outranked it. Two
-// descriptions whose word sets overlap above ROUTING_SIMILARITY_CEILING
-// (Jaccard) FAIL as well, because text that close cannot route apart.
-// `negatives` holds { prompt, winner } pairs: prompts that sound like one skill
-// but belong to another. Every sample counts toward a rank-1 rate, which FAILs
-// below ROUTING_RANK_ONE_LOCK or when that lock is lower than on origin/main.
-// Run standalone: node verify/checks/routing.mjs
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readFrontmatter } from '../frontmatter.mjs';
-import { ROUTING_RANK_ONE_LOCK, ROUTING_SIMILARITY_CEILING } from '../budgets.mjs';
+import { descriptionHashes } from '../../benchmarks/routing.mjs';
 import { createReport } from '../report.mjs';
 import { createRepository } from '../repository.mjs';
 
-const STOPWORDS = new Set((
-  'a an and are as at be but by can do does for from has have how if in into is it its not of on or so than that the their them then there these this to up use used uses using was what when where which while who will with without you your i me my we our'
-).split(' '));
+const RERUN = 'node benchmarks/routing.mjs';
 
-export function words(text) {
-  const found = new Set();
-  for (const raw of text.toLowerCase().split(/[^a-z0-9]+/)) {
-    if (raw.length < 3 || STOPWORDS.has(raw)) continue;
-    found.add(raw.length > 3 && raw.endsWith('s') && !raw.endsWith('ss') ? raw.slice(0, -1) : raw);
-  }
-  return found;
-}
-
-function overlap(left, right) {
-  let shared = 0;
-  for (const word of left) if (right.has(word)) shared += 1;
-  return shared;
-}
-
-function baseLock(repository) {
-  const shown = spawnSync('git', ['-C', repository.root, 'show', 'origin/main:verify/budgets.mjs'], { encoding: 'utf8' });
-  const found = shown.status === 0 ? shown.stdout.match(/ROUTING_RANK_ONE_LOCK = ([\d.]+)/) : null;
-  return found ? Number(found[1]) : undefined;
+function staleKeys(current, recorded) {
+  return Object.keys(current).filter((key) => recorded[key] !== current[key])
+    .map((key) => (recorded[key] === undefined ? `${key} (missing)` : `${key} (changed)`));
 }
 
 export function checkRouting(report, repository) {
-  const descriptions = new Map();
-  for (const file of repository.everySkillFile()) {
-    const parsed = readFrontmatter(repository.lines(file));
-    if (parsed.errors.length > 0) {
-      report.result('UNRUN', 'routing', `blocked by unparsed frontmatter in ${repository.relative(file)}`);
-      return;
-    }
-    if (parsed.values.get('disable-model-invocation') === 'true') continue;
-    descriptions.set(parsed.values.get('name'), words(parsed.values.get('description') ?? ''));
-  }
-  const samplesFile = repository.join('verify', 'routing-samples.json');
-  if (!fs.existsSync(samplesFile)) {
-    report.result('UNRUN', 'routing', 'verify/routing-samples.json is missing');
+  const file = repository.join('benchmarks', 'results', 'routing.json');
+  if (!fs.existsSync(file)) {
+    report.result('FAIL', 'routing', `benchmarks/results/routing.json is missing; run ${RERUN}`);
     return;
   }
-  const samples = JSON.parse(fs.readFileSync(samplesFile, 'utf8'));
-  const problems = [];
-  for (const name of descriptions.keys()) {
-    if (!Array.isArray(samples[name]) || samples[name].length < 2) problems.push(`${name} has fewer than two sample prompts`);
-  }
-  for (const name of Object.keys(samples)) {
-    if (name !== 'negatives' && !descriptions.has(name)) problems.push(`sample skill ${name} is not a model-invocable skill`);
-  }
-  const negatives = samples.negatives ?? [];
-  for (const entry of negatives) {
-    if (typeof entry?.prompt !== 'string' || !descriptions.has(entry.winner)) problems.push(`negative sample ${JSON.stringify(entry)} needs a prompt and a model-invocable winner`);
-  }
-  const cases = [
-    ...Object.entries(samples)
-      .filter(([name]) => descriptions.has(name))
-      .flatMap(([name, prompts]) => prompts.map((prompt) => ({ prompt, name }))),
-    ...negatives
-      .filter((entry) => typeof entry?.prompt === 'string' && descriptions.has(entry.winner))
-      .map((entry) => ({ prompt: entry.prompt, name: entry.winner })),
-  ];
-  const misses = [];
-  for (const { prompt, name } of cases) {
-    const promptWords = words(prompt);
-    const own = overlap(promptWords, descriptions.get(name));
-    let best = { name: '', score: -1 };
-    for (const [other, set] of descriptions) {
-      const score = other === name ? -1 : overlap(promptWords, set);
-      if (score > best.score) best = { name: other, score };
-    }
-    if (best.score >= own) {
-      misses.push(`"${prompt}" belongs to ${name} (${own} shared words) but ${best.name} ${best.score > own ? 'outranks it' : 'ties it'} (${best.score})`);
-    }
-  }
-  const count = cases.length;
-  const rate = count === 0 ? 0 : (count - misses.length) / count;
-  if (rate < ROUTING_RANK_ONE_LOCK) problems.push(`rank-1 rate ${rate.toFixed(2)} is below the locked ${ROUTING_RANK_ONE_LOCK}: ${misses.join('; ')}`);
-  const base = baseLock(repository);
-  if (base !== undefined && ROUTING_RANK_ONE_LOCK < base) problems.push(`ROUTING_RANK_ONE_LOCK ${ROUTING_RANK_ONE_LOCK} is lower than ${base} on origin/main`);
-  const names = [...descriptions.keys()].sort();
-  let highest = { value: 0, pair: '' };
-  for (let first = 0; first < names.length; first += 1) {
-    for (let second = first + 1; second < names.length; second += 1) {
-      const left = descriptions.get(names[first]);
-      const right = descriptions.get(names[second]);
-      const value = overlap(left, right) / (left.size + right.size - overlap(left, right));
-      if (value > highest.value) highest = { value, pair: `${names[first]} and ${names[second]}` };
-      if (value > ROUTING_SIMILARITY_CEILING) {
-        problems.push(`${names[first]} and ${names[second]} descriptions overlap ${value.toFixed(2)} (> ${ROUTING_SIMILARITY_CEILING})`);
-      }
-    }
-  }
-  if (problems.length > 0) {
-    report.result('FAIL', 'routing', problems.join('; '));
+  const recorded = JSON.parse(fs.readFileSync(file, 'utf8')).hashes ?? {};
+  const current = descriptionHashes(repository.root);
+  const stale = staleKeys(current, recorded);
+  if (stale.length > 0) {
+    report.result('FAIL', 'routing', `routing result is stale for ${stale.join(', ')}; rerun ${RERUN}`);
     return;
   }
-  report.result('PASS', 'routing', `${count} sample prompts rank their own skill first at ${rate.toFixed(2)} (lock ${ROUTING_RANK_ONE_LOCK}); most similar descriptions ${highest.pair} at ${highest.value.toFixed(2)} (ceiling ${ROUTING_SIMILARITY_CEILING})`);
+  report.result('PASS', 'routing', `${Object.keys(current).length} description hashes match benchmarks/results/routing.json`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
