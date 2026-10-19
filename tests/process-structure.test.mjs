@@ -35,3 +35,36 @@ test('opening with neither shape fails', () => {
 test('avoid without a produce sentence fails', () => {
   assert.equal(run('Do the thing well. Avoid stock type.').ok, false);
 });
+
+function runBody(steps) {
+  const body = `---\nname: x\n---\n\n# X\n\n${steps}\n\n## References\n\n| File | Read it when |\n|---|---|\n| \`a.md\` | b |\n\nReport: done.\n`;
+  const repository = {
+    processFiles: () => ['/r/skills/build/SKILL.md'],
+    relative: () => 'skills/build/SKILL.md',
+    text: () => body
+  };
+  let result;
+  checkProcessStructure({ assert: (ok, name, pass, fail) => { result = { ok, fail }; } }, repository);
+  return result;
+}
+
+test('no numbered list passes', () => {
+  assert.equal(runBody('- one\n- two').ok, true);
+});
+
+test('contiguous numbered list from 1 passes', () => {
+  assert.equal(runBody('1. First.\n2. Second.').ok, true);
+  assert.equal(runBody('1. First.\n2. Second.\n3. Third.\n4. Fourth.').ok, true);
+});
+
+test('numbered list with a gap fails', () => {
+  const result = runBody('1. First.\n3. Third.');
+  assert.equal(result.ok, false);
+  assert.match(String(result.fail), /without a gap/);
+});
+
+test('single numbered item fails', () => {
+  const result = runBody('1. Only.');
+  assert.equal(result.ok, false);
+  assert.match(String(result.fail), /fewer than 2 items/);
+});

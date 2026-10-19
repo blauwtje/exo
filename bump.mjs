@@ -1,4 +1,4 @@
-// Raise the plugin version in every manifest that carries it, and turn the
+// Raise the plugin version in every manifest and the lockfile that carry it, and turn the
 // changelog's Unreleased heading into the new version's heading.
 //
 //   node bump.mjs [auto|patch|minor|major]
@@ -13,6 +13,7 @@ import process from 'node:process';
 import { releaseLevel, sectionBody, UNRELEASED_HEADING } from './verify/changelog.mjs';
 
 const MANIFESTS = ['package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
+const LOCKFILE = 'package-lock.json';
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
 const CHANGELOG = 'CHANGELOG.md';
 const ARCHIVE = 'CHANGELOG-archive.md';
@@ -67,6 +68,18 @@ for (const manifest of MANIFESTS) {
   }
   rewritten.push({ file: manifest, after });
 }
+
+// The lockfile carries the version twice, at the top and under packages[""],
+// and may lag the manifests, so both fields are set whatever they hold now.
+const lockBefore = fs.readFileSync(path.join(root, LOCKFILE), 'utf8');
+const lockAfter = lockBefore
+  .replace(/^(\{\s*"name":\s*"[^"]*",\s*"version":\s*")[^"]*(")/, `$1${next}$2`)
+  .replace(/("packages":\s*\{\s*"":\s*\{[^{}]*?"version":\s*")[^"]*(")/, `$1${next}$2`);
+if (lockAfter.split(`"${next}"`).length - 1 < 2) {
+  console.error(`${LOCKFILE} lacks its top-level or packages[""] version field; fix it by hand and rerun`);
+  process.exit(1);
+}
+rewritten.push({ file: LOCKFILE, after: lockAfter });
 
 function archiveOlder(text) {
   const headings = [...text.matchAll(VERSION_HEADING)];

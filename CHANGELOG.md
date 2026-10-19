@@ -36,6 +36,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/run.mjs --before-plugin <dir>` adds an `exo-before` arm that loads exo from another checkout, so one run compares a change with the commit before it.
 
 ### Changed
+- `edit-skills` teaches a Produce/Avoid opening as the default, with existing enemy/overcorrection openings migrating on next edit; `process-structure` drops its minimum of three numbered steps and only requires a numbered list to run 1..n.
 - `design-ui` opens on what to produce and an avoid-list, which `process-structure` now accepts beside the enemy/overcorrection shape; `check-docs` states when a research pass ends the turn as a condition; `start` drops its dangling several-fit step.
 - spec options draw a seat and a forbidden move per option with `scripts/draw-seats.mjs`, drop the likeliest shape, and stop at the options for the user to pick.
 - Prompt-audit fixes: edit-skills defers its check step to the caller, build-task reports a hung proof instead of rerunning it, start points at `hooks/session-routing.md`, save-session keeps WIP off a run branch and `handoff.mjs` reads the host config root, agents without Bash drop the delete ban, and spec, design-ui, check-docs, prompt, refactor, ship, run-plan, review-branch and build lose stale or unexplained lines.
@@ -78,6 +79,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - design-ui's `capture.mjs` prints only label, size, path and engine per render, so a builder reads about 310 fewer bytes per two-viewport call.
 
 ### Fixed
+- `npm run bump` now also sets both `package-lock.json` version fields, so `npm install` stops leaving the lockfile dirty; the lockfile is synced to 0.135.0.
 - `exo:prompt` rewrites a pasted screen into short facts, carries a clash with a fixed fact as an open point, grants a stated outside write in the user's words, and flags a named skill that rules out the task.
 - `compareMeans` in `benchmarks/statistics.mjs` gives no verdict when both arms have sd 0, so a zero-spread baseline no longer claims any difference is detectable.
 - A test runs a real fixture-repo test under the run session env, so a session git block that reaches other repos fails `npm run check`.

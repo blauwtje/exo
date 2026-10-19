@@ -7,7 +7,7 @@ argument-hint: <skill or agent to create, edit or size>
 
 # Skills tool
 
-A skill earns its place only by stopping a mistake the model makes without it, in the fewest words that takes. The enemy is the skill that restates default behavior and hides the one rule that changes anything. The overcorrection is an order stripped of its boundary reason, obeyed to the letter past where it ends.
+A skill earns its place only by stopping a mistake the model makes without it, in the fewest words that takes. Produce a skill whose every line changes what the model does, each rule carrying its boundary reason. Avoid restating default behavior, hiding the one rule that changes anything, and an order stripped of its boundary reason.
 
 ## When to use
 
@@ -30,7 +30,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | Part | Contract |
 |---|---|
 | `description` | Trigger only: moments it fires, then what it leaves alone. No workflow: the model acts on that summary instead of the body. |
-| Opening | One paragraph: principle, enemy, overcorrection. |
+| Opening | One paragraph: principle, a "Produce ..." sentence, an "Avoid ..." sentence with a concrete list. An overcorrection sentence only as an optional limit once a recorded run shows over-application. An existing enemy/overcorrection opening migrates when that skill is next edited. |
 | `## When to use` | Bullets: symptoms first, then each "not for" case. |
 | Process | Steps where order matters: numbered, aim at most eight, in order until one matches; a judgment skill with no fixed order: bullets. Each step a rule, with its reason in one clause. |
 | `## Red flags` | Only in a skill the model is tempted to skip: table from tempting thought to what is true. |

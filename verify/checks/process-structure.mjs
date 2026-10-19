@@ -1,6 +1,6 @@
 // A process file opens with an H1, then a stance paragraph (principle, enemy,
 // overcorrection; or principle, "Produce" direction, "Avoid" list), and closes on a non-empty Judgment section. A slim skill instead
-// runs straight into numbered steps, keeps a References table, and ends on one
+// runs straight into steps (numbered only where order matters, else bullets; a numbered list runs 1, 2, ... with 2 or more items), keeps a References table, and ends on one
 // `Report:` line. A pointer reference names the script that owns its rule and
 // carries no process, so it holds neither shape; the text checks still read it.
 // A step reference under references/ keeps the H1 but needs neither the
@@ -28,7 +28,6 @@ const STANCE = /\bThe (?:enemy|overcorrection) is\b/;
 const DROPPED_SECTION = /^#{2,} (?:Judgment|Red flags)\s*$/m;
 const NUMBERED_STEP = /^(?<number>\d+)\. \S/gm;
 const REFERENCES_TABLE = /^## References\r?\n\s*\r?\n\|[^\r\n]*\|\r?$/m;
-const MIN_STEPS = 3;
 const SUBSECTION_HEADING = /^#{2,3} \S/;
 const LONG_LINE = 40;
 
@@ -48,8 +47,29 @@ function fullContractErrors(relative, body, afterHeading) {
   return errors;
 }
 
-function slimContractErrors(relative, body, afterHeading) {
+// Numbered steps mean order matters: each numbered list runs 1, 2, ... without
+// a gap and holds at least two items. A list restarts where a number returns to 1.
+function numberedListErrors(relative, body) {
   const errors = [];
+  const withoutFences = body.replace(/^\s*(```|~~~)[\s\S]*?^\s*\1.*$/gm, '');
+  const lists = [];
+  for (const match of withoutFences.matchAll(NUMBERED_STEP)) {
+    const number = Number(match.groups.number);
+    if (number === 1 || lists.length === 0) lists.push([]);
+    lists[lists.length - 1].push(number);
+  }
+  for (const list of lists) {
+    if (list.length < 2) {
+      errors.push(`${relative}: numbered list "${list.join(', ')}" has fewer than 2 items; use a bullet`);
+    } else if (!list.every((value, offset) => value === offset + 1)) {
+      errors.push(`${relative}: numbered list "${list.join(', ')}" does not run 1, 2, ... without a gap`);
+    }
+  }
+  return errors;
+}
+
+function slimContractErrors(relative, body, afterHeading) {
+  const errors = [...numberedListErrors(relative, body)];
   if (STANCE.test(body)) {
     errors.push(`${relative}: slim skill carries a stance/enemy/overcorrection sentence`);
   }
@@ -58,7 +78,7 @@ function slimContractErrors(relative, body, afterHeading) {
   }
   const blocks = afterHeading.split(BLANK_LINE);
   const firstBlock = (blocks[0] ?? '').trim();
-  const STEP_START = /^(?:\d+\. |[a-z]\. )/;
+  const STEP_START = /^(?:\d+\. |[a-z]\. |- )/;
   if (!/^## /.test(firstBlock) && !STEP_START.test(firstBlock)) {
     errors.push(`${relative}: slim skill opens on a paragraph instead of a heading or step 1`);
   } else if (/^## /.test(firstBlock)) {
@@ -66,12 +86,6 @@ function slimContractErrors(relative, body, afterHeading) {
     if (!/^## /.test(nextBlock) && !STEP_START.test(nextBlock)) {
       errors.push(`${relative}: slim skill's heading opens on a paragraph instead of step 1`);
     }
-  }
-  const numbers = [...body.matchAll(NUMBERED_STEP)].map((match) => Number(match.groups.number));
-  const run = numbers.findIndex((number, index) => number === 1 && numbers[index + MIN_STEPS - 1] === MIN_STEPS
-    && numbers.slice(index, index + MIN_STEPS).every((value, offset) => value === offset + 1));
-  if (run === -1) {
-    errors.push(`${relative}: slim skill has no numbered steps 1 to ${MIN_STEPS}`);
   }
   if (!REFERENCES_TABLE.test(body)) {
     errors.push(`${relative}: slim skill has no References table`);
