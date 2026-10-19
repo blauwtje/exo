@@ -21,6 +21,11 @@ test('truncate returns only the dots when max is 3', () => {
   assert.equal(truncate('hello', 3), '...');
 });
 
+test('truncate throws a RangeError when max is below 3', () => {
+  assert.throws(() => truncate('hello', 2), RangeError);
+  assert.throws(() => truncate('hello', -1), RangeError);
+});
+
 test('truncate leaves an empty text empty', () => {
   assert.equal(truncate('', 5), '');
 });

@@ -95,11 +95,12 @@ export const FLOW_HELPERS = [
   {
     title: 'Add truncate',
     subject: 'add truncate',
-    behavior: 'truncate(text, max) returns text unchanged when its length is at most max, else the first max - 3 characters followed by three ASCII dots (...), so the result is exactly max characters long',
+    behavior: 'truncate(text, max) returns text unchanged when its length is at most max, else the first max - 3 characters followed by three ASCII dots (...), so the result is exactly max characters long; it throws a RangeError when max is below 3 (negative included)',
     module: 'src/truncate.js',
     test: 'src/truncate.test.js',
     code: [
       'export function truncate(text, max) {',
+      "  if (max < 3) throw new RangeError('max must be at least 3');",
       '  if (text.length <= max) return text;',
       "  return text.slice(0, max - 3).padEnd(max, '.');",
       '}'

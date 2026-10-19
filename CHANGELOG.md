@@ -36,6 +36,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- The flow benchmark's `truncate` plan now says `truncate` throws a `RangeError` when `max` is below 3, with a matching hidden test; the plan left that case open, so builder and reviewer disagreed and the review repair loop ran on an input no hidden test graded. Loop rates from rounds before this fix do not compare directly with later rounds.
 - verify dispatches the review fixer for every `concern` finding, also when no `fix` finding exists, instead of the lead reporting it unproven without a test.
 - run-unit finds the build scripts in its own plugin instead of searching the disk and running an older installed copy; benchmark cells turn off the installed exo.
 - `land-task` no longer prints a `Next: Task <n>` line that looks ready to dispatch without a brief; it points at `next-task.mjs`, which writes the brief.

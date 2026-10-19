@@ -43,6 +43,15 @@ Also: tokens -2.4% (p=0.93); run-unit wall -5.5 s (p=0.089, CI [-13.0, +2.8]); l
 - Base: fix-review in runs 8, 10 and 13 (3 of 15); all three review findings name `max < 3` (`slice(0, max - 3)` takes a negative end).
 - Edge: fix-review in runs 6, 7 and 13 (3 of 15); all three still name `max < 3` or a negative max. The line did not stop the loop (expected 0 to 1 per 15, see the build profile's 10 of 45).
 
+## Cause
+
+The repair loop in edge runs 6, 7 and 13 traces to one gap: the fixture plan line (`benchmarks/sweep-fixtures.mjs:98`) leaves `max < 3` undefined, because "followed by three ASCII dots" conflicts with "exactly max characters long" and a negative max cannot be that long. Every edge builder did write a `max < 3` test, so the missing piece was the spec, not a test.
+- Runs 6 and 7: the review finding is a style `concern` (standard 11, no compact one-liners) on the clamp line, not a behavior bug; the builder's test passed and the fixer marked it `reported: unproven` (run 6: builder `agent-af42b4c5819527fbd.jsonl` L42, reviewer `agent-ab9fdff9c06fd81ed.jsonl` L57, fixer `agent-a27e72c4e3347bac8.jsonl` L46; run 7: builder `agent-acdd17403aeb2daf1.jsonl` L42, reviewer `agent-acf10eb8e65db5eb9.jsonl` L62, fixer `agent-a2bfcee3b300cc9f1.jsonl` L67). The reviewer names the plan's silence: "which the plan leaves undefined".
+- Run 13: the builder chose "always three dots" for max 0 and 1 and tested it (`agent-a76c3de893150a1c8.jsonl` L42); the reviewer flagged it as a defect against "exactly max characters long" (`agent-ae86c341e1a5fb85d.jsonl` L38), and fix-review ran (fixer `agent-aaf3d5f20fc737642.jsonl` L68, fixed=1).
+- The hidden tests (`benchmarks/flow-hidden/truncate.test.js`) stop at max 3, so 17/17 cannot tell the choices apart.
+
+Follow-up: this fix defines the case in the plan (`truncate` throws a `RangeError` when `max` is below 3, negative included) and adds a hidden test for max 2 and -1. Loop rates from rounds before this fix are not directly comparable with rounds after it.
+
 ## Result
 
 Landing rule, applied literally:
