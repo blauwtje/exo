@@ -74,12 +74,13 @@ const REPORT = [
   '- src/b.js:4 defect fix',
   '- src/c.js:5 question report',
   '- src/d.js:6 concern report',
+  '- src/e.js:7 note report',
   ''
 ].join('\n');
 
 test('mergeReviews lists the question and report findings, a demoted fix included, and not a probed fix', () => {
   const { shown } = mergeReviews([{ name: 'review-branch', text: REPORT }]);
-  assert.deepEqual(shown, ['- src/b.js:4 defect report', '- src/c.js:5 question report', '- src/d.js:6 concern report']);
+  assert.deepEqual(shown, ['- src/b.js:4 defect report', '- src/c.js:5 question report', '- src/d.js:6 concern report', '- src/e.js:7 note report']);
 });
 
 test('merge-reviews.mjs prints the FINDING lines after its verdict line and the CODEX line last', async () => {
@@ -90,7 +91,7 @@ test('merge-reviews.mjs prints the FINDING lines after its verdict line and the 
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'codex'), '#!/bin/sh\n', { mode: 0o755 });
   const lines = run('merge-reviews.mjs', ['--root', root, '--report', report], { PATH: `${bin}${path.delimiter}${process.env.PATH}` }).trim().split('\n');
-  assert.match(lines[0], /^verdict=FINDINGS defect=2 concern=1 question=1 fix=1 report=/);
+  assert.match(lines[0], /^verdict=FINDINGS defect=2 concern=1 question=1 note=1 fix=1 report=/);
   assert.ok(lines.includes('FINDING - src/c.js:5 question report'));
   assert.equal(lines.at(-1), 'CODEX offer');
   const inRun = run('merge-reviews.mjs', ['--root', root, '--report', report], { PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_RUN: '1', EXO_RUN_DIR: path.join(root, 'rundir') });

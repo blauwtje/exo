@@ -7,12 +7,12 @@ import { codexVerdict } from './pick-reviewer.mjs';
 
 const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
 const PROBE_LINE = /^\s*Probe:\s*\S/;
-const UNREAD = /\b(defect|concern|question)\b.*\b(fix|report)\W*$/;
-const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question)\b.*\b(fix|report)\W*$/;
+const UNREAD = /\b(defect|concern|question|note)\b.*\b(fix|report)\W*$/;
+const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question|note)\b.*\b(fix|report)\W*$/;
 
 const USAGE = `Usage: node merge-reviews.mjs --root <checkout> --report <file> [--report <file> ...]
 Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line,
-then each question and report finding as a FINDING line, then a CODEX offer or CODEX none line.
+then each question, note and report finding as a FINDING line, then a CODEX offer or CODEX none line.
 Inside an exo run the CODEX line is none and records no decision.`;
 
 function verdictOf(text) {
@@ -24,7 +24,7 @@ function verdictOf(text) {
 }
 
 export function mergeReviews(reports) {
-  const counts = { defect: 0, concern: 0, question: 0, fix: 0 };
+  const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0 };
   let demoted = 0;
   let unread = 0;
   let unreadFix = 0;
@@ -55,13 +55,13 @@ export function mergeReviews(reports) {
         reported = true;
         lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
       }
-      if (reported || match[1] === 'question') shown.push(lines[index].trim());
+      if (reported || match[1] === 'question' || match[1] === 'note') shown.push(lines[index].trim());
     });
     sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
   }
-  if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + unread > 0) verdict = 'FINDINGS';
+  if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
-  const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} fix=${counts.fix}\n`;
+  const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix}\n`;
   return { verdict, counts, demoted, unread, unreadFix, shown, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
@@ -78,7 +78,7 @@ function main(argv) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
   process.stdout.write(
-    `verdict=${verdict} defect=${counts.defect} concern=${counts.concern} question=${counts.question} fix=${counts.fix} report=${target}\n`
+    `verdict=${verdict} defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix} report=${target}\n`
   );
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe: line under them\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);

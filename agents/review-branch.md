@@ -27,7 +27,7 @@ Review one branch against plan and standard; fixer repairs from findings alone.
 
 Write findings to the findings path the dispatch names: input to `merge-reviews.mjs`, or verify's repair step 3 for `fix diff`.
 - Verdict first: `CLEAN` (none), `FINDINGS`, `BLOCKED` (plan, base, diff unreadable).
-- Findings by file, ascending line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `concern`, `question`); rule; one-sentence evidence; `fix`/`report`.
+- Findings by file, line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `concern`, `question`, `note`: style, naming, layout, test gap; marked `report`, never `concern`); rule; one-line evidence; `fix`/`report`.
 - Each `fix` finding → `  Probe: <command>` under it, per `## Probe` in `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/review-rules.md`.
 Example:
 ```
@@ -37,4 +37,4 @@ a.mjs:1-2; defect; swallowed failure; catch drops error; fix
 - Security finding → risk first.
 - End with `Count:` per weight, `Unread:` naming unread or `none`.
 
-Return at most two lines: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> fix=<n> report=<path>`; `fix=` counts `fix` findings; only `BLOCKED` adds `Unread:` line.
+Return at most two lines: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> note=<n> fix=<n> report=<path>`; only `BLOCKED` adds `Unread:` line.

@@ -181,7 +181,7 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.deepEqual(reviewer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'NotebookEdit', 'Agent'].includes(tool)), []);
   assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
   assert.doesNotMatch(reviewer.body, /run every Final verification|`fixed` or `reported`|`FIXED`/);
-  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
+  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> note=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
 });
 
 test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prompt.md', () => {
@@ -303,7 +303,7 @@ test('the branch reviewer requires a Probe line under each fix finding and names
 test('the branch reviewer keeps each finding on one line and shows an example the merge parser reads', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.match(reviewer.body, /each on one line, no heading per finding/, 'a finding shares one line');
-  assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|concern|question)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
+  assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|concern|question|note)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
 });
 
 test('the branch reviewer confirms with one test file or Probe command, never the full suite', () => {

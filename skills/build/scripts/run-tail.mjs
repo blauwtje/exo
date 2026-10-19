@@ -201,7 +201,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     if (session.stop === undefined) {
       const text = session.resultText ?? '';
       const verdict = verdictOf(text);
-      const found = countOf(text, 'defect') + countOf(text, 'concern') + countOf(text, 'question');
+      const found = countOf(text, 'defect') + countOf(text, 'concern') + countOf(text, 'question') + countOf(text, 'note');
       const model = session.model ?? 'unpinned';
       const outcome = session.timedOut ? `timed out (${model})` : verdict === null ? `no verdict line (${model})` : `${verdict} (${model}, ${found} findings)`;
       say(`review done: ${name}: ${outcome} (session ${session.sessionId ?? 'none'})`);

@@ -18,12 +18,12 @@ argument-hint: "[plan path] [--land]"
    - Else dispatch one `exo:review-branch` agent: `exo-kind: review-deep` first unless the line names no kind, then the `DISPATCH Branch` fields.
    - Add three to five questions from the Goal and each task's `Data:`, `Risk:` and Acceptance line.
    - Add the `DISPATCH Overlap` dispatch with the `OVERLAP` lines when `OVERLAP` lists more than `none`, all in one message.
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, each `CODE-RULES` path included; its first line is step 3's verdict, `FINDING` lines the `question` and `report` findings.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, each `CODE-RULES` path included; its first line is step 3's verdict, `FINDING` lines the `question`, `note` and `report` findings.
    - `CODEX` = `pick-reviewer.mjs --codex` result: `offer` → ask once for a `codex exec` second review of that plan and diff, appending its findings to the findings path before step 3; else say nothing.
    - `--land` → skip that offer.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.
    - `concern=1` or more with `fix=0` → still dispatch; the fixer, not the lead, writes each concern's failing test, marking it unproven only when it passes.
-   - `fix=0` and `concern=0` → step 4, no `exo:fix-review` dispatch, rerun or fix commit.
+   - `fix=0` and `concern=0` → step 4, also with `note` findings; no `exo:fix-review` dispatch, rerun or fix commit.
    - Else after the dispatch → `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
    - `defect` lines → first book each per `references/lessons.md`.
@@ -39,4 +39,4 @@ argument-hint: "[plan path] [--land]"
 | `references/gate-lines.md` | Step 1. |
 | `references/plan-checks.md` | Never: the reviewer reads it. |
 
-Report: `REPORT` gets `Changed`, chores, `report` findings. Message: the session's report rule, three lines pointing at the `REPORT` path, `question` findings, one decision: `FAIL`, else `question`, else `ship`. Say "file outside the plan" for `UNPLANNED`, "unproven risk" for a concern, each with exo's action.
+Report: `REPORT` gets `Changed`, chores, `report` and `note` findings. Message: the session's report rule, three lines pointing at the `REPORT` path, `question` findings, one decision: `FAIL`, else `question`, else `ship`.
