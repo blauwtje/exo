@@ -1,10 +1,8 @@
 import { spawnSync } from 'node:child_process';
+import { NONE_VALUE, RESULT_VALUE, WORDING_PATH } from '../../lib/evidence-rules.mjs';
 
 const BASE_REF = 'origin/main';
 const NAME = 'edit evidence';
-const WORDING = /^(skills\/[^/]+\/(SKILL\.md|references\/[^/]+\.md)|agents\/[^/]+\.md)$/;
-const RESULT = /^benchmarks\/(results|pressure)\/.+/;
-const NONE = /^none \(\s*\S.*\)$/;
 
 function git(root, args) {
   return spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -15,38 +13,44 @@ function lines(run) {
 }
 
 function badTrailer(value, results) {
-  if (NONE.test(value)) return '';
-  if (!RESULT.test(value)) return 'names neither a benchmarks/results or benchmarks/pressure file nor `none (<reason>)`';
+  if (NONE_VALUE.test(value)) return '';
+  if (!RESULT_VALUE.test(value)) return 'names neither a benchmarks/results or benchmarks/pressure file nor `none (<reason>)`';
   return results.has(value) ? '' : 'names a file not added or changed in this range';
 }
 
-export function checkEditEvidence(report, repository) {
-  const root = repository.root;
+function changesSince(root) {
   const mergeBase = git(root, ['merge-base', 'HEAD', BASE_REF]);
-  if (mergeBase.status !== 0) {
-    report.result('UNRUN', NAME, `the merge base with ${BASE_REF} is not available to compare against`);
-    return;
-  }
+  if (mergeBase.status !== 0) return { unrun: `the merge base with ${BASE_REF} is not available to compare against` };
   const base = mergeBase.stdout.trim();
   const changed = git(root, ['diff', '--name-only', base, 'HEAD']);
   const added = git(root, ['diff', '--name-only', '--diff-filter=AM', base, 'HEAD']);
   const log = git(root, ['log', `${base}..HEAD`, '--format=%B']);
-  if (changed.status !== 0 || added.status !== 0 || log.status !== 0) {
-    report.result('UNRUN', NAME, `git could not list the changes since ${BASE_REF}`);
-    return;
-  }
-  const edited = lines(changed).filter((file) => WORDING.test(file));
-  if (edited.length === 0) {
-    report.assert(true, NAME, 'no skill or agent wording changed since the merge base');
-    return;
-  }
-  const results = new Set(lines(added));
-  const values = [...log.stdout.matchAll(/^Evidence:[ \t]*(.*)$/gm)].map((match) => match[1].trim());
+  if (changed.status !== 0 || added.status !== 0 || log.status !== 0) return { unrun: `git could not list the changes since ${BASE_REF}` };
+  return { changed: lines(changed), added: new Set(lines(added)), log: log.stdout };
+}
+
+function evidenceProblems(log, results) {
+  const values = [...log.matchAll(/^Evidence:[ \t]*(.*)$/gm)].map((match) => match[1].trim());
   const problems = values
     .map((value) => [value, badTrailer(value, results)])
     .filter(([, why]) => why !== '')
     .map(([value, why]) => `Evidence: ${value || '(empty)'} ${why}`);
   if (values.length === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
+  return problems;
+}
+
+export function checkEditEvidence(report, repository) {
+  const since = changesSince(repository.root);
+  if (since.unrun !== undefined) {
+    report.result('UNRUN', NAME, since.unrun);
+    return;
+  }
+  const edited = since.changed.filter((file) => WORDING_PATH.test(file));
+  if (edited.length === 0) {
+    report.assert(true, NAME, 'no skill or agent wording changed since the merge base');
+    return;
+  }
+  const problems = evidenceProblems(since.log, since.added);
   report.assert(
     problems.length === 0,
     NAME,
