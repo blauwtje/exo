@@ -79,6 +79,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - design-ui's `capture.mjs` prints only label, size, path and engine per render, so a builder reads about 310 fewer bytes per two-viewport call.
 
 ### Fixed
+- `edit-skills` step 6 no longer reads as banning the three named agent budget exemptions; it bans adding an exemption, lock or allowlist entry to turn a red check green.
 - `npm run bump` now also sets both `package-lock.json` version fields, so `npm install` stops leaving the lockfile dirty; the lockfile is synced to 0.135.0.
 - `exo:prompt` rewrites a pasted screen into short facts, carries a clash with a fixed fact as an open point, grants a stated outside write in the user's words, and flags a named skill that rules out the task.
 - `compareMeans` in `benchmarks/statistics.mjs` gives no verdict when both arms have sd 0, so a zero-spread baseline no longer claims any difference is detectable.

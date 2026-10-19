@@ -22,7 +22,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 3. **Choose the home.** Place the fix per `references/where-a-fix-lives.md`; write prose in the shape below, style per `references/instruction-style.md`, register per `references/wording.md`.
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells only under step 2's condition (the user asks, or no stored result covers the file); read the `with` answers. `without` run also passed → case shows nothing; harden it until that run fails.
 5. **Close each new excuse.** Each justification the `with` run still produced → apply `references/plugging-holes.md`, rerun all cases. Done when a full rerun adds nothing to its tables.
-6. **Verify.** Run the check the caller's rules assign to this edit (a caller that reserves the full check to its lead → only the proof it names); red check → fix the structure, never exempt it.
+6. **Verify.** Run the check the caller's rules assign to this edit (a caller that reserves the full check to its lead → only the proof it names). Red check → fix the structure; never add an exemption, lock or allowlist entry to turn it green.
 7. **Judge blind.** Step 4's read a close call → judge stored pre-edit and edited `with` answers blind, per `references/blind-eval.md`; run its clones only when the user asks.
 
 ## The shape
