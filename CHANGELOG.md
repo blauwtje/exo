@@ -11,6 +11,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 - A plan task's `Evidence:` field lands as an `Evidence:` commit trailer.
+- `benchmarks/results/2026-10-19-pressure-grade-compression-rerun.md` records the compression case after the judge line fix: with 67%, without 67%, delta +0%; no answer fails for naming `Math.floor`.
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
