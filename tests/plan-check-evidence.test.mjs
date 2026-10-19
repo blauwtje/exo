@@ -10,7 +10,7 @@ function evidenceProblems(tasks) {
 const withEvidence = (task, value) => task.replace(' | Proof:', ` | Evidence: ${value} | Proof:`);
 
 test('a plan changing a wording file with no Evidence field is flagged', () => {
-  for (const file of ['skills/x/SKILL.md', 'skills/x/references/y.md', 'agents/z.md']) {
+  for (const file of ['skills/x/SKILL.md', 'skills/x/references/y.md', 'agents/z.md', 'hooks/session-routing.md', 'hooks/session-rules.md', 'harnesses/codex/host-note.md']) {
     const problems = evidenceProblems([compactTask({ number: 1, title: 'Edit wording', files: [file] })]);
     assert.equal(problems.length, 1, file);
     assert.match(problems[0], /Task 1/);
@@ -44,7 +44,7 @@ test('a reason holding parentheses is accepted as the verify check accepts it', 
 });
 
 test('a Files folder entry holding wording needs an Evidence field', () => {
-  for (const folder of ['skills/x/', 'skills/x/references/', 'agents/']) {
+  for (const folder of ['skills/x/', 'skills/x/references/', 'agents/', 'hooks/', 'harnesses/codex/']) {
     const problems = evidenceProblems([compactTask({ number: 1, title: 'New skill', files: [folder] })]);
     assert.equal(problems.length, 1, folder);
   }

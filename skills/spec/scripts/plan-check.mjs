@@ -513,7 +513,7 @@ function checkCompactFields(task) {
   return [...problems, ...checkWholeSuiteProof(task), ...checkBareDefaultBranchProof(task)];
 }
 
-const WORDING_FOLDER = /^(?:skills\/(?:[^/]+\/(?:references\/)?)?|agents\/)$/;
+const WORDING_FOLDER = /^(?:skills\/(?:[^/]+\/(?:references\/)?)?|agents\/|hooks\/|harnesses\/codex\/)$/;
 
 function checkEvidence(plan) {
   const named = plan.tasks.filter((task) => task.evidence !== null);
@@ -522,7 +522,7 @@ function checkEvidence(plan) {
     .map((task) => `Task ${task.number}: 'Evidence: ${task.evidence}' is not 'benchmarks/results/<file>', 'benchmarks/pressure/<path>' or 'none (<reason>)'`);
   const wording = plan.tasks.find((task) => task.files.some((file) => WORDING_PATH.test(file.path) || WORDING_FOLDER.test(file.path)));
   if (wording !== undefined && named.length === 0) {
-    problems.push(`Task ${wording.number}: Files change skill or agent wording and no task has an 'Evidence:' field: add '| Evidence: <benchmarks/results/<file> | benchmarks/pressure/<path> | none (<reason>)>' to one task`);
+    problems.push(`Task ${wording.number}: Files change skill, agent or session wording and no task has an 'Evidence:' field: add '| Evidence: <benchmarks/results/<file> | benchmarks/pressure/<path> | none (<reason>)>' to one task`);
   }
   return problems;
 }

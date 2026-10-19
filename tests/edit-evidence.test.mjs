@@ -95,3 +95,18 @@ test('a branch with no wording change passes and a missing base is UNRUN', () =>
   git(root, 'remote', 'remove', 'origin');
   assert.equal(run(root).UNRUN, 1);
 });
+
+test('a session-start text edit with no trailer fails', () => {
+  for (const file of ['hooks/session-routing.md', 'hooks/session-rules.md', 'harnesses/codex/host-note.md']) {
+    const root = fixture();
+    edit(root, 'reword', file);
+    const r = run(root);
+    assert.equal(r.FAIL, 1, file);
+  }
+});
+
+test('a code-only edit to the session-start injector needs no trailer', () => {
+  const root = fixture();
+  edit(root, 'reword', 'hooks/session-start.mjs');
+  assert.equal(run(root).FAIL, 0);
+});

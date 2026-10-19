@@ -47,7 +47,7 @@ export function checkEditEvidence(report, repository) {
   }
   const edited = since.changed.filter((file) => WORDING_PATH.test(file));
   if (edited.length === 0) {
-    report.assert(true, NAME, 'no skill or agent wording changed since the merge base');
+    report.assert(true, NAME, 'no skill, agent or session wording changed since the merge base');
     return;
   }
   const problems = evidenceProblems(since.log, since.added);
