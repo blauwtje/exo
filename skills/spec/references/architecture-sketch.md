@@ -43,7 +43,7 @@ Reject or revise a candidate showing:
 
 ## Stop at the options
 
-- After Show and pick → ask the user to pick one and stop; write no spec file, run no plan-check, dispatch no agent beyond this arm's own helper.
+- After Show and pick → ask the user to pick one and stop; write no spec file, run no plan-check, dispatch no agent.
 - Each option, at most 10 lines; read at most 3 files beyond the repo map.
 
 ## The sketch is the contract
