@@ -19,4 +19,4 @@ Build the plan the user invokes run-plan on through `exo:build`, each task lande
 ## Judgment
 
 - Run already live → touch no task, branch or file it owns.
-- In-session loop wanted → official `/ralph-loop` plugin still works beside exo, which adds no Stop hook.
+- In-session loop wanted → official `/ralph-loop` plugin runs beside exo; exo registers no Stop hook.

@@ -90,9 +90,10 @@ test('an agent on the fast tier pins low effort, so no session effort reaches it
 
 const NO_DELETE = 'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.';
 
-test('every agent that loads no CLAUDE.md carries the no-delete rule itself', () => {
+test('every agent that loads no CLAUDE.md and holds Bash carries the no-delete rule itself', () => {
   const missing = agents
     .filter((agent) => agent.frontmatter.omitClaudeMd === 'true')
+    .filter((agent) => (agent.frontmatter.tools ?? '').split(', ').includes('Bash'))
     .filter((agent) => !agent.body.includes(NO_DELETE))
     .map((agent) => agent.fileName);
   assert.deepEqual(missing, []);

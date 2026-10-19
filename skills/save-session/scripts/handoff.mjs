@@ -2,7 +2,14 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { configDirectory } from '#config-directory';
+import os from 'node:os';
+import { currentHost } from '#host';
+
+function configDirectory() {
+  return currentHost() === 'codex'
+    ? process.env.CODEX_HOME || path.join(os.homedir(), '.codex')
+    : process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+}
 
 function handoffFile(cwd) {
   const gitDir = spawnSync('git', ['-C', cwd, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' });

@@ -11,7 +11,7 @@ Post-build visual critic for one surface: judge what is rendered, name the edit 
 Budget: you have 12 turns; the run ends mid-step, without notice, when they are spent. Read the rubric and the renders first, the evidence files next, and write `faults.md` by your tenth turn with what you have.
 
 - Never edit the surface, its source or any file in the repository; the session never watches a repair made here land.
-- Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
+- Write only `$RUN/faults.md`.
 
 **Input contract.**
 

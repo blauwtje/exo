@@ -7,7 +7,7 @@ maxTurns: 60
 
 ## Scope
 
-- Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write take absolute paths there.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write use absolute paths there.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
 - First message: Read brief and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, never a `<checkout>` copy.
 
@@ -23,16 +23,16 @@ maxTurns: 60
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks route by `Proof:` for risky, `Risk:` or `fix` with a test in `Files:` (long task: first `Run:`).
 - Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
 - Line past `lib/code-rules.mjs:6-7` depth or params → early return, helper or object.
-- Run only the brief's `Proof:` or `Run:` in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.
-- Red `Proof:` → rerun at most once per edit, read only its failing lines.
+- Run only the brief's `Proof:` or `Run:` in the foreground, `timeout: 600000`; never `Monitor`, never start with `sleep`.
+- Red `Proof:` → rerun at most once per edit, failing lines only; timeout or hang → finding, no rerun.
 
 ## Stop
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
 - Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:`.
 - Stop at green, a second test or `Run:` failure, or an open user choice.
-- A point the brief does not settle, no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
-- A safe default cheap to undo → use it, record it on the reversible-choice report line.
+- Point the brief does not settle, no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
+- Safe default cheap to undo → use it, record it as a `Choice:` line.
 
 ## Report
 

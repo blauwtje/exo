@@ -34,6 +34,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/run.mjs --before-plugin <dir>` adds an `exo-before` arm that loads exo from another checkout, so one run compares a change with the commit before it.
 
 ### Changed
+- Prompt-audit fixes: edit-skills defers its check step to the caller, build-task reports a hung proof instead of rerunning it, start points at `hooks/session-routing.md`, save-session keeps WIP off a run branch and `handoff.mjs` reads the host config root, agents without Bash drop the delete ban, and spec, design-ui, check-docs, prompt, refactor, ship, run-plan, review-branch and build lose stale or unexplained lines.
 - `exo-cli.mjs run`, `exo approve` and `run-plan.mjs` refuse to start inside a Claude Code session (exit 2); `/exo:run-plan` hands the plan to `exo:build`, and benchmark sweep cells still run.
 - spec sends locate-code and fetch-docs in one message; find-open-points, build-task and review-branch batch their opening reads, saving a serial turn each.
 - The main session cannot Read a whole saved oversized tool output; it reads a line range, greps or sends a subagent.

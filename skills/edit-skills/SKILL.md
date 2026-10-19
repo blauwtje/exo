@@ -20,10 +20,9 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 1. **Catch the mistake.** Write one prompt per `references/pressure-scenarios.md` whose answer shows the mistake as one observable symptom.
 2. **Watch it happen.** Read `benchmarks/results/` and any earlier `pressure.mjs` answers directory for the case first; a stored result covering the edited file stands in for the run. The user asks for a run, or none covers the file → run `scripts/pressure.mjs --prompt <file> --cells <cells> --plugin-dir <clone>` on the cells `--cells-for <edited file>` prints, else the session's own; read only the `without` answers now.
 3. **Choose the home.** Place the fix per `references/where-a-fix-lives.md`; write prose in the shape below, style per `references/instruction-style.md`, register per `references/wording.md`.
-   - Cut → never the `text` fence around the `configure` skill's settings block, nor the `design-ui` hover and state transitions for tabs and buttons; rechecks restored both.
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells only under step 2's condition (the user asks, or no stored result covers the file); read the `with` answers. `without` run also passed → case shows nothing; harden it until that run fails.
 5. **Close each new excuse.** Each justification the `with` run still produced → apply `references/plugging-holes.md`, rerun all cases. Done when a full rerun adds nothing to its tables.
-6. **Verify.** Run `node verify.mjs`; red check → fix the structure, never exempt it.
+6. **Verify.** Run the check the caller's rules assign to this edit (a caller that reserves the full check to its lead → only the proof it names); red check → fix the structure, never exempt it.
 7. **Judge blind.** Step 4's read a close call → judge stored pre-edit and edited `with` answers blind, per `references/blind-eval.md`; run its clones only when the user asks.
 
 ## The shape
@@ -33,7 +32,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `description` | Trigger only: moments it fires, then what it leaves alone. No workflow: the model acts on that summary instead of the body. |
 | Opening | One paragraph: principle, enemy, overcorrection. |
 | `## When to use` | Bullets: symptoms first, then each "not for" case. |
-| Process | Numbered steps, aim at most eight, in order until one matches; each step a rule, reason only where it sets the boundary. |
+| Process | Steps where order matters: numbered, aim at most eight, in order until one matches; a judgment skill with no fixed order: bullets. Each step a rule, with its reason in one clause. |
 | `## Red flags` | Only in a skill the model is tempted to skip: table from tempting thought to what is true. |
 | `## References` | Table of each file and when to read it; nothing loads before the step that needs it. |
 | `## Judgment` | Ladder: which rule wins when two conflict. |
@@ -49,7 +48,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 | The excuse | What holds |
 |---|---|
-| "The body has room to explain itself." | Reason gets one clause, only where it sets the boundary; a paragraph-long one → reference. |
+| "The body has room to explain itself." | Reason gets one clause; a paragraph-long one → reference. |
 | "An edit this small needs no test run." | Without the `without` run, the edit is a guess about what the model does. |
 | "Any model already knows this." | Then cut the line; only what the `without` run got wrong earns a place. |
 | "I will test them together once all the skills are written." | Each skill clears every case before the next begins; skills written in a batch hide each other's gaps. |
@@ -71,5 +70,5 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 ## Judgment
 
 - Rule the `without` run broke outranks a rule that only reads well.
-- Untested edit → revert, never keep as draft.
-- Short outranks complete: an overlong skill drops its weakest rule, never a reason clause that sets a boundary.
+- Edit with neither a run nor a stored result covering its file → revert, never keep as draft.
+- Overlong skill → drop its weakest rule, never a rule's reason clause.

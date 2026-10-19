@@ -24,11 +24,11 @@ argument-hint: <outcome to shape>
    - Recommend a loaded skill's pattern over an option it rules out.
    - `Land:` → plan approval approves only its mode; ask only when `ship` is `ask`.
    - No git repo or `origin` → `Land: local`, no question.
-   - Last answer → brief at once, no recap, no yes question; at most three agreed lines follow.
+   - Last answer → brief at once, no recap, no yes question.
 4. **Map, then locate.**
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
    - Range the map leaves unnamed → `exo:locate-code`, at most eight ranges, read nothing it locates; outside facts → one `exo:fetch-docs` round, no gap-fill; both foreground, one message.
-   - Never `cat`, `head` or `sed`.
+   - Never `cat`, `head` or `sed`: dumps cost lead context.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`.

@@ -36,14 +36,6 @@ The overcorrection is researching a call the repository already makes in deploye
 Findings stay in the message; turn ends under the closing rule in `route-skills`: confirmed answer first, citations next, then what stayed unconfirmed.
 Write `docs/research/<library>.md` only when the user asks for a file, or a named later executor needs the findings and they rest on two or more first-party sources.
 
-## Red flags
-
-| The excuse | What holds |
-|---|---|
-| "I know this API." | Knowing the concept is not knowing this version; read the lockfile. |
-| "The latest docs will do." | Install is older; answer diverges across minor versions. |
-| "I'll paste the page for context." | Ten quoted lines and a URL; the page costs every later turn. |
-
 ## Judgment
 
 - What deployed code does today → repository's working code outranks fetched docs. Code written or upgraded now → pinned or target version's docs outrank a pattern the source marks deprecated or unsafe; unrelated code is not modernized.

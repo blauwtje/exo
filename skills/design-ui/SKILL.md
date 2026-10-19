@@ -6,7 +6,7 @@ argument-hint: <page, component or visual change>
 
 # Visual Design
 
-Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. The enemy is the unfinished default — stock type, flat ground, loose spacing and missing states. The overcorrection is a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one.
+Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. The enemy is the unfinished default: stock type, a flat ground, loose spacing and missing states. The overcorrection is a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one; `## Slop tropes` of `references/build-pass.md` lists the tropes.
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline.
 
@@ -36,11 +36,16 @@ Only a request from the user opens the picker: a landing page or an open identit
 
 ## The one pass
 
-The default for every rung but 1 and 4; `exo:build-ui` writes the code, since code here overruns context. References call steps 1-2 Phase 1-2 and 3-7 Phase 3.
+The default for every rung but 1 and 4; `exo:build-ui` writes the code, since code here overruns context. References call the first group Phase 1-2 and steps 4-7 Phase 3.
 
-1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`.
-2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`.
-3. **Check the plan** per `## Every rung` of `references/phase-direction.md`.
+Before building, each part uses judgment:
+
+- **Context:** read the Phase 1 sections of `references/phase-detail.md`.
+- **Plan:** after one line each naming the scope groups and mood, write the plan to `$RUN/plan.md` under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`; keep it short enough for `exo:build-ui` to read whole.
+- **Check the plan** per `## Every rung` of `references/phase-direction.md`.
+
+Then in order, each step needing the one before:
+
 4. **Build pass.** Read `## The build floor` and `## Proof` of `references/build-pass.md`.
 5. **Build.** Dispatch fresh `exo:build-ui` per `## Where the build runs` of `references/phase-build.md`, after `## The comp` on a full redesign.
 6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3.
@@ -57,7 +62,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 ## References
 
 - Load only the sections a row names, all if none.
-- Read a section by `offset`/`limit` from `grep -n '^## '`, never `cat`, `awk` or `sed`, since Bash persists long output.
+- Read a section by `offset`/`limit` from `grep -n '^## '`; never `cat`, `awk` or `sed` a whole reference, which loads sections no row names.
 - Never Read a `tool-results/` file the run holds, which loads it twice.
 - Each section → read once per run; a phase's sections → one message of parallel Reads.
 - Preview, rung 3 before the click → only Phase 1 and `preview:` sections; other Phase 2 ones after the pick.

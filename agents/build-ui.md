@@ -25,7 +25,7 @@ Budget: page scope 60 turns, report by turn 55; every other scope 35, report by 
 - `PASS`: page scope only, pass number `<n>` of its report.
 - `COMP`: the chosen comp's folder on rung 3 after live comps, or `$RUN/comp/` on a full redesign; page, foundation and surface scopes.
 - `CHECK`: comp scope only, the `pick.mjs --check --variant <n>` command for your comp, and the folder you write in.
-- `RULES`: a file whose `KEY=value` lines supply the keys the call leaves out; a call passing `RUN=` directly keeps working.
+- `RULES`: a file whose `KEY=value` lines supply the keys the call leaves out; a call may pass `RUN=` directly.
 
 - Read each `FILES` range with Read's offset and limit; an Edit to that file also requires it.
 - Open no whole file the `FILES` list does not name whole.

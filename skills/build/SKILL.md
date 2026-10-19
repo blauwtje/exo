@@ -14,7 +14,7 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
-7. **The tail.** Read `references/tail.md`, then run `verify`, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
+7. **The tail.** Read `references/tail.md`, then run `verify`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
 
 - Headless run → only the user's terminal `exo run`, never this session.
 

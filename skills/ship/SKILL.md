@@ -24,7 +24,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 5. **Verify**, for `pr-merge`: hand the diff to `verify`; `FAIL` pushes nothing.
    - Record or reuse a verdict per `references/pr-merge.md`.
 6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.
-   - Push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm.
+   - Push, open, wait for checks (stops after 20 minutes, exit 124; read output at least every 10 min), gate from API, merge, confirm.
    - A fix → rerun step 5, never `--merge`.
 7. **Merge.** List and verify each per `references/pr-merge.md`.
    - `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; a stop never halts others.

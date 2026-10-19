@@ -6,7 +6,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 
 - Main checkout stays on `main`; every edit runs in a worktree, because exo loads in place from this checkout.
 - Run start → `git pull --ff-only` on `main`, then remove every worktree and branch, local and remote, merged into `main`, each worktree per the removal bullet below. Also `git fetch --prune`, then delete each local branch whose upstream is gone (`git branch -vv` shows `: gone]`); `git branch --merged` misses squash merges.
-- Lead only orchestrates: every edit, fix and failed-check repair → worktree subagent, one concern each; independent parts in parallel; brief with two unrelated parts → two subagents.
+- Lead only orchestrates, overriding the user rule "Other work → do it directly" because exo loads in place from the main checkout: every edit, fix and failed-check repair → worktree subagent, one concern each; independent parts in parallel; brief with two unrelated parts → two subagents.
 - `CHANGELOG.md` → outside a run, only the lead writes it, so subagent branches never conflict on it; every plan here ends with a task writing its `## Unreleased` line, so the line lands in the run's squash commit.
 - `exo:spec` → lead runs it itself; code reading goes to `exo:locate-code`; the lead writes the brief itself.
 - Build → `exo:build <brief>` in the lead session, which lands each task through `exo:run-unit` subagents; resume → `exo:build <brief>` again, it reads landed tasks from `Plan-task:` commits. Headless `exo run` → only from the user's terminal; it refuses inside Claude Code. A plan task lands only through that loop; lead and subagents commit no plan task on the run branch.

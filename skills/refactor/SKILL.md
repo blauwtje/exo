@@ -18,7 +18,7 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 
 ## The loop
 
-1. **Pin behavior before the first move.** Capture current outputs in a test, snapshot or before/after script over the inputs that matter; type check and lint pin nothing, both pass on a wrong price.
+1. **Pin behavior before the first move.** Capture current outputs in a test, snapshot or before/after script over the inputs that matter; type check and lint pin nothing, both pass on a wrong result.
 2. **Name the target shape.** One sentence: module layout and call graph as if built today; reshape removes branches, layers or states, never adds indirection.
 3. **Subtract first.** Delete dead code, one-caller wrappers and orphaned references before building the new shape.
 4. **Migrate every caller, then delete the old API, in the same change.** No shim, deprecated wrapper, both-shapes signature or re-export stays, because nothing then forces the last caller over. Search strings, docs, scripts and tests too; renames miss usages there.
@@ -33,9 +33,9 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 |---|---|
 | "Accept both shapes for now; callers move when someone touches them." | Nobody touches them; dual path becomes permanent. Migrate now; say what the line cap or open PR costs. |
 | "Keep the re-export so nothing breaks." | Inside one repository a search proves no caller is left; a kept re-export invites new ones. |
-| "Types and lint pass, so the prices held." | Types check shapes, not values; only a before/after run on the same inputs shows equality. |
+| "Types and lint pass, so the results held." | Types check shapes, not values; only a before/after run on the same inputs shows equality. |
 | "No time for tests on a mechanical split." | A throwaway comparison script takes minutes, no committed test needed. |
-| "Leave it extensible for the channels coming next quarter." | One-implementation seam = indirection; next channel adds its seam when it lands. |
+| "Leave it extensible for the variants coming later." | One-implementation seam = indirection; the next variant adds its seam when it lands. |
 
 ## References
 

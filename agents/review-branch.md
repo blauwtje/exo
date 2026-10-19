@@ -16,7 +16,7 @@ Review one branch against plan and standard; fixer repairs from findings alone.
 - Plan-pasted code, scope `overlap` or no scope → read `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/plan-checks.md` first.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
-- `Red:` source, proof files first: `grep -n '^Red:' <implementer dir>/proof-<plan id>-task-<n>.txt`, written by land as `.exo/proof-<plan id>-task-<n>.txt`; plan id = plan file's name without `.md`.
+- `Red:` source, proof files first: `grep -n '^Red:' <implementer dir>/proof-<plan id>-task-<n>.txt`; plan id = plan file name without `.md`.
 - No `Red:` line in a task's proof file → implementer reports, `Red:` lines only: `grep -n -A1 '^Red:' <implementer dir>/implementer-*.md`.
 - A task is test-first only when its `Proof:` names a test file or runs a test runner, and with `Risk:`, `Red:` line after `Test first: yes`, or heading type `fix` with test file in `Files:`.
 - Test-first task → `defect` marked `report`, when its commit adds no test observing changed behavior or `Red:` line reads `none` or is missing.
@@ -28,7 +28,7 @@ Review one branch against plan and standard; fixer repairs from findings alone.
 Write findings to the findings path the dispatch names: input to `merge-reviews.mjs`, or verify's repair step 3 for `fix diff`.
 - Verdict first: `CLEAN` (none), `FINDINGS`, `BLOCKED` (plan, base, diff unreadable).
 - Findings by file, ascending line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `concern`, `question`); rule; one-sentence evidence; `fix`/`report`.
-- Each `fix` finding → `  Probe: <command>` under it, per `## Probe` in `skills/verify/references/review-rules.md`.
+- Each `fix` finding → `  Probe: <command>` under it, per `## Probe` in `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/review-rules.md`.
 Example:
 ```
 a.mjs:1-2; defect; swallowed failure; catch drops error; fix

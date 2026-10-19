@@ -66,14 +66,14 @@ Apply a kind rule only when the prompt is that kind:
 
 ## Format
 
-Use these tags in this order, each only when it has content:
+Use these tags, each only when it has content; put context and data before the ask:
 1. `<background>`: the goal in one sentence, the user's reason, facts read from code or kept from pasted text, an open point.
 2. `<pasted_content id="...">`: only the pasted text `## Keep` copies verbatim, called data; `<instructions>` names which part, if any, to act on, in the user's words. Opening and closing tag each on its own line, both carrying the same fresh short random id, as in `</pasted_content id="ab12">`; no `source` attribute; the prompt text never mentions the id.
 3. `<instructions>`: imperative verbs; numbers only for the user's separate parts or ordered steps; limits and non-goals as sentences, each with the user's reason when given.
 4. `<success_criteria>`.
 5. `<output_format>`: an ask to start the answer with X → "Start the reply with X, no preamble."
 
-- Long pasted source document, such as a spec → `<documents>` in slot 2, holding one `<document index="n">` each: `<source>`, then the document verbatim in its own `<pasted_content id="...">` pair in place of `<document_content>`, a fresh id per document.
+- Long pasted source document, such as a spec → `<documents>` where `<pasted_content>` would go, holding one `<document index="n">` each: `<source>`, then the document verbatim in its own `<pasted_content id="...">` pair in place of `<document_content>`, a fresh id per document.
 - Clear one-line prompt with nothing to add → plain sentences, no tags.
 - One term per concept, the same tag names every time.
 - Cut every added line whose removal causes no mistake.
