@@ -9,6 +9,8 @@ New entry → add its line to the index below and its full entry in a section af
 
 Read [the build profile](results/2026-10-19-build-profile.md) first for a speed idea: it shows where build wall time goes and what the fix loop costs.
 
+Current flow-unit baseline: [round 8](results/2026-10-20-speed-round8.md), main `82ae8607` after the truncate fixture fix (wall 136.6 s, cost $0.598, n=15).
+
 Open an entry below only when an idea is close. Verdict: rej = rejected, un = untried, nog = landed or tried, no measured gain.
 
 - Reuse Proof run at landing → deferred

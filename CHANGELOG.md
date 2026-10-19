@@ -10,6 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-20-speed-round8.md` records a flow-unit baseline at n=15 after the `truncate` fixture fix: the `max < 3` repair loop did not recur (0 of 15, against 3 of 15), fix-review still ran in 2 of 15 runs on unrelated concerns, hidden tests 270/270, cost unchanged within noise; wall fell 28% but at a different concurrency, so later rounds rerun their own base arm.
 - `benchmarks/results/2026-10-19-speed-round7.md` tests a `build-task` line asking for a test at each limit a `Data:` line implies, at n=15 per arm; it does not land: wall -2.9% not supported (CI [-31.7, +17.7] s, p=0.645), cost +1.0% within noise, the `max < 3` repair loop still ran in 3 of 15 runs in both arms, hidden tests 255/255 in both arms.
 - `benchmarks/results/2026-10-19-build-profile.md` profiles 45 saved flow-unit runs: build-task is the largest and most variable step (65.2 s, 31.7% of wall); the review fix loop explains about 44% of wall variance, ran in 10 of 45 runs, adds about 75 s and $0.23, and every loop repairs one `max < 3` input the plan leaves undefined, which hidden tests never grade.
 - `benchmarks/results/2026-10-19-speed-round4.md` tests a batch-independent-tool-calls line in agent prompts at n=15 per arm; it does not land: wall -4.7% not supported (CI [-43.3, +23.4] s, p=0.389), cost -8.8% (p=0.016) mostly from fewer fix loops, hidden tests 255/255 in both arms.
