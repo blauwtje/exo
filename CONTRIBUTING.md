@@ -92,7 +92,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 - **Measured goal** (`skills/spec/references/measured-goal.md`): the spec reference for a Goal that is a score, cost or time on a task set; it calibrates with `benchmarks/tbench/readouts.mjs --calibrate`, sizes with `benchmarks/mde.mjs` and compares arms paired; its References row raises `STAGE_BODY_TOKENS.spec` in `verify/budgets.mjs` from 760 to 783.
 - **Delegate limits**: each agent that builds, reviews or repairs sets `maxTurns` in its frontmatter (60; `run-unit` 90, `fix-review` 40); the harness ends a delegate at that turn.
 
-Each hook entry pins `"shell": "bash"` and `.gitattributes` forces LF; `CLAUDE.md` `## Environment` says why.
+Each hook entry pins `"shell": "bash"` and `.gitattributes` forces LF; `.claude/CLAUDE.md` `## Environment` says why.
 
 The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
 

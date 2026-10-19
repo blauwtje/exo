@@ -40,7 +40,8 @@ function deriveCommit(task, number, planId, signatures, root) {
   const addArgs = task.files.filter((file) => !removed.has(file.path)).map((file) => shellQuote(file.path)).join(' ');
   const addLine = addArgs === '' ? '' : `git add ${addArgs}\n`;
   const drops = dropsOf(task);
-  const trailers = trailersOf(planId, number, signatures) + (drops === null ? '' : `\nDrops: ${drops}`);
+  const evidence = task.evidence === null ? '' : `\nEvidence: ${task.evidence}`;
+  const trailers = trailersOf(planId, number, signatures) + (drops === null ? '' : `\nDrops: ${drops}`) + evidence;
   return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(trailers)}`;
 }
 

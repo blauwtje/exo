@@ -1,5 +1,6 @@
 .worktrees/
-.claude/
+.claude/*
+!.claude/CLAUDE.md
 node_modules/
 .DS_Store
 docs/*

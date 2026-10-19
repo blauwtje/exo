@@ -9,6 +9,12 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Added
+- A plan task's `Evidence:` field lands as an `Evidence:` commit trailer.
+
+### Changed
+- `npm run check` runs `claude plugin validate --strict --json` and fails on any warning or error; the project notes moved so strict validate passes.
+
 ## 0.136.0 - 2026-10-19
 
 ### Highlights

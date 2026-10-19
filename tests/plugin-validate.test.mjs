@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { checkPluginValidate, errorLines } from '../verify/checks/plugin-validate.mjs';
+import { checkPluginValidate } from '../verify/checks/plugin-validate.mjs';
 
 const FAKE_CLAUDE = `#!/bin/sh
 printf '%s\\n' "$*" >> "$FAKE_LOG"
@@ -13,22 +13,18 @@ printf '%s' "$FAKE_OUTPUT"
 exit "$FAKE_STATUS"
 `;
 
-const REFUSED = [
-  'Validating plugin: /p/CLAUDE.md', '',
-  '⚠ Found 1 warning:', '',
-  '  ❯ root: CLAUDE.md at the plugin root is not loaded as project context.', '',
-  'Validating hooks: /p/hooks/hooks.json', '',
-  '✘ Found 2 errors:', '',
-  '  ❯ modules../run-watch.mjs: run-watch.mjs:119: $.agent is used as a value',
-  '  ❯ modules../other.mjs: other.mjs:3: $.ui is used as a value', '',
-  '✘ Validation failed', ''
-].join('\n');
+const entry = (file, errors = [], warnings = []) => ({ file, errors, warnings, notes: ['ignored'] });
 
-const PASSED = [
-  'Validating hooks: /p/hooks/hooks.json', '',
-  '  ❯ ./run-watch.mjs calls: $.agent.list (via agentLive)', '',
-  '✔ Validation passed', ''
-].join('\n');
+const REFUSED = JSON.stringify({
+  success: false,
+  manifest: entry('/ROOT/.claude-plugin/plugin.json', [], ['name: unusual']),
+  contents: [
+    entry('/ROOT/hooks/hooks.json', ['modules../run-watch.mjs: $.agent is used as a value']),
+    entry('/ROOT/CLAUDE.md', [], ['root: not loaded as project context'])
+  ]
+});
+
+const PASSED = JSON.stringify({ success: true, manifest: entry('/ROOT/.claude-plugin/plugin.json'), contents: [entry('/ROOT/hooks/hooks.json')] });
 
 function sandbox(t, { cli = true, manifest = true, status = 0, output = PASSED } = {}) {
   const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plugin-validate-')));
@@ -43,7 +39,7 @@ function sandbox(t, { cli = true, manifest = true, status = 0, output = PASSED }
   }
   if (cli) fs.writeFileSync(path.join(bin, 'claude'), FAKE_CLAUDE, { mode: 0o755 });
   const log = path.join(base, 'calls.log');
-  const env = { PATH: bin, FAKE_LOG: log, FAKE_OUTPUT: output, FAKE_STATUS: String(status) };
+  const env = { PATH: bin, FAKE_LOG: log, FAKE_OUTPUT: output.replaceAll('/ROOT', root), FAKE_STATUS: String(status) };
   return { root, env, calls: () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n') : []) };
 }
 
@@ -60,26 +56,33 @@ function verdict(box) {
   return { counts: report.counts(), detail: printed.join('\n') };
 }
 
-test('a plugin the engine accepts passes, warnings and call lines aside', (t) => {
+test('a plugin with no finding passes and runs strict JSON mode', (t) => {
   const box = sandbox(t);
   const { counts, detail } = verdict(box);
   assert.deepEqual(counts, { PASS: 1, FAIL: 0, WARN: 0, UNRUN: 0 }, detail);
-  assert.deepEqual(box.calls(), [`plugin validate ${box.root}`]);
+  assert.deepEqual(box.calls(), [`plugin validate --strict --json ${box.root}`]);
 });
 
-test('a refused plugin fails and shows the error lines, not the warning', (t) => {
+test('each error and warning is one FAIL detail with its relative file', (t) => {
   const box = sandbox(t, { status: 1, output: REFUSED });
   const { counts, detail } = verdict(box);
-  assert.equal(counts.FAIL, 1, detail);
-  assert.match(detail, /^\[FAIL\] plugin validate: claude plugin validate exits 1: modules\.\.\/run-watch\.mjs: run-watch\.mjs:119: \$\.agent is used as a value; modules\.\.\/other\.mjs/m);
-  assert.doesNotMatch(detail, /CLAUDE\.md at the plugin root/);
+  assert.equal(counts.FAIL, 3, detail);
+  assert.match(detail, /^\[FAIL\] plugin validate: \.claude-plugin\/plugin\.json: name: unusual$/m);
+  assert.match(detail, /^\[FAIL\] plugin validate: hooks\/hooks\.json: modules\.\.\/run-watch\.mjs: \$\.agent is used as a value$/m);
+  assert.match(detail, /^\[FAIL\] plugin validate: CLAUDE\.md: root: not loaded as project context$/m);
+  assert.doesNotMatch(detail, /ignored/);
 });
 
-test('a failure without error lines shows the first output lines', (t) => {
-  const box = sandbox(t, { status: 2, output: 'boom\n\nsecond\nthird\nfourth\n' });
+test('output that is not JSON is UNRUN', (t) => {
+  const box = sandbox(t, { status: 1, output: 'boom' });
   const { counts, detail } = verdict(box);
-  assert.equal(counts.FAIL, 1, detail);
-  assert.match(detail, /exits 2: boom; second; third; 1 more$/m);
+  assert.deepEqual(counts, { PASS: 0, FAIL: 0, WARN: 0, UNRUN: 1 }, detail);
+});
+
+test('an exit other than 0 or 1 is UNRUN', (t) => {
+  const box = sandbox(t, { status: 2, output: PASSED });
+  const { counts, detail } = verdict(box);
+  assert.deepEqual(counts, { PASS: 0, FAIL: 0, WARN: 0, UNRUN: 1 }, detail);
 });
 
 test('without claude on PATH the check prints an INFO line outside the tally', (t) => {
@@ -94,9 +97,4 @@ test('a root without a plugin manifest is UNRUN and calls no claude', (t) => {
   const { counts, detail } = verdict(box);
   assert.equal(counts.UNRUN, 1, detail);
   assert.deepEqual(box.calls(), []);
-});
-
-test('errorLines keeps the lines under an error heading only', () => {
-  assert.deepEqual(errorLines(PASSED), []);
-  assert.equal(errorLines(REFUSED).length, 2);
 });

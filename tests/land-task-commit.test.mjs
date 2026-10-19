@@ -229,3 +229,23 @@ test('a test-first task whose change touches no test file is refused before anyt
   await writeReport(root, PASS_REPORT);
   await assertRefused(root, planPath, [], /Task 1 is test-first, but its change adds or changes no test file/);
 });
+
+test('a compact task with an Evidence field lands it as a trailer after Plan-task, quotes and substitutions inert', async () => {
+  const evidence = `see 'docs/x.md' $(touch pwned) \`id\` "q"`;
+  const plan = compactPlanFixture({ tasks: [
+    `${compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' })} | Evidence: ${evidence}`
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await writeReport(root, PASS_REPORT);
+  landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
+  const body = git(root, 'log', '-1', '--format=%B');
+  assert.match(body, /^Plan-task: compact\/1\nEvidence: see 'docs\/x\.md' \$\(touch pwned\) `id` "q"$/m);
+  await assert.rejects(fs.access(path.join(root, 'pwned')));
+});
+
+test('a compact task without Evidence lands no Evidence trailer', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, PASS_REPORT);
+  landTask({ planPath, planText: await fs.readFile(planPath, 'utf8'), number: 1, root, reportText: PASS_REPORT });
+  assert.doesNotMatch(git(root, 'log', '-1', '--format=%B'), /Evidence:/);
+});

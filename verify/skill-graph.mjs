@@ -67,7 +67,7 @@ function listDocFiles() {
       if (agent.endsWith('.md')) files.push(path.join(agentsDir, agent));
     }
   }
-  for (const rootDoc of ['README.md', 'CONTRIBUTING.md', 'CLAUDE.md']) {
+  for (const rootDoc of ['README.md', 'CONTRIBUTING.md', '.claude/CLAUDE.md']) {
     const full = path.join(ROOT, rootDoc);
     if (fs.existsSync(full)) files.push(full);
   }
