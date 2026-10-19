@@ -350,9 +350,10 @@ test('review-branch reads its opening inputs together in its first message', () 
 
 test('run-unit runs wait-report only after a background Wave: build', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'run-unit');
-  assert.match(unit.body, /^ {2}- After a background `Wave:` build, run `node "<skill>\/scripts\/wait-report\.mjs" --since <start> --report <Report to: path>`, timeout 600000\.$/m);
-  assert.match(unit.body, /^ {2}- A foreground `Next:` build runs no `wait-report\.mjs`; its return is the report\.$/m);
-  assert.match(unit.body, /^ {2}- Exit 2 of `wait-report\.mjs` reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
+  assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree/m);
+  assert.match(unit.body, /^ {2}- Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a returned slot\.$/m);
+  assert.match(unit.body, /^ {2}- `Next:` stays foreground; its return is the report, no `wait-report\.mjs`\.$/m);
+  assert.match(unit.body, /^ {2}- Wait after every landing; exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
 });
 
 test('run-unit runs on its own kind, at low effort on the balanced profile', () => {

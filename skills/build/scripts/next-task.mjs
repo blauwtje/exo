@@ -6,6 +6,7 @@ import { scratchPath } from '#scratch-path';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
+import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
 import { defaultBranch, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 const SMALL_TASK_FILES = 2;
@@ -212,7 +213,52 @@ export function blockReport({ planPath, planText, root }) {
   ].join('\n')}\n`;
 }
 
-export function nextTaskReport({ planPath, planText, root, inFlight = [] }) {
+const scriptPath = (name) => path.join(SKILL_DIRECTORY, 'scripts', name);
+
+function promptLines(task, frame, planPath, checkout, briefPath) {
+  return [
+    'Prompt:',
+    `Task ${task.number} of ${planPath}, branch ${frame.branch ?? 'none'}, checkout ${checkout}.`,
+    `Read your brief at ${briefPath}.`,
+    `Report to: ${path.join(checkout, '.exo', `implementer-${task.number}.md`)}`,
+    'Return: one line'
+  ];
+}
+
+function dispatchable(task, root) {
+  return !task.design && driftOf(task, root).length === 0;
+}
+
+function dispatchBlock({ task, frame, planPath, checkout, briefPath, since, background }) {
+  if (!dispatchable(task, checkout)) return [];
+  return [`Dispatch: exo:build-task, run_in_background: ${background}`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
+}
+
+function windowLines({ planPath, root, records, running }) {
+  const open = running.filter((number) => records[number] !== undefined);
+  if (open.length === 0) return [];
+  const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}"`);
+  return [
+    `Wait: node "${scriptPath('wait-report.mjs')}" --any ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns, at most six runs, then BLOCKED <n> no report)`,
+    ...open.map((number) => `Land ${number}: node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}" --in-flight ${open.filter((other) => other !== number).join(',')}`)
+  ];
+}
+
+function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since }) {
+  const fresh = inFlight.length === 0;
+  const opened = openSlots({ root, numbers: wave.map((task) => task.number), setup: frame.worktreeSetup, fresh, since });
+  if (opened.reason !== undefined) return { reason: opened.reason, lines: [] };
+  const lines = [`Base: ${opened.base}`, `Baseline: ${opened.baseline}`, '', `Dispatch all in one message, run_in_background: true; Since: ${since}`];
+  for (const task of wave) {
+    const slot = slotOf(opened.toplevel, task.number);
+    const brief = path.join(briefDirectory, `task-${task.number}.md`);
+    lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, ...(dispatchable(task, root) ? promptLines(task, frame, planPath, slot, brief) : []));
+  }
+  const running = [...inFlight, ...wave.map((task) => task.number)];
+  return { reason: undefined, lines: [...lines, '', ...windowLines({ planPath, root: opened.toplevel, records: opened.records, running })] };
+}
+
+export function nextTaskReport({ planPath, planText, root, inFlight = [], open = false, since = Math.floor(Date.now() / 1000) }) {
   const plan = parseTasks(planPath, planText);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
@@ -228,20 +274,32 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [] }) {
     routeLine(route),
     waveLine(wave, inFlight)
   ];
-  if (wave.length === 0) return `${lines.join('\n')}\n`;
-  if (inline) {
+  if (inline && wave.length > 0) {
     const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
     lines.push(`Inline: ${unlanded.map((task) => `Task ${task.number}`).join(', ')}`, 'Steps:', ...inlineSteps(planPath, root));
     for (const task of unlanded) lines.push('', ...inlineTaskLines(task, root));
     return `${lines.join('\n')}\n`;
   }
   const briefDirectory = scratchPath(root, 'briefs');
-  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
+  if (open && (wave.length > 1 || inFlight.length > 0)) {
+    const records = windowRecords(root);
+    if (wave.length === 0) return `${[...lines, ...windowLines({ planPath, root, records, running: inFlight })].join('\n')}\n`;
+    const opened = openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since });
+    if (opened.reason === undefined) return `${[...lines, ...opened.lines].join('\n')}\n`;
+    lines.splice(-1, 1, `Wave discarded: ${opened.reason}`, inFlight.length > 0 ? 'Start: none' : waveLine(wave.slice(0, 1)));
+    if (inFlight.length > 0) return `${[...lines, ...windowLines({ planPath, root, records, running: inFlight })].join('\n')}\n`;
+    wave.splice(1);
+  }
+  for (const task of wave) {
+    const taskPart = taskLines(task, frame, root, briefDirectory);
+    lines.push('', ...taskPart);
+    if (inFlight.length === 0 && wave.length === 1) lines.push(...dispatchBlock({ task, frame, planPath, checkout: root, briefPath: path.join(briefDirectory, `task-${task.number}.md`), since, background: false }));
+  }
   return `${lines.join('\n')}\n`;
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'in-flight': 'value' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
@@ -254,7 +312,7 @@ function main(argv) {
   if (flags.proofs) report = proofsReport;
   const inFlight = (flags['in-flight'] ?? '').split(',').filter(Boolean).map(Number);
   if (inFlight.some((number) => !Number.isInteger(number))) throw new UsageError("flag '--in-flight' names task numbers, comma separated");
-  process.stdout.write(report({ planPath: flags.plan, planText, root: flags.root ?? process.cwd(), inFlight }));
+  process.stdout.write(report({ planPath: flags.plan, planText, root: flags.root ?? process.cwd(), inFlight, open: flags['open-slots'] === true }));
 }
 
 if (isMain(import.meta.url)) {

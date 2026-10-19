@@ -1,6 +1,6 @@
 # Implementer prompt
 
-The `exo:run-unit` agent, or the build session on the direct route, dispatches the `exo:build-task` agent for one task; it writes its report, at most 25 lines, to `Report to:`. Fill every field below and paste nothing more: frame and task sit in the brief file.
+The `exo:run-unit` agent, or the build session on the direct route, dispatches the `exo:build-task` agent for one task; it writes its report, at most 25 lines, to `Report to:`. `next-task.mjs` prints this block filled as `Prompt:`, which `exo:run-unit` pastes verbatim; fill it by hand only for a redispatch. Fill every field below and paste nothing more: frame and task sit in the brief file.
 
 - `<brief path>`: the `Brief:` line `next-task.mjs` printed for the task.
 - `<plan path>`: absolute, often gitignored; read it only at that path, never resolved inside `<checkout>`.

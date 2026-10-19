@@ -101,6 +101,12 @@ export function codexOffer(env = process.env) {
   return onPath('codex', env);
 }
 
+export function codexVerdict() {
+  const offerable = codexOffer();
+  if (offerable && inRun()) recordDecision('codex', 'none', 'a run never offers the second review');
+  return offerable && !inRun() ? 'offer' : 'none';
+}
+
 export function touchesManifest(paths) {
   return paths.some((relativePath) => MANIFESTS.includes(basename(relativePath)));
 }
@@ -127,9 +133,7 @@ function main(argv) {
     return;
   }
   if (flags.codex) {
-    const offerable = codexOffer();
-    if (offerable && inRun()) recordDecision('codex', 'none', 'a run never offers the second review');
-    process.stdout.write(`${offerable && !inRun() ? 'offer' : 'none'}\n`);
+    process.stdout.write(`${codexVerdict()}\n`);
     return;
   }
   process.stdout.write(`${measureEffort()}\n`);

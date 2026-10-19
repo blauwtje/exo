@@ -9,26 +9,24 @@ experimental: { cacheTtl: 1h }
 
 ## The loop
 
-1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines.
+1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots` and read its `Landed:` and `Next:` or `Wave:` lines.
   - A `Next:` or `Wave:` task outside this block → a block task waits on a `BLOCKED` one; return each `BLOCKED <n> waits on <m>`.
 2. **Take the task from the script's output**, never the plan file.
   - A `Design:` task is returned `BLOCKED <n> Design: task`.
-3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message after `date +%s`.
-  - A `Wave:` line → `<skill>/references/rolling-window.md`, worktrees per `<skill>/references/wave-worktrees.md`; `Next:` stays foreground.
+3. **Dispatch the printed block.** Each `Prompt:` goes verbatim to the `exo:build-task` agent with its `Dispatch:` flag, in one message; only that text, no `implementer-prompt.md` read.
+  - `Next:` stays foreground; its return is the report, no `wait-report.mjs`.
+  - A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened with its baseline; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
+  - Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a returned slot.
+  - Land each fresh slot with its `Land <n>:` command, dropping landed numbers from `--in-flight`; `LANDED` ends with a refill block, dispatched likewise.
+  - Wait after every landing; exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A landed task goes straight to the next task; dispatch no review, verify's branch review is the only one.
-  - After a background `Wave:` build, run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
-  - A foreground `Next:` build runs no `wait-report.mjs`; its return is the report.
-  - Exit 2 of `wait-report.mjs` reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
-  - A repair, a choice, a block or no dispatch tool → read `<skill>/references/agent-cases.md` `## run-unit` first.
-  - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
-4. **Commit a green task.** Done means `GREEN`, never your report; else step 3.
-  - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
-  - Its `Then:` line dispatches nothing: only `next-task.mjs` writes a brief, so step 1 reruns it before the next dispatch.
+  - `REFUSED`, `CONFLICT`, `NEWPATH`, `PLAN DRIFT`, a stall, a repair, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## run-unit` and `<skill>/implementer-prompt.md` first.
+4. **Commit a green foreground task.** Done means `GREEN`, never your report; else step 3.
+  - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next`; its last block is the next dispatch, not a step 1 rerun.
   - `no build report at` refusal → SendMessage it verbatim to its writer, once; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
-  - Other refusal except `PLAN DRIFT` → fresh `exo:build-task` from `<skill>/implementer-prompt.md` plus refusal verbatim, at most twice; never rerun a proof.
+  - Other refusal except `PLAN DRIFT` → fresh `exo:build-task` from the same `Prompt:` plus refusal verbatim, at most twice; never rerun a proof.
   - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.
-  - A `Wave:` slot lands per `rolling-window.md` step 3 with `land-slot.mjs`, not `land-task.mjs`; a failed task returns to step 3.
-  - Loop to step 1 until every block task has a `LANDED` or `BLOCKED` line.
+  - Loop until every block task has a `LANDED` or `BLOCKED` line.
 
 ## Stop
 

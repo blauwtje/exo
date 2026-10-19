@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { inRun } from '#run-decision';
+import { codexVerdict } from './pick-reviewer.mjs';
 
 const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
 const PROBE_LINE = /^\s*Probe:\s*\S/;
@@ -9,7 +11,9 @@ const UNREAD = /\b(defect|concern|question)\b.*\b(fix|report)\W*$/;
 const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question)\b.*\b(fix|report)\W*$/;
 
 const USAGE = `Usage: node merge-reviews.mjs --root <checkout> --report <file> [--report <file> ...]
-Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line.`;
+Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line,
+then each question and report finding as a FINDING line, then a CODEX offer or CODEX none line.
+Inside an exo run the CODEX line is none and records no decision.`;
 
 function verdictOf(text) {
   for (const line of text.split('\n')) {
@@ -26,6 +30,7 @@ export function mergeReviews(reports) {
   let unreadFix = 0;
   let verdict = 'CLEAN';
   const sections = [];
+  const shown = [];
   for (const { name, text } of reports) {
     const own = verdictOf(text);
     if (VERDICT_RANK[own] > VERDICT_RANK[verdict]) verdict = own;
@@ -37,24 +42,27 @@ export function mergeReviews(reports) {
         if (loose) {
           unread += 1;
           if (loose[2] === 'fix') unreadFix += 1;
+          shown.push(`unread: ${line.trim()}`);
         }
         return;
       }
       counts[match[1]] += 1;
-      if (match[2] !== 'fix') return;
-      if (PROBE_LINE.test(lines[index + 1] ?? '')) {
+      let reported = match[2] !== 'fix';
+      if (!reported && PROBE_LINE.test(lines[index + 1] ?? '')) {
         counts.fix += 1;
-      } else {
+      } else if (!reported) {
         demoted += 1;
+        reported = true;
         lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
       }
+      if (reported || match[1] === 'question') shown.push(lines[index].trim());
     });
     sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
   }
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} fix=${counts.fix}\n`;
-  return { verdict, counts, demoted, unread, unreadFix, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, unread, unreadFix, shown, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
@@ -65,7 +73,7 @@ function main(argv) {
     name: path.basename(file, '.md'),
     text: fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'BLOCKED: report missing\n'
   }));
-  const { verdict, counts, demoted, unread, unreadFix, text } = mergeReviews(reports);
+  const { verdict, counts, demoted, unread, unreadFix, shown, text } = mergeReviews(reports);
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
@@ -74,6 +82,8 @@ function main(argv) {
   );
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe: line under them\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
+  for (const line of shown) process.stdout.write(`FINDING ${line}\n`);
+  process.stdout.write(`CODEX ${inRun() ? 'none' : codexVerdict()}\n`);
 }
 
 if (isMain(import.meta.url)) {

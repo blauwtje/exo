@@ -50,7 +50,7 @@ export function landSlot({ planPath, number, root, slot, base, baseline, inFligh
   const conflict = conflictOf(root, sha);
   if (conflict !== null) return refusal('CONFLICT', number, `cherry-pick of ${sha} failed and ${conflict.aborted}; slot ${slot} kept\n${conflict.output}`);
   const kept = landed.split('\n').filter((line) => !line.startsWith('Then: ')).join('\n');
-  return `LANDED ${number} ${sha}\n${kept}${removeSlot({ slot, root, base, number })}${nextTaskReport({ planPath, planText, root, inFlight })}`;
+  return `LANDED ${number} ${sha}\n${kept}${removeSlot({ slot, root, base, number })}${nextTaskReport({ planPath, planText, root, inFlight, open: true })}`;
 }
 
 function main(argv) {

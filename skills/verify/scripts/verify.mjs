@@ -4,8 +4,9 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
-import { criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
+import { criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, proofRecordPath, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
 import { changedPaths } from '#size-facts';
@@ -24,7 +25,8 @@ Runs a plan's gate: each landed task's Proof, the Success criterion command and 
 Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, UNPLANNED or FIX-ONLY line per check,
 then one REVIEW Branch line and the OVERLAP lines, one DONE or OPEN line per task,
 one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md line.
---reviews-only prints only the REVIEW and OVERLAP lines and runs no proof or gate.
+--reviews-only prints only the REVIEW and OVERLAP lines, then one DISPATCH line per review to dispatch
+(code standard, review rules, plan, checkout, base, reports, scope, findings path, proof files), and runs no proof or gate.
 --base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
 Exits 1 on any FAIL or UNPLANNED line.`;
 const DEFAULT_BASE = 'main';
@@ -345,12 +347,61 @@ function reviewLines(plan, landed, { root, planId, base }) {
   return lines;
 }
 
+const VERIFY_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
+const REVIEW_RULES = path.join(VERIFY_DIRECTORY, '..', 'references', 'review-rules.md');
+const DEFAULT_CODE_STANDARD = path.join(VERIFY_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
+const STANDARD_FILES = ['CLAUDE.md', path.join('.claude', 'CLAUDE.md'), 'AGENTS.md'];
+const MARKDOWN_PATH = /`([^`\s]+\.md)`|\]\(([^)\s]+\.md)\)/g;
+
+export function codeStandardPath(root) {
+  for (const name of STANDARD_FILES) {
+    const file = path.join(root, name);
+    if (!fs.existsSync(file)) continue;
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (!/code standard/i.test(line)) continue;
+      for (const match of line.matchAll(MARKDOWN_PATH)) {
+        const resolved = path.resolve(root, match[1] ?? match[2]);
+        if (fs.existsSync(resolved)) return resolved;
+      }
+    }
+  }
+  return DEFAULT_CODE_STANDARD;
+}
+
+function dispatchLines(printed, plan, landed, { root, planPath, planId, base }) {
+  const checkout = path.resolve(root ?? '.');
+  const exo = path.join(checkout, '.exo');
+  const baseRef = base ?? DEFAULT_BASE;
+  const common = [
+    `code-standard=${codeStandardPath(checkout)}`,
+    `review-rules=${REVIEW_RULES}`,
+    `plan=${planPath}`,
+    `checkout=${checkout}`,
+    `base=${baseRef}`,
+    `reports=${exo}/`
+  ].join(' ');
+  const proofs = plan.tasks.filter((task) => landed.has(task.number))
+    .map((task) => proofRecordPath(checkout, planId, task.number))
+    .filter((file) => fs.existsSync(file));
+  const lines = [];
+  if (printed.some((line) => /^REVIEW Branch [^:]*: review-branch\b/.test(line))) {
+    lines.push(`DISPATCH Branch: ${common} scope=branch ${baseRef}..HEAD findings=${path.join(exo, 'review-branch.md')} proofs=${proofs.length === 0 ? 'none' : proofs.join(',')}`);
+  }
+  if (printed.some((line) => /^OVERLAP (?!none)/.test(line))) {
+    lines.push(`DISPATCH Overlap: ${common} scope=overlap findings=${path.join(exo, 'review-overlap.md')}`);
+  }
+  return lines;
+}
+
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
   const planId = planIdOf(planPath);
   const landed = new Set(landedTasks(plan.tasks, root, planId));
-  if (reviewsOnly) return { lines: reviewLines(plan, landed, { root, planId, base }), failed: false };
+  if (reviewsOnly) {
+    const printed = reviewLines(plan, landed, { root, planId, base });
+    return { lines: [...printed, ...dispatchLines(printed, plan, landed, { root, planPath, planId, base })], failed: false };
+  }
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;

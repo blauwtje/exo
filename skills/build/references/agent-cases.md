@@ -10,6 +10,7 @@ Read on a rare case. Each unit has its own section.
 - No tool dispatches → return `BLOCKED all nested dispatch unavailable`, alone.
 - A repair → `exo:solve-hard` with the dispatch's `model`, `effort` and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
 - Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`.
+- After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 
 ## build-task
 

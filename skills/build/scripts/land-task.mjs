@@ -12,6 +12,7 @@ import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isCovered, iso
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
+import { nextTaskReport } from './next-task.mjs';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { CODE_RULE_LIMITS, codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
@@ -626,8 +627,14 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${nextLine(wave, planPath, root)}\n`;
 }
 
+// `--next` swaps the `Then:` line for next-task's own report, slots opened, so the caller dispatches in the same turn.
+export function withNext(output, { planPath, planText, root }) {
+  const kept = output.split('\n').filter((line) => !line.startsWith('Then: ')).join('\n');
+  return `${kept}${nextTaskReport({ planPath, planText, root, open: true })}`;
+}
+
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' });
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
   const codeRulesOnly = flags['code-rules'] === true;
@@ -649,7 +656,8 @@ function main(argv) {
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
   const run = flags.check === true ? checkTask : landTask;
-  const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
+  let output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
+  if (flags.next === true && run === landTask) output = withNext(output, { planPath: flags.plan, planText, root });
   process.stdout.write(quiet.file === null ? output : quietText(output, true));
 }
 

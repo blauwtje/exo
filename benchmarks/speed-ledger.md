@@ -48,12 +48,14 @@ Open an entry below only when an idea is close. Verdict: rej = rejected, un = un
 - `--bare` headless runs → un
 - Fix text of scripts from run-log errors → un
 - Short script stdout contract → un
+- Stall hedging (cancel and resend a stalled request) → un
+- Latency-normalized wall as a secondary A/B metric → un
 - Fork dispatch for wave siblings → un
 - Wave loop in a `Workflow` script → un
 - `maxTurns` cap on `build-task`, `run-unit` → un
 - Resume the builder for a repair → un
 - `thinking: between_tools` for mechanical agents → un
-- Landed with gain (last section): Write batching, `build-task` medium, xcrun cache
+- Landed with gain (last section): Write batching, `build-task` medium, xcrun cache, scripts print the next step (next-task prompt/slots, verify DISPATCH/FINDING lines)
 
 ## Not landed, or no measured gain
 
@@ -100,8 +102,12 @@ Open an entry below only when an idea is close. Verdict: rej = rejected, un = un
 - **Script-owned fan-out (`next-task.mjs --slots`)**. Status: no gain, slower at n=15. Wall +47.2 s (+24.8% mean, CI [+12.2, +83.9] s, exact MW p=0.037), cost +2.7% (within noise), hidden 17/17 in both arms. Round 2's -12% at n=5 did not replicate. Evidence: [2026-10-19-speed-round3.md](results/2026-10-19-speed-round3.md), earlier [2026-10-19-speed-round2.md](results/2026-10-19-speed-round2.md). Retry when: the wave or slot setup changes so that run-unit's own worktree creation is the measured bottleneck; branch `speed/fan-out` commit 6a2f5c86 holds the code.
 - **Parallel-tool-call line in agent prompts** ("Independent tool calls → one message, together." in `run-unit`, `build-task`, `review-branch` and the lead's run loop). Status: rejected, no wall gain at n=15. Wall -10.7 s (-4.7% mean, CI [-43.3, +23.4] s, exact MW p=0.389), cost -8.8% (CI [-0.121, +0.0005] $, p=0.016, mostly fewer fix-review loops), hidden 255/255 in both arms. Behavior: `build-task` batched as often without the line (37.4% of turns v 38.8%); only `review-branch` batched more (11.2% to 18.2%). Confound: the par arm also carried wording trims to fit the 750-token agent body ceiling, among them the dropped "Never create a worktree" and `commit` in `build-task`'s banned git list, so it is not a clean line-only test. Evidence: [2026-10-19-speed-round4.md](results/2026-10-19-speed-round4.md). Retry when: the agent bodies have headroom for the line without trims and a run log shows serial independent reads in `build-task` or `run-unit`; branch `speed/parallel-tools` commit 01bfbeb6 holds the prompt change.
 
+- **Stall hedging (cancel and resend a stalled request).** Cancel a request that runs more than about 3x its predicted latency and send it again. Status: untried. Stalled requests are 25% of within-class wall variance (37.5% at a 5 s threshold): 1.0% of requests, 0.6 per run on the critical path, mean 8.9 s, sd 17.2 s, sonnet only (0 of 507 opus requests). Hedging would remove most of the 8.9 s mean stall time per run. exo cannot do it: it needs Claude Code harness or API support. Evidence: [round 6, Cause of the spread](results/2026-10-19-speed-round6.md), 75 runs from rounds 3 to 5. Retry when: Claude Code or the API exposes a request timeout with resend, or per-request cancel.
+- **Latency-normalized wall as a secondary A/B metric** (sum of the predicted latency of the critical-path turns, from a per-model OLS fit of output and cache tokens). Status: untried as a standing method; used once, as a secondary metric, in round 6. API latency is about 84% of within-class wall variance (stalls about 25%, diffuse per-run speed about 59%), and normalizing strips it: round 6 stage-matched, wall -5.6% (p=0.52) against latency-normalized wall -21.0 s (-10.6%, p=0.0012); all runs, normalized wall sd 17.7 to 53.7 s against raw 28.1 to 66.5 s. A 10 s effect is under the 38 s within-class sd, so raw wall needs far more than n=15. Risk: the fit is per model and per round, and it counts turns and tokens only, so it cannot see a change that makes the API slower per token. Evidence: [round 6](results/2026-10-19-speed-round6.md). Retry when: the next speed A/B, report it beside raw wall and the stage-matched result.
+
 ## Landed with a measured gain
 
 - Plan session batches Writes and skips the separate code-rules step: 66 s to 47.5 s and $0.150 to $0.104 per flow cell (n=4), `CHANGELOG.md`.
 - `build-task` at `medium` effort: pass rate kept on its pressure cell, cost $0.0982 to $0.0906, [2026-10-08-effort.md](results/2026-10-08-effort.md).
 - Benchmark cells under the macOS sandbox let git refresh its xcrun cache, so each git call no longer costs about 0.4 s, `CHANGELOG.md`.
+- Scripts print the next step (`next-task.mjs` prints the filled prompt and opens a wave's slots; `verify.mjs --reviews-only` and `merge-reviews.mjs` print the DISPATCH and FINDING lines). Status: landed. Flow-unit n=15: wall -22.4% (p=0.026), cost -15.6% (p=0.0023), tokens -14.3%, run-unit calls -4.4, lead calls -3.7, hidden 255/255 in both arms. Most of the wall gap follows a 6-v-1 fix-loop imbalance (Fisher p=0.080); stage-matched wall -5.6% (p=0.52), latency-normalized -21.0 s (p=0.0012); the arm's own gain is likely 5-10%. Evidence: [round 6](results/2026-10-19-speed-round6.md).

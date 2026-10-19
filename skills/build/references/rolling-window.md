@@ -1,8 +1,8 @@
 # Rolling window
 
-`run-unit` starts the next ready task as soon as one lands, instead of waiting for a whole wave. Each slot is one task in its own worktree. The worktree steps are "wave worktrees step 1, 3, 4", applied to one slot at a time.
+`run-unit` starts the next ready task as soon as one lands, instead of waiting for a whole wave. Each slot is one task in its own worktree, per wave worktrees step 1, 3, 4.
 
-1. **Baseline.** Before the first slot, write the run checkout's `git status --porcelain` once to `<root>/.exo/baseline.txt`.
+1. **Baseline.** `next-task.mjs --open-slots` runs steps 1 and 2; by hand only after `Wave discarded:`. Before the first slot, write the run checkout's `git status --porcelain` once to `<root>/.exo/baseline.txt`.
 2. **Open a slot.**
    - Record the slot's own `<base>`.
    - Create its worktree per wave worktrees step 1.
@@ -24,9 +24,9 @@
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
    - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build stays foreground with `run_in_background: false`.
-   - A landing's refill is in `land-slot.mjs`'s output; else run `next-task.mjs --in-flight <running task numbers, comma separated>`; read its `Start: Task <n>[, Task <m>]` line.
+   - A landing's refill is in `land-slot.mjs`'s output, slots opened; else run `next-task.mjs --in-flight <running task numbers, comma separated>`; read its `Start: Task <n>[, Task <m>]` line.
    - `Start: none` → no refill; wait for a running slot.
 8. **Wait.**
-   - Run `wait-report.mjs --any` with one `--report` and one `--since` per running slot.
+   - The printed `Wait:` is `wait-report.mjs --any` with one `--report` and `--since` per running slot.
    - Exit 0 prints the fresh reports; each is a slot that returned, so land it per step 3.
    - Every wait, also after a land or a repair message, is `wait-report.mjs --any` over the running builds' reports only, never a shell loop or `sleep`; each fresh report lands before the next wait.
