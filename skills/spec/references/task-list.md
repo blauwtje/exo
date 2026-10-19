@@ -22,7 +22,7 @@
 ```
 ### Task <n>: <type>(<scope>): <subject>
 
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>][ | Red: none (<reason>)][ | Literals: none (<reason>)] | Proof: <one command>
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>][ | Red: none (<reason>)][ | Literals: none (<reason>)][ | Evidence: <path> | none (<reason>)] | Proof: <one command>
 ```
 
 - `Files:` ending `/` → whole folder.
@@ -32,6 +32,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 - `Data:` → structure holding result, not fields or logic; ask before changing public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
 - Heading: `land-task`'s conventional-commit subject; `Files:` staged, no `Commit:` block.
+- `Evidence:` → one task when `Files:` change skill or agent wording: `benchmarks/results/<file>`, `benchmarks/pressure/<path>` or `none (<reason>)`.
 - `Design:` → skill loaded first, only for page's look.
 
 ## Rules

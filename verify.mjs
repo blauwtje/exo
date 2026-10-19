@@ -38,6 +38,7 @@ import { checkCodexOverrides } from './verify/checks/codex-overrides.mjs';
 import { checkQuestionOptions } from './verify/checks/question-options.mjs';
 import { checkPaidRuns } from './verify/checks/paid-runs.mjs';
 import { checkBoundaryWords } from './verify/checks/boundary-words.mjs';
+import { checkEditEvidence } from './verify/checks/edit-evidence.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { checkCodeComments } from './verify/checks/code-comments.mjs';
 
@@ -96,6 +97,7 @@ checkQuestionOptions(report, repository);
 checkPaidRuns(report, repository);
 checkInstructionDensity(report, repository);
 checkBoundaryWords(report, repository);
+checkEditEvidence(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);

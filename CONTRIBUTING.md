@@ -13,6 +13,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | `npm run check` | The gate before any commit: the verifier with the script tests, the same run as `npm run validate`. |
 | `npm run validate` | The structural checks over the skill corpus and the script tests. |
 | `npm run validate:static` | The structural checks only, no script tests. |
+| `npm run check`, `npm run validate:static` | The `edit evidence` check fails a branch whose commits since the merge base with `origin/main` change `skills/*/SKILL.md`, `skills/*/references/*.md` or `agents/*.md` without an `Evidence:` trailer on any commit: a `benchmarks/results/` or `benchmarks/pressure/` file added or changed in that range, or `none (<reason>)`. It is `UNRUN` without a merge base. |
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
