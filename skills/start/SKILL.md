@@ -22,12 +22,11 @@ One door for a user who does not remember a skill's name. The enemy is a pick ha
 2. **Two routes, different work.** Goal leaves open whether behavior stays or changes → fits a behavior-keeping and a behavior-changing skill.
    - Run nothing before the answer; a wrong pick does work the answer undoes.
    - Ask one question per `../route-skills/references/question.md`.
-3. **Several fit.** Pick the one, ordering by `route-skills`' "When several fire" section.
-4. **None fits.** Check the no-skill list in `../../hooks/session-routing.md`; do the work without a skill.
-5. **Run.** Call the picked skill through the Skill tool in this turn, goal as argument, before any edit or write.
+3. **None fits.** Check the no-skill list in `../../hooks/session-routing.md`; do the work without a skill.
+4. **Run.** Call the picked skill through the Skill tool in this turn, goal as argument, before any edit or write.
    - Tell the user no command to type; they already typed one.
    - Skill carrying `disable-model-invocation` cannot be called that way → name the exact command to type instead, such as `/exo:remember <goal>`.
-6. **Chain.** Each stage's handoff carries the run on to `ship`: add no stop, summary or question of your own between stages; only the questions each stage's skill prescribes reach the user.
+5. **Chain.** Each stage's handoff carries the run on to `ship`: add no stop, summary or question of your own between stages; only the questions each stage's skill prescribes reach the user.
 
 ## References
 

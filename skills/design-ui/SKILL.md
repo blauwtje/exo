@@ -6,7 +6,7 @@ argument-hint: <page, component or visual change>
 
 # Visual Design
 
-Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. The enemy is the unfinished default: stock type, a flat ground, loose spacing and missing states. The overcorrection is a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one; `## Slop tropes` of `references/build-pass.md` lists the tropes.
+Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. Produce a type pairing with a voice, a lit tinted ground, deliberate spacing and every state drawn. Avoid the unfinished default: stock type, a flat ground, loose spacing, missing states. Avoid a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one; `## Slop tropes` of `references/build-pass.md` lists the tropes.
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline.
 

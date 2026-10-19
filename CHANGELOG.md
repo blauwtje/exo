@@ -36,6 +36,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/run.mjs --before-plugin <dir>` adds an `exo-before` arm that loads exo from another checkout, so one run compares a change with the commit before it.
 
 ### Changed
+- `design-ui` opens on what to produce and an avoid-list, which `process-structure` now accepts beside the enemy/overcorrection shape; `check-docs` states when a research pass ends the turn as a condition; `start` drops its dangling several-fit step.
 - spec options draw a seat and a forbidden move per option with `scripts/draw-seats.mjs`, drop the likeliest shape, and stop at the options for the user to pick.
 - Prompt-audit fixes: edit-skills defers its check step to the caller, build-task reports a hung proof instead of rerunning it, start points at `hooks/session-routing.md`, save-session keeps WIP off a run branch and `handoff.mjs` reads the host config root, agents without Bash drop the delete ban, and spec, design-ui, check-docs, prompt, refactor, ship, run-plan, review-branch and build lose stale or unexplained lines.
 - `exo-cli.mjs run`, `exo approve` and `run-plan.mjs` refuse to start inside a Claude Code session (exit 2); `/exo:run-plan` hands the plan to `exo:build`, and benchmark sweep cells still run.

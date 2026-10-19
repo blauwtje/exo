@@ -43,7 +43,7 @@ const PINNED_SENTENCES = {
     ...BREADTH_LIMITS,
   ],
   'skills/check-docs/SKILL.md': [
-    'Never end a turn on a research pass alone.',
+    'Research pass ends the turn only when the question is standalone with no code to follow',
   ],
   'skills/design-ui/SKILL.md': [
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',

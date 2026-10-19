@@ -1,5 +1,5 @@
-// A process file opens with an H1, then a stance/enemy/overcorrection
-// paragraph, and closes on a non-empty Judgment section. A slim skill instead
+// A process file opens with an H1, then a stance paragraph (principle, enemy,
+// overcorrection; or principle, "Produce" direction, "Avoid" list), and closes on a non-empty Judgment section. A slim skill instead
 // runs straight into numbered steps, keeps a References table, and ends on one
 // `Report:` line. A pointer reference names the script that owns its rule and
 // carries no process, so it holds neither shape; the text checks still read it.
@@ -21,7 +21,9 @@ const POINTER_REFERENCES = ['skills/build/references/workspace.md'];
 const H1 = /^# [^\r\n]+\r?$/m;
 const H2 = /^## (?<name>[^\r\n]+)\r?$/gm;
 const BLANK_LINE = /\r?\n\s*\r?\n/;
-const OPENING = /^(?!This (?:skill|reference|file)\b)[A-Z][^.]+\.\s+The enemy is [^.]+\.\s+The overcorrection is [^.]+\./;
+const NOT_META = /^(?!This (?:skill|reference|file)\b)[A-Z][^.]+\.\s+/;
+const ENEMY_OPENING = new RegExp(NOT_META.source + /The enemy is [^.]+\.\s+The overcorrection is [^.]+\./.source);
+const DIRECTION_OPENING = new RegExp(NOT_META.source + /Produce [^.]+\.\s+Avoid [^.]+\./.source);
 const STANCE = /\bThe (?:enemy|overcorrection) is\b/;
 const DROPPED_SECTION = /^#{2,} (?:Judgment|Red flags)\s*$/m;
 const NUMBERED_STEP = /^(?<number>\d+)\. \S/gm;
@@ -33,8 +35,8 @@ const LONG_LINE = 40;
 function fullContractErrors(relative, body, afterHeading) {
   const errors = [];
   const opening = afterHeading.split(BLANK_LINE)[0].replace(/\r?\n/g, ' ').trim();
-  if (!OPENING.test(opening)) {
-    errors.push(`${relative}: opening stance/enemy/overcorrection contract failed`);
+  if (!ENEMY_OPENING.test(opening) && !DIRECTION_OPENING.test(opening)) {
+    errors.push(`${relative}: opening contract failed: principle, then enemy and overcorrection, or Produce and Avoid sentences`);
   }
   const sections = [...body.matchAll(H2)];
   const last = sections[sections.length - 1];
