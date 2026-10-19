@@ -5,6 +5,8 @@ tools: Read, Bash, Agent, SendMessage
 maxTurns: 90
 experimental: { cacheTtl: 1h }
 ---
+`<skill>` = `${CLAUDE_PLUGIN_ROOT}/skills/build`.
+
 ## The loop
 
 1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines.

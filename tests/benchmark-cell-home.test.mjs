@@ -27,3 +27,22 @@ test('the cell home has no .claude/CLAUDE.md while the real home keeps it', () =
     if (cellHome) fs.rmSync(cellHome, { recursive: true, force: true });
   }
 });
+
+test('the cell home turns off the installed exo plugin and keeps the others', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-home-test-'));
+  const before = process.env.HOME;
+  let cellHome;
+  try {
+    fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ enabledPlugins: { 'exo@blauwtje': true, 'other@market': true } }));
+    process.env.HOME = home;
+    cellHome = makeCellHome();
+    const settings = JSON.parse(fs.readFileSync(path.join(cellHome, '.claude', 'settings.json'), 'utf8'));
+    assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'other@market': true });
+    assert.equal(JSON.parse(fs.readFileSync(path.join(home, '.claude', 'settings.json'), 'utf8')).enabledPlugins['exo@blauwtje'], true);
+  } finally {
+    process.env.HOME = before;
+    fs.rmSync(home, { recursive: true, force: true });
+    if (cellHome) fs.rmSync(cellHome, { recursive: true, force: true });
+  }
+});

@@ -10,6 +10,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-19-speed-round2.md` measures two build-speed ideas at n=5 per arm; neither lands: reviewer kind from the script (wall -1.7%, cost +1.7%) and script-owned fan-out (wall -11.7%, cost -8.3%, p=0.31); hidden tests 17/17 in every run.
+- `benchmarks/speed-ledger.md` lists every build-speed idea that did not land, with its evidence and when to retry it.
+- Flow benchmark records store review-stage counts and tokens excluding review and fix.
 - `benchmarks/results/2026-10-19-build-speed.md` records the build-field speed A/B (n=2 per arm); its gains rest on one run that skipped two review stages, and every run failed the same 3 hidden tests.
 - `benchmarks/results/2026-10-19-build-speed-rerun.md` reruns it at n=3 per arm with the fixed fixture: hidden tests 17/17 in every run, run-unit calls -15%, and no wall, cost or token change beyond run-to-run noise.
 - A plan task's `Evidence:` field lands as an `Evidence:` commit trailer.
@@ -26,11 +29,14 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- verify dispatches the review fixer for every `concern` finding, also when no `fix` finding exists, instead of the lead reporting it unproven without a test.
+- run-unit finds the build scripts in its own plugin instead of searching the disk and running an older installed copy; benchmark cells turn off the installed exo.
 - `land-task` no longer prints a `Next: Task <n>` line that looks ready to dispatch without a brief; it points at `next-task.mjs`, which writes the brief.
 - `/exo:prompt` no longer turns on maximum thinking on every run or adds that keyword to a rewrite the user never asked for; the skill named the keyword literally, and Claude Code read it as typed by the user.
 - The compression pressure case's judge line no longer fails a correct answer that names `toCents` flooring the float product as the cause.
 - The `flow-unit` benchmark cell's compact plan states each helper's behavior, so a build that follows it can pass the hidden `truncate` tests; every run failed 3 of them before.
 - `benchmarks/sweep.mjs --repeat <n>` repeats every set, not only replay; copies keep one cell id, so reports average them as one arm, and each writes its own result dir.
+
 
 ## 0.136.0 - 2026-10-19
 

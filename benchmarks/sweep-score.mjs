@@ -70,6 +70,24 @@ export function countDriftReports(text) {
   return new Set(text.match(/PLAN DRIFT: Task \d+/g) ?? []).size;
 }
 
+// The review stages a flow run dispatched and the first merged verdict's fix
+// and concern counts, so an A/B can pair runs by stage mix: verify runs
+// fix-review and the fix-diff review only when that verdict holds a fix or concern.
+export function reviewStages(subagents, text) {
+  const types = (subagents ?? []).map((name) => String(name).replace(/^.*:/, ''));
+  const verdict = text.match(/verdict=FINDINGS[^"\\]*/)?.[0] ?? '';
+  const count = (key) => {
+    const found = verdict.match(new RegExp(`\\b${key}=(\\d+)`));
+    return found ? Number(found[1]) : null;
+  };
+  return {
+    reviewBranch: types.filter((type) => type === 'review-branch').length,
+    fixReview: types.filter((type) => type === 'fix-review').length,
+    fix: count('fix'),
+    concern: count('concern')
+  };
+}
+
 function shown(value) {
   return value === null || value === undefined ? '-' : String(value);
 }

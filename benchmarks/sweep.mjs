@@ -25,12 +25,13 @@ import { confinedClaude } from '#confine-claude';
 import { killTree } from '#process-tree';
 import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { commentStats, ledgerTranscripts } from './comment-count.mjs';
+import { buildPhases } from './build-phases.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
 import { cellEnvironment, claudeArguments, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
-import { countDriftReports, lintPlan, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
+import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
@@ -239,7 +240,10 @@ async function measureFlow(repository, review, usage) {
     check = { total: FLOW_TASK_COUNT, landed: null, pass: false, defects: [`flow check failed: ${error.message}`] };
   }
   const landed = check.landed === null ? 'unknown' : `${check.landed}/${check.total}`;
-  const detail = `${landed} tasks landed (${landedTasks(repository)}/${FLOW_TASK_COUNT} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}`;
+  const stages = reviewStages(usage?.subagents, transcript);
+  const phases = usage?.transcript ? buildPhases(usage.transcript) : null;
+  const tokensExReview = phases === null ? null : Math.round(Object.entries(phases).reduce((sum, [name, value]) => (name === 'review' || name === 'fix' ? sum : sum + value), 0));
+  const detail = `${landed} tasks landed (${landedTasks(repository)}/${FLOW_TASK_COUNT} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}, review stages ${stages.reviewBranch} review-branch ${stages.fixReview} fix-review (fix=${stages.fix ?? '-'} concern=${stages.concern ?? '-'}), tokens excl. review and fix ${tokensExReview ?? '-'}`;
   return {
     defectsFound: review.counts === null ? null : review.counts.defect,
     falseAlarms: null,
@@ -253,6 +257,8 @@ async function measureFlow(repository, review, usage) {
     routes: gates?.routes ?? null,
     reviewBookings: calls === null ? null : reviewBookings(calls),
     leadPeakTokens: usage?.leadPeakTokens ?? null,
+    reviewStages: stages,
+    tokensExReview,
     commentStats: commentStats({ repository, branch: FLOW_BRANCH, transcripts: flowTranscripts(repository, usage), hiddenPass: check.pass })
   };
 }

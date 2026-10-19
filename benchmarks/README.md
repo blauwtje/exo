@@ -112,6 +112,8 @@ node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against t
 node benchmarks/split.mjs <runDir>...                  # flow cells by token type, call count and context size, averaged over the run dirs
 ```
 
+Build-speed ideas that did not land, and why, are in [speed-ledger.md](speed-ledger.md); read it before trying one again.
+
 The `replay` set is not in `all`: it replays past reviews per model.
 
 ```bash
