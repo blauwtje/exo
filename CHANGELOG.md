@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.136.0 - 2026-10-19
 
 ### Highlights
 - **Inside Claude Code, exo now builds a plan with subagents; a headless run starts only from the terminal `exo run`.**
@@ -201,8 +203,3 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Fixed
 - `exo:build` run reports count each model call's tokens once instead of once per content block, so per-task and total token figures no longer come out about 2.4x too high.
 - `/exo:prompt` opens the rewrite's fenced block with at least three backticks, so a rewrite with no backticks or only inline code still renders as a code block.
-
-## 0.134.8 - 2026-10-14
-
-### Fixed
-- `/exo:prompt` puts the goal and code facts in a `<background>` block instead of `<context>`, since Claude Code drops a `<context>` block when you copy the rewrite from the terminal.

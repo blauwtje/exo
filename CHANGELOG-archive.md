@@ -1,6 +1,11 @@
 # Changelog archive
 
-Releases before 0.134.8; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.9; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.8 - 2026-10-14
+
+### Fixed
+- `/exo:prompt` puts the goal and code facts in a `<background>` block instead of `<context>`, since Claude Code drops a `<context>` block when you copy the rewrite from the terminal.
 
 ## 0.134.7 - 2026-10-14
 
