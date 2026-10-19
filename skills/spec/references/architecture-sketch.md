@@ -1,25 +1,28 @@
 # Architecture sketch
 
-Read when an open decision names two or more structurally different shapes for new or changed behavior: a module boundary, a data model, an integration point. The enemy is picking a shape from prose trade-offs alone. The overcorrection is building each candidate in full before choosing.
+Read when asked for options, or when two or more structurally different shapes compete: a module boundary, a data model, an integration point. The enemy is one context drafting every option near the first. The overcorrection is building each in full before choosing.
 
-## Set criteria first
+## Draw the pairs
 
-- Before sketching → write 3-5 criteria from the brief; interface depth is one.
+- Before drafting any option → run step 4's repo map once.
+- Then run `node "${CLAUDE_SKILL_DIR}/scripts/draw-seats.mjs"` once; it prints 3 pairs, each a seat and a forbidden move.
+- Never swap a pair for one you prefer, and never redraw.
 
-## Sketch, don't build
+## Draft one option per pair
 
-- Write each candidate's types, signatures and module boundaries.
-- Bodies not-implemented; pseudocode for the tricky parts.
-- Reader traces data from input to output by the sketch alone.
-- Two whole-shape candidates beat one shape refined twice; a second flavor of the same shape is not a candidate.
+- Draft in your own context, no delegate, one option per pair, in the order printed.
+- Read the code the map names before designing; the design fits the code there.
+- Design from the seat; a design that uses the forbidden move fails.
+- Each option opens with `Core mechanism:` and `p=`.
+- p → your estimate of the chance a typical engineer, given this request and no prompting, proposes that mechanism first.
+- An option may not reuse an earlier option's core mechanism; same mechanism → redraft from its pair.
+- Write types, signatures and module boundaries; bodies left out.
+- Each option, at most 10 lines: a title; the mechanism in two sentences, what the user sees and does; the sketch; what it hides and what it still exposes to callers.
 
-## Draw candidates apart
+## Replace the likely
 
-- Each candidate → a different constraint, named beside it, from this list or the brief:
-  - **Smallest interface.** One to three entry points.
-  - **Commonest caller.** Its call reads as one line.
-  - **Most flexible.** A new use case needs no interface change.
-- Drafts done → name the shape every candidate shares, such as the same store, split or entry point; one shared by all → redo one candidate with that shape banned.
+- An option with p above 0.15 → redraft once from the same pair with a mechanism of lower p, until at least 2 options sit at p at most 0.15.
+- A redraft still meets the seat, the forbidden move and the request.
 
 ## Screen each candidate
 
@@ -30,21 +33,20 @@ Reject or revise a candidate showing:
 - **Temporal decomposition.** Modules split by execution order (load, validate, save), not by the knowledge they own.
 - **Pass-through method.** Layer forwarding the same arguments without adding policy or adaptation.
 
-## Pick per criterion
+## Show and pick
 
-- Score each candidate per criterion, not on overall feel.
-- Interface depth → prefer the candidate hiding more behind a smaller public surface, even with a harder implementation.
-- Parts of two candidates hold under one data model → graft them; name each source.
-- Before recommending → name what each surviving candidate hides and what it still exposes to callers.
+- Show the 2-3 most distinct survivors, each beside its seat; a second flavor of one shape is not an option.
+- Score each option per 3-5 criteria from the request, interface depth one, not on overall feel.
+- Interface depth → prefer the option hiding more behind a smaller public surface, even with a harder implementation.
+- Parts of two options hold under one data model → graft them; name each source.
+- Recommend one, with its reason.
+
+## Stop at the options
+
+- After Show and pick → ask the user to pick one and stop; write no spec file, run no plan-check, dispatch no agent beyond this arm's own helper.
+- Each option, at most 10 lines; read at most 3 files beyond the repo map.
 
 ## The sketch is the contract
 
 - Chosen sketch ships in the brief; the build implements it.
-- Sketch is not a prototype; question only running code answers → throwaway script, answer into `## Decisions`, script deleted.
-- Re-sketch only on a repeated pattern of friction during the build, never on one edge case.
-- Repeated pattern = same workaround shape recurring, a type needing an escape hatch to compile, an unplanned lock appearing, or a caller needing the abstraction's internals.
-- Fold the friction in as a constraint from the start of the next sketch, not bolted onto the old one.
-
-## Judgment
-
-- One awkward call site does not condemn a shape that otherwise holds.
+- Re-sketch only on a repeated pattern of friction during the build, never on one awkward call site.

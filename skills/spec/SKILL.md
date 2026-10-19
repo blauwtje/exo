@@ -13,7 +13,7 @@ argument-hint: <outcome to shape>
    - Spec always ends on a brief; with no open decision the brief still gets written.
    - An open decision is one the user would notice that neither request nor code settles.
    - Diff fits one sentence or code settles every point → no question, exo closes each choice; ask only what to build.
-   - Asked for options → list them, recommend one, no file.
+   - Asked for options → per `references/architecture-sketch.md`, no file.
 2. **Sort each point.**
    - Answerable by running or reading → record it, never ask.
    - Each open decision is a question, root first.
@@ -55,4 +55,4 @@ argument-hint: <outcome to shape>
 | `references/watching.md` | Step 9, run started. |
 | `references/measured-goal.md` | Goal is a measured score, cost or time on a task set. |
 
-Report: brief's location and next stage, or current question.
+Report: brief location and next stage, or current question.

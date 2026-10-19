@@ -16,8 +16,8 @@ const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'ideas',
 const FIXTURES = '/tmp/exo-pressure/spec';
 const SETUP = path.join(import.meta.dirname, 'pressure', 'spec', 'setup.sh');
 const RUN_FILES = 'benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/{stdout.json,final.md}';
-const USAGE = 'usage: ideas.mjs [--arm base|<variant>] [--n <int>] [--cases <ids>] [--confirm] [--out <dir>] | --score <dir> [--arm <name>] [--results <file>] | --compare <dir> <dir>; each run writes ' + RUN_FILES;
-const SPEC = { arm: 'value', n: 'value', cases: 'value', confirm: 'boolean', out: 'value', score: 'value', results: 'value' };
+const USAGE = 'usage: ideas.mjs [--arm base|<variant>] [--n <int>] [--cases <ids>] [--confirm] [--jobs <int>] [--out <dir>] | --score <dir> [--arm <name>] [--results <file>] | --compare <dir> <dir>; each run writes ' + RUN_FILES;
+const SPEC = { arm: 'value', n: 'value', cases: 'value', confirm: 'boolean', jobs: 'value', out: 'value', score: 'value', results: 'value' };
 export const MAKER_LINE = 'Which designs could do this? Recommend one.';
 export const HEADLESS_LINE = 'No one will answer questions; decide any open point yourself.';
 const DEFAULT_N = 5;
@@ -82,8 +82,8 @@ export function wrongCopyDirs(stdout, pluginDir) {
 }
 
 // why: user settings enable the installed plugins and HOME carries the global CLAUDE.md, so a maker run skips user settings and runs under a cell home, loading only the arm's copy.
-export function makerArguments({ prompt, plugin }) {
-  return ['-p', prompt, '--model', 'opus', '--effort', 'high', '--output-format', 'stream-json', '--verbose', '--setting-sources', 'project,local', '--strict-mcp-config', '--plugin-dir', plugin];
+export function makerArguments({ prompt, plugin, effort = 'high' }) {
+  return ['-p', prompt, '--model', 'opus', '--effort', effort, '--output-format', 'stream-json', '--verbose', '--setting-sources', 'project,local', '--strict-mcp-config', '--plugin-dir', plugin];
 }
 
 function runClaude({ cell, plugin, scratch, home }) {
@@ -93,7 +93,7 @@ function runClaude({ cell, plugin, scratch, home }) {
   const tmp = fs.mkdtempSync(path.join(scratch, 'tmp-'));
   fs.cpSync(fixture, work, { recursive: true });
   const prompt = makerPrompt(CASES[cell.caseId].feature);
-  const run = confinedClaude({ args: makerArguments({ prompt, plugin }), roots: [scratch], cwd: work, tmp });
+  const run = confinedClaude({ args: makerArguments({ prompt, plugin, effort: process.env.EXO_IDEAS_EFFORT || undefined }), roots: [scratch], cwd: work, tmp });
   const timeoutMs = environmentMs('EXO_IDEAS_RUN_MS', 1_200_000);
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, HOME: home, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -121,20 +121,28 @@ export function runFailure({ stdout, exitCode, signal = null, timedOut = false, 
   return null;
 }
 
-async function runCells({ cells, out }) {
+async function runCells({ cells, out, jobs }) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-ideas-'));
   const plugin = armCopy({ arm: cells[0].arm, scratch });
-  const home = makeCellHome();
   try {
-    await runEach({ cells, out, plugin, scratch, home });
+    await runEach({ cells, out, plugin, scratch, jobs });
   } finally {
-    fs.rmSync(home, { recursive: true, force: true });
     fs.rmSync(scratch, { recursive: true, force: true });
   }
 }
 
-async function runEach({ cells, out, plugin, scratch, home }) {
-  for (const cell of cells) {
+// why: each cell gets its own HOME, so cells running at once never share session state.
+async function runEach({ cells, out, plugin, scratch, jobs = 1 }) {
+  const queue = [...cells];
+  const worker = async () => {
+    for (let cell = queue.shift(); cell !== undefined; cell = queue.shift()) await runCell({ cell, out, plugin, scratch });
+  };
+  await Promise.all(Array.from({ length: Math.min(jobs, cells.length) }, worker));
+}
+
+async function runCell({ cell, out, plugin, scratch }) {
+  const home = makeCellHome();
+  try {
     const outcome = await runClaude({ cell, plugin, scratch, home });
     const folder = path.join(out, cell.arm, cell.caseId, String(cell.run));
     fs.mkdirSync(folder, { recursive: true });
@@ -146,6 +154,8 @@ async function runEach({ cells, out, plugin, scratch, home }) {
     else fs.writeFileSync(path.join(folder, 'failed.json'), `${JSON.stringify({ reason, exitCode: outcome.exitCode, signal: outcome.signal, timedOut: outcome.timedOut }, null, 2)}\n`);
     for (const wrong of wrongCopyDirs(outcome.stdout, plugin)) console.warn(`WRONG COPY ${cell.arm}/${cell.caseId}/${cell.run}: ${wrong} is not under ${plugin}`);
     console.log(`${reason === null ? 'done' : `FAILED (${reason})`} ${cell.arm}/${cell.caseId}/${cell.run}`);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
   }
 }
 
@@ -217,7 +227,9 @@ async function main(argv) {
   const out = flags.out ?? path.join(ROOT, 'benchmarks', 'runs', `${today()}-ideas`);
   for (const cell of cells) console.log(`planned ${cell.arm}/${cell.caseId}/${cell.run} -> ${out}`);
   if (flags.confirm !== true) return console.log(`${cells.length} cells planned, nothing spent; add --confirm to run`);
-  await runCells({ cells, out });
+  const jobs = Number(flags.jobs ?? 1);
+  if (!Number.isInteger(jobs) || jobs < 1) throw new UsageError('--jobs needs a positive integer');
+  await runCells({ cells, out, jobs });
 }
 
 if (isMain(import.meta.url)) {

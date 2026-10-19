@@ -17,8 +17,10 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Added
 - `benchmarks/results/2026-10-18-ideas-baseline.md` records the first ideas baseline: 15 runs, 4 distinct shapes per run, mean originality 1.397 of 5, no option both original and fitting.
 - The `spec-cliches` (A3) and `spec-roles` (A1) ideas arms, in `benchmarks/results/2026-10-18-ideas-spec-*.md`, moved originality by 0.001 and 0.05 (noise), so spec stays unchanged and `benchmarks/variants.mjs` drops both variants.
-- The ideas bench scores the recommended option's originality and fit, and each run's tokens and cost, subagents included; `benchmarks/variants.mjs` gains the `spec-seats` variant, three separate-context seats per options request.
-- `benchmarks/results/2026-10-18-ideas-spec-seats.md` records the `spec-seats` arm: originality 1.413 → 1.993, fit 3.438 → 3.598, modal share 0.933 → 0.644, at 3.91x cost per run; spec itself stays unchanged.
+- The ideas bench scores the recommended option's originality and fit, and each run's tokens and cost, subagents included.
+- `benchmarks/results/2026-10-18-ideas-spec-seats.md` records the `spec-seats` arm: originality 1.413 → 1.993, fit 3.438 → 3.598, modal share 0.933 → 0.644, at 3.91x cost per run.
+- `benchmarks/results/2026-10-19-ideas-cheap.md` and `2026-10-19-ideas-lean.md` record nine cheaper arms; the winner, one context with drawn seats and the likeliest shape dropped, stopping at the options, reached originality 2.306, fit 3.717 and modal share 0.467 at 1.63x base cost.
+- `benchmarks/ideas.mjs` gains `--jobs <n>` to run cells at once, one HOME per cell, and `EXO_IDEAS_EFFORT` to set the lead effort.
 - `benchmarks/ideas.mjs` runs a neutral design request N times per case in fresh sessions, a blind calibrated judge scores each option, and the results file gives the minimum detectable effect per metric.
 - `exo:spec` carries a measured-goal method (calibrate, size, ablate, pair, class failures), and benchmarks/tbench/ lands as the runner it uses.
 - `architecture-sketch.md` sets 3-5 criteria before sketching, gives each candidate its own named constraint, redoes one when all share a shape, scores per criterion and grafts parts of two candidates.
@@ -34,6 +36,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/run.mjs --before-plugin <dir>` adds an `exo-before` arm that loads exo from another checkout, so one run compares a change with the commit before it.
 
 ### Changed
+- spec options draw a seat and a forbidden move per option with `scripts/draw-seats.mjs`, drop the likeliest shape, and stop at the options for the user to pick.
 - Prompt-audit fixes: edit-skills defers its check step to the caller, build-task reports a hung proof instead of rerunning it, start points at `hooks/session-routing.md`, save-session keeps WIP off a run branch and `handoff.mjs` reads the host config root, agents without Bash drop the delete ban, and spec, design-ui, check-docs, prompt, refactor, ship, run-plan, review-branch and build lose stale or unexplained lines.
 - `exo-cli.mjs run`, `exo approve` and `run-plan.mjs` refuse to start inside a Claude Code session (exit 2); `/exo:run-plan` hands the plan to `exo:build`, and benchmark sweep cells still run.
 - spec sends locate-code and fetch-docs in one message; find-open-points, build-task and review-branch batch their opening reads, saving a serial turn each.
@@ -137,6 +140,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The review-at-`high` results file no longer says its three `concern` findings marked `fix` are reviewer eval cases, and quotes the two of them that were only in git-ignored run folders.
 
 ### Removed
+- `benchmarks/variants.mjs` drops the `spec-seats` variant and the eleven 2026-10-19 ideas variants, now shipped or measured.
 - The git guard and the secret guard on Bash: force push, `reset --hard`, `clean -f`, a stash drop, a branch force-delete, a whole-tree checkout and a shell read of a `Read(...)`-denied path now pass.
 - The destructive-command guard, the comment guard, the run gate hook and the `guards` setting.
 - `skills/edit-skills/references/cut-log.md`; its two restored cuts now sit in step 3 of `exo:edit-skills`.
