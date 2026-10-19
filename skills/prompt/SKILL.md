@@ -55,7 +55,7 @@ Apply a kind rule only when the prompt is that kind:
 ## Strip
 
 - Removed line that names a behavior → `Dropped:` line, with its strip rule.
-- Thinking cues ("think hard", "step by step"); keep `ultrathink`.
+- Thinking cues ("think hard", "step by step"); keep the one word joining `ultra` and `think`.
 - A request for reasoning in the reply → "briefly explain why", or a summary of actions.
 - Generic checks ("double-check"); a named check stays.
 - CAPS, "MUST", "CRITICAL".
