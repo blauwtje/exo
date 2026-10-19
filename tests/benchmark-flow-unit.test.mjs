@@ -42,3 +42,13 @@ test('sweep prepares the flow-unit repository with the compact plan', async () =
   assert.ok(!plans['flow-unit'].includes('`'.repeat(3)), 'unit plan is compact');
   assert.ok(plans['flow-c7'].includes('`'.repeat(3)), 'c7 plan keeps its code');
 });
+
+test('compact flow plan states each helper behavior, and truncate counts its three dots toward max', () => {
+  const text = flowPlanText('/repo', true);
+  for (const helper of FLOW_HELPERS) {
+    assert.equal(typeof helper.behavior, 'string', `${helper.title} has a behavior sentence`);
+    assert.ok(text.includes(helper.behavior), `compact plan carries the behavior of ${helper.title}`);
+  }
+  assert.match(text, /max - 3 characters followed by three ASCII dots \(\.\.\.\)/);
+  assert.match(text, /exactly max characters long/);
+});

@@ -47,6 +47,7 @@ export const FLOW_HELPERS = [
   {
     title: 'Add titleCase',
     subject: 'add titleCase',
+    behavior: 'titleCase(text) uppercases the first letter of each space-separated word, lowercases the rest, and joins the words with single spaces',
     module: 'src/title-case.js',
     test: 'src/title-case.test.js',
     code: [
@@ -70,6 +71,7 @@ export const FLOW_HELPERS = [
   {
     title: 'Add slugify',
     subject: 'add slugify',
+    behavior: 'slugify(text) lowercases the text, turns each run of characters outside a-z and 0-9 into one dash, and trims dashes from both ends',
     module: 'src/slugify.js',
     test: 'src/slugify.test.js',
     code: [
@@ -93,6 +95,7 @@ export const FLOW_HELPERS = [
   {
     title: 'Add truncate',
     subject: 'add truncate',
+    behavior: 'truncate(text, max) returns text unchanged when its length is at most max, else the first max - 3 characters followed by three ASCII dots (...), so the result is exactly max characters long',
     module: 'src/truncate.js',
     test: 'src/truncate.test.js',
     code: [
@@ -115,6 +118,7 @@ export const FLOW_HELPERS = [
   {
     title: 'Add initials',
     subject: 'add initials',
+    behavior: 'initials(name) returns the uppercased first letter of each whitespace-separated word, joined with no separator, and an empty string for a blank name',
     module: 'src/initials.js',
     test: 'src/initials.test.js',
     code: [
@@ -273,7 +277,7 @@ function compactTaskSection(helper, number) {
   const fields = [
     'Depends on: none',
     `Files: \`${helper.module}\`, \`${helper.test}\``,
-    `Data: one exported function ${helper.title.replace('Add ', '')} in its own module, tested beside it`,
+    `Data: one exported function ${helper.title.replace('Add ', '')} in its own module, tested beside it. ${helper.behavior}.`,
     `Proof: node --test ${helper.test}`
   ];
   return [`### Task ${number}: feat(text): ${helper.subject}`, '', fields.join(' | '), ''];

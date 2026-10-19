@@ -107,6 +107,7 @@ node benchmarks/sweep.mjs --set all                    # prints the 50 calls it 
 node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three hours at the default --concurrency 2
 node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
 node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # writes the results file under <dir> instead of results/
+node benchmarks/sweep.mjs --set flow --repeat 3          # --repeat applies to every set: n calls per cell, result dirs `<id>-<k>`, records keep the cell id and add `repeat: k`
 node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against the baseline (flow-base) over the flow records of one out dir per run
 node benchmarks/split.mjs <runDir>...                  # flow cells by token type, call count and context size, averaged over the run dirs
 ```

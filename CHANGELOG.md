@@ -28,6 +28,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `land-task` no longer prints a `Next: Task <n>` line that looks ready to dispatch without a brief; it points at `next-task.mjs`, which writes the brief.
 - `/exo:prompt` no longer turns on maximum thinking on every run or adds that keyword to a rewrite the user never asked for; the skill named the keyword literally, and Claude Code read it as typed by the user.
 - The compression pressure case's judge line no longer fails a correct answer that names `toCents` flooring the float product as the cause.
+- The `flow-unit` benchmark cell's compact plan states each helper's behavior, so a build that follows it can pass the hidden `truncate` tests; every run failed 3 of them before.
+- `benchmarks/sweep.mjs --repeat <n>` repeats every set, not only replay; copies keep one cell id, so reports average them as one arm, and each writes its own result dir.
 
 ## 0.136.0 - 2026-10-19
 

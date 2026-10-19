@@ -101,6 +101,7 @@ function parseArguments(argv) {
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else throw new Error(`unknown flag ${flag}`);
   }
+  if (!Number.isInteger(options.repeat) || options.repeat < 1) throw new Error('--repeat must be a positive integer');
   if (options.sets === null) throw new Error('name --set all, or a comma list of review, build, plan, flow, replay');
   if (options.sets.includes('replay') && options.cases === null) throw new Error('--set replay needs --cases <path>');
   return options;
@@ -321,7 +322,7 @@ function runLedger(repository) {
 }
 
 async function runCell(cell, runDirectory, copies) {
-  const cellDirectory = path.join(runDirectory, cell.id);
+  const cellDirectory = path.join(runDirectory, cell.directory ?? cell.id);
   fs.mkdirSync(cellDirectory, { recursive: true });
   const cellRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `exo-sweep-${cell.id}-`)));
   const repository = path.join(cellRoot, 'repo');
@@ -340,6 +341,7 @@ async function runCell(cell, runDirectory, copies) {
     const measured = await measureCell(cell, repository, usage, cellDirectory);
     const record = {
       id: cell.id,
+      ...(cell.repeat === undefined ? {} : { repeat: cell.repeat }),
       kind: cell.kind,
       variant: cell.variant,
       model: cell.model,
@@ -409,12 +411,20 @@ function keepNamedCells(cells, ids) {
   return cells.filter((cell) => ids.includes(cell.id));
 }
 
+// Replay cells already expand by repeat in replayCells; every other cell gets
+// `repeat` copies that keep the base id, so the copies stay one arm, and differ
+// in `directory` (`<id>-<k>`) and `repeat`, so each writes its own result dir.
+export function repeatCells(cells, repeat) {
+  if (repeat === 1) return cells;
+  return cells.flatMap((cell) => cell.kind === 'replay' ? [cell] : Array.from({ length: repeat }, (_, index) => ({ ...cell, directory: `${cell.id}-${index + 1}`, repeat: index + 1 })));
+}
+
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   const replay = options.cases === null ? [] : replayCells(JSON.parse(fs.readFileSync(options.cases, 'utf8')), options);
-  const cells = keepNamedCells(selectCells([...sweepCells(), ...replay], options.sets), options.cells);
-  console.log(`${cells.length} claude -p calls planned, one per cell:`);
-  for (const cell of cells) console.log(`  ${cell.id}: --model ${cell.model} --effort ${cell.effort}`);
+  const cells = repeatCells(keepNamedCells(selectCells([...sweepCells(), ...replay], options.sets), options.cells), options.repeat);
+  console.log(`${cells.length} claude -p calls planned, one per cell and repeat:`);
+  for (const cell of cells) console.log(`  ${cell.directory ?? cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (!options.confirm) {
     const projection = projectSweep(cells.map((cell) => cell.id), RUNS);
     console.log(sweepProjectionLine(projection, cells.length));
@@ -439,19 +449,19 @@ async function main() {
       applyVariant(name, copies[name]);
     }
     await runPool(cells, options.concurrency, async (cell, index) => {
-      const recordFile = path.join(runDirectory, cell.id, 'record.json');
+      const recordFile = path.join(runDirectory, cell.directory ?? cell.id, 'record.json');
       if (fs.existsSync(recordFile)) {
         records[index] = JSON.parse(fs.readFileSync(recordFile, 'utf8'));
       } else {
-        running.add(cell.id);
+        running.add(cell.directory ?? cell.id);
         records[index] = await runCell(cell, runDirectory, copies);
-        running.delete(cell.id);
+        running.delete(cell.directory ?? cell.id);
         // Null once the sweep's own signal ended the cell; the sweep exits when its last cell closes.
         if (records[index] === null) return;
       }
       done += 1;
       const record = records[index];
-      console.log(`[${done}/${cells.length}] ${cell.id} ${Math.round(record.wallMs / 1000)}s defects=${record.defectsFound ?? '-'} falseAlarms=${record.falseAlarms ?? '-'}${record.timedOut ? ' TIMED OUT' : ''}`);
+      console.log(`[${done}/${cells.length}] ${cell.directory ?? cell.id} ${Math.round(record.wallMs / 1000)}s defects=${record.defectsFound ?? '-'} falseAlarms=${record.falseAlarms ?? '-'}${record.timedOut ? ' TIMED OUT' : ''}`);
     });
   } finally {
     clearInterval(heartbeat);
