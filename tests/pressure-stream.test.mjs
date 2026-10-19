@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseStream } from '../skills/edit-skills/scripts/pressure.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { deltaTable, gradeSummary, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
 
 const usage = ({ input, output, read, created }) => ({
   inputTokens: input,
@@ -48,4 +51,33 @@ test('a stream whose results hold no modelUsage logs no tokens', () => {
   const bare = (result) => ({ ...result, modelUsage: undefined });
   const { tokens } = parseStream(stream(init, bare(firstResult), init, bare(lastResult)));
   assert.equal(tokens, undefined);
+});
+
+const runGrade = (arm, run, pass) => ({ case: 'a.txt', arm, run, lines: [{ text: 'x', pass, reason: '' }] });
+
+test('gradeSummary applies the threshold per arm and flags a case both arms pass', () => {
+  const runs = [1, 2, 3].flatMap((run) => [runGrade('with', run, run < 3), runGrade('without', run, false)]);
+  const strict = gradeSummary({ 'haiku:low': runs }, 1)['haiku:low'].cases[0];
+  assert.equal(strict.pass, false);
+  assert.ok(Math.abs(strict.delta - 2 / 3) < 1e-9);
+  const lenient = gradeSummary({ 'haiku:low': runs }, 0.6)['haiku:low'].cases[0];
+  assert.equal(lenient.pass, true);
+  assert.equal(lenient.noSkillEffect, false);
+  const both = gradeSummary({ c: [1, 2, 3].flatMap((run) => [runGrade('with', run, true), runGrade('main', run, true)]) }, 1);
+  assert.equal(both.c.cases[0].noSkillEffect, true);
+  assert.match(deltaTable(both)[0], /delta \+0% PASS no skill effect$/);
+  assert.match(deltaTable(gradeSummary({ 'haiku:low': runs }, 1))[0], /with 67% without 0% delta \+67% FAIL$/);
+});
+
+test('writeGrades writes grades.json to the answers folder and returns the delta table', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-grades-'));
+  try {
+    const runs = [1, 2, 3].flatMap((run) => [runGrade('with', run, true), runGrade('without', run, false)]);
+    const table = writeGrades(dir, { 'haiku:low': runs }, 1);
+    const written = JSON.parse(fs.readFileSync(path.join(dir, 'grades.json'), 'utf8'));
+    assert.equal(written['haiku:low'].cases[0].pass, true);
+    assert.match(table[0], /with 100% without 0% delta \+100% PASS$/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -13,7 +13,18 @@ node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/check-
 
 `--setup` reruns that script before every run and runs the runs one after another, so each run starts from a fresh fixture that no other run touches. Each such run can write in `/tmp/exo-pressure/<skill>/`, `<skill>` being the name of the setup script's folder, and otherwise only in its own run folder. Without it the runs of a cell share one fixture, run in parallel and cannot write in it.
 
-`setup.sh` deletes and rebuilds only `/tmp/exo-pressure/<skill>/`, so rerunning it restores a clean fixture. The refactor setup places the fixture scripts that each refactor prompt tells the model to run in its empty directory; the build setup does the same with `setup-strings.sh` for its spec case, one script per no-spec case and `setup-textkit.sh` (placed by `setup-small-plan.sh`) for its small-plan case, each logging its checkout path to `/tmp/exo-pressure/build/checkouts.log` for grading, and the find-cause setup with its three `setup-<fixture>.sh` scripts. Add `--runs 3` to run each cell three times.
+`setup.sh` deletes and rebuilds only `/tmp/exo-pressure/<skill>/`, so rerunning it restores a clean fixture. The refactor setup places the fixture scripts that each refactor prompt tells the model to run in its empty directory; the build setup does the same with `setup-strings.sh` for its spec case, one script per no-spec case and `setup-textkit.sh` (placed by `setup-small-plan.sh`) for its small-plan case, each logging its checkout path to `/tmp/exo-pressure/build/checkouts.log` for grading, and the find-cause setup with its three `setup-<fixture>.sh` scripts.
+
+## Graded runs
+
+Add `--grade` to score every run pass or fail against the tagged lines of the case's `criteria.md` (`--criteria <file>` picks another). A line ending in `grade: run <shell command>` passes when the command exits 0; `grade: judge` goes to the judge prompt in `judge.md`, run on `--judge-cell` (default `sonnet:low`). A run counts only when every line of its case passes. Every run defaults to 3 runs per arm; `--runs <n>` changes that.
+
+```sh
+node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/compression/a-test-heavy.txt \
+  --cells sonnet:high --plugin-dir <exo clone> --setup benchmarks/pressure/compression/setup.sh --grade --threshold 0.6
+```
+
+`--threshold <0-1>` is the pass rate a case needs per arm (default 1). The run writes `grades.json` to the output folder and prints a pass-rate table per cell with the with-minus-without delta. Graded runs stay out of `npm run check` and `npm test`.
 
 A skill's cases run once on Sonnet by default, and only when that skill changes, never in the build or ship flow.
 

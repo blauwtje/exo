@@ -43,6 +43,8 @@ Eleven skills carry `disable-model-invocation: true`, because only the user shou
 
 A new skill needs all of: the folder `skills/<name>/`, its name in `EXPECTED_SKILLS` in `verify/budgets.mjs`, a reference contract in `verify/checks/reference-tables.mjs`, room for its description in `DESCRIPTION_TOTAL_LOCK` and `DESCRIPTION_TOTAL_WARN`, and a page under `docs/skills/`. Write a skill from a discipline you have read, never from a one-line description.
 
+Grade a pressure case with `node skills/edit-skills/scripts/pressure.mjs --grade`: it scores each run pass or fail against the tagged lines of the case's `criteria.md`, applies `--threshold` over the runs (3 by default) and reports the with-minus-without delta; see `benchmarks/pressure/README.md`. It never runs in `npm run check` or `npm test`.
+
 Rename a skill with `node skills/edit-skills/scripts/rename-skill.mjs --from <old> --to <new>`. It moves the skill folder, its `docs/skills/` page and its pressure folder, then rewrites every word-bounded mention outside `CHANGELOG.md` and `benchmarks/results/`.
 
 A `SKILL.md` body after its frontmatter stays within `SKILL_BODY_TOKENS.ceiling` in `verify/budgets.mjs`, counted as bytes / `BYTES_PER_TOKEN`, because a body is paid for on every run; bulk lives in `references/` and the body names the step that opens it. A reference longer than `REFERENCE_CONTENTS_LINES` opens with a contents list linking each `##` section, and no reference links to another. `PENDING_TRIM` lists the skills not yet trimmed to these. Split a skill in two only when the halves fire at different moments, because each skill adds its trigger to every session's listing.

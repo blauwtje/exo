@@ -10,4 +10,4 @@ CLAUDE_PLUGIN_OPTION_WORKSPACE=branch node skills/edit-skills/scripts/pressure.m
 
 The comparison is the `with` arm of a clone before the change against the `with` arm of a clone after it; the `without` arm loads no exo and has no setting to read.
 
-- `case1-set-place.txt`: the run commits the task on a new branch it names, not on main, and puts no numbered workspace question. Fail: the answer ends on the question (`Branch`, `Worktree`, `Current branch`), or commits on main.
+- `case1-set-place.txt`: the run commits the task on a new branch it names, not on main, and puts no numbered workspace question. Fail: the answer ends on the question (`Branch`, `Worktree`, `Current branch`), or commits on main. `grade: judge`

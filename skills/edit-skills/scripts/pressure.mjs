@@ -10,24 +10,28 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { BUDGETS, readKindTable } from '#model-kinds';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { aggregate, defaultJudge, gradeRun, linesForCase, parseCriteria } from './pressure-grade.mjs';
 
 const TIMEOUT_MS = 1_800_000;
-const DEFAULT_RUNS = 1;
+const DEFAULT_RUNS = 3;
+const DEFAULT_JUDGE_CELL = 'sonnet:low';
 const CASE_ROOT = '/tmp/exo-pressure';
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
 const CITATION = /([\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md))(:\d+)?/g;
-const USAGE = `usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>]
+const USAGE = `usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>] [--grade [--criteria <file>] [--threshold <0-1>] [--judge-cell <model:effort>]]
 Runs one pressure-scenario prompt on every model:effort cell, without and with the skill, --runs times per arm.
 --main-dir replaces the without arm with a main arm loading that second copy.
+--grade grades each run against the tagged pass lines of --criteria (default criteria.md beside the prompt), then writes grades.json to --out and prints a pass-rate and delta table per cell.
+--threshold is the pass rate a case needs per arm (default 1); --judge-cell runs the judge lines (default sonnet:low).
 --cells-for <file> prints every model:effort cell the file runs on as one --cells value.
 --setup <script> runs bash <script> before every single run; the runs then go one after another.
 Each answer goes to <model>-<effort>-<arm>-<run>.md in --out; stdout opens with answers: <dir>.
 Exits 1 on an unopened citation, a failed setup or a skill loaded from outside its arm's plugin directory.`;
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value', grade: 'boolean', criteria: 'value', threshold: 'value', 'judge-cell': 'value' }, { usage: USAGE });
   if (flags['cells-for'] !== undefined) return { cellsFor: flags['cells-for'] };
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
@@ -35,6 +39,10 @@ function readFlags(argv) {
   if (flags.runs !== undefined && !POSITIVE_INTEGER.test(flags.runs)) {
     throw new UsageError(`--runs needs a positive integer, got '${flags.runs}'`);
   }
+  const threshold = flags.threshold === undefined ? 1 : Number(flags.threshold);
+  if (!(threshold >= 0 && threshold <= 1)) throw new UsageError(`--threshold needs a number from 0 to 1, got '${flags.threshold}'`);
+  const criteriaFile = flags.criteria ?? path.join(path.dirname(flags.prompt), 'criteria.md');
+  if (flags.grade && !fs.existsSync(criteriaFile)) throw new UsageError(`--grade needs a criteria file, got '${criteriaFile}'`);
   const cells = flags.cells.split(',').map((cell) => {
     const match = CELL_PATTERN.exec(cell);
     if (!match) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort, got '${cell}'`);
@@ -55,6 +63,7 @@ function readFlags(argv) {
     outputStyle: flags['output-style'],
     setupScript,
     runs: flags.runs === undefined ? DEFAULT_RUNS : Number(flags.runs),
+    grade: flags.grade === true ? { criteriaFile, threshold, judgeCell: flags['judge-cell'] ?? DEFAULT_JUDGE_CELL } : undefined,
     outDir: flags.out
   };
 }
@@ -241,13 +250,34 @@ export function makeRunFolder(armName, setupScript) {
   return { scratch, tmp, roots };
 }
 
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir, home }) {
+export function gradeSummary(gradesByCell, threshold) {
+  return Object.fromEntries(Object.entries(gradesByCell).map(([cell, runs]) => [cell, { runs, cases: aggregate(runs, { threshold }) }]));
+}
+
+export function writeGrades(outDir, gradesByCell, threshold) {
+  const summary = gradeSummary(gradesByCell, threshold);
+  fs.writeFileSync(path.join(outDir, 'grades.json'), `${JSON.stringify(summary, null, 2)}\n`);
+  return deltaTable(summary);
+}
+
+export function deltaTable(summary) {
+  const percent = (rate) => (rate === undefined ? 'n/a' : `${Math.round(rate * 100)}%`);
+  return Object.entries(summary).flatMap(([cell, { cases }]) => cases.map((result) => {
+    const delta = result.delta === null ? 'n/a' : `${result.delta >= 0 ? '+' : ''}${Math.round(result.delta * 100)}%`;
+    const compared = result.comparison ?? 'none';
+    return `${cell} ${result.case}: with ${percent(result.rates.with)} ${compared} ${percent(result.rates[compared])} delta ${delta} ${result.pass ? 'PASS' : 'FAIL'}${result.noSkillEffect ? ' no skill effect' : ''}`;
+  }));
+}
+
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir, home, grade, promptFile }) {
+  const gradeLines = grade && linesForCase(parseCriteria(fs.readFileSync(grade.criteriaFile, 'utf8')), path.basename(promptFile));
+  const judge = grade && defaultJudge(grade.judgeCell);
   const arms = [
     comparisonArm({ pluginId, mainDir }),
     { name: 'with', pluginDir, flags: ['--plugin-dir', pluginDir] }
   ];
   const planned = arms.flatMap((arm) => Array.from({ length: runs }, (_, index) => ({ arm, runNumber: index + 1 })));
-  const startRun = ({ arm }) => {
+  const startRun = ({ arm, runNumber }) => {
     if (setupScript !== undefined) {
       const setup = runSetup(setupScript);
       if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
@@ -258,13 +288,20 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     const settings = outputStyle === undefined ? armSettings : { ...armSettings, outputStyle };
     const pluginFlags = settingsAt === -1 ? arm.flags : arm.flags.filter((_, at) => at !== settingsAt && at !== settingsAt + 1);
     const args = claudeArguments({ model, effort, promptText, settingSources, pluginFlags });
-    return runArm(withHome(confinedClaude({ args, roots, cwd: scratch, tmp, settings }), home));
+    const ran = runArm(withHome(confinedClaude({ args, roots, cwd: scratch, tmp, settings }), home));
+    if (!grade) return ran;
+    // why: the next setup run rebuilds the case folder, so a run is graded before the next one starts.
+    return ran.then((outcome) => ({
+      ...outcome,
+      grade: gradeRun({ case: path.basename(promptFile), arm: arm.name, run: runNumber, lines: gradeLines, answer: outcome.finalText ?? '', dir: setupScript === undefined ? scratch : roots[2], judge })
+    }));
   };
   const outcomes = setupScript === undefined
     ? await Promise.all(planned.map(startRun))
     : await runInSequence(planned, startRun);
   console.log(`${model}:${effort}`);
   let failed = false;
+  const grades = [];
   const totals = new Map();
   planned.forEach(({ arm, runNumber }, index) => {
     const outcome = outcomes[index];
@@ -275,6 +312,7 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       console.log(`  ${arm.name} ${runNumber}: ${file} [setup failed: exit ${outcome.setupExit}]`);
       return;
     }
+    if (outcome.grade) grades.push(outcome.grade);
     const skills = outcome.skills.length > 0 ? outcome.skills.join(', ') : 'none';
     const cost = typeof outcome.cost === 'number' ? ` [cost: $${outcome.cost.toFixed(4)}]` : '';
     const tokens = outcome.tokens ? ` [tokens: in=${outcome.tokens.input} out=${outcome.tokens.output}]` : '';
@@ -294,7 +332,14 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     const parts = [cost === undefined ? '' : `$${cost.toFixed(4)}`, tokens ? `[tokens: in=${tokens.input} out=${tokens.output}]` : ''];
     console.log(`  total ${name}: ${parts.filter(Boolean).join(' ')}`);
   }
-  return failed;
+  return { failed, grades };
+}
+
+async function runOneCell(cell, promptText, options) {
+  const { gradesByCell, ...cellOptions } = options;
+  const { failed, grades } = await runCell(cell, promptText, cellOptions);
+  if (failed) process.exitCode = 1;
+  gradesByCell[`${cell.model}:${cell.effort}`] = grades;
 }
 
 async function main() {
@@ -349,12 +394,16 @@ async function main() {
   }
   console.log(`answers: ${outDir}`);
   const home = makeDefaultOptionsHome();
+  const gradesByCell = {};
   try {
     for (const cell of flags.cells) {
-      if (await runCell(cell, promptText, { ...flags, outDir, home })) process.exitCode = 1;
+      await runOneCell(cell, promptText, { ...flags, outDir, home, gradesByCell });
     }
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
+  }
+  if (flags.grade) {
+    console.log(writeGrades(outDir, gradesByCell, flags.grade.threshold).join('\n'));
   }
 }
 

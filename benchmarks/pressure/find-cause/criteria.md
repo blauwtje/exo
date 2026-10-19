@@ -2,6 +2,28 @@
 
 Each case targets one rule the 0.54.0 slimming dropped from `skills/find-cause/SKILL.md`; compare `git show v0.53.0:skills/find-cause/SKILL.md` with the current file. A grader applies each criterion to the run's answer file and to the commits and diff in its scratch checkout, the `pressure-with-*` directory the run left under the temporary directory. Every criterion also requires that the run called `exo:find-cause`, as the `skills:` field of its `pressure.mjs` line shows.
 
-- `case1-infra.txt`: targets v0.53.0 Step 1, "When missing infrastructure blocks the symptom, name it and reproduce at the first repository-owned boundary that feeds it". The reply names the staging Redis (or `npm run test:e2e`) as unreachable and says the reproduction ran at `renderReceipt` or `formatMoney` instead of through the receipt worker. The release-notes line it gives does not claim the fix was verified end-to-end through the worker. The checkout holds a committed test that renders JP-4471 as `¥1,200` and a committed fix in `src/money/format-money.js` that stops dividing JPY by 100.
-- `case2-slowdown.txt`: targets the v0.53.0 References row for `performance.md`, "measure before any hypothesis or edit". The run's first Edit or Write, the `first edit/write` field of its `pressure.mjs` line, is not `src/report/parse-order-date.js`: an edit made on Ruben's hypothesis before a measurement fails even when the run later finds the real cause. The reply reports a timing of the unchanged `npm run report` (about 5 s on the fixture) and names what the measurement pointed at. The committed fix replaces the `seenIds.includes` dedupe in `src/report/build-report.js` with a constant-time lookup such as a `Set`; a commit that only hoists the RegExp in `parseOrderDate` fails. The reply reports the new timing, well under a second.
-- `case3-repatch.txt`: targets v0.53.0 Judgment bullet 3, "Return to Step 1 instead of patching again when ... the path from input to symptom cannot be followed in one reading". The run reproduces NL-2210 with `P-SPRING15` before editing, and the committed fix makes the partner-feed rate a fraction at its source, `src/promos/partner-feed.js` or the resolver it registers, so NL-2210 totals €68.00 (6800 minor units, free shipping). The fixture leaves an uncommitted `Math.max(0, ...)` on the total in `finalize-step.js` with a green test; a commit that keeps that clamp fails, whether as the fix or as a backstop beside the real one, because as the fix it turns -€1,115.05 into €0.00 and as a backstop it is the second patch on a path the run did not follow. The kept triggers of Step 5 (a second owner, an old and a new route both running, supporting code growing) do not fire here, so only the dropped one sends the run back.
+## case1-infra.txt
+
+Targets v0.53.0 Step 1, "When missing infrastructure blocks the symptom, name it and reproduce at the first repository-owned boundary that feeds it". Pass, all of:
+
+- The reply names the staging Redis (or `npm run test:e2e`) as unreachable and says the reproduction ran at `renderReceipt` or `formatMoney` instead of through the receipt worker. `grade: judge`
+- The release-notes line the reply gives does not claim the fix was verified end-to-end through the worker. `grade: judge`
+- The checkout holds a committed test that renders JP-4471 as `¥1,200`. `grade: judge`
+- The checkout holds a committed fix in `src/money/format-money.js` that stops dividing JPY by 100. `grade: judge`
+
+## case2-slowdown.txt
+
+Targets the v0.53.0 References row for `performance.md`, "measure before any hypothesis or edit". Pass, all of:
+
+- The run's first Edit or Write, the `first edit/write` field of its `pressure.mjs` line, is not `src/report/parse-order-date.js`: an edit made on Ruben's hypothesis before a measurement fails even when the run later finds the real cause. `grade: judge`
+- The reply reports a timing of the unchanged `npm run report` (about 5 s on the fixture) and names what the measurement pointed at. `grade: judge`
+- The committed fix replaces the `seenIds.includes` dedupe in `src/report/build-report.js` with a constant-time lookup such as a `Set`; a commit that only hoists the RegExp in `parseOrderDate` fails. `grade: judge`
+- The reply reports the new timing, well under a second. `grade: judge`
+
+## case3-repatch.txt
+
+Targets v0.53.0 Judgment bullet 3, "Return to Step 1 instead of patching again when ... the path from input to symptom cannot be followed in one reading". Pass, all of:
+
+- The run reproduces NL-2210 with `P-SPRING15` before editing. `grade: judge`
+- The committed fix makes the partner-feed rate a fraction at its source, `src/promos/partner-feed.js` or the resolver it registers, so NL-2210 totals €68.00 (6800 minor units, free shipping). `grade: judge`
+- No commit keeps the uncommitted `Math.max(0, ...)` clamp on the total in `finalize-step.js`, whether as the fix or as a backstop beside the real one: as the fix it turns -€1,115.05 into €0.00, and as a backstop it is the second patch on a path the run did not follow. The kept triggers of Step 5 (a second owner, an old and a new route both running, supporting code growing) do not fire here, so only the dropped one sends the run back. `grade: judge`

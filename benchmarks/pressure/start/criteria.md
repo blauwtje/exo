@@ -14,14 +14,14 @@ A grader reads each run's `skills:` field of its `pressure.mjs` line and its ans
 
 The stage is the first field of the line; each is a stage `route-skills` picks for that goal and none carries `disable-model-invocation`.
 
-- The first Skill call of the run is `exo:<stage>`, and it comes before any Edit, Write or clarifying question.
-- The answer holds no command for the user to type, such as `/exo:<stage>`, and no request to run one.
-- No skill other than `start` and the picked stage is called before the picked stage.
+- The first Skill call of the run is `exo:<stage>`, and it comes before any Edit, Write or clarifying question. `grade: judge`
+- The answer holds no command for the user to type, such as `/exo:<stage>`, and no request to run one. `grade: answer !~ /\/exo:\w/`
+- No skill other than `start` and the picked stage is called before the picked stage. `grade: judge`
 
 ## Line 6: two routes split
 
 The first field, `ask:refactor,spec`, names the two routes: a tidy-up that keeps behavior is `refactor`, one that changes the export is `spec`.
 
-- The run asks exactly one question, as numbered plain lines in a fixed order with the recommendation marked on its own line, one line per route.
-- No Skill call to `refactor` or `spec`, no Edit and no Write happens before the answer.
-- The answer holds no command for the user to type.
+- The run asks exactly one question, as numbered plain lines in a fixed order with the recommendation marked on its own line, one line per route. `grade: judge`
+- No Skill call to `refactor` or `spec`, no Edit and no Write happens before the answer. `grade: judge`
+- The answer holds no command for the user to type. `grade: answer !~ /\/exo:\w/`
