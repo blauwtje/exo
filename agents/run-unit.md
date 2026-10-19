@@ -14,8 +14,9 @@ experimental: { cacheTtl: 1h }
 3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message after `date +%s`.
   - A `Wave:` line → `<skill>/references/rolling-window.md`, worktrees per `<skill>/references/wave-worktrees.md`; `Next:` stays foreground.
   - A landed task goes straight to the next task; dispatch no review, verify's branch review is the only one.
-  - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
-  - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
+  - After a background `Wave:` build, run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
+  - A foreground `Next:` build runs no `wait-report.mjs`; its return is the report.
+  - Exit 2 of `wait-report.mjs` reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A repair, a choice, a block or no dispatch tool → read `<skill>/references/agent-cases.md` `## run-unit` first.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 4. **Commit a green task.** Done means `GREEN`, never your report; else step 3.
@@ -24,7 +25,7 @@ experimental: { cacheTtl: 1h }
   - `no build report at` refusal → SendMessage it verbatim to its writer, once; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
   - Other refusal except `PLAN DRIFT` → fresh `exo:build-task` from `<skill>/implementer-prompt.md` plus refusal verbatim, at most twice; never rerun a proof.
   - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.
-  - A `Wave:` slot lands per `rolling-window.md` step 3; a failed task returns to step 3.
+  - A `Wave:` slot lands per `rolling-window.md` step 3 with `land-slot.mjs`, not `land-task.mjs`; a failed task returns to step 3.
   - Loop to step 1 until every block task has a `LANDED` or `BLOCKED` line.
 
 ## Stop

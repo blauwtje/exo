@@ -1,0 +1,103 @@
+
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { test } from 'node:test';
+import { excludeScratch } from '../lib/scratch-exclude.mjs';
+import { git, run } from './harness.mjs';
+import { landingCheckout, editApp } from './land-task-fixture.mjs';
+
+const SCRIPT = new URL('../skills/build/scripts/land-slot.mjs', import.meta.url).pathname;
+
+async function slotFixture() {
+  const { root, planPath } = await landingCheckout();
+  excludeScratch(root);
+  const base = git(root, 'rev-parse', 'HEAD');
+  const slot = `${root}-task-1`;
+  git(root, 'worktree', 'add', '--detach', slot, 'HEAD');
+  await fs.mkdir(path.join(slot, '.exo'), { recursive: true });
+  const baseline = path.join(root, '.exo', 'baseline.txt');
+  await fs.mkdir(path.dirname(baseline), { recursive: true });
+  await fs.writeFile(baseline, git(root, 'status', '--porcelain'));
+  await fs.writeFile(path.join(slot, '.exo', 'implementer-1.md'), 'Landed: src/app.js\nUnresolved: none\n');
+  const land = (inFlight = ['--in-flight', '3']) => run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, ...inFlight], { cwd: root });
+  return { root, slot, land, base };
+}
+
+const worktrees = (root) => git(root, 'worktree', 'list');
+
+test('a green slot lands on the run branch and its worktree leaves', async () => {
+  const { root, slot, land } = await slotFixture();
+  await editApp(slot);
+  const result = await land();
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^LANDED 1\b/);
+  assert.match(result.stdout, /^Start: (?:none|Task \d)/m);
+  assert.doesNotMatch(result.stdout, /kept:/);
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
+  assert.doesNotMatch(worktrees(root), new RegExp(slot));
+  assert.match(await fs.readFile(path.join(root, 'src/app.js'), 'utf8'), /hello/);
+});
+
+test('a refused landing keeps the slot and puts nothing on the run branch', async () => {
+  const { root, slot, land } = await slotFixture();
+  const head = git(root, 'rev-parse', 'HEAD');
+  await editApp(slot);
+  await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
+  const result = await land();
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^REFUSED 1\b.*outside Files/s);
+  assert.match(result.stdout, /^Start: none$/m);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.match(worktrees(root), new RegExp(slot));
+});
+
+test('a new path in the run checkout lands nothing and keeps the slot', async () => {
+  const { root, slot, land } = await slotFixture();
+  const head = git(root, 'rev-parse', 'HEAD');
+  await editApp(slot);
+  await fs.writeFile(path.join(root, 'stray.txt'), 'x\n');
+  const result = await land();
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^NEWPATH 1\b.*stray\.txt/s);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.match(worktrees(root), new RegExp(slot));
+  assert.match(git(slot, 'status', '--porcelain'), /src\/app\.js/);
+});
+
+test('a cherry-pick conflict aborts, keeps the slot and leaves the run branch clean', async () => {
+  const { root, slot, land } = await slotFixture();
+  await editApp(slot);
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {\n  return "other";\n}\n');
+  git(root, 'commit', '-q', '-am', 'chore: diverge');
+  const head = git(root, 'rev-parse', 'HEAD');
+  const result = await land();
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^CONFLICT 1\b/);
+  assert.match(result.stdout, /^Start: none$/m);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.match(worktrees(root), new RegExp(slot));
+});
+
+test('a cherry-pick whose abort fails does not claim the run checkout is clean', async () => {
+  const { root, slot, land } = await slotFixture();
+  await editApp(slot);
+  await fs.writeFile(path.join(root, '.git', 'index.lock'), '');
+  const result = await land();
+  await fs.rm(path.join(root, '.git', 'index.lock'));
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^CONFLICT 1\b/);
+  assert.doesNotMatch(result.stdout, /was aborted/);
+  assert.match(result.stdout, /abort failed/);
+});
+
+test('a landing with no other slot running ends with a Next: or Wave: refill line', async () => {
+  const { slot, land } = await slotFixture();
+  await editApp(slot);
+  const result = await land([]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^LANDED 1\b/);
+  assert.match(result.stdout, /^(Next|Wave): /m);
+  assert.doesNotMatch(result.stdout, /^Start: /m);
+});

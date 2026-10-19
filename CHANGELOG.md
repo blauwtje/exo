@@ -21,6 +21,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `plan-check` and the `edit evidence` check share one set of wording-path and evidence-value rules in `lib/evidence-rules.mjs`; a result path with a space now fails as a malformed value.
 - `npm run check` also requires an `Evidence:` trailer for a change to the session-start text that `hooks/session-start.mjs` injects.
 - `pressure.mjs --grade` scores each pressure run pass or fail against tagged criteria lines, applies a pass threshold over 3 runs and reports the with-minus-without delta.
+- `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
 - `land-task` no longer prints a `Next: Task <n>` line that looks ready to dispatch without a brief; it points at `next-task.mjs`, which writes the brief.

@@ -347,3 +347,15 @@ test('review-branch reads its opening inputs together in its first message', () 
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.match(reviewer.body, /^- First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE\.md`\/`AGENTS\.md` together; then changed ranges\.$/m);
 });
+
+test('run-unit runs wait-report only after a background Wave: build', () => {
+  const unit = agents.find((agent) => agent.frontmatter.name === 'run-unit');
+  assert.match(unit.body, /^ {2}- After a background `Wave:` build, run `node "<skill>\/scripts\/wait-report\.mjs" --since <start> --report <Report to: path>`, timeout 600000\.$/m);
+  assert.match(unit.body, /^ {2}- A foreground `Next:` build runs no `wait-report\.mjs`; its return is the report\.$/m);
+  assert.match(unit.body, /^ {2}- Exit 2 of `wait-report\.mjs` reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
+});
+
+test('run-unit runs on its own kind, at low effort on the balanced profile', () => {
+  assert.equal(kindTable.agents['agents/run-unit.md'].kind, 'run-unit');
+  assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'low' });
+});

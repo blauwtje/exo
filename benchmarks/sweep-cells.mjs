@@ -210,6 +210,7 @@ function flowCells() {
   const buildPrompt = `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
   return [
     { ...shared, id: 'flow-c7', prompt: buildPrompt },
+    { ...shared, id: 'flow-unit', compactPlan: true, prompt: buildPrompt },
     { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt: buildPrompt },
     {
       ...shared,

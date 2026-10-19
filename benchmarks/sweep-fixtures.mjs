@@ -269,7 +269,17 @@ function taskSection(helper, number) {
   ];
 }
 
-export function flowPlanText(repository) {
+function compactTaskSection(helper, number) {
+  const fields = [
+    'Depends on: none',
+    `Files: \`${helper.module}\`, \`${helper.test}\``,
+    `Data: one exported function ${helper.title.replace('Add ', '')} in its own module, tested beside it`,
+    `Proof: node --test ${helper.test}`
+  ];
+  return [`### Task ${number}: feat(text): ${helper.subject}`, '', fields.join(' | '), ''];
+}
+
+function planIntroSection(repository) {
   return [
     '# Text helpers',
     '',
@@ -285,7 +295,12 @@ export function flowPlanText(repository) {
     'Land gate: npm test',
     '',
     'Planned against the seed commit on `main`. `npm test` runs `node --test`, which finds every `*.test.js` file. Executor loads the `build` skill on this plan before the first task.',
-    '',
+    ''
+  ];
+}
+
+function planScopeSection() {
+  return [
     '## Success criterion',
     '',
     '`npm test` passes.',
@@ -294,7 +309,12 @@ export function flowPlanText(repository) {
     '',
     '- `src/words.js` and its test stay unchanged.',
     '- No dependency is added.',
-    '',
+    ''
+  ];
+}
+
+function planContextSection() {
+  return [
     '## Context',
     '',
     '- Every module is an ES module with one named export; its test sits beside it and uses `node:test` and `node:assert/strict`, as `src/words.test.js` does.',
@@ -306,15 +326,30 @@ export function flowPlanText(repository) {
     '- Parallel: every task.',
     '- Shared state: none.',
     '- Smallest safe split: one task per helper, each with its own module and test.',
-    '',
-    '## Tasks',
-    '',
-    ...FLOW_HELPERS.flatMap((helper, index) => taskSection(helper, index + 1)),
+    ''
+  ];
+}
+
+function planClosingSection() {
+  return [
     '## Final verification',
     '',
     '- `npm test`: every test passes, `fail 0`.',
     '- Walkthrough: none, the library has no user-visible surface.',
     ''
+  ];
+}
+
+export function flowPlanText(repository, compact = false) {
+  const section = compact ? compactTaskSection : taskSection;
+  return [
+    ...planIntroSection(repository),
+    ...planScopeSection(),
+    ...planContextSection(),
+    '## Tasks',
+    '',
+    ...FLOW_HELPERS.flatMap((helper, index) => section(helper, index + 1)),
+    ...planClosingSection()
   ].join('\n');
 }
 
@@ -322,7 +357,7 @@ export function flowPlanText(repository) {
 // build reads for its default branch and its merge-base.
 export function prepareFlowRepository(repository, origin, withPlan) {
   git(repository, ['init', '-q', '-b', 'main']);
-  const files = withPlan ? { ...FLOW_SEED, [FLOW_PLAN]: flowPlanText(repository) } : FLOW_SEED;
+  const files = withPlan ? { ...FLOW_SEED, [FLOW_PLAN]: flowPlanText(repository, withPlan === 'compact') } : FLOW_SEED;
   writeFiles(repository, files);
   commitAll(repository, withPlan ? 'chore: seed the library and its plan' : 'chore: seed the library');
   execFileSync('git', ['init', '-q', '--bare', '-b', 'main', origin], { stdio: ['ignore', 'pipe', 'pipe'] });

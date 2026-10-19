@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { killTree } from '#process-tree';
 import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
@@ -302,12 +303,12 @@ function addReplayWorktree(cell, repository) {
   return { ...cell, prompt: reviewPrompt({ planPath: plan, root: repository, base, branch: cell.replay.head, scope, findings: replayFindings(repository) }) };
 }
 
-function prepareRepository(cell, repository, origin) {
+export function prepareRepository(cell, repository, origin) {
   if (cell.variant === 'green-first') prepareGreenFirstBranch(repository);
   else if (cell.kind === 'review') prepareReviewBranch(repository, cell.task, cell.source);
   else if (cell.kind === 'build') prepareBuildRepository(repository, cell.task);
   else if (cell.kind === 'fixer') prepareFixerBranch(repository, cell.task);
-  else prepareFlowRepository(repository, origin, cell.kind === 'flow');
+  else prepareFlowRepository(repository, origin, cell.compactPlan ? 'compact' : cell.kind === 'flow');
 }
 
 // The newest sessions.jsonl under the repository's run logs, or null.
@@ -463,7 +464,9 @@ async function main() {
   console.log(`published ${path.relative(ROOT, resultsFile)}`);
 }
 
-main().catch((error) => {
-  console.error(`sweep: ${error.message}`);
-  process.exitCode = 1;
-});
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(`sweep: ${error.message}`);
+    process.exitCode = 1;
+  });
+}

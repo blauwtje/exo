@@ -55,6 +55,11 @@
       "balanced": { "tier": "standard", "effort": "medium" },
       "quality": { "tier": "standard", "effort": "high" }
     },
+    "run-unit": {
+      "fast": { "tier": "standard", "effort": "low" },
+      "balanced": { "tier": "standard", "effort": "low" },
+      "quality": { "tier": "standard", "effort": "high" }
+    },
     "research": {
       "fast": { "tier": "fast", "effort": "medium" },
       "balanced": { "tier": "fast", "effort": "high" },
@@ -105,7 +110,7 @@
     "agents/fix-review.md": { "kind": "build" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/review-branch.md": { "kind": "review" },
-    "agents/run-unit.md": { "kind": "coordinate" },
+    "agents/run-unit.md": { "kind": "run-unit" },
     "agents/solve-hard.md": { "kind": "hardest" },
     "agents/survey-ui.md": { "kind": "investigate" }
   },
