@@ -24,6 +24,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- `benchmarks/speed-ledger.md` points each rejected idea at its results file, since its idea branches are deleted.
 - Build and verify scripts print the next step (filled build prompts, slot worktrees, review dispatch fields, findings), so run-unit and the lead skip about 5 bookkeeping turns; flow-unit wall -22% (p=0.026) and cost -16% (p=0.0023) at n=15, of which the change itself is likely 5-10%.
 - `benchmarks/speed-ledger.md` opens with a one-line-per-idea index and adds 8 ideas from Anthropic's engineering posts and Agent SDK docs; `.claude/CLAUDE.md` points every build speed or cost brainstorm at that index.
 - Routing is measured by a paid model run, `benchmarks/routing.mjs`, and `npm run check` fails when a skill description or `hooks/session-routing.md` changed after the last recorded result.
