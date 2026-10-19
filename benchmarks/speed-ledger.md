@@ -3,6 +3,55 @@
 This file records every build-speed idea that did not land, or landed without a measured gain, so it is known and not tried again.
 An idea is retried only when the circumstances in its "Retry when:" line change and it now looks promising.
 A new non-landed idea gets a line here in the change that drops or defers it.
+New entry → add its line to the index below and its full entry in a section after it, in the same change.
+
+## Index
+
+Open an entry below only when an idea is close. Verdict: rej = rejected, un = untried, nog = landed or tried, no measured gain.
+
+- Reuse Proof run at landing → deferred
+- Compact build tasks at medium effort → rej
+- Fix-diff review on standard tier → rej
+- Dependent task refills a slot → rej
+- One gate per wave → rej
+- More than 4 parallel slots → rej
+- Event-driven wait for `wait-report` → rej
+- Affected-only test selection → rej
+- Lower lead effort or condensed context → rej
+- Cache warm-up stagger → rej
+- Reviewer fan-out or precision filter → rej
+- Speculative next-action execution → rej
+- Haiku for `run-unit` → rej
+- Fast mode for serial hard unit → rej
+- `land-slot` → nog
+- Skip `wait-report` after foreground build → nog
+- `run-unit` at low effort → nog
+- Review kind copied from script → nog
+- Script-owned fan-out `--slots` → nog, slower at n=15, branch `speed/fan-out`
+- Scripted acceptance of fix diff → un
+- `verify.mjs` runs mechanical review rules → un
+- New test-first module skips review → un
+- Speculative pathfinder → un
+- Lead stages verify during build → un
+- Rolling review → un
+- Dispatch carries read set → un
+- One review bundle file → un
+- Verdict-first review output → un
+- Invariant-edge Red → un
+- Script-written build report `--compose` → un
+- `bin/exo-step` short verbs → un
+- 1-hour cache TTL on other agents → un
+- `omitClaudeMd` on `build-task`, `review-branch` → un
+- `--bare` headless runs → un
+- Parallel-tool-call line in agent prompts → un
+- Fix text of scripts from run-log errors → un
+- Short script stdout contract → un
+- Fork dispatch for wave siblings → un
+- Wave loop in a `Workflow` script → un
+- `maxTurns` cap on `build-task`, `run-unit` → un
+- Resume the builder for a repair → un
+- `thinking: between_tools` for mechanical agents → un
+- Landed with gain (last section): Write batching, `build-task` medium, xcrun cache
 
 ## Not landed, or no measured gain
 
@@ -35,14 +84,22 @@ A new non-landed idea gets a line here in the change that drops or defers it.
 - **Script-written build report: `land-task.mjs --check --compose`** (the model states landed clause, Red and test-first; the script runs Proof, writes the `.diff`, `.log` and report block). Status: untried. It saves 20-35 s over four tasks and removes report-format retries, but it overlaps with candidate 3 above and must land as its output-side superset or after it. Evidence: unmeasured (transcript estimate). Retry when: candidate 3 has landed, or build-task report turns show as a measured share of its wall time.
 - **Short verbs: a `bin/exo-step` command (`next`, `land 3`, `wait 2,3`, `check 3`) reading plan and root from `.exo/run.json`.** Status: untried. It saves 30-35 s per run in about 2.2k fewer output tokens, but plan and root can resolve wrongly in a slot worktree and it touches prompt lines in 4-5 files. Evidence: unmeasured (transcript estimate). Retry when: the harness puts plugin `bin/` on PATH, or lead and run-unit command lines show as a measured share of output tokens.
 - **Cache TTL of 1 hour on `build-task`, `review-branch` and `fix-review`** (`subagentPromptCacheTtl` or per-agent `experimental: { cacheTtl: 1h }`, now set only on `run-unit`). Status: untried. It saves cost on cache re-reads between parallel siblings and across a long run, with little wall effect, and the setting name is unverified. Evidence: unmeasured (transcript estimate). Retry when: a run shows cache writes on these agents after a gap of over 5 minutes.
-- **`omitClaudeMd: true` on `build-task` and `review-branch`** (already set on `fix-review`, `locate-code`, `fetch-docs` and the UI agents). Status: untried. It trims input tokens per call, but these two agents may need the project rules in `CLAUDE.md`, and the field name came from a truncated fetch. Evidence: unmeasured (transcript estimate). Retry when: the field is confirmed in the sub-agents docs and a pressure cell shows the two agents keep their pass rate without `CLAUDE.md`.
+- **`omitClaudeMd: true` on `build-task` and `review-branch`** (already set on `fix-review`, `locate-code`, `fetch-docs` and the UI agents). Status: untried. It trims input tokens per call, but these two agents may need the project rules in `CLAUDE.md`, and the field name came from a truncated fetch. Evidence: unmeasured (transcript estimate). Round 3 note: the SDK [AgentDefinition table](https://code.claude.com/docs/en/agent-sdk/subagents) now confirms `omitClaudeMd` (TypeScript SDK 0.3.271 or later; Python lacks it), so only the pressure cell is missing. Retry when: the field is confirmed in the sub-agents docs and a pressure cell shows the two agents keep their pass rate without `CLAUDE.md`.
 - **`--bare` for headless `claude -p` runs** (skips hooks, plugins, MCP and `CLAUDE.md` discovery). Status: untried. It cuts start-up time per headless call, but it needs `ANTHROPIC_API_KEY` and `--plugin-dir`, and exo's use of headless calls is unchecked. Evidence: unmeasured (transcript estimate). Retry when: a headless `exo run` start-up shows as a measured share of wall time.
+- **Parallel-tool-call line in agent prompts** (add the documented line "whenever you perform multiple independent operations, invoke all relevant tools simultaneously ... Only batch tool calls that are independent" to `run-unit`, `build-task`, `review-branch` and the lead's build rules). Status: untried. It could save 3-8 s per serial read that becomes parallel, with cost flat or lower and quality unchanged, but current models may already parallelize and the gain size is unmeasured. No Anthropic-engineer talk transcript was found; the only talk summary read is third-party ([dev.to](https://dev.to/kazuya_dev/aws-reinvent-2025-what-anthropic-learned-building-ai-agents-in-2025-aim277-16lc)) and it says sub-agents "didn't parallelize well in practice", so the claim below rests on docs and blog posts, not a talk. Evidence: unmeasured, confidence medium (docs agree): [parallel tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use), [multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system), [effort](https://platform.claude.com/docs/en/build-with-claude/effort). Retry when: a run log shows serial independent reads or greps in these agents.
+- **Fix the usage and error text of exo's scripts from run-log error counts** (mine run logs for retries and invalid-argument errors on `next-task`, `land-task`, `land-slot`, `wait-report` and `verify`; rewrite the text they hit, or add a check that fails on a new error without a hint; one-time, not a new agent stage). Status: untried. It removes retry turns (the `--compose` entry names report-format retries) at lower cost with quality unchanged, but the 40% task-time cut that motivates it is specific to Anthropic's research tools. Evidence: unmeasured, confidence medium (two sources agree): [multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system), [writing tools for agents](https://www.anthropic.com/engineering/writing-tools-for-agents). Retry when: run logs show repeated retries or invalid-argument errors on one script.
+- **Script stdout contract: a few lines by default, one `ERROR <reason>` line per failure, detail to a `.exo/*.log`, `--verbose` for the rest** (stays under the 25k-token tool-output cap so nothing spills to `<persisted-output>`; `npm run check` could lint it). Status: untried. It saves a little wall time (fewer spill detours, shorter reads) and input tokens, but it is a repo-wide rule where the "one review bundle" entry covers one file, and no wall figure exists. Evidence: unmeasured, confidence medium-low (principle agreed, no wall figure): [building a C compiler](https://www.anthropic.com/engineering/building-c-compiler), [writing tools for agents](https://www.anthropic.com/engineering/writing-tools-for-agents) (concise format 72 vs 206 tokens). Retry when: tool outputs of exo scripts keep spilling or long outputs show as a measured share of input tokens.
+- **Fork dispatch for wave siblings** (after the lead reads the brief and rules once, spawn wave `build-task`s as forks that inherit the lead's cached conversation instead of fresh agents that re-read them). Status: untried. It could skip 2-3 read turns per task and a cold cache write, but cost is uncertain (the fork carries the lead's context), and it breaks the clean-room `build-task` design with lead bias. Nearest entry: "The dispatch carries the read set", which inlines text; a fork shares the cache instead. No Anthropic-engineer talk transcript was found; the only talk summary read is third-party ([dev.to](https://dev.to/kazuya_dev/aws-reinvent-2025-what-anthropic-learned-building-ai-agents-in-2025-aim277-16lc)) and it says sub-agents "didn't parallelize well in practice", so the claim below rests on docs and blog posts, not a talk. Evidence: unmeasured, confidence low (one first-party source): [SDK subagents](https://code.claude.com/docs/en/agent-sdk/subagents) (a fork inherits the parent conversation; a non-fork gets only the prompt string). Retry when: a run shows the brief and rules reads as a measured share of build-task wall time and a fork keeps the pass rate on a pressure cell.
+- **Run the wave loop in a `Workflow` script** (the `Workflow` tool orchestrates fan-out, wait and land in a script outside the conversation, so lead turns between slots disappear). Status: untried. It could cut lead turns per wave (poll, dispatch, land) and lead context, but it is a TypeScript SDK feature whose availability inside exo's plugin and fit to `Parallel:` waves are unverified, and it must keep the `land-slot` gates. Nearest entry: script-owned fan-out (`next-task --slots`, branch `speed/fan-out`), which stays inside the lead's turns. No Anthropic-engineer talk transcript was found; the only talk summary read is third-party ([dev.to](https://dev.to/kazuya_dev/aws-reinvent-2025-what-anthropic-learned-building-ai-agents-in-2025-aim277-16lc)) and it says sub-agents "didn't parallelize well in practice", so the claim below rests on docs and blog posts, not a talk. Evidence: unmeasured, confidence low: [SDK subagents](https://code.claude.com/docs/en/agent-sdk/subagents) ("scale up with dynamic workflows"), [best practices](https://code.claude.com/docs/en/best-practices). Retry when: the script-owned fan-out has been measured and lead turns between slots show as the critical path, and `Workflow` is confirmed usable from a plugin.
+- **`maxTurns` cap on `build-task` and `run-unit`** (SDK `AgentDefinition` field; the plugin frontmatter name is unchecked; a capped run returns partial and the lead resumes or routes it as BLOCKED). Status: untried. It bounds the tail wall time and cost of a looping task with quality neutral, since partial work goes to a hint file, but `CLAUDE.md` already stops loops by hand. Evidence: unmeasured, confidence low (one source): [SDK subagents](https://code.claude.com/docs/en/agent-sdk/subagents). Retry when: a run shows a task looping past a turn count that a cap would have cut, and the frontmatter field is confirmed.
+- **Resume the builder for a repair instead of a fresh dispatch** (when a landed-gate failure returns to a task, resume that `build-task` by agent id with `SendMessage` so it keeps its file reads). Status: untried. It could save the re-read per repair at lower cost, with the context growing, but `run-unit` already has `SendMessage` and exo may already do this; check current behavior first. Evidence: unmeasured, confidence low (one source): [SDK subagents](https://code.claude.com/docs/en/agent-sdk/subagents) (resume keeps the full history). Retry when: a run shows a repair dispatch re-reading files the first build already read.
+- **`thinking: between_tools` for mechanical agents** (Sonnet 5.5; drop up-front thinking for `run-unit` and `fix-review`, only if Claude Code exposes it per agent). Status: untried. It could cut wall time per turn, but routing risk is the reason a cheaper `run-unit` was rejected, and the ledger tested effort levels, not the thinking mode. Evidence: unmeasured, confidence low (one source, no per-agent control found): [effort](https://platform.claude.com/docs/en/build-with-claude/effort). Retry when: Claude Code exposes the thinking mode per agent and `run-unit` holds its routing pressure cases with it.
 - **Fast mode for the serial hard unit.** Status: rejected. It raises cost for a wall-time gain. Evidence: unmeasured. Retry when: pricing makes fast mode cost-neutral.
+- **Review kind copied from script**. Status: no measured gain. Wall -1.7% mean (Mann-Whitney p=0.84), cost +1.7%; the lighter reviewer raised fix findings in 2 of 5 runs against 1 of 5. Evidence: [2026-10-19-speed-round2.md](results/2026-10-19-speed-round2.md). Retry when: the light reviewer's fix-finding rate is shown equal to the deep one on replay cases.
+- **Script-owned fan-out (`next-task.mjs --slots`)**. Status: no gain, slower at n=15. Wall +47.2 s (+24.8% mean, CI [+12.2, +83.9] s, exact MW p=0.037), cost +2.7% (within noise), hidden 17/17 in both arms. Round 2's -12% at n=5 did not replicate. Evidence: [2026-10-19-speed-round3.md](results/2026-10-19-speed-round3.md), earlier [2026-10-19-speed-round2.md](results/2026-10-19-speed-round2.md). Retry when: the wave or slot setup changes so that run-unit's own worktree creation is the measured bottleneck; branch `speed/fan-out` commit 6a2f5c86 holds the code.
 
 ## Landed with a measured gain
 
 - Plan session batches Writes and skips the separate code-rules step: 66 s to 47.5 s and $0.150 to $0.104 per flow cell (n=4), `CHANGELOG.md`.
 - `build-task` at `medium` effort: pass rate kept on its pressure cell, cost $0.0982 to $0.0906, [2026-10-08-effort.md](results/2026-10-08-effort.md).
 - Benchmark cells under the macOS sandbox let git refresh its xcrun cache, so each git call no longer costs about 0.4 s, `CHANGELOG.md`.
-- **Review kind copied from script**. Status: no measured gain. Wall -1.7% mean (Mann-Whitney p=0.84), cost +1.7%; the lighter reviewer raised fix findings in 2 of 5 runs against 1 of 5. Evidence: [2026-10-19-speed-round2.md](results/2026-10-19-speed-round2.md). Retry when: the light reviewer's fix-finding rate is shown equal to the deep one on replay cases.
-- **Script-owned fan-out (`next-task.mjs --slots`)**. Status: no measured gain (promising). Wall -11.7% mean (MW p=0.31, CI [-63, +15] s), cost -8.3%, run-unit calls -1.2 (CI excludes 0), wall sd 26 vs 43 s; same-review-mix wall only -4.8%. Evidence: [2026-10-19-speed-round2.md](results/2026-10-19-speed-round2.md). Retry when: an n>=15 per arm rerun is affordable; branch `speed/fan-out` commit 6a2f5c86 is ready.

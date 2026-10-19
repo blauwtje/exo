@@ -10,6 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-19-speed-round3.md` reruns script-owned fan-out against base at n=15 per arm; fan-out is slower (wall +24.8%, CI [+12.2, +83.9] s, p=0.037), cost +2.7% within noise, hidden tests 17/17 in every run, so it does not land.
 - `benchmarks/results/2026-10-19-speed-round2.md` measures two build-speed ideas at n=5 per arm; neither lands: reviewer kind from the script (wall -1.7%, cost +1.7%) and script-owned fan-out (wall -11.7%, cost -8.3%, p=0.31); hidden tests 17/17 in every run.
 - `benchmarks/speed-ledger.md` lists every build-speed idea that did not land, with its evidence and when to retry it.
 - Flow benchmark records store review-stage counts and tokens excluding review and fix.
@@ -20,6 +21,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- `benchmarks/speed-ledger.md` opens with a one-line-per-idea index and adds 8 ideas from Anthropic's engineering posts and Agent SDK docs; `.claude/CLAUDE.md` points every build speed or cost brainstorm at that index.
 - Routing is measured by a paid model run, `benchmarks/routing.mjs`, and `npm run check` fails when a skill description or `hooks/session-routing.md` changed after the last recorded result.
 - `npm run check` runs `claude plugin validate --strict --json` and fails on any warning or error; the project notes moved so strict validate passes.
 - `edit-skills` counts a stored result as evidence only when it covers the last edit, and tells the editor to name it in an `Evidence:` trailer.

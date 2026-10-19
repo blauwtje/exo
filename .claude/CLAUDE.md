@@ -33,6 +33,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - New skill, agent or run stage → add only after a recorded failure the existing parts cannot fix.
 - Subagent commit → one purpose, made only after its proof passes.
 - Brief leaves a choice open → subagent returns the competing readings to the lead, not a silent pick.
+- Build speed or cost idea → read `benchmarks/speed-ledger.md` index first, pass its path to every idea agent's brief, add each tested or rejected idea as an entry.
 
 ## Commands
 
