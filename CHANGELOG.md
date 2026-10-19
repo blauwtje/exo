@@ -73,6 +73,7 @@ Versions before 0.134.8 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - design-ui's `capture.mjs` prints only label, size, path and engine per render, so a builder reads about 310 fewer bytes per two-viewport call.
 
 ### Fixed
+- `exo:prompt` rewrites a pasted screen into short facts, carries a clash with a fixed fact as an open point, grants a stated outside write in the user's words, and flags a named skill that rules out the task.
 - `compareMeans` in `benchmarks/statistics.mjs` gives no verdict when both arms have sd 0, so a zero-spread baseline no longer claims any difference is detectable.
 - A test runs a real fixture-repo test under the run session env, so a session git block that reaches other repos fails `npm run check`.
 - `benchmarks/prices.mjs` prices Sonnet 5.5 cache reads at its list price of $0.10 per million tokens, not the Sonnet 5 rate of $0.20.

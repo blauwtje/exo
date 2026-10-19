@@ -121,4 +121,76 @@ Do not edit files, since the ask is an answer, not a change.
 
 Added: do-not-edit line (kind rule).
 </example>
+
+<example>
+Rough: `why can't I publish this post?` followed by 30 pasted lines of the blog editor's draft screen: section titles, help texts, and the fields `title` (filled), `slug` (empty) and `coverImage` (filled). The code read shows `src/editor/PublishPanel.vue`. The screen describes the current state, so it becomes short `<background>` facts, not a copy; only the field names stay verbatim:
+
+````
+<background>
+In the blog editor's publish panel, `src/editor/PublishPanel.vue`, the user cannot publish a draft post. `title` and `coverImage` are filled; `slug` is empty.
+</background>
+
+<instructions>
+Explain why the post cannot be published.
+Do not edit files, since the ask is an answer, not a change.
+</instructions>
+````
+
+Added: `src/editor/PublishPanel.vue` (path read); do-not-edit line (kind rule).
+</example>
+
+<example>
+Rough: `give every tenant a subdomain made of their full company name, never shorten it`. The code read shows `src/tenants/subdomain.ts` and no test command. A DNS label holds at most 63 octets, so the ask clashes with a well-known fixed fact. The open point marks the fact to check first; the rewrite resolves nothing and keeps the ask:
+
+````
+<background>
+Give every tenant a subdomain made of their full company name, in `src/tenants/subdomain.ts`. Check first: a DNS label, such as one subdomain, holds at most 63 octets (RFC 1035); the user asked to "never shorten it".
+</background>
+
+<instructions>
+Give every tenant a subdomain made of their full company name. Never shorten it.
+Only make changes that are directly requested or clearly necessary, since each extra change is more to review.
+</instructions>
+````
+
+Added: `src/tenants/subdomain.ts` (path read); open point (check first: DNS label length limit, against "never shorten it"); minimal-change line (kind rule).
+</example>
+
+<example>
+Rough: `create the reports database on the staging postgres server yourself, run our migrations against it and store its connection string in the staging vault under secret/reports`. The code read shows `db/migrations/` and a `migrate` script in `package.json`. Every write lands outside the repo, on two systems: the database server and the vault the result is stored in. The prompt grants each one literally: which write, on which system, how far:
+
+````
+<background>
+Migrations live in `db/migrations/` and run with `npm run migrate`.
+</background>
+
+<instructions>
+1. You may create one database named `reports` on the staging Postgres server.
+2. You may run the migrations in `db/migrations/` against that database, with `npm run migrate`.
+3. You may write the connection string of that database to `secret/reports` in the staging Vault.
+
+Only make changes that are directly requested or clearly necessary, since each extra change is more to review.
+</instructions>
+````
+
+Added: `db/migrations/` (path read); `npm run migrate` (command read from `package.json`); minimal-change line (kind rule).
+</example>
+
+<example>
+Rough: `speed up the product search queries with the sql-tune skill`. The code read shows `src/search/products.ts`, which queries MongoDB. The session's skill list describes `sql-tune` with "Not for NoSQL databases". The prompt keeps the user's choice; the line after the block reports the misfit:
+
+````
+<background>
+Speed up the product search queries in `src/search/products.ts`, which run on MongoDB.
+</background>
+
+<instructions>
+Speed up the product search queries, using `sql-tune`.
+Only make changes that are directly requested or clearly necessary, since each extra change is more to review.
+</instructions>
+````
+
+Added: `src/search/products.ts` and MongoDB (path read); minimal-change line (kind rule).
+Misfit: `sql-tune` says "Not for NoSQL databases", and this search runs on MongoDB; the prompt keeps it as asked.
+</example>
 </examples>

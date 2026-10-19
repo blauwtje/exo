@@ -13,9 +13,9 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 
 1. No argument → print `/exo:prompt <rough prompt>`, run nothing, stop.
 2. Read only what names a path, a test or build command, or a pattern file for the rewrite: Glob, Grep, Read, the package manifest. No edit, no test run, no helper.
-3. Read `references/examples.md`, then rewrite with the rules below. Show it in one fenced block, opened with at least three backticks and more than the longest backtick run inside it.
-4. After the block, the `Added:` line only when the rewrite has adds, the `Dropped:` line only when a strip rule removed a user line that names a behavior, then one line asking for ok to run it. Prompt for elsewhere → one line asking for changes instead, with no offer to run it, since the user runs it elsewhere.
-5. Reply of plain yes or ok, nothing more → run the last shown block as written, as the user's request in this session; prompt for elsewhere → run nothing. Routing does not hand it to `exo:spec`, since the user approved this prompt and `exo:spec` would set it aside for its own brief; any other skill may still pick it up the usual way.
+3. Read `references/examples.md`, then rewrite with the rules below. Show it in one fenced block, opened with more backticks than the longest run inside it, at least three.
+4. After the block, the `Added:`, `Dropped:` and `Misfit:` lines, each only when its rule fires, then one line asking for ok to run it. Prompt for elsewhere → one line asking for changes instead, with no offer to run it.
+5. Reply of plain yes or ok, nothing more → run the last shown block as written, as the user's request in this session; prompt for elsewhere → run nothing. Routing does not hand it to `exo:spec`, which would swap it for its own brief; other skills may pick it up as usual.
 6. Reply naming changes, such as "yes, but drop X" → revise, show again, ask again.
 7. Any other reply → stop and treat it as a normal message.
 
@@ -23,10 +23,13 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 
 - Keep the intent, the deliverable and every stated requirement, limit and non-goal; reword, never change what is asked.
 - Rough prompt asks for a prompt to use elsewhere, such as in a new session → that prompt is the block: rewrite the prompt it describes as if the user had typed it there, not a prompt asking for it.
-- Copy pasted text and every name verbatim: errors, logs, code, paths, symbols, commands, URLs, issue numbers; pasted chat history only as far as the next rule keeps it.
-- Pasted chat history → keep verbatim only the lines the task uses, such as the message to answer, errors, code and names; other facts the task needs → one `<background>` line; leave out the rest.
+- Copy verbatim only errors, logs, code, a source document (`## Format`), a chat message to answer, and every name: paths, symbols, commands, URLs, issue numbers, config keys.
+- Other pasted text, such as a screen, a state description or the rest of a chat → only the facts the task uses, as short `<background>` lines, not a copy.
 - Keep a stated audience or experience level; carry the report shape or length asked for as one concrete line.
 - Unclear point, or two readings that lead to materially different work → leave it open, in the user's words; ask the user nothing, since the ok reply can name a reading, such as "yes, but only X". A tension between two asks stays as written.
+- Ask clashes with a well-known fixed fact of the system it names → one `<background>` open point: "Check first:" and the fact, then the ask in the user's words, so the session verifies it before acting. Resolve nothing, pick no side; list it in `Added:`.
+- Ask writes outside the repo → one `<instructions>` grant per system it writes to, where results land too (app form, secret store): which write, how far, in the user's words. Grant only the reach the user stated, never a "Check first:" ask; reach left unsaid → open point.
+- User names a skill whose own description rules out the task → keep the skill in the prompt; a `Misfit:` line after the block quotes that clause.
 - Clear prompt → pass through almost unchanged; exploratory question → leave open.
 
 ## Add
@@ -64,13 +67,13 @@ Apply a kind rule only when the prompt is that kind:
 ## Format
 
 Use these tags in this order, each only when it has content:
-1. `<background>`: the goal in one sentence, the user's reason, facts read from code, the one line of facts from pasted chat history.
-2. `<pasted_content id="...">`: pasted text verbatim, chat history only the lines `## Keep` keeps, called data; `<instructions>` names which part, if any, to act on, in the user's words. Opening and closing tag each on its own line, both carrying the same fresh short random id, as in `</pasted_content id="ab12">`; no `source` attribute; the prompt text never mentions the id.
+1. `<background>`: the goal in one sentence, the user's reason, facts read from code or kept from pasted text, an open point.
+2. `<pasted_content id="...">`: only the pasted text `## Keep` copies verbatim, called data; `<instructions>` names which part, if any, to act on, in the user's words. Opening and closing tag each on its own line, both carrying the same fresh short random id, as in `</pasted_content id="ab12">`; no `source` attribute; the prompt text never mentions the id.
 3. `<instructions>`: imperative verbs; numbers only for the user's separate parts or ordered steps; limits and non-goals as sentences, each with the user's reason when given.
 4. `<success_criteria>`.
 5. `<output_format>`: an ask to start the answer with X → "Start the reply with X, no preamble."
 
-- Long pasted documents → `<documents>` in slot 2, holding one `<document index="n">` each: `<source>`, then the document verbatim in its own `<pasted_content id="...">` pair in place of `<document_content>`, a fresh id per document.
+- Long pasted source document, such as a spec → `<documents>` in slot 2, holding one `<document index="n">` each: `<source>`, then the document verbatim in its own `<pasted_content id="...">` pair in place of `<document_content>`, a fresh id per document.
 - Clear one-line prompt with nothing to add → plain sentences, no tags.
 - One term per concept, the same tag names every time.
 - Cut every added line whose removal causes no mistake.
