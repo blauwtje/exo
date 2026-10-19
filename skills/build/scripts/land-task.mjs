@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { dataLiterals, literalFinder } from '#data-literals';
 import { exportSignatures } from '#export-signatures';
@@ -218,7 +219,7 @@ const quiet = { file: null, proofOutput: '' };
 
 function quietText(text, ok) {
   const all = text.split('\n').filter((line) => line.trim() !== '');
-  const lines = ok ? all.filter((line) => !/^(?:Landed|Route|Next|Wave): /.test(line)) : all;
+  const lines = ok ? all.filter((line) => !/^(?:Landed|Route|Next|Then): /.test(line)) : all;
   const kept = lines.length < QUIET_LINES ? lines : [lines[0], ...lines.slice(-(QUIET_LINES - 2))];
   fs.mkdirSync(path.dirname(quiet.file), { recursive: true });
   fs.appendFileSync(quiet.file, `${ok ? '' : text.trimEnd()}\n--- full output ---\n${text}${quiet.proofOutput}`);
@@ -565,6 +566,14 @@ export function checkCodeRules({ planText, number, root, planPath, pin = null })
   return `${runCodeRules(task.files.map((file) => file.path), root)}Code rules OK: Task ${number}\n`;
 }
 
+// Only next-task.mjs writes a task's brief, so a landing names no task to
+// dispatch: it points at next-task.mjs, or says every task landed.
+function nextLine(wave, planPath, root) {
+  if (wave.length === 0) return waveLine(wave);
+  const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'next-task.mjs');
+  return `Then: node "${script}" --block --plan "${planPath}" --root "${root}"`;
+}
+
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
   refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
@@ -614,7 +623,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const route = planRoute(plan.tasks);
   // The inline route builds in the run checkout, never in a wave's worktrees.
   const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
-  return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${waveLine(wave)}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${nextLine(wave, planPath, root)}\n`;
 }
 
 function main(argv) {

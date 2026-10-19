@@ -17,6 +17,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` runs `claude plugin validate --strict --json` and fails on any warning or error; the project notes moved so strict validate passes.
 - `edit-skills` counts a stored result as evidence only when it covers the last edit, and tells the editor to name it in an `Evidence:` trailer.
 
+### Fixed
+- `land-task` no longer prints a `Next: Task <n>` line that looks ready to dispatch without a brief; it points at `next-task.mjs`, which writes the brief.
+
 ## 0.136.0 - 2026-10-19
 
 ### Highlights

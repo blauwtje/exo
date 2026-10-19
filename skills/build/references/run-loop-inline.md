@@ -9,6 +9,7 @@
 - Then write the code from its pasted block, run `Run:` again and expect green.
 - Commit with `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, one commit per task, never a hand-written `git commit`.
 - A failed `Run:` or a land-task refusal gets one fix by this session, then goes to `${CLAUDE_SKILL_DIR}/bug-fixer-prompt.md`; a second failure of one task stops the run `BLOCKED` with 2-3 options.
+- `Then:` line after a landing → rerun `next-task.mjs` for the next task's `Steps:`.
 - `Next: none` → run `node "${CLAUDE_SKILL_DIR}/../verify/scripts/verify.mjs" --plan <plan> --root <checkout> --base <base>` once; load no `Skill exo:verify` and read no tail reference unless the output asks for them.
 - Clean output = only `PASS`, `DONE`, `REPORT`, `MANUAL`, `Proof:`, `REVIEW ... none`, `OVERLAP none` and `SKIP` lines; a `SKIP` with `(out of scope` or `Proof: not a single` is not clean.
 - Clean output → finish as `verify` step 4 does: end on `ship`, whose three lines name the `REPORT` path as the pointer and omit `Proof:` and `MANUAL` lines.

@@ -20,6 +20,7 @@ experimental: { cacheTtl: 1h }
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 4. **Commit a green task.** Done means `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
+  - Its `Then:` line dispatches nothing: only `next-task.mjs` writes a brief, so step 1 reruns it before the next dispatch.
   - `no build report at` refusal → SendMessage it verbatim to its writer, once; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
   - Other refusal except `PLAN DRIFT` → fresh `exo:build-task` from `<skill>/implementer-prompt.md` plus refusal verbatim, at most twice; never rerun a proof.
   - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.

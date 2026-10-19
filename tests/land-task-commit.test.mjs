@@ -19,12 +19,13 @@ test('a green task lands with its trailer and the landed set grows', async () =>
   await editApp(root);
   const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(output, /^Landed: 1\nRoute: unit \(\d+ tasks\)\nNext: Task 2$/m);
+  assert.match(output, /^Landed: 1\nRoute: unit \(\d+ tasks\)\nThen: node ".+next-task\.mjs" --block --plan ".+" --root ".+"$/m);
+  assert.doesNotMatch(output, /^(?:Next|Wave): Task \d/m); // only next-task.mjs writes a brief, so a landing names no task to dispatch
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
-test('a landing in a checkout under .claude/worktrees/ names the next task, while a main checkout names the wave', async () => {
+test('a landing in a checkout under .claude/worktrees/ or a main checkout points at next-task.mjs and names no task', async () => {
   const plan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),
     taskSection({ number: 2, title: 'Left', files: ['- Create: `src/left.js`'], subject: 'feat(app): left' }),
@@ -35,10 +36,12 @@ test('a landing in a checkout under .claude/worktrees/ names the next task, whil
   git(root, 'worktree', 'add', '-q', '-b', 'feat/x', isolated);
   await editApp(isolated);
   const isolatedPlan = path.join(isolated, 'docs/plans/fixture.md');
-  assert.match(landTask({ planPath: isolatedPlan, planText: plan, number: 1, root: isolated }), /\nLanded: 1\nRoute: unit \(.+\)\nNext: Task 2\n$/);
+  assert.match(landTask({ planPath: isolatedPlan, planText: plan, number: 1, root: isolated }), /\nLanded: 1\nRoute: unit \(.+\)\nThen: node ".+next-task\.mjs" --block --plan ".+" --root ".+"\n$/);
   const main = await landingCheckout();
   await editApp(main.root);
-  assert.match(landTask({ planPath: main.planPath, planText: plan, number: 1, root: main.root }), /\nLanded: 1\nRoute: unit \(.+\)\nWave: Task 2, Task 3\n$/);
+  const mainOutput = landTask({ planPath: main.planPath, planText: plan, number: 1, root: main.root });
+  assert.match(mainOutput, /\nLanded: 1\nRoute: unit \(.+\)\nThen: node ".+next-task\.mjs" --block --plan ".+" --root ".+"\n$/);
+  assert.doesNotMatch(mainOutput, /^(?:Next|Wave): Task \d/m);
 });
 
 test('a block without the trailer is refused before it runs', async () => {
