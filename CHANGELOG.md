@@ -10,7 +10,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
-- `benchmarks/results/2026-10-19-build-speed.md` records the build-field speed A/B (n=2 per arm): cost -19% and tokens -16% as direction only, lead calls -4, run-unit calls -1.5, wall time not gated, quality equal.
+- `benchmarks/results/2026-10-19-build-speed.md` records the build-field speed A/B (n=2 per arm); its gains rest on one run that skipped two review stages, and every run failed the same 3 hidden tests.
+- `benchmarks/results/2026-10-19-build-speed-rerun.md` reruns it at n=3 per arm with the fixed fixture: hidden tests 17/17 in every run, run-unit calls -15%, and no wall, cost or token change beyond run-to-run noise.
 - A plan task's `Evidence:` field lands as an `Evidence:` commit trailer.
 - `benchmarks/results/2026-10-19-pressure-grade-compression-rerun.md` records the compression case after the judge line fix: with 67%, without 67%, delta +0%; no answer fails for naming `Math.floor`.
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
