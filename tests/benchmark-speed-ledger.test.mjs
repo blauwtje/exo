@@ -28,7 +28,7 @@ test('the fingerprint ignores case, spacing and target order', () => {
 
 test('the committed ledger reads, renders to its md and passes the check', () => {
   const rows = readLedger();
-  assert.equal(rows.length, 65);
+  assert.ok(rows.length >= 65, `the ledger keeps the 65 migrated rows, found ${rows.length}`);
   assert.ok(rows.every((entry) => KEYS.every((key) => key in entry)));
   assert.deepEqual(checkLedger(), []);
 });

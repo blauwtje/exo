@@ -10,6 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-20-cache-ttl-real-use.md`, `-script-retries.md`, `-repeat-read.md` and `-bash-trim.md` test five cost ideas offline on real-use transcripts; none lands: run-unit back to a 5-minute cache costs +58% in real use, a 1-hour cache costs build-task, review-branch and fix-review 33-44% more, and script error text, repeat-read dedupe and passing-output trim each save under 1.5% of run cost.
 - `benchmarks/results/2026-10-20-checkpoint-fork.md` tests rerunning only the verify block from a kept flow-unit cell (`sweep.mjs --keep-repo`, `benchmarks/checkpoint-fork.mjs`), 5 full cells against 8 forks: it does not land: verify tokens 69,943 vs 86,038 (p=0.008) because each fork pays prompt-cache creation, cost $0.222 vs $0.266 within noise (p=0.242), a fork costs 0.44 of a full cell.
 - `benchmarks/speed-ledger.jsonl` is now the checked source of the speed ledger, with `benchmarks/speed-ledger.md` generated from it, and `benchmarks/baseline-pool.mjs` reuses a stored baseline arm when its content key matches.
 - `benchmarks/results/2026-10-20-speed-round8.md` records a flow-unit baseline at n=15 after the `truncate` fixture fix: the `max < 3` repair loop did not recur (0 of 15, against 3 of 15), fix-review still ran in 2 of 15 runs on unrelated concerns, hidden tests 270/270, cost unchanged within noise; wall fell 28% but at a different concurrency, so later rounds rerun their own base arm.
