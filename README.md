@@ -12,6 +12,10 @@
   <a href="https://github.com/blauwtje/exo/actions/workflows/quality.yml"><img src="https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg" alt="quality"></a>
 </p>
 
+## Measured result
+
+On 5 bug-fix tasks with Sonnet, 5 runs each and hidden tests the model never sees, exo passed 22 of 25 runs and the cheapest rival workflow plugin passed 17 of 25, in the same batch. That cheapest rival's skills never started, so it is close to plain Claude Code, but it is not a run without a plugin. On the tasks both pass, exo costs 1.28 times as much. Method and details: [benchmarks/README.md](benchmarks/README.md).
+
 ## Install
 
 Open the block for the harness you use and run its commands.
