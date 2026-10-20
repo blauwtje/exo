@@ -60,3 +60,32 @@ export function minDetectableEffect({ rate, n }) {
 export function minDetectableMeanEffect({ sd, n }) {
   return (RISE_Z + POWER_Z) * sd * Math.sqrt(2 / n);
 }
+
+function erfc(x) {
+  const z = Math.abs(x);
+  const t = 2 / (2 + z);
+  const poly = -z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806
+    + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))));
+  const value = t * Math.exp(poly);
+  return x >= 0 ? value : 2 - value;
+}
+
+export function mannWhitney(a, b) {
+  const n = a.length;
+  const m = b.length;
+  const all = [...a, ...b].sort((x, y) => x - y);
+  const rank = new Map();
+  let tieTerm = 0;
+  for (let i = 0; i < all.length;) {
+    let j = i;
+    while (j < all.length && all[j] === all[i]) j++;
+    rank.set(all[i], (i + j + 1) / 2);
+    tieTerm += (j - i) ** 3 - (j - i);
+    i = j;
+  }
+  const total = n + m;
+  const u = a.reduce((sum, v) => sum + rank.get(v), 0) - n * (n + 1) / 2;
+  const variance = n * m / 12 * (total + 1 - tieTerm / (total * (total - 1)));
+  if (!(variance > 0)) return 1;
+  return erfc(Math.abs(u - n * m / 2) / Math.sqrt(variance) / Math.SQRT2);
+}

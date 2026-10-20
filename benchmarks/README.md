@@ -112,7 +112,9 @@ node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against t
 node benchmarks/split.mjs <runDir>...                  # flow cells by token type, call count and context size, averaged over the run dirs
 ```
 
-Build-speed ideas that did not land, and why, are in [speed-ledger.md](speed-ledger.md); read it before trying one again.
+Build-speed ideas that did not land, and why, are in [speed-ledger.md](speed-ledger.md); read it before trying one again. The source is `speed-ledger.jsonl`; after editing it run `node benchmarks/speed-ledger.mjs --render`, and `node verify.mjs` fails while the markdown is stale or a line is invalid.
+
+Before a speed round, `node benchmarks/baseline-pool.mjs lookup --commit <sha> --cell <cell> --model <id> --effort <level> --claude-version <v> --metric cost|tokens` says whether a stored baseline arm has the same content key (the files under `agents/`, `skills/`, `hooks/`, `lib/`, `bin/`, `harnesses/`, `install.mjs`, `verify.mjs`, `sweep-fixtures.mjs` and `flow-hidden/` at the commit, plus cell, model, effort and Claude Code version); on a hit, run the candidate arm only. `add --results <file> --arm <row prefix>` stores an arm in `baseline-pool.jsonl` once model, effort and version are known, `key` prints the key, and `replay` re-checks the rule over rounds 2-8 ([results](results/2026-10-20-baseline-pool.md)). `wall` is refused with exit 2: it differs between rounds 3 and 6 under one key (p=0.021) and shifted -28% between rounds 7 and 8 under different keys.
 
 The `replay` set is not in `all`: it replays past reviews per model.
 

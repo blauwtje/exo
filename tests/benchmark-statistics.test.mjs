@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { meanAndSd, minDetectableEffect, minDetectableMeanEffect, signTest } from '../benchmarks/statistics.mjs';
+import { mannWhitney, meanAndSd, minDetectableEffect, minDetectableMeanEffect, signTest } from '../benchmarks/statistics.mjs';
 import { summarize } from '../benchmarks/lean-gates-metrics.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
@@ -73,4 +73,12 @@ test('minDetectableEffect and the mde script agree', () => {
 test('minDetectableMeanEffect scales with spread and shrinks with runs', () => {
   assert.ok(Math.abs(minDetectableMeanEffect({ sd: 1, n: 2 }) - 2.84) < 1e-9);
   assert.ok(Math.abs(minDetectableMeanEffect({ sd: 0.5, n: 8 }) - 2.84 * 0.5 * 0.5) < 1e-9);
+});
+
+test('mannWhitney matches the reference two-sided p, ties included', () => {
+  const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-6, `${actual} vs ${expected}`);
+  near(mannWhitney([1, 2, 3, 4, 5], [6, 7, 8, 9, 10]), 0.009023438818080336);
+  near(mannWhitney([1, 2, 2, 3], [2, 3, 4, 4, 5]), 0.059451093311553654);
+  near(mannWhitney([1, 2, 3], [1.5, 2.5, 3.5, 9]), 0.28884436634648497);
+  assert.equal(mannWhitney([2, 2], [2, 2, 2]), 1);
 });
