@@ -11,6 +11,7 @@
 //   node benchmarks/sweep.mjs --set review,plan --confirm --concurrency 1 --out benchmarks/runs/<dir>
 //   node benchmarks/sweep.mjs --set fixer --confirm --results <dir>   writes the results file outside the tree
 //   node benchmarks/sweep.mjs --set flow --cells flow-c7,flow-base   keeps only the named cells of the sets
+//   node benchmarks/sweep.mjs --set flow --cells flow-unit --confirm --keep-repo <dir>   keeps each cell repository as a checkpoint
 //
 // Every call is billed, so no cell starts without --confirm. A cell whose
 // record.json exists is not run again, so a rerun on the same --out resumes.
@@ -88,7 +89,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1 };
+  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
@@ -100,10 +101,13 @@ function parseArguments(argv) {
     else if (flag === '--cases') options.cases = argv[++index];
     else if (flag === '--models') options.models = argv[++index].split(',');
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
+    else if (flag === '--keep-repo') options.keepRepo = argv[++index];
     else throw new Error(`unknown flag ${flag}`);
   }
   if (!Number.isInteger(options.repeat) || options.repeat < 1) throw new Error('--repeat must be a positive integer');
   if (options.sets === null) throw new Error('name --set all, or a comma list of review, build, plan, flow, replay');
+  if (options.keepRepo === undefined) throw new Error('--keep-repo needs a folder');
+  if (options.keepRepo !== null && options.sets.includes('replay')) throw new Error('--keep-repo does not apply to the replay set: a replay cell is a worktree of this clone');
   if (options.sets.includes('replay') && options.cases === null) throw new Error('--set replay needs --cases <path>');
   return options;
 }
@@ -115,7 +119,7 @@ function git(directory, args) {
 // A cell with a plugin variant loads that variant's copy from `copies`; every
 // other cell loads this clone, as before. The run is confined to its cell root,
 // which holds the repository, its origin and its temporary directory.
-function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
+export function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
@@ -327,7 +331,20 @@ function runLedger(repository) {
   return ledgers[0] ?? null;
 }
 
-async function runCell(cell, runDirectory, copies) {
+// Copies a measured cell's repository, with its excluded .exo/ and its origin,
+// to <keep>/<name>/ before the cell root goes, so a later run can start from
+// that state; the cell's tmp folder is not kept.
+export function keepRepository(cellRoot, keep, name) {
+  const destination = path.join(path.resolve(keep), name);
+  fs.rmSync(destination, { recursive: true, force: true });
+  for (const entry of ['repo', 'origin.git']) {
+    const source = path.join(cellRoot, entry);
+    if (fs.existsSync(source)) fs.cpSync(source, path.join(destination, entry), { recursive: true, verbatimSymlinks: true, preserveTimestamps: true });
+  }
+  return destination;
+}
+
+async function runCell(cell, runDirectory, copies, keep = null) {
   const cellDirectory = path.join(runDirectory, cell.directory ?? cell.id);
   fs.mkdirSync(cellDirectory, { recursive: true });
   const cellRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `exo-sweep-${cell.id}-`)));
@@ -364,6 +381,7 @@ async function runCell(cell, runDirectory, copies) {
     git(repository, ['add', '-A']);
     fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(repository, ['diff', '--cached', 'HEAD']));
     fs.writeFileSync(path.join(cellDirectory, 'record.json'), `${JSON.stringify(record, null, 2)}\n`);
+    if (keep !== null) keepRepository(cellRoot, keep, cell.directory ?? cell.id);
     return record;
   } finally {
     if (cell.kind === 'replay') git(ROOT, ['worktree', 'remove', '--force', repository]);
@@ -431,6 +449,7 @@ async function main() {
   const cells = repeatCells(keepNamedCells(selectCells([...sweepCells(), ...replay], options.sets), options.cells), options.repeat);
   console.log(`${cells.length} claude -p calls planned, one per cell and repeat:`);
   for (const cell of cells) console.log(`  ${cell.directory ?? cell.id}: --model ${cell.model} --effort ${cell.effort}`);
+  if (options.keepRepo !== null) console.log(`keeps each cell repository under ${options.keepRepo}`);
   if (!options.confirm) {
     const projection = projectSweep(cells.map((cell) => cell.id), RUNS);
     console.log(sweepProjectionLine(projection, cells.length));
@@ -460,7 +479,7 @@ async function main() {
         records[index] = JSON.parse(fs.readFileSync(recordFile, 'utf8'));
       } else {
         running.add(cell.directory ?? cell.id);
-        records[index] = await runCell(cell, runDirectory, copies);
+        records[index] = await runCell(cell, runDirectory, copies, options.keepRepo);
         running.delete(cell.directory ?? cell.id);
         // Null once the sweep's own signal ended the cell; the sweep exits when its last cell closes.
         if (records[index] === null) return;

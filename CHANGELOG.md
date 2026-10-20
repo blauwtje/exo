@@ -10,6 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-20-checkpoint-fork.md` tests rerunning only the verify block from a kept flow-unit cell (`sweep.mjs --keep-repo`, `benchmarks/checkpoint-fork.mjs`), 5 full cells against 8 forks: it does not land: verify tokens 69,943 vs 86,038 (p=0.008) because each fork pays prompt-cache creation, cost $0.222 vs $0.266 within noise (p=0.242), a fork costs 0.44 of a full cell.
 - `benchmarks/speed-ledger.jsonl` is now the checked source of the speed ledger, with `benchmarks/speed-ledger.md` generated from it, and `benchmarks/baseline-pool.mjs` reuses a stored baseline arm when its content key matches.
 - `benchmarks/results/2026-10-20-speed-round8.md` records a flow-unit baseline at n=15 after the `truncate` fixture fix: the `max < 3` repair loop did not recur (0 of 15, against 3 of 15), fix-review still ran in 2 of 15 runs on unrelated concerns, hidden tests 270/270, cost unchanged within noise; wall fell 28% but at a different concurrency, so later rounds rerun their own base arm.
 - `benchmarks/results/2026-10-19-speed-round7.md` tests a `build-task` line asking for a test at each limit a `Data:` line implies, at n=15 per arm; it does not land: wall -2.9% not supported (CI [-31.7, +17.7] s, p=0.645), cost +1.0% within noise, the `max < 3` repair loop still ran in 3 of 15 runs in both arms, hidden tests 255/255 in both arms.

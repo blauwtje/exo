@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { checkLedger, fingerprint, KEYS, readLedger, renderLedger } from '../benchmarks/speed-ledger.mjs';
 
 const row = (id, title, extra = {}) => {
@@ -32,10 +33,17 @@ test('the committed ledger reads, renders to its md and passes the check', () =>
   assert.deepEqual(checkLedger(), []);
 });
 
-test('the committed ledger holds 15 self-improve ideas on one results file and L3.3 on the baseline-pool results', () => {
-  const ideas = readLedger().filter((entry) => entry.results === 'benchmarks/results/2026-10-20-self-improve-ideas.md');
-  assert.equal(ideas.length, 15);
-  assert.equal(readLedger().find((entry) => entry.id === 'l3-3-content-keyed-baseline-pool').results, 'benchmarks/results/2026-10-20-baseline-pool.md');
+test('the committed ledger holds all 16 self-improve ideas, each pointing at a results file on disk', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const rows = readLedger();
+  const wanted = ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '3.1', '3.2', '3.3', '4.1', '4.2', '4.3', '5.1', '5.2', '6.1', '6.2'];
+  for (const idea of wanted) {
+    const prefix = `l${idea.replace('.', '-')}-`;
+    const found = rows.filter((entry) => entry.id.startsWith(prefix));
+    assert.equal(found.length, 1, `one ledger row for L${idea}`);
+    assert.ok(found[0].results, `L${idea} names a results file`);
+    assert.ok(fs.existsSync(path.join(root, found[0].results)), `L${idea} results file exists: ${found[0].results}`);
+  }
 });
 
 test('the rendered md starts generated and keeps the index first', () => {

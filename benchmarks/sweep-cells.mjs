@@ -32,7 +32,7 @@ const PLAN_RUNS = [
 // The run arms start exo run, whose sessions pass through this wrapper to run confined.
 const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta.url));
 
-const NO_ANSWER = 'Nobody can answer a question during this run.';
+export const NO_ANSWER = 'Nobody can answer a question during this run.';
 const MINUTE_MS = 60 * 1000;
 
 // The reviewer runs as the cell's own session, not as a dispatched agent,

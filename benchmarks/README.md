@@ -108,6 +108,7 @@ node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three
 node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
 node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # writes the results file under <dir> instead of results/
 node benchmarks/sweep.mjs --set flow --repeat 3          # --repeat applies to every set: n calls per cell, result dirs `<id>-<k>`, records keep the cell id and add `repeat: k`
+node benchmarks/sweep.mjs --set flow --cells flow-unit --confirm --keep-repo <dir>   # copies each measured cell's repo, .exo/ and origin.git to <dir>/<cell dir>/ as a checkpoint; refused with the replay set
 node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against the baseline (flow-base) over the flow records of one out dir per run
 node benchmarks/split.mjs <runDir>...                  # flow cells by token type, call count and context size, averaged over the run dirs
 ```
