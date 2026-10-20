@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
@@ -25,6 +26,7 @@ const USAGE = [
   '       node settings.mjs get <key>                              the effective value',
   '       node settings.mjs set <key> <value> --scope project|local',
   '       node settings.mjs set <key> <value> --scope global       on Codex only',
+  '       node settings.mjs statusline                             install the status line launcher, print the statusLine block',
 ].join('\n');
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
@@ -197,6 +199,37 @@ function set(root, key, value, scope) {
   }
 }
 
+const STATUSLINE_LAUNCHER = [
+  "import fs from 'node:fs';",
+  "import path from 'node:path';",
+  "import { fileURLToPath, pathToFileURL } from 'node:url';",
+  'try {',
+  "  const here = path.dirname(fileURLToPath(import.meta.url));",
+  "  const root = fs.readFileSync(path.join(here, 'plugin-root'), 'utf8').trim();",
+  "  const { main } = await import(pathToFileURL(path.join(root, 'lib', 'statusline.mjs')).href);",
+  '  await main();',
+  '} catch {}',
+  ''
+].join('\n');
+
+function statusline() {
+  if (currentHost() === 'codex') {
+    console.log('the status line is Claude Code only; nothing written on Codex');
+    return;
+  }
+  const directory = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
+  const target = path.join(directory, 'statusline.mjs');
+  if (fs.existsSync(target) && fs.readFileSync(target, 'utf8') !== STATUSLINE_LAUNCHER) {
+    throw new Error(`refused: ${target} already exists and is not the exo launcher; move it, then rerun`);
+  }
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(target, STATUSLINE_LAUNCHER);
+  const command = `node "${path.resolve(target).split(path.sep).join('/')}"`;
+  console.log(`launcher ${target}`);
+  console.log('add this as the value of the "statusLine" key of your Claude Code settings.json (exo does not edit that file):');
+  console.log(JSON.stringify({ type: 'command', command }, null, 2));
+}
+
 function option(args, name) {
   const index = args.indexOf(name);
   return index === -1 ? undefined : args[index + 1];
@@ -215,10 +248,12 @@ try {
     menu(root, args[0]);
   } else if (command === 'get') {
     console.log(settingValue(args[0]));
+  } else if (command === 'statusline') {
+    statusline();
   } else if (command === 'set') {
     set(root, args[0], args[1], option(args, '--scope'));
   } else {
-    throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local');
+    throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local | statusline');
   }
 } catch (error) {
   console.error(error.message);

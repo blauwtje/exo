@@ -104,6 +104,10 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 
 These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. [docs/settings.md](docs/settings.md) describes all the settings.
 
+## Status line
+
+Claude Code only. `/exo:configure` runs `node skills/configure/scripts/settings.mjs statusline`: it writes a launcher to `~/.claude/exo/statusline.mjs` (under `CLAUDE_CONFIG_DIR` when set) and prints a `statusLine` block for your `settings.json`, which exo never edits. The line shows a bold `exo` mark, tokens and share of the window colored by the context budget (green below the soft limit, yellow up to the limit, red past it), the 5h and 7d limits, and the model with its effort. `NO_COLOR` turns the colors off. To remove it, delete the `statusLine` key.
+
 ## More
 
 | Page | Covers |

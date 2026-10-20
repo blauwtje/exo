@@ -55,6 +55,7 @@ Follow `references/setup-map.md` from its first step. Never pick an answer for t
 |---|---|
 | A key `show` lists, for this repository | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project or local>` |
 | A key `show` lists, for every project | None: the harness owns that file. Report names the value to pick for that key under exo in `/config`. |
+| The status line | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" statusline`; relay the printed `statusLine` block and its target file, edit no harness settings file. |
 
 ## References
 
