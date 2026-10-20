@@ -7,6 +7,7 @@ import { BUDGETS, INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
 import { withReceipt } from './context-limit.mjs';
+import { dispatchRules } from './dispatch-rules.mjs';
 
 function raised(input, level) {
   if (input.subagent_type !== 'exo:find-open-points' || !['xhigh', 'max'].includes(level) || [level, 'max'].includes(input.effort)) return input;
@@ -36,10 +37,11 @@ export function agentHook(hookInput, budget, enabled) {
   const output = agentEffort(hookInput, budget);
   const fields = contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
-  if (!fields) return withReceipt(output, hookInput, null, ran, enabled);
-  if (fields.permissionDecision) return withReceipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, hookInput, fields, ran, enabled);
+  if (fields?.permissionDecision) return withReceipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, hookInput, fields, ran, enabled);
+  const context = [dispatchRules(hookInput), fields?.additionalContext].filter(Boolean).join('\n\n');
+  if (!context) return withReceipt(output, hookInput, null, ran, enabled);
   const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
-  return withReceipt({ hookSpecificOutput: { ...base.hookSpecificOutput, ...fields } }, hookInput, null, ran, enabled);
+  return withReceipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: context } }, hookInput, null, ran, enabled);
 }
 
 if (isMain(import.meta.url)) {

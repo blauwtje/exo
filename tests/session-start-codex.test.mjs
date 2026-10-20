@@ -32,6 +32,7 @@ test('a Codex run injects the note after the existing context and writes under .
     assert.ok(settings >= 0 && settings < note, `${settings} ${note}`);
     assert.ok(context.includes(`The exo root is \`${REPOSITORY}\``), 'root not filled');
     assert.ok(!context.includes('{root}'), 'a placeholder is left');
+    assert.ok(context.includes(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8').trimEnd()), 'Codex lacks the dispatch rules');
     assert.ok(!context.includes('EXO_HOST=codex'), 'the note still names the host prefix');
     assert.ok(Buffer.byteLength(context) / 4 <= 5000, `${Buffer.byteLength(context)} bytes`);
     assert.equal(output.systemMessage, undefined, 'a welcome is shown');

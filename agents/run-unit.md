@@ -1,6 +1,6 @@
 ---
 name: run-unit
-description: "Builds and lands one plan block. Dispatched by build only."
+description: "Dispatched by build only."
 tools: Read, Bash, Agent, SendMessage
 maxTurns: 90
 omitClaudeMd: true

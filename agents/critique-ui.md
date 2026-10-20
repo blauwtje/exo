@@ -1,6 +1,6 @@
 ---
 name: critique-ui
-description: "Judges one built visual surface. Dispatched by design-ui only."
+description: "Dispatched by design-ui only."
 tools: Read, Write, Grep
 maxTurns: 12
 omitClaudeMd: true

@@ -1,6 +1,6 @@
 ---
 name: review-branch
-description: "Reviews one finished plan branch. Dispatched by verify only."
+description: "Dispatched by verify only."
 tools: Read, Write, Glob, Grep, Bash
 maxTurns: 30
 ---

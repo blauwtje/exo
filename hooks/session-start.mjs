@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
+import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
 
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
 const onCodex = currentHost() === 'codex';
@@ -82,6 +83,9 @@ const routingFile = path.join(root, 'hooks', 'session-routing.md');
 if (fs.existsSync(routingFile)) parts.push(fs.readFileSync(routingFile, 'utf8').trimEnd());
 const rulesFile = path.join(root, 'hooks', 'session-rules.md');
 if (fs.existsSync(rulesFile)) parts.push(fs.readFileSync(rulesFile, 'utf8').trimEnd());
+// why: Codex serves no Agent hook, so its session text keeps the dispatch rules; on Claude Code a clear or compaction drops them, so the next Agent call delivers them again.
+if (onCodex) parts.push(readDispatchRules());
+else if (typeof input.session_id === 'string' && input.session_id !== '') fs.rmSync(dispatchMarker(input.session_id), { force: true });
 const additionalContext = parts.join('\n\n');
 // why: systemMessage shows to the user only, so the line costs no model tokens. The `receipts` setting turns "exo is on" off, and Codex never shows it; a Node warning still shows.
 let neededNode = 0;

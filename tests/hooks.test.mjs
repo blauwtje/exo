@@ -208,10 +208,27 @@ function sessionContext(prefix, option) {
   }
 }
 
-test('the session hook with no exo settings injects the safety lines, report shape and question protocol, not the prose clamp', () => {
+test('the session hook with no exo settings injects no reply rules, only the fix-all and confirm lines', () => {
   const context = sessionContext('exo-plain-');
-  assert.ok(context.includes(PLAIN_TEXT_SHORT_RULE));
-  assert.ok(!context.includes(PROSE_CLAMP));
+  assert.ok(context.includes('compression=off (default)'));
+  assert.ok(!context.includes('Say the answer first.'));
+  assert.ok(!context.includes('one question per message'));
+  assert.ok(context.includes('Diagnosed causes → fix all, not cut scope or ask;'));
+  assert.ok(context.includes('Irreversible step → confirm with user first.'));
+});
+
+test('the session hook injects the short rule when the plugin option is short or the old low', () => {
+  for (const option of ['short', 'low']) {
+    const context = sessionContext('exo-short-', option);
+    assert.ok(context.includes(PLAIN_TEXT_SHORT_RULE));
+    assert.ok(!context.includes(PROSE_CLAMP));
+  }
+});
+
+test('the exo:short output style carries the short rule text word for word', () => {
+  const style = fs.readFileSync(path.join(REPOSITORY, 'output-styles', 'short.md'), 'utf8');
+  assert.match(style, /^---\nname: short\n[\s\S]*keep-coding-instructions: true\n---\n/);
+  assert.equal(style.replace(/^---\n[\s\S]*?\n---\n/, '').trim(), PLAIN_TEXT_SHORT_RULE);
 });
 
 test('the session hook injects the prose clamp with the report shape and questions when the plugin option is shorter or the old high', () => {
@@ -225,9 +242,9 @@ test('the session hook injects the prose clamp with the report shape and questio
   }
 });
 
-test('the session hook injects no compression rule beyond the off line when the plugin option is off', () => {
+test('the session hook injects no compression rule when the plugin option is off', () => {
   const context = sessionContext('exo-off-', 'off');
-  assert.ok(context.includes('Compression is off: full prose.'));
+  assert.ok(!context.includes('Say the answer first.'));
   assert.ok(!context.includes(PROSE_CLAMP));
   assert.ok(!context.includes('one question per message'));
 });
@@ -259,7 +276,7 @@ test('the session hook adds a Node warning to the user line only when Node is ol
   const manifest = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'package.json'), 'utf8'));
   fs.mkdirSync(path.join(copy, 'hooks'));
   for (const folder of new Set(Object.values(manifest.imports).map((target) => target.split('/')[1]))) fs.symlinkSync(path.join(REPOSITORY, folder), path.join(copy, folder));
-  fs.copyFileSync(path.join(REPOSITORY, 'hooks', 'session-start.mjs'), path.join(copy, 'hooks', 'session-start.mjs'));
+  for (const file of ['session-start.mjs', 'dispatch-rules.mjs']) fs.copyFileSync(path.join(REPOSITORY, 'hooks', file), path.join(copy, 'hooks', file));
   try {
     const messageFor = (engines) => {
       fs.writeFileSync(path.join(copy, 'package.json'), JSON.stringify({ type: 'module', engines, imports: manifest.imports }));

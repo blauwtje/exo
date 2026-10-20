@@ -1,6 +1,6 @@
 ---
 name: build-ui
-description: "Builds one design-ui scope. Dispatched by design-ui only."
+description: "Dispatched by design-ui only."
 tools: Read, Edit, Write, Grep, Bash
 maxTurns: 60
 omitClaudeMd: true

@@ -33,10 +33,10 @@ export const NO_RUN = 'Make the change in code, with tests if a change of this k
 // terse cell shows what brevity alone saves next to the exo cell.
 const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url), 'utf8').trim();
 
-// The compression-* arms carry the rule text the configure schema injects for each
-// compression level, so a cell measures the level exactly as a session receives it.
+// The compression-low arm carries the rule text the configure schema injects for
+// compression=short, so a cell measures that level exactly as a session receives it.
 const COMPRESSION = JSON.parse(fs.readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8')).compression;
-const COMPRESSION_RULE = COMPRESSION.rules[COMPRESSION.default];
+const COMPRESSION_RULE = COMPRESSION.rules.short;
 
 // A git-only arm that loads one rival from the directory rivals.mjs fetches it
 // into; nothing is fetched here, so run.mjs reports a missing directory and

@@ -1,6 +1,6 @@
 ---
 name: solve-hard
-description: "Carries out one hard prompt. Dispatched by build and find-cause only."
+description: "Dispatched by build and find-cause only."
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill
 maxTurns: 60
 ---

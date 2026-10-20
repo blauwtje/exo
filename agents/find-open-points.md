@@ -1,6 +1,6 @@
 ---
 name: find-open-points
-description: "Finds guesses a brief leaves a builder. Dispatched by spec only."
+description: "Dispatched by spec only."
 tools: Read, Glob, Grep, Bash
 maxTurns: 30
 ---

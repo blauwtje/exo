@@ -1,6 +1,6 @@
 ---
 name: build-task
-description: "Builds one plan task. Dispatched by build only."
+description: "Dispatched by build only."
 tools: Read, Edit, Write, Grep, Bash
 maxTurns: 60
 ---

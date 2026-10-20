@@ -9,6 +9,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Highlights
+- **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
+
 ### Added
 - A user-only line shows when an `exo:` skill or agent starts, when exo routes work, and when a hook refuses a call, plus an "exo is on" line at session start; the model sees none of it, and the new `receipts` setting turns the lines off.
 - `hooks/hooks.json` warns the user when `node` is missing, instead of every hook failing silently with exit 127, and session start warns when Node is older than `engines.node`.
@@ -37,7 +40,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
-- The default `compression: short` now injects only the report shape, the question rules and the safety lines (450 words, was 648); the small-words prose clamp loads only under `shorter`.
+- Reply compression is now off by default and opt-in: the `compression: short` setting or the new `exo:short` output style adds the report shape and question rules, and the small-words prose clamp loads only under `shorter`.
+- The lead's brief, model-choice and own-work rules now arrive at the first Agent call instead of session start, and the nine dispatched-only agents carry one-line descriptions (84 to 38 words).
+- The done rules now reuse an existing failing test or repro as proof, write one smallest test per cause only when none exists, run each named order, seed, timezone or input variant once and show it took effect, and read the failing command's full output and the README rules for touched code; the 5-task head-to-head moves exo from 19/25 hidden passes at $0.120 per task to 22/25 at $0.150, against 17/25 at $0.109 for the cheapest rival.
 - A reported bug or small change gets one plain attempt first (repro, fix, proof); `find-cause` starts only when no one-command repro exists or the proof stays red, so routing picks it for 5 of 10 bug prompts, down from 10 of 10, and never on a wrong prompt.
 - Session rules ask for a repro that fails before the fix, a fix for every named cause before stopping, and a read of the repo docs before asking the user; the delegation rule no longer fans out small parts.
 - run-unit runs with `omitClaudeMd: true`, so it no longer loads `CLAUDE.md`: 4.83% less run-unit cost (CI 4.15-5.79%, about 0.28% of a run), and a paid flow-unit run still landed 4 of 4 tasks at $0.595 against $0.598.

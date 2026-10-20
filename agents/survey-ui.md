@@ -1,6 +1,6 @@
 ---
 name: survey-ui
-description: "Surveys one design-ui redesign. Dispatched by design-ui only."
+description: "Dispatched by design-ui only."
 tools: Read, Write, Glob, Grep, Bash
 maxTurns: 30
 omitClaudeMd: true

@@ -97,7 +97,7 @@ test('a branch with no wording change passes and a missing base is UNRUN', () =>
 });
 
 test('a session-start text edit with no trailer fails', () => {
-  for (const file of ['hooks/session-routing.md', 'hooks/session-rules.md', 'harnesses/codex/host-note.md']) {
+  for (const file of ['hooks/session-routing.md', 'hooks/session-rules.md', 'hooks/dispatch-rules.md', 'harnesses/codex/host-note.md']) {
     const root = fixture();
     edit(root, 'reword', file);
     const r = run(root);

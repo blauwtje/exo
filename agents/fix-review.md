@@ -1,6 +1,6 @@
 ---
 name: fix-review
-description: "Repairs one branch review's fix findings. Dispatched by verify only."
+description: "Dispatched by verify only."
 tools: Read, Edit, Write, Grep, Bash
 maxTurns: 40
 omitClaudeMd: true

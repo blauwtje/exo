@@ -22,7 +22,7 @@
       "title": "How compact replies are",
       "description": "short: answer first, a three-line report opening, short one-at-a-time questions. shorter: also just the answer and key facts, in small, easy words. off: normal full replies. A project overrides this in .claude/exo.json.",
       "options": ["off", "short", "shorter"],
-      "default": "short"
+      "default": "off"
     },
     "budget": {
       "type": "string",
