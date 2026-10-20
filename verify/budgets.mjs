@@ -42,7 +42,8 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Lowered 909 -> 635 in the round 2 merge: dispatch-only rules moved to the Agent hook, compression rule
 // text became the opt-in exo:short style, agent descriptions shortened; done-rule clauses added words back.
 // Raised 636 -> 667 with the TaskStop rule line.
-export const SESSION_LOAD_LOCK = { words: 667, measured: '2026-10-20' };
+// Raised 667 -> 669 with the context limit on the settings line.
+export const SESSION_LOAD_LOCK = { words: 669, measured: '2026-10-20' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.
@@ -50,7 +51,8 @@ export const SESSION_LOAD_LOCK = { words: 667, measured: '2026-10-20' };
 // off by default so no rule text rides the settings line; done-rule clauses added bytes back.
 // Raised 1719 -> 1739 with the proof-rule split above.
 // Raised 1745 -> 1926 with the TaskStop rule line.
-export const SESSION_START_BYTES_LOCK = { bytes: 1926, measured: '2026-10-20' };
+// Raised 1926 -> 1950 with the context limit on the settings line.
+export const SESSION_START_BYTES_LOCK = { bytes: 1950, measured: '2026-10-20' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };

@@ -7,6 +7,12 @@ import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { contextDecision, contextLimit, softLimit } from '../lib/context-limits.mjs';
 
+// why: the hook reads defaults.contextLimit from the home's run.json; a user override there would change the levels these tests assume.
+// why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
+const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
+process.env.HOME = testHome;
+process.env.USERPROFILE = testHome;
+
 function homeWith(content) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-'));
   if (content !== undefined) {

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { contextLimit, contextLimitSource } from '#context-limits';
 import { currentHost } from '#host';
 import {
   LOCAL_FILE,
@@ -43,6 +44,10 @@ function activeRules(values) {
     .join(' ');
 }
 
+function contextPart() {
+  return `context=${Math.round(contextLimit() / 1000)}k (${contextLimitSource()})`;
+}
+
 function contextLine(root) {
   try {
     const stack = layers(root);
@@ -50,7 +55,7 @@ function contextLine(root) {
     const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
     const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '' && !(QUIET_DEFAULT.has(key) && resolved[key].layer === 'default'));
-    const parts = printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
+    const parts = [...printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`), contextPart()];
     const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
     return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${rules}`;
   } catch (error) {
@@ -58,6 +63,7 @@ function contextLine(root) {
     const defaultParts = Object.entries(defaults)
       .filter(([key, value]) => value !== '' && !QUIET_DEFAULT.has(key))
       .map(([key, value]) => `${key}=${value} (default)`);
+    defaultParts.push(contextPart());
     return `exo settings: ${defaultParts.join(', ')}; ${error.message}. ${activeRules(defaults)}`;
   }
 }
