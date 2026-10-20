@@ -14,7 +14,7 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 1. No argument → print `/exo:prompt <rough prompt>`, run nothing, stop.
 2. Read only what names a path, a test or build command, or a pattern file for the rewrite: Glob, Grep, Read, the package manifest. No edit, no test run, no helper.
 3. Read `references/examples.md`, then rewrite with the rules below. Show it in one fenced block, opened with more backticks than the longest run inside it, at least three.
-4. After the block, the `Added:`, `Dropped:` and `Misfit:` lines, each only when its rule fires, then one line asking for ok to run it. Prompt for elsewhere → one line asking for changes instead, with no offer to run it.
+4. After the block, the `Added:`, `Dropped:`, `Misfit:` and `Missing:` lines, each only when its rule fires, then one line asking for ok to run it. Prompt for elsewhere → one line asking for changes instead, with no offer to run it.
 5. Reply of plain yes or ok, nothing more → run the last shown block as written, as the user's request in this session; prompt for elsewhere → run nothing. Routing does not hand it to `exo:spec`, which would swap it for its own brief; other skills may pick it up as usual.
 6. Reply naming changes, such as "yes, but drop X" → revise, show again, ask again.
 7. Any other reply → stop and treat it as a normal message.
@@ -29,6 +29,8 @@ Show the user's rough prompt rewritten for Claude, then run it only after the us
 - Unclear point, or two readings that lead to materially different work → leave it open, in the user's words; ask the user nothing, since the ok reply can name a reading, such as "yes, but only X". A tension between two asks stays as written.
 - Ask clashes with a well-known fixed fact of the system it names → one `<background>` open point: "Check first:" and the fact, then the ask in the user's words, so the session verifies it before acting. Resolve nothing, pick no side; list it in `Added:`.
 - Ask writes outside the repo → one `<instructions>` grant per system it writes to, where results land too (app form, secret store): which write, how far, in the user's words. Grant only the reach the user stated, never a "Check first:" ask; reach left unsaid → open point.
+- Long, looping, paid or open-ended job → a `Missing:` line after the block names each absent item. Items: money cap for paid runs, measurable done test for a vague goal, stop rule (max rounds or budget), links for outside projects named only by name, how big a change may be (improve, remove, rewrite).
+- `Missing:` item → never a value in the block; the ok reply can supply it.
 - User names a skill whose own description rules out the task → keep the skill in the prompt; a `Misfit:` line after the block quotes that clause.
 - Clear prompt → pass through almost unchanged; exploratory question → leave open.
 

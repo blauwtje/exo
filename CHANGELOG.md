@@ -10,6 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `prompt` adds a `Missing:` line for a long, looping, paid or open-ended job, naming each absent money cap, measurable done test, stop rule, link for an outside project named only by name, and allowed change size, without filling in a value.
 - `benchmarks/results/2026-10-20-*.md` records 9 more cost ideas tested offline on real-use transcripts, from refusals in one call and a red-loop breaker to reusing the Proof at landing and a builder that lands its own task; none lands, each misses the 3%-of-bucket bar or its quality guard, and `benchmarks/speed-ledger.jsonl` records reviews starting before the gate as already landed in `779e1294`.
 - `benchmarks/results/2026-10-20-*.md` records 16 more cost ideas tested offline or in small paid probes across sessions 6 and 7, from build-task model tier and range reads to review diff spills and lean lead tools; none lands, and `benchmarks/speed-ledger.jsonl` lists each with when to retry it.
 - `benchmarks/results/2026-10-20-cache-ttl-real-use.md`, `-script-retries.md`, `-repeat-read.md` and `-bash-trim.md` test five cost ideas offline on real-use transcripts; none lands: run-unit back to a 5-minute cache costs +58% in real use, a 1-hour cache costs build-task, review-branch and fix-review 33-44% more, and script error text, repeat-read dedupe and passing-output trim each save under 1.5% of run cost.
