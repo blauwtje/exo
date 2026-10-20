@@ -67,13 +67,13 @@ test('a clear on Codex also leaves the Claude folder alone', () => {
   }
 });
 
-test('a Claude run gets the settings line, no Codex note and no welcome', () => {
+test('a Claude run gets the settings line, no Codex note and the "exo is on" line', () => {
   const { home, output } = run({ EXO_HOST: 'claude' });
   try {
     const context = output.hookSpecificOutput.additionalContext;
     assert.ok(context.includes('exo settings:'));
     assert.ok(!context.includes('# exo on Codex'));
-    assert.equal(output.systemMessage, undefined);
+    assert.equal(output.systemMessage, 'exo is on');
     assert.ok(fs.existsSync(path.join(home, '.claude', 'exo', 'plugin-root')));
     assert.equal(fs.existsSync(path.join(home, '.codex')), false);
   } finally {

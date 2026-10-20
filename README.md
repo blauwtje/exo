@@ -19,7 +19,7 @@ Open the block for the harness you use and run its commands.
 <details>
 <summary>Claude Code (CLI)</summary>
 
-Inside Claude Code, run these, then restart it:
+exo's hooks need Node 22 or newer on `PATH`; without it they stay off and the session start says so. Inside Claude Code, run these, then restart it:
 
 ```text
 /plugin marketplace add blauwtje/exo
@@ -95,7 +95,7 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 
 | When Claude | exo answers |
 |---|---|
-| opens a reply with "Great question, let me look into that" and closes with a recap | Under the default `compression=short`, the preamble, the recap and the filler are gone. |
+| opens a reply with "Great question, let me look into that" and closes with a recap | Under `compression=shorter`, the preamble, the recap and the filler are gone; the default `short` opens each report with at most three plain lines. |
 | gets a bug report | `find-cause` builds a reproduction that fails on demand and names one cause before anything is fixed. |
 
 These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. [docs/settings.md](docs/settings.md) describes all the settings.

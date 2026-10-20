@@ -16,7 +16,9 @@ export const RIVALS_ROOT = path.join(HERE, 'fixtures', 'rivals');
 // The git-ignored file that names the local-only rivals, keyed by arm name.
 export const LOCAL_FILE = path.join(HERE, 'fixtures', 'rivals.local.json');
 const LOCAL_FILE_SHOWN = 'benchmarks/fixtures/rivals.local.json';
-const LOCAL_KEYS = ['repository', 'ref', 'commit', 'root', 'promptSuffix'];
+const LOCAL_KEYS = ['repository', 'ref', 'commit', 'root'];
+// promptSuffix is optional: an arm without one gets the plain task prompt.
+const OPTIONAL_LOCAL_KEYS = ['promptSuffix'];
 
 // root: the plugin root inside the repository ('.' when the repository is the
 // plugin). needs: files that must exist there for the plugin to load; the
@@ -41,8 +43,15 @@ const PINNED = {
 // skills-rival is a skills-only rival plugin, forced by naming its skill. Its
 // name stays out of tracked files, so LOCAL_FILE holds its repository, ref,
 // commit, root and the promptSuffix that names the skill; only needs is here.
+// h2h-1..h2h-3 are the head-to-head rivals of the value tier: real plugins
+// (each has .claude-plugin/plugin.json, so none needs a wrapper), loaded
+// unforced with no promptSuffix so their hooks and skills fire as they
+// naturally would. Which rival is which lives in LOCAL_FILE.
 const LOCAL = {
   'skills-rival': { needs: ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'hooks/run-hook.cmd'] },
+  'h2h-1': { needs: ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'skills'] },
+  'h2h-2': { needs: ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'skills'] },
+  'h2h-3': { needs: ['.claude-plugin/plugin.json', 'skills'] },
 };
 
 function readLocalFile() {
@@ -63,7 +72,7 @@ for (const [name, rival] of Object.entries(LOCAL)) {
   const entry = localEntries[name] ?? {};
   const absent = LOCAL_KEYS.filter((key) => typeof entry[key] !== 'string' || entry[key] === '');
   if (absent.length === 0) {
-    RIVALS[name] = { ...rival, ...Object.fromEntries(LOCAL_KEYS.map((key) => [key, entry[key]])) };
+    RIVALS[name] = { ...rival, ...Object.fromEntries([...LOCAL_KEYS, ...OPTIONAL_LOCAL_KEYS].filter((key) => typeof entry[key] === 'string' && entry[key] !== '').map((key) => [key, entry[key]])) };
   } else {
     MISSING_RIVALS[name] = `${LOCAL_FILE_SHOWN} needs "${name}": { ${LOCAL_KEYS.map((key) => `"${key}"`).join(', ')} } as strings; absent: ${absent.join(', ')}`;
   }

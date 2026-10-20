@@ -4,6 +4,7 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
+import { withReceipt } from './context-limit.mjs';
 
 export const CONTEXT_STEP = {
   name: 'context-limit',
@@ -13,7 +14,7 @@ export const CONTEXT_STEP = {
   }
 };
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP]) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {
@@ -29,7 +30,8 @@ export async function dispatchBash(hookInput, steps = [CONTEXT_STEP]) {
   if (verdict) Object.assign(merged, { permissionDecision: verdict.permissionDecision, permissionDecisionReason: verdict.permissionDecisionReason });
   const contexts = outputs.map((output) => output.additionalContext).filter(Boolean);
   if (contexts.length > 0) merged.additionalContext = contexts.join('\n');
-  return Object.keys(merged).length === 1 ? null : { hookSpecificOutput: merged };
+  const output = Object.keys(merged).length === 1 ? null : { hookSpecificOutput: merged };
+  return withReceipt(output, hookInput, verdict, undefined, enabled);
 }
 
 if (isMain(import.meta.url)) {

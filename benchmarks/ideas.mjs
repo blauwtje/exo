@@ -184,6 +184,16 @@ function readRuns(armDir) {
   return { runsByCase, failed };
 }
 
+// why: benchmarks/runs/ is gitignored, so the maker answers behind a results file were lost and a later judge or rubric could not rescore them; the raw runs and their scored records are kept beside the results file.
+export function rawRecordsFile(resultsFile) {
+  return resultsFile.replace(/\.md$/, '') + '.records.json';
+}
+
+export function rawRecordsJson({ arm, runsByCase, records }) {
+  const runs = Object.entries(runsByCase).flatMap(([caseId, list]) => list.map(({ run, finalText, tokens, costUsd }) => ({ case: caseId, run, finalText, tokens, costUsd })));
+  return `${JSON.stringify({ arm, runs, records }, null, 2)}\n`;
+}
+
 export async function scoreDirectory({ dir, arm, judge, results }) {
   const armDir = path.join(dir, arm);
   const { runsByCase, failed } = readRuns(armDir);
@@ -191,6 +201,7 @@ export async function scoreDirectory({ dir, arm, judge, results }) {
   fs.writeFileSync(path.join(armDir, 'records.json'), JSON.stringify(scored.records, null, 2));
   const file = results ?? path.join(ROOT, 'benchmarks', 'results', `${today()}-ideas-${arm}.md`);
   fs.writeFileSync(file, resultsMarkdown({ arm, ...scored, failed }));
+  fs.writeFileSync(rawRecordsFile(file), rawRecordsJson({ arm, runsByCase, records: scored.records }));
   return file;
 }
 

@@ -21,11 +21,13 @@ test('every entry has a prompt, a valid expect and a valid split', () => {
   assert.equal(new Set(prompts.map((p) => p.prompt)).size, prompts.length);
 });
 
-test('each model-invocable skill and null has 10 prompts split 6 train, 4 held-out', () => {
+// null holds 10 trivial negatives plus 10 borderline ones (small decided edits and bugs with a named cause) that look like build or find-cause work but are not.
+test('each model-invocable skill has 10 prompts split 6 train, 4 held-out; null has 20 split 12, 8', () => {
   for (const key of [...invocable, null]) {
     const group = prompts.filter((p) => p.expect === key);
-    assert.equal(group.length, 10, `${key} count`);
-    assert.equal(group.filter((p) => p.split === 'train').length, 6, `${key} train`);
-    assert.equal(group.filter((p) => p.split === 'held-out').length, 4, `${key} held-out`);
+    const scale = key === null ? 2 : 1;
+    assert.equal(group.length, 10 * scale, `${key} count`);
+    assert.equal(group.filter((p) => p.split === 'train').length, 6 * scale, `${key} train`);
+    assert.equal(group.filter((p) => p.split === 'held-out').length, 4 * scale, `${key} held-out`);
   }
 });

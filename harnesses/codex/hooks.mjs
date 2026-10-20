@@ -21,7 +21,9 @@ export const DOCUMENTED_FIELDS = ['type', 'command', 'commandWindows', 'timeout'
 // context at 5000 estimated tokens, and this leaves room for the estimate's error.
 const SESSION_CONTEXT_LIMIT = 6000;
 
-const SOURCE_COMMAND = /^node "\$\{CLAUDE_PLUGIN_ROOT\}\/([^"$\\]+)"$/;
+// The source command may start with the Node guard hooks/hooks.json adds:
+// `command -v node ... || exit 0;` or the SessionStart variant that prints a message.
+const SOURCE_COMMAND = /^(?:command -v node >\/dev\/null 2>&1 \|\| (?:exit 0|\{[^;]*; exit 0; \}); )?node "\$\{CLAUDE_PLUGIN_ROOT\}\/([^"$\\]+)"$/;
 
 // cmd.exe expands % and PowerShell expands $ and the backtick inside double
 // quotes, so a root holding one cannot be quoted for either.

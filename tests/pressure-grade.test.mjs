@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { aggregate, gradeLine, gradeRun, linesForCase, parseCriteria } from '../skills/edit-skills/scripts/pressure-grade.mjs';
+import { aggregate, gradeLine, gradeRun, judgeClauses, lintCriteria, linesForCase, newcombe, parseCriteria, parseMargins, runsNeeded, verdictFor } from '../skills/edit-skills/scripts/pressure-grade.mjs';
 
 const CRITERIA = `# x: criteria
 
@@ -67,22 +67,119 @@ test('judge lines read PASS or FAIL from the judge and hide nothing but the arm'
   assert.equal(gradeLine(line, ctxFor('a', '.', () => 'maybe')).pass, false);
 });
 
-test('aggregate applies the threshold and reports the delta and no-skill-effect flag', () => {
-  const run = ([caseFile, arm, n, ...passes]) => ({ case: caseFile, arm, run: n, lines: passes.map((pass) => ({ text: 't', pass, reason: '' })) });
-  const grades = [
-    run(['a.txt', 'with', 1, true]), run(['a.txt', 'with', 2, true]), run(['a.txt', 'with', 3, true]),
-    run(['a.txt', 'without', 1, true]), run(['a.txt', 'without', 2, false]), run(['a.txt', 'without', 3, false]),
-    run(['b.txt', 'with', 1, true]), run(['b.txt', 'with', 2, true, false]), run(['b.txt', 'with', 3, true]),
-    run(['b.txt', 'without', 1, true]), run(['b.txt', 'without', 2, true]), run(['b.txt', 'without', 3, true])
-  ];
-  const [a, b] = aggregate(grades);
-  assert.equal(a.pass, true);
-  assert.ok(Math.abs(a.delta - 2 / 3) < 1e-9);
-  assert.equal(a.noSkillEffect, false);
-  assert.equal(b.pass, false);
-  const [, loose] = aggregate(grades, { threshold: 0.6 });
-  assert.equal(loose.pass, true);
-  assert.equal(loose.noSkillEffect, true);
+const run = ([caseFile, arm, n, ...passes]) => ({ case: caseFile, arm, run: n, lines: passes.map((pass) => ({ text: 't', pass, reason: '' })) });
+const arms = (caseFile, withPasses, otherPasses, other = 'without') => [
+  ...withPasses.map((pass, index) => run([caseFile, 'with', index + 1, pass])),
+  ...otherPasses.map((pass, index) => run([caseFile, other, index + 1, pass]))
+];
+
+test('aggregate gives PASS, FAIL or INCONCLUSIVE from the interval of the pass-rate difference and the margin', () => {
+  const [win, loss, tie] = aggregate([
+    ...arms('win.txt', [true, true, true], [false, false, false]),
+    ...arms('loss.txt', [false, false, false], [true, true, true]),
+    ...arms('tie.txt', [true, true, true], [true, true, true])
+  ]);
+  assert.deepEqual([win.verdict, win.pass], ['PASS', true]);
+  assert.deepEqual([loss.verdict, loss.pass], ['FAIL', false]);
+  assert.deepEqual([tie.verdict, tie.pass], ['INCONCLUSIVE', false]);
+  assert.equal(win.delta, 1);
+  assert.ok(win.ci[0] > 0 && win.ci[1] <= 1);
+  assert.ok(tie.ci[0] < -0.2 && tie.ci[1] > 0.2);
+  assert.ok(tie.needed > 3);
+  assert.equal(win.needed, null);
+});
+
+test('a 3 of 3 against 2 of 3 split is INCONCLUSIVE, not the FAIL a 100 percent bar printed', () => {
+  const [result] = aggregate(arms('a.txt', [true, true, true], [true, true, false]));
+  assert.equal(result.verdict, 'INCONCLUSIVE');
+  const [bar] = aggregate(arms('a.txt', [true, true, false], [true, true, true]));
+  assert.equal(bar.verdict, 'INCONCLUSIVE');
+});
+
+test('the margin decides where PASS and FAIL start, and a case margin beats the default', () => {
+  const ci = newcombe(30, 30, 30, 30);
+  assert.equal(verdictFor(ci, 0.2), 'PASS');
+  assert.equal(verdictFor(ci, 0.05), 'INCONCLUSIVE');
+  const grades = arms('a.txt', Array(30).fill(true), Array(30).fill(true));
+  assert.equal(aggregate(grades)[0].verdict, 'PASS');
+  assert.equal(aggregate(grades, { margin: 0.05 })[0].verdict, 'INCONCLUSIVE');
+  assert.equal(aggregate(grades, { margin: 0.05, margins: new Map([['a.txt', 0.2]]) })[0].verdict, 'PASS');
+  assert.equal(runsNeeded(1, 1, 0.2), 16);
+});
+
+test('newcombe interval of equal rates is symmetric about 0 and narrows with n', () => {
+  const [low3, high3] = newcombe(3, 3, 3, 3);
+  const [low30, high30] = newcombe(30, 30, 30, 30);
+  assert.ok(Math.abs(low3 + high3) < 1e-9);
+  assert.ok(high30 < high3);
+});
+
+test('a case with one arm keeps the single-arm threshold as its verdict', () => {
+  const grades = [run(['a.txt', 'with', 1, true]), run(['a.txt', 'with', 2, true]), run(['a.txt', 'with', 3, false])];
+  assert.equal(aggregate(grades)[0].verdict, 'FAIL');
+  assert.equal(aggregate(grades, { threshold: 0.6 })[0].verdict, 'PASS');
+  assert.equal(aggregate(grades)[0].ci, null);
+});
+
+test('PASS with an interval spanning 0 is flagged no skill effect, and judge instability is counted', () => {
+  const same = Array(30).fill(true);
+  const [flat] = aggregate(arms('a.txt', same, same));
+  assert.equal(flat.noSkillEffect, true);
+  const unstable = [{ case: 'a.txt', arm: 'with', run: 1, lines: [{ text: 't', pass: true, reason: '', unstable: true }] }];
+  assert.equal(aggregate(unstable)[0].unstable, 1);
+});
+
+test('a contrast arm is compared like the without arm', () => {
+  const [result] = aggregate(arms('a.txt', [true, true, true], [false, false, false], 'contrast'));
+  assert.equal(result.comparison, 'contrast');
+  assert.equal(result.verdict, 'PASS');
+});
+
+test('parseMargins reads a global and a case margin and parseCriteria keeps them out of judge context', () => {
+  const md = 'margin: 0.15\n\n## a.txt\n\nmargin: 0.3\nNote.\n\n- J. `grade: judge`\n';
+  const margins = parseMargins(md);
+  assert.deepEqual([margins.get(null), margins.get('a.txt')], [0.15, 0.3]);
+  assert.deepEqual(parseCriteria(md)[0].lines[0].context, ['Note.']);
+  assert.throws(() => parseMargins('margin: 0\n'), /line 1.*margin/);
+});
+
+test('a judge line is graded by the majority of three votes and an uneven vote is flagged unstable', () => {
+  const line = parseCriteria('- Kind. `grade: judge`\n')[0].lines[0];
+  const replies = (...list) => { const queue = [...list]; return () => queue.shift(); };
+  const split = gradeLine(line, ctxFor('a', '.', replies('PASS\nyes', 'FAIL\nno', 'PASS\nyes again')));
+  assert.deepEqual([split.pass, split.votes, split.unstable], [true, [true, false, true], true]);
+  assert.ok(Math.abs(split.agreement - 2 / 3) < 1e-9);
+  const lost = gradeLine(line, ctxFor('a', '.', replies('FAIL\nbad', 'PASS\nok', 'FAIL\nbad too')));
+  assert.deepEqual([lost.pass, lost.reason], [false, 'bad']);
+  const calls = [];
+  const sure = gradeLine(line, ctxFor('a', '.', (prompt) => { calls.push(prompt); return 'PASS\nok'; }));
+  assert.deepEqual([calls.length, sure.agreement, sure.unstable], [3, 1, false]);
+});
+
+test('judge lines are not called when a deterministic line of the run failed', () => {
+  const lines = parseCriteria('- Hi. `grade: answer =~ /hi/`\n- Kind. `grade: judge`\n')[0].lines;
+  let calls = 0;
+  const judge = () => { calls += 1; return 'PASS\nok'; };
+  const blocked = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'no', dir: os.tmpdir(), judge });
+  assert.deepEqual([calls, blocked.lines.map((line) => line.pass), blocked.lines[1].skipped], [0, [false, false], true]);
+  const open = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'hi', dir: os.tmpdir(), judge });
+  assert.deepEqual([calls, open.lines.map((line) => line.pass)], [3, [true, true]]);
+});
+
+test('lint flags a judge line with three clauses and passes one claim', () => {
+  assert.equal(judgeClauses('The answer names `toCents` as the cause.'), 1);
+  assert.equal(judgeClauses('Names the cause after the float product comes out low (for example 28.999), and names no other cause.'), 3);
+  const md = '- One claim only. `grade: judge`\n- Names the cause after the product is low, and names no other cause. `grade: judge`\n- Cause and mechanism and exclusion. `grade: answer =~ /x/`\n';
+  assert.deepEqual(lintCriteria(md), [{ line: 2, clauses: 3 }]);
+});
+
+test('--check prints a LINT line for a three-clause judge line and still exits 0', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-lint-'));
+  const file = path.join(dir, 'c.md');
+  fs.writeFileSync(file, '- Cause, and mechanism, and exclusion. `grade: judge`\n');
+  const out = spawnSync('node', [path.resolve('skills/edit-skills/scripts/pressure-grade.mjs'), '--check', file], { encoding: 'utf8' });
+  assert.equal(out.status, 0);
+  assert.match(out.stdout, /LINT .*c\.md:1: judge line has 3 clauses/);
 });
 
 test('gradeRun labels the lines with case, arm and run', () => {

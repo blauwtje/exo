@@ -10,6 +10,12 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- A user-only line shows when an `exo:` skill or agent starts, when exo routes work, and when a hook refuses a call, plus an "exo is on" line at session start; the model sees none of it, and the new `receipts` setting turns the lines off.
+- `hooks/hooks.json` warns the user when `node` is missing, instead of every hook failing silently with exit 127, and session start warns when Node is older than `engines.node`.
+- `verify/checks/name-clash.mjs` fails `npm run check` on a new skill name that clashes with a Claude Code skill; today's `verify` and `configure` clashes are recorded as a baseline.
+- `benchmarks/routing/prompts.json` adds 10 borderline prompts that should start no skill, and `benchmarks/ideas.mjs` keeps the raw idea records.
+- `skills/edit-skills/scripts/pressure.mjs` gives a three-state verdict from a confidence interval, takes 3 judge votes, lints judge lines for one claim each, and runs both arms with the plugin through `--contrast-env`.
+- A head-to-head on 5 bug-fix tasks (sonnet, n=5 per task) against three popular workflow plugins: exo moves from 16/25 hidden passes at $0.132 per task to 19/25 at $0.120, tied with the best rival (19/25, $0.141); the cheapest rival scores 17/25 at $0.111, so exo still costs 8% more.
 - `prompt` adds a `Missing:` line for a long, looping, paid or open-ended job, naming each absent money cap, measurable done test, stop rule, link for an outside project named only by name, and allowed change size, without filling in a value.
 - `benchmarks/results/2026-10-20-*.md` records 9 more cost ideas tested offline on real-use transcripts, from refusals in one call and a red-loop breaker to reusing the Proof at landing and a builder that lands its own task; none lands, each misses the 3%-of-bucket bar or its quality guard, and `benchmarks/speed-ledger.jsonl` records reviews starting before the gate as already landed in `779e1294`.
 - `benchmarks/results/2026-10-20-*.md` records 16 more cost ideas tested offline or in small paid probes across sessions 6 and 7, from build-task model tier and range reads to review diff spills and lean lead tools; none lands, and `benchmarks/speed-ledger.jsonl` lists each with when to retry it.
@@ -31,6 +37,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- The default `compression: short` now injects only the report shape, the question rules and the safety lines (450 words, was 648); the small-words prose clamp loads only under `shorter`.
+- A reported bug or small change gets one plain attempt first (repro, fix, proof); `find-cause` starts only when no one-command repro exists or the proof stays red, so routing picks it for 5 of 10 bug prompts, down from 10 of 10, and never on a wrong prompt.
+- Session rules ask for a repro that fails before the fix, a fix for every named cause before stopping, and a read of the repo docs before asking the user; the delegation rule no longer fans out small parts.
 - run-unit runs with `omitClaudeMd: true`, so it no longer loads `CLAUDE.md`: 4.83% less run-unit cost (CI 4.15-5.79%, about 0.28% of a run), and a paid flow-unit run still landed 4 of 4 tasks at $0.595 against $0.598.
 - verify dispatches the review fixer for a `concern` only when it claims wrong behavior: the reviewer writes style, naming, layout and test-gap findings as the new `note` kind, which `merge-reviews.mjs` counts and lists for the report and which never starts the fixer.
 - `benchmarks/speed-ledger.md` points each rejected idea at its results file, since its idea branches are deleted.
@@ -45,6 +54,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- Session start reads settings from the session folder, not the hook's working folder.
+- `benchmarks/mde.mjs` and `benchmarks/statistics.mjs` report an effect as undetectable at a given n instead of capping it at 0.300.
 - The flow benchmark's `truncate` plan now says `truncate` throws a `RangeError` when `max` is below 3, with a matching hidden test; the plan left that case open, so builder and reviewer disagreed and the review repair loop ran on an input no hidden test graded. Loop rates from rounds before this fix do not compare directly with later rounds.
 - verify dispatches the review fixer for every `concern` finding, also when no `fix` finding exists, instead of the lead reporting it unproven without a test.
 - run-unit finds the build scripts in its own plugin instead of searching the disk and running an older installed copy; benchmark cells turn off the installed exo.

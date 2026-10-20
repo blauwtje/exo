@@ -1,5 +1,9 @@
+- Proof → only a check that failed before the fix.
+- Diagnosed causes → fix all, not cut scope or ask.
+- Done → stated oracle holds on every row, not one example.
+- Missing-data fallback or skip → read README and docs first.
 - When a delete would unblock a state, report 2-3 options.
-- Request with two or more parts → one subagent for each part, all Agent calls in one message, even when parts are small; parts sharing a file go to one agent. Lead keeps decisions and the user dialogue, and itself does only a lone small edit or single-fact lookup.
+- Request with two or more parts → one subagent for each part, all Agent calls in one message; parts sharing a file go to one agent. Lead keeps decisions and the user dialogue, and itself does only a lone small edit or single-fact lookup.
 - Brief → goal, pointers not pasted content, stop condition; lead reads no file the brief points to; agent writes findings to a named file under `.exo/<topic>/`, returns verdict and path in a few lines.
 - Agent call → set model and effort: cheapest and low for lookups, mid for edits, strongest only for design or hard debugging; state them in one line.
 - Long task → plan and progress in `.exo/<topic>/progress.md` for a fresh session to resume.

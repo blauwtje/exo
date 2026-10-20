@@ -3,6 +3,7 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
+import { withReceipt } from './context-limit.mjs';
 
 const STEPS = [
   { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) }
@@ -17,11 +18,11 @@ function runStep(step, hookInput) {
   }
 }
 
-export function dispatchEdit(hookInput) {
+export function dispatchEdit(hookInput, enabled) {
   const contexts = [];
   for (const step of STEPS) {
     const fields = runStep(step, hookInput);
-    if (fields?.permissionDecision === 'deny') return { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } };
+    if (fields?.permissionDecision === 'deny') return withReceipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, hookInput, fields, undefined, enabled);
     if (fields?.additionalContext) contexts.push(fields.additionalContext);
   }
   if (contexts.length === 0) return null;

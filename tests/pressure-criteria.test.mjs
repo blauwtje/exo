@@ -26,9 +26,17 @@ test('build small-plan lines a command in the checkout can decide carry a run ta
   }
 });
 
-test('the graded-run docs state no stale runs flag and a threshold example that tolerates one failed run in three', () => {
+test('the graded-run docs state no stale runs flag and a graded example with two arms and no single-arm threshold', () => {
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
   assert.doesNotMatch(readme, /Add `--runs 3`/);
-  const threshold = Number(/--grade --threshold ([\d.]+)/.exec(readme)?.[1]);
-  assert.ok(threshold > 0 && threshold <= 2 / 3, `threshold ${threshold}`);
+  const example = /--grade[^`]*```/.exec(readme)?.[0] ?? '';
+  assert.match(example, /--contrast-env \S+=\w+,\w+/);
+  assert.doesNotMatch(example, /--threshold/);
+});
+
+test('the compression criteria keep one claim per judge line and state a margin', async () => {
+  const { lintCriteria, parseMargins } = await import('../skills/edit-skills/scripts/pressure-grade.mjs');
+  const markdown = fs.readFileSync(path.join(root, 'compression/criteria.md'), 'utf8');
+  assert.deepEqual(lintCriteria(markdown), []);
+  assert.equal(parseMargins(markdown).get(null), 0.2);
 });

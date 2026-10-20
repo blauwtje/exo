@@ -54,7 +54,7 @@ test('no hook runs a delegate budget, and only Bash, Agent, the context tools an
 test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script', () => {
   const entries = hookEntries().filter((entry) => entry.event === 'Stop' || entry.matcher === 'AskUserQuestion');
   assert.deepEqual(entries.map((entry) => entry.event).sort(), ['PreToolUse', 'Stop']);
-  for (const { hook } of entries) assert.equal(hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"');
+  for (const { hook } of entries) assert.ok(hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"'), hook.command);
 });
 
 test('only SessionStart, PreToolUse and Stop have hooks, and the prompt dispatcher is gone', () => {
@@ -102,7 +102,7 @@ test('no tool name matches more than one PreToolUse entry', () => {
 test('the session hook runs the Node file under bash', () => {
   const [entry] = hookEntries().filter((candidate) => candidate.event === 'SessionStart');
   assert.equal(entry.hook.shell, 'bash');
-  assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
+  assert.ok(entry.hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"'), entry.hook.command);
 });
 
 test('the plugin registers seven hook commands, each under bash', () => {
@@ -157,51 +157,121 @@ test('the session hook writes no plugin-root when CLAUDE_PLUGIN_ROOT is unset or
   }
 });
 
-test('the session hook shows no welcome and writes no welcomed marker', () => {
+test('receipts off drops the "exo is on" line from the session hook', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-receipts-off-'));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-receipts-off-project-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
+  delete env.CLAUDE_PROJECT_DIR;
+  try {
+    fs.mkdirSync(path.join(project, '.claude'));
+    fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
+    const run = (cwd) => JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd }) }).toString());
+    const off = run(project);
+    assert.equal(Object.hasOwn(off, 'systemMessage'), false);
+    assert.equal(run(os.tmpdir()).systemMessage, 'exo is on');
+  } finally {
+    for (const directory of [configHome, project]) fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('the session hook shows the user one "exo is on" line and writes no welcomed marker', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-welcome-'));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   try {
     const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
-    assert.equal(output.systemMessage, undefined);
+    assert.equal(output.systemMessage, 'exo is on');
+    assert.doesNotMatch(output.hookSpecificOutput.additionalContext, /exo is on/);
     assert.equal(fs.existsSync(path.join(configHome, 'exo', 'welcomed')), false);
   } finally {
     fs.rmSync(configHome, { recursive: true, force: true });
   }
 });
 
-// The plan's low rule, written out so editing schema.json alone fails this test.
-const PLAIN_TEXT_LOW_RULE = 'Replies are short. Say the answer first. Use small, everyday words a young child knows. Keep each sentence under 12 words, with one idea. If you must use a work word, say what it means in a few small words. Or leave the work word out. This counts for all text the user reads. Do not start with a warm-up line. Do not end by saying again what you said. Leave out filler words. Do not add words that make you sound unsure. Do not write a wall of text. A list has at most about 5 items, unless the user asks for more. Use no table, unless the user asks for detail. Use no list inside a list, unless the user asks for detail. Keep code, commands, paths and names from code exactly as they are. Keep error text, numbers and warnings exactly as they are. Keep every not, no, only and except. Write a security warning in full sentences. Some steps cannot be undone. Before one, ask the user to confirm. Write that check in full sentences. If the user sends only `?`, say your last reply again in full sentences. Then write out every step, reason and work word. Start every report to the user with at most three short lines. Say what happened. Say whether it worked. Say what the user must do now, or that nothing is needed. Some details go in the run report. These are hashes, counts, paths, changes from the plan and review notes. The run report is `.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup. With no run report, put them in the file the work already wrote. Point to that file in one line. Do not repeat them in the reply. With neither file, share them only when the user asks. Ask the user one question per message. Keep the question to about 10 words. Add at most one short sentence of background. Give 2-3 options of a few words each, in a fixed order. Mark the best option where it stands. The user answers with one letter or ok. The question names no file, no word from inside exo and no model. Name them only when the user picks between them. If more questions wait, the title shows how far you are, like 1/3. Reply in the language the user writes in.';
+// The plan's short rule, written out so editing schema.json alone fails this test.
+const PLAIN_TEXT_SHORT_RULE = 'Say the answer first. Keep code, commands, paths, names from code, error text, numbers and warnings exactly as they are, and keep every not, no, only and except. Write a security warning in full sentences. Before a step that cannot be undone, ask the user to confirm. Reply in the language the user writes in. Open every report to the user with at most three short lines: what happened, whether it worked, and what the user must do now or that nothing is needed. Hashes, counts, paths, plan changes and review notes go in `.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup, else in the file the work already wrote; point to it in one line, not repeated in the reply. With neither file, share them only when asked. Ask the user one question per message: about 10 words, at most one short sentence of background, 2-3 short options in a fixed order, the best one marked where it stands, answered with one letter or ok. The question names no file, no word from inside exo and no model, unless the user picks between them. If more questions wait, the title shows progress, like 1/3.';
+const PROSE_CLAMP = 'Use small, everyday words a young child knows. Keep each sentence under 12 words, with one idea.';
 
-test('the session hook with no exo settings injects the plain-text short compression rule', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plain-'));
+function sessionContext(prefix, option) {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
   for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
+  if (option) env.CLAUDE_PLUGIN_OPTION_COMPRESSION = option;
   try {
     const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
-    const context = output.hookSpecificOutput.additionalContext;
-    assert.ok(context.includes(PLAIN_TEXT_LOW_RULE));
-    assert.ok(context.includes('Ask the user one question per message. Keep the question to about 10 words.'));
+    return output.hookSpecificOutput.additionalContext;
   } finally {
     fs.rmSync(configHome, { recursive: true, force: true });
   }
+}
+
+test('the session hook with no exo settings injects the safety lines, report shape and question protocol, not the prose clamp', () => {
+  const context = sessionContext('exo-plain-');
+  assert.ok(context.includes(PLAIN_TEXT_SHORT_RULE));
+  assert.ok(!context.includes(PROSE_CLAMP));
 });
 
-test('the session hook injects the shorter compression rule when the plugin option is shorter', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-shorter-'));
-  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY, CLAUDE_PLUGIN_OPTION_COMPRESSION: 'shorter' };
-  for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
-  try {
-    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
-    const context = output.hookSpecificOutput.additionalContext;
+test('the session hook injects the prose clamp with the report shape and questions when the plugin option is shorter or the old high', () => {
+  for (const option of ['shorter', 'high']) {
+    const context = sessionContext('exo-shorter-', option);
     assert.ok(context.includes('compression=shorter'));
     assert.ok(context.includes('Replies are short. Say the answer first. After the answer, write at most three more lines.'));
-    assert.ok(context.includes('Every sentence adds a new fact. Still write whole, simple sentences. Do not cut words short.'));
+    assert.ok(context.includes(PROSE_CLAMP));
+    assert.ok(context.includes('Start every report to the user with at most three short lines.'));
+    assert.ok(context.includes('Ask the user one question per message. Keep the question to about 10 words.'));
+  }
+});
+
+test('the session hook injects no compression rule beyond the off line when the plugin option is off', () => {
+  const context = sessionContext('exo-off-', 'off');
+  assert.ok(context.includes('Compression is off: full prose.'));
+  assert.ok(!context.includes(PROSE_CLAMP));
+  assert.ok(!context.includes('one question per message'));
+});
+
+test('the session hook reads project settings from the session directory in the hook input, not its own working directory', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cwd-'));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cwd-project-'));
+  const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cwd-elsewhere-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
+  for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
+  for (const name of ['CODEX_HOME', 'EXO_HOST', 'CLAUDE_PROJECT_DIR']) delete env[name];
+  try {
+    execFileSync('git', ['init', '-q', project]);
+    fs.mkdirSync(path.join(project, '.claude'));
+    fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ compression: 'shorter' }));
+    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, cwd: elsewhere, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd: project }) }).toString());
+    assert.ok(output.hookSpecificOutput.additionalContext.includes('compression=shorter'));
   } finally {
-    fs.rmSync(configHome, { recursive: true, force: true });
+    for (const directory of [configHome, project, elsewhere]) fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('the session hook adds a Node warning to the user line only when Node is older than package.json engines', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-node-'));
+  const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-node-root-'));
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  for (const name of ['CLAUDE_PLUGIN_ROOT', 'CODEX_HOME', 'EXO_HOST', 'EXO_RUN_DIR']) delete env[name];
+  const manifest = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'package.json'), 'utf8'));
+  fs.mkdirSync(path.join(copy, 'hooks'));
+  for (const folder of new Set(Object.values(manifest.imports).map((target) => target.split('/')[1]))) fs.symlinkSync(path.join(REPOSITORY, folder), path.join(copy, folder));
+  fs.copyFileSync(path.join(REPOSITORY, 'hooks', 'session-start.mjs'), path.join(copy, 'hooks', 'session-start.mjs'));
+  try {
+    const messageFor = (engines) => {
+      fs.writeFileSync(path.join(copy, 'package.json'), JSON.stringify({ type: 'module', engines, imports: manifest.imports }));
+      return JSON.parse(execFileSync(process.execPath, [path.join(copy, 'hooks', 'session-start.mjs')], { env, input: '{}' }).toString()).systemMessage;
+    };
+    const current = Number(process.versions.node.split('.')[0]);
+    assert.equal(messageFor({ node: `>=${current}` }), 'exo is on');
+    const warned = messageFor({ node: `>=${current + 1}` });
+    assert.ok(warned.startsWith('exo is on\n'));
+    assert.ok(warned.includes(`needs Node ${current + 1} or newer`) && warned.includes(`this is Node ${process.versions.node}`));
+  } finally {
+    for (const directory of [configHome, copy]) fs.rmSync(directory, { recursive: true, force: true });
   }
 });
 

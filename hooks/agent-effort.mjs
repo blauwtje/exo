@@ -6,6 +6,7 @@ import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { BUDGETS, INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
+import { withReceipt } from './context-limit.mjs';
 
 function raised(input, level) {
   if (input.subagent_type !== 'exo:find-open-points' || !['xhigh', 'max'].includes(level) || [level, 'max'].includes(input.effort)) return input;
@@ -31,13 +32,14 @@ export function agentEffort({ tool_name: tool, tool_input: input, effort } = {},
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
 
-export function agentHook(hookInput, budget) {
+export function agentHook(hookInput, budget, enabled) {
   const output = agentEffort(hookInput, budget);
   const fields = contextFields(contextDecision(hookInput));
-  if (!fields) return output;
-  if (fields.permissionDecision) return { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } };
+  const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
+  if (!fields) return withReceipt(output, hookInput, null, ran, enabled);
+  if (fields.permissionDecision) return withReceipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, hookInput, fields, ran, enabled);
   const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
-  return { hookSpecificOutput: { ...base.hookSpecificOutput, ...fields } };
+  return withReceipt({ hookSpecificOutput: { ...base.hookSpecificOutput, ...fields } }, hookInput, null, ran, enabled);
 }
 
 if (isMain(import.meta.url)) {

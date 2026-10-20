@@ -72,7 +72,9 @@ try {
 if (process.env.EXO_RUN_DIR) process.exit(0);
 
 const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(input.cwd) : '';
-const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8' });
+// why: the hook process starts wherever the host ran it; the session's folder, input.cwd, holds the project settings.
+const sessionDirectory = typeof input.cwd === 'string' && fs.existsSync(input.cwd) && fs.statSync(input.cwd).isDirectory() ? input.cwd : undefined;
+const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8', cwd: sessionDirectory });
 const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
 const parts = [`${pointers}${settings}`];
 if (onCodex) parts.push(fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd());
@@ -81,4 +83,15 @@ if (fs.existsSync(routingFile)) parts.push(fs.readFileSync(routingFile, 'utf8').
 const rulesFile = path.join(root, 'hooks', 'session-rules.md');
 if (fs.existsSync(rulesFile)) parts.push(fs.readFileSync(rulesFile, 'utf8').trimEnd());
 const additionalContext = parts.join('\n\n');
-process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);
+// why: systemMessage shows to the user only, so the line costs no model tokens. The `receipts` setting turns "exo is on" off, and Codex never shows it; a Node warning still shows.
+let neededNode = 0;
+try {
+  neededNode = Number(/>=\s*(\d+)/.exec(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).engines?.node ?? '')?.[1] ?? 0);
+} catch {}
+const nodeWarning = Number(process.versions.node.split('.')[0]) < neededNode
+  ? `\nexo needs Node ${neededNode} or newer, and this is Node ${process.versions.node}. Update Node, or some exo hooks and scripts will fail.`
+  : '';
+const receiptsRun = onCodex ? undefined : spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'get', 'receipts'], { encoding: 'utf8', cwd: sessionDirectory });
+const receiptsOff = onCodex || (receiptsRun.status === 0 && receiptsRun.stdout.trim() === 'off');
+const systemMessage = `${receiptsOff ? '' : 'exo is on'}${nodeWarning}`.trim();
+process.stdout.write(`${JSON.stringify({ ...(systemMessage && { systemMessage }), hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);

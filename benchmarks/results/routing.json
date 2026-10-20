@@ -3,10 +3,9 @@
     "sonnet:low"
   ],
   "arms": [
-    "hook",
-    "no-hook"
+    "hook"
   ],
-  "runs": 3,
+  "runs": 1,
   "results": {
     "sonnet:low": {
       "hook": {
@@ -20,71 +19,9 @@
             "falseTrigger": 0
           },
           "find-cause": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "refactor": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "ship": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "spec": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "verify": {
-            "recall": 1,
-            "falseTrigger": 0
-          }
-        },
-        "held-out": {
-          "build": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "design-ui": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "find-cause": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "refactor": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "ship": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "spec": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "verify": {
-            "recall": 1,
-            "falseTrigger": 0
-          }
-        }
-      },
-      "no-hook": {
-        "train": {
-          "build": {
             "recall": 0.6666666666666666,
             "falseTrigger": 0
           },
-          "design-ui": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
-          "find-cause": {
-            "recall": 1,
-            "falseTrigger": 0
-          },
           "refactor": {
             "recall": 1,
             "falseTrigger": 0
@@ -94,7 +31,7 @@
             "falseTrigger": 0
           },
           "spec": {
-            "recall": 0.8333333333333334,
+            "recall": 1,
             "falseTrigger": 0
           },
           "verify": {
@@ -104,27 +41,27 @@
         },
         "held-out": {
           "build": {
-            "recall": 0.75,
-            "falseTrigger": 0
+            "recall": 1,
+            "falseTrigger": 0.03125
           },
           "design-ui": {
             "recall": 1,
             "falseTrigger": 0
           },
           "find-cause": {
-            "recall": 1,
+            "recall": 0.25,
             "falseTrigger": 0
           },
           "refactor": {
-            "recall": 0.9166666666666666,
+            "recall": 1,
             "falseTrigger": 0
           },
           "ship": {
-            "recall": 0.9166666666666666,
+            "recall": 1,
             "falseTrigger": 0
           },
           "spec": {
-            "recall": 0.8333333333333334,
+            "recall": 1,
             "falseTrigger": 0
           },
           "verify": {
@@ -137,8 +74,7 @@
   },
   "errors": {
     "sonnet:low": {
-      "hook": 0,
-      "no-hook": 0
+      "hook": 0
     }
   },
   "sessions": [
@@ -154,43 +90,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Run the plan in docs/plans/billing.md and land the unlanded tasks.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Run the plan in docs/plans/billing.md and land the unlanded tasks.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Resume the plan from where the last session stopped; tasks 1 and 2 are landed.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Resume the plan from where the last session stopped; tasks 1 and 2 are landed.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Resume the plan from where the last session stopped; tasks 1 and 2 are landed.",
       "expect": "build",
       "split": "train",
@@ -208,43 +108,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "The decision is made: move session storage to a new table. It touches the schema, three services and the migration, so implement it test-first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The decision is made: move session storage to a new table. It touches the schema, three services and the migration, so implement it test-first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "We agreed to bump the zod major version and adapt every caller; go ahead and make the change.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "We agreed to bump the zod major version and adapt every caller; go ahead and make the change.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "We agreed to bump the zod major version and adapt every caller; go ahead and make the change.",
       "expect": "build",
       "split": "train",
@@ -262,43 +126,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Change the public signature of createClient to take an options object, update all eleven call sites, and add tests first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Change the public signature of createClient to take an options object, update all eleven call sites, and add tests first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Implement the agreed token-rotation change across the auth middleware, the config loader and the JSON persisted format.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Implement the agreed token-rotation change across the auth middleware, the config loader and the JSON persisted format.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Implement the agreed token-rotation change across the auth middleware, the config loader and the JSON persisted format.",
       "expect": "build",
       "split": "train",
@@ -316,43 +144,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Plan is approved. Execute task 3 onward and keep the proofs green.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Plan is approved. Execute task 3 onward and keep the proofs green.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Swap the password hashing to argon2 as decided; it touches the security boundary and four files, so do it test-first.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Swap the password hashing to argon2 as decided; it touches the security boundary and four files, so do it test-first.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Swap the password hashing to argon2 as decided; it touches the security boundary and four files, so do it test-first.",
       "expect": "build",
       "split": "held-out",
@@ -370,43 +162,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Continue the build from the brief in .exo/briefs; the first two tasks already have commits.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Continue the build from the brief in .exo/briefs; the first two tasks already have commits.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Add the agreed export format to the persisted settings file, with a reader for the old format, across the loader, writer and CLI.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Add the agreed export format to the persisted settings file, with a reader for the old format, across the loader, writer and CLI.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Add the agreed export format to the persisted settings file, with a reader for the old format, across the loader, writer and CLI.",
       "expect": "build",
       "split": "held-out",
@@ -424,43 +180,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "The pricing page looks boring and generic; make it feel distinctive.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The pricing page looks boring and generic; make it feel distinctive.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "This empty dashboard state looks bare. Redesign how it looks and reads.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "This empty dashboard state looks bare. Redesign how it looks and reads.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "This empty dashboard state looks bare. Redesign how it looks and reads.",
       "expect": "design-ui",
       "split": "train",
@@ -478,43 +198,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Rewrite the hero copy and restyle the landing page so it stops looking like a template.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Rewrite the hero copy and restyle the landing page so it stops looking like a template.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "The settings card component looks flat; give it a stronger visual hierarchy.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The settings card component looks flat; give it a stronger visual hierarchy.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "The settings card component looks flat; give it a stronger visual hierarchy.",
       "expect": "design-ui",
       "split": "train",
@@ -532,43 +216,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Make the onboarding screen look polished and rework its headline and button text.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Make the onboarding screen look polished and rework its headline and button text.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Our login page looks generic. Improve the typography, spacing and color.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Our login page looks generic. Improve the typography, spacing and color.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Our login page looks generic. Improve the typography, spacing and color.",
       "expect": "design-ui",
       "split": "train",
@@ -586,43 +234,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "The empty inbox view needs better illustration, copy and layout.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The empty inbox view needs better illustration, copy and layout.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Redesign the product tile component so it looks less dull on the catalog page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Redesign the product tile component so it looks less dull on the catalog page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Redesign the product tile component so it looks less dull on the catalog page.",
       "expect": "design-ui",
       "split": "held-out",
@@ -640,43 +252,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Rework the visual style and microcopy of the 404 page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Rework the visual style and microcopy of the 404 page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "The navigation bar looks cluttered and ugly; restyle it.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The navigation bar looks cluttered and ugly; restyle it.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "The navigation bar looks cluttered and ugly; restyle it.",
       "expect": "design-ui",
       "split": "held-out",
@@ -694,43 +270,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "The export job crashes with a null pointer after the last deploy and I don't know why. Find the cause.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The export job crashes with a null pointer after the last deploy and I don't know why. Find the cause.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Tests started failing intermittently on CI since Tuesday; nothing proves which line is responsible.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Tests started failing intermittently on CI since Tuesday; nothing proves which line is responsible.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Tests started failing intermittently on CI since Tuesday; nothing proves which line is responsible.",
       "expect": "find-cause",
       "split": "train",
@@ -748,47 +288,11 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Page load went from 200ms to 3s after the refactor. Where does the slowdown come from?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Page load went from 200ms to 3s after the refactor. Where does the slowdown come from?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
       "prompt": "Users report a 500 error when saving a profile with an emoji name; I have no stack trace.",
       "expect": "find-cause",
       "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Users report a 500 error when saving a profile with an emoji name; I have no stack trace.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Users report a 500 error when saving a profile with an emoji name; I have no stack trace.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -802,47 +306,11 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "This regression appeared between v2.3 and v2.4, and no one has shown the mechanism. Track it down.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "This regression appeared between v2.3 and v2.4, and no one has shown the mechanism. Track it down.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
       "prompt": "The queue worker silently drops every tenth message. Why?",
       "expect": "find-cause",
       "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The queue worker silently drops every tenth message. Why?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The queue worker silently drops every tenth message. Why?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -851,25 +319,7 @@
       "prompt": "My script prints the wrong total for negative amounts. Figure out what causes it.",
       "expect": "find-cause",
       "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "My script prints the wrong total for negative amounts. Figure out what causes it.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "My script prints the wrong total for negative amounts. Figure out what causes it.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -878,25 +328,7 @@
       "prompt": "The build hangs on the lint step only in Docker. Find out why.",
       "expect": "find-cause",
       "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The build hangs on the lint step only in Docker. Find out why.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The build hangs on the lint step only in Docker. Find out why.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -910,70 +342,16 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Memory climbs steadily in the websocket server; I need the root cause, not a guess.",
+      "run": 1,
+      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
       "expect": "find-cause",
       "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Memory climbs steadily in the websocket server; I need the root cause, not a guess.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
-      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 1,
-      "prompt": "Push this branch and open a pull request.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Push this branch and open a pull request.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Push this branch and open a pull request.",
       "expect": "ship",
       "split": "train",
@@ -991,43 +369,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "The PR checks are failing; fix the failing checks and push.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "The PR checks are failing; fix the failing checks and push.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Address the review comments on my pull request and push the fixes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Address the review comments on my pull request and push the fixes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Address the review comments on my pull request and push the fixes.",
       "expect": "ship",
       "split": "train",
@@ -1045,43 +387,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Resolve the merge conflicts on the open PR and get it green.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Resolve the merge conflicts on the open PR and get it green.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Watch the CI on my pull request and merge it once it passes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Watch the CI on my pull request and merge it once it passes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Watch the CI on my pull request and merge it once it passes.",
       "expect": "ship",
       "split": "train",
@@ -1099,43 +405,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Commits are ready; push them to the remote.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Commits are ready; push them to the remote.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Open a PR for the feature branch with a good description.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Open a PR for the feature branch with a good description.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Open a PR for the feature branch with a good description.",
       "expect": "ship",
       "split": "held-out",
@@ -1153,43 +423,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Reviewers left comments on PR 212; handle them and update the branch.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Reviewers left comments on PR 212; handle them and update the branch.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "The pull request has conflicts with main; rebase and push.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The pull request has conflicts with main; rebase and push.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "The pull request has conflicts with main; rebase and push.",
       "expect": "ship",
       "split": "held-out",
@@ -1207,43 +441,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Keep an eye on the checks for the PR I opened and tell me when it can merge.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Keep an eye on the checks for the PR I opened and tell me when it can merge.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Rename the function parseCfg to parseConfig everywhere without changing behavior.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Rename the function parseCfg to parseConfig everywhere without changing behavior.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Rename the function parseCfg to parseConfig everywhere without changing behavior.",
       "expect": "refactor",
       "split": "train",
@@ -1261,43 +459,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Move the date helpers into their own module; behavior must stay the same.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Move the date helpers into their own module; behavior must stay the same.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Reshape the internal storage API so callers pass one options object; no behavior change.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Reshape the internal storage API so callers pass one options object; no behavior change.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Reshape the internal storage API so callers pass one options object; no behavior change.",
       "expect": "refactor",
       "split": "train",
@@ -1315,43 +477,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Extract the validation logic from the controller into a service, keeping every test green.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Extract the validation logic from the controller into a service, keeping every test green.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Rename the User model's fullName field to displayName across the codebase.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Rename the User model's fullName field to displayName across the codebase.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Rename the User model's fullName field to displayName across the codebase.",
       "expect": "refactor",
       "split": "train",
@@ -1369,43 +495,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Split this 900-line file into modules without changing what it does.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Split this 900-line file into modules without changing what it does.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Move the retry logic out of the client into a shared helper; keep it behavior-identical.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Move the retry logic out of the client into a shared helper; keep it behavior-identical.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Move the retry logic out of the client into a shared helper; keep it behavior-identical.",
       "expect": "refactor",
       "split": "held-out",
@@ -1423,43 +513,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Rename the package directory and fix every import; I don't want a compatibility re-export left behind.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Rename the package directory and fix every import; I don't want a compatibility re-export left behind.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Inline the old wrapper class and call the underlying function directly, same behavior.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Inline the old wrapper class and call the underlying function directly, same behavior.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Inline the old wrapper class and call the underlying function directly, same behavior.",
       "expect": "refactor",
       "split": "held-out",
@@ -1477,43 +531,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Reorganize the internal event API so handlers register through one function; outputs must not change.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Reorganize the internal event API so handlers register through one function; outputs must not change.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "I want a notifications feature but haven't decided what data it stores or how users opt out. Help me define it.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "I want a notifications feature but haven't decided what data it stores or how users opt out. Help me define it.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "I want a notifications feature but haven't decided what data it stores or how users opt out. Help me define it.",
       "expect": "spec",
       "split": "train",
@@ -1531,43 +549,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "We need caching somewhere in the API; weigh Redis against in-process and decide what to do.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "We need caching somewhere in the API; weigh Redis against in-process and decide what to do.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Plan a multi-tenant mode. The data model and the architecture are open.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Plan a multi-tenant mode. The data model and the architecture are open.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Plan a multi-tenant mode. The data model and the architecture are open.",
       "expect": "spec",
       "split": "train",
@@ -1585,43 +567,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Build a new analytics dashboard; I haven't said which data it shows or what it does when data is missing.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Build a new analytics dashboard; I haven't said which data it shows or what it does when data is missing.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Should the sync engine be push or pull? Settle the trade-off and write down what done means.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Should the sync engine be push or pull? Settle the trade-off and write down what done means.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Should the sync engine be push or pull? Settle the trade-off and write down what done means.",
       "expect": "spec",
       "split": "train",
@@ -1639,43 +585,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "I want users to share documents but how permissions work is undecided. Write the spec.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "I want users to share documents but how permissions work is undecided. Write the spec.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Add a reporting page; the numbers it shows and where they come from are open questions.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Add a reporting page; the numbers it shows and where they come from are open questions.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Add a reporting page; the numbers it shows and where they come from are open questions.",
       "expect": "spec",
       "split": "held-out",
@@ -1693,43 +603,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Turn this vague idea of offline support into a plan with decisions made.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Turn this vague idea of offline support into a plan with decisions made.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "We need an audit log. What it records, where it lives and how long it is kept are undecided.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "We need an audit log. What it records, where it lives and how long it is kept are undecided.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "We need an audit log. What it records, where it lives and how long it is kept are undecided.",
       "expect": "spec",
       "split": "held-out",
@@ -1747,43 +621,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Design the import feature end to end: what formats, what happens on bad rows, and what is out of scope.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Design the import feature end to end: what formats, what happens on bad rows, and what is out of scope.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
       "expect": "verify",
       "split": "train",
@@ -1801,43 +639,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Run the verify gate on this branch and review it against the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Run the verify gate on this branch and review it against the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
       "expect": "verify",
       "split": "train",
@@ -1855,43 +657,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Before I open the PR, run the scripted checks and the branch review for the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Before I open the PR, run the scripted checks and the branch review for the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Gate the run branch: all plan tasks have landed.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Gate the run branch: all plan tasks have landed.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Gate the run branch: all plan tasks have landed.",
       "expect": "verify",
       "split": "train",
@@ -1909,43 +675,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Do the branch review and repairs for the finished plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Do the branch review and repairs for the finished plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
       "expect": "verify",
       "split": "held-out",
@@ -1963,43 +693,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Run the post-build gate and fix anything it finds before the pull request.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Run the post-build gate and fix anything it finds before the pull request.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
       "expect": "verify",
       "split": "held-out",
@@ -2017,43 +711,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Check the landed plan branch with the scripted checks and fix the unplanned-file flags.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Check the landed plan branch with the scripted checks and fix the unplanned-file flags.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "What does Array.prototype.flatMap do?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "What does Array.prototype.flatMap do?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "What does Array.prototype.flatMap do?",
       "expect": null,
       "split": "train",
@@ -2071,43 +729,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Explain the difference between a mutex and a semaphore.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Explain the difference between a mutex and a semaphore.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Fix the typo in the README heading.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Fix the typo in the README heading.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Fix the typo in the README heading.",
       "expect": null,
       "split": "train",
@@ -2125,43 +747,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Add a console.log to the start of main so I can see it run.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Add a console.log to the start of main so I can see it run.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "What time zone is the server configured for in config.yaml?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "What time zone is the server configured for in config.yaml?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "What time zone is the server configured for in config.yaml?",
       "expect": null,
       "split": "train",
@@ -2179,43 +765,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Summarize what src/index.js exports.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Summarize what src/index.js exports.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "Change the button label from Save to Submit.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "Change the button label from Save to Submit.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "Change the button label from Save to Submit.",
       "expect": null,
       "split": "held-out",
@@ -2233,43 +783,7 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Write a one-line commit message for my staged change.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
-      "prompt": "Write a one-line commit message for my staged change.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
       "run": 1,
-      "prompt": "How do I undo my last local commit?",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 2,
-      "prompt": "How do I undo my last local commit?",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "hook",
-      "run": 3,
       "prompt": "How do I undo my last local commit?",
       "expect": null,
       "split": "held-out",
@@ -2287,8 +801,71 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 2,
-      "prompt": "Show me the contents of package.json scripts.",
+      "run": 1,
+      "prompt": "Rename the 'Sign in' label to 'Log in' in header.html and login.html; it is a text swap only.",
+      "expect": null,
+      "split": "train",
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "Update the support email from help@acme.test to care@acme.test in the footer template and the contact page.",
+      "expect": null,
+      "split": "train",
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "Add a --dry-run flag to scripts/prune.mjs: when set, print the files it would delete and skip the unlink call. The flag name and output format are settled.",
+      "expect": null,
+      "split": "train",
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "Add a 'lastSeen' field to the User type in src/user.ts and show it in the profile line of src/cli.ts. Format is ISO date, decided.",
+      "expect": null,
+      "split": "train",
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "clamp() in src/math.js returns max when value equals min. Repro: clamp(0, 0, 10) gives 10, expected 0. The bug is the swapped branches on line 14; fix it.",
+      "expect": null,
+      "split": "train",
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "npm test fails: slugify('A  B') returns 'a--b' but the test expects 'a-b'. The collapse regex on line 9 of slug.js is missing the plus sign. Please add it.",
+      "expect": null,
+      "split": "train",
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "Bump the default page size from 20 to 50 in config.js and in the two tests that assert it; the product owner already agreed.",
+      "expect": null,
+      "split": "held-out",
+      "pick": "build"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "prompt": "Add a 'Copy link' button to the share dialog that copies location.href to the clipboard. The label and placement are decided; one component.",
       "expect": null,
       "split": "held-out",
       "pick": null
@@ -2296,2168 +873,17 @@
     {
       "cell": "sonnet:low",
       "arm": "hook",
-      "run": 3,
-      "prompt": "Show me the contents of package.json scripts.",
+      "run": 1,
+      "prompt": "Pagination off by one: page 2 of items.slice((page - 1) * size, page * size) skips the first row when size is 10. Repro is in tests/page.test.js and the slice start on line 22 should be (page - 1) * size, not page * size.",
       "expect": null,
       "split": "held-out",
       "pick": null
     },
     {
       "cell": "sonnet:low",
-      "arm": "no-hook",
+      "arm": "hook",
       "run": 1,
-      "prompt": "Run the plan in docs/plans/billing.md and land the unlanded tasks.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Run the plan in docs/plans/billing.md and land the unlanded tasks.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Run the plan in docs/plans/billing.md and land the unlanded tasks.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Resume the plan from where the last session stopped; tasks 1 and 2 are landed.",
-      "expect": "build",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Resume the plan from where the last session stopped; tasks 1 and 2 are landed.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Resume the plan from where the last session stopped; tasks 1 and 2 are landed.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The decision is made: move session storage to a new table. It touches the schema, three services and the migration, so implement it test-first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The decision is made: move session storage to a new table. It touches the schema, three services and the migration, so implement it test-first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The decision is made: move session storage to a new table. It touches the schema, three services and the migration, so implement it test-first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "We agreed to bump the zod major version and adapt every caller; go ahead and make the change.",
-      "expect": "build",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "We agreed to bump the zod major version and adapt every caller; go ahead and make the change.",
-      "expect": "build",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "We agreed to bump the zod major version and adapt every caller; go ahead and make the change.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Change the public signature of createClient to take an options object, update all eleven call sites, and add tests first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Change the public signature of createClient to take an options object, update all eleven call sites, and add tests first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Change the public signature of createClient to take an options object, update all eleven call sites, and add tests first.",
-      "expect": "build",
-      "split": "train",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Implement the agreed token-rotation change across the auth middleware, the config loader and the JSON persisted format.",
-      "expect": "build",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Implement the agreed token-rotation change across the auth middleware, the config loader and the JSON persisted format.",
-      "expect": "build",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Implement the agreed token-rotation change across the auth middleware, the config loader and the JSON persisted format.",
-      "expect": "build",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Plan is approved. Execute task 3 onward and keep the proofs green.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Plan is approved. Execute task 3 onward and keep the proofs green.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Plan is approved. Execute task 3 onward and keep the proofs green.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Swap the password hashing to argon2 as decided; it touches the security boundary and four files, so do it test-first.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Swap the password hashing to argon2 as decided; it touches the security boundary and four files, so do it test-first.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Swap the password hashing to argon2 as decided; it touches the security boundary and four files, so do it test-first.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Continue the build from the brief in .exo/briefs; the first two tasks already have commits.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Continue the build from the brief in .exo/briefs; the first two tasks already have commits.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Continue the build from the brief in .exo/briefs; the first two tasks already have commits.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Add the agreed export format to the persisted settings file, with a reader for the old format, across the loader, writer and CLI.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Add the agreed export format to the persisted settings file, with a reader for the old format, across the loader, writer and CLI.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Add the agreed export format to the persisted settings file, with a reader for the old format, across the loader, writer and CLI.",
-      "expect": "build",
-      "split": "held-out",
-      "pick": "build"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The pricing page looks boring and generic; make it feel distinctive.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The pricing page looks boring and generic; make it feel distinctive.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The pricing page looks boring and generic; make it feel distinctive.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "This empty dashboard state looks bare. Redesign how it looks and reads.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "This empty dashboard state looks bare. Redesign how it looks and reads.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "This empty dashboard state looks bare. Redesign how it looks and reads.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Rewrite the hero copy and restyle the landing page so it stops looking like a template.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Rewrite the hero copy and restyle the landing page so it stops looking like a template.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Rewrite the hero copy and restyle the landing page so it stops looking like a template.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The settings card component looks flat; give it a stronger visual hierarchy.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The settings card component looks flat; give it a stronger visual hierarchy.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The settings card component looks flat; give it a stronger visual hierarchy.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Make the onboarding screen look polished and rework its headline and button text.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Make the onboarding screen look polished and rework its headline and button text.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Make the onboarding screen look polished and rework its headline and button text.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Our login page looks generic. Improve the typography, spacing and color.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Our login page looks generic. Improve the typography, spacing and color.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Our login page looks generic. Improve the typography, spacing and color.",
-      "expect": "design-ui",
-      "split": "train",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The empty inbox view needs better illustration, copy and layout.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The empty inbox view needs better illustration, copy and layout.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The empty inbox view needs better illustration, copy and layout.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Redesign the product tile component so it looks less dull on the catalog page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Redesign the product tile component so it looks less dull on the catalog page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Redesign the product tile component so it looks less dull on the catalog page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Rework the visual style and microcopy of the 404 page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Rework the visual style and microcopy of the 404 page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Rework the visual style and microcopy of the 404 page.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The navigation bar looks cluttered and ugly; restyle it.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The navigation bar looks cluttered and ugly; restyle it.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The navigation bar looks cluttered and ugly; restyle it.",
-      "expect": "design-ui",
-      "split": "held-out",
-      "pick": "design-ui"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The export job crashes with a null pointer after the last deploy and I don't know why. Find the cause.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The export job crashes with a null pointer after the last deploy and I don't know why. Find the cause.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The export job crashes with a null pointer after the last deploy and I don't know why. Find the cause.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Tests started failing intermittently on CI since Tuesday; nothing proves which line is responsible.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Tests started failing intermittently on CI since Tuesday; nothing proves which line is responsible.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Tests started failing intermittently on CI since Tuesday; nothing proves which line is responsible.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Page load went from 200ms to 3s after the refactor. Where does the slowdown come from?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Page load went from 200ms to 3s after the refactor. Where does the slowdown come from?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Page load went from 200ms to 3s after the refactor. Where does the slowdown come from?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Users report a 500 error when saving a profile with an emoji name; I have no stack trace.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Users report a 500 error when saving a profile with an emoji name; I have no stack trace.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Users report a 500 error when saving a profile with an emoji name; I have no stack trace.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "This regression appeared between v2.3 and v2.4, and no one has shown the mechanism. Track it down.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "This regression appeared between v2.3 and v2.4, and no one has shown the mechanism. Track it down.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "This regression appeared between v2.3 and v2.4, and no one has shown the mechanism. Track it down.",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The queue worker silently drops every tenth message. Why?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The queue worker silently drops every tenth message. Why?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The queue worker silently drops every tenth message. Why?",
-      "expect": "find-cause",
-      "split": "train",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "My script prints the wrong total for negative amounts. Figure out what causes it.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "My script prints the wrong total for negative amounts. Figure out what causes it.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "My script prints the wrong total for negative amounts. Figure out what causes it.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The build hangs on the lint step only in Docker. Find out why.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The build hangs on the lint step only in Docker. Find out why.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The build hangs on the lint step only in Docker. Find out why.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Memory climbs steadily in the websocket server; I need the root cause, not a guess.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Memory climbs steadily in the websocket server; I need the root cause, not a guess.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Memory climbs steadily in the websocket server; I need the root cause, not a guess.",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Date parsing returns yesterday for users in Auckland. What is causing that?",
-      "expect": "find-cause",
-      "split": "held-out",
-      "pick": "find-cause"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Push this branch and open a pull request.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Push this branch and open a pull request.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Push this branch and open a pull request.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The PR checks are failing; fix the failing checks and push.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The PR checks are failing; fix the failing checks and push.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The PR checks are failing; fix the failing checks and push.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Address the review comments on my pull request and push the fixes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Address the review comments on my pull request and push the fixes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Address the review comments on my pull request and push the fixes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Resolve the merge conflicts on the open PR and get it green.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Resolve the merge conflicts on the open PR and get it green.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Resolve the merge conflicts on the open PR and get it green.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Watch the CI on my pull request and merge it once it passes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Watch the CI on my pull request and merge it once it passes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Watch the CI on my pull request and merge it once it passes.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Commits are ready; push them to the remote.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Commits are ready; push them to the remote.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Commits are ready; push them to the remote.",
-      "expect": "ship",
-      "split": "train",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Open a PR for the feature branch with a good description.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Open a PR for the feature branch with a good description.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Open a PR for the feature branch with a good description.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Reviewers left comments on PR 212; handle them and update the branch.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Reviewers left comments on PR 212; handle them and update the branch.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Reviewers left comments on PR 212; handle them and update the branch.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The pull request has conflicts with main; rebase and push.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The pull request has conflicts with main; rebase and push.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The pull request has conflicts with main; rebase and push.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Keep an eye on the checks for the PR I opened and tell me when it can merge.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Keep an eye on the checks for the PR I opened and tell me when it can merge.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Keep an eye on the checks for the PR I opened and tell me when it can merge.",
-      "expect": "ship",
-      "split": "held-out",
-      "pick": "ship"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Rename the function parseCfg to parseConfig everywhere without changing behavior.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Rename the function parseCfg to parseConfig everywhere without changing behavior.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Rename the function parseCfg to parseConfig everywhere without changing behavior.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Move the date helpers into their own module; behavior must stay the same.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Move the date helpers into their own module; behavior must stay the same.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Move the date helpers into their own module; behavior must stay the same.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Reshape the internal storage API so callers pass one options object; no behavior change.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Reshape the internal storage API so callers pass one options object; no behavior change.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Reshape the internal storage API so callers pass one options object; no behavior change.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Extract the validation logic from the controller into a service, keeping every test green.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Extract the validation logic from the controller into a service, keeping every test green.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Extract the validation logic from the controller into a service, keeping every test green.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Rename the User model's fullName field to displayName across the codebase.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Rename the User model's fullName field to displayName across the codebase.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Rename the User model's fullName field to displayName across the codebase.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Split this 900-line file into modules without changing what it does.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Split this 900-line file into modules without changing what it does.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Split this 900-line file into modules without changing what it does.",
-      "expect": "refactor",
-      "split": "train",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Move the retry logic out of the client into a shared helper; keep it behavior-identical.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Move the retry logic out of the client into a shared helper; keep it behavior-identical.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Move the retry logic out of the client into a shared helper; keep it behavior-identical.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Rename the package directory and fix every import; I don't want a compatibility re-export left behind.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Rename the package directory and fix every import; I don't want a compatibility re-export left behind.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Rename the package directory and fix every import; I don't want a compatibility re-export left behind.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Inline the old wrapper class and call the underlying function directly, same behavior.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Inline the old wrapper class and call the underlying function directly, same behavior.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Inline the old wrapper class and call the underlying function directly, same behavior.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Reorganize the internal event API so handlers register through one function; outputs must not change.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Reorganize the internal event API so handlers register through one function; outputs must not change.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Reorganize the internal event API so handlers register through one function; outputs must not change.",
-      "expect": "refactor",
-      "split": "held-out",
-      "pick": "refactor"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "I want a notifications feature but haven't decided what data it stores or how users opt out. Help me define it.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "I want a notifications feature but haven't decided what data it stores or how users opt out. Help me define it.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "I want a notifications feature but haven't decided what data it stores or how users opt out. Help me define it.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "We need caching somewhere in the API; weigh Redis against in-process and decide what to do.",
-      "expect": "spec",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "We need caching somewhere in the API; weigh Redis against in-process and decide what to do.",
-      "expect": "spec",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "We need caching somewhere in the API; weigh Redis against in-process and decide what to do.",
-      "expect": "spec",
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Plan a multi-tenant mode. The data model and the architecture are open.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Plan a multi-tenant mode. The data model and the architecture are open.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Plan a multi-tenant mode. The data model and the architecture are open.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Build a new analytics dashboard; I haven't said which data it shows or what it does when data is missing.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Build a new analytics dashboard; I haven't said which data it shows or what it does when data is missing.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Build a new analytics dashboard; I haven't said which data it shows or what it does when data is missing.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Should the sync engine be push or pull? Settle the trade-off and write down what done means.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Should the sync engine be push or pull? Settle the trade-off and write down what done means.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Should the sync engine be push or pull? Settle the trade-off and write down what done means.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "I want users to share documents but how permissions work is undecided. Write the spec.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "I want users to share documents but how permissions work is undecided. Write the spec.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "I want users to share documents but how permissions work is undecided. Write the spec.",
-      "expect": "spec",
-      "split": "train",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Add a reporting page; the numbers it shows and where they come from are open questions.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Add a reporting page; the numbers it shows and where they come from are open questions.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Add a reporting page; the numbers it shows and where they come from are open questions.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Turn this vague idea of offline support into a plan with decisions made.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Turn this vague idea of offline support into a plan with decisions made.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Turn this vague idea of offline support into a plan with decisions made.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "We need an audit log. What it records, where it lives and how long it is kept are undecided.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "We need an audit log. What it records, where it lives and how long it is kept are undecided.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "We need an audit log. What it records, where it lives and how long it is kept are undecided.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Design the import feature end to end: what formats, what happens on bad rows, and what is out of scope.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Design the import feature end to end: what formats, what happens on bad rows, and what is out of scope.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Design the import feature end to end: what formats, what happens on bad rows, and what is out of scope.",
-      "expect": "spec",
-      "split": "held-out",
-      "pick": "spec"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Run the verify gate on this branch and review it against the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Run the verify gate on this branch and review it against the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Run the verify gate on this branch and review it against the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Before I open the PR, run the scripted checks and the branch review for the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Before I open the PR, run the scripted checks and the branch review for the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Before I open the PR, run the scripted checks and the branch review for the plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Gate the run branch: all plan tasks have landed.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Gate the run branch: all plan tasks have landed.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Gate the run branch: all plan tasks have landed.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Do the branch review and repairs for the finished plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Do the branch review and repairs for the finished plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Do the branch review and repairs for the finished plan.",
-      "expect": "verify",
-      "split": "train",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Run the post-build gate and fix anything it finds before the pull request.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Run the post-build gate and fix anything it finds before the pull request.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Run the post-build gate and fix anything it finds before the pull request.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Check the landed plan branch with the scripted checks and fix the unplanned-file flags.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Check the landed plan branch with the scripted checks and fix the unplanned-file flags.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Check the landed plan branch with the scripted checks and fix the unplanned-file flags.",
-      "expect": "verify",
-      "split": "held-out",
-      "pick": "verify"
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "What does Array.prototype.flatMap do?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "What does Array.prototype.flatMap do?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "What does Array.prototype.flatMap do?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Explain the difference between a mutex and a semaphore.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Explain the difference between a mutex and a semaphore.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Explain the difference between a mutex and a semaphore.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Fix the typo in the README heading.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Fix the typo in the README heading.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Fix the typo in the README heading.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Add a console.log to the start of main so I can see it run.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Add a console.log to the start of main so I can see it run.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Add a console.log to the start of main so I can see it run.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "What time zone is the server configured for in config.yaml?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "What time zone is the server configured for in config.yaml?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "What time zone is the server configured for in config.yaml?",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Summarize what src/index.js exports.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Summarize what src/index.js exports.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Summarize what src/index.js exports.",
-      "expect": null,
-      "split": "train",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Change the button label from Save to Submit.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Change the button label from Save to Submit.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Change the button label from Save to Submit.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Write a one-line commit message for my staged change.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Write a one-line commit message for my staged change.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Write a one-line commit message for my staged change.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "How do I undo my last local commit?",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "How do I undo my last local commit?",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "How do I undo my last local commit?",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 1,
-      "prompt": "Show me the contents of package.json scripts.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 2,
-      "prompt": "Show me the contents of package.json scripts.",
-      "expect": null,
-      "split": "held-out",
-      "pick": null
-    },
-    {
-      "cell": "sonnet:low",
-      "arm": "no-hook",
-      "run": 3,
-      "prompt": "Show me the contents of package.json scripts.",
+      "prompt": "Replace the deprecated 'substr' calls with 'slice' in utils/format.js and utils/pad.js; both files need the same one-word change.",
       "expect": null,
       "split": "held-out",
       "pick": null
@@ -4467,11 +893,11 @@
   "hashes": {
     "build": "03ce61f770bae31003aba1fe53cde9a9cf0248185b383f67220b103520295e6e",
     "design-ui": "5a58a2020bc774f268f91c2039bdc1fc6fe383e3fd66ddceef98441422636d18",
-    "find-cause": "1d61e89b36dda1fae3995a4f3f6395877719c23515c5d1dd98063a803e341f3c",
+    "find-cause": "5d429b5f40a6a26fe6eee170c3b9bbf0714d29afc1b55dbe9568cbf231631b5b",
     "refactor": "edd8c13b3eb45a4e968dcce07f91d54cda9eab5b2483d48fb7ed50ece1655049",
     "ship": "469ca26ee83d6f02bbae796b1b57531e8ed58c910d71f6f6861bd94d6de7dc97",
     "spec": "d23f69b543e162c25fe4395a1998278f1c3c5e3891d603b613f3e9c45499ea64",
     "verify": "135872823444d92ea2b8b45c644a4fcdd925c7d08ea1decae4f4af2b73cffff3",
-    "session-routing": "904ecde27183e712d07905fac0e142e1f8e080d5e2df9147406f4c1f9bb324db"
+    "session-routing": "eeb18ee10a683eab11675f5b2f9d413910b1e585712583f5ecf1cf41f89c3c2c"
   }
 }

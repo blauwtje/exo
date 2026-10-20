@@ -42,11 +42,11 @@ const COMPRESSION_RULE = COMPRESSION.rules[COMPRESSION.default];
 // into; nothing is fetched here, so run.mjs reports a missing directory and
 // --dry-run can still print it. A rival absent from rivals.local.json gets no
 // plugin directory and carries the message in missing, which run.mjs reports.
-function rivalArm(name) {
+function rivalArm(name, extra = { gitOnly: true }) {
   const rival = RIVALS[name];
-  if (!rival) return { prompt: null, pluginDirs: [], promptSuffix: null, gitOnly: true, missing: MISSING_RIVALS[name] };
+  if (!rival) return { prompt: null, pluginDirs: [], promptSuffix: null, ...extra, missing: MISSING_RIVALS[name] };
   const directory = path.join(RIVALS_ROOT, `${name}@${rival.ref.replace(/^v/, '')}`, rival.root);
-  return { prompt: null, pluginDirs: [directory], promptSuffix: rival.promptSuffix ?? null, gitOnly: true };
+  return { prompt: null, pluginDirs: [directory], promptSuffix: rival.promptSuffix ?? null, ...extra };
 }
 
 // The git tier's prose control: the rule text a user would put in a CLAUDE.md.
@@ -76,11 +76,16 @@ export const ARMS = {
   'cc-safety-net': rivalArm('cc-safety-net'),
   // ponytail is a hooks-based rival that loads unforced; run it on the template tier.
   ponytail: rivalArm('ponytail'),
+  // Head-to-head rivals: same plain task prompt as every arm (no promptSuffix),
+  // run only when named with --arms, so a default run keeps its cost.
+  'h2h-1': rivalArm('h2h-1', { h2h: true }),
+  'h2h-2': rivalArm('h2h-2', { h2h: true }),
+  'h2h-3': rivalArm('h2h-3', { h2h: true }),
   'prose-rules': { prompt: PROSE_RULES, pluginDirs: [], promptSuffix: null, gitOnly: true }
 };
 
 // The cut arms run only when named, so a default run keeps its cost.
-export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].variant && !ARMS[name].runPlan);
+export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].h2h && !ARMS[name].variant && !ARMS[name].runPlan);
 
 export const TEMPLATE_TASKS = [
   { id: 'tmpl-fe-timepicker', kind: 'frontend', prompt: 'Create a component in the frontend for choosing a time of day.' },

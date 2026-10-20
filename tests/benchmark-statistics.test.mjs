@@ -63,11 +63,20 @@ test('signTest gives the one-sided binomial p and drops ties', () => {
 test('minDetectableEffect and the mde script agree', () => {
   const effect = minDetectableEffect({ rate: 0.5, n: 100 });
   assert.ok(Math.abs(effect - 2.84 * Math.sqrt(0.005)) < 1e-12);
-  assert.equal(minDetectableEffect({ rate: 0.5, n: 10 }), 0.5);
-  assert.ok(minDetectableEffect({ rate: 0.9, n: 2 }) <= 0.1 + 1e-9);
-  const run = spawnSync(process.execPath, [path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs'), '--rate', '0.5', '--n', '10'], { encoding: 'utf8' });
+  assert.ok(Math.abs(minDetectableEffect({ rate: 0.5, n: 10 }) - 2.84 * Math.sqrt(0.05)) < 1e-12);
+  assert.ok(minDetectableEffect({ rate: 0.9, n: 2 }) > 0.1);
+  const run = spawnSync(process.execPath, [path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs'), '--rate', '0.5', '--n', '100'], { encoding: 'utf8' });
   assert.equal(run.status, 0);
-  assert.match(run.stdout, /0\.500/);
+  assert.match(run.stdout, /min detectable effect: 0\.201\n/);
+});
+
+test('the mde script prints undetectable, not the cap, when the uncapped effect exceeds 1 - rate', () => {
+  const mde = path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs');
+  const out = (n) => spawnSync(process.execPath, [mde, '--rate', '0.7', '--n', n], { encoding: 'utf8' }).stdout;
+  assert.match(out('3'), /min detectable effect: undetectable at n=3 \(needs 1\.063, the largest possible effect is 0\.300\)/);
+  assert.match(out('30'), /undetectable at n=30 \(needs 0\.336,/);
+  assert.match(out('100'), /min detectable effect: 0\.184\n/);
+  assert.doesNotMatch(out('100'), /undetectable/);
 });
 
 test('minDetectableMeanEffect scales with spread and shrinks with runs', () => {

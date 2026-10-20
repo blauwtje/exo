@@ -78,5 +78,15 @@
   {"prompt":"Change the button label from Save to Submit.","expect":null,"split":"held-out"},
   {"prompt":"Write a one-line commit message for my staged change.","expect":null,"split":"held-out"},
   {"prompt":"How do I undo my last local commit?","expect":null,"split":"held-out"},
-  {"prompt":"Show me the contents of package.json scripts.","expect":null,"split":"held-out"}
+  {"prompt":"Show me the contents of package.json scripts.","expect":null,"split":"held-out"},
+  {"prompt":"Rename the 'Sign in' label to 'Log in' in header.html and login.html; it is a text swap only.","expect":null,"split":"train"},
+  {"prompt":"Update the support email from help@acme.test to care@acme.test in the footer template and the contact page.","expect":null,"split":"train"},
+  {"prompt":"Add a --dry-run flag to scripts/prune.mjs: when set, print the files it would delete and skip the unlink call. The flag name and output format are settled.","expect":null,"split":"train"},
+  {"prompt":"Add a 'lastSeen' field to the User type in src/user.ts and show it in the profile line of src/cli.ts. Format is ISO date, decided.","expect":null,"split":"train"},
+  {"prompt":"clamp() in src/math.js returns max when value equals min. Repro: clamp(0, 0, 10) gives 10, expected 0. The bug is the swapped branches on line 14; fix it.","expect":null,"split":"train"},
+  {"prompt":"npm test fails: slugify('A  B') returns 'a--b' but the test expects 'a-b'. The collapse regex on line 9 of slug.js is missing the plus sign. Please add it.","expect":null,"split":"train"},
+  {"prompt":"Bump the default page size from 20 to 50 in config.js and in the two tests that assert it; the product owner already agreed.","expect":null,"split":"held-out"},
+  {"prompt":"Add a 'Copy link' button to the share dialog that copies location.href to the clipboard. The label and placement are decided; one component.","expect":null,"split":"held-out"},
+  {"prompt":"Pagination off by one: page 2 of items.slice((page - 1) * size, page * size) skips the first row when size is 10. Repro is in tests/page.test.js and the slice start on line 22 should be (page - 1) * size, not page * size.","expect":null,"split":"held-out"},
+  {"prompt":"Replace the deprecated 'substr' calls with 'slice' in utils/format.js and utils/pad.js; both files need the same one-word change.","expect":null,"split":"held-out"}
 ]

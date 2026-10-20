@@ -20,7 +20,7 @@
     "compression": {
       "type": "string",
       "title": "How compact replies are",
-      "description": "short: short replies in small, easy words. shorter: just the answer and key facts, in easy words. off: normal full replies. A project overrides this in .claude/exo.json.",
+      "description": "short: answer first, a three-line report opening, short one-at-a-time questions. shorter: also just the answer and key facts, in small, easy words. off: normal full replies. A project overrides this in .claude/exo.json.",
       "options": ["off", "short", "shorter"],
       "default": "short"
     },
@@ -44,6 +44,13 @@
       "description": "ask: the run puts the question. branch: a new branch in this checkout. worktree: a new git worktree. current: the branch already checked out. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
       "options": ["ask", "branch", "worktree", "current"],
       "default": "ask"
+    },
+    "receipts": {
+      "type": "string",
+      "title": "Show a line when exo acts",
+      "description": "on: a short line to you when exo starts, hands work to a helper or refuses a command; it costs the model no tokens. off: no such lines. A project overrides this in .claude/exo.json.",
+      "options": ["on", "off"],
+      "default": "on"
     },
     "env": {
       "type": "string",

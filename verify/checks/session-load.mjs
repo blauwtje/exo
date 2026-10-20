@@ -5,12 +5,13 @@
 // SESSION_LOAD_LOCK in the commit that pays for the text.
 
 import { spawnSync } from 'node:child_process';
+import { Buffer } from 'node:buffer';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { splitFrontmatter } from '../../harnesses/codex/rules.mjs';
 import { readFrontmatter } from '../frontmatter.mjs';
-import { SESSION_LOAD_LOCK } from '../budgets.mjs';
+import { SESSION_LOAD_LOCK, SESSION_START_BYTES_LOCK } from '../budgets.mjs';
 
 const words = (text) => text.split(/\s+/).filter((word) => word !== '').length;
 
@@ -25,7 +26,8 @@ function sessionStartWords(repository) {
       env, input: JSON.stringify({ cwd: scratch, source: 'startup' }), encoding: 'utf8'
     });
     if (run.status !== 0) return { error: `hooks/session-start.mjs exited ${run.status}` };
-    return { count: words(JSON.parse(run.stdout).hookSpecificOutput.additionalContext) };
+    const context = JSON.parse(run.stdout).hookSpecificOutput.additionalContext;
+    return { count: words(context), bytes: Buffer.byteLength(context, 'utf8') };
   } catch (error) {
     return { error: `hooks/session-start.mjs output unreadable, ${error.message}` };
   } finally {
@@ -57,6 +59,10 @@ export function checkSessionLoad(report, repository) {
       return;
     }
     agents += words(`${fields.name ?? path.basename(file, '.md')} ${fields.description ?? ''}`);
+  }
+  if (start.bytes > SESSION_START_BYTES_LOCK.bytes) {
+    report.result('FAIL', 'session load', `hooks/session-start.mjs injects ${start.bytes} bytes, over the ${SESSION_START_BYTES_LOCK.bytes} locked on ${SESSION_START_BYTES_LOCK.measured}; cut the text, or raise the lock in verify/budgets.mjs in the commit that pays for it`);
+    return;
   }
   const total = start.count + skills + agents;
   const parts = `${start.count} session start + ${skills} skills + ${agents} agents`;

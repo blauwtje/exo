@@ -17,14 +17,17 @@ node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/check-
 
 ## Graded runs
 
-Add `--grade` to score every run pass or fail against the tagged lines of the case's `criteria.md` (`--criteria <file>` picks another). A line ending in `grade: run <shell command>` passes when the command exits 0; `grade: judge` goes to the judge prompt in `judge.md`, run on `--judge-cell` (default `sonnet:low`). A run counts only when every line of its case passes. Every run defaults to 3 runs per arm; `--runs <n>` changes that.
+Add `--grade` to score every run pass or fail against the tagged lines of the case's `criteria.md` (`--criteria <file>` picks another). A line ending in `grade: run <shell command>` passes when the command exits 0; `grade: judge` goes to the judge prompt in `judge.md`, run on `--judge-cell` (default `sonnet:low`). A judge line takes the majority of `--judge-votes` calls (default 3) and prints `UNSTABLE JUDGE` when its votes agree under 0.8; it is skipped for a run whose `grade: run` line already failed. Keep one claim per judge line: `--check <criteria file>` prints a `LINT` line for a judge line of more than 2 clauses. A run counts only when every line of its case passes. Every run defaults to 3 runs per arm; `--runs <n>` changes that.
 
 ```sh
 node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/compression/a-test-heavy.txt \
-  --cells sonnet:high --plugin-dir <exo clone> --setup benchmarks/pressure/compression/setup.sh --grade --threshold 0.6
+  --cells sonnet:high --plugin-dir <exo clone> --setup benchmarks/pressure/compression/setup.sh --grade \
+  --contrast-env CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off
 ```
 
-`--threshold <0-1>` is the pass rate a case needs per arm (default 1). The run writes `grades.json` to the output folder and prints a pass-rate table per cell with the with-minus-without delta. Graded runs stay out of `npm run check` and `npm test`.
+With two arms the verdict per case is `PASS`, `FAIL` or `INCONCLUSIVE`: the 95 percent Newcombe interval of the with-minus-comparison pass-rate difference against the margin, set by a `margin: <0-1>` line in `criteria.md` (default 0.2). `PASS` when the interval lies wholly above minus the margin, `FAIL` when wholly below, else `INCONCLUSIVE` with the runs per arm that would decide it. `--threshold <0-1>` (default 1) is the pass rate only a case with one arm needs. The run writes `grades.json` to the output folder and prints a pass-rate table per cell with the with-minus-comparison delta and the verdict. Graded runs stay out of `npm run check` and `npm test`.
+
+`--contrast-env NAME=<a>,<b>` loads the plugin in both arms and sets `NAME` to `<a>` in the `with` arm and `<b>` in the `contrast` arm, so one setting is tested on its own, as the compression case does with `CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off`. It is refused together with `--main-dir`.
 
 A skill's cases run once on Sonnet by default, and only when that skill changes, never in the build or ship flow.
 

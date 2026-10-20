@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { deltaTable, gradeSummary, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
+import { contrastArms, deltaTable, gradeSummary, parseContrastEnv, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
 
 const usage = ({ input, output, read, created }) => ({
   inputTokens: input,
@@ -55,29 +55,48 @@ test('a stream whose results hold no modelUsage logs no tokens', () => {
 
 const runGrade = (arm, run, pass) => ({ case: 'a.txt', arm, run, lines: [{ text: 'x', pass, reason: '' }] });
 
-test('gradeSummary applies the threshold per arm and flags a case both arms pass', () => {
-  const runs = [1, 2, 3].flatMap((run) => [runGrade('with', run, run < 3), runGrade('without', run, false)]);
-  const strict = gradeSummary({ 'haiku:low': runs }, 1)['haiku:low'].cases[0];
-  assert.equal(strict.pass, false);
-  assert.ok(Math.abs(strict.delta - 2 / 3) < 1e-9);
-  const lenient = gradeSummary({ 'haiku:low': runs }, 0.6)['haiku:low'].cases[0];
-  assert.equal(lenient.pass, true);
-  assert.equal(lenient.noSkillEffect, false);
-  const both = gradeSummary({ c: [1, 2, 3].flatMap((run) => [runGrade('with', run, true), runGrade('main', run, true)]) }, 1);
+test('gradeSummary gives a verdict per case from the interval and flags a case both arms pass', () => {
+  const runs = [1, 2, 3].flatMap((run) => [runGrade('with', run, run < 2), runGrade('without', run, true)]);
+  const result = gradeSummary({ 'haiku:low': runs })['haiku:low'].cases[0];
+  assert.equal(result.verdict, 'INCONCLUSIVE');
+  assert.ok(Math.abs(result.delta + 2 / 3) < 1e-9);
+  assert.match(deltaTable(gradeSummary({ 'haiku:low': runs }))[0], /^haiku:low a\.txt: with 33% without 100% delta -67% ci \[[-+]\d+%, \+\d+%\] margin 20% INCONCLUSIVE \(\d+ runs per arm would decide at these rates\)$/);
+  const both = gradeSummary({ c: Array.from({ length: 30 }, (_, run) => [runGrade('with', run, true), runGrade('main', run, true)]).flat() });
   assert.equal(both.c.cases[0].noSkillEffect, true);
-  assert.match(deltaTable(both)[0], /delta \+0% PASS no skill effect$/);
-  assert.match(deltaTable(gradeSummary({ 'haiku:low': runs }, 1))[0], /with 67% without 0% delta \+67% FAIL$/);
+  assert.match(deltaTable(both)[0], /delta \+0% ci \[-11%, \+11%\] margin 20% PASS no skill effect$/);
+  const single = gradeSummary({ c: [1, 2, 3].map((run) => runGrade('with', run, run < 3)) }, { threshold: 0.6 });
+  assert.match(deltaTable(single)[0], /with 67% none n\/a delta n\/a PASS$/);
+});
+
+test('deltaTable names each unstable judge line with its votes', () => {
+  const unstable = { case: 'a.txt', arm: 'with', run: 2, lines: [{ text: 'Kind.', pass: true, reason: '', votes: [true, false, true], agreement: 2 / 3, unstable: true }] };
+  const table = deltaTable(gradeSummary({ c: [unstable] }, { threshold: 0 }));
+  assert.equal(table.at(-1), "UNSTABLE JUDGE c a.txt with run 2: votes PASS/FAIL/PASS on 'Kind.'");
 });
 
 test('writeGrades writes grades.json to the answers folder and returns the delta table', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-grades-'));
   try {
     const runs = [1, 2, 3].flatMap((run) => [runGrade('with', run, true), runGrade('without', run, false)]);
-    const table = writeGrades(dir, { 'haiku:low': runs }, 1);
+    const table = writeGrades(dir, { 'haiku:low': runs }, { threshold: 1 });
     const written = JSON.parse(fs.readFileSync(path.join(dir, 'grades.json'), 'utf8'));
     assert.equal(written['haiku:low'].cases[0].pass, true);
-    assert.match(table[0], /with 100% without 0% delta \+100% PASS$/);
+    assert.match(table[0], /with 100% without 0% delta \+100% ci \[\+\d+%, \+100%\] margin 20% PASS$/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('--contrast-env makes two arms that load the same plugin and differ only in one env value', () => {
+  const contrast = parseContrastEnv('CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off');
+  assert.deepEqual(contrast, { name: 'CLAUDE_PLUGIN_OPTION_COMPRESSION', values: ['short', 'off'] });
+  const [withArm, otherArm] = contrastArms({ pluginDir: '/clone', contrast });
+  assert.deepEqual([withArm.name, otherArm.name], ['with', 'contrast']);
+  assert.deepEqual(withArm.flags, ['--plugin-dir', '/clone']);
+  assert.deepEqual({ ...withArm, env: undefined, name: undefined }, { ...otherArm, env: undefined, name: undefined });
+  assert.deepEqual([withArm.env, otherArm.env], [{ CLAUDE_PLUGIN_OPTION_COMPRESSION: 'short' }, { CLAUDE_PLUGIN_OPTION_COMPRESSION: 'off' }]);
+});
+
+test('--contrast-env rejects a missing pair, a repeated value and a bad name', () => {
+  for (const bad of ['X', 'X=a', 'X=a,a', '1X=a,b', 'X=a,b,c', '=a,b']) assert.throws(() => parseContrastEnv(bad), /--contrast-env needs/);
 });

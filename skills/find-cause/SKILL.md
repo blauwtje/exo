@@ -1,6 +1,6 @@
 ---
 name: find-cause
-description: Use when behavior is reported wrong (bug, error, crash, regression, slowdown) and no evidence shows the causal line and its mechanism. Not when a diagnostic's file, line and symbol match the source, the stated cause holds, or for a feature complaint.
+description: Use when reported wrong behavior (bug, error, crash, regression, slowdown) has no one-command repro, or its proof stays red after one plain fix attempt. Not for a feature complaint.
 argument-hint: <symptom, failing command or error>
 ---
 # Find cause

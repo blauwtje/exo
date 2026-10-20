@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { HEADLESS_LINE, MAKER_LINE, makerArguments, makerPrompt, runFailure, scoreDirectory, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
+import { HEADLESS_LINE, MAKER_LINE, makerArguments, makerPrompt, rawRecordsFile, runFailure, scoreDirectory, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
 import { JUDGE_ARGUMENTS, addRarity, calibration, compareMarkdown, decisions, modalShare, resultsMarkdown, runRecord } from '../benchmarks/ideas-score.mjs';
 
 const IDEAS = path.join(import.meta.dirname, '..', 'benchmarks', 'ideas.mjs');
@@ -104,6 +104,16 @@ test('score writes a results file with calibration, MDE and decisions', async ()
   assert.match(text, /\| strong \| 2 \|/);
   assert.match(text, /A1 wider sketch.*: needed .mean shapes 1,/);
   assert.ok(fs.existsSync(path.join(dir, 'base', 'records.json')));
+});
+
+test('score keeps the raw maker answers beside the results file so a later judge can rescore them', async () => {
+  const { dir } = await scoreWith(true);
+  const kept = JSON.parse(fs.readFileSync(rawRecordsFile(path.join(dir, 'results.md')), 'utf8'));
+  assert.equal(kept.arm, 'base');
+  assert.equal(kept.runs.length, Object.keys(CASES).length);
+  assert.ok(kept.runs.every((run) => run.finalText === 'options here' && run.run === 1));
+  assert.equal(kept.records.length, kept.runs.length);
+  assert.equal(rawRecordsFile('/r/2026-10-20-ideas-base.md'), '/r/2026-10-20-ideas-base.records.json');
 });
 
 test('a miscalibrated judge marks the file and draws no decision', async () => {
