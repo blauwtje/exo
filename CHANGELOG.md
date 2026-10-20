@@ -10,6 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-20-*.md` records 16 more cost ideas tested offline or in small paid probes across sessions 6 and 7, from build-task model tier and range reads to review diff spills and lean lead tools; none lands, and `benchmarks/speed-ledger.jsonl` lists each with when to retry it.
 - `benchmarks/results/2026-10-20-cache-ttl-real-use.md`, `-script-retries.md`, `-repeat-read.md` and `-bash-trim.md` test five cost ideas offline on real-use transcripts; none lands: run-unit back to a 5-minute cache costs +58% in real use, a 1-hour cache costs build-task, review-branch and fix-review 33-44% more, and script error text, repeat-read dedupe and passing-output trim each save under 1.5% of run cost.
 - `benchmarks/results/2026-10-20-checkpoint-fork.md` tests rerunning only the verify block from a kept flow-unit cell (`sweep.mjs --keep-repo`, `benchmarks/checkpoint-fork.mjs`), 5 full cells against 8 forks: it does not land: verify tokens 69,943 vs 86,038 (p=0.008) because each fork pays prompt-cache creation, cost $0.222 vs $0.266 within noise (p=0.242), a fork costs 0.44 of a full cell.
 - `benchmarks/speed-ledger.jsonl` is now the checked source of the speed ledger, with `benchmarks/speed-ledger.md` generated from it, and `benchmarks/baseline-pool.mjs` reuses a stored baseline arm when its content key matches.
@@ -28,6 +29,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- run-unit runs with `omitClaudeMd: true`, so it no longer loads `CLAUDE.md`: 4.83% less run-unit cost (CI 4.15-5.79%, about 0.28% of a run), and a paid flow-unit run still landed 4 of 4 tasks at $0.595 against $0.598.
 - verify dispatches the review fixer for a `concern` only when it claims wrong behavior: the reviewer writes style, naming, layout and test-gap findings as the new `note` kind, which `merge-reviews.mjs` counts and lists for the report and which never starts the fixer.
 - `benchmarks/speed-ledger.md` points each rejected idea at its results file, since its idea branches are deleted.
 - Build and verify scripts print the next step (filled build prompts, slot worktrees, review dispatch fields, findings), so run-unit and the lead skip about 5 bookkeeping turns; flow-unit wall -22% (p=0.026) and cost -16% (p=0.0023) at n=15, of which the change itself is likely 5-10%.
