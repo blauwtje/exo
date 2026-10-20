@@ -4,7 +4,7 @@ Replays the content-keyed baseline pool ([L3.3](2026-10-20-self-improve-ideas.md
 
 ## Pairs
 
-Arm commits: r2 `c087a7aa`, r3 `71a42460`, r4 `6a7d8012`, r6 `31ece02e`, r7 `8d4e6207`, r8 `82ae8607`. Round 2 has n=5, the others n=15.
+Arm commits: r2 `c087a7aa`, r3 `71a42460`, r4 `6a7d8012`, r6 `31ece02e`, r7 `8d4e6207`, r8 `82ae8607`. Round 2 has n=5, the others n=15. Round 2 ran on `c087a7aa`, a run-branch commit not on `main`, so the replay keys round 2 by `71a42460`, its squash commit with the same keyed files.
 
 | pair | key | cost p (shift) | tokens p | wall p |
 |---|---|---|---|---|

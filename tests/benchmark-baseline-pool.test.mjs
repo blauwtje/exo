@@ -7,15 +7,23 @@ import test from 'node:test';
 import { contentKey, parseRows, replayRounds, ROUNDS } from '../benchmarks/baseline-pool.mjs';
 
 const TOOL = path.resolve('benchmarks/baseline-pool.mjs');
-const [r2, r3, , , r7] = ROUNDS;
+const [r2, r3, , r6, r7] = ROUNDS;
 const cli = (...args) => spawnSync(process.execPath, [TOOL, ...args], { encoding: 'utf8' });
 const flagsOf = (round, extra = {}) => Object.entries({ commit: round.commit, cell: round.cell, model: round.model, effort: round.effort, 'claude-version': round.claudeVersion, ...extra }).flat().map(String).map((v, i) => (i % 2 === 0 ? `--${v}` : v));
 
 test('the key ignores the commit hash and changes with a keyed file or a setting', () => {
-  assert.equal(contentKey(r2), contentKey(r3));
+  assert.notEqual(r3.commit, r6.commit);
+  assert.equal(contentKey(r3), contentKey(r6));
   assert.notEqual(contentKey(r2), contentKey(r7));
   assert.notEqual(contentKey(r2), contentKey({ ...r2, effort: 'low' }));
   assert.match(contentKey(r2), /^[0-9a-f]{64}$/);
+});
+
+test('every round commit is an ancestor of HEAD, so a clone of origin can read it', () => {
+  for (const round of ROUNDS) {
+    const result = spawnSync('git', ['merge-base', '--is-ancestor', round.commit, 'HEAD'], { encoding: 'utf8' });
+    assert.equal(result.status, 0, `${round.round} ${round.commit} is not an ancestor of HEAD`);
+  }
 });
 
 test('parseRows reads the rows of the arm and ignores other tables', () => {
@@ -49,7 +57,7 @@ test('add stores a row, lookup then hits for cost and a later round, and add ref
   assert.deepEqual([rows.length, rows[0].n, rows[0].date, rows[0].key], [1, 5, '2026-10-19', contentKey(r2)]);
   assert.equal(cli('add', ...flagsOf(r2, extra)).status, 0);
   assert.equal(fs.readFileSync(pool, 'utf8').trim().split('\n').length, 1);
-  const hit = cli('lookup', ...flagsOf(r3, { pool, metric: 'tokens' }));
+  const hit = cli('lookup', ...flagsOf(r6, { pool, metric: 'tokens' }));
   assert.equal(hit.status, 0);
   assert.equal(JSON.parse(hit.stdout).arm, 'base-');
   const unknown = cli('add', '--commit', r2.commit, '--cell', r2.cell, '--model', r2.model, '--effort', r2.effort, '--results', r2.results, '--arm', r2.arm, '--pool', pool);

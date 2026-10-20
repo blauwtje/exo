@@ -13,7 +13,7 @@ const FIELDS = ['commit', 'cell', 'model', 'effort', 'claudeVersion'];
 const POOL_RESULTS = 'benchmarks/results/2026-10-20-baseline-pool.md';
 const SAME = { cell: 'flow-unit', model: 'claude-sonnet-5-5', effort: 'high', claudeVersion: 'unrecorded' };
 export const ROUNDS = [
-  { round: 'r2', commit: 'c087a7aa', results: 'benchmarks/results/2026-10-19-speed-round2.md', arm: 'base-' },
+  { round: 'r2', commit: '71a42460', results: 'benchmarks/results/2026-10-19-speed-round2.md', arm: 'base-' },
   { round: 'r3', commit: '71a42460', results: 'benchmarks/results/2026-10-19-speed-round3.md', arm: 'base-' },
   { round: 'r4', commit: '6a7d8012', results: 'benchmarks/results/2026-10-19-speed-round4.md', arm: 'base-', claudeVersion: '2.1.303' },
   { round: 'r6', commit: '31ece02e', results: 'benchmarks/results/2026-10-19-speed-round6.md', arm: 'base-' },
