@@ -10,6 +10,7 @@
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>]
 //   node benchmarks/score.mjs benchmarks/runs/<flow dir>... [--publish [--results <file>]]
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --compare <before-arm>,<after-arm>
+//   node benchmarks/score.mjs benchmarks/runs/<dir> --baseline-arm <arm>
 //
 // Value-tier cells get a table of their own: per task and arm, each mean with
 // its standard error; a run of value cells alone prints only that table.
@@ -20,6 +21,12 @@
 // --compare prints, per task, cost and wall time of two arms of one value run:
 // after − before, 2 SE_diff and a rise/noise/fall verdict, then the CV and the
 // next run count (PROCEDURE step 5). It exits 0 whatever the verdict.
+//
+// A value run holding the `exo` arm and a no-plugin arm (`baseline`, or the one
+// --baseline-arm names) ends with one overhead line: R, exo cost over baseline
+// cost summed over the tasks where both arms pass at least 4 of 5 cells, its
+// per-task ratios, and Q, exo hidden passes minus baseline hidden passes over
+// every task both arms ran, each beside its limit (R <= 1.35, Q >= +3).
 //
 // --publish writes the printed text to a results file under a heading and
 // the limitations of its kind. A template run adds the measured cuts against
@@ -60,6 +67,9 @@ const FLOW_LIMITATIONS = [
 ];
 
 const COMPARE_USAGE = 'usage: score.mjs <runs directory> --compare <before-arm>,<after-arm>';
+const OVERHEAD_LIMIT = 1.35;
+const QUALITY_LIMIT = 3;
+const BOTH_PASS_RATE = 0.8;
 const COMPARE_ALONE = '--compare takes one value run directory and does not publish';
 
 function compareArms(value) {
@@ -69,15 +79,17 @@ function compareArms(value) {
 }
 
 function parseArguments(argv) {
-  const options = { directory: null, extraDirectories: [], publish: false, results: null, compare: null };
+  const options = { directory: null, extraDirectories: [], publish: false, results: null, compare: null, baselineArm: 'baseline' };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--publish') options.publish = true;
     else if (flag === '--results') options.results = argv[++index];
     else if (flag === '--compare') options.compare = compareArms(argv[++index]);
+    else if (flag === '--baseline-arm') options.baselineArm = argv[++index];
     else if (options.directory === null) options.directory = path.resolve(flag);
     else options.extraDirectories.push(path.resolve(flag));
   }
+  if (!options.baselineArm) throw new Error('--baseline-arm needs an arm name');
   if (options.directory === null) throw new Error('usage: score.mjs <runs directory> [--publish] [--results <file>]');
   if (options.compare && (options.publish || options.extraDirectories.length > 0)) throw new Error(COMPARE_ALONE);
   return options;
@@ -293,6 +305,41 @@ function valueLines(meta, cells) {
   return lines;
 }
 
+// Per task, an arm's scored cells: pass count, cell count and mean cost.
+function armTasks(cells, arm) {
+  const tasks = new Map();
+  for (const cell of cells.filter((candidate) => candidate.arm === arm && candidate.checks.harnessError === undefined)) {
+    tasks.set(cell.task, [...(tasks.get(cell.task) ?? []), cell]);
+  }
+  return new Map([...tasks].map(([task, group]) => [task, {
+    pass: group.reduce((total, cell) => total + VALUE_METRICS.pass(cell), 0),
+    total: group.length,
+    cost: meanWithError(group.map(VALUE_METRICS.cost))?.mean ?? null
+  }]));
+}
+
+// Exo against the no-plugin arm; empty when either arm has no value cell.
+function overheadLines(cells, baselineArm) {
+  const exo = armTasks(cells, 'exo');
+  const baseline = armTasks(cells, baselineArm);
+  const shared = [...exo.keys()].filter((task) => baseline.has(task)).sort();
+  if (shared.length === 0) return [];
+  const holds = (arm) => arm.cost !== null && arm.pass >= BOTH_PASS_RATE * arm.total;
+  const bothPass = shared.filter((task) => holds(exo.get(task)) && holds(baseline.get(task)));
+  const quality = shared.reduce((total, task) => total + exo.get(task).pass - baseline.get(task).pass, 0);
+  const exoPasses = shared.reduce((total, task) => total + exo.get(task).pass, 0);
+  const baselinePasses = shared.reduce((total, task) => total + baseline.get(task).pass, 0);
+  const qualityText = `Q ${quality < 0 ? '-' : '+'}${Math.abs(quality)} (${exoPasses} vs ${baselinePasses} hidden passes over ${shared.length} tasks) ${quality >= QUALITY_LIMIT ? 'pass' : 'fail'} (limit +${QUALITY_LIMIT})`;
+  let overhead = `R none (no task where both arms pass at least ${BOTH_PASS_RATE * 100}% of cells)`;
+  if (bothPass.length > 0) {
+    const { cut } = taskCut(new Map(bothPass.map((task) => [task, exo.get(task).cost])), new Map(bothPass.map((task) => [task, baseline.get(task).cost])), 'cost');
+    const ratio = 1 - cut;
+    const perTask = bothPass.map((task) => `${task} ${(exo.get(task).cost / baseline.get(task).cost).toFixed(2)}`).join(', ');
+    overhead = `R ${ratio.toFixed(2)} (${perTask}) ${ratio <= OVERHEAD_LIMIT ? 'pass' : 'fail'} (limit ${OVERHEAD_LIMIT.toFixed(2)})`;
+  }
+  return [`overhead exo vs ${baselineArm} · ${overhead} · ${qualityText}`];
+}
+
 // pass is judged by its mean alone, ahead of the other rows, and stays out of the CV.
 const COMPARE_METRICS = {
   pass: {
@@ -477,7 +524,8 @@ function main() {
   }
   const valueCells = cells.filter((cell) => cell.checks.tier === 'value');
   if (valueCells.length > 0 && valueCells.length === cells.length) {
-    const lines = valueLines(meta, valueCells);
+    const overhead = overheadLines(valueCells, options.baselineArm);
+    const lines = [...valueLines(meta, valueCells), ...(overhead.length > 0 ? ['', ...overhead] : [])];
     process.stdout.write(`${lines.join('\n')}\n`);
     if (!options.publish) return;
     const resultsFile = resultsPath(options, meta);
@@ -491,7 +539,8 @@ function main() {
   const summaries = {};
   for (const [arm, armCells] of Object.entries(byArm)) summaries[arm] = summarizeArm(armCells);
   const details = Object.entries(summaries).map(([arm, summary]) => detailLine(arm, summary));
-  const valueSection = valueCells.length === 0 ? [] : ['', ...valueLines(meta, valueCells)];
+  const overhead = overheadLines(valueCells, options.baselineArm);
+  const valueSection = valueCells.length === 0 ? [] : ['', ...valueLines(meta, valueCells), ...(overhead.length > 0 ? ['', ...overhead] : [])];
   const lines = [...tableLines(meta, summaries), '', ...details, ...valueSection];
   process.stdout.write(`${lines.join('\n')}\n`);
   if (!options.publish) return;

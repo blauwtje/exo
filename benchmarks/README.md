@@ -86,6 +86,7 @@ node benchmarks/run.mjs --tasks value-<slug> --arms baseline,exo --model sonnet 
 node benchmarks/score.mjs benchmarks/runs/<dir>   # one row per task and arm: pass rate, defects, LOC, tokens, cost and wall time, each mean with its standard error
 node benchmarks/run.mjs --tasks value-<slug> --arms exo-before,exo --before-plugin <worktree at HEAD~1> --model sonnet --runs 4 --out benchmarks/runs/<dir>
 node benchmarks/score.mjs benchmarks/runs/<dir> --compare exo-before,exo   # per task: pass rate (a timed-out or result-less cell fails; a drop makes the verdict worse, ahead of the rest), cost and wall time after − before, 2 SE_diff, rise/noise/fall, CV (cost and time only) and next n
+node benchmarks/score.mjs benchmarks/runs/<dir> --baseline-arm <arm>   # overhead line under the value table: R, exo cost over this no-plugin arm's (default `baseline`) summed over tasks where both pass 4 of 5, per-task ratios, and Q, exo minus baseline hidden passes, each beside its limit (R <= 1.35, Q >= +3)
 ```
 
 The projection takes each cell's cost from the mean of its finished twins under `benchmarks/runs/`, else the task's `estimateUsd`, else $1.50.

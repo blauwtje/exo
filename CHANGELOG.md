@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- `benchmarks/score.mjs --baseline-arm <arm>` prints a paired overhead line: R, exo cost over the no-plugin arm on tasks both arms pass at least 4 of 5, and Q, the hidden-pass gap, with limits R ≤ 1.35 and Q ≥ +3; the 5-task head-to-head gives R = 1.28 and Q = +5, and replaces the closed goal of costing less per task than the cheapest rival.
 - A user-only line shows when an `exo:` skill or agent starts, when exo routes work, and when a hook refuses a call, plus an "exo is on" line at session start; the model sees none of it, and the new `receipts` setting turns the lines off.
 - `hooks/hooks.json` warns the user when `node` is missing, instead of every hook failing silently with exit 127, and session start warns when Node is older than `engines.node`.
 - `verify/checks/name-clash.mjs` fails `npm run check` on a new skill name that clashes with a Claude Code skill; today's `verify` and `configure` clashes are recorded as a baseline.
