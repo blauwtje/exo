@@ -7,3 +7,5 @@
 - Delete would unblock → report 2-3 options.
 - Request with 2+ parts → one subagent for each part, Agent calls in one message; shared-file parts → one agent.
 - Long task → plan and progress in `.exo/<topic>/progress.md`.
+- Agent notice says it still waits on background work → stop it with TaskStop.
+- Before final report → stop every background shell and agent this session started with TaskStop.

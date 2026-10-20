@@ -60,6 +60,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- Session rules tell the lead to stop an agent whose notice says it still waits on background work, and to stop every background shell and agent before the final report, so no task stays running after the turn; on Codex, `TaskStop` maps to killing the process.
 - Session start reads settings from the session folder, not the hook's working folder.
 - `benchmarks/mde.mjs` and `benchmarks/statistics.mjs` report an effect as undetectable at a given n instead of capping it at 0.300.
 - The flow benchmark's `truncate` plan now says `truncate` throws a `RangeError` when `max` is below 3, with a matching hidden test; the plan left that case open, so builder and reviewer disagreed and the review repair loop ran on an input no hidden test graded. Loop rates from rounds before this fix do not compare directly with later rounds.

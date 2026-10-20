@@ -28,7 +28,8 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 // the confirm-before-undoable line came in from the now opt-in compression rule, and the done-rule clauses grew.
 // Raised 1600 -> 1606 and 1739 -> 1745: "no reruns" became "no repeat loops", so a rerun after a fix stays allowed.
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
-export const INJECTED_CONTEXT_LOCK = { bytes: 1606, measured: '2026-10-20' };
+// Raised 1606 -> 1787 with the TaskStop rule line.
+export const INJECTED_CONTEXT_LOCK = { bytes: 1787, measured: '2026-10-20' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
@@ -40,14 +41,16 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // description; verify/checks/session-load.mjs fails above it.
 // Lowered 909 -> 635 in the round 2 merge: dispatch-only rules moved to the Agent hook, compression rule
 // text became the opt-in exo:short style, agent descriptions shortened; done-rule clauses added words back.
-export const SESSION_LOAD_LOCK = { words: 636, measured: '2026-10-20' };
+// Raised 636 -> 667 with the TaskStop rule line.
+export const SESSION_LOAD_LOCK = { words: 667, measured: '2026-10-20' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.
 // Lowered 3011 -> 1719 in the round 2 merge: dispatch-only rules delivered at the first Agent call, compression
 // off by default so no rule text rides the settings line; done-rule clauses added bytes back.
 // Raised 1719 -> 1739 with the proof-rule split above.
-export const SESSION_START_BYTES_LOCK = { bytes: 1745, measured: '2026-10-20' };
+// Raised 1745 -> 1926 with the TaskStop rule line.
+export const SESSION_START_BYTES_LOCK = { bytes: 1926, measured: '2026-10-20' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };

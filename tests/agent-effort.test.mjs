@@ -54,3 +54,14 @@ test('the session text keeps the fan-out line and leaves the dispatch-only rules
   assert.match(sessionText, /one subagent for each part/);
   for (const line of readDispatchRules().split('\n')) assert.ok(!sessionText.includes(line.slice(2)), line);
 });
+
+test('the session text has one TaskStop bullet for the agent notice and one for the final report', () => {
+  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
+  assert.ok(lines.includes('- Agent notice says it still waits on background work → stop it with TaskStop.'));
+  assert.ok(lines.includes('- Before final report → stop every background shell and agent this session started with TaskStop.'));
+});
+
+test('the Codex host note maps TaskStop to killing the process', () => {
+  const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'codex', 'host-note.md'), 'utf8');
+  assert.match(note, /^- Run TaskStop as killing the process\.$/m);
+});
