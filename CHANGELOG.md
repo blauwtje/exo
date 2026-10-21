@@ -62,6 +62,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- `tests/clean-run-env.mjs` points `TMPDIR` at one folder per test run and deletes it on exit, so `npm test` and `npm run check` stop leaving `mkdtemp` folders in the user temp folder; 12 days of leftovers made macOS boot cleanup take 183 s.
 - `benchmarks/baseline-pool.mjs` keys round 2 by `71a42460` on `main`, not the unpushed run-branch commit `c087a7aa`, so `npm run check` passes in a clone of origin again; a test now fails when a round commit is not an ancestor of `HEAD`.
 - Session rules tell the lead to stop an agent whose notice says it still waits on background work, and to stop every background shell and agent before the final report, so no task stays running after the turn; on Codex, `TaskStop` maps to killing the process.
 - Session start reads settings from the session folder, not the hook's working folder.
