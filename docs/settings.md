@@ -31,4 +31,8 @@ A session hook loads these rules at startup, resume, clear and compaction. They 
 ## Context limit
 
 A hook reads the context size of each session on every tool call. Past the soft limit it asks the agent to finish its step and hand off. Past the hard limit it refuses the tool of a subagent or detached run session. Your own session is never refused: it gets one note at the soft limit and one at the hard limit, asking it to run `exo:save-session` and continue in a fresh session.
+## Status line
+
+Claude Code only. `/exo:configure` runs `node skills/configure/scripts/settings.mjs statusline`: it writes a launcher to `~/.claude/exo/statusline.mjs` (under `CLAUDE_CONFIG_DIR` when set) and prints a `statusLine` block for your `settings.json`, which exo never edits. The line shows a bold `exo` mark, tokens and share of the window colored by the context budget (green below the soft limit, yellow up to the limit, red past it), the 5h and 7d limits, and the model with its effort. `NO_COLOR` turns the colors off. To remove it, delete the `statusLine` key.
+
 How Codex differs is in [codex.md](codex.md).

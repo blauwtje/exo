@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/social-preview.jpg" alt="exo: Claude Code plugin. Spec, build, verify, ship.">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo-light.svg" alt="exo" width="280">
+  </picture>
 </p>
 
 # exo
@@ -12,109 +15,77 @@
   <a href="https://github.com/blauwtje/exo/actions/workflows/quality.yml"><img src="https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg" alt="quality"></a>
 </p>
 
-## Measured result
-
-On 5 bug-fix tasks with Sonnet, 5 runs each and hidden tests the model never sees, exo passed 22 of 25 runs and the cheapest rival workflow plugin passed 17 of 25, in the same batch. That cheapest rival's skills never started, so it is close to plain Claude Code, but it is not a run without a plugin. On the tasks both pass, exo costs 1.28 times as much. Method and details: [benchmarks/README.md](benchmarks/README.md).
-
 ## Install
 
-Open the block for the harness you use and run its commands.
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash
+```
+
+That asks which harnesses and projects get exo, then installs it. The script keeps its copy in `~/.exo`.
+
+It needs git, Node 22 or newer, and `bash` on `PATH` for the hooks. On Windows, Git Bash runs them; support is best effort.
 
 <details>
-<summary>Claude Code (CLI)</summary>
+<summary>Claude Code plugin</summary>
 
-exo's hooks need Node 22 or newer on `PATH`; without it they stay off and the session start says so. Inside Claude Code, run these, then restart it:
+Inside Claude Code, run these, then restart it:
 
 ```text
 /plugin marketplace add blauwtje/exo
 /plugin install exo@blauwtje
 ```
 
-Or run this in a terminal:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness claude
-```
-
-To check, run `/exo:configure` in a new session; if it lists exo's settings, exo is loaded.
+To check, run `/exo:configure` in a new session. If it lists exo's settings, exo is loaded.
 
 </details>
 
 <details>
-<summary>Codex (CLI)</summary>
+<summary>Codex</summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness codex
 ```
 
-To check, run `$configure` in a new session; if it lists exo's settings, exo is loaded.
-
-Codex needs a ChatGPT plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. The Codex desktop app loads the same skills; its handling of exo's hooks and agents is untested. [docs/codex.md](docs/codex.md) lists what differs from Claude Code.
+To check, run `$configure` in a new session. Codex needs a ChatGPT plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. [docs/codex.md](docs/codex.md) lists what differs from Claude Code.
 
 </details>
 
-`curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash` with no arguments asks which harnesses and projects get exo. The script needs git and Node 22 or newer, and keeps its copy of exo in `~/.exo`.
+<details>
+<summary>Update or uninstall</summary>
 
-### Update and uninstall
-
-These act on every install the script made. Update:
+These act on every install the script made.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update
-```
-
-Uninstall:
-
-```bash
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --remove
 ```
 
-`--remove` then deletes `~/.exo` when no install is left and the folder has no local changes. Installed from inside Claude Code? Update with `claude plugin update exo@blauwtje` in a terminal, then restart Claude Code; uninstall with `/plugin uninstall exo@blauwtje` inside Claude Code.
+Installed from inside Claude Code? Update with `claude plugin update exo@blauwtje` in a terminal, then restart. Uninstall with `/plugin uninstall exo@blauwtje`.
 
-The hooks need `bash` on `PATH`. On Windows, Git Bash runs them; support is best effort.
+</details>
+
+Already have exo? Run the install command again; it updates the copy in `~/.exo`.
 
 ## Use
 
-Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. Six skills never start from plain words and need their command typed: `edit-skills`, `write-docs`, `file-issues`, `configure`, `check-docs` and `prompt`. A feature runs `spec` → `build` → `verify` → `ship`, and each stage asks which one runs next. A bug goes to `find-cause` first.
+Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. A feature runs through four stages, and each one asks which runs next. A bug goes to `find-cause` first.
 
-| You want to | Skill |
-|---|---|
-| Decide what to build | `spec` |
-| Build a plan or a decided change | `build` |
-| Check a branch before a pull request | `verify` |
-| Push, open or merge a pull request | `ship` |
-| Fix a bug from its proven cause | `find-cause` |
-| Rename, move or split code without changing behavior | `refactor` |
-| Design a page or component | `design-ui` |
-| Check how a pinned library behaves | `check-docs` |
-| Write a README, doc, PR or commit text | `write-docs` |
-| File GitHub issues | `file-issues` |
-| Write a skill or agent | `edit-skills` |
-| See or change a setting | `configure` |
-| Rewrite a rough prompt | `prompt` |
+| Stage | Skill | Does |
+|---|---|---|
+| 1 | `spec` | Decides what to build. |
+| 2 | `build` | Builds a plan or a decided change with subagents. |
+| 3 | `verify` | Checks the branch before a pull request. |
+| 4 | `ship` | Pushes, opens or merges the pull request. |
 
-`build` runs a plan with subagents, the route every Claude Code session takes. The cheap headless loop, one fresh process per task, runs only from a terminal as `exo run <plan>`; `/exo:run-plan setup` installs `exo`, and `/exo:run-plan <plan>` hands the plan to `build`. `/exo:save-session` saves where a session is, for a fresh one after `/clear`. `/exo:remember` books a correction about the repository, or approves a claim two sessions have booked. Every skill has a page in [docs/skills/](docs/skills/).
+Also: `find-cause`, `refactor`, `design-ui`, `check-docs`, `write-docs`, `file-issues`, `edit-skills`, `configure`, `prompt`, `save-session`, `remember`. Six never start from plain words and need their command typed: `edit-skills`, `write-docs`, `file-issues`, `configure`, `check-docs` and `prompt`. `/exo:remember` keeps a correction about the repository only after two sessions have booked it. `exo run <plan>` runs a plan headless from a terminal; `/exo:run-plan setup` installs it. Each skill has a page in [docs/skills/](docs/skills/).
 
-## What changes
-
-| When Claude | exo answers |
-|---|---|
-| opens a reply with "Great question, let me look into that" and closes with a recap | Under `compression=shorter`, the preamble, the recap and the filler are gone; `compression=short` or the `exo:short` output style opens each report with at most three plain lines. Both are off by default. |
-| gets a bug report | `find-cause` builds a reproduction that fails on demand and names one cause before anything is fixed. |
-
-These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. [docs/settings.md](docs/settings.md) describes all the settings.
-
-## Status line
-
-Claude Code only. `/exo:configure` runs `node skills/configure/scripts/settings.mjs statusline`: it writes a launcher to `~/.claude/exo/statusline.mjs` (under `CLAUDE_CONFIG_DIR` when set) and prints a `statusLine` block for your `settings.json`, which exo never edits. The line shows a bold `exo` mark, tokens and share of the window colored by the context budget (green below the soft limit, yellow up to the limit, red past it), the 5h and 7d limits, and the model with its effort. `NO_COLOR` turns the colors off. To remove it, delete the `statusLine` key.
+[docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
 
 ## More
 
-| Page | Covers |
-|---|---|
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Working on exo: the checks, agents, hooks and releases. |
-| [ABOUT.md](ABOUT.md) | The words exo uses for its own parts. |
-| [benchmarks/README.md](benchmarks/README.md) | Paired runs that measure exo against a session without it. |
-| [CHANGELOG.md](CHANGELOG.md) | What changed in each release. |
+- [CONTRIBUTING.md](CONTRIBUTING.md): working on exo.
+- [ABOUT.md](ABOUT.md): the words exo uses for its own parts.
+- [benchmarks/README.md](benchmarks/README.md): paired runs of exo against a session without it.
+- [CHANGELOG.md](CHANGELOG.md): what changed in each release.
 
 [MIT](LICENSE) licensed.
