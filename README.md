@@ -8,7 +8,7 @@
 # exo
 
 <p align="center">
-  <strong>A plugin for Claude Code and Codex: four stages from idea to merged pull request, and hooks that refuse risky commands.</strong>
+  <strong>An exoskeleton for AI engineering. A plugin for Claude Code and Codex.</strong>
 </p>
 
 <p align="center">
@@ -68,18 +68,41 @@ Already have exo? Run the install command again; it updates the copy in `~/.exo`
 
 ## Use
 
-Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. A feature runs through four stages, and each one asks which runs next. A bug goes to `find-cause` first.
+Describe what you want and Claude starts the skill that fits. A feature goes through four stages, and each asks which runs next. A bug goes to `find-cause` first. If you do not know a skill's name, type `/exo:start <goal>`.
 
-| Stage | Skill | Does |
+| Stage | Skill | What it does |
 |---|---|---|
 | 1 | `spec` | Decides what to build. |
 | 2 | `build` | Builds a plan or a decided change with subagents. |
 | 3 | `verify` | Checks the branch before a pull request. |
 | 4 | `ship` | Pushes, opens or merges the pull request. |
 
-Also: `find-cause`, `refactor`, `design-ui`, `check-docs`, `write-docs`, `file-issues`, `edit-skills`, `configure`, `prompt`, `save-session`, `remember`. Six never start from plain words and need their command typed: `edit-skills`, `write-docs`, `file-issues`, `configure`, `check-docs` and `prompt`. `/exo:remember` keeps a correction about the repository only after two sessions have booked it. `exo run <plan>` runs a plan headless from a terminal; `/exo:run-plan setup` installs it. Each skill has a page in [docs/skills/](docs/skills/).
+Other skills, written as you call them. Those with `/exo:` start only when you type them:
 
-[docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
+- `find-cause`: finds why something broke before any code changes.
+- `refactor`: restructures code without changing what it does.
+- `design-ui`: designs how a page or component looks.
+- `/exo:check-docs`: looks up how the installed version of a library behaves.
+- `/exo:write-docs`: writes READMEs, pull requests and commit messages.
+- `/exo:file-issues`: writes GitHub issues and files them.
+- `/exo:prompt`: rewrites a rough prompt and runs it after you say yes.
+- `/exo:save-session`: saves unfinished work for a fresh session.
+- `/exo:remember`: keeps a repository correction after two sessions have booked it.
+- `/exo:run-plan`: runs a plan headless; `/exo:run-plan setup` installs `exo run <plan>` for your terminal.
+- `/exo:configure`: shows or changes exo's settings.
+
+[docs/skills/](docs/skills/) has a page for every skill. [docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
+
+## Before and after
+
+Each "before" is plain Claude Code. Nothing here compares exo with other plugins.
+
+| Before | After | Test |
+|---|---|---|
+| A task lands once Claude says the tests pass, even if the proof never failed. | A task lands only if its proof fails before the change and passes after; otherwise `no red proof`. | [tests/red-bound.test.mjs](tests/red-bound.test.mjs) |
+| A task lands even when the project's own check is red. | A failing Land gate is refused before anything commits. | [tests/land-task-land-gate.test.mjs](tests/land-task-land-gate.test.mjs) |
+
+On `value-test-pollution`, a suite that fails only in CI, plain Claude Code passed 0 of 5 runs and exo 2 of 5. Over all five benchmark tasks it was 18 of 25 against 20 of 25. That is 0.7 standard errors, so it does not separate them, and exo cost 1.38 times as much. See [the results](benchmarks/results/2026-10-21-h2h-baseline-exo.md).
 
 ## More
 
