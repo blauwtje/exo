@@ -1,6 +1,6 @@
 # Rewrite examples
 
-Unless an example says otherwise, the session's CLAUDE.md files, rules and memory state none of the kind-rule lines, so each one shown is uncovered. In-session examples end with the fixed ok line; a note appears only where a suggestion is admitted.
+Unless an example says otherwise, the session's CLAUDE.md files, rules and memory state none of the kind-rule lines, so each one shown is uncovered. In-session examples end with the fixed ok line; a note appears only where a suggestion is admitted, as a numbered list with the reply line before the ok line.
 
 <examples>
 <example>
@@ -60,7 +60,7 @@ Ok to run it?
 </example>
 
 <example>
-Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work, so the block keeps "clean up" in the user's words and one `Suggest:` line names both readings; a plain ok runs "clean up" as written:
+Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work, so the block keeps "clean up" in the user's words and one note item names both readings; a plain ok runs "clean up" as written:
 
 ````
 <background>
@@ -73,7 +73,33 @@ Only make changes that are directly requested or clearly necessary, since each e
 </instructions>
 ````
 
-Suggest: say which cleanup: remove the unused exports, or split the 600-line file (different work).
+Before it runs:
+1. Cleanup: a) remove the unused exports (best) b) split the 600-line file
+Reply ok to run as is, or answers like 1a or 1b.
+
+Ok to run it?
+</example>
+
+<example>
+Rough: `redesign the settings page with shadcn/ui so it follows all UI/UX laws, keep going until it is good`. The code read shows `src/settings/SettingsPage.tsx`. Three defaults fire: the goal is vague, the library is named only by name, and the job is open-ended. Each becomes a block line, not a suggestion; only the change size is the user's to give:
+
+````
+<background>
+Redesign the settings page in `src/settings/SettingsPage.tsx` with shadcn/ui.
+</background>
+
+<instructions>
+Redesign the settings page with shadcn/ui so it follows all UI/UX laws.
+First find the shadcn/ui official repository or docs and name the link you used.
+First turn the goal "follows all UI/UX laws" into concrete checks and list them; done is each check holding.
+Stop after 5 rounds of change and check, or sooner when a round makes no progress; then report what is left.
+Only make changes that are directly requested or clearly necessary, since each extra change is more to review.
+</instructions>
+````
+
+Before it runs:
+1. Features: a) keep all (best) b) may change
+Reply ok to run as is, or answers like 1a or 1b.
 
 Ok to run it?
 </example>
@@ -180,7 +206,7 @@ Ok to run it?
 </example>
 
 <example>
-Rough: `speed up the product search queries with the sql-tune skill`. The code read shows `src/search/products.ts`, which queries MongoDB. The session's skill list describes `sql-tune` with "Not for NoSQL databases". The prompt keeps the user's choice; a `Suggest:` line quotes the ruling-out clause:
+Rough: `speed up the product search queries with the sql-tune skill`. The code read shows `src/search/products.ts`, which queries MongoDB. The session's skill list describes `sql-tune` with "Not for NoSQL databases". The prompt keeps the user's choice; a note item quotes the ruling-out clause:
 
 ````
 <background>
@@ -193,7 +219,9 @@ Only make changes that are directly requested or clearly necessary, since each e
 </instructions>
 ````
 
-Suggest: drop `sql-tune` (it says "Not for NoSQL databases").
+Before it runs:
+1. `sql-tune` says "Not for NoSQL databases": a) drop it (best) b) keep it
+Reply ok to run as is, or answers like 1a.
 
 Ok to run it?
 </example>

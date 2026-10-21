@@ -14,9 +14,10 @@ Rewrite the rough prompt; run it only after a yes. The enemy is a rewrite that c
 1. No argument → print `/exo:prompt <rough prompt>`, run nothing, stop.
 2. Read only what names a path, a test or build command, or a pattern file, such as the package manifest. No edit, no test run, no helper.
 3. Read `references/examples.md`, then rewrite with the rules below. Show it in one fenced block, opened with more backticks than the longest run inside it, at least three.
-4. After the block, the note (`## Note`); in-session prompt → then exactly the line `Ok to run it?`; prompt for elsewhere → nothing more.
+4. After the block, the note (`references/note.md`, read first); in-session prompt → then the reply line and exactly the line `Ok to run it?`; prompt for elsewhere → nothing more.
 5. Reply of plain yes or ok, nothing more → run the last shown block as written, as the user's request in this session; prompt for elsewhere → run nothing. Not via `exo:spec`, which would swap it for its own brief; other skills may pick it up.
 6. Reply naming changes, such as "yes, but drop X" → change only what X names, show again; the note holds only new suggestions that change raises.
+   - Reply `1a`, `1a 2b` or `2: <value>` → apply only those items, show again.
 7. Any other reply → stop and treat it as a normal message.
 
 ## Covered
@@ -57,6 +58,9 @@ Apply a kind rule only when the prompt is that kind:
 - Review → "flag only gaps that affect correctness or the stated requirements; treat the rest as optional, since chasing every finding leads to over-engineering".
 - Several parts → number them.
 - Only when the user's words say no one will be there to answer during the run → "keep working until every part is done. A summary announcing a next step is not done, since a reply without a tool call stops the work".
+- Long, looping or open-ended job → "stop after 5 rounds of change and check, or sooner when a round makes no progress; then report what is left".
+- Outside project, library or tool named only by name → "first find its official repository or docs and name the link you used".
+- Vague goal with no measurable done test → "first turn the goal, in the user's words, into concrete checks and list them; done is each check holding".
 - Several parts, one may block → "a part that cannot be finished: finish the rest, then say plainly what is missing, so the finished parts still land".
 
 ## Strip
@@ -69,19 +73,6 @@ Apply a kind rule only when the prompt is that kind:
 - Bare title ("you are a senior engineer"), politeness, boilerplate naming no behavior → strip; a concrete ask such as "be concise" stays.
 - Hedge ("try to", "if possible") on an ask the user elsewhere calls required → plain imperative.
 - Negative ask → rephrase as what to do, where the user's meaning stays.
-
-## Note
-
-0-3 lines `Suggest: <one change> (<few-word reason>).`, phrased so the user can reply "yes, but <change>"; most material first.
-
-- Admit one only when the user alone can supply it and it could change the work materially; kinds, each one that fires:
-  - Long, looping, paid or open-ended job → each absent item. Items: money cap for paid runs, measurable done test for a vague goal, stop rule (max rounds or budget), links for outside projects named only by name, how big a change may be (improve, remove, rewrite).
-  - User names a skill whose own description rules out the task → keep the skill in the prompt; quote that clause.
-  - Two readings leading to materially different work → name both.
-  - Path, file, symbol or skill the user names as existing and step 2 did not find → suggest checking the name; not for one the prompt asks to create.
-- Suggested item → never a value in the block; the reply supplies it.
-- Not a suggestion: a report of what the rewrite added or dropped, wording polish, anything the block answers, one shown for this prompt earlier in the conversation.
-- None admitted → no note; silence is the default.
 
 ## Format
 
@@ -108,6 +99,7 @@ Lines for the model this session runs; other or unknown model → the Opus 5.5 f
 | File | Read it when |
 |---|---|
 | `references/examples.md` | Step 3, before every rewrite. |
+| `references/note.md` | Step 4, before the note. |
 
 ## Judgment
 
