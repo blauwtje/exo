@@ -4,7 +4,7 @@
 - Irreversible step → confirm with user first.
 - Done → stated oracle holds on every row, not one example.
 - Missing-data fallback or skip → read README and docs first.
-- Delete would unblock → report 2-3 options.
+- Goal command red and cheapest unblock is a delete, reset or overwrite → edit the project until the command as typed is green and destroys nothing; a pass only under changed settings is not done; options only for the destructive step.
 - Request with 2+ parts → one subagent for each part, Agent calls in one message; shared-file parts → one agent.
 - Long task → plan and progress in `.exo/<topic>/progress.md`.
 - Agent notice says it still waits on background work → stop it with TaskStop.

@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- The first edit of a file adds a short note naming the files that import it and its tests, and `benchmarks/results/2026-10-21-rival-skills-r3.md` records the head-to-head that ships it.
 - `/exo:configure` installs a status line launcher: a bold `exo` mark, context colored by exo's context budget, and uncolored 5h and 7d limits.
 - The session start line names the context limit, such as `context=150k (global)`, so the main session sees it before the first warning.
 - `benchmarks/score.mjs --baseline-arm <arm>` prints a paired overhead line: R, exo cost over the no-plugin arm on tasks both arms pass at least 4 of 5, and Q, the hidden-pass gap, with limits R ≤ 1.35 and Q ≥ +3; the 5-task head-to-head gives R = 1.28 and Q = +5, and replaces the closed goal of costing less per task than the cheapest rival.
@@ -43,6 +44,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- The session rule "Delete would unblock → report 2-3 options" now asks for a project edit that gets the command green as typed and destroys nothing, with options only for the destructive step; against a rival skills plugin on 8 tasks (sonnet, 40 pairs) exo wins 9, loses 0 (sign test p=0.002), passes 36/40 hidden checks against 28/40, at $0.113 against $0.136 per task.
 - The README has a new icon, logos and 1280x640 social preview (a terminal clad in steel plates on dark gunmetal, with an orange prompt), opens with "An exoskeleton for AI engineering.", rewrites `## Use` with before and after examples, and drops the false claim that hooks refuse risky commands.
 - `README.md` drops from 939 to 457 words: it opens with a light and dark logo, install starts with one command and folds the Claude Code, Codex and update steps, and the numbers block is gone, since a same-batch run in `benchmarks/results/2026-10-21-h2h-baseline-exo.md` gives plain Claude Code 18/25 and exo 20/25 (0.7 SE) at 1.38 times the cost; `assets/` gains a new social preview naming Claude Code and Codex, and an icon in `icon.svg`, `icon-512.png`, `logo-light.svg` and `logo-dark.svg`.
 - `prompt` leaves out lines the session already covers through CLAUDE.md, rules, memory, hooks, tests or scripts, and ends with at most 3 `Suggest:` lines, none when nothing is worth changing, then `Ok to run it?`; the `Added:`, `Dropped:`, `Misfit:` and `Missing:` lines are gone, and a rewritten prompt fed back comes out unchanged.

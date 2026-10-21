@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import process from 'node:process';
 import { readHookText } from '#hook-input';
+import { impactFields } from '../lib/edit-impact.mjs';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';
 
 const STEPS = [
-  { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) }
+  { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) },
+  { name: 'edit-impact', run: impactFields }
 ];
 
 function runStep(step, hookInput) {
