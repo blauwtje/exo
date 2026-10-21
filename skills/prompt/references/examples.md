@@ -1,8 +1,10 @@
 # Rewrite examples
 
+Unless an example says otherwise, the session's CLAUDE.md files, rules and memory state none of the kind-rule lines, so each one shown is uncovered. In-session examples end with the fixed ok line; a note appears only where a suggestion is admitted.
+
 <examples>
 <example>
-Rough: `fix the login bug`. The code read shows `src/auth/login.ts` and tests run by `npm test`.
+Rough: `fix the login bug`. The code read shows `src/auth/login.ts` and tests run by `npm test`. The session's CLAUDE.md says nothing about tests, change size or evidence, so those kind-rule lines stay. No note: nothing only the user can supply would change the work.
 
 ````
 <background>
@@ -22,11 +24,11 @@ Only make changes that are directly requested or clearly necessary, since each e
 </success_criteria>
 ````
 
-Added: login flow in `src/auth/login.ts` (path read); reproduce-first (kind rule, `npm test` found); no hard-coding, wrong-test, minimal-change and evidence lines (kind rule); `npm test` (command read from `package.json`).
+Ok to run it?
 </example>
 
 <example>
-Rough: `think step by step. I'm away until tomorrow so finish this without me. 1) the nightly export crashes with this error, fix it 2) add a --dry-run flag to the export script. double-check everything.` followed by a pasted stack trace. The code read shows `tools/export.mjs` and `npm test`.
+Rough: `think step by step. I'm away until tomorrow so finish this without me. 1) the nightly export crashes with this error, fix it 2) add a --dry-run flag to the export script. double-check everything.` followed by a pasted stack trace. The code read shows `tools/export.mjs` and `npm test`. "I'm away until tomorrow" fires the keep-working line; "double-check everything" is a generic check, stripped without a report, since `npm test` is the named check.
 
 ````
 <background>
@@ -54,12 +56,11 @@ A part that cannot be finished: finish the rest, then say plainly what is missin
 </success_criteria>
 ````
 
-Added: `tools/export.mjs` (path read); reproduce-first (kind rule, `npm test` found); no hard-coding, wrong-test, minimal-change, keep-working, blocked-part and evidence lines (kind rule; keep-working from "I'm away until tomorrow"); `npm test` (command read from `package.json`).
-Dropped: "double-check everything" (generic check); `npm test` is the named check.
+Ok to run it?
 </example>
 
 <example>
-Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work. Both readings stay open and the reply asks nothing; the user can name one in the ok reply; a plain ok runs "clean up" as written. The rewrite keeps "clean up" in the user's words:
+Rough: `clean up the reports module`. The code read shows `src/reports/` with unused exports and one 600-line file. Removing dead code and splitting files are materially different work, so the block keeps "clean up" in the user's words and one `Suggest:` line names both readings; a plain ok runs "clean up" as written:
 
 ````
 <background>
@@ -72,19 +73,23 @@ Only make changes that are directly requested or clearly necessary, since each e
 </instructions>
 ````
 
-Added: `src/reports/` (path read); minimal-change line (kind rule).
+Suggest: say which cleanup: remove the unused exports, or split the 600-line file (different work).
+
+Ok to run it?
 </example>
 
 <example>
-Rough: `explain what the retry option in src/http/client.ts does, without editing anything`. The prompt is clear and already says not to edit, so it passes through almost unchanged, as plain sentences with no tags and no `Added:` line:
+Rough: `explain what the retry option in src/http/client.ts does, without editing anything`. The prompt is clear and already says not to edit, so it passes through almost unchanged, as plain sentences with no tags and no note:
 
 ````
 Explain what the `retry` option in `src/http/client.ts` does. Do not edit anything.
 ````
+
+Ok to run it?
 </example>
 
 <example>
-Rough: `write me a prompt I can use in a new session to make an 8-week plan for learning Rust, for someone who knows Python`. The user runs it elsewhere, so the block is that prompt itself, as if typed there, not a prompt asking for one. The reply ends with a line asking for changes and offers no run:
+Rough: `write me a prompt I can use in a new session to make an 8-week plan for learning Rust, for someone who knows Python`. The user runs it elsewhere, so the block is that prompt itself, as if typed there, not a prompt asking for one. A new session loads the same CLAUDE.md, which says nothing about editing during an answer, so the do-not-edit line stays. Nothing follows the block:
 
 ````
 <background>
@@ -96,8 +101,6 @@ Make an 8-week plan for learning Rust.
 Do not edit files, since the ask is an answer, not a change.
 </instructions>
 ````
-
-Added: do-not-edit line (kind rule).
 </example>
 
 <example>
@@ -119,7 +122,7 @@ Do not edit files, since the ask is an answer, not a change.
 </instructions>
 ````
 
-Added: do-not-edit line (kind rule).
+Ok to run it?
 </example>
 
 <example>
@@ -136,7 +139,7 @@ Do not edit files, since the ask is an answer, not a change.
 </instructions>
 ````
 
-Added: `src/editor/PublishPanel.vue` (path read); do-not-edit line (kind rule).
+Ok to run it?
 </example>
 
 <example>
@@ -153,7 +156,7 @@ Only make changes that are directly requested or clearly necessary, since each e
 </instructions>
 ````
 
-Added: `src/tenants/subdomain.ts` (path read); open point (check first: DNS label length limit, against "never shorten it"); minimal-change line (kind rule).
+Ok to run it?
 </example>
 
 <example>
@@ -173,11 +176,11 @@ Only make changes that are directly requested or clearly necessary, since each e
 </instructions>
 ````
 
-Added: `db/migrations/` (path read); `npm run migrate` (command read from `package.json`); minimal-change line (kind rule).
+Ok to run it?
 </example>
 
 <example>
-Rough: `speed up the product search queries with the sql-tune skill`. The code read shows `src/search/products.ts`, which queries MongoDB. The session's skill list describes `sql-tune` with "Not for NoSQL databases". The prompt keeps the user's choice; the line after the block reports the misfit:
+Rough: `speed up the product search queries with the sql-tune skill`. The code read shows `src/search/products.ts`, which queries MongoDB. The session's skill list describes `sql-tune` with "Not for NoSQL databases". The prompt keeps the user's choice; a `Suggest:` line quotes the ruling-out clause:
 
 ````
 <background>
@@ -190,7 +193,46 @@ Only make changes that are directly requested or clearly necessary, since each e
 </instructions>
 ````
 
-Added: `src/search/products.ts` and MongoDB (path read); minimal-change line (kind rule).
-Misfit: `sql-tune` says "Not for NoSQL databases", and this search runs on MongoDB; the prompt keeps it as asked.
+Suggest: drop `sql-tune` (it says "Not for NoSQL databases").
+
+Ok to run it?
+</example>
+<example>
+Rough: `add a CSV export button to the orders page. keep changes minimal, don't add any new dependencies`. The code read shows `src/orders/OrdersPage.tsx` and `npm test`. The session's CLAUDE.md says "Only change what the task needs" and "Show check output, not a claim of success", so the minimal-change and evidence lines are covered and left out. "keep changes minimal" only restates CLAUDE.md, so it is stripped; "don't add any new dependencies" narrows it, so it stays, as what to do. CLAUDE.md says nothing about hard-coding or wrong tests, so those lines stay:
+
+````
+<background>
+Add a CSV export button to the orders page, `src/orders/OrdersPage.tsx`.
+</background>
+
+<instructions>
+Add a CSV export button to the orders page. Use only the dependencies already installed.
+Do not hard-code values that only make the tests pass; solve the problem in general, since tests verify correctness, not define the solution.
+If a test is wrong, say so rather than work around it, so the test itself gets fixed.
+</instructions>
+
+<success_criteria>
+`npm test` passes.
+</success_criteria>
+````
+
+Ok to run it?
+</example>
+
+<example>
+Rough: the reports block above with its suggestion applied, "Clean up the reports module" now "Remove the unused exports in the reports module". Every line already follows the rules and no suggestion is admitted, so the same block comes back, with no synonym swap and no note:
+
+````
+<background>
+Remove the unused exports in the reports module, `src/reports/`.
+</background>
+
+<instructions>
+Remove the unused exports in the reports module.
+Only make changes that are directly requested or clearly necessary, since each extra change is more to review.
+</instructions>
+````
+
+Ok to run it?
 </example>
 </examples>

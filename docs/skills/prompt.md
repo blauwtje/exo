@@ -14,10 +14,12 @@ Not for running a prompt unseen. Type the prompt as it is for that.
 - It asks no questions. An unclear point stays open, in your words. You can pick a reading in your reply, such as "yes, but only X".
 - One fenced block with your prompt rewritten: thinking cues, shouting and filler gone, pasted text kept verbatim. From pasted chat, only the lines the task needs stay, word for word; other needed facts go in one line.
 - Tags only when they help: `<background>`, `<pasted_content>`, `<instructions>`, `<success_criteria>` and `<output_format>`. A clear one-line prompt stays plain.
-- It adds only what your kind of request needs and the code shows, never a guessed fact. An `Added:` line under the block lists each add and where it came from.
+- It adds only what your kind of request needs and the code shows, never a guessed fact.
+- It leaves out what your session already covers: a line your CLAUDE.md files, rules, memory or a repo check already state. A line of yours that only repeats one goes too; one that narrows or adds detail stays.
+- Under the block, at most three short `Suggest:` lines, only for what you alone can supply and what could change the work: a spend cap, a done test, a stop rule, a skill that rules itself out, or two readings that lead to different work. Usually there are none. A suggestion never repeats.
 - It tunes the block to the model your session runs.
-- One line asking for ok. A plain yes runs the block as written, as your request in this session, without `exo:spec`; "yes, but drop X" revises it and shows it again.
-- Ask for a prompt to use elsewhere, such as in a new session, and the block is that prompt, ready to copy. It never runs here; the last line asks only for changes.
+- One fixed line asking for ok. A plain yes runs the block as written, as your request in this session, without `exo:spec`; "yes, but drop X" changes only X and shows it again. Running it on its own output, suggestions applied, gives the same block back.
+- Ask for a prompt to use elsewhere, such as in a new session, and the block is that prompt, ready to copy. It never runs here, and nothing follows the block except suggestions.
 
 ## Source
 
