@@ -245,7 +245,7 @@ function dispatchBlock({ task, frame, planPath, checkout, briefPath, since, back
   return [`Dispatch: exo:build-task, run_in_background: ${background}`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
-function windowLines({ planPath, root, records, running }) {
+export function windowLines({ planPath, root, records, running }) {
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];
   const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}"`);

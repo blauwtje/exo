@@ -11,7 +11,7 @@
    - Green slot → `node "<skill>/scripts/land-slot.mjs" --plan <plan> --task <n> --root <root> --slot "<root>-task-<n>" --base <base> --baseline <root>/.exo/baseline.txt --in-flight <other running task numbers, comma separated>`.
    - One call runs wave worktrees step 3 and 4 for that slot; read the first word of its output.
    - `LANDED` → the slot is gone; read the refill line of the report after it: `Start:` with another slot running, else `Next:` or `Wave:`.
-   - `REFUSED` → route as a failed build; `CONFLICT` or `NEWPATH` → close the window to refills (step 4); each leaves the slot folder in place and names it.
+   - `REFUSED` → route as a failed build, then run its `Wait:`; `CONFLICT` or `NEWPATH` → close the window to refills (step 4); each keeps the slot folder and names it.
 4. **Close the window.**
    - New path in the run's checkout against the baseline, or a cherry-pick conflict → close the window to refills.
    - The turn ends only after every in-flight slot returned or blocked and every slot folder left per wave worktrees step 4, or stalled and named in the return.

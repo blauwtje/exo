@@ -8,7 +8,7 @@ const USAGE = [
   'usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--report <path>...] [--any] [--timeout <seconds>]',
   '--since is given once for all reports or once per --report, paired in order;',
   '--any returns as soon as one report is fresh and prints only the fresh paths.',
-  'Exit 0 prints each report path; exit 2 prints `waiting <paths>` at the deadline; exit 1 is a bad argument.',
+  'Exit 0 prints each report path; exit 2 prints `waiting <paths>` at the deadline; exit 1 is a bad argument, also a --since later than now.',
 ].join('\n');
 
 function isFresh(reportPath, sinceMs) {
@@ -42,6 +42,11 @@ async function main(argv) {
   const timeoutText = flags.timeout ?? String(DEFAULT_TIMEOUT_SECONDS);
   if (!/^\d+$/.test(timeoutText)) throw new UsageError("flag '--timeout' needs seconds");
   const sinceSeconds = flags.since.map(Number);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const late = sinceSeconds.find((seconds) => seconds > nowSeconds);
+  if (late !== undefined) {
+    throw new UsageError(`flag --since ${late} is later than now ${nowSeconds}, so no report can count as fresh; pass the printed Since: or Wait: value, else \`date +%s\` taken before the dispatch`);
+  }
   const pending = await waitForReports({
     reports: flags.report,
     sinceSeconds: sinceSeconds.length === 1 ? sinceSeconds[0] : sinceSeconds,
@@ -62,7 +67,7 @@ if (isMain(import.meta.url)) {
     await main(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    process.stderr.write(`wait-report: ${error.message}\n`);
+    process.stderr.write(`ERROR wait-report: ${error.message}\n`);
     process.exitCode = 1;
   }
 }

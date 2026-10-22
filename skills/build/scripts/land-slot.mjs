@@ -4,7 +4,8 @@ import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { PlanError } from '#plan-tasks';
 import { landTask, LandingError } from './land-task.mjs';
-import { nextTaskReport } from './next-task.mjs';
+import { nextTaskReport, windowLines } from './next-task.mjs';
+import { restartRecord } from './open-slots.mjs';
 import { removeWorktree, RemoveWorktreeError } from './remove-worktree.mjs';
 
 const statusOf = (directory) => execFileSync('git', ['-C', directory, 'status', '--porcelain'], { encoding: 'utf8' }).split('\n').filter(Boolean);
@@ -32,6 +33,12 @@ function removeSlot({ slot, root, base, number }) {
   }
 }
 
+// why: the rebuild rewrites the slot's report, so its wait counts only a report written after this refusal.
+function rebuildLines({ planPath, number, root, slot, base, inFlight }) {
+  const records = restartRecord(root, number, { slot, base, since: Math.floor(Date.now() / 1000) });
+  return `${windowLines({ planPath, root, records, running: [number, ...inFlight.filter((other) => other !== number)] }).join('\n')}\n`;
+}
+
 export function landSlot({ planPath, number, root, slot, base, baseline, inFlight = [] }) {
   const known = fs.readFileSync(baseline, 'utf8').split('\n');
   const fresh = statusOf(root).filter((line) => !known.includes(line));
@@ -43,7 +50,7 @@ export function landSlot({ planPath, number, root, slot, base, baseline, inFligh
   try {
     landed = landTask({ planText, number, root: slot, reportText, reportPath, planPath });
   } catch (error) {
-    if (error instanceof LandingError || error instanceof PlanError) return refusal('REFUSED', number, `${error.message}\nslot ${slot} kept`);
+    if (error instanceof LandingError || error instanceof PlanError) return `${refusal('REFUSED', number, `${error.message}\nslot ${slot} kept`)}${rebuildLines({ planPath, number, root, slot, base, inFlight })}`;
     throw error;
   }
   const sha = execFileSync('git', ['-C', slot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();

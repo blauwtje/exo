@@ -52,6 +52,25 @@ test('a refused landing keeps the slot and puts nothing on the run branch', asyn
   assert.match(worktrees(root), new RegExp(slot));
 });
 
+test('a refused landing prints a Wait: and Land: for the rebuild into the same slot, since the refusal', async () => {
+  const { root, slot, land, base } = await slotFixture();
+  const other = `${root}-task-3`;
+  const window = path.join(root, '.exo', 'window.json');
+  await fs.writeFile(window, JSON.stringify({ 1: { slot, base, since: 1000000000 }, 3: { slot: other, base, since: 1000000003 } }));
+  await editApp(slot);
+  await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
+  const before = Math.floor(Date.now() / 1000);
+  const result = await land();
+  assert.match(result.stdout, /^REFUSED 1\b/);
+  const wait = result.stdout.match(/^Wait: node ".+wait-report\.mjs" --any --since (\d{10}) --report "(.+)" --since 1000000003 --report "(.+)"   \(/m);
+  assert.ok(wait, result.stdout);
+  assert.ok(Number(wait[1]) >= before, `since ${wait[1]} is before the refusal at ${before}`);
+  assert.equal(wait[2], path.join(slot, '.exo', 'implementer-1.md'));
+  assert.equal(wait[3], path.join(other, '.exo', 'implementer-3.md'));
+  assert.match(result.stdout, new RegExp(`^Land 1: node ".+land-slot\\.mjs" .*--task 1 .*--slot "${slot}" --base ${base} .*--in-flight 3$`, 'm'));
+  assert.equal(JSON.parse(await fs.readFile(window, 'utf8'))[1].since, Number(wait[1]));
+});
+
 test('a new path in the run checkout lands nothing and keeps the slot', async () => {
   const { root, slot, land } = await slotFixture();
   const head = git(root, 'rev-parse', 'HEAD');

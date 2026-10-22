@@ -19,6 +19,12 @@ export function windowRecords(root) {
   }
 }
 
+export function restartRecord(root, number, record) {
+  const records = { ...windowRecords(root), [number]: record };
+  fs.writeFileSync(windowFile(root), JSON.stringify(records));
+  return records;
+}
+
 // why: a gitignored plan input exists only in the run checkout, so each slot gets a copy.
 function copyInputs(toplevel, slot, inputs) {
   for (const input of inputs) {
