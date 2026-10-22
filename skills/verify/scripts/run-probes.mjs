@@ -5,18 +5,21 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 
 const PROBE_LINE = /^\s*Probe:\s*(.*)$/;
 const FIXED_FINDING = /\bfixed\s*$/;
+const REPORTED_FINDING = /\breported:\s*\S/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
-Reruns the Probe: command under each finding marked fixed; prints PASS or FAIL per finding, exits 1 on any FAIL.`;
+Reruns the Probe: command under each finding marked fixed; prints PASS or FAIL per finding.
+A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding). Exits 1 on any FAIL.`;
 
 export function fixedProbes(report) {
   const lines = report.split('\n');
   const probes = [];
   lines.forEach((line, index) => {
-    if (PROBE_LINE.test(line) || !FIXED_FINDING.test(line)) return;
+    if (PROBE_LINE.test(line)) return;
     const next = PROBE_LINE.exec(lines[index + 1] ?? '');
-    probes.push({ finding: line.trim(), command: next?.[1].trim() || null });
+    if (FIXED_FINDING.test(line)) probes.push({ finding: line.trim(), command: next?.[1].trim() || null });
+    else if (next && !REPORTED_FINDING.test(line)) probes.push({ finding: line.trim(), command: null, unmarked: true });
   });
   return probes;
 }
@@ -30,9 +33,9 @@ function runProbe(command, root) {
 export function runProbes(report, root) {
   const lines = [];
   let allPassed = true;
-  for (const { finding, command } of fixedProbes(report)) {
+  for (const { finding, command, unmarked } of fixedProbes(report)) {
     if (command === null) {
-      lines.push(`FAIL probe (no Probe line under a fixed finding): ${finding}`);
+      lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding'}): ${finding}`);
       allPassed = false;
       continue;
     }

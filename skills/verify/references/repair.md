@@ -2,7 +2,7 @@
 
 Step 3 of `verify`, after `exo:fix-review` returns. One branch review, one repair, one review of the fix diff, then land or report.
 
-0. Fixer return with no `fixed=` line (turn cap) → count each finding it did not mark as `reported`; no resume, no redispatch; continue with step 1.
+0. Fixer return with no `fixed=` line (turn cap) → append `reported: turn cap` to each finding line it left unmarked, so step 2's probe run does not fail on it; no resume, no redispatch; continue with step 1.
 1. In one turn start all three, so they run side by side:
    - Rerun step 1's `verify.mjs` in the background.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/run-probes.mjs" --report <findings path> --root <checkout>` (reruns each `fixed` finding's probe).
