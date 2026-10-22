@@ -121,3 +121,29 @@ test('a bad trailer is prefixed with the short sha of its commit', () => {
   assert.match(r.lines[0], new RegExp(`${sha} Evidence: tests/foo\\.mjs names neither`));
   assert.doesNotMatch(r.lines[0], new RegExp(`${git(root, 'rev-parse', '--short', 'HEAD~1')} Evidence`));
 });
+
+test('a malformed trailer fails even when no wording file changed', () => {
+  const root = fixture();
+  edit(root, 'code\n\nEvidence: tests/foo.mjs', 'lib/a.mjs');
+  const r = run(root);
+  assert.equal(r.FAIL, 1);
+  assert.match(r.lines[0], /Evidence: tests\/foo\.mjs names neither/);
+});
+
+test('a well-formed result path not in the range passes when no wording file changed', () => {
+  const root = fixture();
+  edit(root, 'code\n\nEvidence: benchmarks/results/elsewhere.json', 'lib/a.mjs');
+  const r = run(root);
+  assert.equal(r.FAIL, 0);
+  assert.equal(r.PASS, 1);
+});
+
+test('an empty or command-result value fails with text naming Proof when no wording file changed', () => {
+  for (const value of ['', 'npm test → 12 pass']) {
+    const root = fixture();
+    edit(root, `code\n\nEvidence: ${value}`, 'lib/a.mjs');
+    const r = run(root);
+    assert.equal(r.FAIL, 1, value);
+    assert.match(r.lines[0], /a command result goes in a `Proof: <command> → <result>` line/);
+  }
+});

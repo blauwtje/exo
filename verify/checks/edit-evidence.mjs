@@ -14,7 +14,8 @@ function lines(run) {
 
 function badTrailer(value, results) {
   if (NONE_VALUE.test(value)) return '';
-  if (!RESULT_VALUE.test(value)) return 'names neither a benchmarks/results or benchmarks/pressure file nor `none (<reason>)`';
+  if (!RESULT_VALUE.test(value)) return 'names neither a benchmarks/results or benchmarks/pressure file nor `none (<reason>)`; a command result goes in a `Proof: <command> → <result>` line';
+  if (results === null) return '';
   return results.has(value) ? '' : 'names a file not added or changed in this range';
 }
 
@@ -29,7 +30,7 @@ function changesSince(root) {
   return { changed: lines(changed), added: new Set(lines(added)), log: log.stdout };
 }
 
-function evidenceProblems(log, results) {
+function evidenceProblems(log, results, needOne) {
   const problems = [];
   let found = 0;
   for (const entry of log.split('\x1e')) {
@@ -41,7 +42,7 @@ function evidenceProblems(log, results) {
       if (why !== '') problems.push(`${sha} Evidence: ${value || '(empty)'} ${why}`);
     }
   }
-  if (found === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
+  if (needOne && found === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
   return problems;
 }
 
@@ -52,11 +53,11 @@ export function checkEditEvidence(report, repository) {
     return;
   }
   const edited = since.changed.filter((file) => WORDING_PATH.test(file));
+  const problems = evidenceProblems(since.log, edited.length > 0 ? since.added : null, edited.length > 0);
   if (edited.length === 0) {
-    report.assert(true, NAME, 'no skill, agent or session wording changed since the merge base');
+    report.assert(problems.length === 0, NAME, 'no wording file changed and every Evidence trailer in the range is valid', `${problems.join('; ')}; fix the \`Evidence:\` line`);
     return;
   }
-  const problems = evidenceProblems(since.log, since.added);
   report.assert(
     problems.length === 0,
     NAME,

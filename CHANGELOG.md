@@ -50,6 +50,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- `npm run check` fails a principle page cite whose file or anchor is gone, and fails any malformed `Evidence:` commit line in the range, even with no wording change.
 - spec opens `docs/principles/README.md` when a request adds or changes an AI agent or LLM worker, its prompt, tools or loop; 3 of 3 runs opened it, up from 0 of 3, and the spec body cap rose from 783 to 790 tokens to pay for it.
 - The body budget PASS line in `npm run check` lists the headroom of each capped skill and agent.
 - The session rule "Delete would unblock → report 2-3 options" now asks for a project edit that gets the command green as typed and destroys nothing, with options only for the destructive step; against a rival skills plugin on 8 tasks (sonnet, 40 pairs) exo wins 9, loses 0 (sign test p=0.002), passes 36/40 hidden checks against 28/40, at $0.113 against $0.136 per task.

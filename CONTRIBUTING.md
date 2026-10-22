@@ -13,7 +13,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | `npm run check` | The gate before any commit: the verifier with the script tests, the same run as `npm run validate`. |
 | `npm run validate` | The structural checks over the skill corpus and the script tests. |
 | `npm run validate:static` | The structural checks only, no script tests. |
-| `npm run check`, `npm run validate:static` | The `edit evidence` check fails a branch whose commits since the merge base with `origin/main` change `skills/*/SKILL.md`, `skills/*/references/*.md`, `agents/*.md`, `hooks/session-routing.md`, `hooks/session-rules.md`, `hooks/dispatch-rules.md` or `harnesses/codex/host-note.md` without an `Evidence:` trailer on any commit: a `benchmarks/results/` or `benchmarks/pressure/` file added or changed in that range, or `none (<reason>)`. It is `UNRUN` without a merge base. |
+| `npm run check`, `npm run validate:static` | The `edit evidence` check fails a branch whose commits since the merge base with `origin/main` change `skills/*/SKILL.md`, `skills/*/references/*.md`, `agents/*.md`, `hooks/session-routing.md`, `hooks/session-rules.md`, `hooks/dispatch-rules.md` or `harnesses/codex/host-note.md` without an `Evidence:` trailer on any commit: a `benchmarks/results/` or `benchmarks/pressure/` file added or changed in that range, or `none (<reason>)`. On any range it also fails an `Evidence:` line that is malformed, even with no wording change. It is `UNRUN` without a merge base. |
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
@@ -55,7 +55,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 `docs/` is git-ignored: research notes, specs and plans live outside the repository.
 
-`docs/principles/README.md` indexes Anthropic's engineering principles; the `principles` check fails a page that is undated, unsourced, unmapped or over budget and warns when its `Checked:` date is older than `EXO_PRINCIPLES_STALE_MS` (90 days).
+`docs/principles/README.md` indexes Anthropic's engineering principles; the `principles` check fails a page that is undated, unsourced, unmapped or over budget, fails a backticked path cite after `exo:` unless it names an existing file or folder exactly, so any `:` or `#` tail fails, and an anchor span after one space (at least 2 identifier characters, text that must occur in the file; a folder cite takes none) that is gone, and warns when its `Checked:` date is older than `EXO_PRINCIPLES_STALE_MS` (90 days).
 
 ## Benchmarks
 

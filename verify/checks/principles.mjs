@@ -14,7 +14,51 @@ function datedFindings(file, text, { now, staleMs }) {
   return [];
 }
 
-function pageProblems({ name, text, isIndex, pages }) {
+const ANCHOR_MIN = 2;
+
+// A backticked span is a path cite when its leading name run is a repository root entry.
+function isPathCite(span, repository) {
+  const lead = /^[\w.-]+/.exec(span);
+  return lead !== null && fs.readdirSync(repository.join('.')).includes(lead[0]);
+}
+
+// Each segment must equal an entry of its parent directory, so a case-insensitive
+// filesystem accepts nothing a case-sensitive one would refuse; "", "." and ".." fail.
+function pathExists(span, repository) {
+  const segments = (span.endsWith('/') ? span.slice(0, -1) : span).split('/');
+  let current = '.';
+  for (const [index, segment] of segments.entries()) {
+    if (segment === '' || segment === '.' || segment === '..') return false;
+    if (!fs.readdirSync(repository.join(current)).includes(segment)) return false;
+    current = current === '.' ? segment : `${current}/${segment}`;
+    if (index < segments.length - 1 && !fs.statSync(repository.join(current)).isDirectory()) return false;
+  }
+  return !span.endsWith('/') || fs.statSync(repository.join(current)).isDirectory();
+}
+
+function citeProblem(span, anchor, repository) {
+  if (!pathExists(span, repository)) return `cites \`${span}\`, the span is not an existing path; cite the file alone and put the anchor in its own backticked span`;
+  if (anchor === undefined || span.endsWith('/')) return null;
+  if (fs.statSync(repository.join(span)).isDirectory()) return `cites ${span} with anchor ${anchor} but it is a folder; end it with / and drop the anchor`;
+  if ((anchor.match(/\w/g) ?? []).length < ANCHOR_MIN) return `cites ${span} with anchor ${anchor} under ${ANCHOR_MIN} identifier characters`;
+  return fs.readFileSync(repository.join(span), 'utf8').includes(anchor) ? null : `cites ${span} but anchor ${anchor} is gone`;
+}
+
+function lineCiteProblems(name, line, repository) {
+  if (!line.includes('exo:')) return [];
+  const text = line.slice(line.indexOf('exo:'));
+  const problems = [];
+  for (const match of text.matchAll(/`([^`]+)`/g)) {
+    if (!isPathCite(match[1], repository)) continue;
+    const next = /^ `([^`]+)`/.exec(text.slice(match.index + match[0].length));
+    const anchor = next && !isPathCite(next[1], repository) ? next[1] : undefined;
+    const problem = citeProblem(match[1], anchor, repository);
+    if (problem) problems.push(`${name} ${problem}`);
+  }
+  return problems;
+}
+
+function pageProblems({ name, text, isIndex, pages, repository }) {
   const problems = [];
   const tokens = Math.round(Buffer.byteLength(text, 'utf8') / BYTES_PER_TOKEN);
   const cap = isIndex ? PRINCIPLE_INDEX_TOKENS : PRINCIPLE_PAGE_TOKENS;
@@ -27,6 +71,7 @@ function pageProblems({ name, text, isIndex, pages }) {
   if (sources === undefined || !/https?:\/\/\S+/.test(sources)) problems.push(`${name} has no URL under ## Sources`);
   for (const line of body.split('\n')) {
     if (line.startsWith('- ') && !line.includes('exo:')) problems.push(`${name} has a bullet without exo: ${line.slice(2, 50)}`);
+    if (line.startsWith('- ')) problems.push(...lineCiteProblems(name, line, repository));
   }
   return problems;
 }
@@ -42,7 +87,7 @@ export function checkPrinciples(report, repository) {
   for (const file of files) {
     const text = fs.readFileSync(repository.join('docs', 'principles', file), 'utf8');
     const isIndex = file === 'README.md';
-    const found = pageProblems({ name: file, text, isIndex, pages }).map((detail) => ['FAIL', detail]);
+    const found = pageProblems({ name: file, text, isIndex, pages, repository }).map((detail) => ['FAIL', detail]);
     if (!isIndex) found.push(...datedFindings(file, text, { now, staleMs }));
     for (const [status, detail] of found) report.result(status, 'principles', detail);
     if (found.length) clean = false;
