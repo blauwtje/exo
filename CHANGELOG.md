@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- `node benchmarks/improve-speed.mjs <checkout>` runs the flow-unit sweep with exo loaded from `<checkout>`, exits nonzero when a run fails its hidden tests or the verify gate, and prints `score: <n>` (work counted, lower is better) as the score command for `exo:improve`.
 - `exo:improve <goal>` runs Karpathy's autoresearch loop on any repo: it changes code, runs one fixed score command, keeps the commit only when the score got better, else resets, logs every round, and goes on until the user stops it.
 - `benchmarks/results/2026-10-22-review-judges-pilot.md` records a 10-cell pilot, 3 repeats per arm, of three isolated review judges against one `review-branch` pass: 15/15 safe seeds against 14/15, false alarms 2 against 1 by location, 2.79x the tokens ($13.77 against $5.01); the pilot sits at a ceiling, so `benchmarks/speed-ledger.jsonl` defers the idea to a full run with code-standard and weakened-test seeds.
 - `benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<f>,standard=<f>,tests=<f>` runs one isolated judge cell per body, and `benchmarks/merge-judges.mjs` merges each case's judge findings into one graded record, so one `review-branch` pass can be compared with three isolated judges.
