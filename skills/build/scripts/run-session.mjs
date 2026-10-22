@@ -320,9 +320,9 @@ function refusingCommits(env, root) {
 export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, repair = false, refuseCommits = null } = {}) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
-  delete env.EXO_RUN_TASK;
-  delete env.EXO_RUN_HANDOFF;
-  delete env.EXO_RUN_REPAIR;
+  for (const name of ['EXO_RUN_TASK', 'EXO_RUN_HANDOFF', 'EXO_RUN_REPAIR', 'EXO_RUN_SESSION']) delete env[name];
+  // why: a run session gates Bash on dontAsk prefix allow rules, which a command rewritten by dispatch-bash's shell fix no longer matches.
+  env.EXO_RUN_SESSION = '1';
   // why: run-no-wait asks a repair session for no task status line; its plan edit is the result.
   if (repair) env.EXO_RUN_REPAIR = '1';
   if (pin !== null) env.EXO_RUN_TASK = pin;

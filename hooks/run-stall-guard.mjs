@@ -3,6 +3,7 @@
 import path from 'node:path';
 import process from 'node:process';
 import { readHookText } from '#hook-input';
+import { fixShell } from '../lib/shell-fixes.mjs';
 import { environmentMs, isMain } from '../lib/script-flags.mjs';
 
 const PLUGIN_ROOT = path.resolve(import.meta.dirname, '..');
@@ -22,17 +23,20 @@ const refusal = (command) => {
 
 export function stallGuardInput(input) {
   if (input?.tool_name !== 'Bash') return null;
-  const command = input.tool_input?.command;
-  if (typeof command !== 'string' || command.trim() === '' || runsExoScript(command.trim())) return null;
+  const original = input.tool_input?.command;
+  if (typeof original !== 'string' || original.trim() === '') return null;
+  if (runsExoScript(original.trim())) return null;
+  const toolInput = fixShell(input.tool_input) ?? input.tool_input;
+  const command = toolInput.command;
   const refused = refusal(command);
   if (refused) return refused;
   const cap = environmentMs('BASH_MAX_TIMEOUT_MS', 600_000);
-  const asked = Number(input.tool_input.timeout);
+  const asked = Number(toolInput.timeout);
   const timeout = Number.isFinite(asked) && asked > 0 ? Math.min(asked, cap) : cap;
   return {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
-      updatedInput: { ...input.tool_input, command: `node "${GUARD}" -- ${shellQuote(command)}`, timeout }
+      updatedInput: { ...toolInput, command: `node "${GUARD}" -- ${shellQuote(command)}`, timeout }
     }
   };
 }

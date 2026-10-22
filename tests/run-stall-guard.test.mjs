@@ -32,6 +32,12 @@ test('any other command is wrapped in the stall guard', () => {
   assert.match(output.updatedInput.command, /stall-guard\.mjs" -- 'for t in a b;/);
 });
 
+test('the shell fix is applied before the command is wrapped, under the timeout cap', () => {
+  const output = stallGuardInput({ tool_name: 'Bash', tool_input: { command: 'echo =x', timeout: 99_999_999 } })?.hookSpecificOutput;
+  assert.match(output.updatedInput.command, /stall-guard\.mjs" -- '\[ -n "\$ZSH_VERSION" \] && setopt noequals; echo =x'/);
+  assert.equal(output.updatedInput.timeout, 600_000);
+});
+
 test('the refused scripts are the ones a task session runs outside the sandbox', () => {
   const { sandbox } = sandboxSettings({ enabled: true, allowedDomains: [] });
   const excluded = new Set(sandbox.excludedCommands.filter((entry) => entry.startsWith('node "') && !entry.endsWith(':*')).map((entry) => entry.slice(6, -1)));
@@ -40,4 +46,8 @@ test('the refused scripts are the ones a task session runs outside the sandbox',
     assert.equal(output?.permissionDecision, 'deny', file);
   }
   assert.ok(excluded.has(SCRIPT.landTask));
+});
+
+test('a bare exo script call with an = word passes unchanged so the sandbox prefix rules still match', () => {
+  assert.equal(stallGuardInput(bash(`node "${SCRIPT.runDecision}" --text =x`)), null);
 });

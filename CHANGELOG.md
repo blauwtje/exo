@@ -80,6 +80,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- The Bash hook rewrites a call so zsh runs every part of a chain holding an `=` word, and each `timeout N` command stays bounded on stock macOS, which lacks GNU `timeout`.
 - `run-probes.mjs` fails a finding that has a `Probe:` line but no `fixed` or `reported:` mark, instead of skipping it with exit 0; on a fixer turn cap, verify marks each unmarked finding `reported: turn cap`.
 - The edit evidence check names the commit that holds a bad `Evidence:` trailer.
 - A memory line saved before the `retired` field existed counts as live again, so its lesson shows in every session.
