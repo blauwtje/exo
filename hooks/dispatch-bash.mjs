@@ -14,7 +14,18 @@ export const CONTEXT_STEP = {
   }
 };
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP], enabled) {
+const WIDE_FIND = /(?:^|[;&|(]|&&|\|\|)\s*find\s+(?:-[HLP]\s+)*["']?(?:\/|~\/?|\$HOME|\$\{HOME\}|(?:\.\.\/?)+)["']?(?=\s|$)/;
+
+export const FIND_STEP = {
+  name: 'wide-find',
+  run(hookInput) {
+    const command = hookInput.tool_input?.command;
+    if (typeof command !== 'string' || /-maxdepth\s+1(?!\d)/.test(command) || !WIDE_FIND.test(command)) return null;
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'A find over /, ~, $HOME or .. runs past the 120 s tool timeout. Search inside the checkout; a plan input that is missing there → report BLOCKED.' } };
+  }
+};
+
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

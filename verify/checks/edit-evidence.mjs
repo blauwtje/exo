@@ -24,18 +24,24 @@ function changesSince(root) {
   const base = mergeBase.stdout.trim();
   const changed = git(root, ['diff', '--name-only', base, 'HEAD']);
   const added = git(root, ['diff', '--name-only', '--diff-filter=AM', base, 'HEAD']);
-  const log = git(root, ['log', `${base}..HEAD`, '--format=%B']);
+  const log = git(root, ['log', `${base}..HEAD`, '--format=%h%x00%B%x1e']);
   if (changed.status !== 0 || added.status !== 0 || log.status !== 0) return { unrun: `git could not list the changes since ${BASE_REF}` };
   return { changed: lines(changed), added: new Set(lines(added)), log: log.stdout };
 }
 
 function evidenceProblems(log, results) {
-  const values = [...log.matchAll(/^Evidence:[ \t]*(.*)$/gm)].map((match) => match[1].trim());
-  const problems = values
-    .map((value) => [value, badTrailer(value, results)])
-    .filter(([, why]) => why !== '')
-    .map(([value, why]) => `Evidence: ${value || '(empty)'} ${why}`);
-  if (values.length === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
+  const problems = [];
+  let found = 0;
+  for (const entry of log.split('\x1e')) {
+    const [sha, body = ''] = entry.replace(/^\n/, '').split('\0');
+    for (const match of body.matchAll(/^Evidence:[ \t]*(.*)$/gm)) {
+      found += 1;
+      const value = match[1].trim();
+      const why = badTrailer(value, results);
+      if (why !== '') problems.push(`${sha} Evidence: ${value || '(empty)'} ${why}`);
+    }
+  }
+  if (found === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
   return problems;
 }
 

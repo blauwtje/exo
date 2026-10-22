@@ -110,3 +110,14 @@ test('a code-only edit to the session-start injector needs no trailer', () => {
   edit(root, 'reword', 'hooks/session-start.mjs');
   assert.equal(run(root).FAIL, 0);
 });
+
+test('a bad trailer is prefixed with the short sha of its commit', () => {
+  const root = fixture();
+  edit(root, 'good\n\nEvidence: none (typo fix)');
+  edit(root, 'bad\n\nEvidence: tests/foo.mjs');
+  const sha = git(root, 'rev-parse', '--short', 'HEAD');
+  const r = run(root);
+  assert.equal(r.FAIL, 1);
+  assert.match(r.lines[0], new RegExp(`${sha} Evidence: tests/foo\\.mjs names neither`));
+  assert.doesNotMatch(r.lines[0], new RegExp(`${git(root, 'rev-parse', '--short', 'HEAD~1')} Evidence`));
+});

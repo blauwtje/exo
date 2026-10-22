@@ -110,6 +110,20 @@ function mapScriptCommands(file, text) {
   });
 }
 
+// A Codex install holds only the skill folder, so a link that leaves it reaches the
+// clone through {{EXO_ROOT}}. Covers `../x` and `{{SKILL_DIR}}/../x`; throws above the root.
+function mapEscapingLinks(file, text) {
+  const skill = skillOf(file);
+  const link = /(\{\{SKILL_DIR\}\}\/)?((?:\.\.\/)+[\w./-]*\w)/g;
+  return text.replace(link, (whole, viaSkillDir, relative) => {
+    const dir = viaSkillDir ? `skills/${skill}` : path.posix.dirname(file.split(path.sep).join('/'));
+    const target = path.posix.normalize(path.posix.join(dir, relative));
+    if (target.startsWith('..')) throw new Error(`${file}: link leaves the exo root: ${relative}`);
+    if (target === `skills/${skill}` || target.startsWith(`skills/${skill}/`)) return whole;
+    return `{{EXO_ROOT}}/${target}`;
+  });
+}
+
 function mapNames(file, text, known) {
   const skills = new Set(known.skills);
   const agents = new Set(known.agents);
@@ -125,6 +139,7 @@ export function codexBody(file, text, known) {
   mapped = mapped.replaceAll('${CLAUDE_PLUGIN_ROOT}', '{{EXO_ROOT}}');
   const inSkill = skillOf(file) !== null;
   if (inSkill) mapped = mapped.replaceAll('${CLAUDE_SKILL_DIR}', '{{SKILL_DIR}}');
+  if (inSkill) mapped = mapEscapingLinks(file, mapped);
   else for (const [token, wording] of AGENT_SKILL_DIR) mapped = mapped.replaceAll(token, wording);
   mapped = mapNames(file, mapped, known);
   for (const [phrase, replacement] of PHRASES) mapped = mapped.replaceAll(phrase, replacement);

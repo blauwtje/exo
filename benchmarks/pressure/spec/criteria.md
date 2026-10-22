@@ -46,6 +46,12 @@ The driver sends these replies in order after the first user turn, stopping when
 `d-notes-export.txt`: `ok`, sent while the reply is a question.
 `e-report-proof.txt`: `ok`, then `go`, each sent only while the reply is a question.
 
+## `a-deepseek-worker.txt`
+
+An agent-design case: the worker's role, tools and run loop are open, so spec's principle-page pointer applies. Grade it in the run folder `drive.mjs` writes, `/tmp/exo-pressure/runs/A-<model>-with[-<label>]/`. The `with` arm passes when:
+
+- The transcript holds a `Read` of `docs/principles/README.md`. `grade: run grep -hoE '"name":"Read","input":\{"file_path":"[^"]*"' turn*.jsonl | grep -q 'docs/principles/README\.md"'`
+
 ## `d-notes-export.txt`
 
 Independent questions in one message: it opens one costly-or-irreversible point (where the PDF renders) and routine points the fixture code leaves open (note order on the page, the default file name, the default page size). The `with` arm passes when:

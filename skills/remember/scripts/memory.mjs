@@ -39,7 +39,7 @@ function isMemory(line) {
 }
 
 function isLive(line) {
-  return line.superseded === null && line.dropped === null && line.retired === null;
+  return line.superseded === null && line.dropped === null && line.retired == null;
 }
 
 function render(state) {

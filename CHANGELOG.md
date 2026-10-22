@@ -13,6 +13,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- `benchmarks/pressure/spec/criteria.md` grades whether spec reads `docs/principles/README.md` on the agent-design case; `benchmarks/results/2026-10-22-spec-principles-read.md` records 0 of 3 Sonnet runs opening it, so the pointer does not yet change what spec does.
+- The Bash hook refuses a disk-wide `find` (`find /`, `find ~`, `find $HOME`, `find ..`) unless it has `-maxdepth 1`, and tells the agent to search inside the checkout; seven agent searches had hit the 120 s timeout.
 - `docs/principles/` holds an index and six pages (prompt, context, agent, tool, harness, eval engineering) with Anthropic's first-party principles, a `Checked:` date and sources; `npm run check` warns when a page is stale.
 - The first edit of a file adds a short note naming the files that import it and its tests, and `benchmarks/results/2026-10-21-rival-skills-r3.md` records the head-to-head that ships it.
 - `/exo:configure` installs a status line launcher: a bold `exo` mark, context colored by exo's context budget, and uncolored 5h and 7d limits.
@@ -68,6 +70,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- The edit evidence check names the commit that holds a bad `Evidence:` trailer.
+- A memory line saved before the `retired` field existed counts as live again, so its lesson shows in every session.
+- The Codex copy rewrites skill links that leave the skill folder to the exo root, and generation fails on any such link left over; five links were dead in a Codex install.
 - `build` carries the plan's `## Assumptions` input paths into each builder brief, stops a task before dispatch when a named absolute input path is unreachable, and tells the builder to block on an unreadable input instead of writing its content from memory.
 - The closing and report rules now live in `skills/route-skills/references/closing.md` and load by path from every skill that cites them, with a check that each owner skill lists it.
 - Corrected steps and docs from the component audit in `build`, `verify`, `design-ui`, `file-issues`, `spec`, `run-plan`, `CONTRIBUTING.md` and the session-start hook so they match the code.
