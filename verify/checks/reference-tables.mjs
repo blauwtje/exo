@@ -108,6 +108,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/hand-off.md',
     'references/watching.md',
     'references/measured-goal.md',
+    '../../docs/principles/README.md',
   ],
   'skills/edit-skills/SKILL.md': [
     'references/pressure-scenarios.md',
@@ -119,6 +120,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/plugging-holes.md',
     'references/blind-eval.md',
     '../route-skills/references/closing.md',
+    '../../docs/principles/README.md',
   ],
   'skills/design-ui/SKILL.md': [
     'references/intake.md',

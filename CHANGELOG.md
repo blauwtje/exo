@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- `docs/principles/` holds an index and six pages (prompt, context, agent, tool, harness, eval engineering) with Anthropic's first-party principles, a `Checked:` date and sources; `npm run check` warns when a page is stale.
 - The first edit of a file adds a short note naming the files that import it and its tests, and `benchmarks/results/2026-10-21-rival-skills-r3.md` records the head-to-head that ships it.
 - `/exo:configure` installs a status line launcher: a bold `exo` mark, context colored by exo's context budget, and uncolored 5h and 7d limits.
 - The session start line names the context limit, such as `context=150k (global)`, so the main session sees it before the first warning.

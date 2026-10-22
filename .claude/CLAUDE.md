@@ -45,6 +45,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 ## Editing
 
 - Skill, agent, rule, hook or `CLAUDE.md` edit → read `skills/edit-skills/references/instruction-style.md` first, follow it.
+- Design of a prompt, context, agent, tool, harness or eval → read `docs/principles/README.md` first, open only the page it names.
 - Bare skill name in a skill or prompt body = `exo:<name>`.
 - New value → derive it from repo, manifests or harness, else one overridable default in run.json `defaults` (`lib/run-providers.json`, `~/.config/exo/run.json`) or an `EXO_*_MS` var via `environmentMs` (`lib/script-flags.mjs`); hardcode only when needed and more useful.
 

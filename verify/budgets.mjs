@@ -107,3 +107,5 @@ export const LEAN_REFERENCE_LOCK = { bytes: 1008, measured: '2026-10-08' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;
+export const PRINCIPLE_PAGE_TOKENS = 800;
+export const PRINCIPLE_INDEX_TOKENS = 300;

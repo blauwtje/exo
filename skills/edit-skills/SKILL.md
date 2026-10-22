@@ -65,6 +65,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |
 | `references/description.md` | Step 3 for the frontmatter; step 5 when a symptom joins the description. |
 | `references/skill-shape.md` | Step 3 for a skill started from nothing; never for a change to an existing skill. |
+| `../../docs/principles/README.md` | Step 3, when the edit designs a prompt, context, agent, tool, harness or eval. |
 | `references/plugging-holes.md` | Step 5, once a run with the skill loaded still produced a justification. |
 | `references/blind-eval.md` | Step 7, when step 4's `with`/`without` read is a close call. |
 | `../route-skills/references/closing.md` | Before the final message. |

@@ -55,6 +55,8 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 `docs/` is git-ignored: research notes, specs and plans live outside the repository.
 
+`docs/principles/README.md` indexes Anthropic's engineering principles; the `principles` check fails a page that is undated, unsourced, unmapped or over budget and warns when its `Checked:` date is older than `EXO_PRINCIPLES_STALE_MS` (90 days).
+
 ## Benchmarks
 
 `benchmarks/README.md` covers the routing eval of `benchmarks/routing.mjs`, whose recorded result the `routing` check compares with the skill descriptions and `hooks/session-routing.md` (a change to either needs a rerun), the paired headless runs that measure exo against a session without it, and the `replay` set of `benchmarks/sweep.mjs`, whose `flow-unit` cell is prepared with the compact unit-route plan (`compactPlan`) and `flow-c7` with the code plan, and which replays past branch and fix-diff reviews per model, plus the ideas set of `benchmarks/ideas.mjs`, which scores the originality and variety of the design options `spec` offers.
