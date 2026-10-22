@@ -65,6 +65,10 @@ The build-speed idea ledger is `benchmarks/speed-ledger.jsonl`, one JSON line pe
 
 `benchmarks/baseline-pool.mjs` pools baseline arms by a sha256 content key of the arm's loaded files at its commit plus cell, model, effort and Claude Code version, never the commit hash. Subcommands `key`, `lookup`, `add` and `replay`; the store is `benchmarks/baseline-pool.jsonl`, one row per arm. It serves `cost` and `tokens` only and exits 2 for `wall`. `replay` reads the per-run base rows of rounds 2-8 (rounds 7-8 are copied into `benchmarks/results/2026-10-20-baseline-pool.md`) and exits 0 only when at least one pair of rounds matches and every matched pair has cost and tokens p > 0.05; `benchmarks/sweep.mjs` does not call the pool.
 
+A seeded review cell's measured record carries `hits` (the seeded range overlapped by a `fix` finding, 0 or 1) and `reportHits` (the same overlap by a `fix` or `report` finding), so a judge that only reports the seed still counts; both are null without a parsed report.
+
+node benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<file>,standard=<file>,tests=<file>   # each review cell becomes one cell per judge, id `<cell id>-judge-<name>`, the file body as its system prompt
+
 ## How a skill dispatches work
 
 - Ten roles are plugin agents under `agents/`, because an agent file fixes a tool list and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. A role becomes an agent only when one effort, one tool list and one turn limit fit every dispatch. Each agent's description says what it does.

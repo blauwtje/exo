@@ -30,7 +30,7 @@ import { buildPhases } from './build-phases.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
-import { cellEnvironment, claudeArguments, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
+import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
@@ -88,8 +88,17 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
   });
 }
 
+export const JUDGE_NAMES = ['plan-fit', 'standard', 'tests'];
+
+function parseReviewerBodies(value) {
+  const pairs = (value ?? '').split(',').map((pair) => pair.split('='));
+  if (pairs.some(([name, file, ...rest]) => !name || !file || rest.length > 0)) throw new Error('--reviewer-bodies needs name=file,name=file');
+  if (pairs.map(([name]) => name).sort().join(',') !== JUDGE_NAMES.join(',')) throw new Error(`--reviewer-bodies needs exactly ${JUDGE_NAMES.join(', ')}`);
+  return Object.fromEntries(pairs);
+}
+
 function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null };
+  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
@@ -102,6 +111,7 @@ function parseArguments(argv) {
     else if (flag === '--models') options.models = argv[++index].split(',');
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else if (flag === '--keep-repo') options.keepRepo = argv[++index];
+    else if (flag === '--reviewer-bodies') options.reviewerBodies = parseReviewerBodies(argv[++index]);
     else throw new Error(`unknown flag ${flag}`);
   }
   if (!Number.isInteger(options.repeat) || options.repeat < 1) throw new Error('--repeat must be a positive integer');
@@ -196,13 +206,15 @@ function measureGreenFirst(review) {
   return { defectsFound: defects !== null && defects > 0 ? 1 : 0, falseAlarms: null, detail };
 }
 
-async function measureReview(cell, repository, review) {
+export async function measureReview(cell, repository, review) {
   if (cell.variant === 'green-first') return measureGreenFirst(review);
   const fixes = review.findings === null ? null : review.findings.filter((finding) => finding.action === 'fix');
   const detail = `verdict ${review.verdict ?? 'none'}, ${fixes?.length ?? 'no'} fix findings`;
   if (cell.variant === 'seeded') {
     const range = defectRange(cell.task);
-    return { defectsFound: fixes === null ? null : Number(fixes.some((finding) => overlaps(finding, range))), falseAlarms: null, detail };
+    const hits = fixes === null ? null : Number(fixes.some((finding) => overlaps(finding, range)));
+    const reportHits = review.findings === null ? null : Number(review.findings.some((finding) => overlaps(finding, range)));
+    return { defectsFound: hits, falseAlarms: null, detail, hits, reportHits };
   }
   return { defectsFound: null, falseAlarms: fixes === null ? null : fixes.length, detail };
 }
@@ -446,7 +458,9 @@ export function repeatCells(cells, repeat) {
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   const replay = options.cases === null ? [] : replayCells(JSON.parse(fs.readFileSync(options.cases, 'utf8')), options);
-  const cells = repeatCells(keepNamedCells(selectCells([...sweepCells(), ...replay], options.sets), options.cells), options.repeat);
+  const judged = options.reviewerBodies === null ? sweepCells()
+    : judgeCells(sweepCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
+  const cells = repeatCells(keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells), options.repeat);
   console.log(`${cells.length} claude -p calls planned, one per cell and repeat:`);
   for (const cell of cells) console.log(`  ${cell.directory ?? cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (options.keepRepo !== null) console.log(`keeps each cell repository under ${options.keepRepo}`);

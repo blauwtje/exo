@@ -48,3 +48,16 @@ test('replay cells are not expanded again', () => {
   const replay = [{ id: 'replay-x-opus-1', kind: 'replay' }];
   assert.deepEqual(repeatCells(replay, 3), replay);
 });
+
+test('--reviewer-bodies lists one judge cell per body and rejects a bad pair', () => {
+  const run = dryRun('--set', 'review', '--reviewer-bodies', 'plan-fit=/dev/null,standard=/dev/null,tests=/dev/null');
+  assert.match(run.stdout, /-judge-plan-fit: /);
+  assert.match(run.stdout, /-judge-standard: /);
+  assert.match(run.stdout, /-judge-tests: /);
+  const bad = dryRun('--set', 'review', '--reviewer-bodies', 'a');
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /name=file/);
+  const wrong = dryRun('--set', 'review', '--reviewer-bodies', 'a=/dev/null,b=/dev/null');
+  assert.notEqual(wrong.status, 0);
+  assert.match(wrong.stderr, /plan-fit, standard, tests/);
+});

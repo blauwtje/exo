@@ -248,6 +248,11 @@ export function sweepCells() {
   return [...reviewCells(reviewerPrompt()), ...buildCells(), ...fixerCells(), ...planCells(), ...flowCells()];
 }
 
+export function judgeCells(cells, bodies) {
+  return cells.flatMap((cell) => cell.kind !== 'review' ? [cell]
+    : Object.entries(bodies).map(([name, body]) => ({ ...cell, id: `${cell.id}-judge-${name}`, appendSystemPrompt: body })));
+}
+
 export function selectCells(cells, setNames) {
   for (const name of setNames) {
     if (name !== 'all' && !CELL_SETS.includes(name)) throw new Error(`unknown cell set ${name}; one of all, ${CELL_SETS.join(', ')}`);

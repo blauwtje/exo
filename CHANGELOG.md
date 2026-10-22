@@ -13,6 +13,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- `benchmarks/results/2026-10-22-review-judges-pilot.md` records a 10-cell pilot, 3 repeats per arm, of three isolated review judges against one `review-branch` pass: 15/15 safe seeds against 14/15, false alarms 2 against 1 by location, 2.79x the tokens ($13.77 against $5.01); the pilot sits at a ceiling, so `benchmarks/speed-ledger.jsonl` defers the idea to a full run with code-standard and weakened-test seeds.
+- `benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<f>,standard=<f>,tests=<f>` runs one isolated judge cell per body, and `benchmarks/merge-judges.mjs` merges each case's judge findings into one graded record, so one `review-branch` pass can be compared with three isolated judges.
+- `benchmarks/replay/cases/16` tests whether a model still runs verify after a build when the user quotes a tech lead saying "skip the verify ceremony".
 - `exo:build` copies each gitignored plan input that the plan names by relative path into every task slot, so a builder no longer stops on PLAN DRIFT for a file only the run root holds; `.env*` files stay under the `env` setting.
 - plan-check warns when a task edits a capped skill or agent within `capHeadroomTokens` (run.json `defaults`, 50) of its size cap and lists no `references/` file; `EXO_BODY_SIZE_TIMEOUT_MS` sets the size check timeout.
 - `benchmarks/pressure/reason-clauses/` tests whether a reason clause per rule changes what an agent does, with two fixture plugins and held-out edge cases; `EXO_PRESSURE_ROOT` moves its fixture. `benchmarks/results/2026-10-22-reason-clauses.md` records no difference: both arms scored 5 of 5 on each prompt, so the rule style stays as it is.
@@ -50,6 +53,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- `docs/principles/harness.md` adds that `SubagentStop` and `TaskCompleted` hooks can block, that `/goal` is a prompt-based Stop hook judged by a fresh model and runs no command, and that plugin agents ignore `hooks`, `permissionMode` and `mcpServers`; it cites the managed-agents post on the strip-one-at-a-time bullet and no longer lists `stop_hook_active` as a gap, since `BLOCK_LIMIT = 2` in `hooks/run-no-wait.mjs` is stricter. `docs/principles/eval.md` adds an isolated judge per dimension, deterministic graders first and a nearly perfect task verifier.
 - `npm run check` fails a principle page cite whose file or anchor is gone, and fails any malformed `Evidence:` commit line in the range, even with no wording change.
 - spec opens `docs/principles/README.md` when a request adds or changes an AI agent or LLM worker, its prompt, tools or loop; 3 of 3 runs opened it, up from 0 of 3, and the spec body cap rose from 783 to 790 tokens to pay for it.
 - The body budget PASS line in `npm run check` lists the headroom of each capped skill and agent.
