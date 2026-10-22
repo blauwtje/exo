@@ -4,7 +4,7 @@ Branch reviewer follows these when the dispatch names this file. Dispatcher read
 
 ## Dispatch
 
-- Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
+- Pass: the `code-standard=` path from the DISPATCH line, without resolving it again.
 - Pass: this file's path, plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`.
 - Pass: scope `branch <base>..HEAD` from `REVIEW Branch`, or `overlap` with the `OVERLAP` lines.
 - Pass: findings path, named as input to `merge-reviews.mjs`: scope `branch` → `<checkout>/.exo/review-branch.md`; scope `overlap` → `<checkout>/.exo/review-overlap.md`.

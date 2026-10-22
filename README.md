@@ -88,7 +88,7 @@ Other skills, written as you call them. Those with `/exo:` start only when you t
 - `/exo:prompt`: rewrites a rough prompt and runs it after you say yes.
 - `/exo:save-session`: saves unfinished work for a fresh session.
 - `/exo:remember`: keeps a repository correction after two sessions have booked it.
-- `/exo:run-plan`: runs a plan headless; `/exo:run-plan setup` installs `exo run <plan>` for your terminal.
+- `/exo:run-plan`: builds a plan through `build`; `/exo:run-plan setup` installs `exo run <plan>` for your terminal.
 - `/exo:configure`: shows or changes exo's settings.
 
 [docs/skills/](docs/skills/) has a page for every skill. [docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.

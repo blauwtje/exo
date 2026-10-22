@@ -360,3 +360,14 @@ test('run-unit runs on its own kind, at low effort on the balanced profile', () 
   assert.equal(kindTable.agents['agents/run-unit.md'].kind, 'run-unit');
   assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'low' });
 });
+
+test('every skill that cites the report rule names closing.md, which defines it', () => {
+  const closing = fs.readFileSync(path.join(skillsRoot, 'route-skills/references/closing.md'), 'utf8');
+  assert.match(closing, /^## Report rule$/m, 'closing.md defines the report rule');
+  for (const file of ['check-docs/SKILL.md', 'edit-skills/references/skill-shape.md', 'verify/SKILL.md', 'ship/SKILL.md', 'refactor/SKILL.md', 'build/references/tail.md', 'find-cause/SKILL.md', 'design-ui/references/phase-detail.md']) {
+    assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /closing\.md/, `${file} cites closing.md`);
+  }
+  for (const owner of ['edit-skills', 'verify', 'ship', 'refactor', 'build', 'design-ui', 'find-cause']) {
+    assert.match(fs.readFileSync(path.join(skillsRoot, owner, 'SKILL.md'), 'utf8'), /^\| `\.\.\/route-skills\/references\/closing\.md` \|/m, `${owner} lists closing.md in its References table`);
+  }
+});

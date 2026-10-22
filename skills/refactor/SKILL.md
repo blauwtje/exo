@@ -25,7 +25,7 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 5. **Build no seam for a future caller.** No base class, registry, factory or flag with one implementation; seam arrives with its second adapter; unused sketch code is dropped, not finished.
 6. **Prove equality on the real code.** Rerun the pin against old and new versions, quote the comparison; "it compiles" or a green suite that never covered the moved code proves nothing.
 7. **Keep it only if reading got easier.** Revert a step that lowers no reader load (fewer files to trace, less state to hold).
-8. **Report.** The session's report rule; equality evidence, line counts and reverted changes go behind the pointer.
+8. **Report.** The report rule in `../route-skills/references/closing.md`; equality evidence, line counts and reverted changes go behind the pointer.
 
 ## Red flags
 
@@ -43,6 +43,7 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 |---|---|
 | `references/behavior-pin.md` | Step 1 when no test covers the code, and step 6 for the comparison. |
 | `references/legacy-api.md` | Step 4, before keeping any old path, and when a caller belongs to another team's open work. |
+| `../route-skills/references/closing.md` | Before the final message. |
 
 ## Judgment
 

@@ -163,3 +163,16 @@ test('Land gate: none opts out and lands as before', async () => {
   const output = landTask({ planPath, planText: withLandGate('none'), number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
+
+test('a task that names Drops: gives its Proof the same EXO_DROPS as its Land gate', async () => {
+  const proof = 'test "$EXO_DROPS" = "only in skills/x.md"';
+  const plan = COMPACT_PLAN
+    .replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`)
+    .replace('| Red: none (fixture)', '| Red: none (fixture) | Drops: only in skills/x.md')
+    .replace('## Plan basis\n', '## Plan basis\nLand gate: test "$EXO_DROPS" = "only in skills/x.md"\n');
+  const { root, planPath } = await compactCheckout(plan);
+  const report = PASS_REPORT.replace('`node tests/app.test.mjs`: pass', `\`${proof}\`: pass`);
+  const output = landTask({ planPath, planText: plan, number: 1, root, reportText: report });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(output, /^Proof: test "\$EXO_DROPS" = "only in skills\/x\.md": pass \(exit 0\)$/m);
+});

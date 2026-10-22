@@ -122,17 +122,14 @@ test('the run-watch wake prompt names the watching reference, and that reference
   assert.ok(fs.statSync(path.join(REPOSITORY, 'skills', 'spec', 'references', 'watching.md')).isFile());
 });
 
-test('the session hook deletes the savings folder an earlier version left and keeps the rest', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-savings-'));
+test('the session hook writes plugin-root and leaves the rest of the config folder', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-config-'));
   const exoDirectory = path.join(configHome, 'exo');
-  fs.mkdirSync(path.join(exoDirectory, 'savings'), { recursive: true });
-  fs.writeFileSync(path.join(exoDirectory, 'savings', 'ledger.jsonl'), '{}\n');
   fs.mkdirSync(path.join(exoDirectory, 'handoff'), { recursive: true });
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   try {
     execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
-    assert.equal(fs.existsSync(path.join(exoDirectory, 'savings')), false);
     assert.ok(fs.existsSync(path.join(exoDirectory, 'handoff')));
     assert.ok(fs.existsSync(path.join(exoDirectory, 'plugin-root')));
     execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });

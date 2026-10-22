@@ -37,5 +37,6 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 | `../build/references/data-migration.md` | When its first line applies. |
 | `../build/references/test-design.md` | When its first line applies. |
 | `../build/references/project-knowledge.md` | 6 |
+| `../route-skills/references/closing.md` | Before the final message. |
 
-Report: the session's report rule with the debug log path as the pointer; mechanism, proof lines and SHAs go to the log; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.
+Report: the report rule in `../route-skills/references/closing.md` with the debug log path as the pointer; mechanism, proof lines and SHAs go to the log; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.

@@ -33,7 +33,7 @@ The overcorrection is researching a call the repository already makes in deploye
 
 ## Output
 
-Findings stay in the message; turn ends under the closing rule in `route-skills`: confirmed answer first, citations next, then what stayed unconfirmed.
+Findings stay in the message; turn ends under the closing rule in `../route-skills/references/closing.md`: confirmed answer first, citations next, then what stayed unconfirmed.
 Write `docs/research/<library>.md` only when the user asks for a file, or a named later executor needs the findings and they rest on two or more first-party sources.
 
 ## Judgment

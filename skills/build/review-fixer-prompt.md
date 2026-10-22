@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS` with `fix=1` or more. The dispatch line carries this file's path and the fill values, never the prompt text. The agent repairs from the findings file alone; `verify` keeps the gate rerun and the commit.
+The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS` with `fix=1` or more or `concern=1` or more. The dispatch line carries this file's path and the fill values, never the prompt text. It repairs from the findings file alone; `verify` keeps the gate rerun and commit.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>, findings file <findings path>, input to `run-probes.mjs`.
@@ -16,7 +16,7 @@ After the fixes, run the `Run:` command, else the `Proof:` command, of every pla
 Write under each finding you mark `fixed`, including a `concern`, a `  Probe: <command that fails before its edit and passes after>` line before you return, the reviewer's own kept.
 Run the `Probe:` command under each fixed finding; it must exit 0.
 Fix that adds a rule, line or block back → first run `git log <base>..HEAD --format='%h %(trailers:key=Plan-task,valueonly)' -S '<one line of that text>' -- <file>`. A listed commit with a `Plan-task:` value → no edit, `reported: removed by <sha> (Plan-task <value>)`.
-After the fixes, run the plan's `Land gate:` command once, if the plan has one. It fails on a fix → revert that fix; it counts as reported, with the gate output.
+After the fixes, run the plan's `Land gate:` command once, if any. It fails on a fix → revert that fix; it counts as reported, with the gate output.
 Run no full test suite (`npm test`, `npm run check`); only the above.
 Search only the files a finding names; no repository-wide search except the plan `grep`.
 Give each command a timeout of at most 120 seconds; a timeout counts as failed; rerun once, narrower.

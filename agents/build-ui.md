@@ -16,7 +16,7 @@ Budget: page scope 60 turns, report by turn 55; every other scope 35, report by 
 **Input contract.**
 
 - `RUN`: absolute run directory.
-- `SCOPE`: `page`, `foundation`, a surface name, `comp:<n>` for direction comp `<n>`, `comp:focal` for the focal-region comp of a full redesign, or `repair:<surface>`, defined by a later brief.
+- `SCOPE`: `page`, `foundation`, a surface name, `comp:<n>` for direction comp `<n>`, `comp:focal` for the focal-region comp of a full redesign, or `repair:<surface>`.
 - `FILES`: repository paths with line ranges the session read for this scope.
 - `REPO`: repository root.
 - `SKILL`: absolute skill directory.
@@ -29,7 +29,7 @@ Budget: page scope 60 turns, report by turn 55; every other scope 35, report by 
 
 - Read each `FILES` range with Read's offset and limit; an Edit to that file also requires it.
 - Open no whole file the `FILES` list does not name whole.
-- Read the `REFERENCES` files under `$SKILL/references/` and no other.
+- Read the `REFERENCES` files under `$SKILL/references/`.
 
 Files:
 

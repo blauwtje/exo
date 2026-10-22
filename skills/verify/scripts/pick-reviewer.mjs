@@ -36,10 +36,6 @@ export const MANIFESTS = [
   'composer.json', 'composer.lock', 'pom.xml', 'build.gradle', 'build.gradle.kts'
 ];
 
-export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
-  return riskTasks || manifestChanged || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light;
-}
-
 const INSTRUCTION_FOLDERS = ['skills', 'agents', 'rules', 'hooks'];
 const INSTRUCTION_FILES = ['CLAUDE.md', 'AGENTS.md'];
 

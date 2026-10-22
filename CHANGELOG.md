@@ -67,6 +67,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- The closing and report rules now live in `skills/route-skills/references/closing.md` and load by path from every skill that cites them, with a check that each owner skill lists it.
+- Corrected steps and docs from the component audit in `build`, `verify`, `design-ui`, `file-issues`, `spec`, `run-plan`, `CONTRIBUTING.md` and the session-start hook so they match the code.
 - `tests/clean-run-env.mjs` points `TMPDIR` at one folder per test run and deletes it on exit, so `npm test` and `npm run check` stop leaving `mkdtemp` folders in the user temp folder; 12 days of leftovers made macOS boot cleanup take 183 s.
 - `benchmarks/baseline-pool.mjs` keys round 2 by `71a42460` on `main`, not the unpushed run-branch commit `c087a7aa`, so `npm run check` passes in a clone of origin again; a test now fails when a round commit is not an ancestor of `HEAD`.
 - Session rules tell the lead to stop an agent whose notice says it still waits on background work, and to stop every background shell and agent before the final report, so no task stays running after the turn; on Codex, `TaskStop` maps to killing the process.
@@ -80,6 +82,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The compression pressure case's judge line no longer fails a correct answer that names `toCents` flooring the float product as the cause.
 - The `flow-unit` benchmark cell's compact plan states each helper's behavior, so a build that follows it can pass the hidden `truncate` tests; every run failed 3 of them before.
 - `benchmarks/sweep.mjs --repeat <n>` repeats every set, not only replay; copies keep one cell id, so reports average them as one arm, and each writes its own result dir.
+- A plan task's `Drops:` words now reach its Proof run as well as its Land gate, so a Proof that runs `npm run validate:static` no longer fails on a word the plan allows.
+- `CONTRIBUTING.md` and `docs/skills/build.md` state the real deep-reviewer trigger, a landed task's `Risk:` field naming a security boundary, and `verify/checks/shared-contracts.mjs` pins that wording.
 
 
 ## 0.136.0 - 2026-10-19

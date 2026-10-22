@@ -29,7 +29,6 @@ Paths:
 src/invoice/total.ts:41-58  roundTotal  rounds to cents, half up
 Called from:
 src/invoice/pdf-export.ts:112  renderSummary  prints the rounded total
-Count: Paths 1, Called from 1
 ```
 
 - Group lines under `Paths:`, `Entry:`, `Called from:`, `Tested in:`, `Read next:` and `Unsure:`; skip a label with no line.

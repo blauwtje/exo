@@ -64,7 +64,6 @@ try {
   if (loadedRoot && fs.existsSync(loadedRoot) && fs.realpathSync(loadedRoot) === fs.realpathSync(root)) {
     fs.writeFileSync(path.join(configDirectory, 'plugin-root'), `${root}\n`);
   }
-  fs.rmSync(path.join(configDirectory, 'savings'), { recursive: true, force: true });
 } catch (error) {
   console.error(`exo: plugin-root pointer not written, ${error.message}`);
 }

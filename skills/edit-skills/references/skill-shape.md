@@ -48,7 +48,7 @@ An agent takes the same shape with two changes: frontmatter sets `model`, `tools
 - War story about one fix ("last sprint the build broke because…") → write the rule it taught; a reader cannot generalize an anecdote.
 - One example in several languages, or a blank template posing as an example → one complete example in the language that matters most.
 - Placeholder names (`step3`, `helper`, `data`) where a domain word exists.
-- A second final-message shape; the report step names what the `# Closing` ending in route-skills carries.
+- A second final-message shape; the report step names what `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/closing.md` carries.
 
 ## Judgment
 

@@ -14,8 +14,4 @@ The session hook injects the routing rules from `hooks/session-routing.md`.
 2. Running a skill or dispatching a delegate → read `references/context.md` first.
 
 # Closing
-
-- Final message = the session's report rule; never a question back.
-- Choice made for user → one line with its cost if wrong.
-- Request readable two ways → name rival reading.
-- Question ends turn only when choice is user's and routes differ; read `references/question.md` first, ask nothing else, run nothing before answer.
+Read `references/closing.md` before the final message; never skip it, and ask only as it says.

@@ -25,6 +25,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/handoff.md',
     'references/loop.md',
     '../build/references/project-knowledge.md',
+    '../route-skills/references/closing.md',
   ],
   'skills/build/SKILL.md': [
     'references/run-loop.md',
@@ -53,11 +54,12 @@ const EXPECTED_OWNER_ROWS = {
     'references/project-knowledge.md',
     'references/performance.md',
     'references/rolling-window.md',
+    '../route-skills/references/closing.md',
   ],
   'skills/check-docs/SKILL.md': [],
   'skills/run-plan/SKILL.md': [],
   'skills/prompt/SKILL.md': ['references/examples.md', 'references/note.md'],
-  'skills/verify/SKILL.md': ['references/review-rules.md', 'references/repair.md', 'references/gate-lines.md', 'references/plan-checks.md', 'references/lessons.md'],
+  'skills/verify/SKILL.md': ['references/review-rules.md', 'references/repair.md', 'references/gate-lines.md', 'references/plan-checks.md', 'references/lessons.md', '../route-skills/references/closing.md'],
   'skills/start/SKILL.md': [
     'references/cheat-sheet.md',
   ],
@@ -74,6 +76,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/pr-comments.md',
     'references/watch.md',
     'references/pr-merge.md',
+    '../route-skills/references/closing.md',
   ],
   'skills/remember/SKILL.md': [
     '../route-skills/references/question.md',
@@ -88,6 +91,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/refactor/SKILL.md': [
     'references/behavior-pin.md',
     'references/legacy-api.md',
+    '../route-skills/references/closing.md',
   ],
   'skills/spec/SKILL.md': [
     'references/stored-brief.md',
@@ -114,6 +118,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/skill-shape.md',
     'references/plugging-holes.md',
     'references/blind-eval.md',
+    '../route-skills/references/closing.md',
   ],
   'skills/design-ui/SKILL.md': [
     'references/intake.md',
@@ -141,6 +146,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/accessibility.md',
     'references/performance-budget.md',
     'references/internationalization.md',
+    '../route-skills/references/closing.md',
   ],
   'skills/write-docs/SKILL.md': [
     'references/ai-tics.md',

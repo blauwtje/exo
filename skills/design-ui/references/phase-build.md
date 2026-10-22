@@ -41,7 +41,7 @@ The one pass only; the full run follows `## Full run builders` alone.
 - Then one call per surface, all in one message, in the turn foundation.md returns.
 - Split → before the foundation call, this session writes its Phase 1 paths and line ranges to `$RUN/files.md` and names it in `FILES=` of `$RUN/build-rules.md`.
 - Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow `## Full run builders`.
-- One surface or shared files → one `exo:build-ui` page scope from the plan and Phase 1 ranges.
+- One surface or shared files → one `exo:build-ui` page scope from the plan and Phase 1 ranges, with `PASS=<n>`.
 - Rung 3 after live comps → the builder gets the selected comp as `COMP`.
 - After a sketch round pick → no `COMP`; the picked sketch is not a comp.
 - Full redesign on another rung → `COMP=$RUN/comp/` of `## The comp` to every page, foundation and surface call.

@@ -69,4 +69,4 @@ Follow `references/setup-map.md` from its first step. Never pick an answer for t
 - A project or local value outranks a global one.
 - User picks every project for a key a project or local layer holds → report names that layer; the new value stays hidden there.
 - Scripts' output outranks any value in context, including the session's `exo settings:` line, read at session start.
-- The pointer to `../route-skills/references/lean.md` has no switch and rides in every session: request to switch it off → give that answer, run nothing.
+- Every delegate that writes code reads `../route-skills/references/lean.md` itself; the session text carries no pointer to it and no switch exists: request to switch it off → give that answer, run nothing.

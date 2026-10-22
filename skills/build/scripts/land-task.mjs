@@ -33,6 +33,12 @@ function dropsOf(task) {
   return task.section.match(/^Depends on: .*?\| Drops: ([^|\n]*?) *(?:\||$)/m)?.[1] || null;
 }
 
+// why: a Proof runs without the run's own variables, but with this task's Drops: words, as its Land gate does, so a Proof that runs the boundary-words check allows the same words.
+function proofEnvOf(task) {
+  const drops = dropsOf(task);
+  return drops === null ? withoutRunVariables() : { ...withoutRunVariables(), EXO_DROPS: drops };
+}
+
 function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
@@ -232,7 +238,7 @@ function runProof(task, command, root, field) {
   const before = workingTreeKey(root);
   const started = Date.now();
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: withoutRunVariables() });
+  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: proofEnvOf(task) });
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   if (proofRun.status === 0 && !proofRun.timedOut) {
@@ -258,7 +264,7 @@ function namedTestFiles(task, proofCommands, { root, planPath }) {
 function runNamedTests(task, proofCommands, options) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   for (const file of namedTestFiles(task, proofCommands, options)) {
-    const testRun = runTreeSync(`node --test ${file}`, { cwd: options.root, timeoutMs: deadlineMs, env: withoutRunVariables() });
+    const testRun = runTreeSync(`node --test ${file}`, { cwd: options.root, timeoutMs: deadlineMs, env: proofEnvOf(task) });
     if (quiet.file !== null) quiet.proofOutput += `node --test ${file}\n${testRun.output}\n`;
     if (testRun.status === 0 && !testRun.timedOut) continue;
     const reason = testRun.timedOut ? `timed out after ${deadlineMs / 1000}s` : `exit ${testRun.status}`;

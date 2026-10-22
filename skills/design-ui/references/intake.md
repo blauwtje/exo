@@ -107,12 +107,12 @@ Settle what the run needs before building: questions worth asking, where the run
 
 - Every run past a tweak, one pass included → writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below; create before Phase 1, name once in the transcript.
 - Every `node scripts/*.mjs` call → redirect stdout into `$RUN`; read needed fields with `jq` or `sed -n`, never the whole file; a JSON line in the transcript is carried into every later turn.
-- `$RUN` holds user.md, `context.json`, `contracts.json`, `picked.json`, `contract-selected.json`, `sketches/`, `variant-<n>/`, `renders/`, `comp/` and `$RUN/comp.md` of a full redesign, and run reports inventory.md, foundation.md, `build-<surface>.md`, faults.md.
+- `$RUN` holds user.md, `context.json`, `contracts.json`, `picked.json`, `contract-selected.json`, `sketches/`, `variant-<n>/`, `renders/`, `comp/` and `$RUN/comp.md` of a full redesign, `space.json`, `finalists.json`, `$RUN/files.md`, `$RUN/build-rules.md`, and run reports inventory.md, foundation.md, `build-<surface>.md`, `build-<n>.md`, faults.md.
 - Each pass → own numbered report `build-<n>.md`; after its last checkpoint copy `renders/` to `renders-<n>/`, `<n>` = pass number from 1, so no pass overwrites an earlier one.
 - `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` writes it.
 - Agents receive `$RUN`, exchange files under it, return reports, never file contents.
 
-After a compaction notice → resume from the newest `/private/tmp/designing/*/` run directory, not the conversation: Build reopens from its `contract-selected.json`; `renders/` shows checkpoints reached.
+After a compaction notice → resume from the newest `/private/tmp/designing/*/` run directory, not the conversation: Build reopens from its `contract-selected.json`, or from the plan file `$RUN/plan.md` when none exists; `renders/` shows checkpoints reached.
 
 ## Symptoms
 

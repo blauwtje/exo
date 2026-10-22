@@ -7,7 +7,8 @@ Runs a plan, one task per fresh context. Without a plan, it builds a decided cha
 - A session opens on a plan, or you say to run or resume one.
 - A decided change with no plan touches more than two files, adds a dependency, changes a public signature, or crosses a persisted format or security boundary.
 - You ask for a change test-first, at any size.
-- Unattended, with Claude Code: `node skills/build/scripts/run-plan.mjs <plan.md>` lands each task in its own headless process, then verifies.
+
+Unattended, `exo run <plan>` from your terminal lands each task in its own headless process, then verifies.
 
 Not for writing or repairing a plan, or a change of two files or fewer.
 
@@ -18,7 +19,7 @@ Not for writing or repairing a plan, or a change of two files or fewer.
 - Test-first work shows the failing test before the fix and the passing test after.
 - A point the plan leaves open is parked, not guessed: after the wave lands you get one question per message, and that task is rebuilt with your answer.
 - A short final message naming a run report that holds the proofs and the brief's `## Manual checks`, the checks only you can make.
-- A handoff to `verify`. It picks the deep reviewer when a landed task carries a `Risk:` field, a manifest or lockfile changed or a public signature changed.
+- A handoff to `verify`. It picks the deep reviewer when a landed task's `Risk:` field names a security boundary. A task that crosses a security boundary needs a `Risk:` field.
 
 ## Source
 

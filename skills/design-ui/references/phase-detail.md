@@ -94,7 +94,7 @@ The floor checked before the critique is `## The build floor` of the `build-pass
 - Completion also needs source and rendered pixels changed between consecutive checkpoints.
 - Completion also needs the fixed faults to include one content or relationship fault and one craft fault.
 - No render path → report visual verification blocked, name what went unchecked, do not report the design complete.
-- Close under the closing rule in `route-skills`: what the surface now does, the checks that ran with their results, and the one open action.
+- Close under the report rule in closing.md, the References row of SKILL.md: what the surface now does, the checks that ran with their results, and the one open action.
 - User confirms a finding as false positive → entry with `type`, `file` and `reason` in `docs/design/check-ui-ignore.json`, written only after that confirmation.
 
 ## Precedence

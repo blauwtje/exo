@@ -1,20 +1,19 @@
 # run-plan
 
-Runs a plan's unlanded tasks unattended, one headless Claude process per task.
+Hands a plan's unlanded tasks to `build`, or installs the terminal `exo run`.
 
 ## When it runs
 
-Only when you type `/exo:run-plan <plan>`.
+Only when you type `/exo:run-plan <plan>` or `/exo:run-plan setup`.
 
-Not for a plan you want built with subagents in this session. Use `build` for that.
+Not for the headless loop: that runs only from your terminal as `exo run <plan>`.
 
 ## What you get
 
-- Each task lands in its own fresh process, so no context carries from one task to the next. A retry after a failed land resumes that task's failed session with only the retry note.
-- A script picks the task and checks git after each process; a process that lands anything else stops the run.
-- One verify process and the verify script run at the end.
-- Logs, `summary.txt`, `tasks.json` and `progress.md` under `.exo/run-plan/`.
+- `exo:build <plan>` runs the plan in this session, each task landed by agents.
+- `setup` installs `exo run` for your terminal, where each task runs in its own headless process.
+- One closing line pointing to `exo run <plan> --detach`.
 
 ## Source
 
-`skills/run-plan/SKILL.md`, which starts `skills/build/scripts/run-plan.mjs`.
+`skills/run-plan/SKILL.md`, which invokes `build`.

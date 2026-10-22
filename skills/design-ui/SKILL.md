@@ -94,6 +94,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 | `references/accessibility.md` | Full run Phase 3: `## Keyboard contracts` alone; Phase 5 `## Sweep` alone. |
 | `references/performance-budget.md` | Full run Phase 3 the sections matching an added hero raster, unloaded font or persistent effect; Phase 5 `## Outcome thresholds` and `## Hard failures` alone. |
 | `references/internationalization.md` | Phase 1 when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script. |
+| `../route-skills/references/closing.md` | Before the final message. |
 
 ## Judgment
 

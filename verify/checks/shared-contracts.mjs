@@ -14,7 +14,8 @@ import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-ch
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 // The reviewer is picked on risk; the file and line limits still set the code-review breadth.
 const BREADTH_LIMITS = [`${NUMBER_WORDS[FILE_LIMIT]} changed files`, `${LINE_LIMIT} changed lines`];
-const RISK_TRIGGER = 'carries a `Risk:` field, a manifest or lockfile changed or a public signature changed';
+// Mirrors taskReviewer in pick-reviewer.mjs: only a `Risk:` field naming a security boundary picks the deep reviewer.
+const RISK_TRIGGER = 'landed task\'s `Risk:` field names a security boundary';
 
 const thousands = (value) => value.toLocaleString('en-US');
 

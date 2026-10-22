@@ -1,6 +1,6 @@
 ---
 name: file-issues
-description: Use when the user asks in plain words to file, open, write or split GitHub issues. Not for a brief spec stores, closing or editing an existing issue, a plan, or a repository the working directory does not point at.
+description: Use when the user types /exo:file-issues to file, open, write or split GitHub issues. Not for a brief spec stores, closing or editing an existing issue, a plan, or a repository the working directory does not point at.
 disable-model-invocation: true
 argument-hint: <what the issue or issues should cover>
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh pr list *), Bash(git log *), Bash(node *repo-fields.mjs*)
@@ -10,7 +10,7 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh p
 
 An issue states what must become true, so a later plan can be written against it. The enemy is the story issue: the occasion that prompted it, a quote from the prompt, and a background paragraph repeating the labels, type and parent GitHub already shows beside the body. The overcorrection is the one-line issue that never says when it is done, pushing the whole spec into the plan.
 
-A plain request to file, open, write or split issues authorizes creating them, with labels, type, project fields, relations and milestone.
+Typing `/exo:file-issues` starts this and authorizes creating the issues, with labels, type, project fields, relations and milestone.
 
 ## Steps
 
@@ -20,7 +20,9 @@ A plain request to file, open, write or split issues authorizes creating them, w
 
 2. **Read the repository, invent nothing.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs"`; pick the vocabulary from its JSON per `references/fields.md`.
 
-3. **Ground the references.** Send `exo:locate-code` the paths and symbols the goal sentences name, so `References` carries real paths. Skip for an issue naming no code.
+3. **Ground the references.** Check each path or symbol the goal sentences name with Glob or Grep, so `References` carries real paths.
+   - Behavior named without a path → dispatch `exo:locate-code`.
+   - Issue naming no code → skip.
 
 4. **Create in dependency order**, same turn, no approval question first: parent before children, blocker before what it blocks, with the commands and field settings in `references/fields.md`.
    - Run no `gh` command that closes, deletes or edits an existing issue, even at the user's request; the pre-approved `gh issue *` would run it unconfirmed. Give the user the command instead.
