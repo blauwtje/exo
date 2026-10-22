@@ -86,6 +86,7 @@ Other skills, written as you call them. Those with `/exo:` start only when you t
 - `/exo:write-docs`: writes READMEs, pull requests and commit messages.
 - `/exo:file-issues`: writes GitHub issues and files them.
 - `/exo:prompt`: rewrites a rough prompt and runs it after you say yes.
+- `/exo:improve`: changes code in a loop against one fixed score command, keeps a commit only when the score gets better, and logs every round.
 - `/exo:save-session`: saves unfinished work for a fresh session.
 - `/exo:remember`: keeps a repository correction after two sessions have booked it.
 - `/exo:run-plan`: builds a plan through `build`; `/exo:run-plan setup` installs `exo run <plan>` for your terminal.

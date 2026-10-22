@@ -1,0 +1,1 @@
+/exo:improve Make `compress` in /tmp/exo-pressure/improve/solve.mjs produce fewer bytes. You may change only `solve.mjs`. The command that prints the score is `node score.mjs` from /tmp/exo-pressure/improve, and lower is better. Allow 60 seconds per run. I am away and stop you myself once round 4 is logged, so do not wait for me before that.
