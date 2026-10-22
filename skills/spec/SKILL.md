@@ -50,7 +50,7 @@ argument-hint: <outcome to shape>
 | `references/brief-in-an-issue.md` | `specs` is `issues` or `both`. |
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
-| `../../docs/principles/README.md` | Agents, tools, context or run-loop shapes compete. |
+| `../../docs/principles/README.md` | Request adds or changes an AI agent or LLM worker, its prompt, tools or loop. |
 | `references/hand-off.md` | Step 9. |
 | `references/watching.md` | Step 9, run started. |
 | `references/measured-goal.md` | Goal is a measured score, cost or time on a task set. |

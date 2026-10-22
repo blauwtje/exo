@@ -153,6 +153,44 @@ test('the Worktree setup command runs inside each slot', async () => {
   for (const number of [2, 3]) assert.ok((await fs.stat(path.join(`${root}-task-${number}`, 'setup-ran'))).isFile());
 });
 
+test('a gitignored relative plan input is copied into each slot', async () => {
+  const { root, plan, planPath, next } = await afterTaskOne('none');
+  const withInput = plan.replace('## Tasks', '## Assumptions\n\n- assume: the data in `data/notes.md` is the only content input.\n\n## Tasks');
+  await fs.writeFile(planPath, withInput);
+  await fs.mkdir(path.join(root, 'data'));
+  await fs.writeFile(path.join(root, 'data', 'notes.md'), 'secret\n');
+  await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), 'data/\n');
+  const result = await next('--open-slots');
+  assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
+  for (const number of [2, 3]) assert.equal(await fs.readFile(path.join(`${root}-task-${number}`, 'data', 'notes.md'), 'utf8'), 'secret\n');
+});
+
+test('a gitignored folder or .env input is not copied into a slot', async () => {
+  const { root, plan, planPath, next } = await afterTaskOne('none');
+  const withInput = plan.replace('## Tasks', '## Assumptions\n\n- assume: the data in `data/` and `config/.env.local` are the only inputs.\n\n## Tasks');
+  await fs.writeFile(planPath, withInput);
+  await fs.mkdir(path.join(root, 'data'));
+  await fs.mkdir(path.join(root, 'config'));
+  await fs.writeFile(path.join(root, 'data', 'notes.md'), 'secret\n');
+  await fs.writeFile(path.join(root, 'config', '.env.local'), 'TOKEN=1\n');
+  await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), 'data/\nconfig/\n');
+  const result = await next('--open-slots');
+  assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
+  for (const number of [2, 3]) {
+    await assert.rejects(fs.stat(path.join(`${root}-task-${number}`, 'data')));
+    await assert.rejects(fs.stat(path.join(`${root}-task-${number}`, 'config', '.env.local')));
+  }
+});
+
+test('a gitignored relative input missing in the run root is left alone', async () => {
+  const { root, plan, planPath, next } = await afterTaskOne('none');
+  await fs.writeFile(planPath, plan.replace('## Tasks', '## Assumptions\n\n- assume: the data in `data/gone.md` is the only input.\n\n## Tasks'));
+  await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), 'data/\n');
+  const result = await next('--open-slots');
+  assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
+  await assert.rejects(fs.stat(path.join(`${root}-task-2`, 'data')));
+});
+
 test('a refill opens its slot with its own base, keeps the baseline and prints a wait over every running slot', async () => {
   const { root, next } = await afterTaskOne('none');
   await next('--open-slots');

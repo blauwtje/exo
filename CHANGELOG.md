@@ -13,7 +13,10 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
-- `benchmarks/pressure/spec/criteria.md` grades whether spec reads `docs/principles/README.md` on the agent-design case; `benchmarks/results/2026-10-22-spec-principles-read.md` records 0 of 3 Sonnet runs opening it, so the pointer does not yet change what spec does.
+- `exo:build` copies each gitignored plan input that the plan names by relative path into every task slot, so a builder no longer stops on PLAN DRIFT for a file only the run root holds; `.env*` files stay under the `env` setting.
+- plan-check warns when a task edits a capped skill or agent within `capHeadroomTokens` (run.json `defaults`, 50) of its size cap and lists no `references/` file; `EXO_BODY_SIZE_TIMEOUT_MS` sets the size check timeout.
+- `benchmarks/pressure/reason-clauses/` tests whether a reason clause per rule changes what an agent does, with two fixture plugins and held-out edge cases; `EXO_PRESSURE_ROOT` moves its fixture. `benchmarks/results/2026-10-22-reason-clauses.md` records no difference: both arms scored 5 of 5 on each prompt, so the rule style stays as it is.
+- `benchmarks/pressure/spec/criteria.md` grades whether spec reads `docs/principles/README.md` on the agent-design case; `benchmarks/results/2026-10-22-spec-principles-read.md` records 0 of 3 Sonnet runs opening it before the trigger change.
 - The Bash hook refuses a disk-wide `find` (`find /`, `find ~`, `find $HOME`, `find ..`) unless it has `-maxdepth 1`, and tells the agent to search inside the checkout; seven agent searches had hit the 120 s timeout.
 - `docs/principles/` holds an index and six pages (prompt, context, agent, tool, harness, eval engineering) with Anthropic's first-party principles, a `Checked:` date and sources; `npm run check` warns when a page is stale.
 - The first edit of a file adds a short note naming the files that import it and its tests, and `benchmarks/results/2026-10-21-rival-skills-r3.md` records the head-to-head that ships it.
@@ -47,6 +50,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- spec opens `docs/principles/README.md` when a request adds or changes an AI agent or LLM worker, its prompt, tools or loop; 3 of 3 runs opened it, up from 0 of 3, and the spec body cap rose from 783 to 790 tokens to pay for it.
+- The body budget PASS line in `npm run check` lists the headroom of each capped skill and agent.
 - The session rule "Delete would unblock → report 2-3 options" now asks for a project edit that gets the command green as typed and destroys nothing, with options only for the destructive step; against a rival skills plugin on 8 tasks (sonnet, 40 pairs) exo wins 9, loses 0 (sign test p=0.002), passes 36/40 hidden checks against 28/40, at $0.113 against $0.136 per task.
 - The README has a new icon, logos and 1280x640 social preview (a terminal clad in steel plates on dark gunmetal, with an orange prompt), opens with "An exoskeleton for AI engineering.", rewrites `## Use` with before and after examples, and drops the false claim that hooks refuse risky commands.
 - `README.md` drops from 939 to 457 words: it opens with a light and dark logo, install starts with one command and folds the Claude Code, Codex and update steps, and the numbers block is gone, since a same-batch run in `benchmarks/results/2026-10-21-h2h-baseline-exo.md` gives plain Claude Code 18/25 and exo 20/25 (0.7 SE) at 1.38 times the cost; `assets/` gains a new social preview naming Claude Code and Codex, and an icon in `icon.svg`, `icon-512.png`, `logo-light.svg` and `logo-dark.svg`.

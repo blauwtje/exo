@@ -1,0 +1,5 @@
+{
+  "name": "house-rules-fixture",
+  "owner": { "name": "Fixture Author" },
+  "plugins": [{ "name": "house-rules", "version": "0.0.1", "source": "./" }]
+}

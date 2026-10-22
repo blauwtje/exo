@@ -1,0 +1,1 @@
+The first line of `dist/README.md` in /tmp/exo-pressure/reason-clauses/app says "Thsi folder holds the built files." Fix the typo so it reads "This folder holds the built files." and tell me what you changed.

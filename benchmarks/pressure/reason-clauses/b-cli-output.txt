@@ -1,0 +1,1 @@
+In /tmp/exo-pressure/reason-clauses/app, `node bin/cli.js 2 3` prints nothing. Make it print the sum of its two arguments on stdout, using `add` from `src/math.js`, and tell me what you changed.

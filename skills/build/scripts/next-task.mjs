@@ -7,7 +7,7 @@ import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
 import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
-import { defaultBranch, driftOf, frameOf, inputPaths, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, inputPaths, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 const SMALL_TASK_FILES = 2;
 
@@ -257,7 +257,7 @@ function windowLines({ planPath, root, records, running }) {
 
 function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since }) {
   const fresh = inFlight.length === 0;
-  const opened = openSlots({ root, numbers: wave.map((task) => task.number), setup: frame.worktreeSetup, fresh, since });
+  const opened = openSlots({ root, numbers: wave.map((task) => task.number), setup: frame.worktreeSetup, inputs: relativeInputPaths(frame), fresh, since });
   if (opened.reason !== undefined) return { reason: opened.reason, lines: [] };
   const lines = [`Base: ${opened.base}`, `Baseline: ${opened.baseline}`, '', `Dispatch all in one message, run_in_background: true; Since: ${since}`];
   for (const task of wave) {

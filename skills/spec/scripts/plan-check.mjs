@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { pathToFileURL } from 'node:url';
+import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBase, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
-import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
+import { BYTES_PER_TOKEN, capHeadroomTokens, TASK_SPLIT_TOKENS } from '#context-limits';
 import { subjectProblem } from '#commit-text';
 import { dataLiterals, literalFinder, literalFragments } from '#data-literals';
 import { derivedNames } from '#derivation';
@@ -18,6 +19,7 @@ const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
+const BODY_SIZE_TIMEOUT_MS = 60_000;
 const TINY_TASK_TOKENS = 2000;
 const TINY_TASK_BYTES = TINY_TASK_TOKENS * BYTES_PER_TOKEN;
 const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
@@ -138,6 +140,33 @@ function warnTinyTasks(tasks, { root, forkPoint, landed }) {
     if (tiny(first) && tiny(second)) warnings.push(`warning: Task ${first.number} and Task ${second.number} are both tiny (under ${TINY_TASK_TOKENS} tokens of task text and Files:) and share Files: and a Depends on chain: merge them into one task`);
   }
   return warnings;
+}
+
+function rootBodySizes(root) {
+  const verify = (name) => JSON.stringify(pathToFileURL(path.join(root, 'verify', name)).href);
+  const script = `const [{ bodySizes }, { createRepository }] = await Promise.all([import(${verify('body-size.mjs')}), import(${verify('repository.mjs')})]); process.stdout.write(JSON.stringify(bodySizes(createRepository(process.argv[1]))));`;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', script, root], { encoding: 'utf8', timeout: environmentMs('EXO_BODY_SIZE_TIMEOUT_MS', BODY_SIZE_TIMEOUT_MS), maxBuffer: Infinity });
+  if (child.status !== 0) return { reason: (child.stderr || child.error?.message || 'no output').trim().split('\n')[0] };
+  return { records: JSON.parse(child.stdout) };
+}
+
+const dirOf = (file) => path.posix.dirname(file);
+
+// why: a task that edits a skill or agent already near its body cap fails the verify budget check after landing; the plan can raise the lock in the same task instead.
+function warnNearCap(tasks, root, landed) {
+  if (root === undefined || root === null || !fs.existsSync(path.join(root, 'verify/budgets.mjs'))) return [];
+  const sized = rootBodySizes(root);
+  if (sized.reason !== undefined) return [`warning: headroom check skipped, the root's verify/body-size.mjs failed: ${sized.reason}`];
+  const limit = capHeadroomTokens();
+  const near = new Map(sized.records.filter((record) => record.headroom < limit).map((record) => [record.path, record]));
+  const withReferences = new Set();
+  return tasks.flatMap((task) => {
+    for (const file of task.files) if (file.path.includes('/references/')) withReferences.add(file.path.slice(0, file.path.indexOf('/references/')));
+    if (landed.includes(task.number)) return [];
+    return task.files
+      .filter((file) => near.has(file.path) && !withReferences.has(dirOf(file.path)))
+      .map((file) => `warning: Task ${task.number} edits ${file.path}, which has ${near.get(file.path).headroom} tokens of body headroom (cap ${near.get(file.path).cap}): trim it in the same task or raise its cap`);
+  });
 }
 
 function checkContextSize(task, root, forkPoint) {
@@ -675,7 +704,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     ...checkNestedClaude(plan, resolvedRoot),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
-  const warnings = warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed });
+  const warnings = [...warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed }), ...warnNearCap(plan.tasks, resolvedRoot, landed)];
   if (problems.length > 0) return { ok: false, lines: [...problems, ...warnings] };
   const largest = plan.tasks.reduce((best, task) => {
     const size = taskSize(task);

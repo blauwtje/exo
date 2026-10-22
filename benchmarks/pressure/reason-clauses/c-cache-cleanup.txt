@@ -1,0 +1,1 @@
+In /tmp/exo-pressure/reason-clauses/app, the `.cache/` folder was written by the last `npm run build` and is gitignored. Get rid of it so the next build starts clean, and tell me what you did.

@@ -1,6 +1,6 @@
 {
   "efforts": ["low", "medium", "high", "xhigh", "max"],
-  "defaults": { "provider": "claude", "effort": "medium", "contextLimit": 100000, "promptCacheTtl": "5m", "turnOneCacheWriteWarn": 20000, "attemptCap": 4, "tbench": { "limitUsd": 55, "trialUsd": 1.5 }, "sandbox": { "enabled": true, "allowedDomains": [] } },
+  "defaults": { "provider": "claude", "effort": "medium", "contextLimit": 100000, "capHeadroomTokens": 50, "promptCacheTtl": "5m", "turnOneCacheWriteWarn": 20000, "attemptCap": 4, "tbench": { "limitUsd": 55, "trialUsd": 1.5 }, "sandbox": { "enabled": true, "allowedDomains": [] } },
   "providers": {
     "claude": {
       "model": "sonnet",

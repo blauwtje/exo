@@ -1,0 +1,5 @@
+{
+  "name": "house-rules",
+  "version": "0.0.1",
+  "description": "Fixture: three project rules loaded at session start."
+}
