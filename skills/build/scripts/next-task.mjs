@@ -7,7 +7,7 @@ import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
 import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
-import { defaultBranch, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, inputPaths, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 const SMALL_TASK_FILES = 2;
 
@@ -23,7 +23,8 @@ function namesFile(bullet, file) {
 
 function bulletsFor(task, bullets) {
   const named = bullets.filter((bullet) => task.files.some((file) => namesFile(bullet, file)));
-  return named.length === 0 && task.files.length > SMALL_TASK_FILES ? bullets : named;
+  if (named.length === 0 && task.files.length > SMALL_TASK_FILES) return bullets;
+  return bullets.filter((bullet) => named.includes(bullet) || inputPaths(bullet).length > 0);
 }
 
 function sectionLines(task, heading, bullets) {
@@ -116,15 +117,25 @@ function readable(file) {
   }
 }
 
+function inputLines(task, sections) {
+  if (!sections.some((line) => inputPaths(line).length > 0)) return [];
+  return [`Inputs: read each absolute path above before building; one unreadable → end on \`Task ${task.number}: BLOCKED input unreadable: <path>\`, never write its content from memory.`];
+}
+
 export function taskBrief(task, frame, root) {
   const rulesPath = scratchPath(root, 'run-rules.md');
   const hasRules = readable(rulesPath);
   const direction = visualDirectionLines(task, frame);
-  return [
-    ...(hasRules ? [`Rules: read ${rulesPath} first; it holds this run's Goal, Success criterion, report cap and boundaries.`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
+  const sections = [
     ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
     ...sectionLines(task, 'Context for these paths and symbols:', frame.context),
     ...sectionLines(task, 'Decisions for these paths:', frame.decisions),
+    ...sectionLines(task, 'Assumptions for these paths and inputs:', frame.assumptions)
+  ];
+  return [
+    ...(hasRules ? [`Rules: read ${rulesPath} first; it holds this run's Goal, Success criterion, report cap and boundaries.`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
+    ...sections,
+    ...inputLines(task, sections),
     ...(hasRules && direction.length === 1 ? [] : direction),
     ...(hasRules ? [] : reportCapLines()),
     ...deferredLines(task),
@@ -148,7 +159,7 @@ function designLine(task) {
 }
 
 function taskLines(task, frame, root, briefDirectory) {
-  const drift = driftOf(task, root);
+  const drift = driftOf(task, root, frame);
   return [
     `Task ${task.number}: ${task.title}`,
     designLine(task),
@@ -159,8 +170,8 @@ function taskLines(task, frame, root, briefDirectory) {
   ];
 }
 
-function inlineTaskLines(task, root) {
-  const drift = driftOf(task, root);
+function inlineTaskLines(task, frame, root) {
+  const drift = driftOf(task, root, frame);
   return [
     ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
     task.section
@@ -225,12 +236,12 @@ function promptLines(task, frame, planPath, checkout, briefPath) {
   ];
 }
 
-function dispatchable(task, root) {
-  return !task.design && driftOf(task, root).length === 0;
+function dispatchable(task, frame, root) {
+  return !task.design && driftOf(task, root, frame).length === 0;
 }
 
 function dispatchBlock({ task, frame, planPath, checkout, briefPath, since, background }) {
-  if (!dispatchable(task, checkout)) return [];
+  if (!dispatchable(task, frame, checkout)) return [];
   return [`Dispatch: exo:build-task, run_in_background: ${background}`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
@@ -252,7 +263,7 @@ function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, si
   for (const task of wave) {
     const slot = slotOf(opened.toplevel, task.number);
     const brief = path.join(briefDirectory, `task-${task.number}.md`);
-    lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, ...(dispatchable(task, root) ? promptLines(task, frame, planPath, slot, brief) : []));
+    lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, ...(dispatchable(task, frame, root) ? promptLines(task, frame, planPath, slot, brief) : []));
   }
   const running = [...inFlight, ...wave.map((task) => task.number)];
   return { reason: undefined, lines: [...lines, '', ...windowLines({ planPath, root: opened.toplevel, records: opened.records, running })] };
@@ -277,7 +288,7 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [], open =
   if (inline && wave.length > 0) {
     const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
     lines.push(`Inline: ${unlanded.map((task) => `Task ${task.number}`).join(', ')}`, 'Steps:', ...inlineSteps(planPath, root));
-    for (const task of unlanded) lines.push('', ...inlineTaskLines(task, root));
+    for (const task of unlanded) lines.push('', ...inlineTaskLines(task, frame, root));
     return `${lines.join('\n')}\n`;
   }
   const briefDirectory = scratchPath(root, 'briefs');

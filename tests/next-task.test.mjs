@@ -5,12 +5,13 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { commitFiles, git, planFixture, run } from './harness.mjs';
-import { editApp, landingCheckout, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
+import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 
 const NEXT_TASK = new URL('../skills/build/scripts/next-task.mjs', import.meta.url).pathname;
 
@@ -44,6 +45,41 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
   assert.match(result.stdout, /^Since: \d{10}$/m);
   const brief = result.stdout.match(/^Brief: (.+)$/m)[1];
   assert.match(result.stdout, new RegExp(`^Prompt:\\nTask 1 of ${planPath}, branch feat/fixture, checkout ${root}\\.\\nRead your brief at ${brief}\\.\\nReport to: ${root}/\\.exo/implementer-1\\.md\\nReturn: one line$`, 'm'));
+});
+
+// The plan names its only content input by absolute path, outside the checkout,
+// under Assumptions, which names none of the task's Files.
+async function planWithInput(input) {
+  const plan = PLAN.replace('## Tasks', `## Assumptions\n\n- assume: the notes at \`${input}\` are the only content input.\n\n## Tasks`);
+  const { root, planPath } = await landingCheckout();
+  await commitFiles(root, { 'docs/plans/fixture.md': plan }, 'chore: plan');
+  return run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
+}
+
+test('an input the plan names outside the checkout reaches the brief', async () => {
+  const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'notes.md');
+  await fs.writeFile(input, 'notes\n');
+  const result = await planWithInput(input);
+  assert.match(result.stdout, /^Prompt:$/m);
+  const brief = await fs.readFile(result.stdout.match(/^Brief: (.+)$/m)[1], 'utf8');
+  assert.ok(brief.includes(`the notes at \`${input}\``), brief);
+});
+
+test('only a brief carrying an input path tells the builder to block on an unreadable one', async () => {
+  const blockLine = 'Inputs: read each absolute path above before building; one unreadable → end on `Task 1: BLOCKED input unreadable: <path>`, never write its content from memory.';
+  const input = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-'));
+  const withInput = await planWithInput(input);
+  assert.ok((await fs.readFile(withInput.stdout.match(/^Brief: (.+)$/m)[1], 'utf8')).split('\n').includes(blockLine));
+  const { root, planPath } = await landingCheckout();
+  const without = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
+  assert.doesNotMatch(await fs.readFile(without.stdout.match(/^Brief: (.+)$/m)[1], 'utf8'), /^Inputs:/m);
+});
+
+test('an unreachable input the plan names stops the task before dispatch', async () => {
+  const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'missing.md');
+  const result = await planWithInput(input);
+  assert.ok(result.stdout.split('\n').includes(`PLAN DRIFT: Task 1: input \`${input}\` is unreachable`), result.stdout);
+  assert.doesNotMatch(result.stdout, /^(?:Prompt|Dispatch):/m);
 });
 
 test('a design task prints no prompt', async () => {

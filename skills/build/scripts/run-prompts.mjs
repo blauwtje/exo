@@ -43,7 +43,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     task: `Task ${number}`,
     plan: planPath,
     root,
-    brief: [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
+    brief: [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
     codeRules: `\`${codeRulesCommand(planPath, number, root)}\``,
     landGate: landGate === 'none' ? '' : `- After the code rules print \`Code rules OK\` and before "Task ${number} is done", run the plan's Land gate \`${landGate}\` and fix every failure it prints until it passes, except one that names only words in the task's \`Drops:\` line: land-task drops those.\n`,
     extra,
@@ -59,7 +59,7 @@ export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
     const task = plan.tasks.find((entry) => entry.number === number);
     // why: a plan session copied its tasks' Commit: blocks and committed them; the script lands each task after the session.
     const unlanded = { ...task, section: task.section.replace(COMMIT_BLOCK, '').trimEnd() };
-    return [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(unlanded, frameOf(plan.frame), root).trimEnd()].join('\n');
+    return [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(unlanded, frameOf(plan.frame), root).trimEnd()].join('\n');
   });
   const fields = {
     tasks: `${numbers.length === 1 ? 'Task' : 'Tasks'} ${numbers.join(', ')}`,

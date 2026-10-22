@@ -68,6 +68,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- `build` carries the plan's `## Assumptions` input paths into each builder brief, stops a task before dispatch when a named absolute input path is unreachable, and tells the builder to block on an unreadable input instead of writing its content from memory.
 - The closing and report rules now live in `skills/route-skills/references/closing.md` and load by path from every skill that cites them, with a check that each owner skill lists it.
 - Corrected steps and docs from the component audit in `build`, `verify`, `design-ui`, `file-issues`, `spec`, `run-plan`, `CONTRIBUTING.md` and the session-start hook so they match the code.
 - `tests/clean-run-env.mjs` points `TMPDIR` at one folder per test run and deletes it on exit, so `npm test` and `npm run check` stop leaving `mkdtemp` folders in the user temp folder; 12 days of leftovers made macOS boot cleanup take 183 s.
