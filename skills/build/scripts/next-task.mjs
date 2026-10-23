@@ -245,17 +245,22 @@ function dispatchBlock({ task, frame, planPath, checkout, briefPath, since, back
   return [`Dispatch: exo:build-task, run_in_background: ${background}`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
-export function windowLines({ planPath, root, records, running }) {
+// why: with every unlanded task running no landing can start a refill, so one wait for all and one chained land replace the per-slot pairs.
+export function windowLines({ planPath, root, records, running, unlanded = null }) {
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];
+  const waitAll = open.length > 1 && unlanded !== null && unlanded.every((number) => open.includes(number));
   const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}"`);
+  const land = (number) => `node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}"${open.length > 1 ? ` --in-flight ${open.filter((other) => other !== number).join(',')}` : ''}`;
+  const order = [...open].sort((left, right) => left - right);
   return [
-    `Wait: node "${scriptPath('wait-report.mjs')}" --any ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns, at most six runs, then BLOCKED <n> no report)`,
-    ...open.map((number) => `Land ${number}: node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}" --in-flight ${open.filter((other) => other !== number).join(',')}`)
+    `Wait: node "${scriptPath('wait-report.mjs')}"${waitAll ? '' : ' --any'} ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns, at most six runs, then BLOCKED <n> no report)`,
+    ...open.map((number) => `Land ${number}: ${land(number)}`),
+    ...(waitAll ? [`Land all: ${order.map((number, index) => `${land(number)}${index < order.length - 1 ? ' --chained' : ''}`).join(' ; ')}`] : [])
   ];
 }
 
-function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since }) {
+function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since, unlanded }) {
   const fresh = inFlight.length === 0;
   const opened = openSlots({ root, numbers: wave.map((task) => task.number), setup: frame.worktreeSetup, inputs: relativeInputPaths(frame), fresh, since });
   if (opened.reason !== undefined) return { reason: opened.reason, lines: [] };
@@ -266,7 +271,13 @@ function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, si
     lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, ...(dispatchable(task, frame, root) ? promptLines(task, frame, planPath, slot, brief) : []));
   }
   const running = [...inFlight, ...wave.map((task) => task.number)];
-  return { reason: undefined, lines: [...lines, '', ...windowLines({ planPath, root: opened.toplevel, records: opened.records, running })] };
+  return { reason: undefined, lines: [...lines, '', ...windowLines({ planPath, root: opened.toplevel, records: opened.records, running, unlanded })] };
+}
+
+function allIndependent(tasks, frame) {
+  if (frame.parallelLine === null) return false;
+  const covered = (task) => frame.parallel === null || frame.parallel.includes(task.number);
+  return tasks.every((task) => task.dependsOn.length === 0 && covered(task));
 }
 
 export function nextTaskReport({ planPath, planText, root, inFlight = [], open = false, since = Math.floor(Date.now() / 1000) }) {
@@ -276,7 +287,7 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [], open =
   const route = planRoute(plan.tasks);
   const inline = route.route === 'inline';
   const ready = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel, inFlight);
-  const wave = landed.length === 0 && inFlight.length === 0 ? ready.slice(0, 1) : ready;
+  const wave = landed.length === 0 && inFlight.length === 0 && !allIndependent(plan.tasks, frame) ? ready.slice(0, 1) : ready;
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,
@@ -294,11 +305,12 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [], open =
   const briefDirectory = scratchPath(root, 'briefs');
   if (open && (wave.length > 1 || inFlight.length > 0)) {
     const records = windowRecords(root);
-    if (wave.length === 0) return `${[...lines, ...windowLines({ planPath, root, records, running: inFlight })].join('\n')}\n`;
-    const opened = openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since });
+    const unlanded = plan.tasks.map((task) => task.number).filter((number) => !landed.includes(number));
+    if (wave.length === 0) return `${[...lines, ...windowLines({ planPath, root, records, running: inFlight, unlanded })].join('\n')}\n`;
+    const opened = openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, since, unlanded });
     if (opened.reason === undefined) return `${[...lines, ...opened.lines].join('\n')}\n`;
     lines.splice(-1, 1, `Wave discarded: ${opened.reason}`, inFlight.length > 0 ? 'Start: none' : waveLine(wave.slice(0, 1)));
-    if (inFlight.length > 0) return `${[...lines, ...windowLines({ planPath, root, records, running: inFlight })].join('\n')}\n`;
+    if (inFlight.length > 0) return `${[...lines, ...windowLines({ planPath, root, records, running: inFlight, unlanded })].join('\n')}\n`;
     wave.splice(1);
   }
   for (const task of wave) {

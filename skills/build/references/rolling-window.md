@@ -27,6 +27,6 @@
    - A landing's refill is in `land-slot.mjs`'s output, slots opened; else run `next-task.mjs --in-flight <running task numbers, comma separated>`; read its `Start: Task <n>[, Task <m>]` line.
    - `Start: none` → no refill; wait for a running slot.
 8. **Wait.**
-   - The printed `Wait:` is `wait-report.mjs --any` with one `--report` and `--since` per running slot.
+   - The printed `Wait:` is `wait-report.mjs`, one `--report` and `--since` per running slot; `--any` unless `Land all:` follows.
    - Exit 0 prints the fresh reports; each is a slot that returned, so land it per step 3.
-   - Every wait, also after a land or a repair message, is `wait-report.mjs --any` over the running builds' reports only, never a shell loop or `sleep`; each fresh report lands before the next wait.
+   - Every wait, also after a land or a repair message, is the printed `Wait:`, never a shell loop or `sleep`; each fresh report lands before the next wait.

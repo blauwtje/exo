@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { runRules } from './next-task.mjs';
+import { blockReport, runRules } from './next-task.mjs';
 import { frameOf, openPoints, parsePlan, PlanError } from '#plan-tasks';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
@@ -17,7 +17,7 @@ const HELP = [
   'usage: node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]',
   '--plan names the plan the user gave, which skips the search.',
   "--find-only prints the picked plan's absolute path, then its `Repository:` and `Branch:` lines (`none` when absent).",
-  'The starting call prints one `run started` line naming the plan, checkout and branch.',
+  'The starting call prints one `run started` line naming the plan, checkout and branch, then `next-task.mjs --block` output when the checkout is on the plan\'s Branch: or the plan names none.',
   'A refusal (zero or several plans, a --checkout that is not a checkout) exits 1 with one line naming the cause and the next command.',
 ].join('\n');
 
@@ -94,6 +94,17 @@ function main(argv) {
   if (planBranch && planBranch !== branch) {
     const switchArgs = branchExists(checkout, planBranch) ? planBranch : `-c ${planBranch}`;
     process.stdout.write(`start-run: note: checkout ${checkout} is on ${branch || 'detached HEAD'}, not the plan's Branch: ${planBranch}. If the workspace answer is ${planBranch}, run \`git -C ${checkout} switch ${switchArgs}\` and do not rerun start-run.\n`);
+    return;
+  }
+  if (frame !== null) process.stdout.write(firstBlock(planPath, checkout));
+}
+
+function firstBlock(planPath, checkout) {
+  try {
+    return blockReport({ planPath, planText: fs.readFileSync(planPath, 'utf8'), root: checkout });
+  } catch (error) {
+    if (error instanceof PlanError) return '';
+    throw error;
   }
 }
 

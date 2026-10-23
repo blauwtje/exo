@@ -1,6 +1,7 @@
 # The loop, steps 1-6
 
 1. **Find the plan, then settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only`, plus `--plan <path>` for a named plan.
+   - Request or caller already names the workspace → skip `--find-only`; run `start-run.mjs --checkout <checkout>` once, same `--plan`.
    - Zero or several matches → ask which plan.
    - Every session takes the unit route below; headless `exo run [plan]` starts only from the user's terminal and refuses inside a session.
    - Settle where the run commits.
@@ -9,6 +10,7 @@
    - Invoking build authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`, except under `--land`, which goes to `ship`.
 2. **Leave the plan to the unit,** which reads the frame sections, never the whole plan.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <plan> --root <checkout>`; `Next: none` goes to step 7.
+   - `run started` output holds a `Plan:` line → it is this step's first output; skip this call once.
    - `Route: inline` prints `Steps:` and each task's section: follow them, not steps 4-6.
    - Only a `Plan-task:` commit decides what landed, never memory.
    - On a restart, once, write one line in the reply language naming the landed tasks and the next; later loops stay silent.

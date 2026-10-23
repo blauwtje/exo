@@ -18,7 +18,7 @@ experimental: { cacheTtl: 1h }
   - `Next:` stays foreground; its return is the report, no `wait-report.mjs`.
   - A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
   - Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a returned slot.
-  - Land each fresh slot with its `Land <n>:` command, dropping landed numbers from `--in-flight`; `LANDED` ends with a refill block, dispatched likewise.
+  - Land each fresh slot with its `Land <n>:` command, or all with one printed `Land all:`; `LANDED` ends with a refill block, dispatched likewise.
   - Wait after every landing; exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A landed task goes straight to the next; dispatch no review, only verify reviews the branch.
   - `REFUSED`, `CONFLICT`, `NEWPATH`, `PLAN DRIFT`, a stall, a repair, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## run-unit` and `<skill>/implementer-prompt.md` first.
