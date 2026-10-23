@@ -3,7 +3,7 @@
 Scope: a run the user started in a terminal.
 
 - After `run --detach` → end the turn at once; the lead wakes only on park or finish, never to poll.
-- Waiting → start no other session, loop or watcher; the run-watch hook wakes this session.
+- Waiting → start no other session, loop or watcher; no ScheduleWakeup, Monitor or sleep; the run-watch hook wakes this session.
 - Session with the exo status line → the status line shows progress and a wake prompt arrives when the run stops.
 - Wake names `landed` or `passed` → report the result from the run report.
 - Wake names another phase → read `<run directory>/report.md`, then dispatch one worktree agent (its own git worktree) to repair; the lead edits no file itself, even a one-line plan fix.

@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
 
 ### Added
+- `benchmarks/speed-ledger.jsonl` records the ten ideas tried in the `improve/oct23` loop: three kept on that branch (critical-path calls 44.27 → 34.4), five rejected, two untested after crashes; the branch stays unmerged, and its 15-run wall check against `main` measured 176.8 s → 153.9 s mean (-13.0%, Mann-Whitney p=0.007, bootstrap 95% CI [-46.5, +2.7] s) at equal hidden-test passes.
 - `node benchmarks/improve-speed.mjs <checkout>` runs the flow-unit sweep with exo loaded from `<checkout>`, exits nonzero when a run fails its hidden tests or the verify gate, and prints `score: <n>` (work counted, lower is better) as the score command for `exo:improve`.
 - `exo:improve <goal>` runs Karpathy's autoresearch loop on any repo: it changes code, runs one fixed score command, keeps the commit only when the score got better, else resets, logs every round, and goes on until the user stops it.
 - `benchmarks/results/2026-10-22-review-judges-pilot.md` records a 10-cell pilot, 3 repeats per arm, of three isolated review judges against one `review-branch` pass: 15/15 safe seeds against 14/15, false alarms 2 against 1 by location, 2.79x the tokens ($13.77 against $5.01); the pilot sits at a ceiling, so `benchmarks/speed-ledger.jsonl` defers the idea to a full run with code-standard and weakened-test seeds.
@@ -82,6 +83,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- verify, its repair loop, the design-task wait and spec's watch end the turn with no ScheduleWakeup, Monitor or sleep while background work runs; a 1200 s wakeup had kept a finished `claude -p` run alive past its budget.
 - A `REFUSED` window landing no longer stalls its rebuild for ~9 min: `land-slot.mjs` now prints a `Wait:` and `Land <n>:` for the rebuild with a `--since` taken at the refusal, and `wait-report.mjs` refuses a `--since` later than now at once with an `ERROR` line instead of waiting out its deadline.
 - The Bash hook rewrites a call so zsh runs every part of a chain holding an `=` word, and each `timeout N` command stays bounded on stock macOS, which lacks GNU `timeout`.
 - `run-probes.mjs` fails a finding that has a `Probe:` line but no `fixed` or `reported:` mark, instead of skipping it with exit 0; on a fixer turn cap, verify marks each unmarked finding `reported: turn cap`.

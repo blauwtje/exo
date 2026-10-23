@@ -9,19 +9,19 @@ argument-hint: "[plan path] [--land]"
 ## The loop
 
 1. **Run the gate.** `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base> --reviews-only` first.
-   - Then in one message: the full run in the background, step 2's dispatch.
+   - Then in one message: the full run in the background, step 2's dispatch; end the turn, no ScheduleWakeup, Monitor or sleep.
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
    - `SKIP`, `WARN`, `FIX-ONLY` or `SESSION` line → read `references/gate-lines.md`.
-   - `FAIL` or `UNPLANNED` line → end the turn with the script's report; rerun no check.
+   - `FAIL` or `UNPLANNED` line → end the turn with script's report; rerun no check.
    - Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`.
-2. **Review the branch.** Skip `REVIEW Branch` if its reviewer reads `none`.
-   - Else dispatch one `exo:review-branch`: `exo-kind: review-deep` first unless the line names no kind, then the `DISPATCH Branch` fields.
-   - Add three to five questions from the Goal and each task's `Data:`, `Risk:`, Acceptance.
+2. **Review the branch.** Skip `REVIEW Branch` if reviewer reads `none`.
+   - Else dispatch one `exo:review-branch`: `exo-kind: review-deep` first unless line names no kind, then `DISPATCH Branch` fields.
+   - Add three to five questions from Goal and each task's `Data:`, `Risk:`, Acceptance.
    - Add `DISPATCH Overlap` dispatch with `OVERLAP` lines when `OVERLAP` lists more than `none`, all in one message.
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, each `CODE-RULES` path included; its first line is step 3's verdict, `FINDING` lines the `question`, `note`, `report` findings.
-   - `CODEX` = `pick-reviewer.mjs --codex` result: `offer` → ask once for a `codex exec` second review of plan and diff, appending its findings to the findings path before step 3; else say nothing.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, each `CODE-RULES` path included; its first line is step 3's verdict, `FINDING` lines `question`, `note`, `report` findings.
+   - `CODEX` = `pick-reviewer.mjs --codex` result: `offer` → ask once for a `codex exec` second review of plan and diff, appending its findings to findings path before step 3; else say nothing.
    - `--land` → skip that offer.
-3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.
+3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:fix-review` agent, with no model override, filled dispatch line, `../build/review-fixer-prompt.md` by path.
    - `concern=1` or more with `fix=0` → still dispatch; the fixer, not the lead, writes each concern's failing test, marking it unproven only if it passes.
    - `fix=0` and `concern=0` → step 4, also with `note` findings; no `exo:fix-review` dispatch, rerun or fix commit.
    - Else, after dispatch → `references/repair.md`.
@@ -37,7 +37,7 @@ argument-hint: "[plan path] [--land]"
 | `references/repair.md` | Step 3. |
 | `references/lessons.md` | Step 4, a `defect`. |
 | `references/gate-lines.md` | Step 1. |
-| `references/plan-checks.md` | Never: the reviewer reads it. |
-| `../route-skills/references/closing.md` | Before the final message. |
+| `references/plan-checks.md` | Never: reviewer reads it. |
+| `../route-skills/references/closing.md` | Before final message. |
 
-Report: `REPORT` gets `Changed`, chores, `report` and `note` findings. Message: the report rule in `../route-skills/references/closing.md`, three lines pointing at the `REPORT` path, `question` findings, one decision: `FAIL`, else `question`, else `ship`.
+Report: `REPORT` gets `Changed`, chores, `report` and `note` findings. Message: report rule in `../route-skills/references/closing.md`, three lines pointing at `REPORT` path, `question` findings, one decision: `FAIL`, else `question`, else `ship`.
