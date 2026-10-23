@@ -8,15 +8,13 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 
 ## The loop
 
-1. **Find the plan, then settle the workspace.**
+1. **Find the plan, settle the workspace.**
 2. **Leave the plan to the unit.** On `Route: unit`: After dispatch, read only script output and unit returns, no plan or diff.
 3. **Ask the branch what landed.**
 4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
 7. **The tail.** Read `references/tail.md`, then run `verify`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
-
-- Headless run → only the user's terminal `exo run`, never this session.
 
 ## No spec
 

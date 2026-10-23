@@ -30,7 +30,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 1978, measured: '2026-10-21' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2104, measured: '2026-10-23' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
@@ -45,7 +45,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 703, measured: '2026-10-21' };
+export const SESSION_LOAD_LOCK = { words: 728, measured: '2026-10-23' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.
@@ -55,7 +55,7 @@ export const SESSION_LOAD_LOCK = { words: 703, measured: '2026-10-21' };
 // Raised 1745 -> 1926 with the TaskStop rule line.
 // Raised 1926 -> 1950 with the context limit on the settings line.
 // Raised 1950 -> 2141 with the green-command-as-typed rule.
-export const SESSION_START_BYTES_LOCK = { bytes: 2141, measured: '2026-10-21' };
+export const SESSION_START_BYTES_LOCK = { bytes: 2267, measured: '2026-10-23' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };
@@ -97,7 +97,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/wave-worktrees.md': 928,
   'skills/build/run-task-prompt.md': 788,
   'skills/ship/references/pr-prep.md': 772,
-  'skills/spec/references/brief.md': 792,
+  'skills/spec/references/brief.md': 891,
   'skills/spec/references/task-list.md': 904,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits

@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { checkLedger, fingerprint, KEYS, readLedger, renderLedger } from '../benchmarks/speed-ledger.mjs';
+import { checkLedger, fingerprint, indexSection, KEYS, readLedger, renderLedger } from '../benchmarks/speed-ledger.mjs';
 
 const row = (id, title, extra = {}) => {
   const base = Object.fromEntries(KEYS.map((key) => [key, null]));
@@ -51,6 +52,19 @@ test('the rendered md starts generated and keeps the index first', () => {
   assert.match(md.split('\n')[0], /speed-ledger\.jsonl/);
   assert.ok(md.indexOf('## Index') < md.indexOf('## Not landed'));
   assert.match(md, /Related: \[A\]\(#a\)/);
+});
+
+test('the index section runs from its heading to the next heading', () => {
+  const index = indexSection(renderLedger([row('a', 'A'), row('b', 'B')]));
+  assert.ok(index.startsWith('## Index'));
+  assert.match(index, /\[A\]\(#a\) → un/);
+  assert.doesNotMatch(index, /^## Not landed/m);
+});
+
+test('--index prints the committed index section only', () => {
+  const out = execFileSync('node', [fileURLToPath(new URL('../benchmarks/speed-ledger.mjs', import.meta.url)), '--index'], { encoding: 'utf8' });
+  assert.ok(out.startsWith('## Index'));
+  assert.equal(out.match(/^## /gm).length, 1);
 });
 
 test('a clean ledger checks with no problems', () => {

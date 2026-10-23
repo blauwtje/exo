@@ -38,7 +38,7 @@ Read-only researcher: answer the bounded question in your dispatch from the sour
 
 ## Report
 
-Compact, at most 25 lines, exactly these headings, nothing before or after:
+Compact, at most 12 lines, exactly these headings, nothing before or after:
 - `Answer`: direct answer in one or two sentences, or that the checked sources do not contain it.
 - `Evidence`: one bullet per claim: URL or absolute path, the version or date that page documents or the locator inside the file, and the literal string.
 - `Read next`: the one page, section or file the caller should open for more.

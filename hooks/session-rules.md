@@ -9,3 +9,4 @@
 - Long task → plan and progress in `.exo/<topic>/progress.md`.
 - Agent notice says it still waits on background work → stop it with TaskStop.
 - Before final report → stop every background shell and agent this session started with TaskStop.
+- Web page or large file to read → `fetch-docs` agent for the page, grep for the lines in the lead, never the whole file.

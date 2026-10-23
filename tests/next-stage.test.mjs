@@ -23,7 +23,7 @@ function nextStage(...args) {
   return result.stdout;
 }
 
-test('after spec the report asks whether to start the build now and names how the work lands', async () => {
+test('after spec the report asks one free-text start-or-change question and names how the work lands', async () => {
   const landings = [
     ['local', 'lands on this machine'],
     [null, 'lands on this machine'],
@@ -32,10 +32,10 @@ test('after spec the report asks whether to start the build now and names how th
   ];
   for (const [land, text] of landings) {
     const out = nextStage('--after', 'spec', '--artifact', await brief({ land }));
-    assert.match(out, /^\*\*Should I start the build now\?\*\*$/m);
-    assert.match(out, new RegExp(`^- \\*\\*\\(A\\) Start now\\*\\*: .*${text}`, 'm'));
-    assert.match(out, /^- \*\*\(B\) Later\*\*: /m);
-    assert.match(out, /^Recommended: \(A\)/m);
+    assert.match(out, new RegExp(`^\\*\\*Start the build now, or change the brief first\\?\\*\\* It .*${text}\\.$`, 'm'));
+    assert.match(out, /^Reply `ok` to start, or say what to change\.$/m);
+    assert.doesNotMatch(out, /\(A\)|Recommended|\/clear|\/model|\/effort|Unattended/);
+    assert.equal(out.trimEnd().split('\n').length, 2);
   }
 });
 
@@ -43,11 +43,23 @@ test('after spec a brief with open points prints the open points, not the start 
   const out = nextStage('--after', 'spec', '--artifact', await brief({ land: 'local', open: ['Which store?'] }));
   assert.match(out, /has 1 open point/);
   assert.match(out, /- Which store\?/);
-  assert.doesNotMatch(out, /Should I start the build now/);
+  assert.doesNotMatch(out, /Start the build now/);
 });
 
 test('after find-cause the question stays as it was', () => {
   const out = nextStage('--after', 'find-cause', '--artifact', 'unused');
   assert.match(out, /^\*\*Should I build the fix\?\*\*$/m);
   assert.match(out, /\(A\) Build\*\*: build the fix now/);
+});
+
+test('after build the report is one free-text change line, no options', () => {
+  const out = nextStage('--after', 'build', '--artifact', 'unused');
+  assert.equal(out.trimEnd().split('\n').length, 1);
+  assert.match(out, /^Reply with what to change/);
+  assert.doesNotMatch(out, /\(A\)|Recommended|\/clear/);
+});
+
+test('--fresh is refused', () => {
+  const result = spawnSync(process.execPath, [SCRIPT, '--after', 'spec', '--artifact', 'x', '--fresh'], { encoding: 'utf8' });
+  assert.equal(result.status, 2);
 });

@@ -232,10 +232,10 @@ test('the session hook injects the prose clamp with the report shape and questio
   for (const option of ['shorter', 'high']) {
     const context = sessionContext('exo-shorter-', option);
     assert.ok(context.includes('compression=shorter'));
-    assert.ok(context.includes('Replies are short. Say the answer first. After the answer, write at most three more lines.'));
+    assert.ok(context.includes('Say the answer first, then at most three more lines.'));
     assert.ok(context.includes(PROSE_CLAMP));
-    assert.ok(context.includes('Start every report to the user with at most three short lines.'));
-    assert.ok(context.includes('Ask the user one question per message. Keep the question to about 10 words.'));
+    assert.ok(context.includes('Open every report to the user with at most three short lines:'));
+    assert.ok(context.includes('Ask the user one question per message: about 10 words'));
   }
 });
 

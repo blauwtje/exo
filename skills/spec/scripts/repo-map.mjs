@@ -63,4 +63,5 @@ if (repository === null) {
     fs.writeFileSync(file, map.text);
   }
   console.log(file);
+  console.log(`grep -n '<term>' ${file}   # search the map, never read it whole`);
 }

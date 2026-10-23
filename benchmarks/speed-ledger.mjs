@@ -128,13 +128,23 @@ export function checkLedger(root = ROOT) {
   return problems;
 }
 
+export function indexSection(md) {
+  const start = md.indexOf('## Index');
+  const next = md.indexOf('\n## ', start + 1);
+  return `${md.slice(start, next < 0 ? undefined : next).trimEnd()}\n`;
+}
+
 function main(args) {
+  if (args.includes('--index')) {
+    process.stdout.write(indexSection(renderLedger(readLedger())));
+    return 0;
+  }
   if (args.includes('--render')) {
     writeFileSync(path.join(ROOT, 'benchmarks', 'speed-ledger.md'), renderLedger(readLedger()));
     return 0;
   }
   if (!args.includes('--check')) {
-    console.error('usage: node benchmarks/speed-ledger.mjs --render | --check');
+    console.error('usage: node benchmarks/speed-ledger.mjs --render | --check | --index');
     return 2;
   }
   const problems = checkLedger();

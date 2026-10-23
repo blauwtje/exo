@@ -110,7 +110,11 @@ test('every listed tool is a tool the harness has', () => {
 test('an agent that only locates or reviews carries no tool that edits the repository', () => {
   const explorer = agents.find((agent) => agent.frontmatter.name === 'locate-code');
   const critic = agents.find((agent) => agent.frontmatter.name === 'critique-ui');
-  assert.deepEqual(explorer.frontmatter.tools.split(', ').filter((tool) => ['Write', 'Edit', 'Agent'].includes(tool)), []);
+  assert.deepEqual(explorer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'Agent'].includes(tool)), []);
+  assert.match(explorer.body, /Write one file only: the report, at the `\.exo\/<topic>\/` path/);
+  assert.match(explorer.body, /Return at most 10 lines/);
+  const docs = agents.find((agent) => agent.frontmatter.name === 'fetch-docs');
+  assert.match(docs.body, /Compact, at most 12 lines, exactly these headings/);
   assert.deepEqual(critic.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'Agent'].includes(tool)), []);
 });
 
@@ -317,12 +321,14 @@ test('the branch reviewer confirms with one test file or Probe command, never th
 
 test('the open-points finder is read-only, runs the decisions check first and caps its report', () => {
   const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
-  assert.deepEqual(finder.frontmatter.tools.split(', '), ['Read', 'Glob', 'Grep', 'Bash']);
+  assert.deepEqual(finder.frontmatter.tools.split(', '), ['Read', 'Write', 'Glob', 'Grep', 'Bash']);
   assert.equal(finder.frontmatter.effort, undefined);
   assert.equal(finder.frontmatter.model, undefined);
   assert.ok(finder.body.indexOf('memory.mjs" decisions') > 0, 'no decisions run');
-  assert.ok(finder.body.includes('[code|assume|user]'));
-  assert.ok(finder.body.includes('Under 1.5k tokens'));
+  assert.ok(finder.body.includes('[user] <point>'));
+  assert.ok(finder.body.includes('Return at most 10 lines'), 'return capped at 10 lines');
+  assert.ok(finder.body.includes('Assumptions: <path>'), 'return names the assumptions file');
+  assert.doesNotMatch(finder.body, /Write nothing/, 'it writes the assumptions file');
 });
 
 // Wall time: a lookup that waits on another lookup it does not depend on costs a

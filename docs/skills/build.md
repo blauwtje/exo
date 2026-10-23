@@ -19,6 +19,7 @@ Not for writing or repairing a plan, or a change of two files or fewer.
 - Test-first work shows the failing test before the fix and the passing test after.
 - A point the plan leaves open is parked, not guessed: after the wave lands you get one question per message, and that task is rebuilt with your answer.
 - A short final message naming a run report that holds the proofs and the brief's `## Manual checks`, the checks only you can make.
+- A line inviting changes in the same session, above `ship`'s route question when it asks one.
 - A handoff to `verify`. It picks the deep reviewer when a landed task's `Risk:` field names a security boundary. A task that crosses a security boundary needs a `Risk:` field.
 
 ## Source

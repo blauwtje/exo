@@ -34,13 +34,12 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - New skill, agent or run stage → add only after a recorded failure the existing parts cannot fix.
 - Subagent commit → one purpose, made only after its proof passes; command result in the commit body → a `Proof: <command> → <result>` line, not `Evidence:`.
 - Brief leaves a choice open → subagent returns the competing readings to the lead, not a silent pick.
-- Build speed or cost idea → read `benchmarks/speed-ledger.md` index first, pass its path to every idea agent's brief, add each tested or rejected idea as a line in `benchmarks/speed-ledger.jsonl`, then run `node benchmarks/speed-ledger.mjs --render`.
+- Build speed or cost idea → run `node benchmarks/speed-ledger.mjs --index` first (prints the index only), pass the `benchmarks/speed-ledger.md` path to every idea agent's brief, add each tested or rejected idea as a line in `benchmarks/speed-ledger.jsonl`, then run `node benchmarks/speed-ledger.mjs --render`.
 
 ## Commands
 
 - `npm run check` gates every commit; clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`; lead runs it once, in background, output to a log; delegate runs only its proof.
 - Plan tasks here → `Land gate: npm run validate:static` (static checks, no test suite); `npm run check` runs once as Success criterion.
-- `npm test` → spec reporter, failure marked `✖`, not `not ok`. `npm run check` → TAP, its FAIL line lists `not ok` lines.
 
 ## Editing
 
@@ -54,9 +53,3 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Each change → one line under `## Unreleased` in `CHANGELOG.md`, in `### Added`, `### Changed`, `### Fixed` or `### Removed`; raise no version.
 - Release → weekly schedule in `.github/workflows/release.yml` cuts it when `## Unreleased` holds an entry; user asks for one sooner → lead runs `gh workflow run release.yml`, optional `-f level=patch|minor|major`. A push to `main` releases nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand; a hand-cut version collides with the workflow's.
 - Change user should read first → at most three bold lead sentences under `### Highlights` in `## Unreleased`, in the commit that records it, not in a release commit.
-
-## Environment
-
-- `hooks/hooks.json` keeps `"shell": "bash"`, else a Windows host without Git Bash falls back to PowerShell; hook command → shell form, not `args`, so Claude Code resolves the shell, not `bash` on `PATH`.
-- Session hook stays Node (`hooks/session-start.mjs`), no `jq`.
-- `.gitattributes` forces LF; a CRLF shebang fails silently on Windows.

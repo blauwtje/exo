@@ -61,7 +61,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 `benchmarks/README.md` covers the routing eval of `benchmarks/routing.mjs`, whose recorded result the `routing` check compares with the skill descriptions and `hooks/session-routing.md` (a change to either needs a rerun), the paired headless runs that measure exo against a session without it, and the `replay` set of `benchmarks/sweep.mjs`, whose `flow-unit` cell is prepared with the compact unit-route plan (`compactPlan`) and `flow-c7` with the code plan, and which replays past branch and fix-diff reviews per model, plus the ideas set of `benchmarks/ideas.mjs`, which scores the originality and variety of the design options `spec` offers.
 
-The build-speed idea ledger is `benchmarks/speed-ledger.jsonl`, one JSON line per idea sorted by `id` with every key of `KEYS` in `benchmarks/speed-ledger.mjs`. `benchmarks/speed-ledger.md` is generated from it: add or change a line, then run `node benchmarks/speed-ledger.mjs --render`; `node verify.mjs` runs the same check, static mode too, one FAIL per problem; `node benchmarks/speed-ledger.mjs --check` exits 1 and lists each problem (md differs from the render, repeated `id` or `fingerprint`, bad `verdict`, unknown `related` id, missing `results` path, line missing a key).
+The build-speed idea ledger is `benchmarks/speed-ledger.jsonl`, one JSON line per idea sorted by `id` with every key of `KEYS` in `benchmarks/speed-ledger.mjs`. `benchmarks/speed-ledger.md` is generated from it: add or change a line, then run `node benchmarks/speed-ledger.mjs --render`; `node verify.mjs` runs the same check, static mode too, one FAIL per problem; `node benchmarks/speed-ledger.mjs --index` prints only the `## Index` section; `node benchmarks/speed-ledger.mjs --check` exits 1 and lists each problem (md differs from the render, repeated `id` or `fingerprint`, bad `verdict`, unknown `related` id, missing `results` path, line missing a key).
 
 `benchmarks/baseline-pool.mjs` pools baseline arms by a sha256 content key of the arm's loaded files at its commit plus cell, model, effort and Claude Code version, never the commit hash. Subcommands `key`, `lookup`, `add` and `replay`; the store is `benchmarks/baseline-pool.jsonl`, one row per arm. It serves `cost` and `tokens` only and exits 2 for `wall`. `replay` reads the per-run base rows of rounds 2-8 (rounds 7-8 are copied into `benchmarks/results/2026-10-20-baseline-pool.md`) and exits 0 only when at least one pair of rounds matches and every matched pair has cost and tokens p > 0.05; `benchmarks/sweep.mjs` does not call the pool.
 
@@ -79,7 +79,7 @@ node benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<file>,standar
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251.
 - The session's effort reaches no subagent: the `agent-effort` hook sets effort at dispatch, and every `dispatches` entry passes a model and an effort in the call. `CLAUDE_CODE_EFFORT_LEVEL` overrides them, so exo never sets it.
-- The stage skills pin no model: the fresh-chat route after `spec` names one, and a pinned model would override that pick and rebuild the prompt cache mid-session. Set `model` or `effort` in a skill only where its work always needs that tier.
+- The stage skills pin no model: a pinned model would override the session's model and rebuild the prompt cache mid-session. Set `model` or `effort` in a skill only where its work always needs that tier.
 - A delegate never sees the session hook, and the session text carries no pointer to `lean.md`, so the five delegate prompts and agents that write code read `skills/route-skills/references/lean.md`, or carry lines from it: `agents/build-task.md`, `skills/build/bug-fixer-prompt.md`, `skills/build/review-fixer-prompt.md`, `agents/build-ui.md` and `skills/find-cause/fixer-prompt.md`.
 
 ## Unattended runs
@@ -108,7 +108,7 @@ node benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<file>,standar
 - **Measured goal** (`skills/spec/references/measured-goal.md`): the spec reference for a Goal that is a score, cost or time on a task set; it calibrates with `benchmarks/tbench/readouts.mjs --calibrate`, sizes with `benchmarks/mde.mjs` and compares arms paired; its References row raises `STAGE_BODY_TOKENS.spec` in `verify/budgets.mjs` from 760 to 783.
 - **Delegate limits**: each agent that builds, reviews or repairs sets `maxTurns` in its frontmatter (60; `run-unit` 90, `fix-review` 40); the harness ends a delegate at that turn.
 
-Each hook entry pins `"shell": "bash"` and `.gitattributes` forces LF; `.claude/CLAUDE.md` `## Environment` says why.
+Each hook entry pins `"shell": "bash"`, else a Windows host without Git Bash falls back to PowerShell; the hook command stays in shell form, not `args`, so Claude Code resolves the shell, not `bash` on `PATH`. The session hook stays Node (`hooks/session-start.mjs`), with no `jq`. `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
 
 The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
 

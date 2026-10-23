@@ -17,7 +17,7 @@ Not for a clear goal, a bug, or visual-only work.
 - A brief with a task list, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both.
 - Checks only you can make go in the brief's `## Manual checks`.
 - New wishes for existing work update the existing brief.
-- A closing question: start the build now in the background, or get the lines to start it later. Build never starts before you pick.
+- A closing free-text question: start the build now in the background, or say what to change in the brief. Build never starts before you reply.
 
 Asked only for options, spec lists them, recommends one, and writes nothing.
 

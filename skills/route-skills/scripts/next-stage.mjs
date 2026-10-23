@@ -1,16 +1,12 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { readKindTable } from '#model-kinds';
 import { frameOf, openPoints, parsePlan } from '#plan-tasks';
 import { scratchPath, ScratchPathError } from '#scratch-path';
 
 const USAGE = [
-  'usage: node next-stage.mjs --after <stage> --artifact <path> [--fresh]',
-  'Prints the next-stage question, or with --fresh the lines the user types after picking the fresh-chat route.',
+  'usage: node next-stage.mjs --after <stage> --artifact <path>',
+  'Prints the next-stage question.',
 ].join('\n');
 
 const START_TEXT = {
@@ -26,13 +22,8 @@ function startText(artifact) {
 }
 
 const NEXT_STAGE = {
-  'spec': {
-    stage: 'build',
-    title: 'Should I start the build now?',
-    context: () => 'The brief is written and checked.',
-    options: [['Start now', startText], ['Later', 'you get the lines to start it']],
-    reason: 'the brief is checked and complete'
-  },
+  'spec': { report: specReport },
+  'build': { report: () => 'Reply with what to change, and I will change it in this session.\n' },
   'find-cause': {
     title: 'Should I build the fix?',
     context: () => 'The cause is found.',
@@ -40,21 +31,6 @@ const NEXT_STAGE = {
     reason: 'this chat knows the fix'
   }
 };
-
-function designPending(artifact) {
-  const file = briefFile(artifact);
-  if (file === null) return false;
-  const plan = parsePlan(fs.readFileSync(file, 'utf8'));
-  if (!plan.tasks.some((task) => task.design)) return false;
-  const visualDirection = frameOf(plan.frame).visualDirection;
-  return visualDirection === null || /^Direction: pending at rung \d+$/m.test(visualDirection);
-}
-
-function modelSwitchFor(stage, artifact) {
-  if (stage === 'build' && designPending(artifact)) return null;
-  const { kinds, stages } = readKindTable();
-  return `Before you type them, switch to a lighter model with \`/model ${kinds[stages[stage].kind].model}\`.`;
-}
 
 function briefFile(artifact) {
   const issue = artifact.match(/^#(\d+)$/);
@@ -68,25 +44,10 @@ function briefFile(artifact) {
   }
 }
 
-function unattendedLine(after, artifact) {
-  const file = after === 'spec' ? briefFile(artifact) : null;
-  if (file === null) return null;
-  const planCheck = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
-  const toplevel = spawnSync('git', ['-C', path.dirname(path.resolve(file)), 'rev-parse', '--show-toplevel'], { encoding: 'utf8' });
-  if (toplevel.error !== undefined) throw toplevel.error;
-  if (toplevel.status !== 0) return null;
-  const check = spawnSync(process.execPath, [planCheck, '--plan', file, '--root', toplevel.stdout.trim(), '--loop'], { encoding: 'utf8' });
-  if (check.error !== undefined) throw check.error;
-  if (check.status !== 0) return null;
-  const script = fileURLToPath(new URL('../../build/scripts/run-plan.mjs', import.meta.url));
-  return `Unattended, in a terminal outside Claude Code: node "${script}" ${path.resolve(file)}`;
-}
-
 export function nextStageReport({ after, artifact }) {
   const stage = NEXT_STAGE[after];
   if (stage === undefined) throw new UsageError(`no next stage known after '${after}'`);
-  if (after === 'spec' && openEntries(artifact).length > 0) return freshReport({ after, artifact });
-  if (stage.title === undefined) throw new UsageError(`'${after}' asks no question; use --fresh`);
+  if (stage.report !== undefined) return stage.report(artifact);
   const options = stage.options.map(([label, does], index) => {
     const text = typeof does === 'function' ? does(artifact) : does;
     return `- **(${String.fromCharCode(65 + index)}) ${label}**: ${text}`;
@@ -95,10 +56,10 @@ export function nextStageReport({ after, artifact }) {
   return `${lines.join('\n')}\n`;
 }
 
-function effortLine(stage) {
-  const { kinds, stages } = readKindTable();
-  const { effort } = kinds[stages[stage].kind];
-  return `Build runs best at \`${effort}\` effort: type \`/effort ${effort}\` first; \`/effort auto\` returns the session to normal effort.`;
+function specReport(artifact) {
+  const open = openEntries(artifact);
+  if (open.length > 0) return openPointsReport(artifact, open);
+  return `**Start the build now, or change the brief first?** It ${startText(artifact)}.\nReply \`ok\` to start, or say what to change.\n`;
 }
 
 function openEntries(artifact) {
@@ -106,32 +67,18 @@ function openEntries(artifact) {
   return file === null ? [] : openPoints(fs.readFileSync(file, 'utf8'));
 }
 
-export function freshReport({ after, artifact }) {
-  const next = NEXT_STAGE[after];
-  if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
-  if (next.stage === undefined) throw new UsageError(`no fresh-chat route after '${after}'`);
-  const open = after === 'spec' ? openEntries(artifact) : [];
-  if (open.length > 0) {
-    return [
-      `The brief at \`${artifact}\` has ${open.length} open point${open.length === 1 ? '' : 's'}, which build refuses. Answer each, record it under \`## Decisions\`, drop it from \`## Open points\`, then hand off again:`,
-      ...open.map((entry) => `- ${entry}`)
-    ].join('\n') + '\n';
-  }
-  const lines = [`Type \`/clear\`, then \`/exo:${next.stage} ${artifact}\`.`];
-  const modelSwitch = modelSwitchFor(next.stage, artifact);
-  if (modelSwitch !== null) lines.push(modelSwitch);
-  lines.push(effortLine(next.stage));
-  const unattended = unattendedLine(after, artifact);
-  if (unattended !== null) lines.push(unattended);
-  return `${lines.join('\n')}\n`;
+function openPointsReport(artifact, open) {
+  return [
+    `The brief at \`${artifact}\` has ${open.length} open point${open.length === 1 ? '' : 's'}, which build refuses. Answer each, record it under \`## Decisions\`, drop it from \`## Open points\`, then hand off again:`,
+    ...open.map((entry) => `- ${entry}`)
+  ].join('\n') + '\n';
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { after: 'value', artifact: 'value', fresh: 'boolean' }, { usage: USAGE });
+  const flags = parseFlags(argv, { after: 'value', artifact: 'value' }, { usage: USAGE });
   if (flags.after === undefined) throw new UsageError("flag '--after' names the stage that just ran");
   if (flags.artifact === undefined) throw new UsageError("flag '--artifact' names the artifact's path");
-  const report = flags.fresh ? freshReport : nextStageReport;
-  process.stdout.write(report({ after: flags.after, artifact: flags.artifact }));
+  process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact }));
 }
 
 if (isMain(import.meta.url)) {

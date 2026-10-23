@@ -7,3 +7,4 @@
    - The message names that file's path.
    - Never rerun a proof or read the plan, a test or a script to name one.
    - Their `Decisions:` line goes in the report as a path, unread; the branch reviewer reads that log.
+   - Change line → run `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after build --artifact <plan>`; print its output above `ship`'s question, else as the last line.
