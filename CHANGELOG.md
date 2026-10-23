@@ -85,6 +85,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- The status line, the `exo` shim and exo-cli fall back to the main checkout, recorded in `~/.claude/exo/plugin-main`, when `plugin-root` names a removed worktree; the status line had gone blank. Run `exo setup` once to refresh an old shim.
 - `exo:improve` keeps its results file and score log in `.exo/improve/`, so removing the loop worktree with `remove-worktree.mjs --kept` saves them instead of deleting them.
 - verify, its repair loop, the design-task wait and spec's watch end the turn with no ScheduleWakeup, Monitor or sleep while background work runs; a 1200 s wakeup had kept a finished `claude -p` run alive past its budget.
 - A `REFUSED` window landing no longer stalls its rebuild for ~9 min: `land-slot.mjs` now prints a `Wait:` and `Land <n>:` for the rebuild with a `--since` taken at the refusal, and `wait-report.mjs` refuses a `--since` later than now at once with an `ERROR` line instead of waiting out its deadline.

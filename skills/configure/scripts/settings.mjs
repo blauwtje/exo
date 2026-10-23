@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { contextLimit, contextLimitSource } from '#context-limits';
 import { currentHost } from '#host';
+import { OLD_STATUSLINE_LAUNCHERS, STATUSLINE_LAUNCHER } from '#plugin-pointer';
 import {
   LOCAL_FILE,
   PROJECT_FILE,
@@ -205,18 +206,6 @@ function set(root, key, value, scope) {
   }
 }
 
-const STATUSLINE_LAUNCHER = [
-  "import fs from 'node:fs';",
-  "import path from 'node:path';",
-  "import { fileURLToPath, pathToFileURL } from 'node:url';",
-  'try {',
-  "  const here = path.dirname(fileURLToPath(import.meta.url));",
-  "  const root = fs.readFileSync(path.join(here, 'plugin-root'), 'utf8').trim();",
-  "  const { main } = await import(pathToFileURL(path.join(root, 'lib', 'statusline.mjs')).href);",
-  '  await main();',
-  '} catch {}',
-  ''
-].join('\n');
 
 function statusline() {
   if (currentHost() === 'codex') {
@@ -225,7 +214,7 @@ function statusline() {
   }
   const directory = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
   const target = path.join(directory, 'statusline.mjs');
-  if (fs.existsSync(target) && fs.readFileSync(target, 'utf8') !== STATUSLINE_LAUNCHER) {
+  if (fs.existsSync(target) && ![STATUSLINE_LAUNCHER, ...OLD_STATUSLINE_LAUNCHERS].includes(fs.readFileSync(target, 'utf8'))) {
     throw new Error(`refused: ${target} already exists and is not the exo launcher; move it, then rerun`);
   }
   fs.mkdirSync(directory, { recursive: true });

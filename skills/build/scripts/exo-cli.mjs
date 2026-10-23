@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
+import { readPluginRoot } from '#plugin-pointer';
 import { readDecisions } from '#run-decision';
 import { environmentMs, isMain } from '#script-flags';
 import { layers, resolve as resolveSetting } from '#settings-store';
@@ -98,11 +99,7 @@ export function copyEnvFiles(root, where, pattern = ENV_NAME) {
 }
 
 function pluginPointer() {
-  try {
-    return fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo', 'plugin-root'), 'utf8').split('\n')[0];
-  } catch {
-    return null;
-  }
+  return readPluginRoot(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo'));
 }
 
 function isPluginCheckout(root) {
@@ -173,6 +170,16 @@ function cleanUp(root, base, keep) {
 
 const LAUNCHER = [
   '#!/bin/sh',
+  'pointer="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo"',
+  'root=$(head -n 1 "$pointer/plugin-root") || exit 1',
+  '[ -d "$root" ] || root=$(head -n 1 "$pointer/plugin-main") || exit 1',
+  'exec node "$root/skills/build/scripts/exo-cli.mjs" "$@"',
+  ''
+].join('\n');
+
+// why: the launcher exo setup wrote before plugin-main; a rerun of setup replaces it.
+const OLD_LAUNCHER = [
+  '#!/bin/sh',
   'root=$(cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo/plugin-root") && exec node "$root/skills/build/scripts/exo-cli.mjs" "$@"',
   ''
 ].join('\n');
@@ -181,7 +188,7 @@ function setupCommand() {
   const home = os.homedir();
   const bin = path.join(home, '.local', 'bin');
   const target = path.join(bin, 'exo');
-  if (fs.existsSync(target) && fs.readFileSync(target, 'utf8') !== LAUNCHER) {
+  if (fs.existsSync(target) && ![LAUNCHER, OLD_LAUNCHER].includes(fs.readFileSync(target, 'utf8'))) {
     throw new Refusal(`refused: ${target} already exists and is not the exo launcher; move it, then rerun exo setup`);
   }
   fs.mkdirSync(bin, { recursive: true });

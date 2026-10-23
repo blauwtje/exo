@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
+import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
 
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
@@ -62,8 +63,9 @@ try {
   // why: only the harness sets CLAUDE_PLUGIN_ROOT to the copy it loads; a hand run or a clone loaded by a pressure session must not repoint the real pointer.
   const loadedRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (loadedRoot && fs.existsSync(loadedRoot) && fs.realpathSync(loadedRoot) === fs.realpathSync(root)) {
-    fs.writeFileSync(path.join(configDirectory, 'plugin-root'), `${root}\n`);
+    writePluginPointer(configDirectory, root);
   }
+  if (!onCodex) refreshStatusLauncher(configDirectory);
 } catch (error) {
   console.error(`exo: plugin-root pointer not written, ${error.message}`);
 }
