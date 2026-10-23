@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { contrastArms, deltaTable, gradeSummary, parseContrastEnv, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
+import { contrastArms, deltaTable, gradeSummary, parseContrastEnv, parseContrastStyle, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
 
 const usage = ({ input, output, read, created }) => ({
   inputTokens: input,
@@ -88,15 +88,30 @@ test('writeGrades writes grades.json to the answers folder and returns the delta
 });
 
 test('--contrast-env makes two arms that load the same plugin and differ only in one env value', () => {
-  const contrast = parseContrastEnv('CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off');
-  assert.deepEqual(contrast, { name: 'CLAUDE_PLUGIN_OPTION_COMPRESSION', values: ['short', 'off'] });
+  const contrast = parseContrastEnv('MY_SETTING=on,off');
+  assert.deepEqual(contrast, { name: 'MY_SETTING', values: ['on', 'off'] });
   const [withArm, otherArm] = contrastArms({ pluginDir: '/clone', contrast });
   assert.deepEqual([withArm.name, otherArm.name], ['with', 'contrast']);
   assert.deepEqual(withArm.flags, ['--plugin-dir', '/clone']);
   assert.deepEqual({ ...withArm, env: undefined, name: undefined }, { ...otherArm, env: undefined, name: undefined });
-  assert.deepEqual([withArm.env, otherArm.env], [{ CLAUDE_PLUGIN_OPTION_COMPRESSION: 'short' }, { CLAUDE_PLUGIN_OPTION_COMPRESSION: 'off' }]);
+  assert.deepEqual([withArm.env, otherArm.env], [{ MY_SETTING: 'on' }, { MY_SETTING: 'off' }]);
 });
 
 test('--contrast-env rejects a missing pair, a repeated value and a bad name', () => {
   for (const bad of ['X', 'X=a', 'X=a,a', '1X=a,b', 'X=a,b,c', '=a,b']) assert.throws(() => parseContrastEnv(bad), /--contrast-env needs/);
+});
+
+test('--contrast-style makes two arms that load the plugin and differ in the outputStyle setting', () => {
+  const contrast = parseContrastStyle('exo:adhd,default');
+  const [withArm, otherArm] = contrastArms({ pluginDir: '/clone', contrast });
+  assert.deepEqual([withArm.name, otherArm.name], ['with', 'contrast']);
+  assert.deepEqual(withArm.flags, ['--plugin-dir', '/clone', '--settings', '{"outputStyle":"exo:adhd"}']);
+  assert.deepEqual(otherArm.flags, ['--plugin-dir', '/clone', '--settings', '{"outputStyle":"default"}']);
+  assert.deepEqual([withArm.outputStyle, otherArm.outputStyle], ['exo:adhd', 'default']);
+  for (const bad of ['x', 'a,a', 'a,', 'a,b,c']) assert.throws(() => parseContrastStyle(bad), /--contrast-style needs/);
+});
+
+test('parseStream reads the style the init event reports', () => {
+  const raw = [{ type: 'system', subtype: 'init', output_style: 'default' }, { type: 'result', result: 'ok' }].map((e) => JSON.stringify(e)).join('\n');
+  assert.equal(parseStream(raw).outputStyle, 'default');
 });

@@ -22,12 +22,14 @@ Add `--grade` to score every run pass or fail against the tagged lines of the ca
 ```sh
 node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/compression/a-test-heavy.txt \
   --cells sonnet:high --plugin-dir <exo clone> --setup benchmarks/pressure/compression/setup.sh --grade \
-  --contrast-env CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off
+  --contrast-style exo:adhd,default
 ```
 
 With two arms the verdict per case is `PASS`, `FAIL` or `INCONCLUSIVE`: the 95 percent Newcombe interval of the with-minus-comparison pass-rate difference against the margin, set by a `margin: <0-1>` line in `criteria.md` (default 0.2). `PASS` when the interval lies wholly above minus the margin, `FAIL` when wholly below, else `INCONCLUSIVE` with the runs per arm that would decide it. `--threshold <0-1>` (default 1) is the pass rate only a case with one arm needs. The run writes `grades.json` to the output folder and prints a pass-rate table per cell with the with-minus-comparison delta and the verdict. Graded runs stay out of `npm run check` and `npm test`.
 
-`--contrast-env NAME=<a>,<b>` loads the plugin in both arms and sets `NAME` to `<a>` in the `with` arm and `<b>` in the `contrast` arm, so one setting is tested on its own, as the compression case does with `CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off`. It is refused together with `--main-dir`.
+`--contrast-env NAME=<a>,<b>` loads the plugin in both arms and sets `NAME` to `<a>` in the `with` arm and `<b>` in the `contrast` arm, so one setting is tested on its own. It is refused together with `--main-dir`.
+
+`--contrast-style <a>,<b>` does the same for the output style: both arms load the plugin and each arm's `--settings` carries `{"outputStyle":<value>}`. Each run's init event must report its arm's style, else the run prints `WRONG STYLE`. It is refused together with `--main-dir`, `--contrast-env` or `--output-style`.
 
 A skill's cases run once on Sonnet by default, and only when that skill changes, never in the build or ship flow.
 

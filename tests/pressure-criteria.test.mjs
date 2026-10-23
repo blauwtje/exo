@@ -30,7 +30,7 @@ test('the graded-run docs state no stale runs flag and a graded example with two
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
   assert.doesNotMatch(readme, /Add `--runs 3`/);
   const example = /--grade[^`]*```/.exec(readme)?.[0] ?? '';
-  assert.match(example, /--contrast-env \S+=\w+,\w+/);
+  assert.match(example, /--contrast-style \S+,\S+/);
   assert.doesNotMatch(example, /--threshold/);
 });
 

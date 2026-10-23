@@ -10,7 +10,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Highlights
-- **Reply compression is now off by default; set `compression` or pick the `exo:short` output style to keep short replies.**
+- **Run `/output-style exo:adhd` to get short replies; the `compression` setting and the `exo:short` output style are gone.**
 
 ### Added
 - `benchmarks/results/2026-10-23-budget-on.md` records a pre-registered confirmatory run of budget `on` against `balanced` on flow-unit (n=10 each): mean cost $0.622 against $0.675, hidden passes 10/10 both, one-sided Mann-Whitney p=0.974, so the gate (`on` ≤ `balanced` + $0.03) passes.
@@ -58,8 +58,9 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- Short replies now come from one output style, `exo:adhd` (`output-styles/adhd.md`), turned on with `/output-style`.
 - The `budget` setting now takes only `on` or `off`; `on` routes each dispatch by kind from one rule table and steps a build-task or doc-task one level up on its retry after a failed check.
-- Stage ends keep the session: spec asks once whether to start the build or change it, and a finished build ends on a line inviting changes; `locate-code` and `find-open-points` write their full report to `.exo/<topic>/` and return at most 10 lines, `fetch-docs` returns at most 12, `hooks/session-rules.md` bans page and whole-file dumps in the lead, and the `shorter` compression text is reworded shorter.
+- Stage ends keep the session: spec asks once whether to start the build or change it, and a finished build ends on a line inviting changes; `locate-code` and `find-open-points` write their full report to `.exo/<topic>/` and return at most 10 lines, `fetch-docs` returns at most 12, `hooks/session-rules.md` bans page and whole-file dumps in the lead.
 - `exo:build` runs faster: `start-run` prints the first dispatch block, the first wave fans out at once when every task is independent, and `run-unit` waits for the whole wave and lands every slot in one chained call when nothing is left to refill; flow-unit wall time fell 13.0% (176.8 s → 153.9 s mean, n=15).
 - `docs/principles/harness.md` adds that `SubagentStop` and `TaskCompleted` hooks can block, that `/goal` is a prompt-based Stop hook judged by a fresh model and runs no command, and that plugin agents ignore `hooks`, `permissionMode` and `mcpServers`; it cites the managed-agents post on the strip-one-at-a-time bullet and no longer lists `stop_hook_active` as a gap, since `BLOCK_LIMIT = 2` in `hooks/run-no-wait.mjs` is stricter. `docs/principles/eval.md` adds an isolated judge per dimension, deterministic graders first and a nearly perfect task verifier.
 - `npm run check` fails a principle page cite whose file or anchor is gone, and fails any malformed `Evidence:` commit line in the range, even with no wording change.
@@ -69,7 +70,6 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The README has a new icon, logos and 1280x640 social preview (a terminal clad in steel plates on dark gunmetal, with an orange prompt), opens with "An exoskeleton for AI engineering.", rewrites `## Use` with before and after examples, and drops the false claim that hooks refuse risky commands.
 - `README.md` drops from 939 to 457 words: it opens with a light and dark logo, install starts with one command and folds the Claude Code, Codex and update steps, and the numbers block is gone, since a same-batch run in `benchmarks/results/2026-10-21-h2h-baseline-exo.md` gives plain Claude Code 18/25 and exo 20/25 (0.7 SE) at 1.38 times the cost; `assets/` gains a new social preview naming Claude Code and Codex, and an icon in `icon.svg`, `icon-512.png`, `logo-light.svg` and `logo-dark.svg`.
 - `prompt` leaves out lines the session already covers through CLAUDE.md, rules, memory, hooks, tests or scripts, and ends with at most 3 `Suggest:` lines, none when nothing is worth changing, then `Ok to run it?`; the `Added:`, `Dropped:`, `Misfit:` and `Missing:` lines are gone, and a rewritten prompt fed back comes out unchanged.
-- Reply compression is now off by default and opt-in: the `compression: short` setting or the new `exo:short` output style adds the report shape and question rules, and the small-words prose clamp loads only under `shorter`.
 - The lead's brief, model-choice and own-work rules now arrive at the first Agent call instead of session start, and the nine dispatched-only agents carry one-line descriptions (84 to 38 words).
 - The done rules now reuse an existing failing test or repro as proof, write one smallest test per cause only when none exists, run each named order, seed, timezone or input variant once and show it took effect, and read the failing command's full output and the README rules for touched code.
 - A reported bug or small change gets one plain attempt first (repro, fix, proof); `find-cause` starts only when no one-command repro exists or the proof stays red, so routing picks it for 5 of 10 bug prompts, down from 10 of 10, and never on a wrong prompt.
@@ -116,6 +116,8 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A plan task's `Drops:` words now reach its Proof run as well as its Land gate, so a Proof that runs `npm run validate:static` no longer fails on a word the plan allows.
 - `CONTRIBUTING.md` and `docs/skills/build.md` state the real deep-reviewer trigger, a landed task's `Risk:` field naming a security boundary, and `verify/checks/shared-contracts.mjs` pins that wording.
 
+### Removed
+- The `compression` setting and the `exo:short` output style; use `exo:adhd` instead.
 
 ## 0.136.0 - 2026-10-19
 

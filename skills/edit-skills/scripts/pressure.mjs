@@ -20,20 +20,21 @@ const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
 const CITATION = /([\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md))(:\d+)?/g;
-const USAGE = `usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone> | --contrast-env NAME=<a>,<b>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>] [--grade [--criteria <file>] [--threshold <0-1>] [--judge-cell <model:effort>] [--judge-votes <n>]]
+const USAGE = `usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone> | --contrast-env NAME=<a>,<b> | --contrast-style <a>,<b>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>] [--grade [--criteria <file>] [--threshold <0-1>] [--judge-cell <model:effort>] [--judge-votes <n>]]
 Runs one pressure-scenario prompt on every model:effort cell, without and with the skill, --runs times per arm.
 --main-dir replaces the without arm with a main arm loading that second copy.
 --contrast-env NAME=<a>,<b> loads the plugin in both arms and sets env var NAME to <a> in the with arm and <b> in the contrast arm, so a setting is tested on its own; the arms differ in nothing else. Not together with --main-dir.
+--contrast-style <a>,<b> loads the plugin in both arms and sets outputStyle to <a> in the with arm and <b> in the contrast arm; each run's init event must report its arm's style, else WRONG STYLE. Not together with --main-dir, --contrast-env or --output-style.
 --grade grades each run against the tagged pass lines of --criteria (default criteria.md beside the prompt), then writes grades.json to --out and prints a pass-rate and delta table per cell.
 The verdict per case is PASS, FAIL or INCONCLUSIVE: the 95% Newcombe interval of the with-minus-comparison pass-rate difference against the margin the criteria file states as "margin: <0-1>" (default ${DEFAULT_MARGIN}). PASS when the interval lies wholly above minus the margin, FAIL when wholly below, else INCONCLUSIVE with the runs per arm that would decide it.
 --threshold is the pass rate a case with one arm needs (default 1); --judge-cell runs the judge lines (default sonnet:low); --judge-votes is the judge calls per judge line, the majority deciding (default ${JUDGE_VOTES}); a line whose votes agree under 0.8 prints UNSTABLE JUDGE.
 --cells-for <file> prints every model:effort cell the file runs on as one --cells value.
 --setup <script> runs bash <script> before every single run; the runs then go one after another.
 Each answer goes to <model>-<effort>-<arm>-<run>.md in --out; stdout opens with answers: <dir>.
-Exits 1 on an unopened citation, a failed setup or a skill loaded from outside its arm's plugin directory.`;
+Exits 1 on an unopened citation, a failed setup, a skill loaded from outside its arm's plugin directory or a run whose init-event style differs from its arm.`;
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'contrast-env': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value', grade: 'boolean', criteria: 'value', threshold: 'value', 'judge-cell': 'value', 'judge-votes': 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'contrast-env': 'value', 'contrast-style': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value', grade: 'boolean', criteria: 'value', threshold: 'value', 'judge-cell': 'value', 'judge-votes': 'value' }, { usage: USAGE });
   if (flags['cells-for'] !== undefined) return { cellsFor: flags['cells-for'] };
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
@@ -46,8 +47,12 @@ function readFlags(argv) {
   if (flags['judge-votes'] !== undefined && !POSITIVE_INTEGER.test(flags['judge-votes'])) {
     throw new UsageError(`--judge-votes needs a positive integer, got '${flags['judge-votes']}'`);
   }
-  const contrast = flags['contrast-env'] === undefined ? undefined : parseContrastEnv(flags['contrast-env']);
-  if (contrast !== undefined && flags['main-dir'] !== undefined) throw new UsageError('--contrast-env and --main-dir each define the second arm; pass one');
+  if (flags['contrast-style'] !== undefined && (flags['contrast-env'] !== undefined || flags['output-style'] !== undefined)) {
+    throw new UsageError('--contrast-style sets the style per arm; pass it without --contrast-env or --output-style');
+  }
+  const contrast = flags['contrast-style'] !== undefined ? parseContrastStyle(flags['contrast-style'])
+    : flags['contrast-env'] === undefined ? undefined : parseContrastEnv(flags['contrast-env']);
+  if (contrast !== undefined && flags['main-dir'] !== undefined) throw new UsageError('--contrast-env, --contrast-style and --main-dir each define the second arm; pass one');
   const criteriaFile = flags.criteria ?? path.join(path.dirname(flags.prompt), 'criteria.md');
   if (flags.grade && !fs.existsSync(criteriaFile)) throw new UsageError(`--grade needs a criteria file, got '${criteriaFile}'`);
   const cells = flags.cells.split(',').map((cell) => {
@@ -83,8 +88,23 @@ export function parseContrastEnv(value) {
   return { name: match[1], values: [match[2], match[3]] };
 }
 
+export function parseContrastStyle(value) {
+  const values = value.split(',');
+  if (values.length !== 2 || values.some((style) => style === '')) throw new UsageError(`--contrast-style needs <a>,<b>, got '${value}'`);
+  if (values[0] === values[1]) throw new UsageError(`--contrast-style needs two different values, got '${values[0]}' twice`);
+  return { style: true, name: 'outputStyle', values };
+}
+
 export function contrastArms({ pluginDir, contrast }) {
   const flags = ['--plugin-dir', pluginDir];
+  if (contrast.style) {
+    return contrast.values.map((outputStyle, at) => ({
+      name: at === 0 ? 'with' : 'contrast',
+      pluginDir,
+      flags: [...flags, '--settings', JSON.stringify({ outputStyle })],
+      outputStyle
+    }));
+  }
   return [
     { name: 'with', pluginDir, flags, env: { [contrast.name]: contrast.values[0] } },
     { name: 'contrast', pluginDir, flags, env: { [contrast.name]: contrast.values[1] } }
@@ -142,6 +162,7 @@ export function parseStream(rawStdout) {
   const reads = [];
   let cost;
   let tokens;
+  let outputStyle;
   for (const line of rawStdout.split('\n')) {
     if (line.trim() === '') continue;
     let event;
@@ -161,6 +182,7 @@ export function parseStream(rawStdout) {
       }
     }
     skillDirs.push(...loadedSkillDirs(event));
+    if (event.type === 'system' && event.subtype === 'init' && typeof event.output_style === 'string') outputStyle = event.output_style;
     if (event.type === 'result') {
       finalText = typeof event.result === 'string' ? event.result : '';
       if (typeof event.total_cost_usd === 'number') cost = event.total_cost_usd;
@@ -168,7 +190,7 @@ export function parseStream(rawStdout) {
       tokens = event.modelUsage && typeof event.modelUsage === 'object' ? modelUsageTokens(event.modelUsage) : undefined;
     }
   }
-  return { cost, tokens, finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
+  return { cost, tokens, outputStyle, finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
 }
 
 function modelUsageTokens(modelUsage) {
@@ -353,6 +375,10 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     const unopened = outcome.unopened.map((citation) => ` [unopened citation: ${citation}]`).join('');
     console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]${cost}${tokens}${unopened}`);
     if (unopened !== '') failed = true;
+    if (arm.outputStyle !== undefined && outcome.outputStyle !== arm.outputStyle) {
+      failed = true;
+      console.log(`  WRONG STYLE ${arm.name} ${runNumber}: init event reports '${outcome.outputStyle ?? 'none'}', arm expects '${arm.outputStyle}'`);
+    }
     for (const dir of wrongCopies(outcome.skillDirs, arm.pluginDir)) {
       failed = true;
       console.log(`  WRONG COPY ${arm.name} ${runNumber}: ${dir} is not under ${arm.pluginDir}`);

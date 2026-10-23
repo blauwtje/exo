@@ -2,7 +2,7 @@
 
 margin: 0.2
 
-Run `bash benchmarks/pressure/compression/setup.sh`, then the prompt from the root of an exo clone with `--contrast-env CLAUDE_PLUGIN_OPTION_COMPRESSION=short,off`: both arms load the plugin and differ only in that setting (values `short`, `shorter`, `off`; `high` aliases `shorter`). The session-start settings line reads `compression=<level> (global)`. Read the answer and the checkout's files after the run.
+Run `bash benchmarks/pressure/compression/setup.sh`, then the prompt from the root of an exo clone with `--contrast-style exo:adhd,default`: both arms load the plugin and differ only in that setting (the `with` arm runs `exo:adhd`, the `contrast` arm `default`). A run whose init event reports another style prints `WRONG STYLE`. Read the answer and the checkout's files after the run.
 
 ## a-test-heavy.txt
 

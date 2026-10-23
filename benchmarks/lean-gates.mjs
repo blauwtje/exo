@@ -65,7 +65,6 @@ const REPO_PLACEHOLDERS = ['@@REPO@@', '{{REPOSITORY}}'];
 // env file, so never and copy act alike here.
 export const EXO_SETTINGS = {
   specs: 'docs',
-  compression: 'low',
   budget: 'medium',
   ship: 'local',
   workspace: 'branch',

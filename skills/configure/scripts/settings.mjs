@@ -34,17 +34,6 @@ const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
 const QUIET_DEFAULT = new Set(['env', 'receipts']);
 
-function activeRules(values) {
-  const onCodex = currentHost() === 'codex';
-  return Object.entries(SCHEMA)
-    .map(([key, entry]) => {
-      const rules = (onCodex && entry.codexRules) || entry.rules;
-      return rules?.[values[key]] ?? '';
-    })
-    .filter(Boolean)
-    .join(' ');
-}
-
 function contextPart() {
   return `context=${Math.round(contextLimit() / 1000)}k (${contextLimitSource()})`;
 }
@@ -57,15 +46,14 @@ function contextLine(root) {
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
     const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '' && !(QUIET_DEFAULT.has(key) && resolved[key].layer === 'default'));
     const parts = [...printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`), contextPart()];
-    const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
-    return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${rules}`;
+    return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. `;
   } catch (error) {
     const defaults = Object.fromEntries(Object.entries(SCHEMA).map(([key, entry]) => [key, entry.default]));
     const defaultParts = Object.entries(defaults)
       .filter(([key, value]) => value !== '' && !QUIET_DEFAULT.has(key))
       .map(([key, value]) => `${key}=${value} (default)`);
     defaultParts.push(contextPart());
-    return `exo settings: ${defaultParts.join(', ')}; ${error.message}. ${activeRules(defaults)}`;
+    return `exo settings: ${defaultParts.join(', ')}; ${error.message}. `;
   }
 }
 
@@ -118,7 +106,7 @@ function show(root) {
 
 const MAX_PICKS = 2;
 const TOPICS = {
-  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['compression', 'budget', 'receipts'] },
+  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['budget', 'receipts'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code and finished work go', keys: ['specs', 'workspace', 'ship'] },
   safety: { label: 'Safety', question: 'Which part of safety?', about: 'what runs copy', keys: ['env'] }
 };

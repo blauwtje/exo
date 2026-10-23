@@ -24,7 +24,7 @@ function withHome(home, body) {
 test('withoutExoOptions drops the options of exo@ configs only', () => {
   const text = JSON.stringify({
     model: 'sonnet',
-    pluginConfigs: { 'exo@exo': { options: { compression: 'shorter' }, keep: 1 }, 'other@x': { options: { a: 1 } } }
+    pluginConfigs: { 'exo@exo': { options: { budget: 'off' }, keep: 1 }, 'other@x': { options: { a: 1 } } }
   });
   const settings = JSON.parse(withoutExoOptions(text));
   assert.deepEqual(settings.pluginConfigs, { 'exo@exo': { keep: 1 }, 'other@x': { options: { a: 1 } } });
@@ -37,13 +37,13 @@ test('the mirror holds settings without exo options and links everything else', 
   try {
     fs.mkdirSync(path.join(home, '.claude', 'projects'), { recursive: true });
     fs.writeFileSync(path.join(home, '.gitconfig'), '[user]\n');
-    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ pluginConfigs: { 'exo@exo': { options: { compression: 'shorter' } } } }));
+    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ pluginConfigs: { 'exo@exo': { options: { budget: 'off' } } } }));
     mirror = withHome(home, makeDefaultOptionsHome);
     const settings = JSON.parse(fs.readFileSync(path.join(mirror, '.claude', 'settings.json'), 'utf8'));
     assert.equal(settings.pluginConfigs['exo@exo'].options, undefined);
     assert.equal(fs.readFileSync(path.join(mirror, '.gitconfig'), 'utf8'), '[user]\n');
     assert.equal(fs.realpathSync(path.join(mirror, '.claude', 'projects')), fs.realpathSync(path.join(home, '.claude', 'projects')));
-    assert.match(fs.readFileSync(path.join(home, '.claude', 'settings.json'), 'utf8'), /compression/);
+    assert.match(fs.readFileSync(path.join(home, '.claude', 'settings.json'), 'utf8'), /budget/);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
     if (mirror) fs.rmSync(mirror, { recursive: true, force: true });
@@ -101,7 +101,7 @@ test('a pressure run spawns claude with HOME set to the mirror, whose settings h
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude'));
-    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ pluginConfigs: { 'exo@exo': { options: { compression: 'shorter' } } } }));
+    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ pluginConfigs: { 'exo@exo': { options: { budget: 'off' } } } }));
     mirror = withHome(home, makeDefaultOptionsHome);
     const run = withPressureHome({ command: 'claude', args: [], env: { TMPDIR: '/tmp/x/' }, cwd: '/tmp' }, mirror);
     assert.equal(run.env.HOME, mirror);

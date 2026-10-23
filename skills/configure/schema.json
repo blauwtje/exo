@@ -13,26 +13,6 @@
       "both": { "label": "Both", "gives": "a file plus a matching GitHub issue" }
     }
   },
-  "compression": {
-    "type": "string",
-    "options": ["off", "short", "shorter"],
-    "default": "off",
-    "description": "how compact the session writes replies: short gives a three-line report opening and short one-at-a-time questions; shorter adds just the answer and key facts, in small, easy words; off gives normal full replies. The old names low and high still read as short and shorter",
-    "aliases": { "low": "short", "high": "shorter" },
-    "legacy": { "key": "replies", "values": { "terse": "shorter", "tight": "short", "standard": "off" } },
-    "rules": {
-      "shorter": "Say the answer first, then at most three more lines. Give reasons and examples only when asked. Every sentence adds a new fact. Write whole, simple sentences; do not cut words short. Use small, everyday words a young child knows. Keep each sentence under 12 words, with one idea. Explain a work word in a few small words, or leave it out. This covers all text the user reads. No warm-up line, no closing recap, no filler, no hedging, no wall of text. A list has at most about 5 items, unless the user asks for more; no table and no list inside a list, unless the user asks for detail. Keep code, commands, paths, names from code, error text, numbers and warnings exactly as they are, and keep every not, no, only and except. Write a security warning in full sentences. Before a step that cannot be undone, ask the user to confirm, in full sentences. If the user sends only `?`, repeat your last reply in full sentences, with every step, reason and work word. Open every report to the user with at most three short lines: what happened, whether it worked, and what the user must do now or that nothing is needed. Hashes, counts, paths, plan changes and review notes go in `.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup, else in the file the work already wrote; point to it in one line, not repeated in the reply. With neither file, share them only when asked. Ask the user one question per message: about 10 words, at most one short sentence of background, 2-3 options of a few words each in a fixed order, the best one marked where it stands, answered with one letter or ok. The question names no file, no word from inside exo and no model, unless the user picks between them. If more questions wait, the title shows progress, like 1/3. Reply in the language the user writes in.",
-      "short": "Say the answer first. Keep code, commands, paths, names from code, error text, numbers and warnings exactly as they are, and keep every not, no, only and except. Write a security warning in full sentences. Before a step that cannot be undone, ask the user to confirm. Reply in the language the user writes in. Open every report to the user with at most three short lines: what happened, whether it worked, and what the user must do now or that nothing is needed. Hashes, counts, paths, plan changes and review notes go in `.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup, else in the file the work already wrote; point to it in one line, not repeated in the reply. With neither file, share them only when asked. Ask the user one question per message: about 10 words, at most one short sentence of background, 2-3 short options in a fixed order, the best one marked where it stands, answered with one letter or ok. The question names no file, no word from inside exo and no model, unless the user picks between them. If more questions wait, the title shows progress, like 1/3."
-    },
-    "label": "Compression",
-    "about": "how compact I write to you",
-    "question": "How compact should my replies be?",
-    "choices": {
-      "short": { "label": "Short", "gives": "three-line report opening, short questions" },
-      "shorter": { "label": "Shorter", "gives": "also just the answer and key facts, small words" },
-      "off": { "label": "Off", "gives": "normal full replies" }
-    }
-  },
   "budget": {
     "type": "string",
     "options": ["off", "on"],

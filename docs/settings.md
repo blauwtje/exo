@@ -11,7 +11,6 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 
 | Key | Values (default first) | Sets |
 |---|---|---|
-| `compression` | `off`, `short`, `shorter` | How compact chat replies are. `off` (the default) gives normal full replies and adds no reply rules to the session. `short` opens every report with at most three plain lines, with the details in a file, and asks short questions one at a time. `shorter` adds short replies in small, easy words: just the answer and key facts, no preamble, recap or filler. The `exo:short` output style (`/output-style`) carries the `short` text without this setting; pick one of the two, not both. A stored `low` still reads as `short` and `high` as `shorter`. A stored `replies` value still reads: `tight` as `short`, `terse` as `shorter`, `standard` as `off`. |
 | `specs` | `docs`, `issues`, `both` | Where `spec` stores a brief: `docs/specs/`, a GitHub issue, or both. |
 | `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. A plan's `Land:` line comes from it: `local` lands `local`, `push` lands `push-main`, `open-pr` and `pr-merge` land `pr`; `ask` makes the spec grill ask, recommending `local`. `pr-merge` opens the pull request in the run and merges it outside the run. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |
@@ -19,7 +18,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 | `budget` | `on`, `off` | Which model and effort each helper runs on, from one per-kind table. `on` is the default. `off` sets none, so every helper inherits your session. A `general-purpose` or `claude` helper with no model or effort set also gets one under `on`. A build-task or doc-task retried after a failed check runs one level up, because `land-task` ends each refusal with an `exo-retry` line and the hook reads that line. Every old value (`low`, `lean`, `fast`, `medium`, `normal`, `balanced`, `high`, `full`, `quality`) reads as `on`. |
 | `receipts` | `on`, `off` | Whether exo shows you a one-line receipt when a session starts (`exo is on`), when a skill starts, when a helper is dispatched and when a command is refused. The lines go to you only and cost the model no tokens. `off` shows none; a Node version warning still shows. |
 
-Every reply level keeps code, commands, paths, error text, numbers and every not, no, only and except whole. Only chat prose is shortened.
+Short replies come from `/output-style exo:adhd`, which keeps code, commands, paths, error text, numbers and every not, no, only and except whole. Only chat prose is shortened.
 
 ## Always on
 

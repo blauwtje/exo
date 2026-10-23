@@ -5,6 +5,5 @@
 
 ## Report rule
 
-- The session's `exo settings` compression text, when it carries a report rule, wins over this one; under `off` this rule applies.
 - Open with at most three short lines: what happened, whether it worked, what the user must do now.
 - Hashes, counts and paths go in the file the work wrote; name that file in one line.

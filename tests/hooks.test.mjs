@@ -186,10 +186,6 @@ test('the session hook shows the user one "exo is on" line and writes no welcome
   }
 });
 
-// The plan's short rule, written out so editing schema.json alone fails this test.
-const PLAIN_TEXT_SHORT_RULE = 'Say the answer first. Keep code, commands, paths, names from code, error text, numbers and warnings exactly as they are, and keep every not, no, only and except. Write a security warning in full sentences. Before a step that cannot be undone, ask the user to confirm. Reply in the language the user writes in. Open every report to the user with at most three short lines: what happened, whether it worked, and what the user must do now or that nothing is needed. Hashes, counts, paths, plan changes and review notes go in `.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup, else in the file the work already wrote; point to it in one line, not repeated in the reply. With neither file, share them only when asked. Ask the user one question per message: about 10 words, at most one short sentence of background, 2-3 short options in a fixed order, the best one marked where it stands, answered with one letter or ok. The question names no file, no word from inside exo and no model, unless the user picks between them. If more questions wait, the title shows progress, like 1/3.';
-const PROSE_CLAMP = 'Use small, everyday words a young child knows. Keep each sentence under 12 words, with one idea.';
-
 function sessionContext(prefix, option) {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
@@ -207,43 +203,28 @@ function sessionContext(prefix, option) {
 
 test('the session hook with no exo settings injects no reply rules, only the fix-all and confirm lines', () => {
   const context = sessionContext('exo-plain-');
-  assert.ok(context.includes('compression=off (default)'));
+  assert.ok(!context.includes('compression'));
   assert.ok(!context.includes('Say the answer first.'));
   assert.ok(!context.includes('one question per message'));
   assert.ok(context.includes('Diagnosed causes → fix all, not cut scope or ask;'));
   assert.ok(context.includes('Irreversible step → confirm with user first.'));
 });
 
-test('the session hook injects the short rule when the plugin option is short or the old low', () => {
-  for (const option of ['short', 'low']) {
-    const context = sessionContext('exo-short-', option);
-    assert.ok(context.includes(PLAIN_TEXT_SHORT_RULE));
-    assert.ok(!context.includes(PROSE_CLAMP));
+test('the exo:adhd output style carries its frontmatter and each outranking rule', () => {
+  const style = fs.readFileSync(path.join(REPOSITORY, 'output-styles', 'adhd.md'), 'utf8');
+  assert.match(style, /^---\nname: adhd\ndescription: .+\nkeep-coding-instructions: true\n---\n/);
+  for (const phrase of ['exactly as they are', 'every not, no, only and except', 'security warning in full sentences', 'ask the user to confirm', 'one question per message', 'language the user writes in', '.exo/run-report.md', 'lone `?`']) {
+    assert.ok(style.toLowerCase().includes(phrase.toLowerCase()), phrase);
   }
 });
 
-test('the exo:short output style carries the short rule text word for word', () => {
-  const style = fs.readFileSync(path.join(REPOSITORY, 'output-styles', 'short.md'), 'utf8');
-  assert.match(style, /^---\nname: short\n[\s\S]*keep-coding-instructions: true\n---\n/);
-  assert.equal(style.replace(/^---\n[\s\S]*?\n---\n/, '').trim(), PLAIN_TEXT_SHORT_RULE);
-});
-
-test('the session hook injects the prose clamp with the report shape and questions when the plugin option is shorter or the old high', () => {
-  for (const option of ['shorter', 'high']) {
-    const context = sessionContext('exo-shorter-', option);
-    assert.ok(context.includes('compression=shorter'));
-    assert.ok(context.includes('Say the answer first, then at most three more lines.'));
-    assert.ok(context.includes(PROSE_CLAMP));
-    assert.ok(context.includes('Open every report to the user with at most three short lines:'));
-    assert.ok(context.includes('Ask the user one question per message: about 10 words'));
+test('the session hook gives no compression entry and no rule text for a stored compression value', () => {
+  for (const option of ['short', 'shorter', 'low', 'high']) {
+    const context = sessionContext('exo-stored-', option);
+    assert.ok(!context.includes('compression'));
+    assert.ok(!context.includes('Say the answer first.'));
+    assert.ok(!context.includes('one question per message'));
   }
-});
-
-test('the session hook injects no compression rule when the plugin option is off', () => {
-  const context = sessionContext('exo-off-', 'off');
-  assert.ok(!context.includes('Say the answer first.'));
-  assert.ok(!context.includes(PROSE_CLAMP));
-  assert.ok(!context.includes('one question per message'));
 });
 
 test('the session hook reads project settings from the session directory in the hook input, not its own working directory', () => {
@@ -257,9 +238,9 @@ test('the session hook reads project settings from the session directory in the 
   try {
     execFileSync('git', ['init', '-q', project]);
     fs.mkdirSync(path.join(project, '.claude'));
-    fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ compression: 'shorter' }));
+    fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ specs: 'issues' }));
     const output = JSON.parse(execFileSync(process.execPath, [hook], { env, cwd: elsewhere, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd: project }) }).toString());
-    assert.ok(output.hookSpecificOutput.additionalContext.includes('compression=shorter'));
+    assert.ok(output.hookSpecificOutput.additionalContext.includes('specs=issues'));
   } finally {
     for (const directory of [configHome, project, elsewhere]) fs.rmSync(directory, { recursive: true, force: true });
   }

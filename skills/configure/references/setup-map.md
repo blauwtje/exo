@@ -12,7 +12,7 @@
 
 ## The order
 
-`scope`, `specs`, `compression`, `budget`, `workspace`, `ship`. `scope` decides the layer for every setting after it.
+`scope`, `specs`, `budget`, `workspace`, `ship`. `scope` decides the layer for every setting after it.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -28,7 +28,6 @@ Ask each setting with the plain texts its entry in `../schema.json` holds, never
 - Context → one sentence of at most 15 words: the `Or type` line; no `Or type` line → its `typed` line, when present.
 - (A) = current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a recommended answer that changed a value would turn `a` into a change the user never read. Value with no entry → shown as written.
 - (B) and (C) → the first two other `choices` entries, in schema order, as `- **(<letter>) <label>**: <gives>`.
-- `compression` → option A is `off`, recommended: normal full replies; B is `short`: a three-line report opening and short one-at-a-time questions; C is `shorter`: also just the answer and key facts, in small, easy words.
 - Every remaining `choices` entry, then `Keep the rest` → typed answers in the `Or type` line: ``Or type `<value>` for <label>, or `rest` to keep the rest.``
 - `Keep the rest` → keeps every setting not yet asked.
 - `scope` has no `Keep the rest`.
