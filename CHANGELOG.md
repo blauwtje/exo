@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Run `/output-style exo:adhd` to get short replies; the `compression` setting and the `exo:short` output style are gone.**
 
 ### Added
+- `node benchmarks/adhd-score.mjs` prints one number, lower is better: the mean per-case ratio of `exo:adhd` output tokens to default-style output tokens, where a case scores 1.0 if any gate fails.
 - `benchmarks/results/2026-10-23-budget-on.md` records a pre-registered confirmatory run of budget `on` against `balanced` on flow-unit (n=10 each): mean cost $0.622 against $0.675, hidden passes 10/10 both, one-sided Mann-Whitney p=0.974, so the gate (`on` ≤ `balanced` + $0.03) passes.
 - `benchmarks/speed-ledger.jsonl` records the ten ideas tried in the `improve/oct23` loop: three kept and now landed on `main` (critical-path calls 44.27 → 34.4), six rejected, one untested after a crash; their 15-run wall check against `main` measured 176.8 s → 153.9 s mean (-13.0%, Mann-Whitney p=0.007, bootstrap 95% CI [-46.5, +2.7] s) at equal hidden-test passes.
 - `node benchmarks/improve-speed.mjs <checkout>` runs the flow-unit sweep with exo loaded from `<checkout>`, exits nonzero when a run fails its hidden tests or the verify gate, and prints `score: <n>` (work counted, lower is better) as the score command for `exo:improve`.

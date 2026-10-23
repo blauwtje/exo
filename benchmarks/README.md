@@ -174,3 +174,9 @@ node benchmarks/score.mjs /tmp/tb-runs --compare exo-before,cand-1
 - The watcher sums finished-trial cost, charges each running trial the job's highest finished cost (`--running`, $1.5 by default, until a trial in that job finishes), and at `--limit` (default $55) sends SIGTERM to Harbor. Harbor has no stop-starting mode, so running trials end too; the importer skips the `CancelledError` trials.
 - Task ids carry the dataset prefix, `-i 'terminal-bench/<task>'`. Run one watcher per Harbor job: `--pid` stops one process, and SIGTERM ends its running trials as well as the queued ones. Limits: the `max_turns` and 429 detection is tested against fixtures only, never against a live job; the agent downloads Node 22 once into `~/.cache/exo/tbench` (SHA256-checked) and reuses it. The `limitUsd` and `trialUsd` defaults and `EXO_TBENCH_POLL_MS` are in `CONTRIBUTING.md`.
 - First eval case, recorded and not run (no harness): `cand-unattended` plus the style block only against `exo-before`, 5 dev tasks x2, with the predicted output tokens within +-15%.
+
+## adhd-score
+
+| Command | What it does |
+|---|---|
+| `node benchmarks/adhd-score.mjs` | Prints one number, lower is better: the mean per-case ratio of `exo:adhd` output tokens to default-style output tokens, where a case scores 1.0 if any gate fails. Flags: `--baseline`, `--check`, `--to-label`, `--calibrate`, `--runs`, `--max-usd`, `--judge-model`, `--model`. `baseline.json` and `labels.jsonl` are stored in `<git common dir>/exo/adhd/`, shared by all worktrees. |
