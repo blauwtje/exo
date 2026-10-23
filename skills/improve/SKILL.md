@@ -13,7 +13,7 @@ Change code, run one fixed score command, keep the commit when the score got bet
 
 Run once before round 1. Ask the user only for what the goal leaves open; this is the only time you ask.
 
-- Resume → only on branch `improve/<tag>` with `improve-<tag>.tsv` at the repo root: once the tree is clean, reset the branch to the last kept commit in its rows, dropping any unscored commit, and take that score. Skip round 0, go to Round, and ask only for what the goal leaves open.
+- Resume → only on branch `improve/<tag>` with `.exo/improve/<tag>.tsv`: once the tree is clean, reset the branch to the last kept commit in its rows, dropping any unscored commit, and take that score. Skip round 0, go to Round, and ask only for what the goal leaves open.
 - Run started on any other branch → new run, even when an `improve/*` branch or results file exists.
 - Scope → the files you may change; every other file is read-only, the score command and everything it reads included.
 - Score command → one command that prints the score; send its output to a log file, never to the chat. Name how to read the score from the log, and the direction: higher or lower is better.
@@ -21,7 +21,8 @@ Run once before round 1. Ask the user only for what the goal leaves open; this i
 - Tag → today's date, such as `oct22`; branch `improve/<tag>` must not exist, except on resume, which keeps the current branch and its tag.
 - Branch → create `improve/<tag>` from the current branch; never work on the current branch, except the `improve/<tag>` branch you resume.
 - Working tree not clean → stop and tell the user; do not stash, reset or discard their changes.
-- Results file → `improve-<tag>.tsv` at the repo root, one per run, tab-separated, header `commit	score	status	description`; add it and `improve-run.log` to the file `git rev-parse --git-path info/exclude` prints, since `.git` is a file in a linked worktree. Then no round's commit takes them and no reset removes them.
+- Results file → `.exo/improve/<tag>.tsv`, one per run, tab-separated, header `commit	score	status	description`; `.exo/` holds it and `.exo/improve/run.log`, so worktree removal saves them.
+- `.exo/` not ignored yet → add it to the file `git rev-parse --git-path info/exclude` prints, since `.git` is a file in a linked worktree. Then no round's commit takes the files and no reset removes them.
 - Round 0 → run the score command on unchanged code, log that score as the first row with status `keep` and description `baseline`.
 - Settled → say the scope, command, direction, limit and branch in one message, then start.
 
@@ -29,12 +30,12 @@ Run once before round 1. Ask the user only for what the goal leaves open; this i
 
 Every round tries one idea and ends in a keep or a reset. Setup done → never ask whether to go on.
 
-1. Read the git state and `improve-<tag>.tsv`; pick an idea no earlier row tried. Out of ideas → reread the in-scope files, combine near-misses, try a larger change.
+1. Read the git state and `.exo/improve/<tag>.tsv`; pick an idea no earlier row tried. Out of ideas → reread the in-scope files, combine near-misses, try a larger change.
 2. Edit in-scope files only.
 3. Commit the idea as one commit.
-4. Run the score command with all output to the log, such as `<command> > improve-run.log 2>&1`; keep the log untracked.
+4. Run the score command with all output to the log, such as `<command> > .exo/improve/run.log 2>&1`; keep the log untracked.
 5. Read the score from the log, not from the chat.
-6. Append one row to `improve-<tag>.tsv`: short commit hash, score, status, description.
+6. Append one row to `.exo/improve/<tag>.tsv`: short commit hash, score, status, description.
 7. Score better than the last kept score → status `keep`; the branch advances.
 8. Score worse → status `discard`; reset the branch to the last kept commit. Score equal → status `keep` when the commit leaves less code than the last kept commit (simpler), else `discard` and reset.
 

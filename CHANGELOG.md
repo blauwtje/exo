@@ -84,6 +84,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- `exo:improve` keeps its results file and score log in `.exo/improve/`, so removing the loop worktree with `remove-worktree.mjs --kept` saves them instead of deleting them.
 - verify, its repair loop, the design-task wait and spec's watch end the turn with no ScheduleWakeup, Monitor or sleep while background work runs; a 1200 s wakeup had kept a finished `claude -p` run alive past its budget.
 - A `REFUSED` window landing no longer stalls its rebuild for ~9 min: `land-slot.mjs` now prints a `Wait:` and `Land <n>:` for the rebuild with a `--since` taken at the refusal, and `wait-report.mjs` refuses a `--since` later than now at once with an `ERROR` line instead of waiting out its deadline.
 - The Bash hook rewrites a call so zsh runs every part of a chain holding an `=` word, and each `timeout N` command stays bounded on stock macOS, which lacks GNU `timeout`.
