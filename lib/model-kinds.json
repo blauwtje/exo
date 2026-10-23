@@ -16,84 +16,54 @@
   },
   "kinds": {
     "build-task": {
-      "fast": { "tier": "standard", "effort": "low" },
-      "balanced": { "tier": "standard", "effort": "medium" },
-      "quality": { "tier": "strong", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "medium" },
+      "retry": { "tier": "strong", "effort": "medium" }
     },
     "doc-task": {
-      "fast": { "tier": "fast", "effort": "low" },
-      "balanced": { "tier": "fast", "effort": "medium" },
-      "quality": { "tier": "standard", "effort": "medium" }
+      "on": { "tier": "fast", "effort": "low" },
+      "retry": { "tier": "standard", "effort": "medium" }
     },
     "build": {
-      "fast": { "tier": "standard", "effort": "medium" },
-      "balanced": { "tier": "standard", "effort": "high" },
-      "quality": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "standard", "effort": "high" }
     },
     "hardest": {
-      "fast": { "tier": "strong", "effort": "medium" },
-      "balanced": { "tier": "strong", "effort": "high" },
-      "quality": { "tier": "strong", "effort": "xhigh" }
+      "on": { "tier": "strong", "effort": "high" }
     },
     "review": {
-      "fast": { "tier": "standard", "effort": "medium" },
-      "balanced": { "tier": "strong", "effort": "medium" },
-      "quality": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "strong", "effort": "medium" }
     },
     "review-deep": {
-      "fast": { "tier": "strong", "effort": "low" },
-      "balanced": { "tier": "strong", "effort": "high" },
-      "quality": { "tier": "strong", "effort": "xhigh" }
+      "on": { "tier": "strong", "effort": "high" }
     },
     "investigate": {
-      "fast": { "tier": "standard", "effort": "low" },
-      "balanced": { "tier": "standard", "effort": "medium" },
-      "quality": { "tier": "strong", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "coordinate": {
-      "fast": { "tier": "standard", "effort": "low" },
-      "balanced": { "tier": "standard", "effort": "medium" },
-      "quality": { "tier": "standard", "effort": "high" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "run-unit": {
-      "fast": { "tier": "standard", "effort": "low" },
-      "balanced": { "tier": "standard", "effort": "low" },
-      "quality": { "tier": "standard", "effort": "high" }
+      "on": { "tier": "standard", "effort": "low" }
     },
     "research": {
-      "fast": { "tier": "fast", "effort": "medium" },
-      "balanced": { "tier": "fast", "effort": "high" },
-      "quality": { "tier": "standard", "effort": "high" }
+      "on": { "tier": "fast", "effort": "medium" }
     },
     "lookup": {
-      "fast": { "tier": "fast", "effort": "low" },
-      "balanced": { "tier": "fast", "effort": "medium" },
-      "quality": { "tier": "fast", "effort": "high" }
+      "on": { "tier": "fast", "effort": "low" }
     },
     "prose": {
-      "fast": { "tier": "standard", "effort": "medium" },
-      "balanced": { "tier": "standard", "effort": "high" },
-      "quality": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "standard", "effort": "high" }
     },
     "chore": {
-      "fast": { "tier": "fast", "effort": "low" },
-      "balanced": { "tier": "fast", "effort": "low" },
-      "quality": { "tier": "standard", "effort": "low" }
+      "on": { "tier": "fast", "effort": "low" }
     },
     "peer": {
-      "fast": { "tier": "standard", "effort": "medium" },
-      "balanced": { "tier": "inherit", "effort": "high" },
-      "quality": { "tier": "inherit", "effort": "high" }
+      "on": { "tier": "inherit", "effort": "high" }
     },
     "peer-review": {
-      "fast": { "tier": "standard", "effort": "low" },
-      "balanced": { "tier": "inherit", "effort": "medium" },
-      "quality": { "tier": "inherit", "effort": "high" }
+      "on": { "tier": "inherit", "effort": "medium" }
     },
     "handover": {
-      "fast": { "tier": "inherit", "effort": null },
-      "balanced": { "tier": "inherit", "effort": null },
-      "quality": { "tier": "inherit", "effort": null }
+      "on": { "tier": "inherit", "effort": null }
     }
   },
   "stages": {

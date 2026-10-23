@@ -203,6 +203,16 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.equal(noTrailer.code, 1);
   assert.equal(noTrailer.stdout, '');
   assert.match(noTrailer.stderr, /Plan-task: 2/);
+  assert.match(noTrailer.stderr, /\nexo-retry\n$/);
+});
+
+test('a code-rule refusal prints no exo-retry line, so the retry keeps its model', async () => {
+  const { root, planPath } = await landingCheckout();
+  await fs.writeFile(path.join(root, 'src/app.js'), '// greets the user\nexport function greet() {\n  return "hello";\n}\n');
+  const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(refused.code, 1);
+  assert.match(refused.stderr, /breaks the code rules/);
+  assert.doesNotMatch(refused.stderr, /exo-retry/);
 });
 
 const literalPlan = (data, escape = '') => compactPlanFixture({ tasks: [

@@ -16,7 +16,8 @@ function raised(input, level) {
 
 function filled(input, budget) {
   if (!BUDGETS.includes(budget)) return input;
-  const table = readKindTable(undefined, { budget });
+  const retry = /^exo-retry$/m.test(input.prompt ?? '');
+  const table = readKindTable(undefined, { budget, retry });
   const agent = /^exo:(.+)$/.exec(input.subagent_type ?? '')?.[1];
   const unnamed = table.unnamed.types.includes(input.subagent_type ?? 'general-purpose') && input.model === undefined && input.effort === undefined;
   const kind = table.kinds[/^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1] ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? table.unnamed.kind : undefined)];

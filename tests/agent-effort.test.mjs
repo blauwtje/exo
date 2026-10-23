@@ -1,5 +1,3 @@
-// The Agent hook fills model and effort for a general-purpose or claude helper that sets neither,
-// and the budget setting defaults to balanced.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -12,14 +10,14 @@ import { dispatchMarker, readDispatchRules } from '../hooks/dispatch-rules.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
 import { SCHEMA } from '../lib/settings-store.mjs';
 
-const call = (input, budget = 'balanced') => agentEffort({ tool_name: 'Agent', tool_input: input }, budget)?.hookSpecificOutput.updatedInput;
+const call = (input, budget = 'on') => agentEffort({ tool_name: 'Agent', tool_input: input }, budget)?.hookSpecificOutput.updatedInput;
 
-test('the budget setting defaults to balanced', () => {
-  assert.equal(SCHEMA.budget.default, 'balanced');
+test('the budget setting defaults to on', () => {
+  assert.equal(SCHEMA.budget.default, 'on');
 });
 
 test('a general-purpose, claude or untyped call with no model or effort gets the unnamed kind', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'balanced' }).kinds[readKindTable().unnamed.kind];
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds[readKindTable().unnamed.kind];
   for (const type of ['general-purpose', 'claude', undefined]) {
     assert.deepEqual(call({ subagent_type: type, prompt: 'x' }), { subagent_type: type, prompt: 'x', model, effort });
   }
@@ -39,11 +37,11 @@ test('the first lead Agent call of a session gets the dispatch rules once, a sub
   const lead = { session_id: sessionId, tool_name: 'Agent', tool_input: { subagent_type: 'Explore', prompt: 'x' } };
   const off = () => false;
   try {
-    assert.equal(agentHook({ ...lead, agent_id: 'a1' }, 'balanced', off), null);
-    assert.equal(agentHook(lead, 'balanced', off).hookSpecificOutput.additionalContext, readDispatchRules());
-    assert.equal(agentHook(lead, 'balanced', off), null);
+    assert.equal(agentHook({ ...lead, agent_id: 'a1' }, 'on', off), null);
+    assert.equal(agentHook(lead, 'on', off).hookSpecificOutput.additionalContext, readDispatchRules());
+    assert.equal(agentHook(lead, 'on', off), null);
     execFileSync(process.execPath, [path.join(import.meta.dirname, '..', 'hooks', 'session-start.mjs')], { input: JSON.stringify({ session_id: sessionId, source: 'compact' }) });
-    assert.equal(agentHook(lead, 'balanced', off).hookSpecificOutput.additionalContext, readDispatchRules());
+    assert.equal(agentHook(lead, 'on', off).hookSpecificOutput.additionalContext, readDispatchRules());
   } finally {
     fs.rmSync(dispatchMarker(sessionId), { force: true });
   }
@@ -64,4 +62,14 @@ test('the session text has one TaskStop bullet for the agent notice and one for 
 test('the Codex host note maps TaskStop to killing the process', () => {
   const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'codex', 'host-note.md'), 'utf8');
   assert.match(note, /^- Run TaskStop as killing the process\.$/m);
+});
+
+test('a prompt with an exo-retry line gets the retry cell of a build-task, other kinds keep the on cell', () => {
+  const on = readKindTable(undefined, { budget: 'on' });
+  const retry = readKindTable(undefined, { budget: 'on', retry: true });
+  assert.notDeepEqual(retry.kinds['build-task'], on.kinds['build-task']);
+  const { model, effort } = retry.kinds['build-task'];
+  assert.deepEqual(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task\nexo-retry' }, 'on'), { subagent_type: 'general-purpose', prompt: 'exo-kind: build-task\nexo-retry', model, effort });
+  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nexo-retry' }, 'on').model, on.kinds.lookup.model);
+  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task' }, 'on').model, on.kinds['build-task'].model);
 });

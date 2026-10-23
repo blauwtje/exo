@@ -21,6 +21,8 @@ export class LandingError extends Error {}
 
 export class PlanDriftError extends LandingError {}
 
+export class CodeRuleError extends LandingError {}
+
 function shellQuote(value) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
@@ -414,7 +416,7 @@ function codeRuleHints(fails) {
 function runCodeRules(files, root) {
   const { fails, warns } = codeRuleFindings({ root, base: 'HEAD', paths: files.filter((file) => !file.endsWith('/')) });
   if (fails.length > 0) {
-    throw new LandingError(`the added code breaks the code rules:\n${fails.join('\n')}\n${codeRuleHints(fails)}The ${CODE_RULE_LIMITS}.`);
+    throw new CodeRuleError(`the added code breaks the code rules:\n${fails.join('\n')}\n${codeRuleHints(fails)}The ${CODE_RULE_LIMITS}.`);
   }
   return warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
 }
@@ -667,22 +669,21 @@ function main(argv) {
   process.stdout.write(quiet.file === null ? output : quietText(output, true));
 }
 
+function refusal(error) {
+  if (error instanceof UsageError) return { text: `land-task: ${error.message}\n`, code: 2, usage: true };
+  if (error instanceof CodeRuleError) return { text: `land-task: ${error.message}\n`, code: 1 };
+  if (error instanceof PlanDriftError) return { text: `${error.message}\nexo-retry\n`, code: 1 };
+  if (error instanceof LandingError) return { text: `land-task: ${error.message}\nexo-retry\n`, code: 1 };
+  if (error instanceof PlanError) return { text: `land-task: ${error.message}\n`, code: 1 };
+  throw error;
+}
+
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    const report = (message) => process.stderr.write(quiet.file === null ? message : quietText(message, false));
-    if (error instanceof UsageError) {
-      process.stderr.write(`land-task: ${error.message}\n`);
-      process.exitCode = 2;
-    } else if (error instanceof PlanDriftError) {
-      report(`${error.message}\n`);
-      process.exitCode = 1;
-    } else if (error instanceof LandingError || error instanceof PlanError) {
-      report(`land-task: ${error.message}\n`);
-      process.exitCode = 1;
-    } else {
-      throw error;
-    }
+    const { text, code, usage } = refusal(error);
+    process.stderr.write(usage || quiet.file === null ? text : quietText(text, false));
+    process.exitCode = code;
   }
 }

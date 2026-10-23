@@ -101,6 +101,19 @@ test('measures are means rounded to two decimals', () => {
   assert.equal(scoreOutDir(out).measures.outputTokens, 1.67);
 });
 
+test('cost is the mean of the record costUsd per cell and stays unscored when a record lacks it', () => {
+  const out = fixture();
+  makeCell(out, 'one', { record: { costUsd: 0.5 } });
+  makeCell(out, 'two', { record: { costUsd: 0.75 } });
+  const scored = scoreOutDir(out);
+  assert.equal(scored.rows[0].cost, 0.5);
+  assert.equal(scored.measures.cost, 0.625);
+  const cell = spawnSync(process.execPath, [SCRIPT, '--from', out, '--measure', 'cost'], { encoding: 'utf8' });
+  assert.match(cell.stdout, /^score: 0.625$/m);
+  makeCell(out, 'three');
+  assert.equal(scoreOutDir(out).measures.cost, null);
+});
+
 test('the command prints score on a good out dir and exits 1 with FAIL lines otherwise', () => {
   const out = fixture();
   makeCell(out, 'ok');

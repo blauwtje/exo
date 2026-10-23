@@ -42,11 +42,10 @@ class Refusal extends Error {}
 // why: the run's one app process; the entry point's `finally` kills its tree.
 let appPid = null;
 
-function budgetPin(name, flags, kind = 'build-task') {
+export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingValue('budget') } = {}) {
   if (name !== 'claude' || flags.model !== undefined || flags.effort !== undefined) return {};
-  const budget = settingValue('budget');
   if (budget === 'off') return { model: null, effort: null };
-  const { model, effort } = readKindTable(undefined, { budget }).kinds[kind];
+  const { model, effort } = readKindTable(undefined, { budget, retry }).kinds[kind];
   return { model: model === INHERIT ? null : model, effort };
 }
 
@@ -73,7 +72,9 @@ function chooseProvider(flags, home, project) {
     asked,
     model: flags.model ?? provider.model,
     ...budgetPin(name, flags),
-    docPin: budgetPin(name, flags, 'doc-task'),
+    docPin: budgetPin(name, flags, { kind: 'doc-task' }),
+    retryPin: budgetPin(name, flags, { retry: true }),
+    docRetryPin: budgetPin(name, flags, { kind: 'doc-task', retry: true }),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
     contextBudget: softLimit(config.defaults.contextLimit),
     cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
@@ -692,7 +693,10 @@ async function main(argv) {
       markLanded(n, { byScript: true, iteration: 0, task: n, turns: 0, weightedTokens: 0, cost: 0, peakContext: 0 }, null);
       continue;
     }
-    const taskPin = isDocTask(task) && provider.docPin.model !== undefined ? provider.docPin : { model, effort };
+    const retrying = retryNote !== '';
+    const docPin = retrying ? provider.docRetryPin : provider.docPin;
+    const basePin = retrying && resume === null && provider.retryPin.model !== undefined ? provider.retryPin : { model, effort };
+    const taskPin = isDocTask(task) && docPin.model !== undefined ? docPin : basePin;
     const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model, sessionEffort: taskPin.effort, resume });
     sayIdle(startedTask);
     writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
@@ -820,7 +824,7 @@ async function main(argv) {
         say('repair landed');
         return null;
       }
-      const last = `${landed.stdout ?? ''}${landed.stderr ?? ''}`.trim().split('\n').at(-1);
+      const last = failingLine(`${landed.stdout ?? ''}${landed.stderr ?? ''}`);
       return { line: `repair landing failed: ${last}`, why: `Landing the Success criterion repair failed (${clip(last, 80)})`, next: 'repair on the branch, then run exo run again', gate: 'FAIL' };
     };
     const successGate = async () => {

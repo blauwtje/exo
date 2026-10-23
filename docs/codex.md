@@ -51,7 +51,7 @@ Codex has no equivalent for some Claude Code features, so exo drops or approxima
 | Feature | On Codex |
 |---|---|
 | Delegate budget | Dropped. Codex has a different transcript. |
-| `budget` setting | Applies on Claude Code only. Codex ignores `exo-kind:` and uses each agent's balanced column. |
+| `budget` setting | Applies on Claude Code only. Codex ignores `exo-kind:` and the retry cell one level up that follows an `exo-retry` line, and uses each agent's `on` cell. |
 | An agent's tool allowlist | Becomes a `read-only` or `workspace-write` sandbox. |
 | `maxTurns` | No field. |
 | Skill `model` and `effort` | Skills run at the session's model. |

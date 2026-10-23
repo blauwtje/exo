@@ -362,7 +362,7 @@ test('run-unit runs wait-report only after a background Wave: build', () => {
   assert.match(unit.body, /^ {2}- Wait after every landing; exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
 });
 
-test('run-unit runs on its own kind, at low effort on the balanced profile', () => {
+test('run-unit runs on its own kind, at low effort', () => {
   assert.equal(kindTable.agents['agents/run-unit.md'].kind, 'run-unit');
   assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'low' });
 });
@@ -382,4 +382,12 @@ test('every lead wait on a background dispatch bans a wakeup, since a pending on
   for (const file of ['build/references/run-loop.md', 'build/references/design-tasks.md', 'verify/SKILL.md', 'verify/references/repair.md', 'spec/references/watching.md']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /ScheduleWakeup[^\n]*Monitor or sleep/, `${file} bans ScheduleWakeup while it waits`);
   }
+});
+
+test('only build-task and doc-task hold a retry cell, one level above their on cell', () => {
+  const table = JSON.parse(fs.readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
+  assert.deepEqual(Object.keys(table.kinds).filter((kind) => table.kinds[kind].retry), ['build-task', 'doc-task']);
+  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['build-task'], { model: 'opus', effort: 'medium' });
+  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['doc-task'], { model: 'sonnet', effort: 'medium' });
+  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds.review, kindTable.kinds.review);
 });

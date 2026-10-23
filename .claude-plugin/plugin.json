@@ -27,9 +27,9 @@
     "budget": {
       "type": "string",
       "title": "Agent model budget",
-      "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. fast, balanced, quality: a hook sets each dispatch's model and effort from the column of that name in the kind table in lib/model-kinds.json. Not sure? Keep balanced. A project overrides this in .claude/exo.json.",
-      "options": ["off", "fast", "balanced", "quality"],
-      "default": "balanced"
+      "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. on: a hook sets each dispatch's model and effort from the kind table in lib/model-kinds.json and steps a build-task or doc-task up one level on its retry. Not sure? Keep on. A project overrides this in .claude/exo.json.",
+      "options": ["off", "on"],
+      "default": "on"
     },
     "ship": {
       "type": "string",

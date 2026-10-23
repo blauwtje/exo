@@ -4,12 +4,16 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds'];
-const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds] [--repeat 15] [--concurrency 5]';
+const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost'];
+const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5]';
 const FAILED_LINE = /^(FAIL|UNPLANNED)/m;
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
-const mean = (values) => Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 100) / 100;
+const DECIMALS = { cost: 3 };
+const mean = (values, decimals = 2) => {
+  const scale = 10 ** decimals;
+  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * scale) / scale;
+};
 
 function readLines(file) {
   const entries = [];
@@ -113,13 +117,13 @@ export function cellRow(directory) {
   const measured = transcriptFailures(usage);
   const failures = [...recordFailures(record), ...measured.failures];
   const fixRounds = (usage?.subagents ?? []).filter((type) => type === 'exo:fix-review').length;
-  return { cell: path.basename(directory), failures: [...new Set(failures)], outputTokens: record.outputTokens, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls };
+  return { cell: path.basename(directory), failures: [...new Set(failures)], outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls };
 }
 
 export function scoreOutDir(outDirectory) {
   const cells = fs.readdirSync(outDirectory).sort().map((name) => path.join(outDirectory, name)).filter((directory) => fs.existsSync(path.join(directory, 'record.json')));
   const rows = cells.map(cellRow);
-  const measures = Object.fromEntries(MEASURES.map((name) => [name, rows.every((row) => row[name] !== undefined) ? mean(rows.map((row) => row[name])) : null]));
+  const measures = Object.fromEntries(MEASURES.map((name) => [name, rows.every((row) => row[name] !== undefined) ? mean(rows.map((row) => row[name]), DECIMALS[name]) : null]));
   return { rows, measures };
 }
 
