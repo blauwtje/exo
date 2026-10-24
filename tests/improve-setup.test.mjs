@@ -91,7 +91,7 @@ test('a second setup with a taken tag gets a numeric suffix', () => {
 test('every setup flag is named in SKILL.md and no failure is swallowed', () => {
   const dir = path.join(path.dirname(SETUP), '..');
   const skill = fs.readFileSync(path.join(dir, 'SKILL.md'), 'utf8');
-  for (const flag of ['--no-overlap', '--built-scorer']) assert.ok(skill.includes(flag), `SKILL.md never passes ${flag}`);
+  for (const flag of ['--no-overlap', '--built-scorer', '--keep-margin', '--confirm', '--stop-after', 'STOP no-keep']) assert.ok(skill.includes(flag), `SKILL.md never passes ${flag}`);
   assert.doesNotMatch(skill, /truncate the largest scope file/);
   assert.doesNotMatch(skill, /except the probe/);
   assert.doesNotMatch(fs.readFileSync(SETUP, 'utf8'), /\} catch \{/);
@@ -147,4 +147,20 @@ test('a scope, readonly or scorer entry that is absolute or outside the repo fai
   assert.equal(git(root, 'branch', '--list', 'improve/*'), '');
   assert.doesNotMatch(git(root, 'worktree', 'list'), /improve-tx/);
   assert.equal(fs.existsSync(path.join(root, '.worktrees')), false);
+});
+
+test('--keep-margin, --confirm and --stop-after are stored in <tag>.json, off by default, and bad values fail before any branch', () => {
+  const root = repo();
+  assert.equal(run(root, ...base).status, 0);
+  const plain = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8'));
+  assert.deepEqual([plain.keepMargin, plain.confirm, plain.stopAfter], [0, false, 0]);
+  const result = run(root, ...base.slice(0, -1), 'on', '--keep-margin', '1.5', '--confirm', '--stop-after', '4');
+  assert.equal(result.status, 0, result.stderr);
+  const on = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/on.json'), 'utf8'));
+  assert.deepEqual([on.keepMargin, on.confirm, on.stopAfter], [1.5, true, 4]);
+  for (const bad of [['--keep-margin', '-1'], ['--keep-margin', 'x'], ['--stop-after', '0'], ['--stop-after', '1.5']]) {
+    const refused = run(root, ...base.slice(0, -1), 'bad', ...bad);
+    assert.equal(refused.status, 2, bad.join(' '));
+    assert.equal(git(root, 'branch', '--list', 'improve/bad'), '');
+  }
 });

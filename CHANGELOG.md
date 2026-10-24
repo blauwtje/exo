@@ -13,6 +13,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Run `/output-style exo:adhd` to get short replies; the `compression` setting and the `exo:short` output style are gone.**
 
 ### Added
+- `exo:improve` setup takes opt-in `--keep-margin <k>` (keep only when the score beats the last keep by more than k·sd), `--confirm` (re-score the candidate and the last keep in the same round and decide on the means) and `--stop-after <n>` (stop after n rounds in a row without a keep), so a noisy score no longer keeps a lucky round.
 - `node benchmarks/adhd-score.mjs` prints one number, lower is better: the mean per-case ratio of `exo:adhd` output tokens to default-style output tokens, where a case scores 1.0 if any gate fails.
 - `benchmarks/results/2026-10-23-budget-on.md` records a pre-registered confirmatory run of budget `on` against `balanced` on flow-unit (n=10 each): mean cost $0.622 against $0.675, hidden passes 10/10 both, one-sided Mann-Whitney p=0.974, so the gate (`on` ≤ `balanced` + $0.03) passes.
 - `benchmarks/speed-ledger.jsonl` records the ten ideas tried in the `improve/oct23` loop: three kept and now landed on `main` (critical-path calls 44.27 → 34.4), six rejected, one untested after a crash; their 15-run wall check against `main` measured 176.8 s → 153.9 s mean (-13.0%, Mann-Whitney p=0.007, bootstrap 95% CI [-46.5, +2.7] s) at equal hidden-test passes.
@@ -93,6 +94,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` lands a unit-route task with one `land-slot` script call, skips `wait-report` after a foreground `Next: build`, and runs `run-unit` at low effort on the balanced profile.
 
 ### Fixed
+- `node benchmarks/adhd-score.mjs` scores the 23 cases 8 at a time, gives each run its own ratio so one failed run no longer forces the case to 1, measures length in visible reply tokens instead of billed `output_tokens` with thinking, prints the score to three decimals with `pass_rate` and `pass_ratio`, corrects two `lead` gates, caps each `claude -p` call at 90 s with one retry (`EXO_ADHD_CALL_MS`), judges only the required facts, one verdict per fact with each reply alone and a majority of 3 votes calibrated on known-FAIL labels (`--add-fail-labels`), and gives partial credit for missing facts; three runs scored 0.398/0.391/0.367 in 24-25 s each.
 - The plan checker refuses a `Land gate:` or `Lint:` command wrapped in backticks, and an HTML entity such as `&gt;` in any command the run executes, so a build no longer fails on a command it cannot run as written.
 - The status line, the `exo` shim and exo-cli fall back to the main checkout, recorded in `~/.claude/exo/plugin-main`, when `plugin-root` names a removed worktree; the status line had gone blank. Run `exo setup` once to refresh an old shim.
 - `exo:improve` keeps its results file and score log in `.exo/improve/`, so removing the loop worktree with `remove-worktree.mjs --kept` saves them instead of deleting them.

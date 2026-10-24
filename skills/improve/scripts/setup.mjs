@@ -10,10 +10,11 @@ import { excludeScratch } from '../../../lib/scratch-exclude.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
 import { matchScope, ScopeError } from './gate.mjs';
 
-const USAGE = 'usage: node setup.mjs --root <dir> --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--no-overlap] [--built-scorer]\n       node setup.mjs --root <dir> --resume [--tag <tag>]';
+const USAGE = 'usage: node setup.mjs --root <dir> --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--no-overlap] [--built-scorer] [--keep-margin <k>] [--confirm] [--stop-after <n>]\n       node setup.mjs --root <dir> --resume [--tag <tag>]';
 const SPEC = {
   root: 'string', goal: 'string', command: 'string', regex: 'string', direction: 'string', scope: 'string', readonly: 'string',
   limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean', 'no-overlap': 'boolean', 'built-scorer': 'boolean',
+  'keep-margin': 'string', confirm: 'boolean', 'stop-after': 'string',
 };
 const RUNS = 3;
 
@@ -172,6 +173,7 @@ function fresh(flags) {
       goal: flags.goal, scope: list(flags.scope), readOnly, hashes: hashPaths(cwd, readOnly), command: flags.command, regex: flags.regex,
       direction: flags.direction, sd: 0, limit: 0, fastCheck: flags['fast-check'] ?? null, worktree, next,
       ...modelFor(), noOverlap: Boolean(flags['no-overlap']), builtScorer: Boolean(flags['built-scorer']),
+      keepMargin: Number(flags['keep-margin'] ?? 0), confirm: Boolean(flags.confirm), stopAfter: Number(flags['stop-after'] ?? 0),
     };
     const runs = scoreRuns(cwd, cfg, RUNS);
     const scores = runs.map((run) => run.score);
@@ -220,6 +222,8 @@ function main() {
     const need = flags.resume ? ['root'] : ['root', 'goal', 'command', 'regex', 'direction', 'scope'];
     for (const name of need) if (!flags[name]) throw new UsageError(`--${name} is required`);
     if (!flags.resume && !['higher', 'lower'].includes(flags.direction)) throw new UsageError('--direction must be higher or lower');
+    if (flags['keep-margin'] !== undefined && !(Number.isFinite(Number(flags['keep-margin'])) && Number(flags['keep-margin']) >= 0)) throw new UsageError('--keep-margin must be a number >= 0');
+    if (flags['stop-after'] !== undefined && !(Number.isInteger(Number(flags['stop-after'])) && Number(flags['stop-after']) >= 1)) throw new UsageError('--stop-after must be an integer >= 1');
     if (flags.resume) resume(flags);
     else fresh(flags);
   } catch (error) {

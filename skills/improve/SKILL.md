@@ -29,8 +29,12 @@ Run once, then start round 1 in the same turn.
 - Goal question → at most one, in plain language, only about what should get better; none when the goal names an outcome.
 - No question about commands, files, patterns or limits; the user may not know them.
 - No command measures the goal → build a scorer per `### Build a scorer` before setup.
-- Setup → `node "${CLAUDE_SKILL_DIR}/scripts/setup.mjs" --root <root> --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--no-overlap] [--built-scorer]`.
+- Setup → `node "${CLAUDE_SKILL_DIR}/scripts/setup.mjs" --root <root> --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--no-overlap] [--built-scorer] [--keep-margin <k>] [--confirm] [--stop-after <n>]`.
 - `--no-overlap` → only when the score measures wall time; setup stores it in `<tag>.json` and the round skips prepare-ahead.
+- `--keep-margin`, `--confirm`, `--stop-after` → only when the user asks for them; each is off by default and stored in `<tag>.json`.
+- `--keep-margin <k>` → a keep needs a gain over k·sd on the last keep; a commit that leaves less code keeps on a gain from 0 up to k·sd.
+- `--confirm` → a score past the margin gets one more candidate score and one fresh score of the last keep in the same round; keep or discard is decided on the means.
+- `--stop-after <n>` → after n rounds in a row without a keep, `round.mjs` prints `STOP no-keep <n>`.
 - Setup exits nonzero → fix the flag its output names, rerun.
 - Settled line → `key=value` fields; read `tag`, `worktree`, `next`, `limit`, `model`, `effort` and `no-overlap` once; every worker dispatch passes that model and effort.
 - Settled → one message, not a question: scope, command, direction, limit, branch, worktree and baseline `score`; a built scorer adds its path, case count and 2 raw case outputs with their scores.
@@ -58,8 +62,8 @@ Setup done → never ask the user anything; the user may be away. Read only each
 8. Third `NO-IDEA` in a row → step 1 with `<note>` = `out-of-ideas`; the loop goes on.
 
 - Prepare ahead → every round, except when the settled line says `no-overlap=true`; the worker's load would skew a wall-time score.
-- Waits → at most ceil((2·limit+30)/540) `--wait` calls per round; none printed `ROW` → stall, go to Stop.
-- `STOP <reason> <detail>` (`scorer-changed <path>`, `reset-failed <hash>`) → go to Stop, naming both.
+- Waits → at most ceil((m·limit+30)/540) `--wait` calls per round, m = 6 with `--confirm`, else 2; none printed `ROW` or `STOP` → stall, go to Stop.
+- `STOP <reason> <detail>` (`scorer-changed <path>`, `reset-failed <hash>`, `checkout-failed <hash>`, `no-keep <n>`) → go to Stop, naming both.
 - Score → the lead runs no score command after setup; `round.mjs` owns all scoring, rows, keeps and resets.
 
 ## Crash
@@ -69,13 +73,13 @@ Setup done → never ask the user anything; the user may be away. Read only each
 
 ## Stop
 
-- Trigger → the user interrupts, a stall, or `STOP scorer-changed`.
+- Trigger → the user interrupts, a stall, or a `STOP` line.
 - Stop → end the background `round.mjs`; report the best kept score against the baseline, the branch, the worktree, and the trigger when it was not the user.
 - Leave the branch, both worktrees and every `.exo/improve/` file in place.
 
 ## Judgment
 
-- Run until the user interrupts; a question after setup finds no one.
+- Run until the user interrupts or `round.mjs` prints `STOP`; a question after setup finds no one.
 - Kept commit → only from a `round.mjs` `keep` row.
 
 | File | Read it when |

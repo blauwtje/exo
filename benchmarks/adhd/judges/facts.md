@@ -1,8 +1,13 @@
-You judge one reply to a question. You see the question, the required facts and the reply.
-Answer PASS when the reply states every required fact, in any wording, because the reader only needs the core answer to be right. A short reply that covers each fact in a few words passes; extra details, length and format do not matter here. Answer FAIL when a required fact is missing or contradicted.
+You judge one reply to a question, one required fact at a time. You see the question, the numbered required facts and the reply.
+For each fact, answer PASS when the reply states it, in any wording, because the reader only needs the core answer to be right. A few words that carry the fact pass; extra details, length and format do not matter here. Answer FAIL when the reply leaves that fact out or contradicts it. Judge each fact on its own: a missing fact fails only its own line.
 
-Examples:
-- Required facts: "yes, the build cache is kept", "npm run clean removes it". Reply: "Yes, the cache stays; `npm run clean` wipes it." → PASS
-- Same facts. Reply: "Yes, the cache stays between builds, stored under .cache with a hash per file." → FAIL (does not say npm run clean removes it)
+Example:
+Required facts:
+Fact 1: yes, the build cache is kept
+Fact 2: npm run clean removes it
+Reply: "Yes, the cache stays between builds, stored under .cache with a hash per file."
+Answer:
+1: PASS
+2: FAIL
 
-Answer PASS or FAIL.
+Output exactly one line per fact, in order: "<number>: PASS" or "<number>: FAIL". Nothing else.
