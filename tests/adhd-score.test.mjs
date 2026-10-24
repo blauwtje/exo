@@ -380,3 +380,35 @@ test('the adhd arm defaults to 3 runs and a $3 cap', () => {
   assert.equal(SCORE_MAX_USD, 3);
   assert.equal(opts.maxUsd, 3);
 });
+
+test('buildBaseline keeps existing rows and replies only for missing cases', async () => {
+  const seen = [];
+  const reply = async ({ prompt }) => { seen.push(prompt); return { text: 'new', tokens: 5, cost: 0 }; };
+  const existing = { a: { replies: ['old'], tokens: [1], mean: 1, cost: 0 } };
+  const out = await buildBaseline({ cases, reply, spend: spendOf(1), runs: 1, existing });
+  assert.deepEqual(out.a.replies, ['old']);
+  assert.deepEqual(out[cases[1].id].replies, ['new']);
+  assert.equal(seen.length, cases.length - 1);
+});
+
+test('buildBaseline with all rebuilds every case', async () => {
+  const existing = { a: { replies: ['old'], tokens: [1], mean: 1, cost: 0 } };
+  const out = await buildBaseline({ cases, reply: async () => ({ text: 'new', tokens: 5, cost: 0 }), spend: spendOf(1), runs: 1, existing, all: true });
+  assert.deepEqual(out.a.replies, ['new']);
+});
+
+test('buildBaseline saves after each case and a failure names the case and arm', async () => {
+  const saves = [];
+  let n = 0;
+  const reply = async () => { if ((n += 1) === 2) throw new Error('timed out'); return { text: 'r', tokens: 1, cost: 0 }; };
+  await assert.rejects(
+    buildBaseline({ cases, reply, spend: spendOf(1), runs: 1, save: (rows) => saves.push(Object.keys(rows)) }),
+    (error) => error.message.includes(cases[1].id) && error.message.includes('arm default') && error.message.includes('timed out'),
+  );
+  assert.deepEqual(saves, [[cases[0].id]]);
+});
+
+test('--all needs --baseline', () => {
+  assert.equal(parseArgs(['--baseline', '--all']).all, true);
+  assert.throws(() => parseArgs(['--all']), /--baseline/);
+});

@@ -87,13 +87,18 @@ export function makeStager() {
   };
 }
 
-export async function buildBaseline({ cases, reply, spend, runs = RUNS }) {
+// why: a baseline run costs real money and one hung call must not lose finished cases, so existing rows are kept unless `all`, `save` runs after each case, and a failed call names its case and arm.
+export async function buildBaseline({ cases, reply, spend, runs = RUNS, existing = {}, all = false, save = () => {} }) {
   const stage = makeStager();
-  const baseline = {};
+  const baseline = all ? {} : { ...existing };
   for (const c of cases) {
-    const results = await stage('default', runs, () => reply({ arm: 'default', prompt: promptOf(c) }));
+    if (baseline[c.id]) continue;
+    const results = await stage('default', runs, () => Promise.resolve(reply({ arm: 'default', prompt: promptOf(c) })).catch((error) => {
+      throw new Error(`reply failed for case ${c.id}, arm default: ${error.message}`, { cause: error });
+    }));
     results.forEach((r) => spend.add(r.cost));
     baseline[c.id] = { replies: results.map((r) => r.text), tokens: results.map((r) => r.tokens), mean: mean(results.map((r) => r.tokens)), cost: results.reduce((sum, r) => sum + r.cost, 0) };
+    save(baseline);
   }
   return baseline;
 }
@@ -259,16 +264,17 @@ function latestAdhdReplies() {
   return Object.fromEntries(perCase.filter((p) => p.replies).map((p) => [p.id, p.replies]));
 }
 
-const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability' };
+const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all' };
 const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number] };
 
 export function parseArgs(argv) {
-  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES };
+  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, all: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES };
   for (let i = 0; i < argv.length; i += 1) {
     if (FLAGS[argv[i]]) opts[FLAGS[argv[i]]] = true;
     else if (VALUES[argv[i]]) { const [key, cast] = VALUES[argv[i]]; opts[key] = cast(argv[++i]); }
     else throw new Error(`unknown argument: ${argv[i]}`);
   }
+  if (opts.all && !opts.baseline) throw new Error('--all needs --baseline');
   if (opts.maxUsd === null) opts.maxUsd = opts.baseline ? BASELINE_MAX_USD : SCORE_MAX_USD;
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
   if (!Number.isInteger(opts.runs) || opts.runs < 1) throw new Error('--runs needs a positive integer');
@@ -360,7 +366,10 @@ async function runApi({ opts, cases }) {
   const judge = (call) => claudeJudge({ ...call, cwd: judgeDir, home: judgeHome });
   try {
     if (opts.baseline) fs.mkdirSync(STORE, { recursive: true });
-    if (opts.baseline) fs.writeFileSync(BASELINE, JSON.stringify(await buildBaseline({ cases, reply, spend }), null, 2));
+    if (opts.baseline) {
+      const existing = !opts.all && fs.existsSync(BASELINE) ? readBaseline() : {};
+      await buildBaseline({ cases, reply, spend, existing, all: opts.all, save: (rows) => fs.writeFileSync(BASELINE, JSON.stringify(rows, null, 2)) });
+    }
     else await runScore({ opts, cases, reply, judge, spend });
   } finally {
     process.stderr.write(`${spend.line().trimEnd()} call_timeouts=${callStats.timeouts} parse_retries=${callStats.parseRetries} dropped_votes=${callStats.droppedVotes}\n`);
