@@ -60,6 +60,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- `node benchmarks/adhd-score.mjs` prints each case's visible and billed output tokens with billed totals, runs the adhd arm 3 times per case by default under a $3 cap, and gates a reply on a closing question, a pure deliverable and every fact of an explain request; the case set gains question, deliverable and explain cases from real chats.
 - `exo:adhd` checks each reply in one line before sending: every asked part has its clause, the Yes or No matches the source, and each claim keeps its name and figure; `node benchmarks/adhd-score.mjs --runs 3` scores 0.311 against 0.41 before.
 - The status line is a two-line status line: line one shows where and who (mark, branch, model, effort, the session's own live in-session build), line two shows what is left (context against exo's budget, 5h usage and, when it matters, 7d usage and a 5h run-out warning).
 - `exo:improve` runs one worker per round (opus/high) that proposes a gated, large, non-duplicate idea and edits it, while scripts do the setup, score, keep or reset, and log one row.

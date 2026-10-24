@@ -48,3 +48,20 @@ test("a # comment inside a fenced block is not a heading", () => {
   assert.equal(gateReply(reply, { literals: [], lead: [] }).pass, true);
   assert.deepEqual(gateReply("# Title\nbody", { literals: [], lead: [] }).failed, ["heading"]);
 });
+
+test("prose after the closing question fails; an ask case needs a question", () => {
+  const n = { literals: [], lead: [] };
+  assert.equal(gateReply("Which one? Tell me soon.", n).failed.includes("question"), true);
+  assert.equal(gateReply("Which one?**", n).pass, true);
+  assert.equal(gateReply("Use `a?b` here.", n).pass, true);
+  assert.deepEqual(gateReply("Use A.", { ...n, ask: true }).failed, ["question"]);
+  assert.equal(gateReply("Use A or B?", { ...n, ask: true }).pass, true);
+});
+
+test("a deliverable must be the bare text, not bolded or wrapped in prose", () => {
+  const d = { literals: [], lead: [], deliverable: "^fix\\(a\\): b$" };
+  assert.equal(gateReply("fix(a): b", d).pass, true);
+  assert.equal(gateReply("```\nfix(a): b\n```", d).pass, true);
+  assert.deepEqual(gateReply("**fix(a): b**", d).failed, ["deliverable"]);
+  assert.deepEqual(gateReply("Use fix(a): b", d).failed, ["deliverable"]);
+});

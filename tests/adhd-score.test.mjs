@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, claudeReply, runAddFailLabels, runToLabel, scoreCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
+import { ADHD_RUNS, SCORE_MAX_USD, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, parseArgs, runAddFailLabels, runToLabel, scoreCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
 import { buildFailRows, dropFact } from '../benchmarks/adhd/labels.mjs';
 
 const cases = [
@@ -21,17 +21,21 @@ const baseline = { a: withReplies(100), b: withReplies(200) };
 
 test('score is the mean per-case token ratio against the baseline', async () => {
   const reply = async ({ prompt }) => ({ text: sized(50), tokens: 5000, cost: 0.01, prompt });
-  const out = await scoreCases({ cases, baseline, reply, judge: pass, spend: spendOf(1) });
+  const out = await scoreCases({ cases, baseline, reply, judge: pass, spend: spendOf(1), runs: 1 });
   assert.equal(out.score, (0.5 + 0.25) / 2);
   assert.equal(out.runs, 1);
 });
 
 test('ratio uses visible reply length and the baseline replies, not billed tokens', async () => {
   const reply = async () => ({ text: sized(10), tokens: 999, cost: 0 });
-  const out = await scoreCases({ cases: [cases[0]], baseline: { a: { replies: [sized(40), sized(60)], tokens: [1, 1], mean: 1 } }, reply, judge: pass, spend: spendOf(1) });
+  const out = await scoreCases({ cases: [cases[0]], baseline: { a: { replies: [sized(40), sized(60)], tokens: [1, 1], mean: 1 } }, reply, judge: pass, spend: spendOf(1), runs: 1 });
   assert.equal(out.score, 0.2);
   assert.equal(out.perCase[0].runs[0].visible, 10);
   assert.equal(out.perCase[0].runs[0].tokens, 999);
+  assert.equal(out.perCase[0].visibleTokens, 10);
+  assert.equal(out.perCase[0].tokens, 999);
+  assert.equal(out.billedTokens, 999);
+  assert.equal(out.baselineBilledTokens, 1);
   assert.equal(out.perCase[0].baselineVisible, 50);
 });
 
@@ -75,29 +79,29 @@ test('cases run concurrently, at most 8 in flight, and perCase keeps case order'
     inFlight -= 1;
     return { text: 'ok.', tokens: 50, cost: 0 };
   };
-  const out = await scoreCases({ cases: many, baseline: base, reply, judge: pass, spend: spendOf(1) });
+  const out = await scoreCases({ cases: many, baseline: base, reply, judge: pass, spend: spendOf(1), runs: 1 });
   assert.equal(peak, 8);
   assert.deepEqual(out.perCase.map((p) => p.id), many.map((c) => c.id));
 });
 
-test('adhd arm runs 1 per case by default and --runs overrides', async () => {
+test('adhd arm runs 3 per case by default and --runs overrides', async () => {
   let calls = 0;
   const reply = async () => { calls += 1; return { text: 'KEY.', tokens: 10, cost: 0.3 }; };
   const out = await scoreCases({ cases, baseline, reply, judge: pass, spend: spendOf(10) });
-  assert.equal(out.runs, 1);
-  assert.equal(calls, 2);
-  calls = 0;
-  await scoreCases({ cases, baseline, reply, judge: pass, spend: spendOf(10), runs: 3 });
+  assert.equal(out.runs, 3);
   assert.equal(calls, 6);
+  calls = 0;
+  await scoreCases({ cases, baseline, reply, judge: pass, spend: spendOf(10), runs: 1 });
+  assert.equal(calls, 2);
 });
 
 test('judge spend counts toward the cap', async () => {
   const reply = async () => ({ text: 'KEY.', tokens: 10, cost: 0 });
   const judge = passCost(0.1);
   const spend = spendOf(1);
-  await scoreCases({ cases: [cases[0]], baseline, reply, judge, spend });
+  await scoreCases({ cases: [cases[0]], baseline, reply, judge, spend, runs: 1 });
   assert.ok(Math.abs(spend.total - 3 * 0.1) < 1e-9);
-  await assert.rejects(scoreCases({ cases: [cases[0]], baseline, reply, judge, spend: spendOf(0.2) }), /max-usd/);
+  await assert.rejects(scoreCases({ cases: [cases[0]], baseline, reply, judge, spend: spendOf(0.2), runs: 1 }), /max-usd/);
 });
 
 test('checkBaseline accepts a full baseline and names each defect', () => {
@@ -213,7 +217,7 @@ test('projection ignores the cost of cases still in flight', async () => {
   const many = Array.from({ length: 10 }, (_, i) => ({ id: `c${i}`, context: 'C', question: 'Q', facts: ['f'], literals: [], lead: [] }));
   const base = Object.fromEntries(many.map((c) => [c.id, withReplies(100)]));
   const reply = async () => ({ text: 'ok.', tokens: 10, cost: 0.05 });
-  const out = await scoreCases({ cases: many, baseline: base, reply, judge: pass, spend: spendOf(1) });
+  const out = await scoreCases({ cases: many, baseline: base, reply, judge: pass, spend: spendOf(1), runs: 1 });
   assert.equal(out.perCase.length, 10);
 });
 
@@ -356,4 +360,23 @@ test('a failing run scores max(1, r), so it never beats a complete run when r > 
   const missOne = await scoreCases({ cases: [long], baseline, reply: longReply, judge: async ({ input }) => verdictLines(input, [1]), spend: spendOf(1) });
   const complete = await scoreCases({ cases: [long], baseline, reply: longReply, judge: pass, spend: spendOf(1) });
   assert.ok(missOne.score >= complete.score - 1e-9 && Math.abs(complete.score - 1.5) < 1e-9);
+});
+
+test('caseLine writes id, ratio, visible and billed tokens, failed gates and missing fact numbers per run', () => {
+  const p = { id: 'a', ratio: 0.5, visibleTokens: 12, baselineVisible: 50, tokens: 300, baselineTokens: 400, failed: [], runs: [{ missing: [] }, { missing: [0, 2] }] };
+  assert.equal(caseLine(p), 'a ratio=0.500 visible=12/50 billed=300/400 failed=none missing=run2:1,3\n');
+  assert.equal(caseLine({ ...p, failed: ['lead'], runs: [{ missing: [] }] }), 'a ratio=0.500 visible=12/50 billed=300/400 failed=lead\n');
+});
+
+test('caseLine rounds the baseline means like the adhd side', () => {
+  const p = { id: 'a', ratio: 0.5, visibleTokens: 40 / 3, baselineVisible: 400 / 3, tokens: 1000 / 3, baselineTokens: 1238 / 3, failed: [], runs: [] };
+  assert.equal(caseLine(p), 'a ratio=0.500 visible=13/133 billed=333/413 failed=none\n');
+});
+
+test('the adhd arm defaults to 3 runs and a $3 cap', () => {
+  const opts = parseArgs([]);
+  assert.equal(ADHD_RUNS, 3);
+  assert.equal(opts.runs, 3);
+  assert.equal(SCORE_MAX_USD, 3);
+  assert.equal(opts.maxUsd, 3);
 });

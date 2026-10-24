@@ -20,9 +20,9 @@ const LABELS_TO_WRITE = 5;
 export { callStats };
 export const REPLY_MODEL = 'claude-opus-5-5';
 const RUNS = 3;
-const ADHD_RUNS = 1;
+export const ADHD_RUNS = 3;
 const CONCURRENCY = 8;
-const SCORE_MAX_USD = 1;
+export const SCORE_MAX_USD = 3;
 const FAIL_SOURCE_LOGS = 3;
 const STABILITY_REPEATS = 5;
 const BASELINE_MAX_USD = 4;
@@ -128,7 +128,7 @@ async function scoreCase({ c, results, baseline, judge, judgeModel, spend }) {
     return { visible, tokens: r.tokens, ratio, failed: failed[i], missingFacts: missing[i].map((k) => c.facts[k]), missing: missing[i] };
   });
   return {
-    id: c.id, replies: results.map((r) => r.text), visible: mean(runs.map((r) => r.visible)), baselineVisible,
+    id: c.id, replies: results.map((r) => r.text), visibleTokens: mean(runs.map((r) => r.visible)), baselineVisible,
     tokens: mean(results.map((r) => r.tokens)), baselineTokens: baseline[c.id].mean,
     failed: [...new Set(failed.flat())], ratio: mean(runs.map((r) => r.ratio)), runs,
   };
@@ -152,7 +152,7 @@ function assertProjection({ spend, doneUsd, done, total }) {
   throw new Error(`projected_usd=${projected.toFixed(4)} over --max-usd ${spend.maxUsd}`);
 }
 
-// why: Decision 2 fixes the adhd arm at 1 run per case so every improve round scores on the same footing.
+// why: a fixed ADHD_RUNS default keeps every improve round on the same footing.
 export async function scoreCases({ cases, baseline, reply, judge = claudeJudge, judgeModel, spend, runs = ADHD_RUNS }) {
   const missing = cases.filter((c) => !baseline[c.id]).map((c) => c.id);
   if (missing.length > 0) throw new Error(`baseline lacks cases: ${missing.join(', ')}; run with --baseline`);
@@ -183,7 +183,9 @@ export async function scoreCases({ cases, baseline, reply, judge = claudeJudge, 
   const passing = allRuns.filter((r) => r.failed.length === 0);
   const passRate = passing.length / allRuns.length;
   const passRatio = passing.length > 0 ? mean(passing.map((r) => r.ratio)) : null;
-  return { score: mean(perCase.map((p) => p.ratio)), passRate, passRatio, perCase, runs };
+  const billedTokens = perCase.reduce((sum, p) => sum + p.tokens, 0);
+  const baselineBilledTokens = perCase.reduce((sum, p) => sum + p.baselineTokens, 0);
+  return { score: mean(perCase.map((p) => p.ratio)), passRate, passRatio, billedTokens, baselineBilledTokens, perCase, runs };
 }
 
 // why: --check proves the committed baseline matches the cases with zero API calls; `tokens` and `mean` stay billed output tokens for cost reference, the ratio reads `replies`.
@@ -260,7 +262,7 @@ function latestAdhdReplies() {
 const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability' };
 const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number] };
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES };
   for (let i = 0; i < argv.length; i += 1) {
     if (FLAGS[argv[i]]) opts[FLAGS[argv[i]]] = true;
@@ -336,11 +338,14 @@ const missingLine = (p) => {
   return parts.length > 0 ? ` missing=${parts.join(' ')}` : '';
 };
 
+export const caseLine = (p) => `${p.id} ratio=${p.ratio.toFixed(3)} visible=${Math.round(p.visibleTokens)}/${Math.round(p.baselineVisible)} billed=${Math.round(p.tokens)}/${Math.round(p.baselineTokens)} failed=${p.failed.join(',') || 'none'}${missingLine(p)}\n`;
+
 async function runScore({ opts, cases, reply, judge, spend }) {
   const result = await scoreCases({ cases, baseline: readBaseline(), reply, judge, judgeModel: opts.judgeModel, spend, runs: opts.runs });
-  for (const p of result.perCase) process.stderr.write(`${p.id} ratio=${p.ratio.toFixed(3)} failed=${p.failed.join(',') || 'none'}${missingLine(p)}\n`);
+  for (const p of result.perCase) process.stderr.write(caseLine(p));
   writeLog({ ...result, cost_usd: spend.total, reply_cost_usd: spend.reply, judge_cost_usd: spend.judge });
   process.stderr.write(`pass_rate=${result.passRate.toFixed(3)} pass_ratio=${result.passRatio === null ? 'n/a' : result.passRatio.toFixed(3)}\n`);
+  process.stderr.write(`billed_tokens=${Math.round(result.billedTokens)} baseline_billed_tokens=${Math.round(result.baselineBilledTokens)}\n`);
   process.stdout.write(`${result.score.toFixed(3)}\n`);
 }
 

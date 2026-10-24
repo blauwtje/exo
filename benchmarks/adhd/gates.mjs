@@ -27,6 +27,16 @@ function outsideFences(reply) {
   }).join("\n");
 }
 
+function closesOnQuestion(reply, ask) {
+  const prose = outsideFences(reply).replace(/`[^`]*`/g, "");
+  const last = prose.lastIndexOf("?");
+  return last < 0 ? !ask : /^[\s*]*$/.test(prose.slice(last + 1));
+}
+
+function unwrapFence(text) {
+  return /^(`{3,}|~{3,})[^\n]*\n([\s\S]*)\n\1[`~]*$/.exec(text)?.[2] ?? text;
+}
+
 const GATES = {
   literals: (reply, c) =>
     (c.literals ?? []).every((variants) => variants.some((v) => reply.includes(v))),
@@ -35,6 +45,9 @@ const GATES = {
   heading: (reply) => !/^\s{0,3}#{1,6}\s/m.test(outsideFences(reply)),
   opener: (reply) => !OPENER.test(reply.trim()),
   recap: (reply) => !RECAP.test(lastSentence(reply)),
+  question: (reply, c) => closesOnQuestion(reply, c.ask === true),
+  deliverable: (reply, c) =>
+    c.deliverable === undefined || new RegExp(c.deliverable).test(unwrapFence(reply.trim())),
 };
 
 export function gateReply(reply, testCase) {
