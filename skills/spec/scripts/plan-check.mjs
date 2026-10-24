@@ -606,6 +606,24 @@ function checkLoop(plan, root, planPath) {
   return [...problems, ...checkLoopLandGate(basis, root)];
 }
 
+const HTML_ENTITY = /&(?:gt|lt|amp|quot|apos|#\d+|#x[0-9a-f]+);/i;
+
+// why: land runs the raw 'Land gate:' and 'Lint:' text in a shell, so a wrapping backtick pair becomes a command substitution; rejecting here keeps one reading of the field in every consumer.
+function checkRunCommands(plan) {
+  const basis = frameOf(plan.frame);
+  const problems = [];
+  for (const [field, value] of [['Land gate', basis.landGate], ['Lint', basis.lint]]) {
+    if (value !== null && /^`[^`]*`$/.test(value.trim())) {
+      problems.push(`'${field}: ${value.trim()}' wraps the command in backticks, which the shell runs as a command substitution; write '${field}: ${value.trim().slice(1, -1)}'`);
+    }
+  }
+  for (const { field, task, command } of loopCommands(plan)) {
+    const entity = command.match(HTML_ENTITY)?.[0];
+    if (entity !== undefined) problems.push(`${field}${task === null ? '' : ` of Task ${task}`}: '${command}' holds the HTML entity '${entity}', which the shell runs as written; write the plain character`);
+  }
+  return problems;
+}
+
 const NESTED_CLAUDE = "exo run's sandbox cannot start a nested claude; move the measurement to the Success line, which verify runs outside the sandbox, with a cost cap in that line";
 const CLAUDE_COMMAND = /^(?:npx\s+)?claude(?:\s|$)/;
 const CLAUDE_IN_SCRIPT = /confinedClaude\(|\(\s*['"`]claude['"`]/;
@@ -702,6 +720,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     ...checkParallelDisjoint(plan.tasks, plan.frame),
     ...checkWorktreeSetup(plan.tasks, plan.frame),
     ...checkNestedClaude(plan, resolvedRoot),
+    ...checkRunCommands(plan),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
   const warnings = [...warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed }), ...warnNearCap(plan.tasks, resolvedRoot, landed)];
