@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { checkTask, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { compactPlanFixture, git, gitRepository, planFixture, run } from './harness.mjs';
 import {
@@ -261,4 +262,21 @@ test('a compact task without Evidence lands no Evidence trailer', async () => {
   await writeReport(root, PASS_REPORT);
   landTask({ planPath, planText: await fs.readFile(planPath, 'utf8'), number: 1, root, reportText: PASS_REPORT });
   assert.doesNotMatch(git(root, 'log', '-1', '--format=%B'), /Evidence:/);
+});
+
+test('land-task CLI refreshes the session record and a refused landing leaves it alone', async () => {
+  const { root, planPath } = await landingCheckout();
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const env = { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' };
+  writeBuildProgress({ sessionId: 'sess-1', plan: planPath, checkout: root, landed: 0, total: 4 }, { env, now: 1000 });
+  const file = path.join(cache, 'exo', 'build', 'sess-1.json');
+  const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env });
+  assert.equal(refused.code, 1);
+  assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).landed, 0);
+  await editApp(root);
+  const landed = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env });
+  assert.equal(landed.code, 0, landed.stderr);
+  const record = JSON.parse(await fs.readFile(file, 'utf8'));
+  assert.equal(record.landed, 1);
+  assert.equal(record.total, 4);
 });

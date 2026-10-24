@@ -60,7 +60,7 @@ test('the launcher renders a fixture line through a plugin-root pointer', () => 
     env: { ...process.env, NO_COLOR: '1', XDG_CACHE_HOME: tempDir() }
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^exo /);
+  assert.match(result.stdout, /^◉ exo /);
   assert.match(result.stdout, /Opus 5\.5/);
 });
 

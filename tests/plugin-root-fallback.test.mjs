@@ -50,7 +50,7 @@ test('the status line falls back to the main checkout once the pointed worktree 
     env: { ...process.env, NO_COLOR: '1', XDG_CACHE_HOME: tempDir('cache') }
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^exo .*Opus 5\.5/);
+  assert.match(result.stdout, /^◉ exo .*Opus 5\.5/);
 });
 
 test('the exo shim falls back to the main checkout once the pointed worktree is gone', () => {

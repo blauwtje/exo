@@ -6,6 +6,7 @@ import { scratchPath } from '#scratch-path';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
+import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
 import { defaultBranch, driftOf, frameOf, inputPaths, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
@@ -321,6 +322,22 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [], open =
   return `${lines.join('\n')}\n`;
 }
 
+// why: the status line reads this record; a failure here must never fail the calling script.
+export function refreshProgress({ planPath, planText, root }) {
+  const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
+  if (!sessionId || process.env.EXO_RUN_TASK) return;
+  try {
+    const record = readBuildProgress(sessionId);
+    if (record === null || record.plan !== path.resolve(planPath)) return;
+    const { tasks } = parsePlan(planText);
+    const landed = landedTasks(tasks, record.checkout ?? root, planIdOf(planPath)).length;
+    refreshBuildProgress({ sessionId, plan: record.plan, landed, total: tasks.length });
+    if (landed >= tasks.length) removeBuildProgress(sessionId);
+  } catch {
+    return;
+  }
+}
+
 function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
@@ -335,7 +352,9 @@ function main(argv) {
   if (flags.proofs) report = proofsReport;
   const inFlight = (flags['in-flight'] ?? '').split(',').filter(Boolean).map(Number);
   if (inFlight.some((number) => !Number.isInteger(number))) throw new UsageError("flag '--in-flight' names task numbers, comma separated");
-  process.stdout.write(report({ planPath: flags.plan, planText, root: flags.root ?? process.cwd(), inFlight, open: flags['open-slots'] === true }));
+  const root = flags.root ?? process.cwd();
+  process.stdout.write(report({ planPath: flags.plan, planText, root, inFlight, open: flags['open-slots'] === true }));
+  refreshProgress({ planPath: flags.plan, planText, root });
 }
 
 if (isMain(import.meta.url)) {

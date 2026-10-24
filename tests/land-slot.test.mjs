@@ -1,8 +1,10 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { git, run } from './harness.mjs';
 import { landingCheckout, editApp } from './land-task-fixture.mjs';
@@ -20,7 +22,7 @@ async function slotFixture() {
   await fs.mkdir(path.dirname(baseline), { recursive: true });
   await fs.writeFile(baseline, git(root, 'status', '--porcelain'));
   await fs.writeFile(path.join(slot, '.exo', 'implementer-1.md'), 'Landed: src/app.js\nUnresolved: none\n');
-  const land = (inFlight = ['--in-flight', '3']) => run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, ...inFlight], { cwd: root });
+  const land = (inFlight = ['--in-flight', '3'], env = {}) => run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, ...inFlight], { cwd: root, env });
   return { root, slot, land, base };
 }
 
@@ -119,4 +121,17 @@ test('a landing with no other slot running ends with a Next: or Wave: refill lin
   assert.match(result.stdout, /^LANDED 1\b/);
   assert.match(result.stdout, /^(Next|Wave): /m);
   assert.doesNotMatch(result.stdout, /^Start: /m);
+});
+
+test('a landed slot refreshes the session record', async () => {
+  const { root, slot, land } = await slotFixture();
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const env = { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' };
+  writeBuildProgress({ sessionId: 'sess-1', plan: path.join(root, 'docs/plans/fixture.md'), checkout: root, landed: 0, total: 4 }, { env, now: 1000 });
+  await editApp(slot);
+  const result = await land(['--in-flight', '3'], env);
+  assert.equal(result.code, 0, result.stderr);
+  const record = JSON.parse(await fs.readFile(path.join(cache, 'exo', 'build', 'sess-1.json'), 'utf8'));
+  assert.equal(record.landed, 1);
+  assert.equal(record.total, 4);
 });

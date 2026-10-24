@@ -8,8 +8,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
+import { refreshProgress } from '../skills/build/scripts/next-task.mjs';
 import { commitFiles, git, planFixture, run } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 
@@ -233,4 +235,107 @@ test('land-task without --next keeps the Then: line', async () => {
   const result = await run(LAND_TASK, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.match(result.stdout, /^Then: node ".+next-task\.mjs" --block/m);
   assert.doesNotMatch(result.stdout, /^Prompt:/m);
+});
+
+const progressFile = (cache, id) => path.join(cache, 'exo', 'build', `${id}.json`);
+
+async function seedProgress(cache, { plan, root, id = 'sess-1' }) {
+  writeBuildProgress({ sessionId: id, plan, checkout: root, landed: 0, total: 4 }, { env: { XDG_CACHE_HOME: cache }, now: 1000 });
+  return progressFile(cache, id);
+}
+
+const readProgress = async (file) => JSON.parse(await fs.readFile(file, 'utf8'));
+
+test('next-task refreshes the session record with landed counted on the checkout', async () => {
+  const { root, planPath } = await landingCheckout();
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const file = await seedProgress(cache, { plan: planPath, root });
+  await editApp(root);
+  landTask({ planPath, planText: PLAN, number: 1, root });
+  const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root, env: { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' } });
+  assert.equal(result.code, 0, result.stderr);
+  const record = await readProgress(file);
+  assert.equal(record.landed, 1);
+  assert.equal(record.total, 4);
+  assert.ok(record.updatedAt > 1000);
+});
+
+test('next-task leaves the record alone without a session id, under EXO_RUN_TASK, for another plan or with no record', async () => {
+  const { root, planPath } = await landingCheckout();
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const file = await seedProgress(cache, { plan: planPath, root });
+  const other = await seedProgress(cache, { plan: '/elsewhere/other.md', root, id: 'sess-2' });
+  await editApp(root);
+  landTask({ planPath, planText: PLAN, number: 1, root });
+  const args = ['--plan', planPath, '--root', root];
+  const quiet = { CLAUDE_CODE_SESSION_ID: '', XDG_CACHE_HOME: cache };
+  await run(NEXT_TASK, args, { cwd: root, env: quiet });
+  await run(NEXT_TASK, args, { cwd: root, env: { ...quiet, CLAUDE_CODE_SESSION_ID: 'sess-1', EXO_RUN_TASK: 'fixture/2' } });
+  const mismatched = await run(NEXT_TASK, args, { cwd: root, env: { ...quiet, CLAUDE_CODE_SESSION_ID: 'sess-2' } });
+  const missing = await run(NEXT_TASK, args, { cwd: root, env: { ...quiet, CLAUDE_CODE_SESSION_ID: 'sess-3' } });
+  assert.equal(mismatched.code, 0, mismatched.stderr);
+  assert.equal(missing.code, 0, missing.stderr);
+  assert.equal((await readProgress(file)).landed, 0);
+  assert.equal((await readProgress(other)).landed, 0);
+  await assert.rejects(fs.access(progressFile(cache, 'sess-3')));
+});
+
+test('next-task deletes the record once every task has landed', async () => {
+  const { root, planPath } = await landingCheckout();
+  const plan = planFixture({ tasks: [taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })] });
+  await fs.writeFile(planPath, plan);
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const file = await seedProgress(cache, { plan: planPath, root });
+  git(root, 'commit', '--allow-empty', '-q', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
+  const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root, env: { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' } });
+  assert.equal(result.code, 0, result.stderr);
+  await assert.rejects(fs.access(file));
+});
+
+test('next-task refreshes a record whose plan was given as a relative --plan', async () => {
+  const { root, planPath } = await landingCheckout();
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const realPlan = await fs.realpath(planPath);
+  const realRoot = await fs.realpath(root);
+  const file = await seedProgress(cache, { plan: realPlan, root });
+  await editApp(root);
+  landTask({ planPath, planText: PLAN, number: 1, root });
+  const result = await run(NEXT_TASK, ['--plan', path.relative(realRoot, realPlan), '--root', root], { cwd: realRoot, env: { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' } });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal((await readProgress(file)).landed, 1);
+});
+
+function setEnv(name, value) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
+test('refreshProgress counts landed on the record checkout, not the caller root', async () => {
+  const { root, planPath } = await landingCheckout();
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const file = await seedProgress(cache, { plan: planPath, root });
+  await editApp(root);
+  landTask({ planPath, planText: PLAN, number: 1, root });
+  const elsewhere = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-elsewhere-'));
+  const saved = { cache: process.env.XDG_CACHE_HOME, id: process.env.CLAUDE_CODE_SESSION_ID, task: process.env.EXO_RUN_TASK };
+  Object.assign(process.env, { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' });
+  delete process.env.EXO_RUN_TASK;
+  try {
+    refreshProgress({ planPath, planText: PLAN, root: elsewhere });
+  } finally {
+    for (const [name, value] of [['XDG_CACHE_HOME', saved.cache], ['CLAUDE_CODE_SESSION_ID', saved.id], ['EXO_RUN_TASK', saved.task]]) setEnv(name, value);
+  }
+  assert.equal((await readProgress(file)).landed, 1);
+});
+
+test('next-task keeps the record of another plan even when this plan is fully landed', async () => {
+  const { root, planPath } = await landingCheckout();
+  const plan = planFixture({ tasks: [taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })] });
+  await fs.writeFile(planPath, plan);
+  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const file = await seedProgress(cache, { plan: '/elsewhere/other.md', root });
+  git(root, 'commit', '--allow-empty', '-q', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
+  const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root, env: { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' } });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal((await readProgress(file)).plan, '/elsewhere/other.md');
 });

@@ -59,6 +59,7 @@ Versions before 0.134.9 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a branch that changes skill or agent text without an `Evidence:` trailer naming a fresh result or `none (<reason>)`; `plan-check` flags a plan that changes such text and names no `Evidence:`.
 
 ### Changed
+- The status line is a two-line status line: line one shows where and who (mark, branch, model, effort, the session's own live in-session build), line two shows what is left (context against exo's budget, 5h usage and, when it matters, 7d usage and a 5h run-out warning).
 - `exo:improve` runs one worker per round (opus/high) that proposes a gated, large, non-duplicate idea and edits it, while scripts do the setup, score, keep or reset, and log one row.
 - Short replies now come from one output style, `exo:adhd` (`output-styles/adhd.md`), turned on with `/output-style`.
 - `exo:adhd` ends each reply with one bold answer sentence of at most 15 words, gives no reasons unless asked, and answers yes/no questions with Yes, No or Maybe; `node benchmarks/adhd-score.mjs` 1.00 → 0.72 over 17 `exo:improve` rounds.

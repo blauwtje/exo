@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { blockReport, runRules } from './next-task.mjs';
-import { frameOf, openPoints, parsePlan, PlanError } from '#plan-tasks';
+import { frameOf, landedTasks, openPoints, parsePlan, planIdOf, PlanError } from '#plan-tasks';
+import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
@@ -90,6 +91,7 @@ function main(argv) {
   if (frame !== null) fs.writeFileSync(scratchPath(checkout, 'run-rules.md'), runRules(frame));
   const onBranch = branch === '' ? 'detached HEAD' : `branch ${branch}`;
   process.stdout.write(`start-run: run started: plan ${planPath}, checkout ${checkout} on ${onBranch}. Step 1 is done; never rerun start-run in this run.\n`);
+  if (frame !== null) recordProgress(planPath, checkout);
   const planBranch = frame?.branch;
   if (planBranch && planBranch !== branch) {
     const switchArgs = branchExists(checkout, planBranch) ? planBranch : `-c ${planBranch}`;
@@ -97,6 +99,20 @@ function main(argv) {
     return;
   }
   if (frame !== null) process.stdout.write(firstBlock(planPath, checkout));
+}
+
+// why: the status line reads this record; a failure here must never fail the run start.
+function recordProgress(planPath, checkout) {
+  const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
+  if (!sessionId || process.env.EXO_RUN_TASK) return;
+  try {
+    const { tasks } = parsePlan(fs.readFileSync(planPath, 'utf8'));
+    const landed = landedTasks(tasks, checkout, planIdOf(planPath)).length;
+    writeBuildProgress({ sessionId, plan: planPath, checkout: path.resolve(checkout), landed, total: tasks.length });
+    pruneBuildProgress();
+  } catch {
+    return;
+  }
 }
 
 function firstBlock(planPath, checkout) {

@@ -8,6 +8,7 @@
   "imports": {
     "#attempt-fingerprint": "./lib/attempt-fingerprint.mjs",
     "#budgets": "./verify/budgets.mjs",
+    "#build-progress": "./lib/build-progress.mjs",
     "#check-cache": "./lib/check-cache.mjs",
     "#code-comments": "./lib/code-comments.mjs",
     "#code-rules": "./lib/code-rules.mjs",

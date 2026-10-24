@@ -12,7 +12,7 @@ import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isCovered, iso
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
-import { nextTaskReport } from './next-task.mjs';
+import { nextTaskReport, refreshProgress } from './next-task.mjs';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { CODE_RULE_LIMITS, codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
@@ -667,6 +667,7 @@ function main(argv) {
   let output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
   if (flags.next === true && run === landTask) output = withNext(output, { planPath: flags.plan, planText, root });
   process.stdout.write(quiet.file === null ? output : quietText(output, true));
+  if (run === landTask) refreshProgress({ planPath: flags.plan, planText, root });
 }
 
 function refusal(error) {

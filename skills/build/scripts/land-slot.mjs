@@ -4,7 +4,7 @@ import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { landedTasks, parsePlan, PlanError, planIdOf } from '#plan-tasks';
 import { landTask, LandingError } from './land-task.mjs';
-import { nextTaskReport, windowLines } from './next-task.mjs';
+import { nextTaskReport, refreshProgress, windowLines } from './next-task.mjs';
 import { restartRecord } from './open-slots.mjs';
 import { removeWorktree, RemoveWorktreeError } from './remove-worktree.mjs';
 
@@ -78,6 +78,7 @@ function main(argv) {
   const inFlight = (flags['in-flight'] ?? '').split(',').filter(Boolean).map(Number);
   if (inFlight.some((number) => !Number.isInteger(number))) throw new UsageError("flag '--in-flight' names task numbers, comma separated");
   process.stdout.write(landSlot({ planPath: flags.plan, number: Number(flags.task), root: flags.root, slot: flags.slot, base: flags.base, baseline: flags.baseline, inFlight, chained: flags.chained === true }));
+  refreshProgress({ planPath: flags.plan, planText: fs.readFileSync(flags.plan, 'utf8'), root: flags.root });
 }
 
 function refuseUsage(error) {
