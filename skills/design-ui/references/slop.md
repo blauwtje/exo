@@ -1,39 +1,27 @@
-# Generic-look bans and content tests
+# Copy and generic-look tests
 
-Each ban has its replacement.
+## Copy
 
-## Bans
+- Swap test → put a competitor's name in the main heading; it still reads true → rewrite it with this product's own nouns and numbers.
+- Marketing headline → at most 7 words; about 80 words per screen.
+- Calls to action → name the outcome ("Install Tidewrack", "Post to Murmur"), not "Get started" or "Learn more" alone.
+- Stock words → none of: seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern", "Welcome to".
+- Tics → no "Not X. Y." reveal, no reflexive lists of three, no em dashes in short copy, no arrow on every button, no middle-dot meta strings.
+- Placeholder → no lorem ipsum, "Feature One", "John Doe" or round numbers (100, 50%).
+- App labels → standard verbs for standard actions (Play, Install, Follow, Save); no themed renaming.
 
-- Purple-to-blue gradient, glow, glassmorphism → flat color from the palette, or a real image or SVG drawn for the subject.
-- Three equal icon cards in a row → one large feature plus smaller items, a table, a timeline or a numbered list; vary scale.
-- Centered hero over a gradient blob → left-aligned or asymmetric hero with a concrete visual: product screen, chart, specimen, map.
-- Inter, Roboto or system-only stack as the whole look → a distinctive display face (local or system serif/mono/grotesque) with a plain body face.
-- Emoji as icons → inline SVG icons at one stroke width, or none.
-- Every section on the same white card with a shadow → alternate background tones; use rules and spacing, not boxes.
-- Rainbow or evenly spread palette → one accent, one neutral family; accent appears at most on 10% of the surface.
-- Rounded-2xl everywhere → one radius token, sharp or soft chosen by the direction.
-- Stock phrases in copy: seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern" → say what it does, for whom, with a number or noun.
-- Lorem ipsum, "Feature One", "John Doe", round numbers (100, 50%) → realistic specific data.
+## Generic looks
 
-## AI defaults
+Each one reads as machine-made; pick none unless the request asks, and only the one it names:
+- Cream ground with terracotta accent and a serif.
+- Near-black with one acid accent (lime, cyan) and glow.
+- Purple-to-blue gradient, gradient-filled text, glassmorphism, radial glow, blobs, wave dividers.
+- Broadsheet: hairline rules, italic serif display, mono captions.
+- Dark slate cards with an indigo or violet accent.
+- Three identical icon cards in a row; a hero of one big metric with three small numbers.
+- Every section on the same white card with a soft shadow; nested cards; a card with a colored left border.
+- Emoji or unicode glyphs as icons → inline SVG at one stroke width.
 
-Current model defaults; each reads as machine-made → pick none unless the request asks:
-- Cream background with terracotta accent.
-- Near-black background with one acid accent (lime, cyan).
-- Purple or blue gradient.
-- Gradient-filled text.
-- Small eyebrow label over every heading.
-- 01 / 02 / 03 section numbering.
-- Three identical icon cards.
-- Hero row of big metrics.
+## Vague-word grep
 
-## Tests
-
-- Subject facts → before writing copy, list 8 facts that belong to this client (place, product, numbers, vocabulary, audience pain); use them in headings, labels and data.
-- Swap-the-name → replace the product name in the hero headline with a competitor's; it still reads true → rewrite it.
-- Vague-word grep → after the build, grep the page for the stock phrases above; any hit → rewrite.
-
-## Restraint
-
-- One memorable element (a big numeral, an unusual layout, a drawn illustration, a signature motion) done well, not five effects.
-- Direction chosen → hold it through type, color, spacing, copy voice and motion; mixed signals read as generic.
+After the build, grep the page for the stock words above; each hit → rewrite.

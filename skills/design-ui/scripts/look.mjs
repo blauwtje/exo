@@ -5,14 +5,16 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const args = process.argv.slice(2);
-let target = null, out = '/tmp/look';
+let target = null, out = '/tmp/look', app = false, shots = true;
 const expects = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
   else if (args[i] === '--expect') expects.push(args[++i]);
+  else if (args[i] === '--app') app = true;
+  else if (args[i] === '--no-shots') shots = false;
   else target = args[i];
 }
-if (!target) { console.log('usage: node look.mjs <file-or-url> [--out <dir>] [--expect "<text>"]...'); process.exit(2); }
+if (!target) { console.log('usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]...'); process.exit(2); }
 
 async function loadPlaywright() {
   try { return await import('playwright'); } catch {}
@@ -66,6 +68,57 @@ function measure() {
   return rows;
 }
 
+function layout(isApp) {
+  const rows = [];
+  const cap = (kind, list) => { rows.push(...list.slice(0, 5)); if (list.length > 5) rows.push(`${kind} +${list.length - 5} more`); };
+  const own = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
+  const sel = (el) => { let s = el.tagName.toLowerCase(); if (el.id) s += '#' + el.id; else if (el.classList[0]) s += '.' + el.classList[0]; return s; };
+  const shown = (el) => { const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0 && +cs.opacity > 0.05; };
+  const pinned = (el) => { for (let a = el; a; a = a.parentElement) { const p = getComputedStyle(a).position; if (p === 'fixed' || p === 'sticky') return a; } return null; };
+  const clipped = (el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const s = getComputedStyle(a); if (s.overflowX !== 'visible' || s.overflowY !== 'visible') return a; } return null; };
+  const cut = (r, c) => { const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), w = Math.min(r.right, c.right) - x, h = Math.min(r.bottom, c.bottom) - y; return w > 0 && h > 0 ? { left: x, top: y, right: x + w, bottom: y + h } : null; };
+  const fonts = new Map(), clips = [], boxes = [];
+  for (const el of document.body.querySelectorAll('*')) {
+    if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName) || el.closest('svg')) continue;
+    const text = own(el);
+    if (!text || !shown(el)) continue;
+    const cs = getComputedStyle(el), label = `${sel(el)} "${text.slice(0, 30)}"`;
+    if (!el.closest('code, pre, kbd, samp')) { const f = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim().toLowerCase(); fonts.set(f, fonts.get(f) ?? label); }
+    const r = el.getBoundingClientRect();
+    const box = clipped(el);
+    if (cs.textOverflow !== 'ellipsis') {
+      const c = box ? box.getBoundingClientRect() : { left: 0, right: innerWidth };
+      const ellipsisBox = box && getComputedStyle(box).textOverflow === 'ellipsis';
+      const partial = r.right > c.left && r.left < c.right && (r.right > c.right + 1 || r.left < c.left - 1);
+      const self = ['hidden', 'clip'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1;
+      if (!ellipsisBox && (partial || self)) clips.push(`CLIP ${innerWidth} ${label}`);
+    }
+    const range = document.createRange();
+    const lines = [];
+    for (const n of el.childNodes) if (n.nodeType === 3 && n.textContent.trim()) { range.selectNodeContents(n); lines.push(...range.getClientRects()); }
+    let area = { left: -1e9, top: -1e9, right: 1e9, bottom: 1e9 };
+    for (let a = box; a && area; a = clipped(a)) area = cut(area, a.getBoundingClientRect());
+    const kept = area ? lines.map((l) => cut(l, area)).filter((l) => l && l.right - l.left > 3 && l.bottom - l.top > 3) : [];
+    if (kept.length) boxes.push({ el, label, lines: kept, layer: pinned(el) });
+  }
+  const overlaps = [];
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i], b = boxes[j];
+    if (a.layer !== b.layer || a.el.contains(b.el) || b.el.contains(a.el)) continue;
+    const hit = a.lines.some((x) => b.lines.some((y) => { const c = cut(x, y); return c && c.right - c.left > 3 && c.bottom - c.top > 3; }));
+    if (hit) overlaps.push(`OVERLAP ${innerWidth} ${a.label} | ${b.label}`);
+  }
+  cap('CLIP', clips);
+  cap('OVERLAP', overlaps);
+  if (fonts.size > 2) rows.push(`FONTS ${fonts.size} ${[...fonts].map(([f, l]) => `${f} (${l})`).join('; ')}`);
+  if (isApp && innerWidth >= 1000 && document.documentElement.scrollHeight > innerHeight * 1.05) rows.push(`FIT ${innerWidth} page ${document.documentElement.scrollHeight}px tall, window ${innerHeight}px`);
+  if (isApp && innerWidth < 600) {
+    const bar = [...document.body.querySelectorAll('*')].some((el) => { const p = getComputedStyle(el).position, r = el.getBoundingClientRect(); return (p === 'fixed' || p === 'sticky') && shown(el) && r.bottom >= innerHeight - 4 && r.height <= 120 && el.querySelectorAll('a, button').length >= 3; });
+    if (!bar) rows.push(`NAV ${innerWidth} no bottom tab bar with 3+ links or buttons`);
+  }
+  return rows;
+}
+
 const lines = [];
 let fail = 0;
 const browser = await chromium.launch();
@@ -82,15 +135,33 @@ for (const width of [1440, 768, 390]) {
     window.scrollTo(0, 0);
   });
   await page.waitForTimeout(600);
-  const shot = join(out, `${width}.png`);
-  await page.screenshot({ path: shot, fullPage: true });
-  lines.push(`SHOT ${shot}`);
+  if (shots && width !== 768) {
+    const shot = join(out, `${width}.png`);
+    await page.screenshot({ path: shot, fullPage: true });
+    lines.push(`SHOT ${shot}`);
+  }
+  if (width !== 768) for (const row of await page.evaluate(layout, app)) { lines.push(row); if (!/^\S+ \+\d+ more$/.test(row)) fail++; }
   if (width === 1440) {
     for (const row of await page.evaluate(measure)) { lines.push(row); if (!row.startsWith('SKIP')) fail++; }
-    const body = (await page.evaluate(() => document.body.innerText)).toLowerCase();
+    const body = (await page.evaluate(() => {
+      const shown = (el) => { const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0 && +cs.opacity > 0.05; };
+      const controls = [...document.querySelectorAll('a, button, [role=tab], [role=button], [tabindex], label, select option')].filter((c) => shown(c.tagName === 'OPTION' ? c.parentElement : c));
+      const keys = (p) => [p.id, ...Object.values(p.dataset)].filter(Boolean);
+      const opened = (p) => keys(p).some((k) => controls.some((c) => [...c.attributes].some((a) => a.value === k || a.value === `#${k}` || a.value.split(/\s+/).includes(k))))
+        || (p.getAttribute('aria-labelledby') || '').split(/\s+/).some((id) => { const c = id && document.getElementById(id); return c && shown(c); });
+      const present = (el) => {
+        if (shown(el)) return true;
+        let panel = null;
+        for (let a = el; a && a !== document.body; a = a.parentElement) if (!shown(a) && (!a.parentElement || shown(a.parentElement) || a.parentElement === document.body)) { panel = a; break; }
+        return !!panel && opened(panel);
+      };
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), out = [];
+      for (let n; (n = w.nextNode());) if (!n.parentElement.closest('script, style, noscript, template') && present(n.parentElement)) out.push(n.textContent);
+      return out.join(' ').replace(/\s+/g, ' ');
+    })).toLowerCase();
     for (const t of expects) if (!body.includes(t.toLowerCase())) { lines.push(`MISSING "${t}"`); fail++; }
   }
-  if (width !== 768) {
+  if (width !== 768 && !app) {
     for (const t of expects) {
       const top = await page.evaluate((needle) => {
         for (const el of document.body.querySelectorAll('*')) {
@@ -102,9 +173,9 @@ for (const width of [1440, 768, 390]) {
       if (top !== null && top > 3000) { lines.push(`BELOW ${width} ${top} "${t}"`); fail++; }
     }
   }
-  if (width === 390) {
+  if (width !== 1440) {
     const px = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    if (px > 0) { lines.push(`OVERFLOW 390 ${px}`); fail++; }
+    if (px > 0) { lines.push(`OVERFLOW ${width} ${px}`); fail++; }
   }
   await page.close();
 }

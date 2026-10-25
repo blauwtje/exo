@@ -123,8 +123,6 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/design-ui/SKILL.md': [
     'references/slop.md',
-    'references/motion.md',
-    'references/finish.md',
   ],
   'skills/write-docs/SKILL.md': [
     'references/ai-tics.md',
