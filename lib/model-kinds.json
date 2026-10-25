@@ -76,16 +76,13 @@
   "unnamed": { "types": ["general-purpose", "claude"], "kind": "investigate" },
   "agents": {
     "agents/build-task.md": { "kind": "build-task" },
-    "agents/build-ui.md": { "kind": "build" },
-    "agents/critique-ui.md": { "kind": "review-deep" },
     "agents/fetch-docs.md": { "kind": "research" },
     "agents/find-open-points.md": { "kind": "investigate" },
     "agents/fix-review.md": { "kind": "build" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/review-branch.md": { "kind": "review" },
     "agents/run-unit.md": { "kind": "run-unit" },
-    "agents/solve-hard.md": { "kind": "hardest" },
-    "agents/survey-ui.md": { "kind": "investigate" }
+    "agents/solve-hard.md": { "kind": "hardest" }
   },
   "dispatches": [
     { "file": "skills/improve/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: improve-round`", "kind": "improve-round" },
@@ -94,8 +91,6 @@
     { "file": "skills/build/reviewer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
     { "file": "skills/build/references/fresh-eyes.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
     { "file": "skills/build/references/design-tasks.md", "match": "delegate whose prompt opens with `exo-kind: peer`", "kind": "peer" },
-    { "file": "skills/design-ui/references/phase-detail.md", "match": "Phase 5 → a `general-purpose` delegate whose prompt opens with `exo-kind: review`", "kind": "review" },
-    { "file": "skills/design-ui/references/phase-detail.md", "match": "A `general-purpose` delegate whose prompt opens with `exo-kind: review`, dispatched", "kind": "review" },
     { "file": "skills/edit-skills/references/blind-eval.md", "match": "delegate whose prompt opens with `exo-kind: review` as judge", "kind": "review" }
   ]
 }

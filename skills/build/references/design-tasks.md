@@ -10,17 +10,16 @@ This session reads the state only, never the plan's `## Visual direction` or the
   - Name plan path, branch, checkout, `<skill>` (`${CLAUDE_SKILL_DIR}` resolved), the task number, and `<skill>/references/design-tasks.md` `## The delegate` as its steps.
   - Call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.
   - Its one-line return routes as a unit's does.
-- **`direction pending at rung <n>`.** Build the task in this session under `design-ui`, from its Direction phase: the one step that reads the plan here, because only this session can ask.
-- **`direction none`.** Build the task in this session under `design-ui`, from its `## Route`, same reason.
+- **`direction pending at rung <n>`.** Build the task in this session under `design-ui`; this session can ask the user.
+- **`direction none`.** Build the task in this session under `design-ui`, same reason.
 
 ## The delegate
 
 The session never reads this section; only the delegate does.
 
-1. Load `design-ui`; the plan names a `Contract:` → enter it at Route rung 2, else at its `## Detached run`.
-   - Before entering, write the plan's `Contract:` to `$RUN/contract-selected.json` and the task's `Files:` lines to `$RUN/files.md` as `<path>:<first>-<last>`.
-   - The plan names no `Contract:` → write only `$RUN/files.md`; `design-ui`'s run rule settles the direction and records it, so `BLOCKED` on no contract is wrong.
-   - The recorded direction outranks your own reading of the task; the plan's `Contract:` or the run rule settled it.
+1. Load `design-ui` and build the task's `Files:`.
+   - The plan names a `Contract:` → it is the direction; the plan names none → `design-ui` decides it, so `BLOCKED` on no contract is wrong.
+   - The plan's direction outranks your own reading of the task.
 2. Once `design-ui` reports, run the task's `Proof:`, or a long task's `Run:`.
 3. Write `<command>: pass` over its last output lines, indented, to `<checkout>/.exo/implementer-<n>.md`.
 4. Land it with `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`; land-task refuses a compact task without that report.

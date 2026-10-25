@@ -1,14 +1,12 @@
 // Every reference a skill exposes is reachable from its table, the required
 // cross-skill owner rows are present with their timing predicate, every
-// delegate prompt beside a SKILL.md has a row, and the design-ui reference set
-// matches its table file for file.
+// delegate prompt beside a SKILL.md has a row.
 
 import fs from 'node:fs';
 import path from 'node:path';
 
 const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
-const VISUAL_DESIGN_REFERENCE_COUNT = 24;
 const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
 const EXPECTED_OWNER_ROWS = {
@@ -124,32 +122,9 @@ const EXPECTED_OWNER_ROWS = {
     '../../docs/principles/README.md',
   ],
   'skills/design-ui/SKILL.md': [
-    'references/intake.md',
-    '../route-skills/references/question.md',
-    'references/phase-detail.md',
-    'references/phase-direction.md',
-    'references/phase-build.md',
-    'references/build-pass.md',
-    'references/stack.md',
-    'references/visual-direction.md',
-    'references/sketch-tab.md',
-    'references/direction-preview.md',
-    'references/composition.md',
-    'references/typography.md',
-    'references/controls.md',
-    'references/implementation.md',
+    'references/slop.md',
     'references/motion.md',
-    'references/interaction-qa.md',
-    'references/feedback-and-status.md',
-    'references/visual-critique.md',
-    'references/craft-recipes.md',
-    'references/component-system.md',
-    'references/tokens.md',
-    'references/icons-and-imagery.md',
-    'references/accessibility.md',
-    'references/performance-budget.md',
-    'references/internationalization.md',
-    '../route-skills/references/closing.md',
+    'references/finish.md',
   ],
   'skills/write-docs/SKILL.md': [
     'references/ai-tics.md',
@@ -256,21 +231,6 @@ function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
   }
 }
 
-function checkVisualDesignSet(errors, repository) {
-  const skillFile = path.join(repository.skillsRoot, 'design-ui', 'SKILL.md');
-  const referencesRoot = path.join(repository.skillsRoot, 'design-ui', 'references');
-  const rows = referenceTableEntries(repository.text(skillFile))
-    .map((entry) => entry.path)
-    .filter((row) => row.startsWith('references/'))
-    .map((row) => path.resolve(path.dirname(skillFile), row));
-  const tabled = new Set(rows);
-  const present = new Set(repository.walk(referencesRoot, (file) => file.endsWith('.md')));
-  const equal = tabled.size === present.size && [...tabled].every((file) => present.has(file));
-  if (present.size !== VISUAL_DESIGN_REFERENCE_COUNT || tabled.size !== VISUAL_DESIGN_REFERENCE_COUNT || !equal) {
-    errors.push(`design-ui requires set equality for ${VISUAL_DESIGN_REFERENCE_COUNT} files and rows; files=${present.size}, rows=${tabled.size}`);
-  }
-}
-
 export function checkReferenceTables(report, repository) {
   const skillFiles = repository.walk(repository.skillsRoot, (file) => path.basename(file) === 'SKILL.md');
   const errors = [];
@@ -302,7 +262,6 @@ export function checkReferenceTables(report, repository) {
     }
   }
 
-  checkVisualDesignSet(errors, repository);
 
   for (const name of IMPLEMENT_ONLY) {
     const matches = repository.walk(repository.skillsRoot, (file) => path.basename(file) === name);

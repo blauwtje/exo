@@ -29,7 +29,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
   const task = plan.tasks.find((entry) => entry.number === number);
   const extra = [
     `- Read ${learnings} first, and before ending append one line on anything the next task should know.`,
-    ...(task.design ? [`- Design task: build by steps 1-3 of ${path.join(SKILL_DIR, 'references', 'design-tasks.md')} \`## The delegate\`, contract first when the plan names one, else design-ui's run rule settles the direction, with \`$RUN\` as ${path.join(root, '.exo')}.`] : []),
+    ...(task.design ? [`- Design task: build by steps 1-3 of ${path.join(SKILL_DIR, 'references', 'design-tasks.md')} \`## The delegate\`, with the plan's Contract or Visual direction as the direction.`] : []),
     ...(runDir
       ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${path.join(runDir, 'decisions.md')}) and go on.`]
       : []),

@@ -27,8 +27,8 @@ argument-hint: <outcome to shape>
    - Last answer → brief now, no recap, no yes question.
 4. **Map, then locate.**
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
-   - Unmapped range → `exo:locate-code`, at most eight, read none located; outside facts → one `exo:fetch-docs` round, no gap-fill; both foreground, one message.
-   - `grep -n` the map; never `cat`, `head` or `sed` it.
+   - Unmapped range → `exo:locate-code` agent, at most eight, read none located; outside facts → one `exo:fetch-docs` round, no gap-fill; both foreground, one message.
+   - `grep -n` the map; never `cat`, `head`, `sed`.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`; read its output, never its source.

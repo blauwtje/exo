@@ -81,7 +81,7 @@ Other skills, written as you call them. Those with `/exo:` start only when you t
 
 - `find-cause`: finds why something broke before any code changes.
 - `refactor`: restructures code without changing what it does.
-- `design-ui`: designs how a page or component looks.
+- `design-ui`: builds the real page or component directly, asks only when it cannot build without the answer, and finishes motion, reduced motion and every state.
 - `/exo:check-docs`: looks up how the installed version of a library behaves.
 - `/exo:write-docs`: writes READMEs, pull requests and commit messages.
 - `/exo:file-issues`: writes GitHub issues and files them.

@@ -9,9 +9,7 @@ import path from 'node:path';
 import { after } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-export const SCRIPTS = fileURLToPath(new URL('../skills/design-ui/scripts/', import.meta.url));
-
-export const script = (name) => path.join(SCRIPTS, name);
+const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const temporaryDirectories = [];
 
@@ -62,7 +60,7 @@ export async function run(file, args, options = {}) {
     const child = execFile(
       process.execPath,
       [file, ...args],
-      { cwd: options.cwd ?? SCRIPTS, env, timeout: 120_000 },
+      { cwd: options.cwd ?? REPOSITORY_ROOT, env, timeout: 120_000 },
       (error, stdout, stderr) => resolve({
         code: error ? (typeof error.code === 'number' ? error.code : 1) : 0,
         stdout: String(stdout),

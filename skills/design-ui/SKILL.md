@@ -1,105 +1,58 @@
 ---
 name: design-ui
-description: "Use when a page or component's look or copy changes, or looks empty, boring or generic. Not for a typo or non-visual change."
-argument-hint: <page, component or visual change>
+description: Use when a page or component's look or copy changes, or it looks empty, boring or generic. Not for a typo, a non-visual change, or a request that leaves data or behavior open (spec).
 ---
 
-# Visual Design
+# design-ui
 
-Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. Produce a type pairing with a voice, a lit tinted ground, deliberate spacing and every state drawn. Avoid the unfinished default: stock type, a flat ground, loose spacing, missing states. Avoid a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one; `## Slop tropes` of `references/build-pass.md` lists the tropes.
+Build the real page straight away, render it, look at it, fix it. The enemy is the generic template look and the question that stalls the work. The overcorrection is effects piled on with no direction: one committed direction, held.
 
-A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline.
+## Brief
 
-Every screen ships the scope `references/composition.md` completes and the motion bar of `references/motion.md`.
+- Question → ask only when the request cannot be built without the answer; else decide and note the decision in the report.
+- Reading → before any code, write one line: audience, mood, direction (a committed, specific aesthetic such as "warm editorial, ink on cream, one terracotta accent", not "clean modern").
+- Requirements → list every explicit ask from the request as a checklist; the brief outranks taste.
+- Content → use the subject's own facts, names and numbers; headline passes the swap-the-name test in `references/slop.md`. Open that file before writing copy or choosing colors.
+- Stack → use the repo's existing stack and tokens; none exists → plain HTML, CSS and JS, no CDN or network fonts unless the request allows them.
+- Restyle → keep all content, links and working behavior; change only presentation.
 
-**After a compaction**, see `## The run directory` of `references/intake.md`.
+## Build
 
-## Size the request
+- Order → type scale and color tokens as CSS variables first, then layout, then components, then motion.
+- Type → pair one display face with one body face (system or local fonts when offline); clear hierarchy of size and weight; body 16-18px, line length at most 75ch.
+- Color → one dominant neutral family, one accent used sparingly, text contrast at least 4.5:1 (3:1 for large text and UI borders).
+- Layout → one deliberate asymmetry or rule-break; spacing from a 4/8 scale; responsive at 1440, 768 and 390 with no horizontal scroll.
+- Motion → part of done, not polish. Open `references/motion.md` before writing any transition or animation.
+- States → draw every one that applies: hover, focus-visible, active, disabled, loading, empty, error, success. Open `references/finish.md` for the list and floors.
+- Interaction → every control in the request works with real (made-up, realistic) data, not placeholders such as lorem ipsum.
 
-Any visual change belongs here, at any file count; an undecided surface goes to `spec` first, added state, persistence, a dependency `references/stack.md` lacks or a network call to `build`.
+## Preview
 
-- **Page or redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. It takes the one pass below; the existing direction is evidence, not a veto.
-- **Sketch, new piece, tweak:** `## Sizes` of `references/phase-build.md`.
+- Preview → the real rendered page, not a mock. Serve or open it and screenshot at 1440, 768 and 390, for example `npx playwright screenshot --viewport-size=1440,900 --full-page <url-or-file> /tmp/d-1440.png`.
+- Look → open each screenshot with Read and judge the picture, not the code; shoot without scrolling first, and list every contrast failure before pass 1.
+- Console → load the page and exercise one interaction; zero errors and zero failed requests.
 
-## Route
+## Review
 
-Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface. Then stop at the first matching rung:
+- Pass 1 → against the screenshots and `references/finish.md` checklist, list the top three defects by severity: broken, unreadable, generic, then polish; fix them.
+- Pass 2 → re-screenshot once, confirm the fixes, fix what remains; no third loop.
+- Requirements → tick each checklist line against the page before reporting; a miss is fixed, not noted.
 
-1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at one-pass step 5.
-3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: `## The direction offer` of `references/intake.md`, then the sketch round.
-4. **Sketch:** the sketch path.
-5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, while neither the user nor the brief lets it be replaced: the plan keeps that identity. A component library in the manifest is not that evidence on its own.
-6. **Everything else**, a landing or marketing page included: the scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface.
+## Report
 
-Only a request from the user opens the picker: a landing page or an open identity does not.
-
-## The one pass
-
-The default for every rung but 1 and 4; `exo:build-ui` writes the code, since code here overruns context. References call the first group Phase 1-2 and steps 4-7 Phase 3.
-
-Before building, each part uses judgment:
-
-- **Context:** read the Phase 1 sections of `references/phase-detail.md`.
-- **Plan:** after one line each naming the scope groups and mood, write the plan to `$RUN/plan.md` under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`; keep it short enough for `exo:build-ui` to read whole.
-- **Check the plan** per `## Every rung` of `references/phase-direction.md`.
-
-Then in order, each step needing the one before:
-
-4. **Build pass.** Read `## The build floor` and `## Proof` of `references/build-pass.md`.
-5. **Build.** Dispatch fresh `exo:build-ui` per `## Where the build runs` of `references/phase-build.md`, after `## The comp` on a full redesign.
-6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3.
-7. **Finish on a fresh capture.** Take its step 4.
-
-## On request only
-
-The parts below run only when the user's own words ask for them; a page's size, rung or genre never starts them.
-
-- **Variants or a picker** ("show me options", "let me choose"): rung 3.
-- **Working or live comps**: `## The comps` of `references/phase-direction.md`.
-- **A survey, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
+- Contents → the one-line reading, files changed, screenshot paths, the requirement checklist with pass marks, any decision made in place of a question.
+- Length → under 15 lines; no praise of the result.
 
 ## References
 
-- Load only the sections a row names, all if none.
-- Read a section by `offset`/`limit` from `grep -n '^## '`; never `cat`, `awk` or `sed` a whole reference, which loads sections no row names.
-- Never Read a `tool-results/` file the run holds, which loads it twice.
-- Each section → read once per run; a phase's sections → one message of parallel Reads.
-- Preview, rung 3 before the click → only Phase 1 and `preview:` sections; other Phase 2 ones after the pick.
-
 | File | Read it when |
 |---|---|
-| `references/intake.md` | Before Phase 1: `## Asking`, `## The run directory`; preview: `## The direction offer`; `## Symptoms` for a reported fault; `## Settled identity` when Route rungs 1-4 miss. |
-| `../route-skills/references/question.md` | Never on rung 3; a question beyond the form and the offer. |
-| `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the full run. |
-| `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; preview: `## Mood to look`, `## Rung 3`, `## Judgment`; the rest on a live-comp request or a read-only planning mode. |
-| `references/phase-build.md` | One-pass step 5: `## Where the build runs`; steps 6-7 and every path's capture: `## Capture, look, fix once`; full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | One-pass step 4: `## The build floor`, `## Proof`; sketch Phase 3: whole. |
-| `references/stack.md` | Phase 2 and preview: `## Which stack`; the rest when it picks the default stack, `## Scaffold` and `## Theme` builder-only on the one pass. |
-| `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
-| `references/sketch-tab.md` | Preview: `## The commands`, `## The direction round`, `## The answer`; whole before the first other visual choice the user asked to see. |
-| `references/direction-preview.md` | Live comps on request only: after `--check` reports ok, before the first comp. |
-| `references/composition.md` | Phase 1 `## Inventory before layout`; Phase 2 `## Turn subject evidence into a system`, `## Choose structures from relationships`, `## Write a composition contract`; full run Phase 3 `## Build density without clutter`, `## Surface obligations`, `## Responsive recomposition`. |
-| `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list`, `## Pairing`; preview: `## Pairing`; full run Phase 3 the rest. |
-| `references/controls.md` | Full run Phase 3: `## Tactile hierarchy`, `## Labels`, `## Anatomy of the composite controls`. |
-| `references/implementation.md` | Full run Phase 3: `## Where code lives`, `## One styling mechanism`, `## Tokens and palette derivation`, `## Responsive type and layout`, `## Banned patterns`, `## Finish — browser surfaces`. |
-| `references/motion.md` | Builder alone on the one pass; else before the first animation: `## Motion thesis`, `## Job gate`, `## Timing`, `## Reduced motion`; full run Phase 3 `## Materials`; `## Scroll and view transitions` or `## Continuity contract` when the build uses one, `## Judgment` for an animation library. |
-| `references/interaction-qa.md` | Full run Phase 3; `## Pre-ship interaction sweep`, Phase 5 alone. |
-| `references/feedback-and-status.md` | Full run Phase 3; Phase 5 `## Sweep` alone. |
-| `references/visual-critique.md` | Opt-in Phase 4: `exo:critique-ui` step 1's sections. |
-| `references/craft-recipes.md` | Full run Phase 3. |
-| `references/component-system.md` | Phase 1 `## Adopt before authoring` when the repository ships a component layer; full run Phase 3 before a control, field or surface the design repeats: `## Anatomy`, `## The state row`, `## Scales, not values`, plus `## Composite patterns` for a composite. |
-| `references/tokens.md` | Phase 2: `## Tiers`; then the section matching a DTCG pipeline, a second theme or brand, or a ramp derived from target contrast. |
-| `references/icons-and-imagery.md` | Full run Phase 3. |
-| `references/accessibility.md` | Full run Phase 3: `## Keyboard contracts` alone; Phase 5 `## Sweep` alone. |
-| `references/performance-budget.md` | Full run Phase 3 the sections matching an added hero raster, unloaded font or persistent effect; Phase 5 `## Outcome thresholds` and `## Hard failures` alone. |
-| `references/internationalization.md` | Phase 1 when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script. |
-| `../route-skills/references/closing.md` | Before the final message. |
+| `references/slop.md` | Before writing copy or choosing colors, type or layout. |
+| `references/motion.md` | Before any transition or animation. |
+| `references/finish.md` | When drawing states and in the review pass. |
 
 ## Judgment
 
-- Explicit brief requirements outrank every design default.
-- Accessibility and complete content/state coverage outrank visual novelty.
-- This skill owns visual decisions only.
-- When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting.
-- When no stage called it, execute the visual-only request and report directly.
+- The request's explicit asks outrank taste and the ban lists.
+- A missing fact outranks the no-question rule only when the page cannot be built without it.
+- Motion and states outrank speed: a page without them is not done.

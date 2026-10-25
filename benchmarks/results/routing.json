@@ -19,7 +19,7 @@
             "falseTrigger": 0
           },
           "find-cause": {
-            "recall": 0.6666666666666666,
+            "recall": 0.5,
             "falseTrigger": 0
           },
           "refactor": {
@@ -42,7 +42,7 @@
         "held-out": {
           "build": {
             "recall": 1,
-            "falseTrigger": 0.03125
+            "falseTrigger": 0
           },
           "design-ui": {
             "recall": 1,
@@ -265,7 +265,7 @@
       "prompt": "The export job crashes with a null pointer after the last deploy and I don't know why. Find the cause.",
       "expect": "find-cause",
       "split": "train",
-      "pick": "find-cause"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -859,7 +859,7 @@
       "prompt": "Bump the default page size from 20 to 50 in config.js and in the two tests that assert it; the product owner already agreed.",
       "expect": null,
       "split": "held-out",
-      "pick": "build"
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -892,7 +892,7 @@
   "split": "all",
   "hashes": {
     "build": "03ce61f770bae31003aba1fe53cde9a9cf0248185b383f67220b103520295e6e",
-    "design-ui": "5a58a2020bc774f268f91c2039bdc1fc6fe383e3fd66ddceef98441422636d18",
+    "design-ui": "3382cc8e57ae5fa739e143af7917330f1ca1964cfaef11e6d5ce2f7806eb19d6",
     "find-cause": "5d429b5f40a6a26fe6eee170c3b9bbf0714d29afc1b55dbe9568cbf231631b5b",
     "refactor": "edd8c13b3eb45a4e968dcce07f91d54cda9eab5b2483d48fb7ed50ece1655049",
     "ship": "469ca26ee83d6f02bbae796b1b57531e8ed58c910d71f6f6861bd94d6de7dc97",

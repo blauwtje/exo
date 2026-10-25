@@ -78,9 +78,8 @@ export const STAGE_BODY_TOKENS = {
   'start': 750, 'spec': 790, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
-// ceiling. build-ui, survey-ui and critique-ui carry visual-direction context
-// no other agent needs, so they are exempt by exact name, never by pattern.
-export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui'] };
+// ceiling. An agent is exempt only by exact name, never by pattern.
+export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 // Every stage-path reference and every prompt a stage skill's own table names
 // (a row whose target is not under references/) stays within 750 tokens,
 // unless it is locked here at its measured size. A lock fails a file that
@@ -97,7 +96,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/wave-worktrees.md': 928,
   'skills/build/run-task-prompt.md': 788,
   'skills/ship/references/pr-prep.md': 772,
-  'skills/spec/references/brief.md': 891,
+  'skills/spec/references/brief.md': 881,
   'skills/spec/references/task-list.md': 904,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits

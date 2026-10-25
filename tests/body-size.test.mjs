@@ -17,10 +17,8 @@ test('bodySizes returns path, tokens, cap and headroom per capped body', () => {
     'skills/build/SKILL.md': `---\nname: build\n---\n${'x'.repeat(400)}`,
     'skills/other/SKILL.md': `---\nname: other\n---\n${'x'.repeat(40)}`,
     'agents/a.md': `---\nname: a\n---\n${'x'.repeat(80)}`,
-    'agents/build-ui.md': `---\nname: b\n---\nignored`,
   });
   const byPath = Object.fromEntries(bodySizes(repo).map((r) => [r.path, r]));
-  assert.equal(byPath['agents/build-ui.md'], undefined);
   assert.equal(byPath['skills/build/SKILL.md'].tokens, 100);
   assert.equal(byPath['skills/build/SKILL.md'].cap, 750);
   assert.equal(byPath['skills/build/SKILL.md'].headroom, 650);

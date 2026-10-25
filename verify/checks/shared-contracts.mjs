@@ -46,63 +46,6 @@ const PINNED_SENTENCES = {
   'skills/check-docs/SKILL.md': [
     'Research pass ends the turn only when the question is standalone with no code to follow',
   ],
-  'skills/design-ui/SKILL.md': [
-    'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
-    'or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive',
-    'This skill owns visual decisions only.',
-    'When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting.',
-    'When no stage called it, execute the visual-only request and report directly.',
-    'Only a request from the user opens the picker: a landing page or an open identity does not.',
-    'A component library in the manifest is not that evidence on its own',
-  ],
-  'skills/design-ui/references/intake.md': [
-    'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
-  ],
-  'skills/design-ui/references/phase-detail.md': [
-    '`## The build floor` of the `build-pass` reference',
-    'never substitute a product-category aesthetic for missing evidence',
-    'its repair is a new direction, not another polish pass, so the cycle ends there',
-    'baseline before the first edit, post-build before the critique fixes, and final after them',
-  ],
-  'skills/design-ui/references/phase-direction.md': [
-    'validate the set with `--check` to status ok before building any variant',
-    'A read-only planning mode runs no `scripts/direction.mjs` call',
-  ],
-  'skills/design-ui/references/motion.md': [
-    'only exercised is motion-verified',
-  ],
-  'skills/design-ui/references/visual-critique.md': [
-    '- [ ] Body-text contrast below WCAG AA **4.5:1**.',
-    '- [ ] Body text below **14px**.',
-    '- [ ] Body line-height below **1.5**.',
-    'adjacent type steps under a 1.25 ratio',
-  ],
-  'skills/design-ui/references/visual-direction.md': [
-    '- Body ink on ground: verify a ratio of at least 4.5:1.',
-    'UI chrome and text at least 24px, or 18.66px and bold, require 3:1; all smaller text requires 4.5:1.',
-    'Every planned quiet region carries one named job',
-  ],
-  'skills/design-ui/references/typography.md': [
-    '- **Body** — text set at 16px or larger, or 14px in dense data UI, with line-height at least 1.5, every used weight loaded, and a true italic when italic text appears.',
-    'Ratio between adjacent steps: **1.25 by default**',
-    'Record family, provenance `chosen`, the matched traits as `matchEvidence`',
-  ],
-  'skills/design-ui/references/build-pass.md': [
-    '- no horizontal scroll from 360px through 1440px;',
-    '- reduced-motion handling for every animation and semantic HTML beneath styling;',
-    '- reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;',
-    '- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property;',
-    '- body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;',
-    '- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;',
-    '- targets at least 24×24 CSS px, the WCAG 2.2 AA minimum;',
-    '- a target is exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation;',
-    '- 44×44 is the enhanced target and the default under a coarse pointer;',
-    'The underdesign floor: the ground is a designed surface, not an untouched flat neutral',
-    'This floor binds every build, in the session and in every builder',
-  ],
-  'agents/build-ui.md': [
-    'Every scope meets `## The build floor` of `$SKILL/references/build-pass.md`',
-  ],
   'skills/edit-skills/SKILL.md': [
     `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens and ${DESCRIPTION_CHARS.ceiling} characters.`,
     `A reference holds one topic and links to no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
@@ -127,16 +70,7 @@ const PINNED_SENTENCES = {
 // only by list separators that holds at least one asset name; other backticked
 // tokens in the section stand alone and are not checked. The asset is read
 // from the repository under check.
-const PINNED_LISTS = [
-  { file: 'skills/design-ui/references/build-pass.md', section: '## Slop tropes',
-    asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
-  { file: 'skills/design-ui/references/sketch-tab.md', section: '## The labels',
-    asset: 'skills/design-ui/assets/sketch-tab-labels.json', names: (json) => Object.keys(json) },
-  { file: 'skills/design-ui/references/direction-preview.md', section: '## What the chooser reads',
-    asset: 'skills/design-ui/assets/pick-labels.json', names: (json) => Object.keys(json) },
-  { file: 'skills/design-ui/references/phase-build.md', section: '## Judgment',
-    asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.alwaysBlocking },
-];
+const PINNED_LISTS = [];
 
 const LIST_SEPARATOR = /^(?:, |,? (?:or|and|plus) )$/;
 

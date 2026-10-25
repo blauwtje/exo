@@ -83,7 +83,7 @@ node benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<file>,standar
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251.
 - The session's effort reaches no subagent: the `agent-effort` hook sets effort at dispatch, and every `dispatches` entry passes a model and an effort in the call. `CLAUDE_CODE_EFFORT_LEVEL` overrides them, so exo never sets it.
 - The stage skills pin no model: a pinned model would override the session's model and rebuild the prompt cache mid-session. Set `model` or `effort` in a skill only where its work always needs that tier.
-- A delegate never sees the session hook, and the session text carries no pointer to `lean.md`, so the five delegate prompts and agents that write code read `skills/route-skills/references/lean.md`, or carry lines from it: `agents/build-task.md`, `skills/build/bug-fixer-prompt.md`, `skills/build/review-fixer-prompt.md`, `agents/build-ui.md` and `skills/find-cause/fixer-prompt.md`.
+- A delegate never sees the session hook, and the session text carries no pointer to `lean.md`, so the four delegate prompts and agents that write code read `skills/route-skills/references/lean.md`, or carry lines from it: `agents/build-task.md`, `skills/build/bug-fixer-prompt.md`, `skills/build/review-fixer-prompt.md`, and `skills/find-cause/fixer-prompt.md`.
 
 ## Unattended runs
 

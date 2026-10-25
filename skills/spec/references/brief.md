@@ -34,7 +34,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Judgment
 
-- `## Visual direction` (exact name; design-ui reads it) names an existing `contract-selected.json` → design-ui resumes at Build, repeating no variant choice.
+- `## Visual direction` (exact name; design-ui reads it) names a direction → design-ui builds against it and picks none.
 
 ## Open points step
 

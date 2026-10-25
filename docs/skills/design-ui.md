@@ -11,10 +11,10 @@ If the data or behavior of a new screen is still open, `spec` decides that first
 
 ## What you get
 
-- A short plan first: colors, fonts and an ASCII layout, checked against your request.
-- The page built in one pass, screenshotted at 390 and 1440 px wide, then fixed once.
+- The real page built straight away, with no question unless the request cannot be built without one.
+- Motion, reduced motion and every state (hover, focus, disabled, loading, empty, error) drawn as part of done.
+- Screenshots at 1440, 768 and 390 px wide, then two fix passes against a checklist of your asks.
 - Accessibility and contrast minimums, never traded for looks.
-- Only when you ask: several looks to choose from, a critique, or a full multi-step run.
 
 ## Source
 
