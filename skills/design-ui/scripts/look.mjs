@@ -6,15 +6,16 @@ import { pathToFileURL } from 'node:url';
 
 const args = process.argv.slice(2);
 let target = null, out = '/tmp/look', app = false, shots = true;
-const expects = [];
+const expects = [], states = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
   else if (args[i] === '--expect') expects.push(args[++i]);
   else if (args[i] === '--app') app = true;
   else if (args[i] === '--no-shots') shots = false;
+  else if (args[i] === '--state') { const [name, ...js] = args[++i].split('='); states.push({ name: name.replace(/[^\w-]/g, '-'), js: js.join('=') }); }
   else target = args[i];
 }
-if (!target) { console.log('usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]...'); process.exit(2); }
+if (!target) { console.log('usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]... [--state "<name>=<js>"]...'); process.exit(2); }
 
 async function loadPlaywright() {
   try { return await import('playwright'); } catch {}
@@ -177,6 +178,19 @@ for (const width of [1440, 768, 390]) {
     const px = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (px > 0) { lines.push(`OVERFLOW ${width} ${px}`); fail++; }
   }
+  await page.close();
+}
+for (const { name, js } of shots ? states : []) for (const width of [1440, 390]) {
+  const page = await browser.newPage({ viewport: { width, height: 900 } });
+  await page.goto(url, { waitUntil: 'load' });
+  await page.waitForTimeout(300);
+  try {
+    await page.evaluate(`(async () => { ${js} })()`);
+    await page.waitForTimeout(500);
+    const shot = join(out, `state-${name}-${width}.png`);
+    await page.screenshot({ path: shot });
+    lines.push(`SHOT ${shot}`);
+  } catch (e) { lines.push(`STATE ${name} ${width} ${String(e.message).split('\n')[0]}`); fail++; }
   await page.close();
 }
 await browser.close();

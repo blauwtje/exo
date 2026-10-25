@@ -91,6 +91,7 @@
     { "file": "skills/build/reviewer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
     { "file": "skills/build/references/fresh-eyes.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
     { "file": "skills/build/references/design-tasks.md", "match": "delegate whose prompt opens with `exo-kind: peer`", "kind": "peer" },
-    { "file": "skills/edit-skills/references/blind-eval.md", "match": "delegate whose prompt opens with `exo-kind: review` as judge", "kind": "review" }
+    { "file": "skills/edit-skills/references/blind-eval.md", "match": "delegate whose prompt opens with `exo-kind: review` as judge", "kind": "review" },
+    { "file": "skills/design-ui/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: review` as critic", "kind": "review" }
   ]
 }

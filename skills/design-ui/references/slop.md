@@ -1,27 +1,27 @@
-# Copy and generic-look tests
+# Generic looks and copy tells
 
-## Copy
-
-- Swap test → put a competitor's name in the main heading; it still reads true → rewrite it with this product's own nouns and numbers.
-- Marketing headline → at most 7 words; about 80 words per screen.
-- Calls to action → name the outcome ("Install Tidewrack", "Post to Murmur"), not "Get started" or "Learn more" alone.
-- Stock words → none of: seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern", "Welcome to".
-- Tics → no "Not X. Y." reveal, no reflexive lists of three, no em dashes in short copy, no arrow on every button, no middle-dot meta strings.
-- Placeholder → no lorem ipsum, "Feature One", "John Doe" or round numbers (100, 50%).
-- App labels → standard verbs for standard actions (Play, Install, Follow, Save); no themed renaming.
+Each pattern here reads as machine-made because so many generated pages share it. Every one is legitimate when the request names it; otherwise use the alternative beside it.
 
 ## Generic looks
 
-Each one reads as machine-made; pick none unless the request asks, and only the one it names:
-- Cream ground with terracotta accent and a serif.
-- Near-black with one acid accent (lime, cyan) and glow.
-- Purple-to-blue gradient, gradient-filled text, glassmorphism, radial glow, blobs, wave dividers.
-- Broadsheet: hairline rules, italic serif display, mono captions.
-- Dark slate cards with an indigo or violet accent.
-- Three identical icon cards in a row; a hero of one big metric with three small numbers.
-- Every section on the same white card with a soft shadow; nested cards; a card with a colored left border.
-- Emoji or unicode glyphs as icons → inline SVG at one stroke width.
+- Cream ground near `#F4F1EA`, terracotta accent, serif display → the ground and inks of the direction's world.
+- Near-black with one acid accent (lime, cyan) and glow → a deep hue with real value steps and a material finish.
+- Purple-to-blue gradient, gradient-filled text, glassmorphism, radial glow, blobs, wave dividers → solid committed color and surfaces modelled by one light source.
+- Broadsheet: hairline rules, italic serif display, mono captions → type and rules from the world's own print, if it has any.
+- Dark slate cards with an indigo or violet accent → a dominant hue taken from the subject.
+- Emoji or unicode glyphs as icons → inline SVG icons at one stroke width.
+
+## Copy
+
+- Swap test → put a competitor's name in the main heading. If it still reads true, rewrite it with this product's own nouns and numbers.
+- Marketing headline → about 7 words or fewer, and about 80 words of marketing prose per screen; people scan, so long copy goes unread. UI labels and data inside product artifacts do not count toward the 80.
+- Calls to action → name the outcome ("Install Tidewrack", "Post to Murmur"), not "Get started" or "Learn more" alone.
+- App labels → standard verbs for standard actions (Play, Install, Follow, Save), since themed renaming makes people guess.
+- Stock words → replace seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern" and "Welcome to" with a concrete claim.
+- Tics → the "Not X. Y." reveal, reflexive lists of three, em dashes in short copy, an arrow on every button; write the plain sentence instead.
+- Middle-dot meta strings (`3h · 12 likes · Design`) → separate elements: a timestamp, a counter with its icon, a category chip in the item's color.
+- Placeholders → lorem ipsum, "Feature One", "John Doe" and round numbers (100, 50%) become specific names and uneven numbers.
 
 ## Vague-word grep
 
-After the build, grep the page for the stock words above; each hit → rewrite.
+After the build, grep the page for the stock words above; rewrite each hit.

@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 
-const DIRECTIONS = [
-  ['Night market', 'deep maroon or aubergine chrome bar, lantern-yellow primary button, every item tile its own saturated hue', 'one rounded sans at 500/700/800: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", sans-serif', 'pill buttons, 12px cards, soft long shadow'],
-  ['Sticker sheet', 'warm mid-tone ground with a dot or grid texture, each content type a whole card in its own flat color (mint, mustard, plum, navy)', 'one heavy rounded sans: ui-rounded, "Avenir Next Rounded", "Arial Rounded MT Bold", sans-serif', '1.5px ink outline, 3px soft offset shadow, 14px radius'],
-  ['Transit map', 'white panels on a saturated line-color chrome, every category its own line color used as a thick bar and a filled pill', '"Helvetica Neue", "Avenir Next", sans-serif at 400/700, tabular numerals', 'radius 0 or full pill only, no shadow, 3px colored rules'],
-  ['Console hardware', 'graphite chrome in three steps of value, one signal color for primary and status (amber, signal red or cobalt), item art in bright enamel colors', '"DIN Alternate", "Avenir Next Condensed", Bahnschrift, sans-serif, tabular numerals', '6px radius, 1px inner highlight, recessed wells for inputs'],
-  ['Toy plastic', 'bright primary chrome (tomato, cobalt or grass) over a light ground, chunky item tiles in candy colors', 'one round geometric sans at 700/900: ui-rounded, "Avenir Next", "Trebuchet MS", sans-serif', '20px radius, thick 3px borders, press-down shadow on buttons'],
-  ['Riso print', 'paper ground covered 40-60% by two or three overprinted spot inks (fluoro pink, teal, sun yellow) with SVG grain', 'Futura, "Century Gothic", "Avenir Next", sans-serif at 500/800', 'radius 0, misregistered offset fills, no shadow'],
-  ['Deep water', 'drenched in one deep hue (teal, ink green or ultramarine, not a purple gradient), light content cards, item art in coral, kelp and sand', '"Avenir Next", "Gill Sans", sans-serif at 400/600/800', '16px radius, no border, layered soft shadows'],
-  ['Sports broadcast', 'two saturated team colors on dark navy, slanted panel edges, score-bug chips for numbers', '"Avenir Next Condensed", "DIN Condensed", "Arial Narrow", sans-serif, heavy caps only on short labels', 'skewed 8deg panel ends, 4px radius, hard edge light'],
-  ['Paper cutout', 'colored ground (mustard, tomato or teal) with layered flat cut shapes as imagery, white content sheets', '"Gill Sans", Optima, "Avenir Next", sans-serif at 400/700', 'irregular blob masks on art only, 10px radius, soft drop shadow'],
-  ['Studio daylight', 'cool white ground with large color fields per section or item (one strong primary, item colors from a tuned 6-hue set), dark ink text', '"Avenir Next", Seravek, "Gill Sans", sans-serif at 400/600/800', '10px radius, 1px hairline borders, no shadow except on overlays'],
-  ['Arcade cabinet', 'deep indigo-black ground with lit marquee panels, every item a bright cabinet-art tile, one hot primary', '"Avenir Next Condensed", Futura, sans-serif at 700/900', '4px radius, 2px bright edge on focus and selection, scanline texture only in art'],
-  ['Greenhouse', 'saturated leaf-green chrome, cool off-white panels, item fills in tomato, squash, plum and sky', 'Optima, "Avenir Next", "Gill Sans", sans-serif at 400/700', '18px radius, 1px leaf-dark border, gentle shadow'],
+const SEEDS = [
+  ['Transit map', 'every category its own line color, used as thick bars and filled pills on calm panels', 'a plain grotesque with tabular numerals', 'radius 0 or full pill, colored rules, no shadow', 'tight'],
+  ['Console hardware', 'graphite chrome in three value steps, one signal color for action and status, enamel-bright item art', 'a squared technical sans for labels, a calm text face', 'small radius, inner highlight, recessed wells for inputs', 'tight'],
+  ['Toy plastic', 'one bright primary on chrome over a light ground, chunky item tiles in candy colors', 'a round geometric display at heavy weight over a plain text face', 'large radius, thick borders, press-down shadow on buttons', 'airy'],
+  ['Riso print', 'paper ground with two or three overprinted spot inks and grain', 'a geometric display, a quiet text face', 'radius 0, misregistered offset fills, no shadow', 'airy'],
+  ['Deep water', 'drenched in one deep hue, light content sheets, item art in reef colors', 'a humanist sans across a wide weight range', 'soft radius, no border, layered soft shadows', 'airy'],
+  ['Sports broadcast', 'two saturated team colors on dark navy, slanted panel ends, score-bug chips for numbers', 'a condensed display for numbers and short labels only', 'skewed panel ends, small radius, hard edge light', 'tight'],
+  ['Paper cutout', 'colored ground with layered flat cut shapes as imagery, white content sheets', 'a humanist display with a plain text face', 'irregular masks on art only, soft drop shadow', 'airy'],
+  ['Studio daylight', 'cool white ground with large color fields per section or item, dark ink text', 'a neutral grotesque at strong weight contrast', 'hairline borders, shadow only on overlays', 'airy'],
+  ['Arcade cabinet', 'deep ground with lit marquee panels, every item a bright cabinet-art tile, one hot primary', 'a wide or condensed display for titles only', 'bright edge on focus and selection, texture only in art', 'tight'],
+  ['Greenhouse', 'leaf-green chrome, cool off-white panels, item fills in fruit and sky colors', 'a calligraphic-leaning sans display over a plain text face', 'generous radius, leaf-dark border, gentle shadow', 'airy'],
 ];
 
 const args = process.argv.slice(2);
@@ -21,7 +19,8 @@ let seed = at >= 0 ? Number(args[at + 1]) : Math.floor(Math.random() * 2 ** 31);
 if (!Number.isFinite(seed)) { console.log('usage: node deal.mjs [--seed <n>]'); process.exit(2); }
 const next = () => { seed = (seed * 1103515245 + 12345) % 2 ** 31; return seed / 2 ** 31; };
 
-const pool = [...DIRECTIONS];
+const pool = [...SEEDS];
 const dealt = [];
-while (dealt.length < 3) dealt.push(pool.splice(Math.floor(next() * pool.length), 1)[0]);
-for (const [name, color, type, shape] of dealt) console.log(`DIRECTION ${name}\n  color: ${color}\n  type: ${type}\n  shape: ${shape}`);
+while (dealt.length < 2) dealt.push(pool.splice(Math.floor(next() * pool.length), 1)[0]);
+console.log('Seeds only: add each to your own candidates; the subject\'s world decides.');
+for (const [name, color, type, shape, density] of dealt) console.log(`SEED ${name}\n  color: ${color}\n  type: ${type}\n  shape: ${shape}\n  density: ${density}`);
