@@ -10,7 +10,9 @@ Motion clarifies state or guides attention; it never only decorates.
 
 ## Required
 
-- Entrance → hero and each section reveal on load or scroll (IntersectionObserver, once): rise 16-32px plus fade, children staggered 60-90ms, at most 8 staggered items. Hide content only after the observer exists and only below the first viewport; add `.in` on load to anything already in view, so a full-page screenshot without scrolling shows every section.
+- Entrance → hero and each section reveal on load or scroll (IntersectionObserver, once): rise 16-32px by `transform` only, children staggered 60-90ms, at most 8 staggered items.
+- Fade → only on a reveal that plays on load and ends within 400ms, stagger included; a scroll reveal keeps text at full opacity, so a capture right after scrolling measures final contrast.
+- Text parent → opacity 1 on every ancestor of text once motion ends; contrast is measured with ancestor opacity multiplied in.
 - Signature moment → exactly one authored motion tied to the direction: line chart drawing itself, number count-up, headline mask reveal, marquee, step-to-step slide.
 - Control feedback → every button, link, card, row and input has hover, `:focus-visible` and `:active` (scale 0.97 or 1px shift) transitions.
 - State transitions → tab or step change, sort, filter, validation message, success and loading all animate in (fade or slide, not a jump cut); loading uses a skeleton shimmer or spinner.
@@ -31,5 +33,4 @@ Content stays visible with no motion: reveal elements start visible when JS is a
 
 ## Check
 
-- Emulate reduced motion once (Playwright `page.emulateMedia({reducedMotion: 'reduce'})`) and confirm nothing is hidden.
-- Full-page screenshot → take it with no scrolling and again after scrolling to the bottom; both show all content.
+- Reveal CSS → read it once: no scroll reveal changes opacity, every load fade ends within 400ms; the look.mjs full-page shots show all content, no section left blank.

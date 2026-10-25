@@ -15,6 +15,18 @@ Each ban has its replacement.
 - Stock phrases in copy: seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern" → say what it does, for whom, with a number or noun.
 - Lorem ipsum, "Feature One", "John Doe", round numbers (100, 50%) → realistic specific data.
 
+## AI defaults
+
+Current model defaults; each reads as machine-made → pick none unless the request asks:
+- Cream background with terracotta accent.
+- Near-black background with one acid accent (lime, cyan).
+- Purple or blue gradient.
+- Gradient-filled text.
+- Small eyebrow label over every heading.
+- 01 / 02 / 03 section numbering.
+- Three identical icon cards.
+- Hero row of big metrics.
+
 ## Tests
 
 - Subject facts → before writing copy, list 8 facts that belong to this client (place, product, numbers, vocabulary, audience pain); use them in headings, labels and data.

@@ -11,7 +11,9 @@ Draw each that applies, styled, not browser default:
 ## Floors
 
 - Contrast → body and small text 4.5:1, large text and UI parts 3:1; check muted text, placeholder, and text on the accent.
-- Accent as small text (under 18px) → its own 4.5:1 on that background; darken the accent text token apart from the button fill. Decorative outline numerals are `aria-hidden` and excluded.
+- Accent as small text (under 18px) → its own 4.5:1 on that background; darken the accent text token apart from the button fill.
+- Outline or transparent-fill text → none, decorative too; look.mjs scores it 1.0.
+- Contrast proof → look.mjs `CONTRAST` lines, not a judged screenshot; a ratio of 4.46 fails 4.5.
 - Type → body at least 16px, line height 1.5-1.7 for body, 1.05-1.2 for display; line length at most 75ch.
 - Targets → at least 40px tall on touch widths.
 - Semantics → real `button`, `a`, `label`, `table`, heading order; alt text; `lang`; viewport meta.
@@ -19,9 +21,9 @@ Draw each that applies, styled, not browser default:
 
 ## Pre-flight
 
-1. Every request line ticked against the page.
-2. Screenshots at 1440, 768 and 390 viewed; nothing clipped, overlapping, empty or low contrast.
-3. Console clean after load and one interaction.
+1. Every requirement anchor ticked against the page; look.mjs prints no `MISSING` or `BELOW`.
+2. Shots 1440 and 390 viewed; nothing clipped, overlapping or empty; look.mjs ends `LOOK fail=0`.
+3. No `CONSOLE` or `OVERFLOW` line left.
 4. Reduced-motion block present.
 5. Stock-phrase grep is 0; hero headline passes swap-the-name.
 6. Fix order → broken, unreadable, generic, polish.
