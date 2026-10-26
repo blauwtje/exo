@@ -44,10 +44,10 @@ test('context shows used over context_window.context_window_size, warns at 80k, 
 
 test('7d always shows and the cache fills a missing payload', () => {
   const limits = (week) => ({ five_hour: { resets_at: SEC + 9000, used_percentage: 6 }, seven_day: { used_percentage: week } });
-  assert.equal(plain(payload(1, { rate_limits: limits(49) })).split('\n')[1], '  ctx 0k/1M   5h 6% ↻2h 30m   7d 49%');
-  assert.equal(plain(payload(1, { rate_limits: limits(50) })).split('\n')[1], '  ctx 0k/1M   5h 6% ↻2h 30m   7d 50%');
+  assert.equal(plain(payload(1, { rate_limits: limits(49) })).split('\n')[1], '  ctx 0k/1M   5h 6% resets in 2h 30m   7d 49%');
+  assert.equal(plain(payload(1, { rate_limits: limits(50) })).split('\n')[1], '  ctx 0k/1M   5h 6% resets in 2h 30m   7d 50%');
   const cache = { cached_at: SEC - 100, five_hour: { resets_at: SEC + 2400, used_percentage: 9 }, seven_day: { resets_at: null, used_percentage: 80 } };
-  assert.equal(plain(payload(1), { cache }).split('\n')[1], '  ctx 0k/1M   5h 9% ↻40m   7d 80%');
+  assert.equal(plain(payload(1), { cache }).split('\n')[1], '  ctx 0k/1M   5h 9% resets in 40m   7d 80%');
 });
 
 test('context window size renders M from one million and k below', () => {
@@ -64,13 +64,13 @@ test('reset countdowns follow both percentages, dimmed, day scale from 24 hours'
     five_hour: { resets_at: SEC + 80 * 60, used_percentage: 60 },
     seven_day: { resets_at: SEC + (3 * 24 + 4) * 3600 + 600, used_percentage: 40 },
   };
-  assert.equal(plain(payload(1, { rate_limits: limits })).split('\n')[1], '  ctx 0k/1M   5h 60% ↻1h 20m   7d 40% ↻3d 4h');
+  assert.equal(plain(payload(1, { rate_limits: limits })).split('\n')[1], '  ctx 0k/1M   5h 60% resets in 1h 20m   7d 40% resets in 3d 4h');
   assert.equal(
     line(payload(1, { rate_limits: limits })).split('\n')[1],
-    `  ${D('ctx')} 0k${D('/1M')}   ${D('5h')} 60% ${D('↻1h 20m')}   ${D('7d')} 40% ${D('↻3d 4h')}`,
+    `  ${D('ctx')} 0k${D('/1M')}   ${D('5h')} 60% ${D('resets in 1h 20m')}   ${D('7d')} 40% ${D('resets in 3d 4h')}`,
   );
   const edge = { seven_day: { resets_at: SEC + 1440 * 60, used_percentage: 1 } };
-  assert.equal(plain(payload(1, { rate_limits: edge })).split('\n')[1], '  ctx 0k/1M   5h –%   7d 1% ↻1d 0h');
+  assert.equal(plain(payload(1, { rate_limits: edge })).split('\n')[1], '  ctx 0k/1M   5h –%   7d 1% resets in 1d 0h');
 });
 
 test('no countdown for a null window, an unknown reset or a reset in the past', () => {
@@ -87,13 +87,13 @@ test('expired cache falls back', () => {
 test('5h run-out warning', () => {
   const at = (elapsedMin, used) => ({ rate_limits: { five_hour: { resets_at: SEC + (300 - elapsedMin) * 60, used_percentage: used } } });
   const second = (p) => plain(payload(1, p)).split('\n')[1];
-  assert.equal(second(at(29, 90)), '  ctx 0k/1M   5h 90% ↻4h 31m   7d –%');
-  assert.equal(second(at(150, 71)), '  ctx 0k/1M   5h 71% ↻2h 30m   7d –%   5h out in 1h 2m');
+  assert.equal(second(at(29, 90)), '  ctx 0k/1M   5h 90% resets in 4h 31m   7d –%');
+  assert.equal(second(at(150, 71)), '  ctx 0k/1M   5h 71% resets in 2h 30m   7d –%   5h out in 1h 2m');
   assert.equal(line(payload(1, at(150, 71))).split('\n')[1].endsWith('\x1b[38;5;215m5h out in 1h 2m\x1b[0m'), true);
-  assert.equal(second(at(150, 50)), '  ctx 0k/1M   5h 50% ↻2h 30m   7d –%');
-  assert.equal(second(at(150, 30)), '  ctx 0k/1M   5h 30% ↻2h 30m   7d –%');
-  assert.equal(second(at(60, 100)), '  ctx 0k/1M   5h 100% ↻4h 0m   7d –%   5h out in 0m');
-  assert.equal(second(at(200, 90)), '  ctx 0k/1M   5h 90% ↻1h 40m   7d –%   5h out in 23m');
+  assert.equal(second(at(150, 50)), '  ctx 0k/1M   5h 50% resets in 2h 30m   7d –%');
+  assert.equal(second(at(150, 30)), '  ctx 0k/1M   5h 30% resets in 2h 30m   7d –%');
+  assert.equal(second(at(60, 100)), '  ctx 0k/1M   5h 100% resets in 4h 0m   7d –%   5h out in 0m');
+  assert.equal(second(at(200, 90)), '  ctx 0k/1M   5h 90% resets in 1h 40m   7d –%   5h out in 23m');
 });
 
 test('long branch is cut to 19 characters plus an ellipsis; control characters go', () => {
@@ -106,15 +106,15 @@ test('NO_COLOR drops every SGR code', () => {
   assert.equal(plain(payload(1, { model: { display_name: 'Opus 5' } }), { branch: 'x' }).includes('\x1b'), false);
 });
 
-test('worst case stays within 70 visible characters per line', () => {
+test('worst case stays within 82 visible characters per line', () => {
   const p = payload(150_000, {
     model: { display_name: 'Opus 5.5' }, effort: { level: 'xhigh' },
     rate_limits: { five_hour: { resets_at: SEC + 240 * 60, used_percentage: 50 }, seven_day: { resets_at: SEC + (6 * 24 + 23) * 3600, used_percentage: 99 } },
   });
   const lines = plain(p, { branch: 'a'.repeat(30), build: { landed: 9, total: 12 } }).split('\n');
   assert.equal(lines[0], `◉ exo   ${'a'.repeat(19)}…   Opus 5.5 xhigh   build 10/12`);
-  assert.equal(lines[1], '  ctx 150k/1M   5h 50% ↻4h 0m   7d 99% ↻6d 23h   5h out in 1h 0m');
-  for (const text of lines) assert.ok(text.length <= 70, text);
+  assert.equal(lines[1], '  ctx 150k/1M   5h 50% resets in 4h 0m   7d 99% resets in 6d 23h   5h out in 1h 0m');
+  for (const text of lines) assert.ok(text.length <= 82, text);
 });
 
 test('transcript token count wins over the payload count', () => {
