@@ -43,8 +43,9 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
   const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Next: Task 1$/m);
-  assert.match(result.stdout, /^Dispatch: exo:build-task, run_in_background: false$/m);
+  assert.match(result.stdout, /^Dispatch: exo:build-task$/m);
   assert.match(result.stdout, /^Since: \d{10}$/m);
+  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --since \d{10} --report "\S+\/\.exo\/implementer-1\.md"   \(tool timeout 600000; exit 2 reruns, at most three runs/m);
   const brief = result.stdout.match(/^Brief: (.+)$/m)[1];
   assert.match(result.stdout, new RegExp(`^Prompt:\\nTask 1 of ${planPath}, branch feat/fixture, checkout ${root}\\.\\nRead your brief at ${brief}\\.\\nReport to: ${root}/\\.exo/implementer-1\\.md\\nReturn: one line$`, 'm'));
 });
@@ -133,8 +134,8 @@ test('a failed worktree add discards the wave and the first task builds alone in
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Wave discarded: git worktree add .+-task-3 failed/m);
   assert.match(result.stdout, /^Next: Task 2$/m);
-  assert.doesNotMatch(result.stdout, /^(?:Wave|Slot|Wait):/m);
-  assert.match(result.stdout, /^Dispatch: exo:build-task, run_in_background: false$/m);
+  assert.doesNotMatch(result.stdout, /^(?:Wave|Slot):/m);
+  assert.match(result.stdout, /^Dispatch: exo:build-task$/m);
   assert.match(result.stdout, new RegExp(`checkout ${root}\\.$`, 'm'));
   assert.doesNotMatch(worktrees(root), /-task-2/);
   await assert.rejects(fs.stat(`${root}-task-2`));

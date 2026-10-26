@@ -30,7 +30,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 2102, measured: '2026-10-23' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2343, measured: '2026-10-26' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
@@ -45,7 +45,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 728, measured: '2026-10-23' };
+export const SESSION_LOAD_LOCK = { words: 761, measured: '2026-10-26' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.
@@ -55,7 +55,7 @@ export const SESSION_LOAD_LOCK = { words: 728, measured: '2026-10-23' };
 // Raised 1745 -> 1926 with the TaskStop rule line.
 // Raised 1926 -> 1950 with the context limit on the settings line.
 // Raised 1950 -> 2141 with the green-command-as-typed rule.
-export const SESSION_START_BYTES_LOCK = { bytes: 2232, measured: '2026-10-23' };
+export const SESSION_START_BYTES_LOCK = { bytes: 2449, measured: '2026-10-26' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };
@@ -75,7 +75,7 @@ export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 // cap because its pinned gate sentences hold it at its measured 790.
 // Raised 783 -> 790: the principles row names AI agent work (0/3 -> 3/3 runs opened the index, benchmarks/results/2026-10-22-spec-principles-read-reworded.md).
 export const STAGE_BODY_TOKENS = {
-  'start': 750, 'spec': 790, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
+  'start': 750, 'spec': 840, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. An agent is exempt only by exact name, never by pattern.
@@ -94,9 +94,9 @@ export const REFERENCE_TOKEN_LOCKS = {
   // autonomous-exo-5 Task 10; their older rules stay whole.
   'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 928,
-  'skills/build/run-task-prompt.md': 788,
+  'skills/build/run-task-prompt.md': 787,
   'skills/ship/references/pr-prep.md': 772,
-  'skills/spec/references/brief.md': 881,
+  'skills/spec/references/brief.md': 909,
   'skills/spec/references/task-list.md': 904,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits

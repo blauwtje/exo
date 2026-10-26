@@ -40,7 +40,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 1. **Verified names only.** List path or symbol only after reading it.
 2. **One field line, one task.** Second field line, `Run:`, `Expected:` or code block → long-format, needing `Commit:`, `Run:`, `Expected:`.
 3. **Small tasks.** One concern; split only when `Files:` spans shared write target and independent one.
-   - Size → (task + `Files:` bytes) / 4 over 25,000 fails.
+   - Size → (task + `Files:` bytes) / 4 over 15,000 fails.
    - `Files:` → also each registry, index or test list naming added file, and one existing test per changed source.
 4. **Shared write target.** File, key or branch two tasks touch → split, unless shared invariant earns `Depends on:` edge.
 5. **No manual task.** User-only check → one `## Manual checks` line.

@@ -14,7 +14,7 @@ You read a draft brief as a builder who cannot ask anyone; the assumptions file 
 - Sort each point:
   - `code` → the repository answers it; give the answer and its `path:line`.
   - `assume` → code and memory cannot answer it, but a wrong guess is cheap to undo; give the assumption.
-  - `user` → code and memory cannot answer it, a wrong guess changes what gets built, and it is costly to undo later.
+  - `user` → code and memory cannot answer it, a wrong guess is costly to undo, and it passes `skills/route-skills/references/question.md` `## When to ask`. A point failing that gate is `assume`, marked `(exo decided)`.
 - Report only a path and line a tool result showed you this run.
 - Bash → only `memory.mjs decisions`, `git log`, `git blame`, `git show --stat`, `git diff --stat`, `ls` and `find`.
 - Write one file only: the `code` and `assume` points, at the `.exo/<topic>/assumptions.md` path the dispatch names, else `.exo/open-points/assumptions.md`. No git or `gh` writes, ask nothing.

@@ -1,11 +1,15 @@
 # The question shape
 
+## When to ask
+
+Ask only when the answer is a preference or product outcome only the user knows and a wrong guess is costly to undo. A question that cannot be phrased in everyday words about what the user sees or gets is exo's to decide: decide it, and record it where the skill says. Default is zero questions.
+
 ## One question
 
 A message asks exactly one question, so the user answers with one letter. Several decisions open → the one whose answer matters most comes first; the next comes only after the answer, if one is still open. Each question has this shape.
 
 ```text
-**1/3 How should we pick the new look?**
+**How should we pick the new look?**
 You can see three looks first or let me choose.
 
 - **(A) Show me**: all three sketches open in your browser.
@@ -15,10 +19,10 @@ You can see three looks first or let me choose.
 Recommended: (A), because seeing beats reading about them.
 ```
 
-1. **Title line.** `**<title>**`, plain everyday question ending in `?`, at most 10 words; no `---` line, no number beyond progress. Several questions queued → the title starts with progress like `1/3 `, not counted in the 10.
+1. **Title line.** `**<title>**`, plain everyday question ending in `?`, at most 10 words; no `---` line, no number.
 2. **Context.** At most one sentence of at most 15 words, only when the user needs it to choose. Plain words anyone understands: no token counts, seconds, costs, tool, model or effort names, no file name the user need not open, no internal name unless the user picks between them.
 3. **Options.** One blank line, then `- **(A) Label**: what the user gets`, one per line, then one blank line. Label: one to three words; text: at most 8 words on what the user gets or gives up; never holds a command.
-4. **Two or three options.** Two only when no honest third route exists; a padded option is a fake choice. Design choice, not a configure or stop/keep menu → privately draft at least 5 routes, mark the first to mind, show the most distinct, at least one not first to mind.
+4. **Two or three options.** Two only when no honest third route exists; a padded option is a fake choice.
 5. **Recommendation.** `Recommended: (<letter>), because <why that option beats the others>`, naming any shown letter, reason at most 8 words, one line. Options keep their order and letters, whoever recommends.
 6. **Size.** Simple beats complete. Nothing follows the recommendation.
 7. **No tool.** Options are text in the reply; a question tool, a form or a picker is never used.

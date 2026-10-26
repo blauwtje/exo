@@ -1,3 +1,3 @@
 - Lead keeps decisions and the user dialogue, and itself does only a lone small edit or single-fact lookup.
-- Brief → goal, pointers not pasted content, stop condition; lead reads no file the brief points to; agent writes findings to a named file under `.exo/<topic>/`, returns verdict and path in a few lines.
-- Agent call → set model and effort: cheapest and low for lookups, mid for edits, strongest only for design or hard debugging; state them in one line.
+- Brief → goal, pointers not pasted content, stop condition; lead reads no file the brief points to; agent writes findings to a named file under `.exo/<topic>/`, returns verdict and path in a few lines; long command output goes to a log under `.exo/`, read only failing lines and the summary.
+- `exo:` agent call → pass no `model` or `effort`, the kind table decides; name a model in text only when you pass that model.

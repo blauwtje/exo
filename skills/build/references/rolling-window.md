@@ -19,11 +19,11 @@
    - A repair takes a fresh slot worktree at the current `HEAD`.
    - The run's checkout never holds uncommitted work while the window is open.
 6. **Stalled slot.**
-   - After six `wait-report.mjs` runs with no new report, each waiting slot returns `BLOCKED <n> no report`.
+   - After three `wait-report.mjs` runs with no new report, each waiting slot returns `BLOCKED <n> no report`.
    - Its folder stays in place: `remove-worktree.mjs --report` refuses while the report is absent; the line names the folder and that refusal, and step 4's wait does not run again for this slot.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
-   - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build stays foreground with `run_in_background: false`.
+   - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build also returns async; run its printed `Wait:`.
    - A landing's refill is in `land-slot.mjs`'s output, slots opened; else run `next-task.mjs --in-flight <running task numbers, comma separated>`; read its `Start: Task <n>[, Task <m>]` line.
    - `Start: none` → no refill; wait for a running slot.
 8. **Wait.**

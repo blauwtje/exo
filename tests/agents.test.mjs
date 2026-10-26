@@ -274,7 +274,7 @@ test('spec dispatches locate-code and fetch-docs in one message, and find-open-p
 
 test('build-task reads its brief and lean.md in its first message', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  assert.match(implementer.body, /^- First message: Read brief and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` once, never a `<checkout>` copy\.$/m);
+  assert.match(implementer.body, /^- No text before the first tool call; first call: Read brief and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` once, never a `<checkout>` copy\.$/m);
 });
 
 test('review-branch reads its opening inputs together in its first message', () => {
@@ -284,15 +284,18 @@ test('review-branch reads its opening inputs together in its first message', () 
 
 test('run-unit runs wait-report only after a background Wave: build', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'run-unit');
-  assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree/m);
-  assert.match(unit.body, /^ {2}- Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a returned slot\.$/m);
-  assert.match(unit.body, /^ {2}- `Next:` stays foreground; its return is the report, no `wait-report\.mjs`\.$/m);
-  assert.match(unit.body, /^ {2}- Wait after every landing; exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
+  assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
+  assert.match(unit.body, /^ {2}- Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a slot\.$/m);
+  assert.match(unit.body, /^ {2}- `Next:` also returns async; run its printed `Wait:`, no foreground return\.$/m);
+  assert.match(unit.body, /^ {2}- Loop until every block task has a `LANDED` or `BLOCKED` line\.$/m);
+  assert.match(unit.body, /^ {2}- A command or agent result saying it runs in the background → run the printed `Wait:`; never end the turn while a build, repair or land runs\.$/m);
+  assert.match(unit.body, /land-task\.mjs[^\n]* --next` with timeout 600000/);
+  assert.match(unit.body, /^ {2}- Wait after every landing; exit 2 reruns, at most three runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
 });
 
 test('run-unit runs on its own kind, at low effort', () => {
   assert.equal(kindTable.agents['agents/run-unit.md'].kind, 'run-unit');
-  assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'low' });
+  assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'medium' });
 });
 
 test('every skill that cites the report rule names closing.md, which defines it', () => {
@@ -312,10 +315,10 @@ test('every lead wait on a background dispatch bans a wakeup, since a pending on
   }
 });
 
-test('only build-task and doc-task hold a retry cell, one level above their on cell', () => {
+test('only build-task and doc-task hold a retry cell, above their on cell', () => {
   const table = JSON.parse(fs.readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
   assert.deepEqual(Object.keys(table.kinds).filter((kind) => table.kinds[kind].retry), ['build-task', 'doc-task']);
-  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['build-task'], { model: 'opus', effort: 'medium' });
-  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['doc-task'], { model: 'sonnet', effort: 'medium' });
+  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['build-task'], { model: 'opus', effort: 'high' });
+  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['doc-task'], { model: 'opus', effort: 'high' });
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds.review, kindTable.kinds.review);
 });

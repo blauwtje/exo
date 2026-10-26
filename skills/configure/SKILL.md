@@ -31,16 +31,7 @@ Take the first step the request and answers so far leave open.
 2. **Pick the setting.** Request names none → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply.
    - Topic picked → run `menu work`, `menu places` or `menu safety`, relayed the same way.
 3. **Ask the value.** Setting known, no value → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
-4. **Ask the layer.** Key `show` lists, setting and value known, no layer → ask:
-   ```text
-   **Who should this apply to?**
-
-   - **(A) Project**: everyone who works in this repository.
-   - **(B) Local**: only you, in this repository.
-   - **(C) Global**: you, in every project on this machine.
-
-   Recommended: (A), because it reaches the team, not only you.
-   ```
+4. **Pick the layer.** Request names no layer → project scope: it reaches every collaborator, not only you, and only a named local or global layer changes that. The closing line names the layer used, so the choice is never hidden.
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change.
    - Rejection → relay it as the script printed it, change nothing by hand.
    - Project value → add one line under the fence: collaborators receive it once `.claude/exo.json` is committed.

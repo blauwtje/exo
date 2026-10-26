@@ -278,3 +278,10 @@ test('the Stop hook lets a repair session end without a task status line', async
   assert.equal(runNoWait(input, { env }), null);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('the dispatch rules leave agent models to the kind table and send long command output to a log', () => {
+  const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
+  assert.match(rules, /pass no `model` or `effort`, the kind table decides/);
+  assert.match(rules, /long command output goes to a log under `\.exo\/`/);
+  assert.doesNotMatch(rules, /cheapest and low for lookups/);
+});

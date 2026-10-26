@@ -10,3 +10,4 @@
 - Agent notice says it still waits on background work → stop it with TaskStop.
 - Before final report → stop every background shell and agent this session started with TaskStop.
 - Web page or large file to read → `fetch-docs` agent for the page, grep for the lines in the lead, never the whole file.
+- Main-session work → small chunks; each chunk's reading and edits go to a subagent briefed by file path, read only its verdict and path; plan in `.exo/<topic>/progress.md`; at the 60k warning finish the chunk and move to a fresh session.

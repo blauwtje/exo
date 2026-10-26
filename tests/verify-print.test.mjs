@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
 import { codeStandardPath } from '../skills/verify/scripts/verify.mjs';
+import { TASK_SPLIT_TOKENS } from '../lib/context-limits.mjs';
 import { git } from './harness.mjs';
 import { landingCheckout, editApp } from './land-task-fixture.mjs';
 
@@ -97,4 +98,10 @@ test('merge-reviews.mjs prints the FINDING lines after its verdict line and the 
   const inRun = run('merge-reviews.mjs', ['--root', root, '--report', report], { PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_RUN: '1', EXO_RUN_DIR: path.join(root, 'rundir') });
   assert.ok(inRun.trim().endsWith('CODEX none'));
   await assert.rejects(fs.access(path.join(root, 'rundir', 'decisions.md')), 'inside a run the merge records no decision');
+});
+
+test('the task list states the 15,000-token task cap that plan-check enforces', async () => {
+  const taskList = await fs.readFile(path.join(SCRIPTS, '..', '..', 'spec', 'references', 'task-list.md'), 'utf8');
+  assert.equal(TASK_SPLIT_TOKENS, 15_000);
+  assert.ok(taskList.includes(`over ${TASK_SPLIT_TOKENS.toLocaleString('en-US')} fails`), 'task-list.md names the cap');
 });

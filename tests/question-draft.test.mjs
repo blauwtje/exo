@@ -1,21 +1,24 @@
-// The question rule drafts more design routes than it shows, so the shown
-// menu is a pick from a wider draft, not the first three to mind.
-
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { MAX_OPTIONS } from '../verify/checks/question-options.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const QUESTION = 'skills/route-skills/references/question.md';
+const text = fs.readFileSync(path.join(root, QUESTION), 'utf8');
 
-test('question rule 4 drafts more design routes than the option cap and shows one not first to mind', () => {
-  const text = fs.readFileSync(path.join(root, QUESTION), 'utf8');
+test('question.md opens with a When to ask gate before the shape', () => {
+  const headings = text.split('\n').filter((line) => line.startsWith('## '));
+  assert.equal(headings[0], '## When to ask');
+  const gate = text.split('## When to ask')[1].split('\n## ')[0];
+  assert.match(gate, /only the user/);
+  assert.match(gate, /everyday words/);
+  assert.match(gate, /costly to undo/);
+});
+
+test('question rule 4 has no route draft and the example title has no progress counter', () => {
   const rule = text.split('\n').find((line) => line.startsWith('4. '));
   assert.ok(rule, 'no rule 4');
-  const draft = rule.match(/draft at least (\d+) routes/);
-  assert.ok(draft, 'rule 4 sets no draft count');
-  assert.ok(Number(draft[1]) > MAX_OPTIONS, `draft ${draft[1]} is not wider than ${MAX_OPTIONS} shown`);
-  assert.match(rule, /not first to mind/, 'no shown route outside the first to mind');
+  assert.doesNotMatch(rule, /draft|routes|first to mind/);
+  assert.doesNotMatch(text, /\*\*\d+\/\d+ /);
 });

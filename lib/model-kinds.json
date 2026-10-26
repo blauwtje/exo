@@ -16,12 +16,12 @@
   },
   "kinds": {
     "build-task": {
-      "on": { "tier": "standard", "effort": "medium" },
-      "retry": { "tier": "strong", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "high" },
+      "retry": { "tier": "strong", "effort": "high" }
     },
     "doc-task": {
-      "on": { "tier": "fast", "effort": "low" },
-      "retry": { "tier": "standard", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "medium" },
+      "retry": { "tier": "strong", "effort": "high" }
     },
     "build": {
       "on": { "tier": "standard", "effort": "high" }
@@ -33,31 +33,31 @@
       "on": { "tier": "strong", "effort": "high" }
     },
     "review": {
-      "on": { "tier": "strong", "effort": "medium" }
+      "on": { "tier": "strong", "effort": "high" }
     },
     "review-deep": {
       "on": { "tier": "strong", "effort": "high" }
     },
     "investigate": {
-      "on": { "tier": "standard", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "high" }
     },
     "coordinate": {
       "on": { "tier": "standard", "effort": "medium" }
     },
     "run-unit": {
-      "on": { "tier": "standard", "effort": "low" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "research": {
-      "on": { "tier": "fast", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "lookup": {
-      "on": { "tier": "fast", "effort": "low" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "prose": {
       "on": { "tier": "standard", "effort": "high" }
     },
     "chore": {
-      "on": { "tier": "fast", "effort": "low" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "peer": {
       "on": { "tier": "inherit", "effort": "high" }

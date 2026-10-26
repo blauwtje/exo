@@ -32,9 +32,9 @@ Claims two separate sessions had booked when this skill loaded, before this sess
    - Rerun `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" propose`, because the block above predates the booking; next steps use this output.
 3. **Write nothing yet** when the rerun names no claim; say which session count the booking now stands at.
 4. **Propose** each claim in the rerun output to the user with both dated quotes, one claim per question, question shape.
-   - Claim a lint rule or test can catch → option 1 adds that check, named as a rule or test file and handed to `build`, with no line written; option 2 writes the text line.
+   - Claim a lint rule or test can catch → no question: hand the check, named as a rule or test file, to `build`; write no line, and the closing line names that default.
    - Any other claim → ask it as above.
-   - User declines the claim, or picks option 1 (the check carries it) → run `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" reject --session "<this session id>"`; else `propose --count` keeps counting it in ship's `Lessons:` line.
+   - User declines the claim, or a check carries it → run `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" reject --session "<this session id>"`; else `propose --count` keeps counting it in ship's `Lessons:` line.
    - Reject a lesson `propose` printed with `(key: <key>)` by `--key '<key>'`, any other claim by `--claim "<the claim>"`.
 5. **Write** an approved claim with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --claim "<the claim>" --refs "<path,path#symbol>"`.
    - Lesson `propose` printed with `(key: <key>)` → add `--key '<key>'`.

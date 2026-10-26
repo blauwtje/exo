@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { budgetPin } from '../skills/build/scripts/run-plan.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { budgetPin, chooseProvider } from '../skills/build/scripts/run-plan.mjs';
+import { CONTEXT_LIMIT, softLimit } from '../lib/context-limits.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 
 const cell = (kind, retry) => {
@@ -31,4 +35,11 @@ test('a resumed headless retry keeps the session pin, only a fresh retry uses th
   const { readFileSync } = await import('node:fs');
   const source = readFileSync(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url), 'utf8');
   assert.ok(source.includes('const basePin = retrying && resume === null && provider.retryPin.model !== undefined'));
+});
+
+test('the run plan budgets the fixed 80k limit and ignores a contextLimit setting', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":200000}}');
+  assert.equal(chooseProvider({}, home, home).contextBudget, softLimit(CONTEXT_LIMIT));
 });

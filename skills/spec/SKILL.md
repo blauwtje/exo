@@ -12,15 +12,16 @@ argument-hint: <outcome to shape>
    - First invoke every installed non-`exo:` skill matching the request.
    - Spec always ends on a brief; with no open decision the brief still gets written.
    - An open decision is one the user would notice that neither request nor code settles.
-   - Diff fits one sentence or code settles every point → no question, exo closes each choice; ask only what to build.
+   - Diff fits one sentence or code settles every point → no question, exo closes each choice.
+   - Ask only per `../route-skills/references/question.md` `## When to ask`; default is zero questions.
    - Asked for options → per `references/architecture-sketch.md`, no file.
 2. **Sort each point.**
    - Answerable by running or reading → record, never ask.
-   - Each open decision is a question, root first.
+   - Each open decision passes `## When to ask`: a plain product choice only the user can make → question, root first; any other → exo decides it.
    - A decision the user left open stays open despite code.
    - Name the owning layer, a smaller alternative.
 3. **Ask one at a time.**
-   - Ask per `../route-skills/references/question.md`; decide nothing silently.
+   - Ask per `../route-skills/references/question.md`; record each choice exo decides in Decisions.
    - Recommend a loaded skill's pattern over an option it rules out.
    - `Land:` → plan approval approves only its mode; ask only if `ship` is `ask`.
    - No git repo or `origin` → `Land: local`, no question.

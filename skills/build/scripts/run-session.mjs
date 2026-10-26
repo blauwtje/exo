@@ -403,7 +403,15 @@ export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, re
       settle(null, null);
     });
     child.on('exit', (code, signal) => {
-      if (!timedOut && !aborted) return;
+      if (!timedOut && !aborted) {
+        // why: a grandchild holding the pipes keeps 'close' from firing, so the run would hang with no timeout armed.
+        clearTimeout(graceTimer);
+        graceTimer = setTimeout(() => {
+          endTree('SIGKILL');
+          settle(code, signal);
+        }, KILL_GRACE_MS);
+        return;
+      }
       endTree('SIGKILL');
       settle(code, signal);
     });

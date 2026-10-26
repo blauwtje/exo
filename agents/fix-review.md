@@ -14,4 +14,6 @@ Never delete a file, container, volume, database, branch or credential to get pa
 
 You have 40 turns; mark every finding in the findings file by your thirtieth turn.
 
+Before returning → TaskStop each background shell or agent you started that still runs.
+
 Return the line the prompt names, in at most two lines, and nothing else.

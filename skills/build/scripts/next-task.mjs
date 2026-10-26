@@ -241,9 +241,10 @@ function dispatchable(task, frame, root) {
   return !task.design && driftOf(task, root, frame).length === 0;
 }
 
-function dispatchBlock({ task, frame, planPath, checkout, briefPath, since, background }) {
+function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
-  return [`Dispatch: exo:build-task, run_in_background: ${background}`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
+  const report = path.join(checkout, '.exo', `implementer-${task.number}.md`);
+  return [`Dispatch: exo:build-task`, `Since: ${since}`, `Wait: node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}"   (tool timeout 600000; exit 2 reruns, at most three runs, then BLOCKED <n> no report)`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
 // why: with every unlanded task running no landing can start a refill, so one wait for all and one chained land replace the per-slot pairs.
@@ -255,7 +256,7 @@ export function windowLines({ planPath, root, records, running, unlanded = null 
   const land = (number) => `node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}"${open.length > 1 ? ` --in-flight ${open.filter((other) => other !== number).join(',')}` : ''}`;
   const order = [...open].sort((left, right) => left - right);
   return [
-    `Wait: node "${scriptPath('wait-report.mjs')}"${waitAll ? '' : ' --any'} ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns, at most six runs, then BLOCKED <n> no report)`,
+    `Wait: node "${scriptPath('wait-report.mjs')}"${waitAll ? '' : ' --any'} ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns, at most three runs, then BLOCKED <n> no report)`,
     ...open.map((number) => `Land ${number}: ${land(number)}`),
     ...(waitAll ? [`Land all: ${order.map((number, index) => `${land(number)}${index < order.length - 1 ? ' --chained' : ''}`).join(' ; ')}`] : [])
   ];
@@ -317,7 +318,7 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [], open =
   for (const task of wave) {
     const taskPart = taskLines(task, frame, root, briefDirectory);
     lines.push('', ...taskPart);
-    if (inFlight.length === 0 && wave.length === 1) lines.push(...dispatchBlock({ task, frame, planPath, checkout: root, briefPath: path.join(briefDirectory, `task-${task.number}.md`), since, background: false }));
+    if (inFlight.length === 0 && wave.length === 1) lines.push(...dispatchBlock({ task, frame, planPath, checkout: root, briefPath: path.join(briefDirectory, `task-${task.number}.md`), since }));
   }
   return `${lines.join('\n')}\n`;
 }

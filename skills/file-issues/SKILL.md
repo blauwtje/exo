@@ -16,7 +16,7 @@ Typing `/exo:file-issues` starts this and authorizes creating the issues, with l
 
 1. **Intake.** One goal sentence per issue, each tied to the part of the request it came from.
    - Never invent an issue the request does not ask for.
-   - Goal sentence needing "and" for two unrelated outcomes → too big: propose a parent plus sub-issues, list the split, ask once.
+   - Goal sentence needing "and" for two unrelated outcomes → too big: file a parent plus sub-issues, no question; the closing line names the split.
 
 2. **Read the repository, invent nothing.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs"`; pick the vocabulary from its JSON per `references/fields.md`.
 
@@ -50,4 +50,4 @@ Typing `/exo:file-issues` starts this and authorizes creating the issues, with l
 ## Judgment
 
 - Explicit user instructions on the body outrank this skill, including a section it forbids: say once that the metadata already shows it, then write it.
-- Repeated request for one issue after a proposed split → that is the decision.
+- User asks for one issue after a split → file one.

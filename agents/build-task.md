@@ -9,7 +9,7 @@ maxTurns: 60
 
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write use absolute paths there.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
-- First message: Read brief and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, never a `<checkout>` copy.
+- No text before the first tool call; first call: Read brief and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, never a `<checkout>` copy.
 
 ## Git
 
@@ -20,16 +20,16 @@ maxTurns: 60
 
 - Compact task: build `Files:` heading per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks route by `Proof:` for risky, `Risk:` or `fix` with a test in `Files:` (long task: first `Run:`).
-- Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
+- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks the route (long task: first `Run:`).
+- Never delete, skip or loosen a test: fix code or report.
 - Line past `lib/code-rules.mjs:6-7` depth or params → early return, helper or object.
-- Run only the brief's `Proof:` or `Run:` in the foreground, `timeout: 600000`; never `Monitor`, never start with `sleep`.
+- Run only the brief's `Proof:` or `Run:` in the foreground, `timeout: 600000`, output to `.exo/<name>.log`, then read the summary and failing lines; never `Monitor`, never `sleep` first.
 - Red `Proof:` → rerun at most once per edit, failing lines only; timeout or hang → finding, no rerun.
 
 ## Stop
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
-- Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:`.
+- Start no background session or delegate, ask nothing; a log over 40 lines → beside `Report to:`.
 - Stop at green, a second test or `Run:` failure, or an open user choice.
 - Point the brief does not settle, no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
 - Safe default cheap to undo → use it, record it as a `Choice:` line.

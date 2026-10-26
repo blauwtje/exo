@@ -8,7 +8,8 @@ Read on a rare case. Each unit has its own section.
 - A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`; the lead asks it after the wave and re-dispatches with the answer.
 - Edit, write or commit no file yourself: builds edit, land-task commits.
 - No tool dispatches → return `BLOCKED all nested dispatch unavailable`, alone.
-- A repair → `exo:solve-hard` with the dispatch's `model`, `effort` and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
+- A repair → `exo:solve-hard` with the dispatch's `model`, `effort`, `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`; then run `node "<skill>/scripts/wait-report.mjs" --since <epoch seconds before dispatch> --report <that path>` with timeout 600000, exit 2 reruns at most three runs.
+- A build report that ends on a context limit → fresh `exo:build-task` from the same `Prompt:` plus the report path, same kind and model; no `exo-retry`, no `exo:solve-hard`.
 - Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`.
 - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 

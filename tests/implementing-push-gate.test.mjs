@@ -63,6 +63,7 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(!repairStep.includes('git push'), 'the repair step runs no push');
   assert.ok(VERIFY.includes('--base <base> --reviews-only` first'), 'verify lists the reviews before the gate');
   assert.ok(VERIFY.includes('Then in one message: the full run in the background, step 2\'s dispatch'), 'the gate and the dispatch start in one message');
+  assert.ok(VERIFY.includes('Run by a dispatched agent → the full run in the foreground, `verify.mjs` with timeout 600000'), 'a dispatched agent runs the gate in the foreground');
   assert.ok(VERIFY.includes('Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`'), 'the repair waits for the gate');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');

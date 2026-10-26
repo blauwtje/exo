@@ -24,7 +24,7 @@ Each task of a wave, as `build` step 4 forms it, builds in its own worktree, so 
    - Cherry-pick conflict → `git cherry-pick --abort`, no manual resolve: a resolved conflict is a commit no task branch holds.
    - Landed tasks stay; after step 4 end the turn naming the conflicting task.
 4. **Remove.**
-   - First wait with `wait-report.mjs --any` (six runs) for every running build of the wave.
+   - First wait with `wait-report.mjs --any` (three runs) for every running build of the wave.
    - For each folder the run made, then save its diff: `git -C "<root>-task-<n>" add -A && git -C "<root>-task-<n>" diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"`.
    - Folder differing from `<base>` → the patch counts as written only once `test -s` finds it non-empty.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root> --report "<root>-task-<n>/.exo/implementer-<n>.md"`, the report a build writes last.

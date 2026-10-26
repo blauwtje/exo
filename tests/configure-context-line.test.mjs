@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { contextLimit } from '../lib/context-limits.mjs';
 
 const repo = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const script = path.join(repo, 'skills', 'configure', 'scripts', 'settings.mjs');
@@ -29,11 +28,7 @@ function contextLine(home) {
   return result.stdout;
 }
 
-test('the settings line shows the context limit from the user run.json as global', () => {
-  assert.match(contextLine(homeWith('{"defaults":{"contextLimit":150000}}')), /context=150k \(global\)/);
-});
-
-test('the settings line shows the shipped context limit as default without a run.json', () => {
-  const shipped = Math.round(contextLimit(homeWith()) / 1000);
-  assert.match(contextLine(homeWith()), new RegExp(`context=${shipped}k \\(default\\)`));
+test('the settings line carries no context part whatever the user run.json holds', () => {
+  assert.doesNotMatch(contextLine(homeWith('{"defaults":{"contextLimit":150000}}')), /context=/);
+  assert.doesNotMatch(contextLine(homeWith()), /context=/);
 });

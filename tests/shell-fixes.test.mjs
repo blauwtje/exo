@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { onPath } from '#on-path';
-import { fixShell, TIMEOUT_FUNCTION } from '../lib/shell-fixes.mjs';
+import { fixShell, SED_FUNCTION, TIMEOUT_FUNCTION } from '../lib/shell-fixes.mjs';
 
-const fix = (command, hasTimeout = false) => fixShell({ command, description: 'd' }, hasTimeout)?.command ?? null;
+const fix = (command, hasTimeout = false, bsd = () => false) => fixShell({ command, description: 'd' }, hasTimeout, bsd)?.command ?? null;
 
 test('a command without an = word or timeout is left alone', () => {
   assert.equal(fix('echo a b; x=1 ls "=no"'), null);
@@ -27,6 +27,22 @@ test('a timeout word gets the function prefix and the command text stays as writ
     assert.equal(fix(command), TIMEOUT_FUNCTION + command);
   }
   assert.equal(fix('echo =x; timeout 5 y'), '[ -n "$ZSH_VERSION" ] && setopt noequals; ' + TIMEOUT_FUNCTION + 'echo =x; timeout 5 y');
+});
+
+test('an unquoted $NAME list in a for loop adds shwordsplit; other commands keep the prefix', () => {
+  const split = '[ -n "$ZSH_VERSION" ] && setopt noequals shwordsplit; ';
+  for (const command of ['for f in $P; do echo $f; done', 'echo =x; for f in $FILES\ndo echo $f; done']) {
+    assert.equal(fix(command), split + command, command);
+  }
+  for (const command of ['for f in "$P"; do echo $f; done', 'for f in a b; do echo $f; done', 'for f in $(ls); do echo $f; done']) {
+    assert.equal(fix(command), null, command);
+  }
+  assert.equal(fix('echo =x; for f in "$P"; do :; done'), '[ -n "$ZSH_VERSION" ] && setopt noequals; echo =x; for f in "$P"; do :; done');
+});
+
+test('zsh splits an unquoted for-loop list after the fix', { skip: !onPath('zsh', process.env) }, () => {
+  const out = spawnSync('zsh', ['-f', '-c', fix('P="a b"; for f in $P; do echo "[$f]"; done')], { encoding: 'utf8' }).stdout;
+  assert.equal(out, '[a]\n[b]\n');
 });
 
 test('a word starting with == gets the setopt prefix', () => {
@@ -148,4 +164,43 @@ test('--timeout and timeouts are not a timeout word', () => {
   for (const command of ['curl --timeout 5 x', 'cat timeouts.log', 'run --no-timeout']) {
     assert.equal(fixShell({ command }, false), null, command);
   }
+});
+
+test('a bare sed -i gets the sed function only on BSD sed', () => {
+  assert.equal(fix("sed -i 's/a/b/' f", false, () => true), SED_FUNCTION + "sed -i 's/a/b/' f");
+  assert.equal(fix("sed -i 's/a/b/' f", false, () => false), null);
+  for (const command of ["sed -i '' 's/a/b/' f", "sed -i.bak 's/a/b/' f", "sed -i'' 's/a/b/' f", "sed -n 's/a/b/p' f"]) {
+    assert.equal(fix(command, false, () => true), null);
+  }
+});
+
+test('the sed function turns a bare -i into -i with an empty suffix and keeps other arguments', { skip: process.platform !== 'darwin' }, () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sedfix-'));
+  try {
+    const file = join(dir, 'f.txt');
+    writeFileSync(file, 'a a\n');
+    const result = spawnSync('bash', ['-c', fix(`sed -i 's/a/b/g' ${file}`, false, () => true)], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(file, 'utf8'), 'b b\n');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+const runSedFunction = (script) => {
+  const dir = mkdtempSync(join(tmpdir(), 'sedargs-'));
+  try {
+    writeFileSync(join(dir, 'sed'), `#!/bin/sh\nprintf '[%s]' "$@"\n`, { mode: 0o755 });
+    return spawnSync('bash', ['-c', SED_FUNCTION + script], { encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}` } });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+};
+
+test('the sed function leaves the caller variables n and a as they were', () => {
+  assert.equal(runSedFunction('n=keep a=keep; sed -n p f >/dev/null; echo "$n $a"').stdout, 'keep keep\n');
+});
+
+test('the sed function passes a correct -i empty suffix through beside a bare -i', () => {
+  assert.equal(runSedFunction("sed -i -i '' -e x f").stdout, '[-i][][-i][][-e][x][f]');
 });

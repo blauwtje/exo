@@ -7,7 +7,6 @@ import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { contextDecision, contextLimit, softLimit } from '../lib/context-limits.mjs';
 
-// why: the hook reads defaults.contextLimit from the home's run.json; a user override there would change the levels these tests assume.
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
 process.env.HOME = testHome;
@@ -22,17 +21,13 @@ function homeWith(content) {
   return home;
 }
 
-test('contextLimit reads the user override and falls back to the shipped default', () => {
-  const shipped = contextLimit(homeWith());
-  assert.ok(Number.isInteger(shipped) && shipped > 0);
-  assert.equal(contextLimit(homeWith('{"defaults":{"contextLimit":200000}}')), 200000);
-  for (const bad of ['{not json', '{"defaults":{"contextLimit":-5}}', '{"defaults":{"contextLimit":"big"}}']) {
-    assert.equal(contextLimit(homeWith(bad)), shipped);
-  }
+test('contextLimit is the fixed 80k and ignores a leftover run.json setting', () => {
+  assert.equal(contextLimit(), 80_000);
+  assert.equal(contextLimit(homeWith('{"defaults":{"contextLimit":200000}}')), 80_000);
 });
 
-test('softLimit is 60% of the limit', () => {
-  assert.equal(softLimit(100000), 60000);
+test('softLimit is 75% of the limit', () => {
+  assert.equal(softLimit(80_000), 60_000);
 });
 
 test('main session gets one note per level and is never denied', () => {

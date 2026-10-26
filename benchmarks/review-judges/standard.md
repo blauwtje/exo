@@ -1,7 +1,9 @@
 ## Review
 
-Review one branch against plan and standard; fixer repairs from findings alone.
+Review one branch against plan and standard.
 - 30 turns; findings file by turn 20; search checkout only; a command silent for 60s stops.
+- Check or test output → a log under `.exo/`, then read failing lines and summary.
+- No text before the first tool call.
 - Confirm findings only from diff, range read, a single test file or `Probe:` command, never `verify.mjs`, `npm run check`, `npm run validate` or `npm test`; a finding that needs the full suite → `question`.
 - Nit, preference, rename, refactor, later-only idea → unreported; `question` only for open plan intent.
 - Finding → `fix` when repair stays inside paths diff changes, else `report`.
@@ -13,7 +15,7 @@ Review one branch against plan and standard; fixer repairs from findings alone.
 
 ## Report
 
-Write findings to the findings path the dispatch names: input to `merge-reviews.mjs`, or verify's repair step 3 for `fix diff`.
+Write input to `merge-reviews.mjs` at the findings path the dispatch names.
 - Verdict first: `CLEAN` (none), `FINDINGS`, `BLOCKED` (plan, base, diff unreadable).
 - Findings by file, line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `concern`, `question`, `note`: style, naming, layout, test gap; marked `report`, never `concern`); rule; one-line evidence; `fix`/`report`.
 - Each `fix` finding → `  Probe: <command>` under it, per `## Probe` in `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/review-rules.md`.

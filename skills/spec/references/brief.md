@@ -7,7 +7,7 @@ Brief = decided outcome, in fixed sections a later session resumes from. Section
 In this order:
 
 - **Goal:** the observable result, in one sentence.
-- **Decisions:** every bin-1 decision with its answer, closed by you, the code with its settling path, or exo for a second "I don't know" or small work.
+- **Decisions:** every bin-1 decision with its answer, closed by you, the code with its settling path, or exo for a second "I don't know" or small work; a choice exo made ends in `(exo decided)`.
 - **Non-goals:** what a reader would assume is included, one bullet each naming its paths; none → omit.
 - **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
@@ -45,5 +45,6 @@ Dispatch the `exo:find-open-points` agent once on the brief.
 - Insert its `- ` bullets after the brief's `## Assumptions` line, unread: `node -e 'const f=require("fs"),[b,a]=process.argv.slice(1),s=f.readFileSync(b,"utf8"),h=/^## Assumptions\n/m;if(!h.test(s))throw b;f.writeFileSync(b,s.replace(h,m=>m+"\n"+f.readFileSync(a,"utf8").match(/^- .*/gm).join("\n")+"\n"))' <brief> <path>`; ask nothing for those.
 - Return with no `Assumptions:` path → no file; skip the insert.
 - `user` point → ask it, one per message.
+- Choice exo decided → its Decisions line ends in `(exo decided)`.
 - Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
 - Unanswered `user` point → `## Open points` (exact name); no point left → omit it.

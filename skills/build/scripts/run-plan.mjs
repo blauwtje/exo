@@ -10,7 +10,7 @@ import process from 'node:process';
 import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
 import { commitsOf, criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable } from '#model-kinds';
-import { softLimit } from '#context-limits';
+import { CONTEXT_LIMIT, softLimit } from '#context-limits';
 import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { redGreen, testPaths } from '#red-green';
@@ -53,7 +53,7 @@ export function budgetPin(name, flags, { kind = 'build-task', retry = false, bud
 const DOC_EXCLUDED = /^(skills|agents|rules|hooks)\//;
 const isDocTask = (task) => task.files.length > 0 && task.files.every(({ path: file }) => file.endsWith('.md') && !DOC_EXCLUDED.test(file) && path.basename(file) !== 'CLAUDE.md');
 
-function chooseProvider(flags, home, project) {
+export function chooseProvider(flags, home, project) {
   let config;
   try {
     config = loadRunConfig({ home });
@@ -66,7 +66,6 @@ function chooseProvider(flags, home, project) {
   const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
   if (provider.refused !== undefined) throw new Refusal(provider.refused);
   if (!Number.isInteger(config.defaults.attemptCap) || config.defaults.attemptCap < 1) throw new Refusal(`run.json defaults.attemptCap must be a positive integer, got ${JSON.stringify(config.defaults.attemptCap)}`);
-  if (!Number.isInteger(config.defaults.contextLimit) || config.defaults.contextLimit < 1) throw new Refusal(`run.json defaults.contextLimit must be a positive integer, got ${JSON.stringify(config.defaults.contextLimit)}`);
   return {
     ...provider,
     asked,
@@ -76,7 +75,7 @@ function chooseProvider(flags, home, project) {
     retryPin: budgetPin(name, flags, { retry: true }),
     docRetryPin: budgetPin(name, flags, { kind: 'doc-task', retry: true }),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
-    contextBudget: softLimit(config.defaults.contextLimit),
+    contextBudget: softLimit(CONTEXT_LIMIT),
     cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
     attemptCap: config.defaults.attemptCap,
     sandbox: sandboxMode(config, project)

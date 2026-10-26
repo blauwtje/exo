@@ -26,7 +26,7 @@ test('a general-purpose, claude or untyped call with no model or effort gets the
 test('an explicit model or effort, an exo-kind line, off and other types leave the unnamed fill out', () => {
   assert.equal(call({ subagent_type: 'general-purpose', model: 'opus' }), undefined);
   assert.equal(call({ subagent_type: 'claude', effort: 'high' }), undefined);
-  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup' }).model, 'haiku');
+  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup' }).model, 'sonnet');
   assert.equal(call({ subagent_type: 'general-purpose' }, 'off'), undefined);
   for (const type of ['fork', 'Explore', 'claude-code-guide', 'statusline-setup']) assert.equal(call({ subagent_type: type }), undefined);
 });
@@ -57,6 +57,13 @@ test('the session text has one TaskStop bullet for the agent notice and one for 
   const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
   assert.ok(lines.includes('- Agent notice says it still waits on background work → stop it with TaskStop.'));
   assert.ok(lines.includes('- Before final report → stop every background shell and agent this session started with TaskStop.'));
+});
+
+test('the session text and the context reference carry the same chunking line', () => {
+  const root = path.join(import.meta.dirname, '..');
+  const line = fs.readFileSync(path.join(root, 'hooks', 'session-rules.md'), 'utf8').split('\n').find((l) => l.startsWith('- Main-session work'));
+  assert.ok(line);
+  assert.ok(fs.readFileSync(path.join(root, 'skills', 'route-skills', 'references', 'context.md'), 'utf8').split('\n').includes(line));
 });
 
 test('the Codex host note maps TaskStop to killing the process', () => {
