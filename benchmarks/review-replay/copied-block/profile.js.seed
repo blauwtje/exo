@@ -1,0 +1,27 @@
+export function validateName(input) {
+  const value = String(input ?? '').trim();
+  if (value === '') throw new Error('name is required');
+  if (value.length > 80) throw new Error('name is too long');
+  if (/[<>]/.test(value)) throw new Error('name has forbidden characters');
+  return value;
+}
+
+export function validateCity(input) {
+  const value = String(input ?? '').trim();
+  if (value === '') throw new Error('city is required');
+  if (value.length > 80) throw new Error('city is too long');
+  if (/[<>]/.test(value)) throw new Error('city has forbidden characters');
+  return value;
+}
+
+export function validateStreet(input) {
+  const value = String(input ?? '').trim();
+  if (value === '') throw new Error('street is required');
+  if (value.length > 80) throw new Error('street is too long');
+  if (/[<>]/.test(value)) throw new Error('street has forbidden characters');
+  return value;
+}
+
+export function buildProfile(form) {
+  return { name: validateName(form.name), city: validateCity(form.city), street: validateStreet(form.street) };
+}

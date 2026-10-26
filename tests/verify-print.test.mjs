@@ -72,6 +72,8 @@ const REPORT = [
   'FINDINGS',
   '- src/a.js:3 defect fix',
   '  Probe: grep -q x src/a.js',
+  '  Class: x',
+  '  Sweep: grep -n x src/a.js',
   '- src/b.js:4 defect fix',
   '- src/c.js:5 question report',
   '- src/d.js:6 concern report',
@@ -82,6 +84,21 @@ const REPORT = [
 test('mergeReviews lists the question and report findings, a demoted fix included, and not a probed fix', () => {
   const { shown } = mergeReviews([{ name: 'review-branch', text: REPORT }]);
   assert.deepEqual(shown, ['- src/b.js:4 defect report', '- src/c.js:5 question report', '- src/d.js:6 concern report', '- src/e.js:7 note report']);
+});
+
+const NO_SWEEP = ['FINDINGS', '- src/a.js:3 defect fix', '  Probe: true', '  Class: x', '- src/b.js:4 defect fix', '  Probe: true', '  Sweep: true', ''].join('\n');
+
+test('mergeReviews demotes a fix line missing its Class or its Sweep line', () => {
+  const merged = mergeReviews([{ name: 'review-branch', text: NO_SWEEP }]);
+  assert.equal(merged.counts.fix, 0);
+  assert.equal(merged.demoted, 2);
+  assert.deepEqual(merged.shown, ['- src/a.js:3 defect report', '- src/b.js:4 defect report']);
+});
+
+test('mergeReviews keeps a fix line with a Probe alone when it comes from the code-rules report', () => {
+  const merged = mergeReviews([{ name: 'code-rules', text: NO_SWEEP }]);
+  assert.equal(merged.counts.fix, 2);
+  assert.equal(merged.demoted, 0);
 });
 
 test('merge-reviews.mjs prints the FINDING lines after its verdict line and the CODEX line last', async () => {
@@ -104,4 +121,121 @@ test('the task list states the 15,000-token task cap that plan-check enforces', 
   const taskList = await fs.readFile(path.join(SCRIPTS, '..', '..', 'spec', 'references', 'task-list.md'), 'utf8');
   assert.equal(TASK_SPLIT_TOKENS, 15_000);
   assert.ok(taskList.includes(`over ${TASK_SPLIT_TOKENS.toLocaleString('en-US')} fails`), 'task-list.md names the cap');
+});
+
+test('merge-reviews.mjs appends one ledger row per finding per round, the round counting up', async () => {
+  const { root } = await landingCheckout();
+  const report = path.join(root, 'review-branch.md');
+  await fs.writeFile(report, [REPORT, 'src/f.js:8-9; defect; swallowed failure; catch drops error; fix', '  Probe: true', '  Class: swallowed failure', '  Sweep: true', ''].join('\n'));
+  const head = git(root, 'rev-parse', 'HEAD').trim();
+  const ledger = path.join(root, '.exo', 'review-ledger.jsonl');
+  const rows = async () => (await fs.readFile(ledger, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
+  run('merge-reviews.mjs', ['--root', root, '--report', report]);
+  const first = await rows();
+  assert.equal(first.length, 6);
+  assert.deepEqual(first[0], { round: 1, rule: 'defect', path: 'src/a.js', range: '3', weight: 'defect', state: 'open', head });
+  assert.deepEqual(first[1], { round: 1, rule: 'defect', path: 'src/b.js', range: '4', weight: 'defect', state: 'reported', head });
+  assert.deepEqual(first[2], { round: 1, rule: 'question', path: 'src/c.js', range: '5', weight: 'question', state: 'reported', head });
+  assert.deepEqual(first[5], { round: 1, rule: 'swallowed failure', path: 'src/f.js', range: '8-9', weight: 'defect', state: 'open', head });
+  run('merge-reviews.mjs', ['--root', root, '--report', report]);
+  const all = await rows();
+  assert.equal(all.length, 12);
+  assert.deepEqual(new Set(all.slice(6).map((row) => row.round)), new Set([2]));
+});
+
+const FIX_LINE = (rule, file) => [`${file}:8-9; defect; ${rule}; catch drops error; fix`, '  Probe: true', `  Class: ${rule}`, '  Sweep: true', ''].join('\n');
+
+async function reviewRound(root, text) {
+  const report = path.join(root, 'review-branch.md');
+  await fs.writeFile(report, text);
+  return run('merge-reviews.mjs', ['--root', root, '--report', report]).trim().split('\n');
+}
+
+test('the same rule@path open in two consecutive rounds prints BLOCKED recurring with both readings', async () => {
+  const { root } = await landingCheckout();
+  const first = await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  assert.match(first[0], /^verdict=FINDINGS /);
+  const second = await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js').replace('8-9', '10-11')}`);
+  assert.match(second[0], /^verdict=BLOCKED /);
+  assert.equal(second[1], 'BLOCKED recurring swallowed failure src/f.js');
+  assert.equal(second[2], '  round 1: src/f.js:8-9 defect');
+  assert.equal(second[3], '  round 2: src/f.js:10-11 defect');
+  assert.match(await fs.readFile(path.join(root, '.exo', 'branch-review.md'), 'utf8'), /^BLOCKED\n/);
+});
+
+test('a fixed row for that round, or another path, clears the recurrence', async () => {
+  const { root } = await landingCheckout();
+  await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  const ledger = path.join(root, '.exo', 'review-ledger.jsonl');
+  await fs.appendFile(ledger, `${JSON.stringify({ round: 1, rule: 'swallowed failure', path: 'src/f.js', range: '8-9', weight: 'defect', state: 'fixed', head: null })}\n`);
+  const again = await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  assert.match(again[0], /^verdict=FINDINGS /);
+  const other = await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/g.js')}`);
+  assert.match(other[0], /^verdict=FINDINGS /);
+});
+
+test('the DISPATCH Branch line carries ledger= only once the ledger holds a row', async () => {
+  const { root, planPath } = await landedBranch();
+  const dispatch = () => run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']).split('\n').find((line) => line.startsWith('DISPATCH Branch: '));
+  assert.ok(!dispatch().includes('ledger='));
+  await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  assert.ok(dispatch().endsWith(` ledger=${path.join(root, '.exo', 'review-ledger.jsonl')}`), dispatch());
+});
+
+const reviewInputOf = async (root, planPath) => {
+  run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']);
+  return fs.readFile(path.join(root, '.exo', 'review-input.md'), 'utf8');
+};
+
+test('--reviews-only writes review-input.md with the goal, non-goals, branch diff and code standard', async () => {
+  const { root, planPath } = await landedBranch();
+  const input = await reviewInputOf(root, planPath);
+  assert.match(input, /The fixture proves the plan reader\./);
+  assert.match(input, /`src\/other\.js` stays as it is\./);
+  assert.match(input, /\+\s+return "hello";/);
+  assert.ok(input.includes(`code-standard=${codeStandardPath(root)}`), input);
+  assert.ok(!input.includes('ledger'), 'no ledger summary before the first round');
+});
+
+test('review-input.md names the changed paths and the git diff command when the diff passes 20,000 bytes', async () => {
+  const { root, planPath } = await landedBranch();
+  await fs.writeFile(path.join(root, 'src', 'big.js'), `${'export const filler = 1;\n'.repeat(1000)}`);
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'feat(app): big');
+  const input = await reviewInputOf(root, planPath);
+  assert.ok(!input.includes('export const filler'), 'the big diff is not inlined');
+  assert.ok(input.includes('src/big.js') && input.includes('src/app.js'), input);
+  assert.ok(input.includes('git diff main..HEAD'), input);
+});
+
+test('review-input.md summarises the ledger rows by round once the ledger holds a row', async () => {
+  const { root, planPath } = await landedBranch();
+  await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  const input = await reviewInputOf(root, planPath);
+  assert.ok(input.includes('round 1: swallowed failure@src/f.js:8-9 defect open'), input);
+});
+
+test('--reviews-only rewrites review-input.md each round', async () => {
+  const { root, planPath } = await landedBranch();
+  await reviewInputOf(root, planPath);
+  await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  assert.ok((await reviewInputOf(root, planPath)).includes('round 1:'));
+});
+
+test('a CLEAN round between two rounds with the same finding keeps them from counting as consecutive', async () => {
+  const { root } = await landingCheckout();
+  await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  const clean = await reviewRound(root, 'CLEAN\n');
+  assert.match(clean[0], /^verdict=CLEAN /);
+  const third = await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
+  assert.match(third[0], /^verdict=FINDINGS /, third.join('\n'));
+});
+
+test('one reader parses .exo/review-ledger.jsonl', async () => {
+  const merge = await fs.readFile(path.join(SCRIPTS, 'merge-reviews.mjs'), 'utf8');
+  const verify = await fs.readFile(path.join(SCRIPTS, 'verify.mjs'), 'utf8');
+  const summary = verify.slice(verify.indexOf('function ledgerSummary'), verify.indexOf('function reviewInputDiff'));
+  assert.match(summary, /ledgerRows\(checkout\)/);
+  assert.doesNotMatch(summary, /JSON\.parse/);
+  assert.equal((merge.match(/JSON\.parse/g) ?? []).length, 1);
 });

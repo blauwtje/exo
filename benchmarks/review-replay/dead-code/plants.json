@@ -1,0 +1,5 @@
+[
+  { "path": "report.js", "range": "1-6", "class": "dead code" },
+  { "path": "report.js", "range": "19-19", "class": "dead code" },
+  { "path": "report.js", "range": "23-25", "class": "dead code" }
+]

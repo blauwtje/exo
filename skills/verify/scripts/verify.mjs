@@ -17,6 +17,7 @@ import { contextLimit, contextPeaks } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { isTestFirst, isTestPath, runnableProof } from '#red-green';
+import { ledgerPath, latestRound, ledgerRows } from './merge-reviews.mjs';
 import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
@@ -51,7 +52,7 @@ const ADDED_SKIP = /\.(?:skip|only)\b/;
 const SILENCER = /eslint-disable|@ts-(?:ignore|nocheck|expect-error)|#\s*(?:noqa|type:\s*ignore|pylint:\s*disable)|\/\/\s*nolint|biome-ignore|(?:istanbul|c8) ignore/;
 const PROSE_FILE = /\.(?:md|mdx|txt|rst)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
-const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*)$/;
+const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*?)\t?$/;
 const WARN_TEXT_LENGTH = 100;
 
 export function unmarkedMcpTool(command, { code, output }) {
@@ -213,8 +214,6 @@ function testRepairCommit(task, root, base) {
 }
 
 function claimLines(task, { root, planId, base }) {
-  const git = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
-  const shas = taskCommits(task, root, planId);
   const changed = taskPaths(task, root, planId);
   const lines = [];
   if (isTestFirst(task) && !changed.some(isTestPath)) {
@@ -223,14 +222,30 @@ function claimLines(task, { root, planId, base }) {
       ? `FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`
       : `WARN claims-diff Task ${task.number} (test-first; its test changed only in repair commit ${repair.sha.slice(0, 7)})`);
   }
-  for (const sha of shas) {
-    const patch = git('-U0', '--no-color', '--no-ext-diff', sha);
-    for (const finding of [...weakenedTests(patch), ...silencedChecks(patch)]) lines.push(`WARN claims-diff Task ${task.number} (${finding})`);
-  }
   return lines;
 }
 
-export function codeRulesReport(fails, root) {
+const DEFECT_KINDS = { removed: 'removed assertion', added: 'added skip', silenced: 'silenced check' };
+
+function defectLine(finding) {
+  const [, where, kind, text] = /^(.+?:\d+) (removed|added|silenced) (.*)$/.exec(finding);
+  return `${where}; defect; ${DEFECT_KINDS[kind]}; ${text}; report`;
+}
+
+function testDefectLines(task, { root, planId }) {
+  const show = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
+  return taskCommits(task, root, planId).flatMap((sha) => {
+    const patch = show('-U0', '--no-color', '--no-ext-diff', sha);
+    const deleted = show('--name-status', sha).split('\n').flatMap((line) => (line.startsWith('D\t') ? [line.slice(2)] : [])).filter(isTestPath);
+    const inDeleted = (finding) => deleted.some((file) => finding.startsWith(`${file}:`));
+    return [
+      ...deleted.map((file) => `${file}:1; defect; deleted test file; ${file}; report`),
+      ...[...weakenedTests(patch), ...silencedChecks(patch)].filter((finding) => !inDeleted(finding)).map(defectLine)
+    ];
+  });
+}
+
+export function codeRulesReport(fails, root, defects = []) {
   const entries = fails.flatMap((finding) => {
     const at = /^(.+?):(\d+) /.exec(finding);
     if (at === null) return [];
@@ -238,7 +253,7 @@ export function codeRulesReport(fails, root) {
     if (source === '') return [];
     return [`${finding} defect fix`, `  Probe: ! grep -nF -- '${source.replace(/'/g, "'\\''")}' ${at[1]}`];
   });
-  return ['FINDINGS', '', ...entries, ''].join('\n');
+  return ['FINDINGS', '', ...entries, ...defects, ''].join('\n');
 }
 
 function codeRuleLines(plan, landed, { root, planId, base }) {
@@ -246,15 +261,17 @@ function codeRuleLines(plan, landed, { root, planId, base }) {
   const reportPath = path.join(path.resolve(root), '.exo', 'code-rules.md');
   fs.rmSync(reportPath, { force: true });
   const fails = new Set();
+  const defects = new Set();
   const lines = [];
   for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
+    testDefectLines(task, { root, planId }).forEach((line) => defects.add(line));
     const found = codeRuleFindings({ root, base, paths: taskPaths(task, root, planId) });
     found.fails.forEach((finding) => fails.add(finding));
     lines.push(...found.warns.map((warn) => `WARN code-rules Task ${task.number} (${warn})`));
   }
-  if (fails.size === 0) return lines;
+  if (fails.size === 0 && defects.size === 0) return lines;
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  fs.writeFileSync(reportPath, codeRulesReport([...fails], root));
+  fs.writeFileSync(reportPath, codeRulesReport([...fails], root, [...defects]));
   return [...lines, `CODE-RULES ${reportPath}`];
 }
 
@@ -351,6 +368,7 @@ const VERIFY_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REVIEW_RULES = path.join(VERIFY_DIRECTORY, '..', 'references', 'review-rules.md');
 const DEFAULT_CODE_STANDARD = path.join(VERIFY_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
 const STANDARD_FILES = ['CLAUDE.md', path.join('.claude', 'CLAUDE.md'), 'AGENTS.md'];
+const REVIEW_INPUT_DIFF_LIMIT = 20_000;
 const MARKDOWN_PATH = /`([^`\s]+\.md)`|\]\(([^)\s]+\.md)\)/g;
 
 export function codeStandardPath(root) {
@@ -385,12 +403,41 @@ function dispatchLines(printed, plan, landed, { root, planPath, planId, base }) 
     .filter((file) => fs.existsSync(file));
   const lines = [];
   if (printed.some((line) => /^REVIEW Branch [^:]*: review-branch\b/.test(line))) {
-    lines.push(`DISPATCH Branch: ${common} scope=branch ${baseRef}..HEAD findings=${path.join(exo, 'review-branch.md')} proofs=${proofs.length === 0 ? 'none' : proofs.join(',')}`);
+    const ledger = latestRound(checkout) > 0 ? ` ledger=${ledgerPath(checkout)}` : '';
+    lines.push(`DISPATCH Branch: ${common} scope=branch ${baseRef}..HEAD findings=${path.join(exo, 'review-branch.md')} proofs=${proofs.length === 0 ? 'none' : proofs.join(',')}${ledger}`);
   }
   if (printed.some((line) => /^OVERLAP (?!none)/.test(line))) {
     lines.push(`DISPATCH Overlap: ${common} scope=overlap findings=${path.join(exo, 'review-overlap.md')}`);
   }
   return lines;
+}
+
+function ledgerSummary(checkout) {
+  if (latestRound(checkout) === 0) return [];
+  return ledgerRows(checkout).filter((row) => row.state !== 'none').map((row) => `- round ${row.round}: ${row.rule}@${row.path}:${row.range} ${row.weight} ${row.state}`);
+}
+
+function reviewInputDiff(checkout, baseRef) {
+  const range = `${baseRef}..HEAD`;
+  const git = (...args) => execFileSync('git', ['-C', checkout, '-c', 'core.quotepath=off', ...args], { encoding: 'utf8', maxBuffer: Infinity });
+  const diff = git('diff', '--no-color', '--no-ext-diff', range);
+  if (Buffer.byteLength(diff) <= REVIEW_INPUT_DIFF_LIMIT) return ['```diff', diff.trimEnd(), '```'];
+  return [`The diff passes ${REVIEW_INPUT_DIFF_LIMIT} bytes; read it with \`git diff ${range}\`. Changed paths:`, ...git('diff', '--name-only', range).split('\n').filter(Boolean).map((file) => `- ${file}`)];
+}
+
+function writeReviewInput(frame, { checkout, baseRef }) {
+  const ledger = ledgerSummary(checkout);
+  const text = [
+    '## Goal', frame.goal, '',
+    '## Non-goals', ...frame.nonGoals.map((goal) => `- ${goal}`), '',
+    '## Branch diff', ...reviewInputDiff(checkout, baseRef), '',
+    `code-standard=${codeStandardPath(checkout)}`,
+    ...(ledger.length === 0 ? [] : ['', '## Ledger', ...ledger]),
+    ''
+  ].join('\n');
+  const file = path.join(checkout, '.exo', 'review-input.md');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text);
 }
 
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
@@ -400,6 +447,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const landed = new Set(landedTasks(plan.tasks, root, planId));
   if (reviewsOnly) {
     const printed = reviewLines(plan, landed, { root, planId, base });
+    writeReviewInput(frame, { checkout: path.resolve(root), baseRef: base ?? DEFAULT_BASE });
     return { lines: [...printed, ...dispatchLines(printed, plan, landed, { root, planPath, planId, base })], failed: false };
   }
   const lines = [];

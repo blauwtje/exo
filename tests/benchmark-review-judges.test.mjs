@@ -29,7 +29,7 @@ test('measureReview leaves hits null without a report', async () => {
 const sourceLines = readFileSync(new URL('../agents/review-branch.md', import.meta.url), 'utf8').split('\n');
 const judgeLines = (name) => readFileSync(new URL(`../benchmarks/review-judges/${name}.md`, import.meta.url), 'utf8')
   .split('\n').filter((line) => line.trim() !== '');
-const focus = { 'plan-fit': [13], standard: [19], tests: [20, 21, 22, 23, 24] };
+const focus = { 'plan-fit': [13], standard: [18], tests: [19, 20, 21, 22] };
 const allFocus = Object.values(focus).flat();
 
 test('every judge body line is a verbatim line of review-branch', () => {
@@ -89,7 +89,7 @@ async function seededJudgeRoot() {
   const { defectRange } = await import('../benchmarks/sweep-fixtures.mjs');
   const range = defectRange(seeded.task);
   const root = mkdtempSync(join(tmpdir(), 'judges-'));
-  const hit = `FINDINGS\n\n${range.file}:${range.start}-${range.end} defect fix\nProbe: node x.js\n\nCount: defect=1 concern=0 question=0\n`;
+  const hit = `FINDINGS\n\n${range.file}:${range.start}-${range.end} defect fix\nProbe: node x.js\nClass: swallowed failure\nSweep: grep -n catch x.js\n\nCount: defect=1 concern=0 question=0\n`;
   const clean = 'CLEAN\n\nCount: defect=0 concern=0 question=0\n';
   writeCell(root, `${seeded.id}-judge-plan-fit`, { wallMs: 100, tokens: 10, costUsd: 1, report: clean });
   writeCell(root, `${seeded.id}-judge-standard`, { wallMs: 300, tokens: 20, costUsd: 2, report: hit });

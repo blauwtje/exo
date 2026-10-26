@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+export function discountedPrice(price, customer) {
+  if (price < 0) throw new RangeError('price must not be negative');
+  if (customer.tier === 'gold') return price * 0.8;
+  if (customer.tier === 'silver') return price * 0.9;
+  if (customer.firstOrder) return price - Math.min(price, 5);
+  return price;
+}
+
+export function shippingCents(weightKg, express) {
+  if (weightKg <= 0) throw new RangeError('weight must be positive');
+  const base = weightKg <= 2 ? 500 : 500 + Math.ceil(weightKg - 2) * 150;
+  return express ? base * 2 : base;
+}
+
+test('regular price stays unchanged', () => {
+  assert.equal(discountedPrice(100, { tier: 'none' }), 100);
+});
+
+test('gold tier gets twenty percent off', () => {
+  assert.equal(discountedPrice(100, { tier: 'gold' }), 80);
+});
+
+test('light parcel costs the base rate', () => {
+  assert.equal(shippingCents(1, false), 500);
+});
+
+test('negative price is rejected', () => {
+  assert.throws(() => discountedPrice(-1, { tier: 'none' }), RangeError);
+});
+
+test('empty parcel is rejected', () => {
+  assert.throws(() => shippingCents(0, false), RangeError);
+});
+
+test('express light parcel costs double', () => {
+  assert.equal(shippingCents(1, true), 1000);
+});

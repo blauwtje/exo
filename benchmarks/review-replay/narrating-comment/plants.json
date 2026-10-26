@@ -1,0 +1,5 @@
+[
+  { "path": "inventory.js", "range": "2-2", "class": "narrating comment" },
+  { "path": "inventory.js", "range": "4-4", "class": "narrating comment" },
+  { "path": "inventory.js", "range": "18-18", "class": "narrating comment" }
+]

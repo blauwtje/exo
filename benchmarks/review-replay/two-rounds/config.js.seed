@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+
+const DEFAULTS = { port: 8080, workers: 2 };
+
+export function loadConfig(file) {
+  let raw = {};
+  try {
+    raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    raw = {};
+  }
+  return { ...DEFAULTS, ...raw };
+}
+
+export function listenOptions(config) {
+  return { port: config.port, backlog: config.workers * 128 };
+}
+
+export function describe(config) {
+  return `port ${config.port}, ${config.workers} workers`;
+}

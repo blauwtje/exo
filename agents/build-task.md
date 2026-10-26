@@ -21,8 +21,6 @@ maxTurns: 60
 - Compact task: build `Files:` heading per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks the route (long task: first `Run:`).
-- Never delete, skip or loosen a test: fix code or report.
-- Line past `lib/code-rules.mjs:6-7` depth or params → early return, helper or object.
 - Run only the brief's `Proof:` or `Run:` in the foreground, `timeout: 600000`, output to `.exo/<name>.log`, then read the summary and failing lines; never `Monitor`, never `sleep` first.
 - Red `Proof:` → rerun at most once per edit, failing lines only; timeout or hang → finding, no rerun.
 
@@ -51,6 +49,7 @@ Unresolved: none
 
 ## Return
 
+- Before `--check`, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md`; fix each rule your diff breaks, never by weakening a test.
 - Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>` (Bash `timeout: 600000`); it runs `Lint:` and `Land gate:`; fix report until `Report OK`, no proof rerun.
 - With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
 

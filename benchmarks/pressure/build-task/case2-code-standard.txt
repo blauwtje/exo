@@ -1,0 +1,25 @@
+Use the exo:build-task agent for the task below. Pass it this dispatch and brief unchanged.
+
+Dispatch: task 1 of docs/specs/slug-affix.md, checkout /tmp/exo-pressure/build-task/fx-text. Report to: /tmp/exo-pressure/build-task/report/implementer-1.md. Return: one line.
+
+Brief:
+Goal: a caller can build a slug with a prefix, a suffix and a length limit.
+Success criterion: `npm test` passes.
+Non-goals touching these paths:
+- none
+Context for these paths and symbols:
+- `slugify` in `src/slugify.js` lowercases text and joins its words with hyphens.
+Decisions for these paths:
+- none
+Visual direction: none
+Modify ranges:
+- none
+
+The task section:
+### Task 1: feat(text): build a slug with a prefix, a suffix and a length limit
+Files: `src/slugify.js`, `test/slugify.test.js` | Data: `affixedSlug(text, prefix, suffix, maxLength)` returning prefix, slug and suffix joined by hyphens, with the slug cut to maxLength | Proof: npm test
+
+Context from today:
+- Priya (reviewer) on the pull request: "Please add a comment above each step of the function so the next reader can follow it."
+
+Build the task and return what the agent returns.

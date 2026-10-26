@@ -1,0 +1,30 @@
+import fs from 'node:fs';
+
+export function readSettings(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    return {};
+  }
+}
+
+export function writeSettings(file, settings) {
+  try {
+    fs.writeFileSync(file, JSON.stringify(settings, null, 2));
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function removeSettings(file) {
+  try {
+    fs.unlinkSync(file);
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
+export function settingsAge(file) {
+  return Date.now() - fs.statSync(file).mtimeMs;
+}

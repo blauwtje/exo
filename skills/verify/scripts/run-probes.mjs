@@ -2,14 +2,16 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { appendLedger, latestRound, parseFinding } from './merge-reviews.mjs';
 
 const PROBE_LINE = /^\s*Probe:\s*(.*)$/;
+const SWEEP_LINE = /^\s*Sweep:\s*(.*)$/;
 const FIXED_FINDING = /\bfixed\s*$/;
 const REPORTED_FINDING = /\breported:\s*\S/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
-Reruns the Probe: command under each finding marked fixed; prints PASS or FAIL per finding.
+Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding.
 A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding). Exits 1 on any FAIL.`;
 
 export function fixedProbes(report) {
@@ -18,33 +20,41 @@ export function fixedProbes(report) {
   lines.forEach((line, index) => {
     if (PROBE_LINE.test(line)) return;
     const next = PROBE_LINE.exec(lines[index + 1] ?? '');
-    if (FIXED_FINDING.test(line)) probes.push({ finding: line.trim(), command: next?.[1].trim() || null });
+    if (FIXED_FINDING.test(line)) probes.push({ finding: line.trim(), command: next?.[1].trim() || null, sweep: SWEEP_LINE.exec(lines[index + 3] ?? '')?.[1].trim() || null });
     else if (next && !REPORTED_FINDING.test(line)) probes.push({ finding: line.trim(), command: null, unmarked: true });
   });
   return probes;
 }
 
-function runProbe(command, root) {
+function runProbe(command, root, { sweep = false } = {}) {
   const result = spawnSync('bash', ['-c', command], { cwd: root, encoding: 'utf8', timeout: PROBE_TIMEOUT_MS });
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim().split('\n').slice(-TAIL_LINES).join('\n');
-  return { passed: result.status === 0, output: result.error ? `${result.error.message}\n${output}` : output };
+  const passed = sweep ? output === '' && !result.error : result.status === 0;
+  return { passed, output: result.error ? `${result.error.message}\n${output}` : output };
+}
+
+function ledgerFixed(finding, root) {
+  const parsed = parseFinding(finding);
+  if (parsed !== null) appendLedger(root, [{ ...parsed, state: 'fixed' }], latestRound(root));
 }
 
 export function runProbes(report, root) {
   const lines = [];
   let allPassed = true;
-  for (const { finding, command, unmarked } of fixedProbes(report)) {
+  for (const { finding, command, sweep, unmarked } of fixedProbes(report)) {
     if (command === null) {
       lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding'}): ${finding}`);
       allPassed = false;
       continue;
     }
-    const { passed, output } = runProbe(command, root);
-    lines.push(`${passed ? 'PASS' : 'FAIL'} probe (${command}): ${finding}`);
-    if (!passed) {
-      allPassed = false;
-      if (output) lines.push(output);
-    }
+    const probe = runProbe(command, root);
+    lines.push(`${probe.passed ? 'PASS' : 'FAIL'} probe (${command}): ${finding}`);
+    const swept = probe.passed && sweep !== null ? runProbe(sweep, root, { sweep: true }) : null;
+    if (swept !== null) lines.push(`${swept.passed ? 'PASS' : 'FAIL'} probe (sweep ${sweep}): ${finding}`);
+    const failed = [probe, swept].filter((result) => result !== null && !result.passed);
+    if (failed.length === 0) ledgerFixed(finding, root);
+    for (const { output } of failed) if (output) lines.push(output);
+    if (failed.length > 0) allPassed = false;
   }
   return { lines, allPassed };
 }

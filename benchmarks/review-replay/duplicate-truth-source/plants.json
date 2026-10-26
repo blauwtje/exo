@@ -1,0 +1,5 @@
+[
+  { "path": "retry.js", "range": "5-5", "class": "duplicate truth source" },
+  { "path": "retry.js", "range": "10-10", "class": "duplicate truth source" },
+  { "path": "retry.js", "range": "17-17", "class": "duplicate truth source" }
+]

@@ -1,0 +1,25 @@
+const LEGACY_SEPARATOR = ';';
+const SEPARATOR = ',';
+
+function legacyFormat(rows) {
+  return rows.map((row) => row.join(LEGACY_SEPARATOR)).join('\n');
+}
+
+function escapeCell(cell) {
+  return String(cell).replaceAll('"', '""');
+}
+
+export function formatRows(rows) {
+  if (rows.length === 0) return '';
+  return rows.map((row) => row.map((cell) => `"${escapeCell(cell)}"`).join(SEPARATOR)).join('\n');
+}
+
+export function formatReport(title, rows) {
+  const body = formatRows(rows);
+  if (rows.length === 0 && body !== '') return title;
+  return `${title}\n${body}`;
+}
+
+function summarize(rows) {
+  return `${rows.length} rows`;
+}

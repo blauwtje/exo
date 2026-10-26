@@ -235,6 +235,15 @@ function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
   }
 }
 
+const REVIEW_RULES = 'skills/verify/references/review-rules.md';
+const LATER_ROUND_RULE = 'raise `fix` only for a defect inside the fix diff';
+
+function checkLaterRoundRule(errors, repository) {
+  const rules = repository.text(path.join(repository.root, REVIEW_RULES));
+  const probe = rules.split(/^## /m).find((section) => section.startsWith('Probe')) ?? '';
+  if (!probe.includes(LATER_ROUND_RULE)) errors.push(`${REVIEW_RULES}: '## Probe' lacks the later-round rule '${LATER_ROUND_RULE}'`);
+}
+
 export function checkReferenceTables(report, repository) {
   const skillFiles = repository.walk(repository.skillsRoot, (file) => path.basename(file) === 'SKILL.md');
   const errors = [];
@@ -266,6 +275,8 @@ export function checkReferenceTables(report, repository) {
     }
   }
 
+
+  checkLaterRoundRule(errors, repository);
 
   for (const name of IMPLEMENT_ONLY) {
     const matches = repository.walk(repository.skillsRoot, (file) => path.basename(file) === name);

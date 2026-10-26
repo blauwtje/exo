@@ -37,3 +37,38 @@ test('a reported finding is skipped', async () => {
   assert.equal(result.code, 0);
   assert.equal(result.stdout, '');
 });
+
+test('a passing probe appends a fixed row at the ledger round and a failing probe appends none', async () => {
+  const root = await fixture();
+  const ledger = path.join(root, '.exo', 'review-ledger.jsonl');
+  await fs.mkdir(path.dirname(ledger));
+  await fs.writeFile(ledger, `${JSON.stringify({ round: 2, rule: 'swallowed failure', path: 'a.mjs', range: '1-2', weight: 'defect', state: 'open', head: null })}\n`);
+  const file = path.join(root, 'report.md');
+  await fs.writeFile(file, [
+    'a.mjs:1-2; defect; swallowed failure; catch drops error; fix; fixed', '  Probe: true',
+    'b.mjs:4; concern; naming; vague name; fix; fixed', '  Probe: false', ''
+  ].join('\n'));
+  await run(RUN_PROBES, ['--report', file, '--root', root], { cwd: root });
+  const rows = (await fs.readFile(ledger, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[1], { round: 2, rule: 'swallowed failure', path: 'a.mjs', range: '1-2', weight: 'defect', state: 'fixed', head: null });
+});
+
+test('a fixed finding whose sweep prints output fails with the output', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: true\n  Class: broken\n  Sweep: echo b.mjs:7 still broken; true\n');
+  assert.equal(result.code, 1);
+  assert.match(result.stdout, /^FAIL probe \(sweep [^\n]*\): a\.mjs:1/m);
+  assert.match(result.stdout, /^b\.mjs:7 still broken$/m);
+});
+
+test('a fixed finding whose sweep prints nothing passes even when the sweep exits 1', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: true\n  Class: broken\n  Sweep: grep -n "zzz[z]" report.md; false\n');
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^PASS probe \(sweep [^\n]*\): a\.mjs:1/m);
+});
+
+test('a reported finding runs no sweep', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; reported: turn cap\n  Probe: false\n  Class: broken\n  Sweep: echo hit\n');
+  assert.equal(result.code, 0);
+  assert.doesNotMatch(result.stdout, /sweep/);
+});

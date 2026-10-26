@@ -1,0 +1,5 @@
+[
+  { "path": "settings.js", "range": "6-8", "class": "swallowed failure" },
+  { "path": "settings.js", "range": "15-17", "class": "swallowed failure" },
+  { "path": "settings.js", "range": "23-25", "class": "swallowed failure" }
+]

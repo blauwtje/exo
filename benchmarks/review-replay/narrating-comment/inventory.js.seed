@@ -1,0 +1,20 @@
+export function restock(inventory, sku, count) {
+  // look up the current stock for the sku
+  const current = inventory.get(sku) ?? 0;
+  // add the new count to the current stock
+  const next = current + count;
+  inventory.set(sku, next);
+  return next;
+}
+
+export function pick(inventory, sku, count) {
+  const current = inventory.get(sku) ?? 0;
+  if (current < count) throw new Error(`only ${current} of ${sku} left`);
+  inventory.set(sku, current - count);
+  return current - count;
+}
+
+export function lowStock(inventory, threshold) {
+  // return the skus below the threshold
+  return [...inventory].filter(([, count]) => count < threshold).map(([sku]) => sku);
+}

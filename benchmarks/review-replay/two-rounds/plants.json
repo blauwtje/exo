@@ -1,0 +1,4 @@
+[
+  { "path": "config.js", "range": "9-11", "class": "swallowed failure", "round": 1 },
+  { "path": "config.js", "range": "16-16", "class": "unchecked config value", "round": 2 }
+]

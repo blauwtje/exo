@@ -9,6 +9,9 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+- Verify reaches CLEAN in fewer review rounds: each fix line names its defect class and a sweep the fixer runs to clear every hit, a review ledger keeps every round's findings so later rounds raise a fix only inside the fix diff and a finding that recurs stops the loop, and the status line shows context against the physical window size.
+
 ### Fixed
 - `exo:build` refuses to start a run whose plan fails `plan-check --loop --run`, so a task whose Proof starts a nested claude never reaches a unit.
 
