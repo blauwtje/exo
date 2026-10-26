@@ -1,6 +1,12 @@
 # Changelog archive
 
-Releases before 0.134.9; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.10; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.9 - 2026-10-14
+
+### Fixed
+- `exo:build` run reports count each model call's tokens once instead of once per content block, so per-task and total token figures no longer come out about 2.4x too high.
+- `/exo:prompt` opens the rewrite's fenced block with at least three backticks, so a rewrite with no backticks or only inline code still renders as a code block.
 
 ## 0.134.8 - 2026-10-14
 
