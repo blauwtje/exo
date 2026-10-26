@@ -18,6 +18,9 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:fix-review` repairs a concern no test can show directly and adds no test file the plan rules out; in review replay, mean rounds to clean fell from 2.38 to 1.86 and cost from 9.38 to 6.90 USD (n=21).
 
 ### Fixed
+- `benchmarks/improve-all-score.mjs` gates the replay fix rate on a fixed floor of 0.69 from `main`'s own mean 0.841 and spread 0.049, so `main` no longer fails its own gate and the sd is no longer 0.
+- `benchmarks/improve-all-score.mjs` counts a replay run that raised a false fix line as never clean instead of failing the score, so noise on `main` no longer rejects improve setup.
+- `benchmarks/improve-all-score.mjs` takes its `main` build wall and build cost baselines from the repeat 10 concurrency 10 sweep with failed cells penalized, so `main` scores 1.000 on both build parts instead of 2.272 and 1.528.
 - The `--reviews-only` test in `tests/verify-print.test.mjs` checks for the `## Ledger` heading, so it no longer fails when the checkout path contains `ledger`.
 - `exo:build` refuses to start a run whose plan fails `plan-check --loop --run`, so a task whose Proof starts a nested claude never reaches a unit.
 

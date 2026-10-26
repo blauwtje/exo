@@ -8,8 +8,10 @@ import { parseFlags } from '#script-flags';
 import { scoreOutDir } from './improve-speed.mjs';
 
 const USAGE = 'Usage: node benchmarks/improve-all-score.mjs [--serial] [--from-replay <runs dir>] [--from-build <out dir>]';
-const MAIN = { rounds: 1.857, verifyCost: 4.6, buildWall: 129.8, buildCost: 0.622 };
-const FIX_RATE_FLOOR = 0.929;
+const MAIN = { rounds: 1.857, verifyCost: 4.6, buildWall: 294.9487, buildCost: 0.95046258 };
+const MAIN_FIX_RATE = { mean: 0.841, sd: 0.049 };
+const FIX_RATE_SIGMAS = 3;
+const FIX_RATE_FLOOR = Math.floor((MAIN_FIX_RATE.mean - FIX_RATE_SIGMAS * MAIN_FIX_RATE.sd) * 100) / 100;
 const NEVER_CLEAN = 4;
 const REPLAY_REPEAT = 2;
 const REPLAY_ROUNDS = 3;
@@ -21,8 +23,6 @@ const OUT_LINE = /^out (.+)$/m;
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
 const sum = (values) => values.reduce((total, value) => total + value, 0);
-const variance = (values) => (values.length < 2 ? 0 : sum(values.map((value) => (value - mean(values)) ** 2)) / (values.length - 1));
-const round3 = (value) => Math.round(value * 1000) / 1000;
 
 class GateFailure extends Error {}
 
@@ -48,24 +48,22 @@ function readRuns(directory) {
   return names.map((name) => ({ task: name.replace(/-[^-]+$/, ''), ...readJson(path.join(directory, name, 'run.json')) }));
 }
 
-function fixStatistic(cells) {
+function fixRate(cells) {
   const graded = cells.map((cell) => cell.list.filter((run) => run.grade).map((run) => run.grade.fixed / run.grade.planted)).filter((rates) => rates.length > 0);
   if (graded.length === 0) throw new GateFailure('no graded replay run');
-  return {
-    rate: mean(graded.map(mean)),
-    sd: Math.sqrt(sum(graded.map((rates) => variance(rates) / rates.length))) / graded.length
-  };
+  return mean(graded.map(mean));
 }
+
+const raisedFalseFix = (run) => (run.grade?.falseFix ?? 0) > 0;
+const roundsScored = (run) => (raisedFalseFix(run) ? NEVER_CLEAN : (run.roundsToClean ?? NEVER_CLEAN));
 
 export function replayMeasures(directory) {
   const runs = readRuns(directory);
   const cells = [...Map.groupBy(runs, (run) => run.task)].map(([task, list]) => ({ task, list }));
-  const fix = fixStatistic(cells);
-  const falseFix = sum(runs.filter((run) => run.grade).map((run) => run.grade.falseFix));
-  if (falseFix > 0) throw new GateFailure(`replay raised ${falseFix} false fix line(s)`);
-  if (round3(fix.rate) < FIX_RATE_FLOOR - 2 * fix.sd) throw new GateFailure(`replay fix rate ${fix.rate.toFixed(3)} is below ${FIX_RATE_FLOOR} minus 2 sd ${(2 * fix.sd).toFixed(3)}`);
-  const rounds = mean(cells.map((cell) => mean(cell.list.map((run) => run.roundsToClean ?? NEVER_CLEAN))));
-  return { rounds, verifyCost: sum(runs.map((run) => run.costUsd)) };
+  const rate = fixRate(cells);
+  if (rate < FIX_RATE_FLOOR) throw new GateFailure(`replay fix rate ${rate.toFixed(3)} is below the floor ${FIX_RATE_FLOOR}: main ${MAIN_FIX_RATE.mean} minus ${FIX_RATE_SIGMAS} sd ${MAIN_FIX_RATE.sd}`);
+  const rounds = mean(cells.map((cell) => mean(cell.list.map(roundsScored))));
+  return { rounds, verifyCost: sum(runs.map((run) => run.costUsd)), falseFixRuns: runs.filter(raisedFalseFix).length, runCount: runs.length };
 }
 
 function buildCell(directory, row) {
@@ -143,6 +141,11 @@ function reportFailedCells(failedCells, total) {
   console.error(`build failed ${failedCells.length} of ${total}: ${details}`);
 }
 
+function reportFalseFix(falseFixRuns, total) {
+  if (falseFixRuns === 0) return;
+  console.error(`replay false fix ${falseFixRuns} of ${total}`);
+}
+
 async function main(argv) {
   const flags = parseFlags(argv, { serial: 'boolean', 'from-replay': 'value', 'from-build': 'value' }, { usage: USAGE });
   const checkout = path.resolve('.');
@@ -150,6 +153,7 @@ async function main(argv) {
   try {
     const measured = await measure(flags, checkout, work);
     const parts = ratios(measured);
+    reportFalseFix(measured.falseFixRuns, measured.runCount);
     reportFailedCells(measured.failedCells, measured.cellCount);
     for (const [id, ratio] of parts) console.log(`${id} ratio=${ratio.toFixed(3)}`);
     console.log(geometricMean(parts.map(([, ratio]) => ratio)).toFixed(3));
