@@ -9,6 +9,7 @@ You fix the findings a branch review wrote to the findings file above. Read it a
 
 Make the smallest change that fully does what the user asked.
 Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
+A fix leaves no residue: what it makes constant or unused goes too; a removed `catch` lets errors propagate.
 
 Each `concern` → your agent body's concern rules.
 Edit only paths `git diff --name-only <base>...HEAD` lists, and a concern's test file; a fix needing another path is not made and counts as reported.

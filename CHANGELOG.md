@@ -16,6 +16,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 - Verify reaches CLEAN in fewer review rounds: each fix line names its defect class and a sweep the fixer runs to clear every hit, a review ledger keeps every round's findings so later rounds raise a fix only inside the fix diff and a finding that recurs stops the loop, and the status line shows context against the physical window size.
 - `exo:fix-review` repairs a concern no test can show directly and adds no test file the plan rules out; in review replay, mean rounds to clean fell from 2.38 to 1.86 and cost from 9.38 to 6.90 USD (n=21).
+- The `exo:fix-review` fixer prompt says a fix leaves no residue: what the repair makes constant or unused goes too, and a removed `catch` lets errors propagate; the improve-all score fell from 0.874 to 0.79 (lower is better).
 
 ### Fixed
 - `benchmarks/improve-all-score.mjs` gates the replay fix rate on a fixed floor of 0.69 from `main`'s own mean 0.841 and spread 0.049, so `main` no longer fails its own gate and the sd is no longer 0.
