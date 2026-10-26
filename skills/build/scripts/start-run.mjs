@@ -8,18 +8,20 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { blockReport, runRules } from './next-task.mjs';
+import { planCheckReport } from '../../spec/scripts/plan-check.mjs';
 import { frameOf, landedTasks, openPoints, parsePlan, planIdOf, PlanError } from '#plan-tasks';
 import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
+const PLAN_CHECK = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
 const USAGE = 'usage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]';
 const HELP = [
   'usage: node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]',
   '--plan names the plan the user gave, which skips the search.',
   "--find-only prints the picked plan's absolute path, then its `Repository:` and `Branch:` lines (`none` when absent).",
   'The starting call prints one `run started` line naming the plan, checkout and branch, then `next-task.mjs --block` output when the checkout is on the plan\'s Branch: or the plan names none.',
-  'A refusal (zero or several plans, a --checkout that is not a checkout) exits 1 with one line naming the cause and the next command.',
+  'A refusal (zero or several plans, a --checkout that is not a checkout, a plan failing plan-check --loop --run) exits 1 with one line naming the cause and the next command.',
 ].join('\n');
 
 export class RefusalError extends Error {}
@@ -86,6 +88,7 @@ function main(argv) {
   }
   const checkout = flags.checkout ?? root;
   const branch = checkoutBranch(checkout);
+  if (planFrame(planPath) !== null) requirePlanCheck(planPath, checkout);
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   const frame = planFrame(planPath);
   if (frame !== null) fs.writeFileSync(scratchPath(checkout, 'run-rules.md'), runRules(frame));
@@ -122,6 +125,12 @@ function firstBlock(planPath, checkout) {
     if (error instanceof PlanError) return '';
     throw error;
   }
+}
+
+function requirePlanCheck(planPath, checkout) {
+  const report = planCheckReport(fs.readFileSync(planPath, 'utf8'), { root: checkout, loop: true, planPath, run: true });
+  if (report.ok) return;
+  throw new RefusalError(`plan-check --loop --run fails on ${planPath}:\n${report.lines.join('\n')}\nNext: fix the plan, confirm with \`node ${PLAN_CHECK} --loop --run --plan ${planPath} --root ${checkout}\`, then rerun start-run.`);
 }
 
 function checkoutBranch(checkout) {

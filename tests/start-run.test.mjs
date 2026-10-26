@@ -19,8 +19,8 @@ function fixture() {
   fs.mkdirSync(path.dirname(plan), { recursive: true });
   fs.writeFileSync(plan, [
     '# Demo', '', '## Goal', 'g', '', '## Plan basis', `Repository: ${repo}`, 'Branch: work', 'Worktree setup: none',
-    'Land gate: true', 'Land: local', 'Commit: feat(x): y', 'Lint: none', 'Allow: none', '',
-    '## Success criterion', '`true`', 'Red: none', 'Product run: none', '',
+    'Land gate: node --version','Land: local', 'Commit: feat(x): y', 'Lint: none', 'Allow: none', '',
+    '## Success criterion', '`true`', 'Red: none (demo plan)','Product run: none', '',
     '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none', '- Smallest safe split: one each', '',
     '## Tasks', '### Task 1: feat(x): one', 'Depends on: none | Files: `a.txt` | Data: d | Proof: true', '',
     '### Task 2: feat(x): two', 'Depends on: 1 | Files: `b.txt` | Data: d | Proof: true', '',
@@ -84,4 +84,19 @@ test('start-run still writes its record when pruning fails on an unremovable ent
   fs.mkdirSync(path.join(directory, 'stuck.json'), { recursive: true });
   run(f, { CLAUDE_CODE_SESSION_ID: 'abc-5' });
   assert.equal(fs.existsSync(recordFile(f.cache, 'abc-5')), true);
+});
+
+test('start-run refuses a plan whose proof starts a nested claude, before it writes anything', () => {
+  const f = fixture();
+  const text = fs.readFileSync(f.plan, 'utf8').replace('Files: `b.txt` | Data: d | Proof: true', 'Files: `b.txt` | Data: d | Proof: claude -p measure');
+  fs.writeFileSync(f.plan, text);
+  git(f.repo, 'commit', '-q', '-am', 'chore: plan');
+  const env = { ...process.env, XDG_CACHE_HOME: f.cache, CLAUDE_CODE_SESSION_ID: 'abc-6' };
+  const result = spawnSync(process.execPath, [SCRIPT, '--plan', f.plan, '--root', f.repo, '--checkout', f.repo], { encoding: 'utf8', env });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /starts a nested claude/);
+  assert.match(result.stderr, /Next: fix the plan.*plan-check\.mjs --loop --run --plan /s);
+  assert.equal(result.stdout, '');
+  assert.equal(fs.existsSync(path.join(f.cache, 'exo')), false);
+  assert.equal(fs.existsSync(path.join(f.repo, '.exo')), false);
 });
