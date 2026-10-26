@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { sweepCells } from '../benchmarks/sweep-cells.mjs';
+import { pluginVariants, sweepCells } from '../benchmarks/sweep-cells.mjs';
+import { applyVariant } from '../benchmarks/variants.mjs';
 import { FLOW_HELPERS, FLOW_PLAN, flowPlanText } from '../benchmarks/sweep-fixtures.mjs';
 
 test('flow-unit cell sits beside flow-c7 and asks for the compact plan', () => {
@@ -15,6 +16,35 @@ test('flow-unit cell sits beside flow-c7 and asks for the compact plan', () => {
   assert.equal(unit.compactPlan, true);
   assert.equal(unit.prompt, c7.prompt);
   assert.notEqual(c7.compactPlan, true);
+});
+
+test('flow-fold cell matches flow-unit except for its id and the fold-unit plugin variant', () => {
+  const cells = sweepCells();
+  const unit = cells.find((cell) => cell.id === 'flow-unit');
+  const fold = cells.find((cell) => cell.id === 'flow-fold');
+  assert.deepEqual({ ...fold, id: unit.id, pluginVariant: unit.pluginVariant }, unit);
+  assert.equal(fold.pluginVariant, 'fold-unit');
+  assert.ok(pluginVariants(cells).includes('fold-unit'));
+});
+
+test('fold-unit replaces the whole of step 5, bullets included, and keeps the build-task dispatch', () => {
+  const root = path.join(import.meta.dirname, '..');
+  const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'fold-unit-'));
+  try {
+    fs.cpSync(path.join(root, 'skills/build/references'), path.join(copy, 'skills/build/references'), { recursive: true });
+    applyVariant('fold-unit', copy);
+    const loop = fs.readFileSync(path.join(copy, 'skills/build/references/run-loop.md'), 'utf8');
+    const step = loop.slice(loop.indexOf('5. **'), loop.indexOf('6. **'));
+    assert.ok(!step.includes('Name plan path'));
+    assert.ok(!step.includes('do not apply'));
+    assert.ok(!step.includes('dispatching no agent'));
+    assert.ok(step.includes('${CLAUDE_PLUGIN_ROOT}/agents/run-unit.md'));
+    assert.ok(step.includes('`<skill>` = `${CLAUDE_SKILL_DIR}`'));
+    assert.ok(step.includes('exo:build-task'));
+    assert.ok(!step.includes('exo:run-unit'));
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
+  }
 });
 
 test('compact flow plan has one field line per task, no code, and runs every task in parallel', () => {

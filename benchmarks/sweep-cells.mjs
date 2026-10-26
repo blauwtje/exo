@@ -212,6 +212,7 @@ function flowCells() {
     { ...shared, id: 'flow-c7', prompt: buildPrompt },
     { ...shared, id: 'flow-unit', compactPlan: true, prompt: buildPrompt },
     { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt: buildPrompt },
+    { ...shared, id: 'flow-fold', compactPlan: true, pluginVariant: 'fold-unit', prompt: buildPrompt },
     {
       ...shared,
       id: 'flow-base',
