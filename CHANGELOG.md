@@ -9,10 +9,15 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Added
+- `benchmarks/speed-ledger.jsonl` records the verify review-rounds loop: the `exo:fix-review` concern rule landed (rounds to clean 2.381 → 1.857, first-repair fix rate 0.889 → 0.929 over per-fixture means), dropping the `review-input.md` read in `exo:review-branch` rejected (fix rate 0.738), and a fixer self-check of its repair diff rejected (1.952, 1 false fix line).
+
 ### Changed
 - Verify reaches CLEAN in fewer review rounds: each fix line names its defect class and a sweep the fixer runs to clear every hit, a review ledger keeps every round's findings so later rounds raise a fix only inside the fix diff and a finding that recurs stops the loop, and the status line shows context against the physical window size.
+- `exo:fix-review` repairs a concern no test can show directly and adds no test file the plan rules out; in review replay, mean rounds to clean fell from 2.38 to 1.86 and cost from 9.38 to 6.90 USD (n=21).
 
 ### Fixed
+- The `--reviews-only` test in `tests/verify-print.test.mjs` checks for the `## Ledger` heading, so it no longer fails when the checkout path contains `ledger`.
 - `exo:build` refuses to start a run whose plan fails `plan-check --loop --run`, so a task whose Proof starts a nested claude never reaches a unit.
 
 ## 0.137.0 - 2026-10-26

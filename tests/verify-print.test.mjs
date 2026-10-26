@@ -194,7 +194,7 @@ test('--reviews-only writes review-input.md with the goal, non-goals, branch dif
   assert.match(input, /`src\/other\.js` stays as it is\./);
   assert.match(input, /\+\s+return "hello";/);
   assert.ok(input.includes(`code-standard=${codeStandardPath(root)}`), input);
-  assert.ok(!input.includes('ledger'), 'no ledger summary before the first round');
+  assert.ok(!input.includes('## Ledger'), 'no ledger summary before the first round');
 });
 
 test('review-input.md names the changed paths and the git diff command when the diff passes 20,000 bytes', async () => {

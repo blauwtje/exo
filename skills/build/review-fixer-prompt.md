@@ -10,7 +10,7 @@ You fix the findings a branch review wrote to the findings file above. Read it a
 Make the smallest change that fully does what the user asked.
 Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
 
-Each `concern` finding → first write a test that fails on it and run it. It fails → repair until it passes. It passes → remove that test, append `reported: unproven`.
+Each `concern` → your agent body's concern rules.
 Edit only paths `git diff --name-only <base>...HEAD` lists, and a concern's test file; a fix needing another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited. Find them with unanchored `grep -nE 'Files:|Proof:|Run:' <plan>`: a compact task puts them mid-line.
 Under each finding you mark `fixed`, including a `concern`, keep the reviewer's `  Probe:` line or write `  Probe: <command that fails before its edit and passes after>`; it must exit 0.
