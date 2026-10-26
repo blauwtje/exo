@@ -44,7 +44,7 @@ test('--reviews-only prints one DISPATCH line with the filled review fields', as
   assert.ok(dispatch.includes('base=main'));
   assert.ok(dispatch.includes('scope=branch main..HEAD'));
   assert.ok(dispatch.includes(`findings=${path.join(root, '.exo', 'review-branch.md')}`));
-  assert.ok(dispatch.includes(`proofs=${path.join(root, '.exo', 'proof-fixture-task-1.txt')}`));
+  assert.ok(!dispatch.includes('reports=') && !dispatch.includes('proofs='), dispatch);
   assert.ok(dispatch.includes('review-rules='));
   assert.ok(!output.includes('DISPATCH Overlap'), 'no overlap, no overlap dispatch');
 });
@@ -195,6 +195,22 @@ test('--reviews-only writes review-input.md with the goal, non-goals, branch dif
   assert.match(input, /\+\s+return "hello";/);
   assert.ok(input.includes(`code-standard=${codeStandardPath(root)}`), input);
   assert.ok(!input.includes('## Ledger'), 'no ledger summary before the first round');
+});
+
+test('review-input.md holds the proof file Red: line as a Task line, and none when no task yields one', async () => {
+  const { root, planPath } = await landedBranch();
+  assert.match(await reviewInputOf(root, planPath), /## Red lines\nnone\n/);
+  await fs.writeFile(path.join(root, '.exo', 'proof-fixture-task-1.txt'), 'Proof: `node --test` -> exit 0, pass 1\nRed: proved\n');
+  const input = await reviewInputOf(root, planPath);
+  assert.match(input, /## Red lines\nTask 1: Red: proved\n/);
+});
+
+test('review-input.md takes a report-only task Test first: and Red: lines and no other report line', async () => {
+  const { root, planPath } = await landedBranch();
+  await fs.writeFile(path.join(root, '.exo', 'implementer-1.md'), 'Landed: greeting\nTest first: yes, logic\nRed: node --test: fail\n  expected hello, got undefined\nProof:\n');
+  const input = await reviewInputOf(root, planPath);
+  assert.match(input, /## Red lines\nTask 1: Test first: yes, logic\nTask 1: Red: node --test: fail\n\n/);
+  assert.ok(!input.includes('Landed: greeting'), input);
 });
 
 test('review-input.md names the changed paths and the git diff command when the diff passes 20,000 bytes', async () => {

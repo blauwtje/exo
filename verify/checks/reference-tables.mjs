@@ -237,11 +237,13 @@ function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
 
 const REVIEW_RULES = 'skills/verify/references/review-rules.md';
 const LATER_ROUND_RULE = 'raise `fix` only for a defect inside the fix diff';
+const RED_SOURCE_RULE = 'only `Red:` source is `## Red lines` of `<checkout>/.exo/review-input.md`';
 
-function checkLaterRoundRule(errors, repository) {
+function checkReviewRules(errors, repository) {
   const rules = repository.text(path.join(repository.root, REVIEW_RULES));
   const probe = rules.split(/^## /m).find((section) => section.startsWith('Probe')) ?? '';
   if (!probe.includes(LATER_ROUND_RULE)) errors.push(`${REVIEW_RULES}: '## Probe' lacks the later-round rule '${LATER_ROUND_RULE}'`);
+  if (!rules.includes(RED_SOURCE_RULE)) errors.push(`${REVIEW_RULES}: lacks the Red source rule '${RED_SOURCE_RULE}'`);
 }
 
 export function checkReferenceTables(report, repository) {
@@ -276,7 +278,7 @@ export function checkReferenceTables(report, repository) {
   }
 
 
-  checkLaterRoundRule(errors, repository);
+  checkReviewRules(errors, repository);
 
   for (const name of IMPLEMENT_ONLY) {
     const matches = repository.walk(repository.skillsRoot, (file) => path.basename(file) === name);

@@ -386,25 +386,25 @@ export function codeStandardPath(root) {
   return DEFAULT_CODE_STANDARD;
 }
 
-function dispatchLines(printed, plan, landed, { root, planPath, planId, base }) {
-  const checkout = path.resolve(root ?? '.');
-  const exo = path.join(checkout, '.exo');
-  const baseRef = base ?? DEFAULT_BASE;
-  const common = [
+function dispatchFields(checkout, planPath, baseRef) {
+  return [
     `code-standard=${codeStandardPath(checkout)}`,
     `review-rules=${REVIEW_RULES}`,
     `plan=${planPath}`,
     `checkout=${checkout}`,
-    `base=${baseRef}`,
-    `reports=${exo}/`
+    `base=${baseRef}`
   ].join(' ');
-  const proofs = plan.tasks.filter((task) => landed.has(task.number))
-    .map((task) => proofRecordPath(checkout, planId, task.number))
-    .filter((file) => fs.existsSync(file));
+}
+
+function dispatchLines(printed, { root, planPath, base }) {
+  const checkout = path.resolve(root ?? '.');
+  const exo = path.join(checkout, '.exo');
+  const baseRef = base ?? DEFAULT_BASE;
+  const common = dispatchFields(checkout, planPath, baseRef);
   const lines = [];
   if (printed.some((line) => /^REVIEW Branch [^:]*: review-branch\b/.test(line))) {
     const ledger = latestRound(checkout) > 0 ? ` ledger=${ledgerPath(checkout)}` : '';
-    lines.push(`DISPATCH Branch: ${common} scope=branch ${baseRef}..HEAD findings=${path.join(exo, 'review-branch.md')} proofs=${proofs.length === 0 ? 'none' : proofs.join(',')}${ledger}`);
+    lines.push(`DISPATCH Branch: ${common} scope=branch ${baseRef}..HEAD findings=${path.join(exo, 'review-branch.md')}${ledger}`);
   }
   if (printed.some((line) => /^OVERLAP (?!none)/.test(line))) {
     lines.push(`DISPATCH Overlap: ${common} scope=overlap findings=${path.join(exo, 'review-overlap.md')}`);
@@ -425,12 +425,30 @@ function reviewInputDiff(checkout, baseRef) {
   return [`The diff passes ${REVIEW_INPUT_DIFF_LIMIT} bytes; read it with \`git diff ${range}\`. Changed paths:`, ...git('diff', '--name-only', range).split('\n').filter(Boolean).map((file) => `- ${file}`)];
 }
 
-function writeReviewInput(frame, { checkout, baseRef }) {
+const RED_LINE = /^Red:/;
+const REPORT_RED_LINE = /^(?:Test first|Red):/;
+
+function linesOf(file, pattern) {
+  if (!fs.existsSync(file)) return [];
+  return fs.readFileSync(file, 'utf8').split('\n').filter((line) => pattern.test(line));
+}
+
+function redLines(plan, landed, { checkout, planId }) {
+  const lines = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => {
+    const proven = linesOf(proofRecordPath(checkout, planId, task.number), RED_LINE);
+    const found = proven.length > 0 ? proven : linesOf(path.join(checkout, '.exo', `implementer-${task.number}.md`), REPORT_RED_LINE);
+    return found.map((line) => `Task ${task.number}: ${line}`);
+  });
+  return lines.length === 0 ? ['none'] : lines;
+}
+
+function writeReviewInput(frame, { checkout, baseRef, redSection }) {
   const ledger = ledgerSummary(checkout);
   const text = [
     '## Goal', frame.goal, '',
     '## Non-goals', ...frame.nonGoals.map((goal) => `- ${goal}`), '',
     '## Branch diff', ...reviewInputDiff(checkout, baseRef), '',
+    '## Red lines', ...redSection, '',
     `code-standard=${codeStandardPath(checkout)}`,
     ...(ledger.length === 0 ? [] : ['', '## Ledger', ...ledger]),
     ''
@@ -447,8 +465,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const landed = new Set(landedTasks(plan.tasks, root, planId));
   if (reviewsOnly) {
     const printed = reviewLines(plan, landed, { root, planId, base });
-    writeReviewInput(frame, { checkout: path.resolve(root), baseRef: base ?? DEFAULT_BASE });
-    return { lines: [...printed, ...dispatchLines(printed, plan, landed, { root, planPath, planId, base })], failed: false };
+    const checkout = path.resolve(root);
+    writeReviewInput(frame, { checkout, baseRef: base ?? DEFAULT_BASE, redSection: redLines(plan, landed, { checkout, planId }) });
+    return { lines: [...printed, ...dispatchLines(printed, { root, planPath, base })], failed: false };
   }
   const lines = [];
   let failed = false;

@@ -17,7 +17,7 @@ maxTurns: 30
 - Plan-pasted code, scope `overlap` or no scope → read `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/plan-checks.md` first.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
-- `Red:` source: `grep -n '^Red:' <proofs= files of DISPATCH>`; no line or `proofs=none` → `grep -n -A1 '^Red:' <reports>/implementer-*.md`, `Red:` lines only.
+- `Red:` source: only `## Red lines` of `review-input.md`, one `Task <n>:` line each; a task with no line or `none` has no `Red:` line.
 - A task is test-first only when its `Proof:` names a test file or runs a test runner, and with `Risk:`, `Red:` line after `Test first: yes`, or heading type `fix` with test file in `Files:`.
 - Test-first task → `defect` marked `report` if its commit adds no test of changed behavior or `Red:` line reads `none` or is missing.
 - Write only findings file; no git or `gh` writes, no background session, ask nothing; blocked → report 2-3 options, delete nothing.

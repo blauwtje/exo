@@ -54,7 +54,6 @@ export function reviewPrompt({ planPath, root, base, branch, scope, findings, qu
     `- Branch: ${branch}`,
     `- Checkout: ${root}`,
     `- Base: ${base}`,
-    `- Implementer report directory: ${path.join(root, SCRATCH_FOLDER)}/`,
     `- Scope: ${scope}`,
     `- Findings path: ${findings}`,
     ...(questions.length > 0 ? ['- Questions:', ...questions.map((question) => `  - ${question}`)] : [])
