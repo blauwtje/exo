@@ -14,6 +14,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/speed-ledger.jsonl` records the verify review-rounds loop: the `exo:fix-review` concern rule landed (rounds to clean 2.381 → 1.857, first-repair fix rate 0.889 → 0.929 over per-fixture means), dropping the `review-input.md` read in `exo:review-branch` rejected (fix rate 0.738), and a fixer self-check of its repair diff rejected (1.952, 1 false fix line).
 - `benchmarks/variants.mjs` gains a `fold-unit` arm: a paid `flow` sweep can run a `flow-fold` cell where the build lead runs the `run-unit` loop itself, paired against `flow-unit`.
 - `benchmarks/speed-ledger.jsonl` records the `fold-unit` arm as rejected: over 10 paired flow runs each, both arms passed every hidden check and cost the same ($0.742 vs $0.745), but the lead-run loop was slower (median wall 161 s vs 127 s, one 712 s run).
+- `benchmarks/tasks.mjs` gains one `adhd-no-<slug>` arm per brevity sentence of `output-styles/adhd.md`: each is the `adhd-style` prompt minus that one sentence, so `benchmarks/run.mjs` can pair it against `adhd-style` on the value tier, and it stays out of the default arm list.
 
 ### Changed
 - The `exo:adhd` output style bolds only the words that carry the answer (Yes/No, the value or action, at most 3 spans) and the leading term of each bullet in a list of 3 or more, instead of the whole reply sentence.

@@ -35,6 +35,31 @@ const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url)
 
 const ADHD_STYLE = fs.readFileSync(new URL('../output-styles/adhd.md', import.meta.url), 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').trim();
 
+export const BREVITY_LINES = {
+  'least': 'Give the least that fully answers.',
+  'no-narration': 'While working, write no text between tool calls: no plan, no progress note, no thinking aloud.',
+  'short-reasoning': 'Keep reasoning to a few lines.',
+  'lean-reads': 'Read only what the task needs, filter command output to the lines that matter (for example `| tail -n 30` or `| grep`), make the smallest edit, and run the check once more only to confirm.',
+  'lean-args': 'Pass tool calls only the arguments they need: no restated file content, no comment, no description.',
+  'one-sentence': 'Write one reply at the end: one sentence of at most 15 words with the answer first, then stop, because a reader with ADHD keeps the point only when nothing else competes with it.',
+  'no-why': 'Give the what, not the why or an example: the user asks for those when they want them.',
+  'leave-out': 'Leave out what the user can see in the diff or the command output, and any caveat or untested edge the user did not ask about.',
+  'fewest-steps': 'Pick the fewest steps that work.',
+  'on-request': 'Stay on the request, with no side topics.'
+};
+
+function withoutSentence(text, sentence) {
+  for (const spaced of [`${sentence} `, ` ${sentence}`]) {
+    if (text.includes(spaced)) return text.replace(spaced, '');
+  }
+  throw new Error(`adhd style has no sentence "${sentence}"`);
+}
+
+const ABLATION_ARMS = Object.fromEntries(Object.entries(BREVITY_LINES).map(([slug, sentence]) => [
+  `adhd-no-${slug}`,
+  { prompt: withoutSentence(ADHD_STYLE, sentence), pluginDirs: [], promptSuffix: null, ablate: slug }
+]));
+
 // A git-only arm that loads one rival from the directory rivals.mjs fetches it
 // into; nothing is fetched here, so run.mjs reports a missing directory and
 // --dry-run can still print it. A rival absent from rivals.local.json gets no
@@ -60,6 +85,7 @@ export const ARMS = {
   baseline: { prompt: null, pluginDirs: [], promptSuffix: null },
   terse: { prompt: TERSE_PROMPT, pluginDirs: [], promptSuffix: null },
   'adhd-style': { prompt: ADHD_STYLE, pluginDirs: [], promptSuffix: null },
+  ...ABLATION_ARMS,
   'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDirs: [], promptSuffix: null },
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
   'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },
@@ -82,7 +108,7 @@ export const ARMS = {
 };
 
 // The cut arms run only when named, so a default run keeps its cost.
-export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].h2h && !ARMS[name].variant && !ARMS[name].runPlan);
+export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].h2h && !ARMS[name].variant && !ARMS[name].runPlan && !ARMS[name].ablate);
 
 export const TEMPLATE_TASKS = [
   { id: 'tmpl-fe-timepicker', kind: 'frontend', prompt: 'Create a component in the frontend for choosing a time of day.' },
