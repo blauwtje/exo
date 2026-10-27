@@ -269,8 +269,8 @@ function readsRepositoryFile(lines, entry, names) {
   return lines.some((line) => /\breadFile(?:Sync)?\b/.test(line) && namesEntry(line, entry.path, entry.others) && pointsAtRepository(line, names));
 }
 
-function lockProblems(task, root, sources) {
-  const listed = task.files.map((file) => file.path);
+function lockProblems(task, root, sources, later) {
+  const listed = [...task.files.map((file) => file.path), ...later];
   return LOCKS_AND_REGISTRIES.filter((lock) => !isCovered(listed, lock) && fs.existsSync(path.join(root, lock))).flatMap((lock) => {
     const text = fs.readFileSync(path.join(root, lock), 'utf8');
     return sources
@@ -301,7 +301,7 @@ function readerProblems(task, root, sources) {
   });
 }
 
-function checkUnlistedTests(task, root) {
+function checkUnlistedTests(task, root, byNumber) {
   if (root === undefined || root === null) return [];
   const testsDir = path.join(root, 'tests');
   if (!fs.existsSync(testsDir)) return [];
@@ -320,7 +320,7 @@ function checkUnlistedTests(task, root) {
     path: source.path,
     others: new Set(tracked.filter((name) => name !== source.path).map((name) => path.posix.basename(name)))
   }));
-  return [...problems, ...lockProblems(task, root, withOthers), ...readerProblems(task, root, withOthers)];
+  return [...problems, ...lockProblems(task, root, withOthers, laterChainedPaths(byNumber, task.number)),...readerProblems(task, root, withOthers)];
 }
 
 const TEST_FILE_NAME = /^(?:[\w.-]+[._](?:test|spec)|test_[\w.-]+)\.\w+$/;
@@ -333,6 +333,12 @@ function checkProofTestsListed(task, root, byNumber) {
     .map((token) => token.replace(/^\.\//, ''))
     .filter((token) => TEST_FILE_NAME.test(path.posix.basename(token)) && !isCovered(listed, token) && fs.existsSync(path.join(root, token)));
   return [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add \`${testPath}\` to Files: (its Proof runs it)`);
+}
+
+function laterChainedPaths(byNumber, number) {
+  return [...byNumber.values()]
+    .filter((other) => reachesThrough(byNumber, other.number, number))
+    .flatMap((other) => other.files.map((file) => file.path));
 }
 
 function dependencyChainOf(byNumber, from) {
@@ -709,7 +715,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkContextSize(task, resolvedRoot, forkPoint)),
-    ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot)),
+    ...plan.tasks.flatMap((task) => checkUnlistedTests(task, resolvedRoot, byNumber)),
     ...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => checkProofTestsListed(task, resolvedRoot, byNumber)),
     ...(resolvedRoot === undefined || resolvedRoot === null || !fs.existsSync(resolvedRoot)
       ? []

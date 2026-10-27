@@ -29,6 +29,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The verify branch reviewer sees no implementer prose: `--reviews-only` writes each landed task's `Red:` lines into a `## Red lines` section of `review-input.md`, and the reviewer reads them there instead of from the implementer report directory.
 
 ### Fixed
+- `plan-check` accepts a task that edits a file named in `CONTRIBUTING.md` or another lock doc when a later task in its `Depends on:` chain lists that doc, so a large file plus its lock doc no longer trips the task size limit.
 - The Codex adapter skips macOS `.DS_Store` files inside skill folders, and `tests/routing-prompts.test.mjs` lists skills through `modelInvocableSkills`, so a Finder file no longer fails `npm run check`.
 - The `exo:adhd` output style puts multi-line code in a code fence, writes one progress line when a step runs past one minute, allows a few words while background work still runs, and runs each check once instead of one rerun in total.
 - The hung-call test in `tests/adhd-score.test.mjs` drives the 300 ms call cap with mock timers, so it no longer fails under CPU load when the healthy retry outlives the cap.
