@@ -52,7 +52,7 @@ test('an exo agent with a model and effort already set shows those', () => {
 
 test('an agent that is not an exo agent gives no line, and no output when nothing changes', () => {
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'Explore', prompt: 'x' } }, 'on', ON), null);
-  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'x' } }, 'on', ON).systemMessage, undefined);
+  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'exo-kind: build\nx' } }, 'on', ON).systemMessage, undefined);
 });
 
 test('a refusal gives one line with its reason from the Bash, Edit and Agent hooks', async () => {

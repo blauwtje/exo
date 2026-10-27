@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
-export const RUN_VARIABLES = ['EXO_RUN', 'EXO_RUN_DIR', 'EXO_RUN_TASK', 'EXO_RUN_SESSION', 'EXO_DROPS'];
+export const RUN_VARIABLES = ['EXO_RUN', 'EXO_RUN_DIR', 'EXO_RUN_TASK', 'EXO_RUN_SESSION', 'EXO_DROPS', 'EXO_PENDING_EVIDENCE'];
 
 for (const name of RUN_VARIABLES) delete process.env[name];
 

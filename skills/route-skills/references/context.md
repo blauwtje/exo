@@ -16,4 +16,4 @@
 - **Isolated commands.** Worktree-isolated delegate's Bash refuses some shapes: double-quote a runtime value with a literal prefix, or put `--` before it; run plain commands one at a time, not `;` chains with variables; wait with a background run, never `sleep`.
 - **Files.** Create files with Write, not compound Bash; one simple command per Bash call.
 - **Scope.** Write only the artifacts a skill names, at the length needed.
-- Main-session work → small chunks; each chunk's reading and edits go to a subagent briefed by file path, read only its verdict and path; plan in `.exo/<topic>/progress.md`; at the 60k warning finish the chunk and move to a fresh session.
+- Main-session work → small chunks; each chunk's reading and edits go to a subagent briefed by file path, read only its verdict and path; plan in `.exo/<topic>/progress.md`; at the 60k warning hand the rest to subagents.

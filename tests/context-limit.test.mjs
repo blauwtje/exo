@@ -44,10 +44,14 @@ test('main session gets one note per level and is never denied', () => {
     const call = (tokens) => contextDecision({ session_id, transcript_path: at(tokens), tool_name: 'Read' });
     assert.equal(call(10_000), null);
     const soft = call(70_000);
-    assert.match(soft.additionalContext, /exo:save-session/);
+    assert.match(soft.additionalContext, /subagents/);
+    assert.match(soft.additionalContext, /manager subagent/);
+    assert.doesNotMatch(soft.additionalContext, /save-session|fresh session/);
     assert.equal(call(71_000), null);
     const hard = call(120_000);
-    assert.match(hard.additionalContext, /tell the user/);
+    assert.match(hard.additionalContext, /remaining work to subagents/);
+    assert.match(hard.additionalContext, /only decisions and user dialogue/);
+    assert.doesNotMatch(hard.additionalContext, /save-session|fresh session/);
     assert.equal(hard.deny, undefined);
     assert.equal(call(121_000), null);
   } finally {
@@ -94,18 +98,18 @@ test('Bash and Edit dispatchers give the main session one soft note at 61k, none
 
     assert.equal(await dispatchBash(input('Bash', `${id}-b0`, below)), null);
     const bash = await dispatchBash(input('Bash', `${id}-b1`, soft));
-    assert.match(bash.hookSpecificOutput.additionalContext, /exo:save-session/);
+    assert.doesNotMatch(bash.hookSpecificOutput.additionalContext, /save-session|fresh session/);
     assert.equal(await dispatchBash(input('Bash', `${id}-b1`, soft)), null);
 
     assert.equal(dispatchEdit(input('Edit', `${id}-e0`, below)), null);
     const edit = dispatchEdit(input('Edit', `${id}-e1`, soft));
-    assert.match(edit.hookSpecificOutput.additionalContext, /exo:save-session/);
+    assert.doesNotMatch(edit.hookSpecificOutput.additionalContext, /save-session|fresh session/);
     assert.equal(dispatchEdit(input('Edit', `${id}-e1`, soft)), null);
 
     const deny = { name: 'deny', run: () => ({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'no' } }) };
     const denied = await dispatchBash(input('Bash', `${id}-b2`, soft), [CONTEXT_STEP, deny]);
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(denied.hookSpecificOutput.additionalContext, /exo:save-session/);
+    assert.doesNotMatch(denied.hookSpecificOutput.additionalContext, /save-session|fresh session/);
 
     process.env.EXO_RUN_HANDOFF = path.join(dir, 'handoff.md');
     assert.equal(dispatchEdit(input('Edit', `${id}-e2`, limit + 1000)).hookSpecificOutput.permissionDecision, 'deny');

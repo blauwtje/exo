@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
-import { codeStandardPath } from '../skills/verify/scripts/verify.mjs';
+import { codeStandardPath } from '../skills/verify/scripts/review-input.mjs';
 import { TASK_SPLIT_TOKENS } from '../lib/context-limits.mjs';
 import { git } from './harness.mjs';
 import { landingCheckout, editApp } from './land-task-fixture.mjs';
@@ -54,7 +54,7 @@ test('the DISPATCH line leaves the REVIEW and OVERLAP lines the run tail parses 
   const lines = run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']).trim().split('\n');
   assert.ok(lines.some((line) => /^REVIEW Branch ([^:]*): (review-branch)(?: exo-kind: (\S+))?\s*$/.test(line)));
   assert.ok(lines.includes('OVERLAP none'));
-  assert.ok(lines.filter((line) => !/^(REVIEW|OVERLAP|DISPATCH) /.test(line)).length === 0, 'no other line is printed');
+  assert.ok(lines.filter((line) => !/^(REVIEW|OVERLAP|DISPATCH|FINDINGS-SHA|HEAD) /.test(line)).length === 0, 'no other line is printed');
 });
 
 test('codeStandardPath names a file CLAUDE.md or AGENTS.md calls the code standard, else the plugin default', async () => {
@@ -148,7 +148,7 @@ const FIX_LINE = (rule, file) => [`${file}:8-9; defect; ${rule}; catch drops err
 async function reviewRound(root, text) {
   const report = path.join(root, 'review-branch.md');
   await fs.writeFile(report, text);
-  return run('merge-reviews.mjs', ['--root', root, '--report', report]).trim().split('\n');
+  return run('merge-reviews.mjs', ['--root', root, '--report', report]).trim().split('\n').filter((line) => !line.startsWith('COVERAGE'));
 }
 
 test('the same rule@path open in two consecutive rounds prints BLOCKED recurring with both readings', async () => {
@@ -213,15 +213,14 @@ test('review-input.md takes a report-only task Test first: and Red: lines and no
   assert.ok(!input.includes('Landed: greeting'), input);
 });
 
-test('review-input.md names the changed paths and the git diff command when the diff passes 20,000 bytes', async () => {
+test('review-input.md inlines the whole branch diff while it fits one reviewer', async () => {
   const { root, planPath } = await landedBranch();
   await fs.writeFile(path.join(root, 'src', 'big.js'), `${'export const filler = 1;\n'.repeat(1000)}`);
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'feat(app): big');
   const input = await reviewInputOf(root, planPath);
-  assert.ok(!input.includes('export const filler'), 'the big diff is not inlined');
-  assert.ok(input.includes('src/big.js') && input.includes('src/app.js'), input);
-  assert.ok(input.includes('git diff main..HEAD'), input);
+  assert.ok(input.includes('+export const filler = 1;') && input.includes('src/app.js'), input);
+  assert.ok(!input.includes('git diff main..HEAD'), input);
 });
 
 test('review-input.md summarises the ledger rows by round once the ledger holds a row', async () => {
@@ -249,8 +248,8 @@ test('a CLEAN round between two rounds with the same finding keeps them from cou
 
 test('one reader parses .exo/review-ledger.jsonl', async () => {
   const merge = await fs.readFile(path.join(SCRIPTS, 'merge-reviews.mjs'), 'utf8');
-  const verify = await fs.readFile(path.join(SCRIPTS, 'verify.mjs'), 'utf8');
-  const summary = verify.slice(verify.indexOf('function ledgerSummary'), verify.indexOf('function reviewInputDiff'));
+  const reviewInput = await fs.readFile(path.join(SCRIPTS, 'review-input.mjs'), 'utf8');
+  const summary = reviewInput.slice(reviewInput.indexOf('function ledgerSummary'), reviewInput.indexOf('function shardInputPath'));
   assert.match(summary, /ledgerRows\(checkout\)/);
   assert.doesNotMatch(summary, /JSON\.parse/);
   assert.equal((merge.match(/JSON\.parse/g) ?? []).length, 1);

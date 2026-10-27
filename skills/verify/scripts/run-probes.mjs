@@ -2,17 +2,16 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { fixerMark } from '#fixer-mark';
 import { appendLedger, latestRound, parseFinding } from './merge-reviews.mjs';
 
 const PROBE_LINE = /^\s*Probe:\s*(.*)$/;
 const SWEEP_LINE = /^\s*Sweep:\s*(.*)$/;
-const FIXED_FINDING = /\bfixed\s*$/;
-const REPORTED_FINDING = /\breported:\s*\S/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
 Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding.
-A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding). Exits 1 on any FAIL.`;
+A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding); a fixed finding with no Probe: line under it prints FAIL probe (no Probe line). Exits 1 on any FAIL.`;
 
 export function fixedProbes(report) {
   const lines = report.split('\n');
@@ -20,8 +19,9 @@ export function fixedProbes(report) {
   lines.forEach((line, index) => {
     if (PROBE_LINE.test(line)) return;
     const next = PROBE_LINE.exec(lines[index + 1] ?? '');
-    if (FIXED_FINDING.test(line)) probes.push({ finding: line.trim(), command: next?.[1].trim() || null, sweep: SWEEP_LINE.exec(lines[index + 3] ?? '')?.[1].trim() || null });
-    else if (next && !REPORTED_FINDING.test(line)) probes.push({ finding: line.trim(), command: null, unmarked: true });
+    const mark = fixerMark(line);
+    if (mark?.state === 'fixed') probes.push({ finding: line.trim(), command: next?.[1].trim() || null, sweep: SWEEP_LINE.exec(lines[index + 3] ?? '')?.[1].trim() || null });
+    else if (next && mark === null) probes.push({ finding: line.trim(), command: null, unmarked: true });
   });
   return probes;
 }
@@ -43,7 +43,7 @@ export function runProbes(report, root) {
   let allPassed = true;
   for (const { finding, command, sweep, unmarked } of fixedProbes(report)) {
     if (command === null) {
-      lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding'}): ${finding}`);
+      lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding: add its Probe: line, or mark reported: <reason> when no commit repaired it'}): ${finding}`);
       allPassed = false;
       continue;
     }

@@ -286,6 +286,18 @@ test('the dispatch rules leave agent models to the kind table and send long comm
   assert.doesNotMatch(rules, /cheapest and low for lookups/);
 });
 
+test('the dispatch rules send a brief with an open choice or unknown cause to the hardest kind and a decided fix to build', async () => {
+  const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
+  assert.match(rules, /design, architecture or solution choice open, or asks for an unknown cause → first brief line `exo-kind: hardest`/);
+  assert.match(rules, /fully decided fix → `exo-kind: build`/);
+  const { agentEffort } = await import('../hooks/agent-effort.mjs');
+  const { readKindTable } = await import('../lib/model-kinds.mjs');
+  const { kinds } = readKindTable(undefined, { budget: 'on' });
+  const modelOf = (prompt) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt } }, 'on').hookSpecificOutput.updatedInput.model;
+  assert.equal(modelOf('exo-kind: hardest\nPick the cache design'), kinds.hardest.model);
+  assert.equal(modelOf('exo-kind: build\nApply the decided fix'), kinds.build.model);
+});
+
 test('a subagent Bash call is denied a shared-state git command at command position, the lead and other commands are not', async () => {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
   const decide = async (command, agentId) => {

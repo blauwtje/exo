@@ -37,6 +37,7 @@ Decided change with no plan file → `references/no-spec.md`. After a compaction
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
 | `references/rolling-window.md` | Never here: unit reads it. |
 | `references/agent-cases.md` | Never here: agents read it. |
+| `references/fix-class.md` | Never here: repairs read it. |
 | `implementer-prompt.md` | Never here: unit reads it. |
 | `drift-repairer-prompt.md` | Never here: unit reads it. |
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |

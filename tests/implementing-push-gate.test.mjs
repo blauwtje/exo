@@ -53,6 +53,22 @@ test('a green task commits and pushes nothing', () => {
   assert.ok(!commitStep.includes('git push'), 'the unit commit step runs no push');
 });
 
+test('an off-brief return gets one in-place correction, a red proof or failing command a fresh retry', () => {
+  const unit = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
+  const commitStep = unit.match(/^4\. \*\*Commit a green foreground task\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m)[0];
+  const lines = commitStep.split('\n');
+  const offBrief = lines.find((line) => line.includes('Off-brief'));
+  assert.ok(offBrief.includes('SendMessage'), 'the first answer to an off-brief return is a SendMessage');
+  assert.ok(offBrief.includes('`hooks/session-rules.md`'), 'the line cites the drift rule');
+  assert.ok(/second|still/.test(offBrief), 'a fresh agent follows only a repeated off-brief return');
+  const refusal = lines.find((line) => line.includes('Other refusal'));
+  assert.ok(!refusal.includes('SendMessage'), 'a red proof or failing command is retried by a fresh agent, per Fix rounds');
+  assert.ok(refusal.includes('fresh `exo:build-task`'));
+  const direct = fs.readFileSync(new URL('../skills/build/references/run-loop-direct.md', import.meta.url), 'utf8');
+  const report = direct.split('\n').find((line) => line.includes('about the report'));
+  assert.ok(!report.includes('SendMessage') && report.includes('fresh `exo:build-task`'), 'a failing command in a report is retried by a fresh agent');
+});
+
 test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7, TAIL);
   assert.ok(tailStep.includes('End this loop on `verify`'));
@@ -63,7 +79,7 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(!repairStep.includes('git push'), 'the repair step runs no push');
   assert.ok(VERIFY.includes('--base <base> --reviews-only` first'), 'verify lists the reviews before the gate');
   assert.ok(VERIFY.includes('Then in one message: the full run in the background, step 2\'s dispatch'), 'the gate and the dispatch start in one message');
-  assert.ok(VERIFY.includes('Run by a dispatched agent → the full run in the foreground, `verify.mjs` with timeout 600000'), 'a dispatched agent runs the gate in the foreground');
+  assert.ok(VERIFY.includes('Dispatched agent → full run in the foreground, timeout 600000.'), 'a dispatched agent runs the gate in the foreground');
   assert.ok(VERIFY.includes('Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`'), 'the repair waits for the gate');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');
@@ -133,7 +149,7 @@ test('--land carries the approval through build, verify and ship, skipping three
     assert.equal((text.match(/^\s*- `--land` →/gm) ?? []).length, { build: 0, verify: 2, ship: 1 }[name], `${name} has its --land bullets; build's sits in tail.md`);
   }
   assert.ok(WORKSPACE.includes('- `--land` → the `ask` menu takes its (A) through `--pick` with no question.'));
-  assert.match(VERIFY, /--codex`[^\n]*\n\s*- `--land` → skip that offer\.\n/, 'the codex offer is skipped right under it');
+  assert.match(VERIFY, /`CODEX offer` line[^\n]*\n\s*- `--land` → skip\.\n/, 'the codex offer is skipped right under it');
   assert.ok(VERIFY.includes('- `--land` → pass `--land` to `ship`.'));
   assert.ok(TAIL.includes('- `--land` → run `verify --land`'), 'the tail passes the flag to verify');
   assert.ok(RUN_LOOP.includes('`--land`') && TAIL.includes('`--land`'), 'the loop and tail pass the flag on');

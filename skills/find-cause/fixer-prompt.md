@@ -43,6 +43,8 @@ Return only the handoff path.
 Make the smallest change that fully does what the user asked.
 Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
 
+Before the fix, read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
+
 Hard boundaries:
 - Edit only paths in scope; fix needs another path → stop, report that path and why.
 - Bash: reproduce and proof commands, read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service.

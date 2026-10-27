@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
-import { coversCompanion, criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, proofRecordPath, taskCommits } from '#plan-tasks';
+import { coversCompanion, criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
 import { changedPaths } from '#size-facts';
+import { coveringTests } from '../../../lib/covering-tests.mjs';
 import { codeRuleFindings } from '#code-rules';
 import { proofsReport } from '#proofs-report';
 import { transcriptFolder } from '#confine-claude';
@@ -17,11 +18,14 @@ import { contextLimit, contextPeaks } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { isTestFirst, isTestPath, runnableProof } from '#red-green';
-import { ledgerPath, latestRound, ledgerRows } from './merge-reviews.mjs';
+import { boundaryLines, dispatchLines, redLines, writeReviewInput } from './review-input.mjs';
 import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
+import { findingsDigest } from './merge-reviews.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
+import { fixedProbes } from './run-probes.mjs';
 
 const USAGE = `Usage: node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
+       node verify.mjs --repair --plan <path> --root <checkout> --pre-fix-sha <sha> --findings <path> --findings-sha256 <hash>
 Runs a plan's gate: each landed task's Proof, the Success criterion command and an unplanned-path check.
 Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, UNPLANNED or FIX-ONLY line per check,
 then one REVIEW Branch line and the OVERLAP lines, one DONE or OPEN line per task,
@@ -29,6 +33,12 @@ one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md lin
 --reviews-only prints only the REVIEW and OVERLAP lines, then one DISPATCH line per review to dispatch
 (code standard, review rules, plan, checkout, base, reports, scope, findings path, proof files), and runs no proof or gate.
 --base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
+--reviews-only also prints HEAD.
+--repair checks the fixer's return and prints FAIL fixer-uncommitted, FAIL fixer-no-commits, FAIL stale-findings,
+FAIL fixer-no-guard (a commit lacks Sweep: or Guard:) or FAIL fixer-guard-not-in-diff, else PASS fixer-committed.
+It then rechecks only the repair diff: the Land gate, the tests covering the changed files and each named Guard test,
+then prints one DISPATCH Repair line for the fix-diff review and LOOP next=fix|done|stop round=<n>/2.
+A third repair pass prints STOP repair-bound. The pass count lives in <root>/.exo/verify-state.json.
 Exits 1 on any FAIL or UNPLANNED line.`;
 const DEFAULT_BASE = 'main';
 const DEFAULT_LAND_GATE = 'npm run check';
@@ -54,12 +64,161 @@ const PROSE_FILE = /\.(?:md|mdx|txt|rst)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*?)\t?$/;
 const WARN_TEXT_LENGTH = 100;
+const SELF_HOSTED_SCRIPTS = ['skills/verify/', 'skills/build/review-fixer-prompt.md', 'skills/route-skills/references/code-standard.md'];
+const SELF_HOSTED_AGENTS = ['agents/'];
+const VERIFY_SCRIPT = 'skills/verify/scripts/verify.mjs';
+const REPAIR_BOUND = 2;
+const REPAIR_REVIEW_LINE = 'REVIEW Branch repair: review-branch';
+const COMMIT_SEPARATOR = '\u001e';
+const FIELD_SEPARATOR = '\u001f';
+const GUARD_WITHOUT_REASON = /^none(?!\s*\(\s*[^\s)])/i;
+const GUARD_TEST_FILE = /^tests\/[^/]+\.test\.mjs$/;
 
 export function unmarkedMcpTool(command, { code, output }) {
   if (code !== COMMAND_NOT_FOUND) return null;
   const word = command.split(/\s/, 1)[0];
   if (!SNAKE_CASE_WORD.test(word)) return null;
   return new RegExp(`\\b${word}: (?:command )?not found`).test(output) ? word : null;
+}
+
+function gitOutput(root, args) {
+  return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+}
+
+function underAny(file, prefixes) {
+  return prefixes.some((prefix) => file === prefix || (prefix.endsWith('/') && file.startsWith(prefix)));
+}
+
+export function selfHostingGap(root, base = DEFAULT_BASE) {
+  const changed = gitOutput(root, ['-c', 'core.quotepath=off', 'diff', '--name-only', `${base}...HEAD`]).split('\n').filter((file) => file !== '');
+  return { scripts: changed.filter((file) => underAny(file, SELF_HOSTED_SCRIPTS)), agents: changed.filter((file) => underAny(file, SELF_HOSTED_AGENTS)) };
+}
+
+function sharesRepository(root, pluginRoot) {
+  if (spawnSync('git', ['-C', pluginRoot, 'rev-parse', '--git-dir'], { stdio: 'ignore' }).status !== 0) return false;
+  const commonDir = (dir) => fs.realpathSync(path.resolve(dir, gitOutput(dir, ['rev-parse', '--git-common-dir'])));
+  return commonDir(root) === commonDir(pluginRoot);
+}
+
+function hostingFor({ root, base, running, pluginRoot }) {
+  if (!sharesRepository(root, pluginRoot)) return null;
+  const gap = selfHostingGap(root, base);
+  const branchScript = path.join(path.resolve(root), VERIFY_SCRIPT);
+  const branchRuns = fs.existsSync(branchScript) && fs.realpathSync(branchScript) !== fs.realpathSync(running);
+  return { reexec: gap.scripts.length > 0 && branchRuns ? branchScript : null, note: gap.agents.length > 0 ? `SELF-HOSTED agents=${gap.agents.join(',')}` : null };
+}
+
+export function selfHostPlan({ root, base, running, pluginRoot = path.resolve(path.dirname(running), '../../..') }) {
+  return hostingFor({ root, base, running, pluginRoot }) ?? { reexec: null, note: null };
+}
+
+function reviewedState(root) {
+  return [`HEAD ${gitOutput(root, ['rev-parse', 'HEAD'])}`];
+}
+
+function bodyField(body, name) {
+  return body.match(new RegExp(`^${name}: (.+)$`, 'm'))?.[1].trim().replace(/^`|`$/g, '') ?? null;
+}
+
+function repairCommits(root, preFixSha) {
+  const log = gitOutput(root, ['log', `--format=%h${FIELD_SEPARATOR}%B${COMMIT_SEPARATOR}`, `${preFixSha}..HEAD`]);
+  return log.split(COMMIT_SEPARATOR).map((entry) => entry.trim()).filter((entry) => entry !== '').map((entry) => {
+    const [sha, body] = entry.split(FIELD_SEPARATOR);
+    return { sha, sweep: bodyField(body, 'Sweep'), guard: bodyField(body, 'Guard') };
+  });
+}
+
+function missingFields({ sweep, guard }) {
+  return [sweep === null ? 'Sweep:' : null, guard === null || GUARD_WITHOUT_REASON.test(guard) ? 'Guard:' : null].filter((field) => field !== null);
+}
+
+function namedGuards(commits) {
+  return commits.map(({ guard }) => guard).filter((guard) => guard !== null && !/^none\b/i.test(guard));
+}
+
+function guardLines(commits, diffFiles) {
+  const incomplete = commits.filter((commit) => missingFields(commit).length > 0);
+  return [
+    ...incomplete.map((commit) => `FAIL fixer-no-guard (commit ${commit.sha} lacks ${missingFields(commit).join(' and ')})`),
+    ...namedGuards(commits).filter((guard) => !diffFiles.includes(guard)).map((guard) => `FAIL fixer-guard-not-in-diff (${guard} is not in the repair diff)`)
+  ];
+}
+
+async function repairTestLines(files) {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  const lines = [];
+  for (const file of files) {
+    const run = await runCommand(`node --test ${file}`, timeoutMs, env);
+    if (!run.ok) lines.push(...failLines(`repair-test ${file}`, failReason(run), run.output));
+  }
+  return lines;
+}
+
+async function recheckLines({ root, planText, diffFiles, commits }) {
+  const landGate = frameOf(parsePlan(planText).frame).landGate;
+  const lines = [];
+  if (landGate !== null && landGate !== 'none') {
+    const run = await runCommand(landGate, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS), process.env);
+    if (!run.ok) lines.push(...failLines(`repair-static ${landGate}`, failReason(run), run.output));
+  }
+  const guardTests = namedGuards(commits).filter((guard) => GUARD_TEST_FILE.test(guard));
+  const tests = [...new Set([...coveringTests(root, diffFiles), ...guardTests])];
+  lines.push(...await repairTestLines(tests));
+  return lines.length === 0 ? [`PASS repair-recheck (${landGate ?? 'no Land gate'}; ${tests.length} test file${tests.length === 1 ? '' : 's'})`] : lines;
+}
+
+function fixDiffDispatch({ root, planPath, preFixSha }) {
+  const [branch] = dispatchLines([REPAIR_REVIEW_LINE], { root, planPath, base: preFixSha, head: 'HEAD' });
+  return branch.replace('DISPATCH Branch:', 'DISPATCH Repair:').replace('scope=branch', 'scope=fix-diff').replace(/ findings=\S+/, ` findings=${path.join(path.resolve(root), '.exo', 'fix-review.md')}`).replace(/ ledger=\S+/, '');
+}
+
+function repairPasses(root) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(root, '.exo', 'verify-state.json'), 'utf8')).repairPasses ?? 0;
+  } catch (error) {
+    if (error.code === 'ENOENT') return 0;
+    throw error;
+  }
+}
+
+function recordRepairPasses(root, repairPasses) {
+  const file = path.join(root, '.exo', 'verify-state.json');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify({ repairPasses })}\n`);
+}
+
+function loopLines(round, failed) {
+  if (!failed) return [`LOOP next=done round=${round}/${REPAIR_BOUND}`];
+  if (round < REPAIR_BOUND) return [`LOOP next=fix round=${round}/${REPAIR_BOUND}`];
+  return ['STOP repair-bound', `LOOP next=stop round=${REPAIR_BOUND}/${REPAIR_BOUND}`];
+}
+
+function handbackLines({ root, preFixSha, findings, findingsSha256 }) {
+  const lines = [];
+  if (findingsDigest(fs.readFileSync(findings, 'utf8')) !== findingsSha256) lines.push(`FAIL stale-findings (a finding line in ${findings} changed since merge-reviews printed ${findingsSha256})`);
+  const dirty = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' }).split('\n').filter((line) => line !== '' && !line.slice(3).startsWith('.exo/'));
+  if (dirty.length > 0) lines.push(`FAIL fixer-uncommitted (${dirty.length} changed path${dirty.length === 1 ? '' : 's'} after the fixer returned)`, ...dirty.map((line) => `  ${line}`));
+  const fixed = fixedProbes(fs.readFileSync(findings, 'utf8')).filter((probe) => !probe.unmarked).length;
+  const commits = repairCommits(root, preFixSha);
+  if (fixed > 0 && commits.length === 0) lines.push(`FAIL fixer-no-commits (${fixed} fixed, no commit since ${preFixSha})`);
+  const diffFiles = gitOutput(root, ['-c', 'core.quotepath=off', 'diff', '--name-only', `${preFixSha}..HEAD`]).split('\n').filter((file) => file !== '');
+  lines.push(...guardLines(commits, diffFiles));
+  return { lines, commits, diffFiles };
+}
+
+export async function repairLines({ root, planText, planPath, preFixSha, findings, findingsSha256 }) {
+  const passes = repairPasses(root);
+  if (passes >= REPAIR_BOUND) return ['STOP repair-bound', `LOOP next=stop round=${REPAIR_BOUND}/${REPAIR_BOUND}`];
+  const { lines: problems, commits, diffFiles } = handbackLines({ root, preFixSha, findings, findingsSha256 });
+  const lines = problems.length === 0 ? ['PASS fixer-committed'] : problems;
+  if (problems.length === 0 && commits.length > 0) {
+    lines.push(...await recheckLines({ root, planText, diffFiles, commits }));
+    if (!lines.some((line) => line.startsWith('FAIL '))) lines.push(fixDiffDispatch({ root, planPath, preFixSha }));
+  }
+  recordRepairPasses(root, passes + 1);
+  return [...lines, ...loopLines(passes + 1, lines.some((line) => line.startsWith('FAIL ')))];
 }
 
 function packageScripts(root) {
@@ -298,11 +457,11 @@ export function manualChecks(frame) {
   return section.split('\n').filter((line) => line.trim().startsWith('- ')).map((line) => line.trim().slice(2));
 }
 
-function runCommand(command, timeoutMs) {
+function runCommand(command, timeoutMs, env = process.env) {
   return new Promise((resolve) => {
     const started = Date.now();
     // why: a detached child leads its own process group, which Windows does not support.
-    const child = spawn(command, { shell: true, detached: process.platform !== 'win32' });
+    const child = spawn(command, { shell: true, env, detached: process.platform !== 'win32' });
     let output = '';
     let done = false;
     const finish = (result) => {
@@ -364,98 +523,12 @@ function reviewLines(plan, landed, { root, planId, base }) {
   return lines;
 }
 
-const VERIFY_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
-const REVIEW_RULES = path.join(VERIFY_DIRECTORY, '..', 'references', 'review-rules.md');
-const DEFAULT_CODE_STANDARD = path.join(VERIFY_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
-const STANDARD_FILES = ['CLAUDE.md', path.join('.claude', 'CLAUDE.md'), 'AGENTS.md'];
-const REVIEW_INPUT_DIFF_LIMIT = 20_000;
-const MARKDOWN_PATH = /`([^`\s]+\.md)`|\]\(([^)\s]+\.md)\)/g;
-
-export function codeStandardPath(root) {
-  for (const name of STANDARD_FILES) {
-    const file = path.join(root, name);
-    if (!fs.existsSync(file)) continue;
-    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
-      if (!/code standard/i.test(line)) continue;
-      for (const match of line.matchAll(MARKDOWN_PATH)) {
-        const resolved = path.resolve(root, match[1] ?? match[2]);
-        if (fs.existsSync(resolved)) return resolved;
-      }
-    }
+function taskOwners(plan, landed, { root, planId }) {
+  const owners = new Map();
+  for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
+    for (const file of taskPaths(task, root, planId)) if (!owners.has(file)) owners.set(file, task.number);
   }
-  return DEFAULT_CODE_STANDARD;
-}
-
-function dispatchFields(checkout, planPath, baseRef) {
-  return [
-    `code-standard=${codeStandardPath(checkout)}`,
-    `review-rules=${REVIEW_RULES}`,
-    `plan=${planPath}`,
-    `checkout=${checkout}`,
-    `base=${baseRef}`
-  ].join(' ');
-}
-
-function dispatchLines(printed, { root, planPath, base }) {
-  const checkout = path.resolve(root ?? '.');
-  const exo = path.join(checkout, '.exo');
-  const baseRef = base ?? DEFAULT_BASE;
-  const common = dispatchFields(checkout, planPath, baseRef);
-  const lines = [];
-  if (printed.some((line) => /^REVIEW Branch [^:]*: review-branch\b/.test(line))) {
-    const ledger = latestRound(checkout) > 0 ? ` ledger=${ledgerPath(checkout)}` : '';
-    lines.push(`DISPATCH Branch: ${common} scope=branch ${baseRef}..HEAD findings=${path.join(exo, 'review-branch.md')}${ledger}`);
-  }
-  if (printed.some((line) => /^OVERLAP (?!none)/.test(line))) {
-    lines.push(`DISPATCH Overlap: ${common} scope=overlap findings=${path.join(exo, 'review-overlap.md')}`);
-  }
-  return lines;
-}
-
-function ledgerSummary(checkout) {
-  if (latestRound(checkout) === 0) return [];
-  return ledgerRows(checkout).filter((row) => row.state !== 'none').map((row) => `- round ${row.round}: ${row.rule}@${row.path}:${row.range} ${row.weight} ${row.state}`);
-}
-
-function reviewInputDiff(checkout, baseRef) {
-  const range = `${baseRef}..HEAD`;
-  const git = (...args) => execFileSync('git', ['-C', checkout, '-c', 'core.quotepath=off', ...args], { encoding: 'utf8', maxBuffer: Infinity });
-  const diff = git('diff', '--no-color', '--no-ext-diff', range);
-  if (Buffer.byteLength(diff) <= REVIEW_INPUT_DIFF_LIMIT) return ['```diff', diff.trimEnd(), '```'];
-  return [`The diff passes ${REVIEW_INPUT_DIFF_LIMIT} bytes; read it with \`git diff ${range}\`. Changed paths:`, ...git('diff', '--name-only', range).split('\n').filter(Boolean).map((file) => `- ${file}`)];
-}
-
-const RED_LINE = /^Red:/;
-const REPORT_RED_LINE = /^(?:Test first|Red):/;
-
-function linesOf(file, pattern) {
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, 'utf8').split('\n').filter((line) => pattern.test(line));
-}
-
-function redLines(plan, landed, { checkout, planId }) {
-  const lines = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => {
-    const proven = linesOf(proofRecordPath(checkout, planId, task.number), RED_LINE);
-    const found = proven.length > 0 ? proven : linesOf(path.join(checkout, '.exo', `implementer-${task.number}.md`), REPORT_RED_LINE);
-    return found.map((line) => `Task ${task.number}: ${line}`);
-  });
-  return lines.length === 0 ? ['none'] : lines;
-}
-
-function writeReviewInput(frame, { checkout, baseRef, redSection }) {
-  const ledger = ledgerSummary(checkout);
-  const text = [
-    '## Goal', frame.goal, '',
-    '## Non-goals', ...frame.nonGoals.map((goal) => `- ${goal}`), '',
-    '## Branch diff', ...reviewInputDiff(checkout, baseRef), '',
-    '## Red lines', ...redSection, '',
-    `code-standard=${codeStandardPath(checkout)}`,
-    ...(ledger.length === 0 ? [] : ['', '## Ledger', ...ledger]),
-    ''
-  ].join('\n');
-  const file = path.join(checkout, '.exo', 'review-input.md');
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, text);
+  return owners;
 }
 
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
@@ -466,8 +539,11 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   if (reviewsOnly) {
     const printed = reviewLines(plan, landed, { root, planId, base });
     const checkout = path.resolve(root);
-    writeReviewInput(frame, { checkout, baseRef: base ?? DEFAULT_BASE, redSection: redLines(plan, landed, { checkout, planId }) });
-    return { lines: [...printed, ...dispatchLines(printed, { root, planPath, base })], failed: false };
+    const range = { base: base ?? DEFAULT_BASE, head: 'HEAD' };
+    const taskOf = taskOwners(plan, landed, { root, planId });
+    recordRepairPasses(checkout, 0);
+    const shards = writeReviewInput(frame, { checkout, ...range, redSection: redLines(plan, landed, { checkout, planId }), boundaries: boundaryLines(plan, landed), taskOf });
+    return { lines: [...printed, ...dispatchLines(printed, { root, planPath, ...range, shards }), ...reviewedState(checkout)], failed: false };
   }
   const lines = [];
   let failed = false;
@@ -621,14 +697,39 @@ function writeRunReport(lines, { planPath, planText, root }) {
   return reportPath;
 }
 
+function resolvedArgs(flags, planPath, root) {
+  const named = { ...flags, plan: planPath, root };
+  return Object.entries(named).flatMap(([name, value]) => {
+    if (value === undefined || value === false) return [];
+    return value === true ? [`--${name}`] : [`--${name}`, value];
+  });
+}
+
+async function printRepair(flags, root, { planPath, planText }) {
+  for (const name of ['pre-fix-sha', 'findings', 'findings-sha256']) {
+    if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required with --repair`);
+  }
+  const lines = await repairLines({ root, planText, planPath, preFixSha: flags['pre-fix-sha'], findings: path.resolve(flags.findings), findingsSha256: flags['findings-sha256'] });
+  process.stdout.write(`${lines.join('\n')}\n`);
+  if (lines.some((line) => /^(?:FAIL|STOP) /.test(line))) process.exitCode = 1;
+}
+
 async function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value', 'reviews-only': 'boolean' }, { usage: USAGE });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value', 'reviews-only': 'boolean', repair: 'boolean', 'pre-fix-sha': 'value', findings: 'value', 'findings-sha256': 'value' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
   const planPath = path.resolve(flags.plan);
   const planText = fs.readFileSync(planPath, 'utf8');
   const root = flags.root === undefined ? undefined : path.resolve(flags.root);
   if (root !== undefined) process.chdir(root);
-  const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root, base: flags.base, reviewsOnly: flags['reviews-only'] === true });
+  const hosting = selfHostPlan({ root: root ?? process.cwd(), base: flags.base, running: fs.realpathSync(fileURLToPath(import.meta.url)) });
+  if (hosting.reexec !== null) {
+    process.exitCode = spawnSync(process.execPath, [hosting.reexec, ...resolvedArgs(flags, planPath, root)], { stdio: 'inherit' }).status ?? 1;
+    return;
+  }
+  if (flags.repair === true) return printRepair(flags, root ?? process.cwd(), { planPath, planText });
+  const gate = await runGate(planText, { planPath, checkCommand: flags['check-command'], root, base: flags.base, reviewsOnly: flags['reviews-only'] === true });
+  const lines = hosting.note === null ? gate.lines : [hosting.note, ...gate.lines];
+  const failed = gate.failed;
   process.stdout.write(`${lines.join('\n')}\n`);
   if (flags['reviews-only']) return;
   const reportPath = writeRunReport(lines, { planPath, planText, root: path.resolve('.') });

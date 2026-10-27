@@ -169,16 +169,17 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*[\s\S]*?(?=^4\. )/m)[0];
   const repairAfter = fs.readFileSync(path.join(skillsRoot, 'verify', 'references', 'repair.md'), 'utf8');
   assert.ok(repairStep.includes('`references/repair.md`'), 'step 3 hands the work after the fixer to repair.md');
-  const before = ["Rerun step 1's `verify.mjs`", 'run-probes.mjs', 'the scope `fix diff`'].map((text) => repairAfter.indexOf(text));
-  const fixCommit = repairAfter.indexOf('land-task.mjs" --fix');
-  assert.ok(before.every((index) => index !== -1 && index < fixCommit), 'verify starts the gate rerun, the probes and the fix diff review together, before the fix commit');
-  const stops = [
-    /A `FAIL` or `UNPLANNED` line from `verify\.mjs` ends the turn[^\n]*fixes uncommitted/,
-    /A `FAIL probe` line ends the turn[^\n]*fixes uncommitted/,
-    /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`[^\n]*fixes uncommitted/,
-  ].map((pattern) => repairAfter.search(pattern));
-  assert.ok(stops.every((index) => index !== -1 && index < fixCommit), 'a FAIL or UNPLANNED line, a FAIL probe line or a missing fix-review.md ends the turn with fixes uncommitted, before the fix commit');
-  assert.ok(Math.min(...stops) > Math.max(...before), 'verify checks the stops only after starting the rerun, the probes and the fix diff review');
+  const repairRun = repairAfter.indexOf('verify.mjs" --repair');
+  const probeRun = repairAfter.indexOf('run-probes.mjs');
+  const loopFollow = repairAfter.indexOf('Follow the `LOOP` line');
+  const fixDiffReview = repairAfter.indexOf('per the `DISPATCH Repair` line');
+  assert.ok(repairRun !== -1 && probeRun !== -1 && repairRun < loopFollow && probeRun < loopFollow, 'verify starts the repair recheck and the probes together, before it follows LOOP');
+  assert.ok(loopFollow !== -1 && loopFollow < fixDiffReview, 'verify follows the LOOP line before the fix diff review');
+  for (const next of ['next=fix', 'next=stop', 'next=done']) assert.ok(repairAfter.slice(loopFollow, fixDiffReview).includes(`\`${next}\``), `repair.md acts on ${next}`);
+  assert.ok(!repairAfter.includes('land-task.mjs'), 'the fixer commits, so repair.md runs no land-task');
+  assert.match(repairAfter, /A `FAIL probe` line ends the turn/, 'a FAIL probe line ends the turn');
+  assert.match(repairAfter, /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`/, 'a missing fix-review.md ends the turn BLOCKED');
+  assert.doesNotMatch(repairAfter, /A `FAIL` or `UNPLANNED` line from `verify\.mjs`/, 'the prose exit the script replaces is gone');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
   assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'verify points to the report rule and ends on one decision');
   assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
@@ -321,4 +322,11 @@ test('only build-task and doc-task hold a retry cell, above their on cell', () =
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['build-task'], { model: 'opus', effort: 'high' });
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['doc-task'], { model: 'opus', effort: 'high' });
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds.review, kindTable.kinds.review);
+});
+
+test('the branch reviewer takes its input path from the dispatch and reports Read: paths and the out-of-scope weight', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  assert.match(reviewer.body, /Read the dispatch's `input=` path first, else `<checkout>\/\.exo\/review-input\.md`/);
+  assert.match(reviewer.body, /`out-of-scope`: input class under a task's `Boundary:` `out`/);
+  assert.match(reviewer.body, /`Read: <paths>`/);
 });

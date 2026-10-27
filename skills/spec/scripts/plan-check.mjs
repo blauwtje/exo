@@ -578,6 +578,16 @@ function checkBareDefaultBranchProof(task) {
   return [`Task ${task.number}: 'Proof: ${task.proof}' diffs against bare \`${match[1]}\`, which moves when the default branch moves: use \`$(git merge-base ${match[1]} HEAD)\` as the base`];
 }
 
+const BOUNDARY_FORMAT = "'Boundary: in <accepted input> | out <rejected input> | test <test file in Files>'";
+
+function checkBoundary(task) {
+  if (task.risk !== 'security boundary') return [];
+  if (task.boundary === null) return [`Task ${task.number}: 'Risk: security boundary' has no 'Boundary:' field: add ${BOUNDARY_FORMAT}`];
+  const listed = task.files.map((file) => file.path);
+  if (isCovered(listed, task.boundary.test)) return [];
+  return [`Task ${task.number}: 'Boundary:' test \`${task.boundary.test}\` is not in Files:: use ${BOUNDARY_FORMAT}`];
+}
+
 function checkCompactFields(task) {
   const problems = [];
   if (task.filesField === null) problems.push(`Task ${task.number}: field line lacks 'Files:'`);
@@ -585,7 +595,7 @@ function checkCompactFields(task) {
   if (task.risk !== null && !RISK_CATEGORIES.includes(task.risk)) {
     problems.push(`Task ${task.number}: 'Risk: ${task.risk}' is not one of ${RISK_CATEGORIES.join(', ')}`);
   }
-  return [...problems, ...checkWholeSuiteProof(task), ...checkBareDefaultBranchProof(task)];
+  return [...problems, ...checkBoundary(task), ...checkWholeSuiteProof(task), ...checkBareDefaultBranchProof(task)];
 }
 
 const WORDING_FOLDER = /^(?:skills\/(?:[^/]+\/(?:references\/)?)?|agents\/|hooks\/|harnesses\/codex\/)$/;

@@ -250,7 +250,8 @@ function dispatchable(task, frame, root) {
 function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
   const report = path.join(checkout, '.exo', `implementer-${task.number}.md`);
-  return [`Dispatch: exo:build-task`, `Since: ${since}`, `Wait: node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}"   (tool timeout 600000; exit 2 reruns, at most three runs, then BLOCKED <n> no report)`, ...promptLines(task, frame, planPath, checkout, briefPath)];
+  const stamp = path.join(checkout, '.exo', `checked-${task.number}`);
+  return [`Dispatch: exo:build-task`, `Since: ${since}`, `Wait: node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}" --stamp "${stamp}"   (tool timeout 600000; exit 2 reruns, at most three runs, then BLOCKED <n> no report)`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
 // why: with every unlanded task running no landing can start a refill, so one wait for all and one chained land replace the per-slot pairs.
@@ -258,7 +259,7 @@ export function windowLines({ planPath, root, records, running, unlanded = null 
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];
   const waitAll = open.length > 1 && unlanded !== null && unlanded.every((number) => open.includes(number));
-  const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}"`);
+  const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}" --stamp "${path.join(records[number].slot, '.exo', `checked-${number}`)}"`);
   const land = (number) => `node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}"${open.length > 1 ? ` --in-flight ${open.filter((other) => other !== number).join(',')}` : ''}`;
   const order = [...open].sort((left, right) => left - right);
   return [

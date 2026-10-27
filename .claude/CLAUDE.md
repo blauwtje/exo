@@ -14,7 +14,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - `exo:improve` run → its own plan: own loop in its own worktree on `improve/<tag>`, worker subagents do the edits, no `exo:spec` or `exo:build`; at Stop the lead squashes the kept commits per `Then →` and writes the CHANGELOG line.
 - Run task blocked → its partial work to a hint file such as `.exo/carry/task<n>-partial.patch`, run tree reset; not a commit on the run branch. After that reset, lead fixes the plan (checked with `node skills/spec/scripts/plan-check.mjs --loop --run --plan <plan> --root <run worktree>`) or the cause in a worktree subagent, then reruns `exo:build`.
 - Gate or Success criterion repair on run branch → `fix(<scope>):` commit, no `Plan-task:` trailer; else the verify gate flags its files `UNPLANNED <file>`.
-- Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's; handover between phases → the brief and `.exo/` files.
+- Verify → one fresh subagent briefed with the skill and its inputs only, first brief line `exo-kind: review`, no checks beyond the skill's; handover between phases → the brief and `.exo/` files.
 - Non-run subagent work → land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; after rebase, every line of the change stays under `## Unreleased`.
 - Then → `node lib/check-cache.mjs --query "npm run check"` first, `pass` skips the check, `miss` runs `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; squash the branch onto `main` as one Conventional Commit (`git merge --squash <branch>`, then `git commit`) with every branch `Evidence:` and `Proof:` line copied into the commit body; no push, no pull request.
 - After squash → remove every worktree and branch the change created, local and remote; delete a branch with `git branch -D <name>`, in its own command.
@@ -31,7 +31,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Mistake recurs across runs or reviews → add a check to `npm run check` or a fix on its code path, not a new hook or another prose line; a hook adds overhead to every session.
 - Plan task mixes a no-behavior-change edit with a behavior change → split into two tasks, structural first.
 - Subagent report claims a passing check or a code fact → read the proof output line and cited file before accepting.
-- Run log or unit return shows looping, unrequested functionality or weakened tests → stop the run, repair the cause, then resume.
+- Run log or unit return shows looping, unrequested functionality or weakened tests → send that agent one SendMessage correction first; next return still drifts → stop the run, repair the cause, then resume.
 - New skill, agent or run stage → add only after a recorded failure the existing parts cannot fix.
 - Subagent commit → one purpose, made only after its proof passes; command result in the commit body → a `Proof: <command> → <result>` line, not `Evidence:`.
 - Brief leaves a choice open → subagent returns the competing readings to the lead, not a silent pick.

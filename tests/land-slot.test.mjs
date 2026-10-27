@@ -64,11 +64,13 @@ test('a refused landing prints a Wait: and Land: for the rebuild into the same s
   const before = Math.floor(Date.now() / 1000);
   const result = await land();
   assert.match(result.stdout, /^REFUSED 1\b/);
-  const wait = result.stdout.match(/^Wait: node ".+wait-report\.mjs" --any --since (\d{10}) --report "(.+)" --since 1000000003 --report "(.+)"   \(/m);
+  const wait = result.stdout.match(/^Wait: node ".+wait-report\.mjs" --any --since (\d{10}) --report "(.+)" --stamp "(.+)" --since 1000000003 --report "(.+)" --stamp "(.+)"   \(/m);
   assert.ok(wait, result.stdout);
   assert.ok(Number(wait[1]) >= before, `since ${wait[1]} is before the refusal at ${before}`);
   assert.equal(wait[2], path.join(slot, '.exo', 'implementer-1.md'));
-  assert.equal(wait[3], path.join(other, '.exo', 'implementer-3.md'));
+  assert.equal(wait[3], path.join(slot, '.exo', 'checked-1'));
+  assert.equal(wait[4], path.join(other, '.exo', 'implementer-3.md'));
+  assert.equal(wait[5], path.join(other, '.exo', 'checked-3'));
   assert.match(result.stdout, new RegExp(`^Land 1: node ".+land-slot\\.mjs" .*--task 1 .*--slot "${slot}" --base ${base} .*--in-flight 3$`, 'm'));
   assert.equal(JSON.parse(await fs.readFile(window, 'utf8'))[1].since, Number(wait[1]));
 });

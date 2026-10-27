@@ -23,12 +23,46 @@ test('a general-purpose, claude or untyped call with no model or effort gets the
   }
 });
 
+test('an unnamed call resolves its kind from job words in the description, an exo-kind line first', () => {
+  const { kinds } = readKindTable(undefined, { budget: 'on' });
+  const kindOf = (input) => call({ subagent_type: 'general-purpose', ...input });
+  assert.equal(kindOf({ description: 'Fix edit-evidence false block cause' }).model, kinds.hardest.model);
+  assert.equal(kindOf({ description: 'Fix edit-evidence false block cause' }).effort, kinds.hardest.effort);
+  assert.equal(kindOf({ description: 'Fix the typo' }).model, kinds.build.model);
+  assert.equal(kindOf({ description: 'Fix the typo' }).effort, kinds.build.effort);
+  assert.equal(kindOf({ description: 'Reviewing the diff' }).model, kinds.review.model);
+  assert.equal(kindOf({ description: 'Fix the typo', prompt: 'exo-kind: lookup' }).model, kinds.lookup.model);
+  assert.equal(kindOf({ description: 'Fix the typo', prompt: 'exo-kind: lookup' }).effort, kinds.lookup.effort);
+  assert.equal(kindOf({ description: 'Summarise notes' }).effort, kinds.investigate.effort);
+  for (const [description, kind] of [['Decides the cause', 'hardest'], ['Designing a table', 'hardest'], ['Diagnosed stall', 'hardest'], ['Summarised notes', 'investigate'], ['Picked a winner', 'hardest']]) {
+    assert.equal(kindOf({ description }).model, kinds[kind].model, description);
+    assert.equal(kindOf({ description }).effort, kinds[kind].effort, description);
+  }
+});
+
 test('an explicit model or effort, an exo-kind line, off and other types leave the unnamed fill out', () => {
   assert.equal(call({ subagent_type: 'general-purpose', model: 'opus' }), undefined);
   assert.equal(call({ subagent_type: 'claude', effort: 'high' }), undefined);
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup' }).model, 'sonnet');
   assert.equal(call({ subagent_type: 'general-purpose' }, 'off'), undefined);
   for (const type of ['fork', 'Explore', 'claude-code-guide', 'statusline-setup']) assert.equal(call({ subagent_type: type }), undefined);
+});
+
+test('an unnamed call that names no job is denied with the exo-kind route, a labelled or job-worded one is not', () => {
+  const decision = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', ...input } }, budget, () => false)?.hookSpecificOutput.permissionDecision;
+  const denied = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'x' } }, 'on', () => false).hookSpecificOutput;
+  assert.equal(denied.permissionDecision, 'deny');
+  assert.match(denied.permissionDecisionReason, /exo-kind:/);
+  assert.match(denied.permissionDecisionReason, /hardest/);
+  assert.notEqual(decision({ description: 'Edit-evidence false block', prompt: 'exo-kind: build\nx' }), 'deny');
+  assert.notEqual(decision({ description: 'review the branch', prompt: 'x' }), 'deny');
+  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'exo-kind: Hardest\nx' }), 'deny');
+  for (const word of ['Investigate', 'Research', 'Summarise', 'Summarize', 'Explore']) assert.notEqual(decision({ description: `${word} the stall`, prompt: 'x' }), 'deny');
+  assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, readKindTable(undefined, { budget: 'on' }).kinds.hardest.model);
+  assert.equal(call({ description: 'Fix the typo', prompt: 'exo-kind: hard\nx' }).model, readKindTable(undefined, { budget: 'on' }).kinds.build.model);
+  for (const description of ['Pickup log lines', 'Picker colours', 'Designated owner', 'Collect findings', 'Add test fixtures']) assert.equal(decision({ description, prompt: 'x' }), 'deny', description);
+  assert.notEqual(decision({ description: 'Edit-evidence false block', prompt: 'x' }, 'off'), 'deny');
+  assert.notEqual(decision({ subagent_type: 'exo:locate-code', description: 'Edit-evidence false block', prompt: 'x' }), 'deny');
 });
 
 test('the first lead Agent call of a session gets the dispatch rules once, a subagent call none, and session start re-arms them', () => {
@@ -63,7 +97,16 @@ test('the session text and the context reference carry the same chunking line', 
   const root = path.join(import.meta.dirname, '..');
   const line = fs.readFileSync(path.join(root, 'hooks', 'session-rules.md'), 'utf8').split('\n').find((l) => l.startsWith('- Main-session work'));
   assert.ok(line);
+  assert.match(line, /at the 60k warning hand the rest to subagents\.$/);
+  assert.doesNotMatch(line, /fresh session/);
   assert.ok(fs.readFileSync(path.join(root, 'skills', 'route-skills', 'references', 'context.md'), 'utf8').split('\n').includes(line));
+});
+
+test('the session text has one off-brief return line: a SendMessage correction before any redispatch, fix rounds kept for review findings', () => {
+  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n').filter((l) => l.startsWith('- Off-brief return →'));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /one SendMessage naming the drift .*and the rule it broke; stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `\*\*Fix rounds\.\*\*`\.$/);
+  assert.doesNotMatch(lines[0], /fresh session/);
 });
 
 test('the Codex host note maps TaskStop to killing the process', () => {

@@ -35,13 +35,13 @@ function fixture() {
   return root;
 }
 
-const run = (root) => {
+const run = (root, env = {}) => {
   const report = createReport();
   const lines = [];
   const log = console.log;
   console.log = (line) => lines.push(line);
   try {
-    checkEditEvidence(report, { root });
+    checkEditEvidence(report, { root }, { env });
   } finally {
     console.log = log;
   }
@@ -146,4 +146,17 @@ test('an empty or command-result value fails with text naming Proof when no word
     assert.equal(r.FAIL, 1, value);
     assert.match(r.lines[0], /a command result goes in a `Proof: <command> → <result>` line/);
   }
+});
+
+test('a pending Evidence value from an unlanded task stands in for the missing trailer', () => {
+  const root = fixture();
+  edit(root, 'reword');
+  assert.equal(run(root, { EXO_PENDING_EVIDENCE: 'none (typo fix)' }).FAIL, 0);
+  assert.equal(run(root, { EXO_PENDING_EVIDENCE: '' }).FAIL, 1);
+});
+
+test('a pending Evidence value does not excuse an invalid committed trailer', () => {
+  const root = fixture();
+  edit(root, 'reword\n\nEvidence: none ()');
+  assert.equal(run(root, { EXO_PENDING_EVIDENCE: 'none (typo fix)' }).FAIL, 1);
 });

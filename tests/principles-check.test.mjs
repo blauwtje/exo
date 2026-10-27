@@ -154,3 +154,10 @@ test('the repository pages pass', () => {
   checkPrinciples({ result: (status, name, detail) => results.push(`${status} ${detail}`) }, createRepository(ROOT));
   assert.ok(results.every((line) => !line.startsWith('FAIL')), results.join('\n'));
 });
+
+test('the principles index states the value rule and CONTRIBUTING names it', () => {
+  const index = fs.readFileSync(path.join(ROOT, 'docs', 'principles', 'README.md'), 'utf8');
+  assert.match(index, /only if its value is at least its cost in tokens, time and false blocks/);
+  assert.match(index, /unsure → speed-ledger line/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'CONTRIBUTING.md'), 'utf8'), /value rule/);
+});

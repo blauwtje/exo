@@ -70,14 +70,15 @@ test('skips test files, non-source files, missing files and paths outside cwd', 
 test('a search past EXO_EDIT_IMPACT_MS gives no note instead of stalling the edit', { skip: process.platform === 'win32' }, () => {
   const cwd = repo(LIB);
   const bin = repo({});
-  fs.writeFileSync(path.join(bin, 'git'), '#!/bin/sh\nsleep 20\n', { mode: 0o755 });
+  const stallMs = 20000;
+  fs.writeFileSync(path.join(bin, 'git'), `#!/bin/sh\nsleep ${stallMs / 1000}\n`, { mode: 0o755 });
   const saved = { path: process.env.PATH, ms: process.env.EXO_EDIT_IMPACT_MS };
   process.env.PATH = `${bin}${path.delimiter}${saved.path}`;
   process.env.EXO_EDIT_IMPACT_MS = '200';
   const started = Date.now();
   try {
     assert.equal(impactNote({ cwd, file: 'src/dedupe.mjs', sessionId: session() }), null);
-    assert.ok(Date.now() - started < 5000);
+    assert.ok(Date.now() - started < stallMs / 4);
   } finally {
     process.env.PATH = saved.path;
     if (saved.ms === undefined) delete process.env.EXO_EDIT_IMPACT_MS;

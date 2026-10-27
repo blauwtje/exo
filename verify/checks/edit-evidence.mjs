@@ -46,14 +46,15 @@ function evidenceProblems(log, results, needOne) {
   return problems;
 }
 
-export function checkEditEvidence(report, repository) {
+export function checkEditEvidence(report, repository, { env = process.env } = {}) {
   const since = changesSince(repository.root);
   if (since.unrun !== undefined) {
     report.result('UNRUN', NAME, since.unrun);
     return;
   }
   const edited = since.changed.filter((file) => WORDING_PATH.test(file));
-  const problems = evidenceProblems(since.log, edited.length > 0 ? since.added : null, edited.length > 0);
+  const pending = (env.EXO_PENDING_EVIDENCE ?? '').trim() !== '';
+  const problems = evidenceProblems(since.log, edited.length > 0 ? since.added : null, edited.length > 0 && !pending);
   if (edited.length === 0) {
     report.assert(problems.length === 0, NAME, 'no wording file changed and every Evidence trailer in the range is valid', `${problems.join('; ')}; fix the \`Evidence:\` line`);
     return;

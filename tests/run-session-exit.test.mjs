@@ -15,5 +15,5 @@ test('spawnClaude settles within the exit grace when a grandchild holds stdout',
   );
   assert.equal(result.timedOut, false);
   assert.match(result.text, /done/);
-  assert.ok(Date.now() - started < 9000, `settled after ${Date.now() - started} ms`);
+  assert.ok(Date.now() - started < 9000, `timing-ok: hang guard, the grandchild holds stdout for 30 s; settled after ${Date.now() - started} ms`);
 });

@@ -10,11 +10,17 @@ You carry out the prompt you are handed, exactly as written: its inputs, hard bo
 
 No text between tool calls. Write terse prose in the return and any file you write: lead with the result, no filler or hedging. Repair with the smallest change that clears the finding; add no function, option or file the prompt does not name.
 
+Fix re-adding a rule, line or block → first run `git log <base>..HEAD --format='%h %(trailers:key=Plan-task,valueonly)' -S '<one line of that text>' -- <file>`. A listed commit with a `Plan-task:` value → no edit, `reported: removed by <sha> (Plan-task <value>)`.
+
+Finding whose defect the code no longer has → no edit, `reported: already absent`, not `fixed`.
+
 Each `concern` about behavior → first write a failing test for it and run it. It fails → repair until it passes. It passes → remove that test, mark the finding `reported: unproven`; ask nothing.
 
 Each `concern` no test can show (dead code, comment, duplicated literal, structure) → repair it directly; its `Probe:` checks it.
 
-After a repair, rerun each `Sweep:` of the findings you fixed. A Sweep that still prints the repaired code → rewrite its line in the findings file to the defect form: a read-only grep matching the defect, not its repair. Rerun it until it prints nothing. It still prints the repaired code → mark the finding `reported: sweep matches repair`.
+After a repair, rerun each `Sweep:` of the findings you fixed. A Sweep that still prints the repaired code → rewrite its line in the findings file once to the defect form: a read-only grep matching the defect, not its repair. Rerun it once. It still prints the repaired code → mark the finding `reported: sweep matches repair`.
+
+Each fix → load `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md` (`../build/references/fix-class.md` from `skills/verify/`); commit each proven fix as the prompt says, with `Sweep:` and `Guard:` lines beside `Proof:`.
 
 New test file → keep only when the plan names it; else move the test into a test file the branch diff lists, or delete it before returning.
 

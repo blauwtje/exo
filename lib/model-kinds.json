@@ -73,7 +73,19 @@
     "build-no-spec": { "kind": "hardest" },
     "build": { "kind": "coordinate" }
   },
-  "unnamed": { "types": ["general-purpose", "claude"], "kind": "investigate" },
+  "unnamed": {
+    "types": ["general-purpose", "claude"],
+    "kind": "investigate",
+    "jobs": {
+      "review": "review", "verify": "review", "audit": "review", "judge": "review",
+      "decide": "hardest", "design": "hardest", "choose": "hardest", "pick": "hardest",
+      "cause": "hardest", "diagnose": "hardest", "architect": "hardest",
+      "fix": "build", "repair": "build", "implement": "build", "build": "build",
+      "investigate": "investigate", "research": "investigate", "summarise": "investigate", "summarize": "investigate", "explore": "investigate",
+      "locate": "lookup", "find": "lookup", "lookup": "lookup",
+      "rebase": "chore", "squash": "chore", "cleanup": "chore"
+    }
+  },
   "agents": {
     "agents/build-task.md": { "kind": "build-task" },
     "agents/fetch-docs.md": { "kind": "research" },

@@ -46,7 +46,7 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
   assert.match(result.stdout, /^Next: Task 1$/m);
   assert.match(result.stdout, /^Dispatch: exo:build-task$/m);
   assert.match(result.stdout, /^Since: \d{10}$/m);
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --since \d{10} --report "\S+\/\.exo\/implementer-1\.md"   \(tool timeout 600000; exit 2 reruns, at most three runs/m);
+  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --since \d{10} --report "\S+\/\.exo\/implementer-1\.md" --stamp "\S+\/\.exo\/checked-1"   \(tool timeout 600000; exit 2 reruns, at most three runs/m);
   const brief = result.stdout.match(/^Brief: (.+)$/m)[1];
   assert.match(result.stdout, new RegExp(`^Prompt:\\nTask 1 of ${planPath}, branch feat/fixture, checkout ${root}\\.\\nRead your brief at ${brief}\\.\\nReport to: ${root}/\\.exo/implementer-1\\.md\\nReturn: one line$`, 'm'));
 });
@@ -132,7 +132,7 @@ test('--open-slots on a Wave writes the baseline, opens each slot and prints the
     assert.match(result.stdout, new RegExp(`^Land ${number}: node ".+land-slot\\.mjs" --plan "${planPath}" --task ${number} --root "${root}" --slot "${slot}" --base ${head} --baseline "${root}/\\.exo/baseline\\.txt" --in-flight ${5 - number}$`, 'm'));
   }
   assert.match(result.stdout, /^Dispatch all in one message, run_in_background: true; Since: \d{10}$/m);
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --any --since \d{10} --report ".+-task-2\/\.exo\/implementer-2\.md" --since \d{10} --report ".+-task-3\/\.exo\/implementer-3\.md"/m);
+  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --any --since \d{10} --report ".+-task-2\/\.exo\/implementer-2\.md" --stamp ".+-task-2\/\.exo\/checked-2" --since \d{10} --report ".+-task-3\/\.exo\/implementer-3\.md" --stamp ".+-task-3\/\.exo\/checked-3"/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '?? preexisting.txt');
 });
 
@@ -216,7 +216,7 @@ test('a refill opens its slot with its own base, keeps the baseline and prints a
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Start: Task 4$/m);
   assert.match(result.stdout, new RegExp(`^Land 4: .+--task 4 --root "${root}" --slot "${root}-task-4" --base ${head} .+--in-flight 3$`, 'm'));
-  assert.match(result.stdout, /^Wait: .+implementer-3\.md" .+implementer-4\.md"/m);
+  assert.match(result.stdout, /^Wait: .+checked-3" .+checked-4"/m);
   assert.equal(await fs.readFile(path.join(root, '.exo', 'baseline.txt'), 'utf8'), baseline);
   assert.match(worktrees(root), new RegExp(`${root}-task-4 `));
 });
@@ -226,7 +226,7 @@ test('a refill with nothing to start still prints the wait over the running slot
   await next('--open-slots');
   const result = await next('--open-slots', '--in-flight', '2,3');
   assert.match(result.stdout, /^Start: none$/m);
-  assert.match(result.stdout, /^Wait: .+implementer-2\.md" .+implementer-3\.md"/m);
+  assert.match(result.stdout, /^Wait: .+checked-2" .+checked-3"/m);
 });
 
 test('land-task --next replaces the Then: line with next-task\'s report', async () => {

@@ -57,9 +57,14 @@ test('two judge calls overlap in time instead of blocking each other', async () 
   const saved = process.env.PATH;
   process.env.PATH = `${dir}:${saved}`;
   try {
-    const start = Date.now();
-    await Promise.all([claudeJudge({ system: 's', input: 'i' }), claudeJudge({ system: 's', input: 'i' })]);
-    assert.ok(Date.now() - start < 1800, `took ${Date.now() - start} ms`);
+    const timed = async (count) => {
+      const start = Date.now();
+      await Promise.all(Array.from({ length: count }, () => claudeJudge({ system: 's', input: 'i' })));
+      return Date.now() - start;
+    };
+    const one = await timed(1);
+    const two = await timed(2);
+    assert.ok(two < one * 1.8, `one call ${one} ms, two calls ${two} ms`);
   } finally {
     process.env.PATH = saved;
     fs.rmSync(dir, { recursive: true, force: true });

@@ -26,8 +26,8 @@ experimental: { cacheTtl: 1h }
   - `REFUSED`, `CONFLICT`, `NEWPATH`, `PLAN DRIFT`, stall, repair, context-limit end, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## run-unit`, `<skill>/implementer-prompt.md` first.
 4. **Commit a green foreground task.** Done = `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000; last block = next dispatch, not a rerun.
-  - `no build report at` refusal → SendMessage it verbatim to writer once; no SendMessage → fresh agent with prior result path.
-  - Other refusal except `PLAN DRIFT` → fresh `exo:build-task`, same `Prompt:` plus refusal verbatim, at most twice; never rerun a proof.
+  - Off-brief return or `no build report at` → SendMessage once (`hooks/session-rules.md`); no SendMessage or second off-brief → fresh agent.
+  - Other refusal except `PLAN DRIFT` → fresh `exo:build-task`, `Prompt:` plus refusal, at most twice; never rerun a proof.
   - `PLAN DRIFT`, writer's `FAIL` or third refusal → step 3; push nothing.
   - Loop until every block task has a `LANDED` or `BLOCKED` line.
 

@@ -20,6 +20,9 @@ import { checkHookSize } from './verify/checks/hook-size.mjs';
 import { checkNameClash } from './verify/checks/name-clash.mjs';
 import { checkPluginValidate } from './verify/checks/plugin-validate.mjs';
 import { checkTestSize } from './verify/checks/test-size.mjs';
+import { checkTestTiming } from './verify/checks/test-timing.mjs';
+import { checkCoveringTests } from './verify/checks/covering-tests.mjs';
+import { checkBoundaryRows } from './verify/checks/boundary-rows.mjs';
 import { checkChangelogPlacement } from './verify/checks/changelog-placement.mjs';
 import { checkSessionLoad } from './verify/checks/session-load.mjs';
 import { checkBannedText } from './verify/checks/banned-text.mjs';
@@ -44,6 +47,7 @@ import { checkBoundaryWords } from './verify/checks/boundary-words.mjs';
 import { checkEditEvidence } from './verify/checks/edit-evidence.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { checkCodeComments } from './verify/checks/code-comments.mjs';
+import { checkFixClassLoad } from './verify/checks/fix-class-load.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -80,6 +84,9 @@ checkHookSize(report, repository);
 checkNameClash(report, repository);
 checkPluginValidate(report, repository);
 checkTestSize(report, repository);
+checkTestTiming(report, repository);
+checkCoveringTests(report, repository);
+checkBoundaryRows(report, repository);
 checkChangelogPlacement(report, repository);
 checkSessionLoad(report, repository);
 checkBannedText(report, repository);
@@ -104,6 +111,7 @@ checkPrinciples(report, repository);
 checkInstructionDensity(report, repository);
 checkBoundaryWords(report, repository);
 checkEditEvidence(report, repository);
+checkFixClassLoad(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);

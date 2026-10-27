@@ -23,6 +23,7 @@
     "#hook-input": "./lib/hook-input.mjs",
     "#host": "./lib/host.mjs",
     "#land-gate": "./lib/land-gate.mjs",
+    "#land-lock": "./lib/land-lock.mjs",
     "#mcp-tool-call": "./lib/mcp-tool-call.mjs",
     "#memory-store": "./lib/memory-store.mjs",
     "#model-kinds": "./lib/model-kinds.mjs",
@@ -48,7 +49,8 @@
     "#size-facts": "./lib/size-facts.mjs",
     "#stall-guard": "./lib/stall-guard.mjs",
     "#suite-command": "./lib/suite-command.mjs",
-    "#token-weights": "./lib/token-weights.mjs"
+    "#token-weights": "./lib/token-weights.mjs",
+    "#fixer-mark": "./lib/fixer-mark.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {

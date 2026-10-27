@@ -72,3 +72,9 @@ test('a reported finding runs no sweep', async () => {
   assert.equal(result.code, 0);
   assert.doesNotMatch(result.stdout, /sweep/);
 });
+
+test('a fixed finding with no Probe line fails and names the reported mark', async () => {
+  const result = await probes('a.mjs:1; concern; broken; report | fixed\n');
+  assert.equal(result.code, 1);
+  assert.match(result.stdout, /^FAIL probe \(no Probe line under a fixed finding: [^\n]*reported: <reason>[^\n]*\): a\.mjs:1/m);
+});

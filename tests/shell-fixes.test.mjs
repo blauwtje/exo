@@ -65,7 +65,7 @@ test('the fixed timeout stops a long sleep under bash', () => {
   const started = Date.now();
   const result = spawnSync('bash', ['-c', fix('timeout 1 sleep 5; echo after')], { encoding: 'utf8' });
   assert.match(result.stdout, /after/);
-  assert.ok(Date.now() - started < 4000);
+  assert.ok(Date.now() - started < 4000, 'timing-ok: hang guard, timeout 1 ends near 1 s while an unfixed chain sleeps 5 s');
 });
 
 test('a PATH holding only gtimeout still gets the timeout function', () => {

@@ -29,6 +29,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/run-loop.md',
     'references/run-loop-direct.md',
     'references/agent-cases.md',
+    'references/fix-class.md',
     'references/run-loop-inline.md',
     'references/tail.md',
     'references/task-mode.md',
@@ -237,7 +238,7 @@ function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
 
 const REVIEW_RULES = 'skills/verify/references/review-rules.md';
 const LATER_ROUND_RULE = 'raise `fix` only for a defect inside the fix diff';
-const RED_SOURCE_RULE = 'only `Red:` source is `## Red lines` of `<checkout>/.exo/review-input.md`';
+const RED_SOURCE_RULE = 'only `Red:` source is `## Red lines` of the dispatch\'s `input=` file, else `<checkout>/.exo/review-input.md`';
 
 function checkReviewRules(errors, repository) {
   const rules = repository.text(path.join(repository.root, REVIEW_RULES));

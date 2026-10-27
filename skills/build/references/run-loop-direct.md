@@ -9,6 +9,7 @@
 - That reference's step 4 saves each worktree's diff, then removes it.
 - Land-task refusal `no build report at` → SendMessage to the agent that wrote the build, once, with land-task's full refusal verbatim, to write the report; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
 - Land-task refusal about the report's content (no Proof command, a command listed as failing) → a fresh `exo:build-task` from `../implementer-prompt.md`, with land-task's full refusal added verbatim; this session reruns no proof to repair a report.
+- Off-brief build-task return → SendMessage it once, per `${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.md`; a second one → a fresh `exo:build-task` as above.
 - Build-task stopped at its turn limit before green → redispatch `exo:build-task` from `../implementer-prompt.md`, not an improvised prompt to another agent.
 - Any other land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `PLAN DRIFT` to `../drift-repairer-prompt.md`, `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
 - Second failure of one task → stop the run `BLOCKED` with both reports and 2-3 options.

@@ -1,11 +1,14 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { inRun } from '#run-decision';
 import { codexVerdict } from './pick-reviewer.mjs';
+import { withoutFixerMark } from '#fixer-mark';
 
+const DEFAULT_BASE = 'main';
 const LEDGER_FILE = '.exo/review-ledger.jsonl';
 const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
 const PROBE_LINE = /^\s*Probe:\s*\S/;
@@ -13,15 +16,23 @@ const CLASS_LINE = /^\s*Class:\s*\S/;
 const SWEEP_LINE = /^\s*Sweep:\s*\S/;
 const FIX_DETAIL_LINE = /^\s*(?:Probe|Class|Sweep):\s*\S/;
 const MECHANICAL_REPORT = 'code-rules';
-const UNREAD = /\b(defect|concern|question|note)\b.*\b(fix|report)\W*$/;
+const UNREAD = /\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\W*$/;
 const LOCATION = /^\s*(?:[-*]\s*)?(\S+?):(\d+)(?:-(\d+))?\b(.*)$/;
-const WEIGHT = /\b(defect|concern|question|note)\b/;
-const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question|note)\b.*\b(fix|report)\W*$/;
+const WEIGHT = /\b(defect|concern|question|note|out-of-scope)\b/;
+const READ_LINE = /^\s*Read:\s*(.*)$/;
+const BRANCH_REPORT = /^review-branch/;
+const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\W*$/;
 
-const USAGE = `Usage: node merge-reviews.mjs --root <checkout> --report <file> [--report <file> ...]
+const USAGE = `Usage: node merge-reviews.mjs --root <checkout> [--base <ref>] --report <file> [--report <file> ...]
 Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line,
-then each question, note and report finding as a FINDING line, then a CODEX offer or CODEX none line.
+then COVERAGE <read>/<total> and one UNREAD-FILE line per file changed since --base (default main) that no review-branch report lists on a Read: line,
+then each question, note and report finding as a FINDING line, then FINDINGS-SHA <digest> (the findings lines without fixer marks, indented detail and FAIL lines), then a CODEX offer or CODEX none line.
 Inside an exo run the CODEX line is none and records no decision.`;
+
+export function findingsDigest(text) {
+  const lines = text.split('\n').filter((line) => line.trim() !== '' && !/^\s/.test(line) && !line.startsWith('FAIL '));
+  return createHash('sha256').update(lines.map(withoutFixerMark).join('\n')).digest('hex');
+}
 
 export function parseFinding(line) {
   const at = LOCATION.exec(line);
@@ -71,6 +82,26 @@ export function appendLedger(root, findings, round) {
   fs.appendFileSync(ledgerPath(root), rows.join(''));
 }
 
+function readPaths(text) {
+  return text.split('\n').flatMap((line) => READ_LINE.exec(line)?.[1].split(/[\s,]+/) ?? [])
+    .map((entry) => entry.replaceAll('`', '').replace(/^\.\//, ''))
+    .filter(Boolean);
+}
+
+function coverageOf(reports, changed) {
+  const branch = reports.filter(({ name }) => BRANCH_REPORT.test(name));
+  if (changed === null || branch.length === 0) return null;
+  const read = new Set(branch.flatMap(({ text }) => readPaths(text)));
+  const unread = changed.filter((file) => !read.has(file));
+  return { read: changed.length - unread.length, total: changed.length, unread };
+}
+
+export function changedFiles(root, base) {
+  const diff = spawnSync('git', ['-C', root, 'diff', '--name-only', `${base}...HEAD`], { encoding: 'utf8' });
+  if (diff.status !== 0) throw new Error(`git diff ${base}...HEAD failed: ${diff.stderr.trim()}`);
+  return diff.stdout.split('\n').filter(Boolean);
+}
+
 function verdictOf(text) {
   for (const line of text.split('\n')) {
     const match = line.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/);
@@ -92,8 +123,8 @@ function recurringOf(findings, prior) {
 
 const reading = ({ round, path: file, range, weight }) => `round ${round}: ${file}:${range} ${weight}`;
 
-export function mergeReviews(reports, prior = new Map()) {
-  const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0 };
+export function mergeReviews(reports, prior = new Map(), changed = null) {
+  const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0, 'out-of-scope': 0 };
   let demoted = 0;
   let unread = 0;
   let unreadFix = 0;
@@ -102,9 +133,11 @@ export function mergeReviews(reports, prior = new Map()) {
   const shown = [];
   const findings = [];
   for (const { name, text } of reports) {
-    const own = verdictOf(text);
-    if (VERDICT_RANK[own] > VERDICT_RANK[verdict]) verdict = own;
     const lines = text.split('\n');
+    const weights = lines.map((line) => line.match(FINDING)?.[1]).filter(Boolean);
+    const scopedOnly = weights.length > 0 && weights.every((weight) => weight === 'out-of-scope');
+    const own = scopedOnly && verdictOf(text) === 'FINDINGS' ? 'CLEAN' : verdictOf(text);
+    if (VERDICT_RANK[own] > VERDICT_RANK[verdict]) verdict = own;
     lines.forEach((line, index) => {
       const match = line.match(FINDING);
       if (!match) {
@@ -117,11 +150,12 @@ export function mergeReviews(reports, prior = new Map()) {
         return;
       }
       counts[match[1]] += 1;
+      const outOfScope = match[1] === 'out-of-scope';
       let reported = match[2] !== 'fix';
-      if (!reported && hasFixDetails(lines, index, name)) {
+      if (!reported && !outOfScope && hasFixDetails(lines, index, name)) {
         counts.fix += 1;
       } else if (!reported) {
-        demoted += 1;
+        if (!outOfScope) demoted += 1;
         reported = true;
         lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
       }
@@ -132,14 +166,16 @@ export function mergeReviews(reports, prior = new Map()) {
   }
   const recurring = recurringOf(findings, prior);
   if (recurring.length > 0) verdict = 'BLOCKED';
+  const coverage = coverageOf(reports, changed);
+  if (verdict === 'CLEAN' && coverage?.unread.length > 0) verdict = 'FINDINGS';
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix}\n`;
-  return { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', report: 'list' }, { usage: USAGE });
+  const flags = parseFlags(argv, { root: 'value', base: 'value', report: 'list' }, { usage: USAGE });
   if (!flags.root) throw new UsageError('--root is required');
   if (!flags.report?.length) throw new UsageError('--report is required');
   const reports = flags.report.map((file) => ({
@@ -147,7 +183,8 @@ function main(argv) {
     text: fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'BLOCKED: report missing\n'
   }));
   const round = latestRound(flags.root) + 1;
-  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, text } = mergeReviews(reports, openInLastRound(flags.root));
+  const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
+  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed);
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
@@ -155,12 +192,15 @@ function main(argv) {
   process.stdout.write(
     `verdict=${verdict} defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix} report=${target}\n`
   );
+  if (coverage !== null) process.stdout.write(`COVERAGE ${coverage.read}/${coverage.total}\n`);
+  for (const file of coverage?.unread ?? []) process.stdout.write(`UNREAD-FILE ${file}\n`);
   for (const { now, before } of recurring) {
     process.stdout.write(`BLOCKED recurring ${now.rule} ${now.path}\n  ${reading(before)}\n  ${reading({ ...now, round })}\n`);
   }
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe:, Class: and Sweep: lines under them\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
   for (const line of shown) process.stdout.write(`FINDING ${line}\n`);
+  process.stdout.write(`FINDINGS-SHA ${findingsDigest(text)}\n`);
   process.stdout.write(`CODEX ${inRun() ? 'none' : codexVerdict()}\n`);
 }
 

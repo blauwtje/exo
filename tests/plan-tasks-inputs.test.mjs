@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { coversCompanion, isCovered, inputPaths, relativeInputPaths } from '../lib/plan-tasks.mjs';
+import { coversCompanion, isCovered, inputPaths, parsePlan, relativeInputPaths } from '../lib/plan-tasks.mjs';
 
 test('a relative input under a dot folder is an input', () => {
   const frame = { assumptions: ['- assume: the hint is `.exo/carry/task1-partial.patch`'], context: [] };
@@ -53,4 +53,28 @@ for (const [name, entries, file, expected] of COMPANION_FORMS) {
 
 test('isCovered stays exact for a same-stem file', () => {
   assert.equal(isCovered(['src/Button.tsx'], 'src/Button.module.css'), false);
+});
+
+const BOUNDARY = { in: 'a file path', out: 'a bad path, an empty file', test: 'tests/a.test.mjs' };
+
+function boundaryOfTask(body) {
+  return parsePlan(`### Task 1: t\n${body}\n`).tasks[0].boundary;
+}
+
+test('a Boundary line on its own line is read into task.boundary = { in, out, test }', () => {
+  const body = 'Depends on: none\nBoundary: in a file path | out a bad path, an empty file | test tests/a.test.mjs';
+  assert.deepEqual(boundaryOfTask(body), BOUNDARY);
+});
+
+test('a Boundary field in a compact task line is read into in, out and test', () => {
+  const body = 'Depends on: none | Files: `lib/a.mjs` | Boundary: in a file path | out a bad path, an empty file | test tests/a.test.mjs | Proof: node --test';
+  assert.deepEqual(boundaryOfTask(body), BOUNDARY);
+});
+
+test('a task without a Boundary line has boundary null', () => {
+  assert.equal(boundaryOfTask('Depends on: none | Files: `lib/a.mjs`'), null);
+});
+
+test('a Boundary line missing its test part has boundary null', () => {
+  assert.equal(boundaryOfTask('Depends on: none\nBoundary: in a file path | out a bad path'), null);
 });

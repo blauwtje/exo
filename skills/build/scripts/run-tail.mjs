@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { fixerMark, withoutFixerMark } from '#fixer-mark';
 import { readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -43,7 +44,7 @@ function fixerPrompt({ planPath, root, base, findings }) {
   return block.replace(/<plan path>/g, planPath).replace(/<root>/g, root).replace(/<base>/g, base).replace(/<findings path>/g, findings).replace(/<plan>/g, planPath);
 }
 
-export function reviewPrompt({ planPath, root, base, branch, scope, findings, questions = [] }) {
+export function reviewPrompt({ planPath, root, base, branch, scope, findings, input, questions = [] }) {
   return [
     agentBody(),
     '',
@@ -55,6 +56,7 @@ export function reviewPrompt({ planPath, root, base, branch, scope, findings, qu
     `- Checkout: ${root}`,
     `- Base: ${base}`,
     `- Scope: ${scope}`,
+    ...(input === undefined ? [] : [`- Input: ${input}`]),
     `- Findings path: ${findings}`,
     ...(questions.length > 0 ? ['- Questions:', ...questions.map((question) => `  - ${question}`)] : [])
   ].join('\n');
@@ -65,24 +67,53 @@ const countOf = (text, name) => Number(text.match(new RegExp(`\\b${name}=(\\d+)`
 
 export function parseReviewLines(text) {
   let review = null;
+  const branches = [];
   const overlaps = [];
   for (const line of text.split('\n')) {
+    const dispatch = line.match(/^DISPATCH Branch(?: (\d+)\/(\d+))?: .*\bscope=branch (\S+).*\bfindings=(\S+)/);
+    if (dispatch !== null) branches.push({ range: dispatch[3], findings: dispatch[4], input: line.match(/\binput=(\S+)/)?.[1], number: dispatch[1] });
     const branchLine = line.match(/^REVIEW Branch ([^:]*): (review-branch)(?: exo-kind: (\S+))?\s*$/);
     if (branchLine !== null) review = { range: branchLine[1], kind: branchLine[3] ?? 'review' };
     const overlap = line.match(/^OVERLAP (?!none)(.+?) \(Tasks [^)]*\)$/);
     if (overlap !== null) overlaps.push(overlap[1]);
   }
-  return { review, overlaps };
+  return { review, branches, overlaps };
 }
 
 export function unprovenRisks(findings) {
   if (!fs.existsSync(findings)) return [];
   return fs.readFileSync(findings, 'utf8').split('\n')
-    .filter((line) => /\bconcern\b/.test(line) && /reported:\s*unproven\b/.test(line))
-    .map((line) => line.replace(/;?\s*reported:.*$/, '').trim());
+    .filter((line) => /\bconcern\b/.test(line) && /^unproven\b/.test(fixerMark(line)?.reason ?? ''))
+    .map((line) => withoutFixerMark(line).trim());
 }
 
+export const mergeArgs = ({ root, base, reports }) => ['--root', root, ...(base === null ? [] : ['--base', base]), ...reports.flatMap((report) => ['--report', report])];
+
+export const fixReviewScope = (preFixSha) => `fix diff ${preFixSha}..HEAD`;
+
+export function parseRepairLines(text) {
+  const lines = text.split('\n');
+  const stopLine = lines.find((line) => /^STOP\b/.test(line) || /^LOOP next=stop\b/.test(line));
+  return { stopLine, failLine: lines.find((line) => /^FAIL\b/.test(line)) };
+}
+
+const findingsShaOf = (text) => text.match(/^FINDINGS-SHA (\S+)/m)?.[1] ?? null;
+
+const headOf = (root) => spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
+
 const stopOf =(line, why, next) => ({ line, why, next });
+
+const crashed = (answer, verdictLine) => answer.status !== 0 && !verdictLine.test(out(answer));
+
+function crashStop(command, answer) {
+  const last = out(answer).trim().split('\n').at(-1) || `no output`;
+  return stopOf(`${command} failed: exit ${answer.status ?? 'none'}, ${last}`, `${command} exited ${answer.status ?? 'without a status'} and printed no verdict line: ${last}`, 'fix the cause, then run exo run again');
+}
+
+const REVIEW_LINES = /^(REVIEW|DISPATCH|OVERLAP)\b/m;
+const GATE_LINES = /^(FAIL|UNPLANNED|REPORT)\b/m;
+const REPAIR_LINES = /^(FAIL|STOP)\b/m;
+const PROBE_LINES = /^FAIL probe\b/m;
 
 const gateFailures = (gate) => out(gate).split('\n').filter((line) => /^(FAIL|UNPLANNED)\b/.test(line));
 
@@ -178,17 +209,19 @@ const BRANCH_QUESTIONS = [
   'Is any changed behavior wrong, whatever task it came from?'
 ];
 
-export async function runTail({ planPath, plan, root, base, branch, runSession, logDir = path.join(root, SCRATCH_FOLDER), say = () => {}, attemptsLeft = 1 }) {
+export async function runTail({ planPath, plan, root, base, branch, runSession, exec = node, logDir = path.join(root, SCRATCH_FOLDER), say = () => {}, attemptsLeft = 1 }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
   const baseText = base ?? 'HEAD';
   const criterionStop = await proveCriterion({ planPath, plan, root, logDir, runSession, say });
   if (criterionStop !== null) return { stop: criterionStop };
   const reviewedTree = workingTreeKey(root);
-  const { review: branchReview, overlaps } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
+  const dispatched = exec(SCRIPT.verify, [...gateArgs, '--reviews-only'], root);
+  if (crashed(dispatched, REVIEW_LINES)) return { stop: crashStop('verify --reviews-only', dispatched) };
+  const { review: branchReview, branches, overlaps } = parseReviewLines(out(dispatched));
   const reviewModel = agentModel();
   const dispatches = [
-    ...(branchReview === null ? [] : [{ task: null, name: 'branch', key: BRANCH_REVIEW_KEY, model: agentModel(branchReview.kind), findings: path.join(exo, 'review-branch.md'), scope: `branch ${branchReview.range}`, questions: BRANCH_QUESTIONS }]),
+    ...(branchReview === null ? [] : branches.map((shard) => ({ task: null, name: shard.number === undefined ? 'branch' : `branch ${shard.number}`, key: shard.number === undefined ? BRANCH_REVIEW_KEY : `${BRANCH_REVIEW_KEY}-${shard.number}`, model: agentModel(branchReview.kind), findings: shard.findings, input: shard.input, scope: `branch ${shard.range}`, questions: BRANCH_QUESTIONS }))),
     ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel('review'), findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
   const reports = dispatches.map((dispatch) => dispatch.findings);
@@ -217,10 +250,12 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   }
 
   if (reports.length === 0) return finish(reviewedTree);
-  const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
+  const mergeAnswer = exec(SCRIPT.mergeReviews, mergeArgs({ root, base, reports }), root);
+  const merged = out(mergeAnswer);
   const verdict = verdictOf(merged);
   const findings = path.join(exo, 'branch-review.md');
   recordReviews(root, { fresh, sessions, tree: reviewedTree });
+  if (verdict === null) return { stop: crashStop('merge-reviews', mergeAnswer) };
   if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
   if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) {
     const untrackedBefore = new Set(untrackedPaths(root));
@@ -235,25 +270,38 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       return { stop };
     };
     const fixReview = path.join(exo, 'fix-review.md');
+    const findingsSha = findingsShaOf(merged);
     const fixAttempt = async (failedLine) => {
       say(failedLine === null ? 'fix start' : 'fix retry start');
-      const note = failedLine === null ? '' : `\n\nThe previous fix failed: ${failedLine}\nThe tree holds that fix's edits; repair them so this check passes.`;
+      const note = failedLine === null ? '' : `\n\nThe previous fix failed: ${failedLine}\nThe previous fix's commits are on the branch; repair them with new commits so this check passes.`;
+      const preFixSha = headOf(root);
       const session = await runSession({ kind: 'fix', task: null, model: null, prompt: `${fixerPrompt({ planPath, root, base: baseText, findings })}${note}` });
       if (session.stop !== undefined) return { result: shelved(session.stop) };
-      const gate = node(SCRIPT.verify, gateArgs, root);
+      const repaired = exec(SCRIPT.verify, [...gateArgs, '--repair', '--pre-fix-sha', preFixSha, '--findings', findings, '--findings-sha256', findingsSha], root);
+      if (crashed(repaired, REPAIR_LINES)) return { result: shelved(crashStop('verify --repair', repaired)) };
+      const { stopLine, failLine } = parseRepairLines(out(repaired));
+      if (stopLine !== undefined) return { result: shelved(stopOf(`fix repair stopped: ${stopLine}`, 'verify --repair stopped the review fix', `read ${findings}, repair on the branch, then run exo run again`)) };
+      if (failLine !== undefined) return { failure: { line: failLine, stop: stopOf(`fix repair failed: ${failLine}`, 'verify --repair refused the review fix', `read ${findings}, repair on the branch, then run exo run again`) } };
+      const gate = exec(SCRIPT.verify, gateArgs, root);
+      if (crashed(gate, GATE_LINES)) return { result: shelved(crashStop('verify', gate)) };
       const failing = gateFailures(gate);
-      if (failing.length > 0) return { failure: { line: failing[0], stop: fixBrokeGate(failing[0], findings), recheck: () => gateStop(failing, gateFailures(node(SCRIPT.verify, gateArgs, root)), findings) } };
-      const probes = node(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
+      const recheck = () => {
+        const without = exec(SCRIPT.verify, gateArgs, root);
+        if (crashed(without, GATE_LINES)) return crashStop('verify', without);
+        return gateStop(failing, gateFailures(without), findings);
+      };
+      if (failing.length > 0) return { failure: { line: failing[0], stop: fixBrokeGate(failing[0], findings), recheck } };
+      const probes = exec(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
+      if (crashed(probes, PROBE_LINES)) return { result: shelved(crashStop('run-probes', probes)) };
       const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
       if (failedProbe !== undefined) return { failure: { line: failedProbe, stop: stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe', `read ${findings}, repair on the branch, then run exo run again`) } };
-      const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
-      if (status.status === 0 && status.stdout.trim() === '') {
+      if (headOf(root) === preFixSha) {
         say('fix review skipped: fixer changed nothing');
         return { result: finish(reviewedTree) };
       }
       fs.rmSync(fixReview, { force: true });
       say('fix review start');
-      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
+      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: fixReviewScope(preFixSha), findings: fixReview }) });
       if (second.stop !== undefined) return { result: shelved(second.stop) };
       const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
       const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
@@ -269,17 +317,14 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     if (attempt.failure !== undefined && attemptsLeft - 1 >= 1) attempt = await fixAttempt(attempt.failure.line);
     if (attempt.result !== undefined) return attempt.result;
     if (attempt.failure !== undefined) return shelved(attempt.failure.stop, attempt.failure.recheck);
-    const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
-    const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
-    if (landed.status !== 0) return shelved(stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again'));
-    say('fix landed');
+    say('fix committed');
     return finish(workingTreeKey(root));
   }
   return finish(reviewedTree);
 
   function finish(reviewPassTree) {
     if (reports.length > 0) recordPass(root, BRANCH_REVIEW_KEY, 0, reviewPassTree);
-    const gate = node(SCRIPT.verify, gateArgs, root);
+    const gate = exec(SCRIPT.verify, gateArgs, root);
     const unproven = unprovenRisks(path.join(exo, 'branch-review.md'));
     if (unproven.length === 0) return { gate };
     return { gate: { status: gate.status, stdout: `${gate.stdout ?? ''}${unproven.map((line) => `WARN Unproven risk: ${line}\n`).join('')}`, stderr: gate.stderr } };

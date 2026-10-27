@@ -34,6 +34,16 @@ function markdownFiles(root, folder) {
     .map((name) => path.join(folder, name).split(path.sep).join('/'));
 }
 
+function findKindlessDispatches(root) {
+  const files = [...['hooks', 'skills', 'agents'].flatMap((folder) => markdownFiles(root, folder)), '.claude/CLAUDE.md'].filter((file) => fs.existsSync(path.join(root, file)));
+  return files.flatMap((file) => fs.readFileSync(path.join(root, file), 'utf8').split('\n').flatMap((line, index) => {
+    const dispatches = (line.includes('general-purpose') || line.includes('`claude`')) && /dispatch|spawn|delegate|subagent/i.test(line);
+    return dispatches && !line.includes('exo-kind:')
+      ? [`${file}:${index + 1}: dispatches general-purpose or claude with no exo-kind:`]
+      : [];
+  }));
+}
+
 export function findInheritanceGaps(root, table) {
   const gaps = [];
   const covered = new Map();
@@ -52,7 +62,7 @@ export function findInheritanceGaps(root, table) {
       }
     });
   }
-  return gaps;
+  return [...gaps, ...findKindlessDispatches(root)];
 }
 
 function filePins(root, file) {
