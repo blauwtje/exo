@@ -32,6 +32,7 @@ import { codexBody, codexMarkdown, codexOpenaiYaml, splitFrontmatter } from './r
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const GENERATED = path.posix.join('harnesses', 'codex', 'generated');
 const OVERRIDES = path.posix.join('harnesses', 'codex', 'overrides');
+const IGNORED_FILES = ['.DS_Store'];
 const READ_ONLY = ['agents/fetch-docs.md', 'agents/locate-code.md'];
 const OVERRIDE_HEADER = /^<!-- exo:override source-sha256=([0-9a-f]{64}) -->\n/;
 
@@ -68,6 +69,7 @@ function listFiles(directory) {
   if (!fs.existsSync(directory)) return [];
   const found = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (IGNORED_FILES.includes(entry.name)) continue;
     const location = path.join(directory, entry.name);
     if (entry.isDirectory()) found.push(...listFiles(location));
     else found.push(location);

@@ -1,14 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { modelInvocableSkills } from '../benchmarks/routing.mjs';
 
 const prompts = JSON.parse(readFileSync(new URL('../benchmarks/routing/prompts.json', import.meta.url), 'utf8'));
-const skillsDir = new URL('../skills/', import.meta.url);
-const invocable = readdirSync(skillsDir).filter((name) => {
-  const text = readFileSync(new URL(`${name}/SKILL.md`, skillsDir), 'utf8');
-  const front = text.split('---')[1] ?? '';
-  return !/^disable-model-invocation:\s*true/m.test(front);
-});
+const invocable = modelInvocableSkills(fileURLToPath(new URL('..', import.meta.url)));
 
 test('every entry has a prompt, a valid expect and a valid split', () => {
   assert.ok(Array.isArray(prompts));

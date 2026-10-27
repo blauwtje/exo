@@ -2,8 +2,15 @@
 // that climbs above the exo root fails generation.
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { generateTree } from '../harnesses/codex/generate.mjs';
 import { codexBody } from '../harnesses/codex/rules.mjs';
+
+const SOURCE_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const KNOWN = { skills: [], agents: [] };
 
@@ -24,4 +31,14 @@ test('a link inside the skill folder stays', () => {
 
 test('a link above the exo root throws', () => {
   assert.throws(() => codexBody('skills/spec/SKILL.md', 'See ../../../etc/passwd', KNOWN), /leaves the exo root/);
+});
+
+test('a Finder file inside a skill folder is not generated', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-ds-store-'));
+  for (const folder of ['skills', 'agents', 'lib', path.join('harnesses', 'codex')]) {
+    fs.cpSync(path.join(SOURCE_ROOT, folder), path.join(root, folder), { recursive: true });
+  }
+  fs.writeFileSync(path.join(root, 'skills', 'build', '.DS_Store'), 'x');
+  const files = [...generateTree(root).keys()];
+  assert.deepEqual(files.filter((file) => file.endsWith('.DS_Store')), []);
 });
