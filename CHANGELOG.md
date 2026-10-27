@@ -22,6 +22,8 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The verify branch reviewer sees no implementer prose: `--reviews-only` writes each landed task's `Red:` lines into a `## Red lines` section of `review-input.md`, and the reviewer reads them there instead of from the implementer report directory.
 
 ### Fixed
+- The hung-call test in `tests/adhd-score.test.mjs` drives the 300 ms call cap with mock timers, so it no longer fails under CPU load when the healthy retry outlives the cap.
+- `benchmarks/sweep.mjs` no longer copies implementer reports into a replay checkout; the branch reviewer stopped reading them.
 - `benchmarks/improve-all-score.mjs` gates the replay fix rate on a fixed floor of 0.69 from `main`'s own mean 0.841 and spread 0.049, so `main` no longer fails its own gate and the sd is no longer 0.
 - `benchmarks/improve-all-score.mjs` counts a replay run that raised a false fix line as never clean instead of failing the score, so noise on `main` no longer rejects improve setup.
 - `benchmarks/improve-all-score.mjs` takes its `main` build wall and build cost baselines from the repeat 10 concurrency 10 sweep with failed cells penalized, so `main` scores 1.000 on both build parts instead of 2.272 and 1.528.

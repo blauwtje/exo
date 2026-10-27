@@ -190,23 +190,47 @@ test('projection is checked as each case completes, so an early costly finisher 
   await assert.rejects(scoreCases({ cases: many, baseline: base, reply, judge: pass, spend: spendOf(1) }), /projected_usd/);
 });
 
-test('a hung claude call is killed at the cap and retried once, then fails clearly', async () => {
+const waitForStarts = async (file, count) => {
+  const deadline = Date.now() + 30000;
+  const started = () => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).length : 0);
+  while (started() < count) {
+    if (Date.now() > deadline) throw new Error(`fake claude start ${count} never seen`);
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+};
+
+test('a hung claude call is killed at the cap and retried once, then fails clearly', async (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
-  const marker = path.join(dir, 'seen');
+  const starts = path.join(dir, 'starts');
+  const hangs = path.join(dir, 'hangs');
   const ok = '{"result":"x","usage":{"output_tokens":1},"total_cost_usd":0}';
-  fs.writeFileSync(path.join(dir, 'claude'), `#!/bin/sh\ncat >/dev/null\nif [ ! -e ${marker} ]; then touch ${marker}; exec sleep 30; fi\necho '${ok}'\n`, { mode: 0o755 });
+  const hang = `echo hung >> ${starts}; exec sleep 30`;
+  const fake = (body) => fs.writeFileSync(path.join(dir, 'claude'), `#!/bin/sh\ncat >/dev/null\n${body}\n`, { mode: 0o755 });
+  fake(`if [ ! -e ${hangs} ]; then touch ${hangs}; ${hang}; fi\necho '${ok}'`);
   const savedPath = process.env.PATH;
   process.env.PATH = `${dir}:${savedPath}`;
   process.env.EXO_ADHD_CALL_MS = '300';
   callStats.timeouts = 0;
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   try {
-    const out = await claudeReply({ arm: 'default', prompt: 'q' });
+    const first = claudeReply({ arm: 'default', prompt: 'q' });
+    await waitForStarts(starts, 1);
+    t.mock.timers.tick(300);
+    const out = await first;
     assert.equal(out.text, 'x');
     assert.equal(callStats.timeouts, 1);
-    fs.writeFileSync(path.join(dir, 'claude'), '#!/bin/sh\ncat >/dev/null\nexec sleep 30\n', { mode: 0o755 });
-    await assert.rejects(claudeReply({ arm: 'default', prompt: 'q' }), /timed out twice/);
+    fs.rmSync(starts);
+    fake(hang);
+    const second = claudeReply({ arm: 'default', prompt: 'q' });
+    const failure = assert.rejects(second, /timed out twice/);
+    await waitForStarts(starts, 1);
+    t.mock.timers.tick(300);
+    await waitForStarts(starts, 2);
+    t.mock.timers.tick(300);
+    await failure;
     assert.equal(callStats.timeouts, 3);
   } finally {
+    t.mock.timers.reset();
     process.env.PATH = savedPath;
     delete process.env.EXO_ADHD_CALL_MS;
     fs.rmSync(dir, { recursive: true, force: true });
