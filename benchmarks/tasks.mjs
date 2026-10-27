@@ -47,7 +47,7 @@ export const BREVITY_LINES = {
   'on-request': '- Stay on the request, no side topics.'
 };
 
-function withoutSentence(text, sentence) {
+export function withoutSentence(text, sentence) {
   for (const spaced of [`\n${sentence}`, `${sentence} `, ` ${sentence}`]) {
     if (text.includes(spaced)) return text.replace(spaced, '');
   }

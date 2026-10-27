@@ -10,6 +10,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `node benchmarks/adhd-score.mjs --ablate <slug>` scores the `exo:adhd` style minus one `BREVITY_LINES` sentence; the score log records the slug in `ablate`.
 - `benchmarks/improve-all-score.mjs` scores verify rounds, verify replay cost, flow-unit build wall time and build cost as one geometric-mean ratio against `main`; a failed build cell counts at twice its wall time and cost instead of crashing the score.
 - `benchmarks/speed-ledger.jsonl` records the verify review-rounds loop: the `exo:fix-review` concern rule landed (rounds to clean 2.381 → 1.857, first-repair fix rate 0.889 → 0.929 over per-fixture means), dropping the `review-input.md` read in `exo:review-branch` rejected (fix rate 0.738), and a fixer self-check of its repair diff rejected (1.952, 1 false fix line).
 - `benchmarks/variants.mjs` gains a `fold-unit` arm: a paid `flow` sweep can run a `flow-fold` cell where the build lead runs the `run-unit` loop itself, paired against `flow-unit`.

@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { execFileSync } from 'node:child_process';
 import { makeCellHome } from './cell-home.mjs';
+import { BREVITY_LINES, withoutSentence } from './tasks.mjs';
 import { gateReply } from './adhd/gates.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
@@ -38,12 +39,13 @@ const meanVisible = (replies) => mean(replies.map(visibleTokens));
 const promptOf = (c) => `${c.context}\n\n${c.question}`;
 
 // why: the adhd arm differs from the default arm only by this plugin dir holding the style file.
-function makeStylePlugin() {
+export function makeStylePlugin(ablate = null) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-plugin-'));
   fs.mkdirSync(path.join(dir, '.claude-plugin'));
   fs.mkdirSync(path.join(dir, 'output-styles'));
   fs.writeFileSync(path.join(dir, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'exo', version: '0.0.0', description: 'adhd style only' }));
-  fs.copyFileSync(path.join(ROOT, 'output-styles', 'adhd.md'), path.join(dir, 'output-styles', 'adhd.md'));
+  const style = fs.readFileSync(path.join(ROOT, 'output-styles', 'adhd.md'), 'utf8');
+  fs.writeFileSync(path.join(dir, 'output-styles', 'adhd.md'), ablate === null ? style : withoutSentence(style, BREVITY_LINES[ablate]));
   return dir;
 }
 
@@ -265,15 +267,16 @@ function latestAdhdReplies() {
 }
 
 const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all' };
-const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number] };
+const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String] };
 
 export function parseArgs(argv) {
-  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, all: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES };
+  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, all: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null };
   for (let i = 0; i < argv.length; i += 1) {
     if (FLAGS[argv[i]]) opts[FLAGS[argv[i]]] = true;
     else if (VALUES[argv[i]]) { const [key, cast] = VALUES[argv[i]]; opts[key] = cast(argv[++i]); }
     else throw new Error(`unknown argument: ${argv[i]}`);
   }
+  if (opts.ablate !== null && !Object.hasOwn(BREVITY_LINES, opts.ablate)) throw new Error(`--ablate needs one of: ${Object.keys(BREVITY_LINES).join(', ')}`);
   if (opts.all && !opts.baseline) throw new Error('--all needs --baseline');
   if (opts.maxUsd === null) opts.maxUsd = opts.baseline ? BASELINE_MAX_USD : SCORE_MAX_USD;
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
@@ -282,9 +285,9 @@ export function parseArgs(argv) {
   return opts;
 }
 
-function writeLog(record) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
-  fs.writeFileSync(path.join(LOG_DIR, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`), JSON.stringify(record, null, 2));
+function writeLog(record, dir = LOG_DIR) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`), JSON.stringify(record, null, 2));
 }
 
 const readBaseline = () => {
@@ -346,10 +349,10 @@ const missingLine = (p) => {
 
 export const caseLine = (p) => `${p.id} ratio=${p.ratio.toFixed(3)} visible=${Math.round(p.visibleTokens)}/${Math.round(p.baselineVisible)} billed=${Math.round(p.tokens)}/${Math.round(p.baselineTokens)} failed=${p.failed.join(',') || 'none'}${missingLine(p)}\n`;
 
-async function runScore({ opts, cases, reply, judge, spend }) {
-  const result = await scoreCases({ cases, baseline: readBaseline(), reply, judge, judgeModel: opts.judgeModel, spend, runs: opts.runs });
+export async function runScore({ opts, cases, reply, judge, spend, baseline = readBaseline() }) {
+  const result = await scoreCases({ cases, baseline, reply, judge, judgeModel: opts.judgeModel, spend, runs: opts.runs });
   for (const p of result.perCase) process.stderr.write(caseLine(p));
-  writeLog({ ...result, cost_usd: spend.total, reply_cost_usd: spend.reply, judge_cost_usd: spend.judge });
+  writeLog({ ...result, ablate: opts.ablate, cost_usd: spend.total, reply_cost_usd: spend.reply, judge_cost_usd: spend.judge }, opts.logDir);
   process.stderr.write(`pass_rate=${result.passRate.toFixed(3)} pass_ratio=${result.passRatio === null ? 'n/a' : result.passRatio.toFixed(3)}\n`);
   process.stderr.write(`billed_tokens=${Math.round(result.billedTokens)} baseline_billed_tokens=${Math.round(result.baselineBilledTokens)}\n`);
   process.stdout.write(`${result.score.toFixed(3)}\n`);
@@ -357,7 +360,7 @@ async function runScore({ opts, cases, reply, judge, spend }) {
 
 async function runApi({ opts, cases }) {
   const spend = new Spend(opts.maxUsd);
-  const pluginDir = makeStylePlugin();
+  const pluginDir = makeStylePlugin(opts.ablate);
   const armDirs = { default: fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-default-')), adhd: fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-adhd-')) };
   const judgeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-judge-'));
   const armHomes = { default: makeCellHome(), adhd: makeCellHome() };

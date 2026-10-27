@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { ADHD_RUNS, SCORE_MAX_USD, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, parseArgs, runAddFailLabels, runToLabel, scoreCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
+import { ADHD_RUNS, SCORE_MAX_USD, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, makeStylePlugin, parseArgs, runAddFailLabels, runScore, runToLabel, scoreCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
 import { buildFailRows, dropFact } from '../benchmarks/adhd/labels.mjs';
+import { BREVITY_LINES, withoutSentence } from '../benchmarks/tasks.mjs';
 
 const cases = [
   { id: 'a', context: 'C', question: 'Q', facts: ['f'], literals: [['KEY']], lead: [] },
@@ -435,4 +436,53 @@ test('buildBaseline saves after each case and a failure names the case and arm',
 test('--all needs --baseline', () => {
   assert.equal(parseArgs(['--baseline', '--all']).all, true);
   assert.throws(() => parseArgs(['--all']), /--baseline/);
+});
+
+const STYLE_FILE = fs.readFileSync(new URL('../output-styles/adhd.md', import.meta.url), 'utf8');
+const pluginStyle = (ablate) => {
+  const dir = makeStylePlugin(ablate);
+  try {
+    return fs.readFileSync(path.join(dir, 'output-styles', 'adhd.md'), 'utf8');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+};
+
+test('--ablate takes a brevity slug and defaults to null', () => {
+  assert.equal(parseArgs([]).ablate, null);
+  assert.equal(parseArgs(['--ablate', 'no-why']).ablate, 'no-why');
+});
+
+test('--ablate with an unknown slug lists the valid slugs', () => {
+  assert.throws(() => parseArgs(['--ablate', 'nope']), (error) => Object.keys(BREVITY_LINES).every((slug) => error.message.includes(slug)));
+});
+
+test('the style plugin without --ablate carries the full style file', () => {
+  assert.equal(pluginStyle(null), STYLE_FILE);
+});
+
+test('the style plugin with an ablated slug lacks exactly that sentence', () => {
+  for (const [slug, sentence] of Object.entries(BREVITY_LINES)) {
+    const style = pluginStyle(slug);
+    assert.equal(style.includes(sentence), false, `${slug} drops its sentence`);
+    assert.equal(style, withoutSentence(STYLE_FILE, sentence));
+    assert.equal(style.length < STYLE_FILE.length, true);
+    assert.equal(style.startsWith('---\n'), true);
+  }
+});
+
+test('the score log records the ablated slug, null without the flag', async () => {
+  const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0.01 });
+  const logged = async (flags) => {
+    const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+    try {
+      const opts = { ...parseArgs([...flags, '--runs', '1']), logDir };
+      await runScore({ opts, cases, reply, judge: pass, spend: spendOf(1), baseline });
+      return JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
+    } finally {
+      fs.rmSync(logDir, { recursive: true, force: true });
+    }
+  };
+  assert.equal((await logged(['--ablate', 'no-why'])).ablate, 'no-why');
+  assert.equal((await logged([])).ablate, null);
 });
