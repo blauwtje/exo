@@ -80,3 +80,26 @@ test('a prompt with an exo-retry line gets the retry cell of a build-task, other
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nexo-retry' }, 'on').model, on.kinds.lookup.model);
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task' }, 'on').model, on.kinds['build-task'].model);
 });
+
+test('an exo call has its passed model and effort replaced by the table, a general-purpose call keeps them', () => {
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.lookup;
+  assert.deepEqual(call({ subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus', effort: 'max' }), { subagent_type: 'exo:locate-code', prompt: 'x', model, effort });
+  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup', model: 'opus', effort: 'max' }), undefined);
+});
+
+test('an inherit kind drops a passed model on an exo call so the session model applies', () => {
+  const updated = call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', model: 'opus' });
+  assert.equal(Object.hasOwn(updated, 'model'), false);
+});
+
+test('the raised find-open-points effort still wins over the table', () => {
+  const run = (level) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:find-open-points', prompt: 'x', model: 'haiku', effort: 'low' }, effort: { level } }, 'on').hookSpecificOutput.updatedInput;
+  assert.equal(run('max').effort, 'max');
+  assert.equal(run('xhigh').effort, 'xhigh');
+});
+
+test('the hook line names the replaced model and effort', () => {
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.lookup;
+  const hook = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus', effort: 'max' } }, 'on', () => true);
+  assert.equal(hook.systemMessage, `exo › locate-code (${model}, ${effort}; replaced opus, max)`);
+});

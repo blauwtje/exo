@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
+import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { refreshProgress } from '../skills/build/scripts/next-task.mjs';
@@ -78,11 +79,20 @@ test('only a brief carrying an input path tells the builder to block on an unrea
   assert.doesNotMatch(await fs.readFile(without.stdout.match(/^Brief: (.+)$/m)[1], 'utf8'), /^Inputs:/m);
 });
 
+test('a backticked route the plan names is no input and does not block the task', async () => {
+  const result = await planWithInput('/api/:id/items');
+  assert.match(result.stdout, /^Prompt:$/m);
+  assert.doesNotMatch(result.stdout, /PLAN DRIFT/);
+  assert.doesNotMatch(await fs.readFile(result.stdout.match(/^Brief: (.+)$/m)[1], 'utf8'), /^Inputs:/m);
+});
+
 test('an unreachable input the plan names stops the task before dispatch', async () => {
   const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'missing.md');
   const result = await planWithInput(input);
   assert.ok(result.stdout.split('\n').includes(`PLAN DRIFT: Task 1: input \`${input}\` is unreachable`), result.stdout);
   assert.doesNotMatch(result.stdout, /^(?:Prompt|Dispatch):/m);
+  const lines = result.stdout.split('\n');
+  assert.equal(lines[lines.findIndex((line) => line.startsWith('PLAN DRIFT: ')) + 1], refusalHandler('plan drift'));
 });
 
 test('a design task prints no prompt', async () => {

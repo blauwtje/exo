@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { sharedStateDenyRules } from '../../../lib/git-deny.mjs';
 import { loopCommands } from '#plan-tasks';
 import { ECOSYSTEM_MANIFESTS } from '#size-facts';
 import { sumCounts, usageCounts } from '#token-weights';
@@ -39,8 +40,8 @@ export const insideClaudeCode = (env = process.env) => Boolean(env.CLAUDECODE);
 
 export const DENY_RULES = [
   'Bash(git push *)', 'Bash(gh *)', 'Bash(git reset *)', 'Bash(git rebase *)', 'Bash(git cherry-pick *)',
-  'Bash(git merge *)', 'Bash(git tag *)', 'Bash(git switch *)', 'Bash(git checkout *)', 'Bash(git branch -D *)',
-  'Bash(git commit *)', 'Bash(git stash *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(node *settings.mjs*)', 'Bash(node *memory.mjs*)',
+  'Bash(git merge *)', 'Bash(git tag *)', 'Bash(git switch *)', 'Bash(git checkout *)', ...sharedStateDenyRules(),
+  'Bash(git commit *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(node *settings.mjs*)', 'Bash(node *memory.mjs*)',
   'Bash(npm publish*)', 'Bash(npm *publish*)', 'Bash(vercel*)', 'Bash(npx vercel*)',
   'Bash(netlify deploy*)', 'Bash(fly deploy*)', 'Bash(flyctl deploy*)'
 ];

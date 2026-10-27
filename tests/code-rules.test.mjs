@@ -102,3 +102,52 @@ test('the eslint path asks for no-empty and no-unused-vars and fails on both', (
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+const CWD_ESLINT = `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args.includes('--version')) {
+  console.log('9.0.0');
+  process.exit(0);
+}
+const files = args.slice(args.indexOf('--') + 1);
+const message = process.cwd() + ' ' + args.includes('--no-config-lookup');
+console.log(JSON.stringify(files.map((file) => ({ filePath: require('node:path').resolve(file), messages: [{ ruleId: 'no-empty', line: 1, message }] }))));
+`;
+
+function installEslint(folder) {
+  const bin = path.join(folder, 'node_modules', '.bin');
+  fs.mkdirSync(bin, { recursive: true });
+  fs.writeFileSync(path.join(bin, 'eslint'), CWD_ESLINT, { mode: 0o755 });
+}
+
+test('eslint runs from the nearest folder holding a config, with that folder binary', () => {
+  const root = repository();
+  try {
+    const app = path.join(root, 'packages', 'app');
+    fs.mkdirSync(path.join(app, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(app, 'eslint.config.js'), 'export default [];\n');
+    installEslint(root);
+    installEslint(app);
+    fs.writeFileSync(path.join(app, 'src', 'a.mjs'), 'const a = 1;\n');
+    fs.writeFileSync(path.join(root, 'b.mjs'), 'const b = 1;\n');
+    const { fails } = codeRuleFindings({ root, base: 'HEAD', paths: ['packages/app/src/a.mjs', 'b.mjs'] });
+    assert.deepEqual(fails.sort(), [`b.mjs:1 no-empty ${root} true`, `packages/app/src/a.mjs:1 no-empty ${app} false`]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a config folder without its own eslint binary uses the root binary from that folder', () => {
+  const root = repository();
+  try {
+    const app = path.join(root, 'app');
+    fs.mkdirSync(app, { recursive: true });
+    fs.writeFileSync(path.join(app, '.eslintrc.json'), '{}\n');
+    installEslint(root);
+    fs.writeFileSync(path.join(app, 'a.mjs'), 'const a = 1;\n');
+    const { fails } = codeRuleFindings({ root, base: 'HEAD', paths: ['app/a.mjs'] });
+    assert.deepEqual(fails, [`app/a.mjs:1 no-empty ${app} false`]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { refusalHandler } from '../lib/refusal-handlers.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/start-run.mjs', import.meta.url));
 const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
@@ -96,7 +97,80 @@ test('start-run refuses a plan whose proof starts a nested claude, before it wri
   assert.equal(result.status, 1);
   assert.match(result.stderr, /starts a nested claude/);
   assert.match(result.stderr, /Next: fix the plan.*plan-check\.mjs --loop --run --plan /s);
+  assert.ok(result.stderr.endsWith(`\n${refusalHandler('start stop')}\n`), result.stderr);
   assert.equal(result.stdout, '');
   assert.equal(fs.existsSync(path.join(f.cache, 'exo')), false);
   assert.equal(fs.existsSync(path.join(f.repo, '.exo')), false);
+});
+
+function runOutput({ repo, plan, cache }) {
+  const result = spawnSync(process.execPath, [SCRIPT, '--plan', plan, '--root', repo, '--checkout', repo], { encoding: 'utf8', env: { ...process.env, XDG_CACHE_HOME: cache } });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout;
+}
+
+test('start-run commits pre-existing work in its own trailerless commit and prints its sha before run started', () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.repo, 'a.txt'), 'tracked\n');
+  git(f.repo, 'add', 'a.txt');
+  git(f.repo, 'commit', '-q', '-m', 'chore: a');
+  fs.writeFileSync(path.join(f.repo, 'a.txt'), 'changed\n');
+  fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
+  fs.writeFileSync(f.plan, `${fs.readFileSync(f.plan, 'utf8')}\n`);
+  const stdout = runOutput(f);
+  const sha = git(f.repo, 'rev-parse', '--short', 'HEAD').trim();
+  assert.equal(git(f.repo, 'log', '-1', '--format=%s').trim(), 'fix(run): keep work present before the run');
+  assert.doesNotMatch(git(f.repo, 'log', '-1', '--format=%B'), /Plan-task:/);
+  assert.deepEqual(git(f.repo, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter(Boolean).sort(), ['a.txt', 'new.txt']);
+  assert.equal(git(f.repo, 'status', '--porcelain', '--untracked-files=no').trim(), 'M docs/plans/demo.md');
+  assert.ok(stdout.indexOf(sha) !== -1 && stdout.indexOf(sha) < stdout.indexOf('run started'), stdout);
+});
+
+test('start-run keeps the plan out of the pre-run commit when the checkout path is a symlink', () => {
+  const f = fixture();
+  const link = `${f.repo}-link`;
+  fs.symlinkSync(f.repo, link);
+  fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
+  fs.writeFileSync(f.plan, `${fs.readFileSync(f.plan, 'utf8')}\n`);
+  const plan = path.join(link, 'docs', 'plans', 'demo.md');
+  const result = spawnSync(process.execPath, [SCRIPT, '--plan', plan, '--root', f.repo, '--checkout', link], { encoding: 'utf8', env: { ...process.env, XDG_CACHE_HOME: f.cache } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(git(f.repo, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter(Boolean), ['new.txt']);
+});
+
+test('start-run on a clean tree makes no commit', () => {
+  const f = fixture();
+  const before = git(f.repo, 'rev-parse', 'HEAD');
+  const stdout = runOutput(f);
+  assert.equal(git(f.repo, 'rev-parse', 'HEAD'), before);
+  assert.doesNotMatch(stdout, /committed pre-existing work/);
+});
+
+test('start-run on a checkout off the plan Branch: commits nothing', () => {
+  const f = fixture();
+  git(f.repo, 'switch', '-q', '-c', 'other');
+  fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
+  const before = git(f.repo, 'rev-parse', 'HEAD');
+  runOutput(f);
+  assert.equal(git(f.repo, 'rev-parse', 'HEAD'), before);
+});
+
+test('start-run stops before the pre-run commit and run started when a service the repo needs is down', () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.repo, 'compose.yaml'), 'services: {}\n');
+  fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
+  const fakes = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-bin-'));
+  for (const name of ['docker', 'open']) {
+    fs.writeFileSync(path.join(fakes, name), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  }
+  const before = git(f.repo, 'rev-parse', 'HEAD');
+  const result = spawnSync(process.execPath, [SCRIPT, '--plan', f.plan, '--root', f.repo, '--checkout', f.repo], {
+    encoding: 'utf8',
+    env: { ...process.env, XDG_CACHE_HOME: f.cache, PATH: `${fakes}${path.delimiter}${process.env.PATH}` },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /^start-run: docker not running: .*Next: /);
+  assert.ok(result.stderr.endsWith(`\n${refusalHandler('start stop')}\n`), result.stderr);
+  assert.doesNotMatch(result.stdout, /run started/);
+  assert.equal(git(f.repo, 'rev-parse', 'HEAD'), before);
 });

@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { checkTask, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { compactPlanFixture, git, gitRepository, planFixture, run } from './harness.mjs';
@@ -69,6 +70,19 @@ test('a stray path outside Files: is refused before anything stages or commits',
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Task 1 changed a path outside Files: `src\/extra\.js`/);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
   assert.match(git(root, 'status', '--porcelain'), /extra\.js/);
+});
+
+test('a same-stem companion of a listed file is not a stray, a prefix-sharing sibling and a different directory still are', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  for (const stray of ['src/apple.js', 'src/app', 'lib/app.test.js']) {
+    await fs.mkdir(path.dirname(path.join(root, stray)), { recursive: true });
+    await fs.writeFile(path.join(root, stray), 'x\n');
+    assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), (error) => error.message.includes(`changed a path outside Files: \`${stray}\``));
+    await fs.rm(path.join(root, stray));
+  }
+  await fs.writeFile(path.join(root, 'src/app.test.js'), 'export const spec = 1;\n');
+  assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
 test('a git worktree nested in the checkout is skipped, a plain untracked directory beside it is still refused', async () => {
@@ -205,6 +219,26 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.equal(noTrailer.stdout, '');
   assert.match(noTrailer.stderr, /Plan-task: 2/);
   assert.match(noTrailer.stderr, /\nexo-retry\n$/);
+  assert.ok(noTrailer.stderr.endsWith(`${refusalHandler('proof failed')}\nexo-retry\n`), noTrailer.stderr);
+});
+
+test('a stray path refusal prints the outside-Files handler line before exo-retry', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(refused.code, 1);
+  assert.ok(refused.stderr.endsWith(`${refusalHandler('outside Files')}\nexo-retry\n`), refused.stderr);
+});
+
+test('a missing build report refusal prints the report-missing handler line before exo-retry', async () => {
+  const { root, planPath } = await compactCheckout();
+  const missing = path.join(root, '.exo/absent-report.md');
+  assert.notEqual(refusalHandler('report missing'), refusalHandler('proof failed'));
+  const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--report', missing], { cwd: root });
+  assert.equal(refused.code, 1);
+  assert.match(refused.stderr, /no build report at/);
+  assert.ok(refused.stderr.endsWith(`${refusalHandler('report missing')}\nexo-retry\n`), refused.stderr);
 });
 
 test('a code-rule refusal prints no exo-retry line, so the retry keeps its model', async () => {
@@ -214,6 +248,7 @@ test('a code-rule refusal prints no exo-retry line, so the retry keeps its model
   assert.equal(refused.code, 1);
   assert.match(refused.stderr, /breaks the code rules/);
   assert.doesNotMatch(refused.stderr, /exo-retry/);
+  assert.ok(refused.stderr.includes(`\n${refusalHandler('code rule')}\n`), refused.stderr);
 });
 
 const literalPlan = (data, escape = '') => compactPlanFixture({ tasks: [

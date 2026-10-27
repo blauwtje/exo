@@ -10,15 +10,16 @@ experimental: { cacheTtl: 1h }
 
 ## Loop
 
-1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots`; read `Landed:` and `Next:` or `Wave:` lines.
+1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots`; read `Landed:`, `Next:`, `Wave:`.
   - `Next:` or `Wave:` task outside this block → block task waits on `BLOCKED` one; return each `BLOCKED <n> waits on <m>`.
-2. **Take tasks from script output**, never the plan file.
+  - `PLAN DRIFT` → step 3's `exo:solve-hard` repair, then step 1.
+2. **Take tasks from script output**, never the plan.
   - `Design:` task → `BLOCKED <n> Design: task`.
 3. **Dispatch the printed block.** Each `Prompt:` verbatim, only that text, to `exo:build-task` with its `Dispatch:` flag, in one message; no `implementer-prompt.md` read.
   - `Next:` also returns async; run its printed `Wait:`, no foreground return.
   - A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
   - Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a slot.
-  - Land each fresh slot via `Land <n>:` or all via `Land all:`; `LANDED` ends with refill block; dispatch likewise.
+  - Land each fresh slot via `Land <n>:`, all via `Land all:`; `LANDED` ends with refill block; dispatch likewise.
   - Wait after every landing; exit 2 reruns, at most three runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - Landed task → next; no review, only verify reviews.
   - A command or agent result saying it runs in the background → run the printed `Wait:`; never end the turn while a build, repair or land runs.
@@ -37,10 +38,10 @@ experimental: { cacheTtl: 1h }
 
 ## Return
 
-No text between tool calls. One line per task, at most 8 lines:
+No text between tool calls. At most 8 lines, one per task:
 
-- `LANDED <n>` for committed task, plus ` pending <command>` per `Pending:` line.
-- `BLOCKED <n> NEEDS ANSWER: <question> <report path>` for a `NEEDS ANSWER` build.
-- `BLOCKED <n> <reason> <report path>` otherwise; path `none` without report.
+- `LANDED <n>`, plus ` pending <command>` per `Pending:` line.
+- `BLOCKED <n> NEEDS ANSWER: <question> <report path>` for `NEEDS ANSWER`.
+- `BLOCKED <n> <reason> <report path>` otherwise; `none` without report.
 
-Before return → TaskStop your running background shells and agents.
+Before return → TaskStop your background shells and agents.

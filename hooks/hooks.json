@@ -71,6 +71,18 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-start.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

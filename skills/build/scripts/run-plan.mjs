@@ -24,6 +24,7 @@ import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, SESSION_REF
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { landChangelogTask } from './changelog-task.mjs';
+import { ensureServices } from '../../../lib/services.mjs';
 import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, planLandedLine, planSessionLine, scriptLandedLine, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
@@ -126,15 +127,17 @@ function preflight(planArgument, flags) {
   const passFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planIdOf(planPath), 'plan-check-ok');
   const sha = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
   const passKey = `${sha(planPath)} ${gitOut(root, ['rev-parse', 'HEAD'])} ${sha(SCRIPT.planCheck)}\n`;
-  if (isFileOnDisk(passFile) && fs.readFileSync(passFile, 'utf8') === passKey) return { claude, planPath, root, plan, branch };
-  const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
-  if (check.status === 0) {
+  if (!(isFileOnDisk(passFile) && fs.readFileSync(passFile, 'utf8') === passKey)) {
+    const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
+    if (check.status !== 0) {
+      const lines = `${check.stdout}\n${check.stderr}`.split('\n').filter((line) => line.trim() !== '');
+      throw new Refusal(`plan-check --loop fails: ${lines.find((line) => line.startsWith('loop: ')) ?? lines[0] ?? `exit ${check.status}`}`);
+    }
     fs.mkdirSync(path.dirname(passFile), { recursive: true });
     fs.writeFileSync(passFile, passKey);
-  } else {
-    const lines = `${check.stdout}\n${check.stderr}`.split('\n').filter((line) => line.trim() !== '');
-    throw new Refusal(`plan-check --loop fails: ${lines.find((line) => line.startsWith('loop: ')) ?? lines[0] ?? `exit ${check.status}`}`);
   }
+  const services = ensureServices(root);
+  if (services !== 'up') throw new Refusal(services);
   return { claude, planPath, root, plan, branch };
 }
 

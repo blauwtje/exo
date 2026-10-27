@@ -8,7 +8,7 @@ import { exportSignatures } from '#export-signatures';
 import { runTreeSync, withoutRunVariables } from '#process-tree';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, decisionsPathOf, defaultBase, frameOf, isCovered, isolatedCheckout, isPlanDoc, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, coversCompanion, decisionsPathOf, defaultBase, frameOf, isCovered, isolatedCheckout, isPlanDoc, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -16,12 +16,32 @@ import { nextTaskReport, refreshProgress } from './next-task.mjs';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { CODE_RULE_LIMITS, codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
+import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
+import { dockerHost, ensureServices } from '../../../lib/services.mjs';
 
-export class LandingError extends Error {}
+export class LandingError extends Error {
+  kind = 'proof failed';
+}
 
-export class PlanDriftError extends LandingError {}
+export class PlanDriftError extends LandingError {
+  kind = 'plan drift';
+}
 
-export class CodeRuleError extends LandingError {}
+export class CodeRuleError extends LandingError {
+  kind = 'code rule';
+}
+
+export class EnvError extends LandingError {
+  kind = 'env';
+}
+
+export class ReportMissingError extends LandingError {
+  kind = 'report missing';
+}
+
+export class OutsideFilesError extends LandingError {
+  kind = 'outside Files';
+}
 
 function shellQuote(value) {
   return `'${value.replace(/'/g, "'\\''")}'`;
@@ -174,7 +194,7 @@ function expectedLayout(task, reportPath, command = null) {
 function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
     const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
-    throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}${expectedLayout(task, reportPath)}`);
+    throw new ReportMissingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}${expectedLayout(task, reportPath)}`);
   }
   const lines = reportText.replace(/\r\n/g, '\n').split('\n');
   const kept = [];
@@ -235,23 +255,40 @@ function quietText(text, ok) {
   return `${[...kept, `Full output: ${quiet.file}`].join('\n')}\n`;
 }
 
-function runProof(task, command, root, field) {
-  if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
-  const before = workingTreeKey(root);
-  const started = Date.now();
+function proofAttempt(task, command, root) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: proofEnvOf(task) });
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
-  if (proofRun.status === 0 && !proofRun.timedOut) {
+  return { proofRun, deadlineMs, tail, passed: proofRun.status === 0 && !proofRun.timedOut };
+}
+
+function startedServices(root, docker) {
+  let started = false;
+  const status = ensureServices(root, { docker: { ...docker, start: () => { started = true; return docker.start(); } } });
+  if (status !== 'up') throw new EnvError(`ENV: ${status.split(' ')[0]} down: ${status}`);
+  return started;
+}
+
+function proofFailure(attempt) {
+  const { proofRun, deadlineMs } = attempt;
+  if (proofRun.timedOut) return `timed out after ${deadlineMs / 1000}s`;
+  if (proofRun.error !== undefined) return `spawn error ${proofRun.error.message}`;
+  if (proofRun.signal !== null) return `signal ${proofRun.signal}`;
+  return `exit ${proofRun.status}`;
+}
+
+function runProof(task, command, { root, field, docker }) {
+  if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
+  const before = workingTreeKey(root);
+  const started = Date.now();
+  let attempt = proofAttempt(task, command, root);
+  if (!attempt.passed && startedServices(root, docker)) attempt = proofAttempt(task, command, root);
+  if (attempt.passed) {
     recordPass(root, command, Date.now() - started, before);
-    return { command, tail };
+    return { command, tail: attempt.tail };
   }
-  let reason = `exit ${proofRun.status}`;
-  if (proofRun.timedOut) reason = `timed out after ${deadlineMs / 1000}s`;
-  else if (proofRun.error !== undefined) reason = `spawn error ${proofRun.error.message}`;
-  else if (proofRun.signal !== null) reason = `signal ${proofRun.signal}`;
-  throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${reason}):`, ...tail].join('\n'));
+  throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${proofFailure(attempt)}):`, ...attempt.tail].join('\n'));
 }
 
 const TEST_FILE = /^tests\/[\w.-]+\.test\.mjs$/;
@@ -312,7 +349,7 @@ function changedPaths(root, planPath) {
 
 function unplannedPaths(task, { root, planPath, siblingWork = () => false }) {
   const entries = task.files.map((file) => file.path);
-  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !siblingWork(changed));
+  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed) && !siblingWork(changed));
 }
 
 function siblingWorkOf(plan, task, { root, planPath, landing }) {
@@ -528,7 +565,7 @@ function refuseMissingLiterals(task, root, planPath = null) {
 function refuseUnplannedPaths(task, options) {
   const unplanned = unplannedPaths(task, options);
   if (unplanned.length > 0) {
-    throw new LandingError(`Task ${task.number} changed a path outside Files: ${unplanned.map((file) => `\`${file}\``).join(', ')}`);
+    throw new OutsideFilesError(`Task ${task.number} changed a path outside Files: ${unplanned.map((file) => `\`${file}\``).join(', ')}`);
   }
 }
 
@@ -583,56 +620,78 @@ function nextLine(wave, planPath, root) {
   return `Then: node "${script}" --block --plan "${planPath}" --root "${root}"`;
 }
 
-export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
-  refuseOutsidePin(pin, planPath, number);
-  refuseMismatchedToplevel(root);
-  const plan = parsePlan(planText);
-  const planId = planIdOf(planPath);
+function taskOf(plan, number) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
+  return task;
+}
+
+function refuseBeforeProof(plan, task, { root, planPath, pin, planId }) {
   refuseMcpProofUnderPin(pin, task);
   refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
   refuseUntestedTestFirst(task, root);
   refuseMissingLiterals(task, root, planPath);
-  const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
+  const block = commitBlockOf(plan, task.number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
+  return block;
+}
+
+function proveTask(task, { root, planPath, docker, reportText, reportPath }) {
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
-  const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
+  const proofs = proofCommands.map((command) => runProof(task, command, { root, field: task.compact ? 'Proof' : 'Run', docker }));
   runNamedTests(task, proofCommands, { root, planPath });
-  const redLine = redGreenLine(task, proofCommands, root, pending);
-  const frame = frameOf(plan.frame);
-  runLint(frame.lint, task.files.map((file) => file.path), root);
-  const warnLines = runCodeRules(task.files.map((file) => file.path), root);
-  const gateLine = warnLines + (runLandGate(frame.landGate, root, dropsOf(task)) ?? '');
-  // The block runs under bash, as the plugin's hooks do; a host without bash
-  // fails those hooks before this script runs.
+  return { proofs, pending, redLine: redGreenLine(task, proofCommands, root, pending) };
+}
+
+function runGates(task, frame, root) {
+  const files = task.files.map((file) => file.path);
+  runLint(frame.lint, files, root);
+  const warnLines = runCodeRules(files, root);
+  return warnLines + (runLandGate(frame.landGate, root, dropsOf(task)) ?? '');
+}
+
+function runCommitBlock(block, root, number) {
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
-  if (commit.status !== 0) {
-    const output = `${commit.stdout ?? ''}${commit.stderr ?? ''}${commit.error?.message ?? ''}`.trim();
-    throw new LandingError(`the Commit: block of Task ${number} failed:\n${output}`);
-  }
+  if (commit.status === 0) return;
+  const output = `${commit.stdout ?? ''}${commit.stderr ?? ''}${commit.error?.message ?? ''}`.trim();
+  throw new LandingError(`the Commit: block of Task ${number} failed:\n${output}`);
+}
+
+function committedSha(task, { root, planId }) {
   const head = execFileSync('git', ['-C', root, 'log', '-1', '--format=%h%n%s%n%B'], { encoding: 'utf8' });
   const [sha, subject, ...body] = head.split('\n');
-  const trailer = planTaskTrailer(planId, number);
-  if (!body.includes(trailer)) {
-    throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
-  }
-  // bash expands the block, so a `$` or backquote in its subject can commit a
-  // subject the plan does not give.
+  const trailer = planTaskTrailer(planId, task.number);
+  if (!body.includes(trailer)) throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
   const expectedSubject = task.commitSubject ?? task.title;
-  if (subject !== expectedSubject) {
-    throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
-  }
-  const landed = landedTasks(plan.tasks, root, planId);
-  appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
-  writeProofRecord({ root, planId, number, proofs, redLine });
+  if (subject === expectedSubject) return sha;
+  throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
+}
+
+function landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine }) {
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (exit 0)`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const route = planRoute(plan.tasks);
-  // The inline route builds in the run checkout, never in a wave's worktrees.
   const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
   return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${nextLine(wave, planPath, root)}\n`;
+}
+
+export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null, docker = dockerHost }) {
+  refuseOutsidePin(pin, planPath, number);
+  refuseMismatchedToplevel(root);
+  const plan = parsePlan(planText);
+  const planId = planIdOf(planPath);
+  const task = taskOf(plan, number);
+  const block = refuseBeforeProof(plan, task, { root, planPath, pin, planId });
+  const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath });
+  const frame = frameOf(plan.frame);
+  const gateLine = runGates(task, frame, root);
+  runCommitBlock(block, root, number);
+  const sha = committedSha(task, { root, planId });
+  const landed = landedTasks(plan.tasks, root, planId);
+  appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
+  writeProofRecord({ root, planId, number, proofs, redLine });
+  return landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine });
 }
 
 // `--next` swaps the `Then:` line for next-task's own report, slots opened, so the caller dispatches in the same turn.
@@ -672,9 +731,9 @@ function main(argv) {
 
 function refusal(error) {
   if (error instanceof UsageError) return { text: `land-task: ${error.message}\n`, code: 2, usage: true };
-  if (error instanceof CodeRuleError) return { text: `land-task: ${error.message}\n`, code: 1 };
-  if (error instanceof PlanDriftError) return { text: `${error.message}\nexo-retry\n`, code: 1 };
-  if (error instanceof LandingError) return { text: `land-task: ${error.message}\nexo-retry\n`, code: 1 };
+  if (error instanceof CodeRuleError || error instanceof EnvError) return { text: `land-task: ${error.message}\n${refusalHandler(error.kind)}\n`, code: 1 };
+  if (error instanceof PlanDriftError) return { text: `${error.message}\n${refusalHandler(error.kind)}\nexo-retry\n`, code: 1 };
+  if (error instanceof LandingError) return { text: `land-task: ${error.message}\n${refusalHandler(error.kind)}\nexo-retry\n`, code: 1 };
   if (error instanceof PlanError) return { text: `land-task: ${error.message}\n`, code: 1 };
   throw error;
 }

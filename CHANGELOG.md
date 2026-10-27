@@ -19,6 +19,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/tasks.mjs` gains one `adhd-no-<slug>` arm per brevity sentence of `output-styles/adhd.md`: each is the `adhd-style` prompt minus that one sentence, so `benchmarks/run.mjs` can pair it against `adhd-style` on the value tier, and it stays out of the default arm list.
 
 ### Changed
+- A subagent near its context limit gets told the limits in its own start context by a new `SubagentStart` hook, and the 60k note and 80k block name exo as their source, say `Write` still works, and point to the result file its brief names, so it hands over instead of ignoring the note.
 - The `adhd` output style shows instead of describes (snippet, tree, diff, runnable example), numbers run-order steps, states each outcome's status, writes one line only on a change of direction and none while background work still runs, and writes agent briefs as bullets; every agent body asks for terse prose with no narration between tool calls, and `exo:locate-code` caps each row note at 6 words and answers `No match.` or a lone hit in one line.
 - The `exo:adhd` output style replies in English only.
 - The `exo:adhd` output style is restructured into short headed rules and drops lines the harness or exo already enforces; the `adhd-no-<slug>` arms follow the new bullets and gain a `small-edit` arm.
@@ -30,6 +31,8 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The verify branch reviewer sees no implementer prose: `--reviews-only` writes each landed task's `Red:` lines into a `## Red lines` section of `review-input.md`, and the reviewer reads them there instead of from the implementer report directory.
 
 ### Fixed
+- `plan-check` sizes a task that names one markdown heading, such as `## Unreleased` in `CHANGELOG.md`, by that section, so a plan's changelog task no longer breaks the task token budget once the changelog grows.
+- A build finishes a plan with fewer false blocks and lead hand-edits: a Proof that needs a down Docker service starts OrbStack or Docker and reruns once, each refusal prints its in-loop `Then:` handler, a same-stem companion file of a listed file is no longer flagged unplanned, `export-signatures` counts parameters from top-level syntax only, eslint runs from the nearest folder with an ESLint config, an unknown-flag error lists the known flags, a subagent is denied the git commands that change state shared by all worktrees, and the kind table picks the model on every exo agent call.
 - `plan-check` accepts a task that edits a file named in `CONTRIBUTING.md` or another lock doc when a later task in its `Depends on:` chain lists that doc, so a large file plus its lock doc no longer trips the task size limit.
 - The Codex adapter skips macOS `.DS_Store` files inside skill folders, and `tests/routing-prompts.test.mjs` lists skills through `modelInvocableSkills`, so a Finder file no longer fails `npm run check`.
 - The `exo:adhd` output style puts multi-line code in a code fence, writes one progress line when a step runs past one minute, allows a few words while background work still runs, and runs each check once instead of one rerun in total.

@@ -15,6 +15,7 @@ import { isTestPath } from '#red-green';
 import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { wholeSuiteKeys } from '#suite-command';
 
+const NAMED_HEADING = /`(#{1,6}) ([^`\n]+)`/g;
 const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
@@ -121,8 +122,47 @@ function forkPointOf(root) {
   return fork.status === 0 ? fork.stdout.trim() : null;
 }
 
+function textAtCommit(root, commit, target) {
+  const shown = spawnSync('git', ['-C', root, 'show', `${commit}:${target}`], { encoding: 'utf8', maxBuffer: Infinity });
+  return shown.status === 0 ? shown.stdout : null;
+}
+
+function textOnDisk(target) {
+  try {
+    return fs.readFileSync(target, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function linesEqual(lines, target) {
+  return lines.flatMap((line, index) => (line === target ? [index] : []));
+}
+
+function headingSectionBytes(text, taskText) {
+  const named = [...taskText.matchAll(NAMED_HEADING)].map((match) => ({ level: match[1].length, line: `${match[1]} ${match[2]}` }));
+  if (named.length === 0) return null;
+  const outerLevel = Math.min(...named.map((heading) => heading.level));
+  const outers = named.filter((heading) => heading.level === outerLevel);
+  if (outers.length !== 1) return null;
+  const lines = text.split('\n');
+  const starts = linesEqual(lines, outers[0].line);
+  if (starts.length !== 1) return null;
+  const closing = new RegExp(`^#{1,${outerLevel}} `);
+  const following = lines.findIndex((line, index) => index > starts[0] && closing.test(line));
+  const section = lines.slice(starts[0], following === -1 ? lines.length : following);
+  if (named.some((heading) => linesEqual(section, heading.line).length !== 1)) return null;
+  return Buffer.byteLength(section.join('\n'));
+}
+
 function taskBytes(task, root, forkPoint) {
-  const sizeOf = (file) => (forkPoint === null ? bytesUnder(path.join(root, file.path)) : bytesAtCommit(root, forkPoint, file.path));
+  const wholeSize = (file) => (forkPoint === null ? bytesUnder(path.join(root, file.path)) : bytesAtCommit(root, forkPoint, file.path));
+  const textOf = (file) => (forkPoint === null ? textOnDisk(path.join(root, file.path)) : textAtCommit(root, forkPoint, file.path));
+  const sizeOf = (file) => {
+    if (!file.path.endsWith('.md')) return wholeSize(file);
+    const text = textOf(file);
+    return (text === null ? null : headingSectionBytes(text, task.section)) ?? wholeSize(file);
+  };
   return Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + sizeOf(file), 0);
 }
 

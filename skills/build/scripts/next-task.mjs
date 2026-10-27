@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
+import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
@@ -159,6 +160,11 @@ function designLine(task) {
   return match === null ? 'Design: none' : `Design: ${match[1]}`;
 }
 
+function driftLines(task, drift) {
+  if (drift.length === 0) return ['Drift: none'];
+  return [...drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`), refusalHandler('plan drift')];
+}
+
 function taskLines(task, frame, root, briefDirectory) {
   const drift = driftOf(task, root, frame);
   return [
@@ -166,7 +172,7 @@ function taskLines(task, frame, root, briefDirectory) {
     designLine(task),
     ...(task.proof === null ? [] : [`Proof: ${task.proof}`]),
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
-    ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
+    ...driftLines(task, drift),
     `Brief: ${writeBrief(task, frame, root, briefDirectory)}`
   ];
 }
@@ -174,7 +180,7 @@ function taskLines(task, frame, root, briefDirectory) {
 function inlineTaskLines(task, frame, root) {
   const drift = driftOf(task, root, frame);
   return [
-    ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
+    ...driftLines(task, drift),
     task.section
   ];
 }

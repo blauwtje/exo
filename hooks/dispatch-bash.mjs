@@ -3,6 +3,7 @@
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
+import { sharesGitState } from '../lib/git-deny.mjs';
 import { fixShell } from '../lib/shell-fixes.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';
@@ -26,6 +27,15 @@ export const FIND_STEP = {
   }
 };
 
+export const SHARED_STATE_STEP = {
+  name: 'shared-state-git',
+  run(hookInput) {
+    const command = hookInput.tool_input?.command;
+    if (!hookInput.agent_id || typeof command !== 'string' || !sharesGitState(command)) return null;
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'A subagent shares its stash list, worktrees and branches with every other worktree, so git stash, worktree remove, prune, move and branch delete or rename are denied here. Report the need to the lead.' } };
+  }
+};
+
 export const SHELL_STEP = {
   name: 'shell-fix',
   run(hookInput) {
@@ -41,7 +51,7 @@ function firstRewrite(outputs) {
   return outputs.find((output) => output.updatedInput && output.permissionDecision === undefined)?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHELL_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, SHELL_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

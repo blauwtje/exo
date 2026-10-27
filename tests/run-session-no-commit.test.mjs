@@ -6,7 +6,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { parsePlan } from '#plan-tasks';
 import { planPrompt } from '../skills/build/scripts/run-prompts.mjs';
-import { childEnv, PLUGIN_ROOT } from '../skills/build/scripts/run-session.mjs';
+import { SHARED_STATE_GIT } from '../lib/git-deny.mjs';
+import { childEnv, DENY_RULES, PLUGIN_ROOT } from '../skills/build/scripts/run-session.mjs';
 
 const PROVIDER = { name: 'claude', env: {}, effort: null, promptCacheTtl: null };
 const GUARD = path.join(PLUGIN_ROOT, 'lib', 'stall-guard.mjs');
@@ -114,4 +115,10 @@ test('a plan session brief keeps the task but not its Commit: block', () => {
   const text = planPrompt({ plan, planPath, numbers: [1], root, sandbox: false });
   assert.match(text, /Step 1: Write the module/);
   assert.doesNotMatch(text, /git commit/);
+});
+
+test('a headless session denies each shared-state git command', () => {
+  for (const pattern of SHARED_STATE_GIT) assert.ok(DENY_RULES.includes(`Bash(git ${pattern})`), pattern);
+  assert.ok(DENY_RULES.includes('Bash(git stash *)'));
+  assert.ok(DENY_RULES.includes('Bash(git branch -D *)'));
 });

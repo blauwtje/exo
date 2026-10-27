@@ -22,27 +22,43 @@ function filled(input, budget) {
   const unnamed = table.unnamed.types.includes(input.subagent_type ?? 'general-purpose') && input.model === undefined && input.effort === undefined;
   const kind = table.kinds[/^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1] ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? table.unnamed.kind : undefined)];
   if (!kind) return input;
-  const model = input.model ?? (kind.model === INHERIT ? undefined : kind.model);
-  const effort = input.effort ?? kind.effort;
-  return { ...input, ...(model && { model }), ...(effort && { effort }) };
+  const tableModel = kind.model === INHERIT ? undefined : kind.model;
+  const { model: passedModel, ...rest } = input;
+  const model = agent ? tableModel : passedModel ?? tableModel;
+  const tableEffort = kind.effort ?? input.effort;
+  const effort = agent ? tableEffort : input.effort ?? kind.effort;
+  return { ...rest, ...(model && { model }), ...(effort && { effort }) };
 }
 
 export function agentEffort({ tool_name: tool, tool_input: input, effort } = {}, budget = settingValue('budget')) {
   if (tool !== 'Agent' || !input) return null;
-  const updated = filled(raised(input, effort?.level), budget);
-  if (!Object.keys(updated).some((key) => updated[key] !== input[key])) return null;
+  const updated = raised(filled(input, budget), effort?.level);
+  if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
+}
+
+function replacedNote(passed = {}, ran = {}) {
+  const parts = ['model', 'effort'].filter((key) => passed[key] !== undefined && passed[key] !== ran[key]).map((key) => passed[key]);
+  return parts.length ? `replaced ${parts.join(', ')}` : '';
+}
+
+function withReplacedNote(output, hookInput, ran) {
+  const note = /^exo:/.test(ran?.subagent_type ?? '') ? replacedNote(hookInput.tool_input, ran) : '';
+  if (!note || !output?.systemMessage) return output;
+  const line = output.systemMessage;
+  return { ...output, systemMessage: line.endsWith(')') ? `${line.slice(0, -1)}; ${note})` : `${line} (${note})` };
 }
 
 export function agentHook(hookInput, budget, enabled) {
   const output = agentEffort(hookInput, budget);
   const fields = contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
-  if (fields?.permissionDecision) return withReceipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, hookInput, fields, ran, enabled);
+  const receipt = (message, receiptFields) => withReplacedNote(withReceipt(message, hookInput, receiptFields, ran, enabled), hookInput, ran);
+  if (fields?.permissionDecision) return receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
   const context = [dispatchRules(hookInput), fields?.additionalContext].filter(Boolean).join('\n\n');
-  if (!context) return withReceipt(output, hookInput, null, ran, enabled);
+  if (!context) return receipt(output, null);
   const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
-  return withReceipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: context } }, hookInput, null, ran, enabled);
+  return receipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: context } }, null);
 }
 
 if (isMain(import.meta.url)) {

@@ -57,8 +57,8 @@ test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script'
   for (const { hook } of entries) assert.ok(hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"'), hook.command);
 });
 
-test('only SessionStart, PreToolUse and Stop have hooks, and the prompt dispatcher is gone', () => {
-  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionStart', 'Stop']);
+test('only SessionStart, PreToolUse, SubagentStart and Stop have hooks, and the prompt dispatcher is gone', () => {
+  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionStart', 'Stop', 'SubagentStart']);
   for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs']) {
     assert.equal(fs.existsSync(path.join(REPOSITORY, file)), false, file);
   }
@@ -105,9 +105,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.ok(entry.hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"'), entry.hook.command);
 });
 
-test('the plugin registers seven hook commands, each under bash', () => {
+test('the plugin registers eight hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 7, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 8, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
@@ -284,4 +284,77 @@ test('the dispatch rules leave agent models to the kind table and send long comm
   assert.match(rules, /pass no `model` or `effort`, the kind table decides/);
   assert.match(rules, /long command output goes to a log under `\.exo\/`/);
   assert.doesNotMatch(rules, /cheapest and low for lookups/);
+});
+
+test('a subagent Bash call is denied a shared-state git command at command position, the lead and other commands are not', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const decide = async (command, agentId) => {
+    const output = await dispatchBash({ hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: agentId, tool_input: { command } }, undefined, () => false);
+    return output?.hookSpecificOutput?.permissionDecision;
+  };
+  const denied = ['git stash', 'git stash pop', 'cd x && git stash list', 'git -C ../other worktree remove w', 'git worktree prune', 'git branch -D run', 'git branch -m old new', 'git branch --delete x', '(git worktree move a b)', 'git --no-pager stash', 'git -c k=v stash pop', 'git --git-dir=.git stash', 'git --git-dir x stash', 'git -C dir stash', 'git --work-tree w --no-pager worktree remove w', 'git worktree  remove w', 'git branch -q -D x', 'git branch -df x', 'git branch --force -d x', 'git branch -f -m a b', 'if git stash; then :; fi', '{ git stash; }', 'time git stash', 'x=`git stash`', 'echo ok | git stash', 'if true; then git stash; fi', 'git branch run -D', 'git branch run -d', 'git branch old -m new', 'git branch --del x', 'git branch --de x', 'git branch --d x', 'git branch -f -D x', '! git stash', 'exec git stash', 'command git stash', 'env git stash', 'env A=1 git stash', 'sudo git stash', 'git stash>/dev/null', 'git worktree prune>/dev/null', 'git 2>/dev/null stash', 'git >log branch -D x'];
+  for (const command of denied) assert.equal(await decide(command, 'agent-1'), 'deny', command);
+  for (const command of denied) assert.notEqual(await decide(command, undefined), 'deny', `lead ${command}`);
+  const allowed = ['git commit -m "no git stash here"', 'grep "git stash" notes.md', 'git status', 'git branch --show-current', 'git worktree list', 'git log --oneline', 'git --no-pager log --oneline', 'git -c k=v status', 'git --git-dir=.git worktree list', 'git commit --amend -m x', 'git log --stash', 'git branch --sort -committerdate', 'git commit -m "then git stash later"', 'git branch -v', 'git branch -a --list x', 'git branch --no-merged', 'git branch -vv', 'git status >/dev/null 2>&1', 'git log >stash'];
+  for (const command of allowed) assert.notEqual(await decide(command, 'agent-1'), 'deny', command);
+});
+
+test('a subagent Bash call is denied a shared-state git command handed to a wrapper or behind any prefix before git, and echo git stash is a documented deny', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const decide = async (command) => {
+    const output = await dispatchBash({ hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'agent-1', tool_input: { command } }, undefined, () => false);
+    return output?.hookSpecificOutput?.permissionDecision;
+  };
+  const denied = ['bash -c "git stash"', "sh -c 'git branch -D x'", 'zsh -c "cd x && git stash"', 'bash -lc "git stash"', 'nohup git stash', 'nice git stash', 'xargs git branch -D', 'sudo bash -c "git stash"', 'bash -c "bash -c \\"git stash\\""', 'xargs -n1 git branch -D', 'xargs -r git stash', 'nice -n 10 git stash', 'timeout 5 git stash', 'sudo -u me git worktree remove w', 'env A=1 git stash', '/usr/bin/git stash', 'eval "git stash"', 'eval git branch -D x', 'echo git stash', "sh -c 'echo git stash'"];
+  for (const command of denied) assert.equal(await decide(command), 'deny', command);
+  const allowed = ['bash -c "git status"', 'bash script.sh', 'nohup git status', 'xargs git log', 'bash -c "echo hi"', 'xargs -n1 git log', 'timeout 5 git status', 'git commit -m "then git stash"'];
+  for (const command of allowed) assert.notEqual(await decide(command), 'deny', command);
+});
+
+test('the git deny list is not a sandbox: git code fed to a shell through here-string or pipe is out of scope and allowed', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const decide = async (command) => {
+    const output = await dispatchBash({ hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'agent-1', tool_input: { command } }, undefined, () => false);
+    return output?.hookSpecificOutput?.permissionDecision;
+  };
+  const outOfScope = ['bash <<< "git stash"', 'echo "git stash" | sh'];
+  for (const command of outOfScope) assert.notEqual(await decide(command), 'deny', command);
+});
+
+const LINEAR_SMALL = 2000;
+const LINEAR_GROWTH = 8;
+const LINEAR_MAX_RATIO = 20;
+const LINEAR_RUNS = 5;
+
+const allowedGitCommands = (count) => [`git${' --git-dir'.repeat(count)} log`, 'git branch '.repeat(count * 2), `git${' -C git'.repeat(count)} log`, 'bash '.repeat(count * 2)];
+const deniedGitCommand = (count) => `git${' --git-dir'.repeat(count)} stash`;
+
+function bestTime(action) {
+  let best = Infinity;
+  for (let run = 0; run < LINEAR_RUNS; run += 1) {
+    const start = performance.now();
+    action();
+    best = Math.min(best, performance.now() - start);
+  }
+  return best;
+}
+
+function decideAllGitCommands(sharesGitState, count) {
+  const allowed = allowedGitCommands(count);
+  const denied = deniedGitCommand(count);
+  return () => {
+    allowed.forEach((command) => sharesGitState(command));
+    sharesGitState(denied);
+  };
+}
+
+test('deciding a long run of git global options grows linearly with its length', async () => {
+  const { sharesGitState } = await import('../lib/git-deny.mjs');
+  allowedGitCommands(LINEAR_SMALL).forEach((command) => assert.equal(sharesGitState(command), false, command.slice(0, 40)));
+  assert.equal(sharesGitState(deniedGitCommand(LINEAR_SMALL)), true);
+  decideAllGitCommands(sharesGitState, LINEAR_SMALL)();
+  const small = bestTime(decideAllGitCommands(sharesGitState, LINEAR_SMALL));
+  const large = bestTime(decideAllGitCommands(sharesGitState, LINEAR_SMALL * LINEAR_GROWTH));
+  const ratio = large / Math.max(small, 0.05);
+  assert.ok(ratio < LINEAR_MAX_RATIO, `${LINEAR_GROWTH}x the options took ${ratio.toFixed(1)}x the time (${small.toFixed(2)} ms to ${large.toFixed(2)} ms)`);
 });

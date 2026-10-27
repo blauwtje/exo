@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
-import { contextDecision, contextLimit, softLimit } from '../lib/context-limits.mjs';
+import { contextDecision, contextLimit, softLimit, subagentStartNote } from '../lib/context-limits.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
@@ -129,4 +129,30 @@ test('main session Read of a whole persisted tool output is denied; a range or a
   const { execFileSync } = await import('node:child_process');
   const out = execFileSync(process.execPath, [hook.pathname], { input: JSON.stringify({ session_id: 'p', transcript_path, tool_name: 'Read', tool_input: { file_path: persisted } }), encoding: 'utf8' });
   assert.equal(JSON.parse(out).hookSpecificOutput.permissionDecision, 'deny');
+});
+
+test('a subagent past the soft limit is told to hand over through its result file, past the hard limit that Write still works', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-'));
+  const at = (tokens) => {
+    const file = path.join(dir, `t${tokens}.jsonl`);
+    fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+    return file;
+  };
+  const call = (tokens, tool_name) => contextDecision({ session_id: 'a', agent_id: 'a1', agent_transcript_path: at(tokens), tool_name });
+  const soft = call(softLimit(contextLimit()) + 1000, 'Bash');
+  assert.match(soft.additionalContext, /exo context limit/);
+  assert.match(soft.additionalContext, /result file/);
+  const hard = call(contextLimit() + 1000, 'Bash');
+  assert.match(hard.deny, /Write is still allowed/);
+  assert.match(hard.deny, /result file/);
+  assert.equal(call(contextLimit() + 1000, 'Write'), null);
+});
+
+test('the SubagentStart hook gives every subagent the limits and the hand-over route in its own start context', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const hook = new URL('../hooks/subagent-start.mjs', import.meta.url);
+  const out = JSON.parse(execFileSync(process.execPath, [hook.pathname], { input: '{}', encoding: 'utf8' }));
+  assert.equal(out.hookSpecificOutput.hookEventName, 'SubagentStart');
+  assert.equal(out.hookSpecificOutput.additionalContext, subagentStartNote());
+  assert.match(subagentStartNote(), /60k.*80k.*except Write.*result file/s);
 });

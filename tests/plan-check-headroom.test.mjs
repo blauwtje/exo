@@ -69,3 +69,29 @@ test('EXO_BODY_SIZE_TIMEOUT_MS bounds the body-size child and a timeout skips th
     else process.env.EXO_BODY_SIZE_TIMEOUT_MS = before;
   }
 });
+
+const SIZE_LIMIT_BYTES = 15_000 * 4;
+
+const changelog = (history) => `# Changelog\n\n## Unreleased\n\n### Changed\n\n- a line\n\n## 0.1.0\n\n### Changed\n\n${'x'.repeat(history)}\n`;
+
+async function flaggedForSize(file, data) {
+  const root = await gitRepository({ 'CHANGELOG.md': file });
+  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Record', files: ['CHANGELOG.md'], data })] });
+  return planCheckReport(plan, { root }).lines.some((line) => /^Task 1: split Task 1 \(about \d+ tokens/.test(line));
+}
+
+test('a task naming one heading of a markdown file is sized by that heading section, not the whole file', async () => {
+  assert.equal(await flaggedForSize(changelog(SIZE_LIMIT_BYTES), 'one `## Unreleased` `### Changed` line'), false);
+});
+
+test('a task naming no heading of a markdown file is sized by the whole file', async () => {
+  assert.equal(await flaggedForSize(changelog(SIZE_LIMIT_BYTES), 'one new line'), true);
+});
+
+test('a task naming a heading the file lacks is sized by the whole file', async () => {
+  assert.equal(await flaggedForSize(changelog(SIZE_LIMIT_BYTES), 'one `## Missing` line'), true);
+});
+
+test('a task naming a heading and one outside its section is sized by the whole file', async () => {
+  assert.equal(await flaggedForSize(changelog(SIZE_LIMIT_BYTES), 'a `## Unreleased` line and a `## 0.1.0` line'), true);
+});

@@ -7,31 +7,30 @@ maxTurns: 60
 
 ## Scope
 
-- Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write use absolute paths there.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write use absolute paths.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
 - No text before the first tool call; first call: Read brief and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, never a `<checkout>` copy.
 - No text between tool calls.
 
 ## Git
 
-- Never create a worktree, never enter or leave one; run no `gh` command.
-- Run no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; only `land-task.mjs` commits.
+- Never create a worktree, never enter or leave one; run no `gh` command and no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; only `land-task.mjs` commits.
 
 ## Build
 
-- Compact task: build `Files:` heading per `Data:`; green = `Proof:` passing, missing script written first, project tools only.
+- Build `Files:` per `Data:`; green = `Proof:` passing, missing script written first, project tools only.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` picks the route (long task: first `Run:`).
-- Run only the brief's `Proof:` or `Run:` in the foreground, `timeout: 600000`, output to `.exo/<name>.log`, read summary and failing lines; never `Monitor`, never `sleep` first.
-- Red `Proof:` → rerun at most once per edit, failing lines only; timeout or hang → finding, no rerun.
+- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine`.
+- Run only the brief's `Proof:` or `Run:` in the foreground, `timeout: 600000`, log to `.exo/<name>.log`, read summary, failing lines; never `Monitor`, never `sleep` first.
+- Red `Proof:` → rerun at most once per edit, failing lines only; timeout or hang → finding, no rerun; down service → `node ${CLAUDE_PLUGIN_ROOT}/lib/services.mjs --root <checkout>` once, rerun; still down → `BLOCKED <n> ENV`, never edit code.
 
 ## Stop
 
-- Never delete files, data or branches to pass a block: report 2-3 options.
+- Never delete files, data or branches to pass a block.
 - Start no background session or delegate, ask nothing; log over 40 lines → beside `Report to:`.
 - Stop at green, a second test or `Run:` failure, or an open choice.
 - Point the brief does not settle, no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
-- Safe default cheap to undo → use it, record a `Choice:` line.
+- Safe default cheap to undo → use it, record a `Choice:`.
 
 ## Report
 
@@ -51,7 +50,7 @@ Unresolved: none
 ## Return
 
 - Before `--check`, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md`; fix each rule your diff breaks, never by weakening a test.
-- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>` (Bash `timeout: 600000`); it runs `Lint:` and `Land gate:`; fix until `Report OK`, no proof rerun.
+- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>` (`timeout: 600000`); fix until `Report OK`, no proof rerun.
 - With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
 
 Task <n>: GREEN | diff: <diff path> | log: <log path>

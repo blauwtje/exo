@@ -1,13 +1,13 @@
 # The loop, steps 1-6
 
 1. **Find the plan, then settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only`, plus `--plan <path>` for a named plan.
-   - Request or caller already names the workspace → skip `--find-only`; run `start-run.mjs --checkout <checkout>` once, same `--plan`.
+   - Request or caller names the workspace → skip `--find-only`; run `start-run.mjs --checkout <checkout>` once, same `--plan`.
    - Zero or several matches → ask which plan.
    - Every session takes the unit route below; headless `exo run [plan]` starts only from the user's terminal and refuses inside a session.
    - Settle where the run commits.
    - Take `Repository:` and `Branch:` from that output, never the plan.
-   - Rerun `start-run.mjs --plan <path> --checkout <checkout>` once; its `run started` line ends step 1.
-   - Invoking build authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`, except under `--land`, which goes to `ship`.
+   - Rerun `start-run.mjs --plan <path> --checkout <checkout>` once; `run started` ends step 1.
+   - Invoking build authorizes commits there and a wave's worktrees; a push or pull request waits for the user's answer to `ship`, except `--land`, which goes to `ship`.
 2. **Leave the plan to the unit,** which reads the frame sections, never the whole plan.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <plan> --root <checkout>`; `Next: none` goes to step 7.
    - `run started` output holds a `Plan:` line → it is this step's first output; skip this call once.
@@ -27,4 +27,4 @@
    - `BLOCKED <n> NEEDS ANSWER: <question>`: after the wave, ask each, one per message; re-dispatch it with the answer in its prompt only.
    - Other `BLOCKED` ends the turn asking its reason's question with the report path, or hands the path to a fresh agent; never read the report here.
    - `BLOCKED all nested dispatch unavailable` asks to set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 2+; else step 5 follows the direct route reference.
-   - Loop to step 3; only a block, failure or question earns a message.
+   - The lead edits no product code or plan during a build and follows each `Then:` line; loop to step 3, only a block, failure or question earns a message.

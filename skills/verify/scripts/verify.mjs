@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
-import { criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, proofRecordPath, taskCommits } from '#plan-tasks';
+import { coversCompanion, criterionCommand, frameOf, isCovered, isPlanDoc, landedTasks, parsePlan, planIdOf, planRoute, proofRecordPath, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
 import { changedPaths } from '#size-facts';
@@ -105,7 +105,7 @@ function repoPathOf(planPath, root) {
 
 export function findUnplannedPaths(tasks, paths) {
   const declared = tasks.flatMap((task) => task.files.map((file) => file.path));
-  return paths.filter((path) => !isCovered(declared, path));
+  return paths.filter((path) => !isCovered(declared, path) && !coversCompanion(declared, path));
 }
 
 function isTrailerlessFix({ subject, body }) {

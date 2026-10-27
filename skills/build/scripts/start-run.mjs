@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
+import fs, { realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -9,12 +9,15 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { blockReport, runRules } from './next-task.mjs';
 import { planCheckReport } from '../../spec/scripts/plan-check.mjs';
-import { frameOf, landedTasks, openPoints, parsePlan, planIdOf, PlanError } from '#plan-tasks';
+import { decisionsPathOf, frameOf, landedTasks, openPoints, parsePlan, planIdOf, PlanError } from '#plan-tasks';
 import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
+import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
+import { ensureServices } from '../../../lib/services.mjs';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
 const PLAN_CHECK = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
+const PRE_RUN_COMMIT = 'fix(run): keep work present before the run';
 const USAGE = 'usage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]';
 const HELP = [
   'usage: node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]',
@@ -89,19 +92,39 @@ function main(argv) {
   const checkout = flags.checkout ?? root;
   const branch = checkoutBranch(checkout);
   if (planFrame(planPath) !== null) requirePlanCheck(planPath, checkout);
+  requireServices(checkout);
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   const frame = planFrame(planPath);
   if (frame !== null) fs.writeFileSync(scratchPath(checkout, 'run-rules.md'), runRules(frame));
   const onBranch = branch === '' ? 'detached HEAD' : `branch ${branch}`;
+  const planBranch = frame?.branch;
+  if (!planBranch || planBranch === branch) commitPreexistingWork(checkout, planPath);
   process.stdout.write(`start-run: run started: plan ${planPath}, checkout ${checkout} on ${onBranch}. Step 1 is done; never rerun start-run in this run.\n`);
   if (frame !== null) recordProgress(planPath, checkout);
-  const planBranch = frame?.branch;
   if (planBranch && planBranch !== branch) {
     const switchArgs = branchExists(checkout, planBranch) ? planBranch : `-c ${planBranch}`;
     process.stdout.write(`start-run: note: checkout ${checkout} is on ${branch || 'detached HEAD'}, not the plan's Branch: ${planBranch}. If the workspace answer is ${planBranch}, run \`git -C ${checkout} switch ${switchArgs}\` and do not rerun start-run.\n`);
     return;
   }
   if (frame !== null) process.stdout.write(firstBlock(planPath, checkout));
+}
+
+function excludedFromPreRunCommit(checkout, planPath) {
+  const top = realpathSync(checkout);
+  const listed = gitLine(checkout, ['worktree', 'list', '--porcelain']).split('\n')
+    .filter((line) => line.startsWith('worktree ')).map((line) => line.slice('worktree '.length));
+  const canonical = (file) => path.join(realpathSync(path.dirname(path.resolve(file))), path.basename(file));
+  return [canonical(planPath), canonical(decisionsPathOf(planPath)), ...listed]
+    .map((file) => path.relative(top, path.resolve(file)))
+    .filter((relative) => relative !== '' && !relative.startsWith('..'));
+}
+
+function commitPreexistingWork(checkout, planPath) {
+  const excludes = excludedFromPreRunCommit(checkout, planPath).map((relative) => `:(exclude)${relative}`);
+  gitLine(checkout, ['add', '-A', '--', '.', ...excludes]);
+  if (gitLine(checkout, ['diff', '--cached', '--name-only']) === '') return;
+  gitLine(checkout, ['commit', '-q', '-m', PRE_RUN_COMMIT]);
+  process.stdout.write(`start-run: committed pre-existing work as ${gitLine(checkout, ['rev-parse', '--short', 'HEAD'])} (${PRE_RUN_COMMIT}).\n`);
 }
 
 // why: the status line reads this record; a failure here must never fail the run start.
@@ -133,6 +156,12 @@ function requirePlanCheck(planPath, checkout) {
   throw new RefusalError(`plan-check --loop --run fails on ${planPath}:\n${report.lines.join('\n')}\nNext: fix the plan, confirm with \`node ${PLAN_CHECK} --loop --run --plan ${planPath} --root ${checkout}\`, then rerun start-run.`);
 }
 
+function requireServices(checkout) {
+  const status = ensureServices(path.resolve(checkout));
+  if (status === 'up') return;
+  throw new RefusalError(`${status}. Next: bring the service up, then rerun start-run.`);
+}
+
 function checkoutBranch(checkout) {
   try {
     return execFileSync('git', ['-C', checkout, 'branch', '--show-current'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -158,7 +187,7 @@ if (isMain(import.meta.url)) {
       process.stderr.write(`start-run: ${error.message}\n${USAGE}\n`);
       process.exitCode = 2;
     } else if (error instanceof RefusalError) {
-      process.stderr.write(`start-run: ${error.message}\n`);
+      process.stderr.write(`start-run: ${error.message}\n${refusalHandler('start stop')}\n`);
       process.exitCode = 1;
     } else {
       throw error;
