@@ -36,20 +36,21 @@ const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url)
 const ADHD_STYLE = fs.readFileSync(new URL('../output-styles/adhd.md', import.meta.url), 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').trim();
 
 export const BREVITY_LINES = {
-  'least': 'Give the least that fully answers.',
-  'no-narration': 'While working, write no text between tool calls: no plan, no progress note, no thinking aloud.',
-  'short-reasoning': 'Keep reasoning to a few lines.',
-  'lean-reads': 'Read only what the task needs, filter command output to the lines that matter (for example `| tail -n 30` or `| grep`), make the smallest edit, and run the check once more only to confirm.',
-  'lean-args': 'Pass tool calls only the arguments they need: no restated file content, no comment, no description.',
-  'one-sentence': 'Write one reply at the end: one sentence of at most 15 words with the answer first, then stop, because a reader with ADHD keeps the point only when nothing else competes with it.',
-  'no-why': 'Give the what, not the why or an example: the user asks for those when they want them.',
-  'leave-out': 'Leave out what the user can see in the diff or the command output, and any caveat or untested edge the user did not ask about.',
-  'fewest-steps': 'Pick the fewest steps that work.',
-  'on-request': 'Stay on the request, with no side topics.'
+  'least': '- Give the least that fully answers.',
+  'no-narration': '- Write no text between tool calls: no plan, no progress note, no thinking aloud.',
+  'short-reasoning': '- Keep reasoning to a few lines.',
+  'lean-reads': '- Read only what the task needs; filter command output to the lines that matter, such as `| tail -n 30` or `| grep`.',
+  'small-edit': '- Make the smallest edit and rerun the check once only to confirm.',
+  'lean-args': '- Pass tool calls only the arguments they need: no restated file content, no comment, no description.',
+  'one-sentence': '- Final reply → one sentence of at most 15 words, answer first, then stop.',
+  'no-why': '- Give the what, not the why or an example.',
+  'leave-out': '- Leave out what the diff or output shows, and any caveat or untested edge the user did not ask about.',
+  'fewest-steps': '- Pick the fewest steps that work.',
+  'on-request': '- Stay on the request, no side topics.'
 };
 
 function withoutSentence(text, sentence) {
-  for (const spaced of [`${sentence} `, ` ${sentence}`]) {
+  for (const spaced of [`\n${sentence}`, `${sentence} `, ` ${sentence}`]) {
     if (text.includes(spaced)) return text.replace(spaced, '');
   }
   throw new Error(`adhd style has no sentence "${sentence}"`);
