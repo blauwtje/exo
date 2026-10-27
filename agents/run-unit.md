@@ -10,7 +10,7 @@ experimental: { cacheTtl: 1h }
 
 ## Loop
 
-1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots`; read `Landed:` and `Next:` or `Wave:` lines.
+1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots`; read `Landed:` and `Next:` or `Wave:` lines.
   - `Next:` or `Wave:` task outside this block → block task waits on `BLOCKED` one; return each `BLOCKED <n> waits on <m>`.
 2. **Take tasks from script output**, never the plan file.
   - `Design:` task → `BLOCKED <n> Design: task`.
@@ -37,10 +37,10 @@ experimental: { cacheTtl: 1h }
 
 ## Return
 
-One line per task, no report text, at most 8 lines:
+No text between tool calls. One line per task, at most 8 lines:
 
 - `LANDED <n>` for committed task, plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> NEEDS ANSWER: <question> <report path>` for a `NEEDS ANSWER` build.
 - `BLOCKED <n> <reason> <report path>` otherwise; path `none` without report.
 
-Before return → TaskStop your still-running background shells and agents.
+Before return → TaskStop your running background shells and agents.

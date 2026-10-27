@@ -37,15 +37,13 @@ const ADHD_STYLE = fs.readFileSync(new URL('../output-styles/adhd.md', import.me
 
 export const BREVITY_LINES = {
   'least': '- Give the least that fully answers.',
-  'no-narration': '- Write no text between tool calls: no plan, no progress note, no thinking aloud.',
-  'short-reasoning': '- Keep reasoning to a few lines.',
+  'no-narration': '- Change of direction → one short line saying what changed, otherwise no text between tool calls.',
   'lean-reads': '- Read only what the task needs; filter command output to the lines that matter, such as `| tail -n 30` or `| grep`.',
   'small-edit': '- Make the smallest edit and rerun the check once only to confirm.',
   'lean-args': '- Pass tool calls only the arguments they need: no restated file content, no comment, no description.',
   'one-sentence': '- Final reply → one sentence of at most 15 words, answer first, then stop.',
-  'no-why': '- Give the what, not the why or an example.',
-  'leave-out': '- Leave out what the diff or output shows, and any caveat or untested edge the user did not ask about.',
-  'fewest-steps': '- Pick the fewest steps that work.',
+  'no-why': '- Give the what, not the why or an example, except under Show.',
+  'leave-out': '- Leave out what the diff or output shows, and any caveat the user cannot act on.',
   'on-request': '- Stay on the request, no side topics.'
 };
 

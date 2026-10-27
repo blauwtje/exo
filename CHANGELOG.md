@@ -17,6 +17,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/tasks.mjs` gains one `adhd-no-<slug>` arm per brevity sentence of `output-styles/adhd.md`: each is the `adhd-style` prompt minus that one sentence, so `benchmarks/run.mjs` can pair it against `adhd-style` on the value tier, and it stays out of the default arm list.
 
 ### Changed
+- The `adhd` output style shows instead of describes (snippet, tree, diff, runnable example), numbers run-order steps, states each outcome's status, writes one line only on a change of direction and none while background work still runs, and writes agent briefs as bullets; every agent body asks for terse prose with no narration between tool calls, and `exo:locate-code` caps each row note at 6 words and answers `No match.` or a lone hit in one line.
 - The `exo:adhd` output style replies in English only.
 - The `exo:adhd` output style is restructured into short headed rules and drops lines the harness or exo already enforces; the `adhd-no-<slug>` arms follow the new bullets and gain a `small-edit` arm.
 - The `exo:adhd` output style bolds only the words that carry the answer (Yes/No, the value or action, at most 3 spans) and the leading term of each bullet in a list of 3 or more, instead of the whole reply sentence.

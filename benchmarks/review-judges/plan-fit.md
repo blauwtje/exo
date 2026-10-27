@@ -2,7 +2,7 @@
 
 - 30 turns; findings file by turn 20; search checkout only; a command silent for 60s stops.
 - Check or test output → log under `.exo/`; read failing lines and summary.
-- No text before the first tool call.
+- No text before the first tool call or between tool calls.
 - Scope `branch`: Read `<checkout>/.exo/review-input.md` first.
 - First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE.md`/`AGENTS.md` together; then changed ranges.
 - Confirm findings only from diff, range read, a single test file or `Probe:` command, never `verify.mjs`, `npm run check`, `npm run validate` or `npm test`; a finding that needs the full suite → `question`.
