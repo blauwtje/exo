@@ -18,6 +18,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - The `exo:adhd` output style bolds only the words that carry the answer (Yes/No, the value or action, at most 3 spans) and the leading term of each bullet in a list of 3 or more, instead of the whole reply sentence.
+- The `exo:adhd` output style reports a failure as cause and fix without alarm, names a cause only when something read shows it, stops editing code after 3 still-broken replies to test the likely wrong assumption, and ranks lists most relevant first.
 - Verify reaches CLEAN in fewer review rounds: each fix line names its defect class and a sweep the fixer runs to clear every hit, a review ledger keeps every round's findings so later rounds raise a fix only inside the fix diff and a finding that recurs stops the loop, and the status line shows context against the physical window size.
 - `exo:fix-review` repairs a concern no test can show directly and adds no test file the plan rules out; in review replay, mean rounds to clean fell from 2.38 to 1.86 and cost from 9.38 to 6.90 USD (n=21).
 - The `exo:fix-review` fixer prompt says a fix leaves no residue: what the repair makes constant or unused goes too, and a removed `catch` lets errors propagate; the improve-all score fell from 0.874 to 0.79 (lower is better).
