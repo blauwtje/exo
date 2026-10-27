@@ -12,6 +12,7 @@ import { buildFailRows } from './adhd/labels.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CASES = path.join(import.meta.dirname, 'adhd', 'cases.jsonl');
+const SATURATED = path.join(import.meta.dirname, 'adhd', 'saturated.json');
 // why: the baseline and labels are gitignored, so inside the checkout every new worktree lacks them and removing one deletes them; the git common dir is shared by all worktrees and never committed.
 const STORE = path.resolve(ROOT, execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8' }).trim(), 'exo', 'adhd');
 const BASELINE = path.join(STORE, 'baseline.json');
@@ -30,6 +31,14 @@ const BASELINE_MAX_USD = 4;
 
 export const readCases = (file = CASES) =>
   fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
+
+export const readSaturated = (file = SATURATED) => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+export function selectCases(cases, { screen, caseIds }, saturated = readSaturated()) {
+  const unknown = (caseIds ?? []).find((id) => !cases.some((c) => c.id === id));
+  if (unknown) throw new Error(`unknown case: ${unknown}`);
+  return cases.filter((c) => (!caseIds || caseIds.includes(c.id)) && !(screen && saturated.includes(c.id)));
+}
 
 const mean = (values) => values.reduce((sum, v) => sum + v, 0) / values.length;
 
@@ -159,33 +168,52 @@ function assertProjection({ spend, doneUsd, done, total }) {
   throw new Error(`projected_usd=${projected.toFixed(4)} over --max-usd ${spend.maxUsd}`);
 }
 
-// why: a fixed ADHD_RUNS default keeps every improve round on the same footing.
-export async function scoreCases({ cases, baseline, reply, judge = claudeJudge, judgeModel, spend, runs = ADHD_RUNS }) {
+function assertBaselineCovers(cases, baseline) {
   const missing = cases.filter((c) => !baseline[c.id]).map((c) => c.id);
   if (missing.length > 0) throw new Error(`baseline lacks cases: ${missing.join(', ')}; run with --baseline`);
-  process.stderr.write(`runs=${runs}\n`);
-  const judgeCall = limited(judge, JUDGE_CONCURRENCY);
-  const stage = makeStager();
-  const perCase = Array(cases.length);
+}
+
+function caseScorer({ baseline, reply, judge, judgeModel, spend, runs, stage }) {
+  return async (c) => {
+    const results = await stage('adhd', runs, () => reply({ arm: 'adhd', prompt: promptOf(c) }));
+    results.forEach((r) => spend.add(r.cost));
+    let caseUsd = results.reduce((sum, r) => sum + r.cost, 0);
+    const caseSpend = { add: (cost, kind) => { caseUsd += cost; spend.add(cost, kind); } };
+    return { ...(await scoreCase({ c, results, baseline, judge, judgeModel, spend: caseSpend })), cost_usd: caseUsd };
+  };
+}
+
+function caseWorker({ cases, todo, perCase, scoreOne, spend, onCase }) {
+  let next = 0;
   let done = 0;
   let doneUsd = 0;
-  let next = 0;
-  const worker = async () => {
-    while (next < cases.length) {
-      const i = next++;
-      const c = cases[i];
-      const results = await stage('adhd', runs, () => reply({ arm: 'adhd', prompt: promptOf(c) }));
-      results.forEach((r) => spend.add(r.cost));
-      let caseUsd = results.reduce((sum, r) => sum + r.cost, 0);
-      const caseSpend = { add: (cost, kind) => { caseUsd += cost; spend.add(cost, kind); } };
-      perCase[i] = await scoreCase({ c, results, baseline, judge: judgeCall, judgeModel, spend: caseSpend });
+  return async () => {
+    while (next < todo.length) {
+      const i = todo[next++];
+      perCase[i] = await scoreOne(cases[i]);
+      onCase(perCase.filter(Boolean));
       done += 1;
-      doneUsd += caseUsd;
+      doneUsd += perCase[i].cost_usd;
       // why: the mean cost of the completed cases prices the whole run, not total spend, which already holds the replies of cases still in flight; checking after every case catches later cases that cost more than the first.
-      assertProjection({ spend, doneUsd, done, total: cases.length });
+      assertProjection({ spend, doneUsd, done, total: todo.length });
     }
   };
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, cases.length) }, worker));
+}
+
+// why: a fixed ADHD_RUNS default keeps every improve round on the same footing.
+export async function scoreCases({ cases, baseline, reply, judge = claudeJudge, judgeModel, spend, runs = ADHD_RUNS, prior = [], onCase = () => {} }) {
+  assertBaselineCovers(cases, baseline);
+  process.stderr.write(`runs=${runs}\n`);
+  const kept = new Map(prior.map((p) => [p.id, p]));
+  const perCase = cases.map((c) => kept.get(c.id));
+  const todo = cases.flatMap((c, i) => (kept.has(c.id) ? [] : [i]));
+  const scoreOne = caseScorer({ baseline, reply, judge: limited(judge, JUDGE_CONCURRENCY), judgeModel, spend, runs, stage: makeStager() });
+  const worker = caseWorker({ cases, todo, perCase, scoreOne, spend, onCase });
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, todo.length) }, worker));
+  return summarize(perCase, runs);
+}
+
+function summarize(perCase, runs) {
   const allRuns = perCase.flatMap((p) => p.runs);
   const passing = allRuns.filter((r) => r.failed.length === 0);
   const passRate = passing.length / allRuns.length;
@@ -193,6 +221,30 @@ export async function scoreCases({ cases, baseline, reply, judge = claudeJudge, 
   const billedTokens = perCase.reduce((sum, p) => sum + p.tokens, 0);
   const baselineBilledTokens = perCase.reduce((sum, p) => sum + p.baselineTokens, 0);
   return { score: mean(perCase.map((p) => p.ratio)), passRate, passRatio, billedTokens, baselineBilledTokens, perCase, runs };
+}
+
+export async function rescoreCases({ cases, baseline, log, judge = claudeJudge, judgeModel, spend }) {
+  const byId = new Map(cases.map((c) => [c.id, c]));
+  const rows = log.perCase.filter((p) => byId.has(p.id));
+  if (rows.length === 0 || rows.some((p) => !p.replies?.length)) throw new Error('the log holds no replies to rescore for these cases');
+  assertBaselineCovers(rows, baseline);
+  const judgeCall = limited(judge, JUDGE_CONCURRENCY);
+  const perCase = await Promise.all(rows.map(async (p) => {
+    let caseUsd = 0;
+    const caseSpend = { add: (cost, kind) => { caseUsd += cost; spend.add(cost, kind); } };
+    const results = p.replies.map((text) => ({ text, tokens: p.tokens }));
+    const scored = await scoreCase({ c: byId.get(p.id), results, baseline, judge: judgeCall, judgeModel, spend: caseSpend });
+    return { ...scored, tokens: p.tokens, baselineTokens: p.baselineTokens, cost_usd: caseUsd };
+  }));
+  return summarize(perCase, log.runs);
+}
+
+export function projectDryRun({ cases, baseline, runs, judgePerReply = null }) {
+  assertBaselineCovers(cases, baseline);
+  const replyPerRun = (c) => baseline[c.id].cost / baseline[c.id].replies.length;
+  const costPerRun = (c) => replyPerRun(c) + (judgePerReply ?? 0.4 * replyPerRun(c));
+  const projectedUsd = cases.reduce((sum, c) => sum + costPerRun(c) * runs, 0);
+  return { cells: cases.length * runs, projectedUsd };
 }
 
 // why: --check proves the committed baseline matches the cases with zero API calls; `tokens` and `mean` stay billed output tokens for cost reference, the ratio reads `replies`.
@@ -235,7 +287,15 @@ export async function calibrateLines({ labels, judge, model, onCost, votes }) {
   return [`facts ${ratio(r)} pass_rows=${ratio(r.pass)} fail_rows=${ratio(r.fail)} built_fail_rows=${ratio(r.built)} deleted_fact_only=${ratio(r.deleted)}`];
 }
 
-const logFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort() : []);
+function isPartialLog(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8')).partial === true;
+  } catch (error) {
+    throw new Error(`${file}: ${error.message}`);
+  }
+}
+
+const logFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.json') && !isPartialLog(path.join(dir, f))).sort() : []);
 
 // why: rows are rebuilt from the human labels and the newest score logs, so the same inputs give the same rows; a row id already in the file is never written again, and no existing line changes.
 export function runAddFailLabels(cases, { file = LABELS, logDir = LOG_DIR, baseline = readBaseline() } = {}) {
@@ -260,17 +320,17 @@ export function stabilityItems(cases, log) {
 }
 
 function latestAdhdReplies() {
-  const logs = fs.existsSync(LOG_DIR) ? fs.readdirSync(LOG_DIR).filter((f) => f.endsWith('.json')).sort() : [];
+  const logs = logFiles(LOG_DIR);
   if (logs.length === 0) return {};
   const { perCase = [] } = JSON.parse(fs.readFileSync(path.join(LOG_DIR, logs.at(-1)), 'utf8'));
   return Object.fromEntries(perCase.filter((p) => p.replies).map((p) => [p.id, p.replies]));
 }
 
-const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all' };
-const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String] };
+const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all', '--dry-run': 'dryRun', '--screen': 'screen', '--rescore': 'rescore' };
+const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')] };
 
 export function parseArgs(argv) {
-  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, all: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null };
+  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, all: false, dryRun: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null, screen: false, rescore: false, caseIds: null, resume: null };
   for (let i = 0; i < argv.length; i += 1) {
     if (FLAGS[argv[i]]) opts[FLAGS[argv[i]]] = true;
     else if (VALUES[argv[i]]) { const [key, cast] = VALUES[argv[i]]; opts[key] = cast(argv[++i]); }
@@ -278,6 +338,10 @@ export function parseArgs(argv) {
   }
   if (opts.ablate !== null && !Object.hasOwn(BREVITY_LINES, opts.ablate)) throw new Error(`--ablate needs one of: ${Object.keys(BREVITY_LINES).join(', ')}`);
   if (opts.all && !opts.baseline) throw new Error('--all needs --baseline');
+  if (opts.rescore && (opts.baseline || opts.dryRun)) throw new Error('--rescore cannot combine with --baseline or --dry-run');
+  if (opts.rescore && !opts.log) throw new Error('--rescore needs --log <file>');
+  if (opts.resume && (opts.baseline || opts.dryRun || opts.rescore)) throw new Error('--resume cannot combine with --baseline, --dry-run or --rescore');
+  if (opts.screen && !argv.includes('--runs')) opts.runs = 1;
   if (opts.maxUsd === null) opts.maxUsd = opts.baseline ? BASELINE_MAX_USD : SCORE_MAX_USD;
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
   if (!Number.isInteger(opts.runs) || opts.runs < 1) throw new Error('--runs needs a positive integer');
@@ -285,9 +349,12 @@ export function parseArgs(argv) {
   return opts;
 }
 
-function writeLog(record, dir = LOG_DIR) {
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`), JSON.stringify(record, null, 2));
+const logPath = (dir) => path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+
+function writeLog(record, file) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(`${file}.tmp`, JSON.stringify(record, null, 2));
+  fs.renameSync(`${file}.tmp`, file);
 }
 
 const readBaseline = () => {
@@ -299,6 +366,20 @@ function runCheck(cases) {
   const problems = checkBaseline({ cases, baseline: readBaseline() });
   if (problems.length > 0) throw new Error(`baseline check failed:\n${problems.join('\n')}`);
   process.stdout.write(`baseline ok: ${cases.length} cases\n`);
+}
+
+export function judgeRate(dir) {
+  const [newest] = logFiles(dir).reverse();
+  if (!newest) return null;
+  const log = JSON.parse(fs.readFileSync(path.join(dir, newest), 'utf8'));
+  const replies = (log.perCase ?? []).reduce((sum, p) => sum + (p.replies?.length ?? 0), 0);
+  return replies > 0 && Number.isFinite(log.judge_cost_usd) ? log.judge_cost_usd / replies : null;
+}
+
+export function runDryRun(opts, cases, baseline = readBaseline()) {
+  const out = projectDryRun({ cases, baseline, runs: opts.runs, judgePerReply: judgeRate(opts.logDir) });
+  process.stdout.write(`${JSON.stringify(out)}\n`);
+  if (out.projectedUsd > opts.maxUsd) process.stderr.write(`projected_usd=${out.projectedUsd.toFixed(4)} over --max-usd ${opts.maxUsd}\n`);
 }
 
 export function runToLabel(cases, { file = LABELS, baseline = readBaseline() } = {}) {
@@ -316,7 +397,7 @@ async function withJudge(opts, task) {
   const judgeHome = makeCellHome();
   const judge = (call) => claudeJudge({ ...call, cwd: judgeDir, home: judgeHome });
   try {
-    await task({ judge, onCost: (cost) => spend.add(cost, 'judge') });
+    await task({ judge, onCost: (cost) => spend.add(cost, 'judge'), spend });
   } finally {
     process.stderr.write(`${spend.line().trimEnd()} call_timeouts=${callStats.timeouts} parse_retries=${callStats.parseRetries} dropped_votes=${callStats.droppedVotes}\n`);
     for (const dir of [judgeDir, judgeHome]) fs.rmSync(dir, { recursive: true, force: true });
@@ -349,13 +430,39 @@ const missingLine = (p) => {
 
 export const caseLine = (p) => `${p.id} ratio=${p.ratio.toFixed(3)} visible=${Math.round(p.visibleTokens)}/${Math.round(p.baselineVisible)} billed=${Math.round(p.tokens)}/${Math.round(p.baselineTokens)} failed=${p.failed.join(',') || 'none'}${missingLine(p)}\n`;
 
-export async function runScore({ opts, cases, reply, judge, spend, baseline = readBaseline() }) {
-  const result = await scoreCases({ cases, baseline, reply, judge, judgeModel: opts.judgeModel, spend, runs: opts.runs });
+function reportScore({ result, record, file }) {
   for (const p of result.perCase) process.stderr.write(caseLine(p));
-  writeLog({ ...result, ablate: opts.ablate, cost_usd: spend.total, reply_cost_usd: spend.reply, judge_cost_usd: spend.judge }, opts.logDir);
+  writeLog({ ...result, ...record }, file);
   process.stderr.write(`pass_rate=${result.passRate.toFixed(3)} pass_ratio=${result.passRatio === null ? 'n/a' : result.passRatio.toFixed(3)}\n`);
   process.stderr.write(`billed_tokens=${Math.round(result.billedTokens)} baseline_billed_tokens=${Math.round(result.baselineBilledTokens)}\n`);
   process.stdout.write(`${result.score.toFixed(3)}\n`);
+}
+
+const costRecord = (spend, before = {}) => ({ cost_usd: spend.total + (before.cost_usd ?? 0), reply_cost_usd: spend.reply + (before.reply_cost_usd ?? 0), judge_cost_usd: spend.judge + (before.judge_cost_usd ?? 0) });
+
+function readPartialLog(opts, cases) {
+  const log = JSON.parse(fs.readFileSync(opts.resume, 'utf8'));
+  if (log.partial !== true) throw new Error(`${opts.resume} is not a partial log`);
+  if (log.runs !== opts.runs || (log.ablate ?? null) !== opts.ablate || (log.screen ?? false) !== opts.screen || log.model !== opts.model || JSON.stringify(log.cases) !== JSON.stringify(cases.map((c) => c.id))) throw new Error(`${opts.resume} was made with other --runs, --ablate, --screen, --model or --cases`);
+  return log;
+}
+
+export async function runScore({ opts, cases, reply, judge, spend, baseline = readBaseline() }) {
+  const started = Date.now();
+  const before = opts.resume ? readPartialLog(opts, cases) : null;
+  const file = logPath(opts.logDir);
+  const record = () => ({ durationMs: (before?.durationMs ?? 0) + Date.now() - started, ablate: opts.ablate, screen: opts.screen, model: opts.model, cases: cases.map((c) => c.id), ...costRecord(spend, before ?? undefined) });
+  const onCase = (rows) => writeLog({ ...summarize(rows, opts.runs), ...record(), partial: true }, file);
+  const result = await scoreCases({ cases, baseline, reply, judge, judgeModel: opts.judgeModel, spend, runs: opts.runs, prior: before?.perCase ?? [], onCase });
+  reportScore({ result, file, record: record() });
+}
+
+export async function runRescore({ opts, cases, judge, spend, baseline = readBaseline() }) {
+  const started = Date.now();
+  const log = JSON.parse(fs.readFileSync(opts.log, 'utf8'));
+  if (log.partial === true) throw new Error(`${opts.log} is a partial log; finish it with --resume first`);
+  const result = await rescoreCases({ cases, baseline, log, judge, judgeModel: opts.judgeModel, spend });
+  reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - started, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
 }
 
 async function runApi({ opts, cases }) {
@@ -383,12 +490,15 @@ async function runApi({ opts, cases }) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const cases = readCases();
+  const selected = selectCases(cases, opts);
   if (opts.check) runCheck(cases);
+  else if (opts.dryRun) runDryRun(opts, selected);
   else if (opts.toLabel) runToLabel(cases);
   else if (opts.addFailLabels) runAddFailLabels(cases, { logDir: opts.logDir });
   else if (opts.calibrate) await runCalibrate(opts);
   else if (opts.stability) await runStability(opts, cases);
-  else await runApi({ opts, cases });
+  else if (opts.rescore) await withJudge(opts, ({ judge, spend }) => runRescore({ opts, cases: selected, judge, spend }));
+  else await runApi({ opts, cases: opts.baseline ? cases : selected });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
