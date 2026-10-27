@@ -17,6 +17,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/tasks.mjs` gains one `adhd-no-<slug>` arm per brevity sentence of `output-styles/adhd.md`: each is the `adhd-style` prompt minus that one sentence, so `benchmarks/run.mjs` can pair it against `adhd-style` on the value tier, and it stays out of the default arm list.
 
 ### Changed
+- The `exo:adhd` output style replies in English only.
 - The `exo:adhd` output style is restructured into short headed rules and drops lines the harness or exo already enforces; the `adhd-no-<slug>` arms follow the new bullets and gain a `small-edit` arm.
 - The `exo:adhd` output style bolds only the words that carry the answer (Yes/No, the value or action, at most 3 spans) and the leading term of each bullet in a list of 3 or more, instead of the whole reply sentence.
 - The `exo:adhd` output style reports a failure as cause and fix without alarm, names a cause only when something read shows it, stops editing code after 3 still-broken replies to test the likely wrong assumption, and ranks lists most relevant first.
