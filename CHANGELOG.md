@@ -21,6 +21,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo key set <provider>` stores a provider key, `exo claude --provider <name>` starts an interactive Claude Code session on DeepSeek or Z.ai, and `exo run` on those providers uses their documented model ids and retries a transient provider error with backoff.
 - `npm run check` gains a `paid benchmarks` check: a `benchmarks/*.mjs` entry point that calls `claude -p` or the Anthropic API must offer `--dry-run` or a quick default tier, so every paid eval keeps the cheap shape.
 - `node benchmarks/sweep.mjs --provider <name> --effort <levels>` runs sweep cells on a `run.json` provider at each listed effort; `benchmarks/speed-ledger.jsonl` records the DeepSeek flash quick sweep: `low` for build and flow, `high` for review and fixer, `max` never scored higher ($1.55 for 3 efforts).
+- `node benchmarks/lead-context.mjs` profiles each lead session's peak context, turns over the soft and hard limit, compaction points and per-stage share from local transcripts at no model cost; after a compact, clear or resume the session start names the active `.exo/*/progress.md` to read, and the lead's 60k and 80k notes make it write that file first.
 
 ### Changed
 - The `paid benchmarks` check scans `benchmarks/` subfolders and `confinedClaude` launches, and `sweep.mjs`, `checkpoint-fork.mjs`, `pressure/drive.mjs` and `replay/grade.mjs` gain `--dry-run`, `--full` and a quick default tier; `confined-child.mjs` is exempt because its callers have both, and the check prints that reason.

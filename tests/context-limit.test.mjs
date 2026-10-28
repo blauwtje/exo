@@ -47,8 +47,14 @@ test('main session gets one note per level and is never denied', () => {
     assert.match(soft.additionalContext, /subagents/);
     assert.match(soft.additionalContext, /manager subagent/);
     assert.doesNotMatch(soft.additionalContext, /save-session|fresh session/);
+    assert.ok(soft.additionalContext.indexOf('progress.md') >= 0);
+    assert.ok(soft.additionalContext.indexOf('progress.md') < soft.additionalContext.indexOf('subagents'));
+    assert.match(soft.additionalContext, /decisions, open points and next step in this turn/);
     assert.equal(call(71_000), null);
     const hard = call(120_000);
+    assert.ok(hard.additionalContext.indexOf('progress.md') >= 0);
+    assert.ok(hard.additionalContext.indexOf('progress.md') < hard.additionalContext.indexOf('subagents'));
+    assert.match(hard.additionalContext, /decisions, open points and next step in this turn/);
     assert.match(hard.additionalContext, /remaining work to subagents/);
     assert.match(hard.additionalContext, /only decisions and user dialogue/);
     assert.doesNotMatch(hard.additionalContext, /save-session|fresh session/);

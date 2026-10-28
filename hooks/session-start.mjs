@@ -8,6 +8,7 @@ import process from 'node:process';
 import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
+import { environmentMs } from '../lib/script-flags.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
 
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
@@ -27,28 +28,54 @@ function located(file, top) {
   return `\`${relative}\` from the repository root`;
 }
 
-function pointersFor(cwd) {
-  let pointers = '';
-  const gitDirectory = git(cwd, 'rev-parse', '--absolute-git-dir');
-  const top = gitDirectory === null ? null : git(cwd, 'rev-parse', '--show-toplevel');
+function newestProgressFile(cwd) {
+  const folder = path.join(cwd, '.exo');
+  if (!fs.existsSync(folder)) return undefined;
+  const youngest = Date.now() - environmentMs('EXO_PROGRESS_POINTER_MS', 3600000);
+  const candidates = fs.readdirSync(folder, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(folder, entry.name, 'progress.md'))
+    .map((file) => ({ file, modified: fs.statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0 }))
+    .filter((candidate) => candidate.modified >= youngest);
+  candidates.sort((first, second) => second.modified - first.modified);
+  return candidates[0]?.file;
+}
+
+function progressPointer(cwd, source, top) {
+  if (!['compact', 'clear', 'resume'].includes(source)) return '';
+  const file = newestProgressFile(cwd);
+  if (file === undefined) return '';
+  return `A progress file sits at ${located(file, top)}. Read it only when this session continues that work.\n\n`;
+}
+
+function handoffFileFor(gitDirectory, scope) {
+  if (gitDirectory === null) return path.join(configDirectory, 'handoff', `${scope}.md`);
+  return path.join(gitDirectory, 'exo', 'handoff', `${scope}.md`);
+}
+
+function handoffPointer(cwd, gitDirectory, top) {
   const scope = gitDirectory === null ? path.basename(cwd) : git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD') ?? '';
-  const handoffFile = gitDirectory === null
-    ? path.join(configDirectory, 'handoff', `${scope}.md`)
-    : path.join(gitDirectory, 'exo', 'handoff', `${scope}.md`);
-  if (fs.existsSync(handoffFile) && fs.statSync(handoffFile).isFile()) {
-    const staleness = gitDirectory === null ? '' : ' Compare its `Written:` commit with `git rev-parse --short HEAD`.';
-    const resumeLine = fs.readFileSync(handoffFile, 'utf8').split('\n').map((line) => line.trim()).filter((line) => line.startsWith('Resume: ')).pop();
-    const resume = resumeLine === undefined ? '' : ` To continue it, the user sends: ${resumeLine.slice('Resume: '.length, 'Resume: '.length + 300)}`;
-    pointers += `A handoff for \`${scope}\` sits at ${located(handoffFile, top)}. Read it only when this session continues that work.${staleness}${resume}\n\n`;
-  }
+  const handoffFile = handoffFileFor(gitDirectory, scope);
+  if (!fs.existsSync(handoffFile) || !fs.statSync(handoffFile).isFile()) return '';
+  const staleness = gitDirectory === null ? '' : ' Compare its `Written:` commit with `git rev-parse --short HEAD`.';
+  const resumeLine = fs.readFileSync(handoffFile, 'utf8').split('\n').map((line) => line.trim()).filter((line) => line.startsWith('Resume: ')).pop();
+  const resume = resumeLine === undefined ? '' : ` To continue it, the user sends: ${resumeLine.slice('Resume: '.length, 'Resume: '.length + 300)}`;
+  return `A handoff for \`${scope}\` sits at ${located(handoffFile, top)}. Read it only when this session continues that work.${staleness}${resume}\n\n`;
+}
+
+function memoryPointer(cwd, top) {
   const commonDirectory = git(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir');
   const memoryFile = commonDirectory === null
     ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')
     : path.join(commonDirectory, 'exo', 'memory.md');
-  if (fs.existsSync(memoryFile) && fs.statSync(memoryFile).isFile()) {
-    pointers += `A project memory for this repository sits at ${located(memoryFile, top)}. Read it before changing code you have not read here, and run \`/exo:remember\` to change it.\n\n`;
-  }
-  return pointers;
+  if (!fs.existsSync(memoryFile) || !fs.statSync(memoryFile).isFile()) return '';
+  return `A project memory for this repository sits at ${located(memoryFile, top)}. Read it before changing code you have not read here, and run \`/exo:remember\` to change it.\n\n`;
+}
+
+function pointersFor(cwd, source) {
+  const gitDirectory = git(cwd, 'rev-parse', '--absolute-git-dir');
+  const top = gitDirectory === null ? null : git(cwd, 'rev-parse', '--show-toplevel');
+  return handoffPointer(cwd, gitDirectory, top) + memoryPointer(cwd, top) + progressPointer(cwd, source, top);
 }
 
 let input = {};
@@ -73,7 +100,7 @@ try {
 // why: a detached run session (EXO_RUN_DIR, set by exo-cli.mjs for every spawned kind) reads no human-facing context; its final report is machine-read.
 if (process.env.EXO_RUN_DIR) process.exit(0);
 
-const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(input.cwd) : '';
+const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(input.cwd, input.source) : '';
 // why: the hook process starts wherever the host ran it; the session's folder, input.cwd, holds the project settings.
 const sessionDirectory = typeof input.cwd === 'string' && fs.existsSync(input.cwd) && fs.statSync(input.cwd).isDirectory() ? input.cwd : undefined;
 const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8', cwd: sessionDirectory });

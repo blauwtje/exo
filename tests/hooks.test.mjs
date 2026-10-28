@@ -380,3 +380,48 @@ test('deciding a long run of git global options grows linearly with its length',
   const ratio = large / Math.max(small, 0.05);
   assert.ok(ratio < LINEAR_MAX_RATIO, `${LINEAR_GROWTH}x the options took ${ratio.toFixed(1)}x the time (${small.toFixed(2)} ms to ${large.toFixed(2)} ms)`);
 });
+
+function progressPointer(source, { ageMs = 0, env = {}, files = ['topic/progress.md'] } = {}) {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-progress-config-'));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-progress-project-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const hookEnv = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY, ...env };
+  for (const name of ['CODEX_HOME', 'EXO_HOST', 'EXO_RUN_DIR']) delete hookEnv[name];
+  try {
+    files.forEach((file, index) => {
+      const target = path.join(project, '.exo', file);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, 'progress');
+      const stamp = new Date(Date.now() - ageMs - index * 1000);
+      fs.utimesSync(target, stamp, stamp);
+    });
+    const output = JSON.parse(execFileSync(process.execPath, [hook], { env: hookEnv, input: JSON.stringify({ session_id: 's1', source, cwd: project }) }).toString());
+    return output.hookSpecificOutput.additionalContext;
+  } finally {
+    for (const directory of [configHome, project]) fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+test('the session hook names a fresh progress file after a compact, clear or resume only', () => {
+  for (const source of ['compact', 'clear', 'resume']) {
+    const context = progressPointer(source);
+    assert.match(context, /A progress file sits at `[^`]*\.exo\/topic\/progress\.md`\. Read it only when this session continues that work\./, source);
+  }
+  for (const source of ['startup', 'fork']) assert.doesNotMatch(progressPointer(source), /A progress file sits at/, source);
+});
+
+test('the session hook names the newest progress file one level under .exo and skips deeper ones', () => {
+  const context = progressPointer('compact', { files: ['run-plan/id/stamp/progress.md', 'newer/progress.md', 'older/progress.md'] });
+  assert.match(context, /\.exo\/newer\/progress\.md/);
+  assert.doesNotMatch(context, /run-plan/);
+});
+
+test('the session hook skips a progress file older than EXO_PROGRESS_POINTER_MS and honours a shorter window', () => {
+  assert.doesNotMatch(progressPointer('compact', { ageMs: 3700000 }), /A progress file sits at/);
+  assert.match(progressPointer('compact', { ageMs: 3500000 }), /A progress file sits at/);
+  assert.doesNotMatch(progressPointer('compact', { ageMs: 120000, env: { EXO_PROGRESS_POINTER_MS: '60000' } }), /A progress file sits at/);
+});
+
+test('the session hook names no progress file when none exists', () => {
+  assert.doesNotMatch(progressPointer('clear', { files: [] }), /A progress file sits at/);
+});

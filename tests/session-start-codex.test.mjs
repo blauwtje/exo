@@ -92,3 +92,20 @@ test('a headless run session gets no additionalContext, a plain session still do
   assert.ok(!stdout.includes('additionalContext'), stdout);
   assert.equal(fs.readFileSync(path.join(home, '.claude', 'exo', 'plugin-root'), 'utf8'), `${REPOSITORY}\n`);
 });
+
+test('a Codex compact names a fresh progress file, a startup does not', () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-codex-progress-'));
+  fs.mkdirSync(path.join(project, '.exo', 'topic'), { recursive: true });
+  fs.writeFileSync(path.join(project, '.exo', 'topic', 'progress.md'), 'progress');
+  const contextFor = (source) => {
+    const { home, output } = run({ EXO_HOST: 'codex' }, { session_id: 's3', source, cwd: project });
+    fs.rmSync(home, { recursive: true, force: true });
+    return output.hookSpecificOutput.additionalContext;
+  };
+  try {
+    assert.match(contextFor('compact'), /A progress file sits at `[^`]*\.exo\/topic\/progress\.md`\. Read it only when this session continues that work\./);
+    assert.doesNotMatch(contextFor('startup'), /A progress file sits at/);
+  } finally {
+    fs.rmSync(project, { recursive: true, force: true });
+  }
+});
