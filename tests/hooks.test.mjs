@@ -351,22 +351,37 @@ const LINEAR_RUNS = 5;
 const allowedGitCommands = (count) => [`git${' --git-dir'.repeat(count)} log`, 'git branch '.repeat(count * 2), `git${' -C git'.repeat(count)} log`, 'bash '.repeat(count * 2)];
 const deniedGitCommand = (count) => `git${' --git-dir'.repeat(count)} stash`;
 
-function bestTime(action) {
-  let best = Infinity;
-  for (let run = 0; run < LINEAR_RUNS; run += 1) {
-    const start = performance.now();
-    action();
-    best = Math.min(best, performance.now() - start);
-  }
-  return best;
+const cpuUsage = process.threadCpuUsage ?? process.cpuUsage;
+
+function cpuMilliseconds() {
+  const { user, system } = cpuUsage();
+  return (user + system) / 1000;
 }
 
-function decideAllGitCommands(sharesGitState, count) {
+function cpuTime(action) {
+  const start = cpuMilliseconds();
+  action();
+  return cpuMilliseconds() - start;
+}
+
+function bestTimes(smallAction, largeAction) {
+  let small = Infinity;
+  let large = Infinity;
+  for (let run = 0; run < LINEAR_RUNS; run += 1) {
+    small = Math.min(small, cpuTime(smallAction));
+    large = Math.min(large, cpuTime(largeAction));
+  }
+  return { small, large };
+}
+
+function decideAllGitCommands(sharesGitState, count, repeats = 1) {
   const allowed = allowedGitCommands(count);
   const denied = deniedGitCommand(count);
   return () => {
-    allowed.forEach((command) => sharesGitState(command));
-    sharesGitState(denied);
+    for (let repeat = 0; repeat < repeats; repeat += 1) {
+      allowed.forEach((command) => sharesGitState(command));
+      sharesGitState(denied);
+    }
   };
 }
 
@@ -374,9 +389,11 @@ test('deciding a long run of git global options grows linearly with its length',
   const { sharesGitState } = await import('../lib/git-deny.mjs');
   allowedGitCommands(LINEAR_SMALL).forEach((command) => assert.equal(sharesGitState(command), false, command.slice(0, 40)));
   assert.equal(sharesGitState(deniedGitCommand(LINEAR_SMALL)), true);
-  decideAllGitCommands(sharesGitState, LINEAR_SMALL)();
-  const small = bestTime(decideAllGitCommands(sharesGitState, LINEAR_SMALL));
-  const large = bestTime(decideAllGitCommands(sharesGitState, LINEAR_SMALL * LINEAR_GROWTH));
+  const smallRepeated = decideAllGitCommands(sharesGitState, LINEAR_SMALL, LINEAR_GROWTH);
+  smallRepeated();
+  const times = bestTimes(smallRepeated, decideAllGitCommands(sharesGitState, LINEAR_SMALL * LINEAR_GROWTH));
+  const small = times.small / LINEAR_GROWTH;
+  const large = times.large;
   const ratio = large / Math.max(small, 0.05);
   assert.ok(ratio < LINEAR_MAX_RATIO, `${LINEAR_GROWTH}x the options took ${ratio.toFixed(1)}x the time (${small.toFixed(2)} ms to ${large.toFixed(2)} ms)`);
 });

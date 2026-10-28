@@ -15,7 +15,7 @@ The default lists only sessions whose peak reaches the soft limit; --all lists e
 Exit codes: 0 done, 2 bad flag or missing transcript folder.`;
 
 const STAGES = ['spec', 'next-task', 'unit', 'merge-reviews', 'other'];
-const NODE_SCRIPT = (name) => new RegExp(`\\bnode\\b[^\\n]*\\b${name}\\.mjs`);
+const NODE_SCRIPT = (name) => new RegExp(`\\bnode\\b[^;&|\\n]*\\b${name}\\.mjs`);
 const NEXT_TASK = NODE_SCRIPT('next-task');
 const MERGE_REVIEWS = NODE_SCRIPT('merge-reviews');
 
@@ -34,22 +34,38 @@ function stageOfCalls(calls) {
   return calls.map(stageOfCall).find((stage) => stage !== 'other') ?? 'other';
 }
 
+const TYPED_SPEC = '<command-name>/exo:spec</command-name>';
+const isTypedSpec = (entry) => entry.type === 'user' && JSON.stringify(entry.message?.content ?? '').includes(TYPED_SPEC);
+
+function growthOf(tokens, previous, typedSpec) {
+  if (!previous) return { stage: 'other', added: 0 };
+  if (typedSpec) return { stage: 'spec', added: tokens - previous.tokens };
+  return { stage: stageOfCalls(previous.calls), added: tokens - previous.tokens };
+}
+
+function countTurn(profile, tokens) {
+  profile.peak = Math.max(profile.peak, tokens);
+  if (tokens >= softLimit(contextLimit())) profile.pastSoft += 1;
+  if (tokens >= contextLimit()) profile.pastHard += 1;
+}
+
 export function profileSession(file) {
-  const soft = softLimit(contextLimit());
-  const hard = contextLimit();
   const stages = Object.fromEntries(STAGES.map((stage) => [stage, 0]));
   const profile = { peak: 0, pastSoft: 0, pastHard: 0, compactions: [], stages };
   let previous = null;
+  let typedSpec = false;
   for (const { tokens, entry } of contextSeries(file)) {
-    if (entry.type === 'system' && entry.subtype === 'compact_boundary') profile.compactions.push(entry.compactMetadata?.preTokens);
+    if (entry.type === 'system' && entry.subtype === 'compact_boundary') profile.compactions.push(entry.compactMetadata?.preTokens ?? 'unknown');
+    if (isTypedSpec(entry)) typedSpec = true;
     if (tokens === null) continue;
-    profile.peak = Math.max(profile.peak, tokens);
-    if (tokens >= soft) profile.pastSoft += 1;
-    if (tokens >= hard) profile.pastHard += 1;
-    if (previous && tokens > previous.tokens) stages[stageOfCalls(previous.calls)] += tokens - previous.tokens;
     const id = entry.message?.id;
-    const calls = id !== undefined && id === previous?.id ? [...previous.calls, ...callsOf(entry)] : callsOf(entry);
-    previous = { tokens, id, calls };
+    const sameTurn = id !== undefined && id === previous?.id;
+    if (sameTurn) profile.peak = Math.max(profile.peak, tokens);
+    else countTurn(profile, tokens);
+    const { stage, added } = growthOf(tokens, previous, typedSpec);
+    if (added > 0) stages[stage] += added;
+    typedSpec = false;
+    previous = { tokens, id, calls: sameTurn ? [...previous.calls, ...callsOf(entry)] : callsOf(entry) };
   }
   return profile;
 }

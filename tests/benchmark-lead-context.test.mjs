@@ -48,13 +48,47 @@ test('contextSeries yields the summed tokens of each assistant turn with its ent
   assert.equal(series[0].entry.message.content[0].input.skill, 'exo:spec');
 });
 
-test('a stage call that is not the last block of a split assistant message still gets the growth', async () => {
+const withId = (entry, id) => ({ ...entry, message: { ...entry.message, id } });
+
+async function sessionLine(entries) {
   const folder = await fixture();
-  const split = (id, call) => ({ ...turn(50_000, call), message: { ...turn(50_000, call).message, id } });
-  const entries = [split('msg_1', agent('exo:run-unit')), split('msg_1', bash('ls')), turn(70_000)];
   await fs.writeFile(path.join(folder, 's.jsonl'), `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
   const result = await run(TOOL, ['--folder', folder, '--all']);
-  assert.match(result.stdout, /^session s .*unit 100%/m);
+  return result.stdout.split('\n').find((line) => line.startsWith('session s '));
+}
+
+test('a stage call that is not the last block of a split assistant message still gets the growth', async () => {
+  const split = (id, call) => withId(turn(50_000, call), id);
+  const line = await sessionLine([split('msg_1', agent('exo:run-unit')), split('msg_1', bash('ls')), turn(70_000)]);
+  assert.match(line, /unit 100%/);
+});
+
+test('split entries of one assistant message count as one turn past each limit', async () => {
+  const line = await sessionLine([withId(turn(70_000), 'm1'), withId(turn(70_000, bash('ls')), 'm1'), withId(turn(71_000), 'm2')]);
+  assert.match(line, /turns>=60k 2 /);
+});
+
+const typedSpec = { type: 'user', message: { role: 'user', content: '<command-name>/exo:spec</command-name>' } };
+
+test('a typed /exo:spec gives the growth up to the next assistant entry to spec, also at session start', async () => {
+  const line = await sessionLine([typedSpec, turn(30_000, bash('ls')), typedSpec, turn(70_000)]);
+  assert.match(line, /spec 100% next-task 0% unit 0% merge-reviews 0% other 0%/);
+});
+
+test('a typed /exo:spec before the first assistant entry attributes nothing to spec', async () => {
+  const line = await sessionLine([typedSpec, turn(30_000, bash('ls')), turn(70_000)]);
+  assert.match(line, /spec 0% next-task 0% unit 0% merge-reviews 0% other 100%/);
+});
+
+test('a script name after another command in the same line does not start a stage', async () => {
+  const chained = bash('node lib/check-cache.mjs --query x; cat skills/build/scripts/merge-reviews.mjs | grep next-task.mjs');
+  const line = await sessionLine([turn(60_000, chained), turn(80_000)]);
+  assert.match(line, /merge-reviews 0% other 100%/);
+});
+
+test('a compact_boundary without preTokens prints unknown in the compactions slot', async () => {
+  const line = await sessionLine([turn(70_000), { type: 'system', subtype: 'compact_boundary' }, turn(20_000)]);
+  assert.match(line, /compactions unknown spec /);
 });
 
 test('--help prints the usage and exits 0', async () => {
