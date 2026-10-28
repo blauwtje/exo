@@ -11,6 +11,8 @@
 - Land-task refusal about the report's content (no Proof command, a command listed as failing) → a fresh `exo:build-task` from `../implementer-prompt.md`, with land-task's full refusal added verbatim; this session reruns no proof to repair a report.
 - Off-brief build-task return → SendMessage it once, per `${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.md`; a second one → a fresh `exo:build-task` as above.
 - Build-task stopped at its turn limit before green → redispatch `exo:build-task` from `../implementer-prompt.md`, not an improvised prompt to another agent.
-- Any other land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `PLAN DRIFT` to `../drift-repairer-prompt.md`, `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
+- `PLAN DRIFT` → follow its printed `Then:` line from next-task or land-task: the `plan drift` line hands the report path, unread, to `../drift-repairer-prompt.md`; the `input unreachable` line stops the run `BLOCKED` with that path, no repair delegate.
+- Build return `BLOCKED input unreadable: <path>` → stop the run `BLOCKED` with that path, no repair delegate; no repair session can supply the input.
+- Any other land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
 - Second failure of one task → stop the run `BLOCKED` with both reports and 2-3 options.
 - Land-task refusal other than `PLAN DRIFT` or a report refusal → repair delegate the same way, rerun once; a second refusal stops likewise.

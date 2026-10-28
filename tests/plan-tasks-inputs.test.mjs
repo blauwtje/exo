@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import os from 'node:os';
 import test from 'node:test';
-import { coversCompanion, isCovered, inputPaths, parsePlan, relativeInputPaths } from '../lib/plan-tasks.mjs';
+import { coversCompanion, driftOf, INPUT_UNREADABLE, isCovered, isUnreachableInput, inputPaths, parsePlan, relativeInputPaths } from '../lib/plan-tasks.mjs';
 
 test('a relative input under a dot folder is an input', () => {
   const frame = { assumptions: ['- assume: the hint is `.exo/carry/task1-partial.patch`'], context: [] };
@@ -18,7 +19,11 @@ const INPUT_FORMS = [
   ['a glob', '`/tmp/*/out.txt`', []],
   ['a URL path whose first segment is absent', '`/zz-no-such-root/v1/items`', []],
   ['a route whose first segment matches a root folder in another case', '`/users/me`', []],
-  ['a real path', '`/tmp/some/file.md`', ['/tmp/some/file.md']],
+  ['a missing path under the tmp root', '`/tmp/some/file.md`', ['/tmp/some/file.md']],
+  ['a missing path under the home folder', `\`${os.homedir()}/missing/notes.md\``, [`${os.homedir()}/missing/notes.md`]],
+  ['a missing path under a system root', '`/var/backups/example-app`', []],
+  ['a missing path under the etc root', '`/etc/zz-no-such/conf`', []],
+  ['a path that only shares the tmp prefix', '`/tmpfoo/x/y.md`', []],
   ['a real path with a dotted name', '`/usr/bin/env`', ['/usr/bin/env']],
 ];
 
@@ -77,4 +82,13 @@ test('a task without a Boundary line has boundary null', () => {
 
 test('a Boundary line missing its test part has boundary null', () => {
   assert.equal(boundaryOfTask('Depends on: none\nBoundary: in a file path | out a bad path'), null);
+});
+
+test('one predicate names both unreachable-input stop texts', () => {
+  const frame = { assumptions: ['- assume: the notes are `/tmp/exo-absent/missing.md`'], context: [] };
+  const [item] = driftOf({ files: [] }, os.tmpdir(), frame);
+  assert.ok(isUnreachableInput(item));
+  assert.ok(isUnreachableInput(`PLAN DRIFT ${item}`));
+  assert.ok(isUnreachableInput(`Task 1: BLOCKED ${INPUT_UNREADABLE}: /tmp/x.md`));
+  assert.ok(!isUnreachableInput('PLAN DRIFT region `greet` moved'));
 });

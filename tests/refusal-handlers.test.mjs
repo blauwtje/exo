@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { REFUSAL_HANDLERS, refusalHandler } from '../lib/refusal-handlers.mjs';
 
-const KINDS = ['plan drift', 'outside Files', 'report missing', 'proof failed', 'env', 'code rule', 'start stop'];
+const KINDS = ['plan drift', 'input unreachable', 'outside Files', 'report missing', 'proof failed', 'env', 'code rule', 'start stop'];
 
 test('every refusal kind maps to one single-line Then: handler', () => {
   assert.deepEqual(Object.keys(REFUSAL_HANDLERS).sort(), [...KINDS].sort());
@@ -15,4 +15,10 @@ test('every refusal kind maps to one single-line Then: handler', () => {
 
 test('an unknown refusal kind throws', () => {
   assert.throws(() => refusalHandler('mystery'), /no refusal handler for 'mystery'/);
+});
+
+test('the input unreachable handler stops the run BLOCKED and parks no task for an answer', () => {
+  const line = refusalHandler('input unreachable');
+  assert.match(line, /stop the run `BLOCKED`/);
+  assert.ok(!line.includes('NEEDS ANSWER'));
 });

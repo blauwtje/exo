@@ -9,7 +9,7 @@ import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
 import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
-import { defaultBranch, driftOf, frameOf, inputPaths, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, INPUT_UNREADABLE, inputPaths, isInputDrift, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 const SMALL_TASK_FILES = 2;
 
@@ -121,7 +121,7 @@ function readable(file) {
 
 function inputLines(task, sections) {
   if (!sections.some((line) => inputPaths(line).length > 0)) return [];
-  return [`Inputs: read each absolute path above before building; one unreadable → end on \`Task ${task.number}: BLOCKED input unreadable: <path>\`, never write its content from memory.`];
+  return [`Inputs: read each absolute path above before building; one unreadable → end on \`Task ${task.number}: BLOCKED ${INPUT_UNREADABLE}: <path>\`, never write its content from memory.`];
 }
 
 export function taskBrief(task, frame, root) {
@@ -162,7 +162,8 @@ function designLine(task) {
 
 function driftLines(task, drift) {
   if (drift.length === 0) return ['Drift: none'];
-  return [...drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`), refusalHandler('plan drift')];
+  const kind = drift.some(isInputDrift) ? 'input unreachable' : 'plan drift';
+  return [...drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`), refusalHandler(kind)];
 }
 
 function taskLines(task, frame, root, briefDirectory) {

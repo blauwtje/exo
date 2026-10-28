@@ -53,8 +53,8 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
 
 // The plan names its only content input by absolute path, outside the checkout,
 // under Assumptions, which names none of the task's Files.
-async function planWithInput(input) {
-  const plan = PLAN.replace('## Tasks', `## Assumptions\n\n- assume: the notes at \`${input}\` are the only content input.\n\n## Tasks`);
+async function planWithInput(input, region = 'greet') {
+  const plan = PLAN.replace('(`greet`)', `(\`${region}\`)`).replace('## Tasks', `## Assumptions\n\n- assume: the notes at \`${input}\` are the only content input.\n\n## Tasks`);
   const { root, planPath } = await landingCheckout();
   await commitFiles(root, { 'docs/plans/fixture.md': plan }, 'chore: plan');
   return run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
@@ -86,13 +86,38 @@ test('a backticked route the plan names is no input and does not block the task'
   assert.doesNotMatch(await fs.readFile(result.stdout.match(/^Brief: (.+)$/m)[1], 'utf8'), /^Inputs:/m);
 });
 
+test('absolute paths that exist only on another machine are no input and do not block the task', async () => {
+  const result = await planWithInput('/var/backups/example-app` and `/srv/example-app/data');
+  assert.match(result.stdout, /^Prompt:$/m);
+  assert.doesNotMatch(result.stdout, /PLAN DRIFT/);
+  assert.doesNotMatch(await fs.readFile(result.stdout.match(/^Brief: (.+)$/m)[1], 'utf8'), /^Inputs:/m);
+});
+
 test('an unreachable input the plan names stops the task before dispatch', async () => {
   const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'missing.md');
   const result = await planWithInput(input);
   assert.ok(result.stdout.split('\n').includes(`PLAN DRIFT: Task 1: input \`${input}\` is unreachable`), result.stdout);
   assert.doesNotMatch(result.stdout, /^(?:Prompt|Dispatch):/m);
   const lines = result.stdout.split('\n');
-  assert.equal(lines[lines.findIndex((line) => line.startsWith('PLAN DRIFT: ')) + 1], refusalHandler('plan drift'));
+  assert.equal(lines[lines.findIndex((line) => line.startsWith('PLAN DRIFT: ')) + 1], refusalHandler('input unreachable'));
+});
+
+test('a region drift beside an unreachable input still stops the task as an unreachable input', async () => {
+  const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'missing.md');
+  const result = await planWithInput(input, 'farewell');
+  const lines = result.stdout.split('\n');
+  assert.ok(lines.includes(`PLAN DRIFT: Task 1: input \`${input}\` is unreachable`), result.stdout);
+  assert.ok(lines.includes('PLAN DRIFT: Task 1: region `farewell` is missing from `src/app.js`'), result.stdout);
+  assert.equal(lines[lines.findLastIndex((line) => line.startsWith('PLAN DRIFT: ')) + 1], refusalHandler('input unreachable'));
+});
+
+test('a region drift with no unreachable input keeps the plan drift handler', async () => {
+  const input = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-'));
+  const result = await planWithInput(input, 'farewell');
+  const lines = result.stdout.split('\n');
+  assert.ok(lines.includes('PLAN DRIFT: Task 1: region `farewell` is missing from `src/app.js`'), result.stdout);
+  assert.ok(!lines.some((line) => line.includes('is unreachable')), result.stdout);
+  assert.equal(lines[lines.findLastIndex((line) => line.startsWith('PLAN DRIFT: ')) + 1], refusalHandler('plan drift'));
 });
 
 test('a design task prints no prompt', async () => {

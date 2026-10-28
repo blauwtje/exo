@@ -42,6 +42,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `parseArguments` in `benchmarks/run-args.mjs` is split into small named steps with the same behavior.
 
 ### Fixed
+- A plan whose Assumptions name an absolute path that exists only on another machine no longer raises `PLAN DRIFT`: only a path readable here or under the home, temp or `/tmp` root counts as an input, and a local input reported as `input ... is unreachable` stops the run `BLOCKED` with the path instead of starting a repair session.
 - `exo run --provider deepseek` maps the Opus tier to `deepseek-flash` instead of `deepseek-v4-pro`, so every DeepSeek tier runs on one model.
 - Verify's repair round no longer fails on its own bookkeeping: one shared grammar in `lib/fixer-mark.mjs` reads the fixer's `| fixed` and `| reported: ...` marks, so they no longer trip `stale-findings`; the fixer prompt shows the exact mark form, and a defect already absent is marked `reported: already absent` instead of `fixed` with no Probe line.
 - Concurrent `land-task --check` and landing no longer rewrite a landed commit: one per-checkout lock, compare-and-swap candidate moves, a final parent and `Files:` check, and run-unit waits on the `.exo/checked-<n>` stamp or a non-GREEN report.

@@ -8,7 +8,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
-import { commitsOf, criterionCommand, defaultBranch, frameOf, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
+import { commitsOf, criterionCommand, defaultBranch, driftOf, frameOf, isInputDrift, isUnreachableInput, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable } from '#model-kinds';
 import { CONTEXT_LIMIT, softLimit } from '#context-limits';
 import { settingValue } from '#settings-store';
@@ -426,7 +426,12 @@ async function main(argv) {
   };
   const blockedStop = (n, reason) => {
     say(`task ${n} blocked: ${clip(reason, 80)}`);
-    return { line: `task ${n} blocked: ${reason}`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 'repair per exo:spec references/watching.md, then run exo run again' };
+    const next = isUnreachableInput(reason) ? 'make that input readable on this machine or drop it from the plan, then run exo run again' : 'repair per exo:spec references/watching.md, then run exo run again';
+    return { line: `task ${n} blocked: ${reason}`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next };
+  };
+  const unreachableInputStop = (n) => {
+    const items = driftOf(plan.tasks.find((entry) => entry.number === n), root, frameOf(plan.frame)).filter(isInputDrift);
+    return items.length === 0 ? undefined : blockedStop(n, `PLAN DRIFT ${items.join('; ')}`);
   };
   const repaired = new Set();
   const withoutFields = (line) => line.replace(/(?:Files|Proof):[^|]*/g, '');
@@ -465,7 +470,7 @@ async function main(argv) {
     return treeAfter === treeBefore ? null : 'working tree changed beyond the plan';
   };
   const repairTask = async (n, report) => {
-    if (repaired.has(n)) return false;
+    if (repaired.has(n) || isUnreachableInput(report)) return false;
     repaired.add(n);
     const before = fs.readFileSync(planPath, 'utf8');
     const treeBefore = treeBesidePlan();
@@ -593,7 +598,7 @@ async function main(argv) {
     return blockedStop(n, `hit --max-turns ${agentMaxTurns('build') * taskCount}`);
   };
   if (stop === undefined && chosen.mode === 'plan' && order.length > 0) {
-    stop = budgetStop() ?? undefined;
+    stop = budgetStop() ?? unreachableInputStop(order[0]);
     const first = order[0];
     if (stop === undefined) {
       iteration += 1;
@@ -673,7 +678,7 @@ async function main(argv) {
       stop = { line: `iteration cap ${cap} reached, ${landed.length}/${plan.tasks.length} landed`, why: `The run hit its limit of ${cap} sessions`, next: 'run exo run again to continue, or raise --max-iterations' };
       break;
     }
-    stop = budgetStop() ?? undefined;
+    stop = budgetStop() ?? unreachableInputStop(task.number);
     if (stop !== undefined) break;
     iteration += 1;
     const n = task.number;
