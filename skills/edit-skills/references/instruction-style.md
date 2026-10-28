@@ -44,6 +44,19 @@ Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: mod
 - "Think carefully" → none; thinking always on.
 - One term per concept; established term over coined one.
 
+## Opus 5.5
+
+- Verification line ("double-check", "final verification step", "verify with another agent") → cut; it over-verifies.
+- Review or audit prompt → ask for all findings, then filter by severity afterwards; not "only important ones".
+- Brief that may spawn agents → name delegation criteria or a cap, restate the parent's constraints.
+- Unattended prompt → name the kinds of early stop to avoid.
+- Less thinking wanted → lower `effort`, not prose.
+
+## Memory files
+
+- Rule that must hold every time → `CLAUDE.md` or a check; `.claude/rules/*.md` with `paths:` loads unreliably.
+- `@` import → organizes the file, cuts no context; imported text loads at launch.
+
 ## Placement and budgets
 
 - Most-broken rules → top of file.

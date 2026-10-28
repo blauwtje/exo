@@ -17,9 +17,13 @@ const skillsRoot = path.join(repositoryRoot, 'skills');
 // The keys code.claude.com/docs/en/plugins-reference lists for a plugin agent.
 const SUPPORTED_KEYS = [
   'name', 'description', 'model', 'effort', 'maxTurns', 'tools',
-  'disallowedTools', 'skills', 'remember', 'background', 'omitClaudeMd', 'isolation',
-  'experimental',
+  'disallowedTools', 'skills', 'memory', 'color', 'autoCompactWindow', 'background', 'omitClaudeMd',
+  'isolation', 'experimental',
 ];
+
+function unsupportedKeys(frontmatter) {
+  return Object.keys(frontmatter).filter((key) => !SUPPORTED_KEYS.includes(key));
+}
 const KNOWN_TOOLS = [
   'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage', 'TaskStop',
 ];
@@ -55,9 +59,13 @@ function skillMarkdown() {
 
 test('every agent uses only the frontmatter keys a plugin agent supports', () => {
   for (const agent of agents) {
-    const unsupported = Object.keys(agent.frontmatter).filter((key) => !SUPPORTED_KEYS.includes(key));
-    assert.deepEqual(unsupported, [], `${agent.fileName} carries unsupported keys`);
+    assert.deepEqual(unsupportedKeys(agent.frontmatter), [], `${agent.fileName} carries unsupported keys`);
   }
+});
+
+test('the key allowlist accepts memory and color and rejects remember', () => {
+  assert.deepEqual(unsupportedKeys({ name: 'a', memory: 'project', color: 'blue' }), []);
+  assert.deepEqual(unsupportedKeys({ name: 'a', remember: 'project' }), ['remember']);
 });
 
 test('only run-unit sets the one-hour prompt cache', () => {

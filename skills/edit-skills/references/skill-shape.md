@@ -41,8 +41,6 @@ Add "The overcorrection is <the mistake this must not create>." only when a reco
 - <rule A> outranks <rule B> when <condition>.
 ```
 
-An agent takes the same shape with two changes: frontmatter sets `model`, `tools` and `effort` (discovery and bulk reading run on Sonnet with few tools); body closes with the exact report format its caller parses. An agent that writes code to a brief runs on the standard tier; only judges and hard repairs may run on the strong tier.
-
 ## What to leave out
 
 - War story about one fix ("last sprint the build broke because…") → write the rule it taught; a reader cannot generalize an anecdote.

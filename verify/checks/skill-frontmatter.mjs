@@ -9,6 +9,8 @@ import { EXPECTED_SKILLS, EXPECTED_SKILL_PATHS } from '../budgets.mjs';
 import { readFrontmatter } from '../frontmatter.mjs';
 
 const SKILL_NAME_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RESERVED_NAME = /anthropic|claude/;
+const COMPATIBILITY_LIMIT = 500;
 
 export function checkSkillFrontmatter(report, repository) {
   const skillFiles = repository.walk(repository.skillsRoot, (file) => path.basename(file) === 'SKILL.md');
@@ -34,6 +36,12 @@ export function checkSkillFrontmatter(report, repository) {
     const description = parsed.values.get('description') ?? '';
     if (!SKILL_NAME_SHAPE.test(name) || name.length > 64) {
       errors.push(`${relative}: invalid skill name '${name}'`);
+    }
+    if (RESERVED_NAME.test(name)) {
+      errors.push(`${relative}: skill name '${name}' holds a reserved word`);
+    }
+    if ((parsed.values.get('compatibility') ?? '').length > COMPATIBILITY_LIMIT) {
+      errors.push(`${relative}: compatibility exceeds ${COMPATIBILITY_LIMIT} characters`);
     }
     if (name !== path.basename(path.dirname(file))) {
       errors.push(`${relative}: name does not match directory`);

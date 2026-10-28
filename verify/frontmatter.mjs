@@ -4,10 +4,10 @@
 
 import { ALLOWED_EFFORT, ALLOWED_MODEL } from './budgets.mjs';
 
-const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell): +(?<value>.+)$/;
+const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell|license|compatibility|user-invocable|disallowed-tools|context|agent): +(?<value>.+)$/;
 // A switch reads the same under YAML 1.1 and 1.2 only as lowercase true or
 // false, so those two plain scalars are its whole vocabulary.
-const BOOLEAN_KEYS = ['disable-model-invocation'];
+const BOOLEAN_KEYS = ['disable-model-invocation', 'user-invocable'];
 const AMBIGUOUS_START = /^[-?:,[\]{}#&*!|>@`]/;
 const AMBIGUOUS_COLON = /:\s/;
 const AMBIGUOUS_COMMENT = /\s#/;

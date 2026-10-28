@@ -1,6 +1,6 @@
 ---
 name: edit-skills
-description: Use when creating, editing or sizing a skill or agent, and before it is done. Not for a rule or CLAUDE.md; read references/instruction-style.md.
+description: Use when creating, editing or sizing a skill, agent, hook or skill script, and before it is done. Not for a rule or CLAUDE.md; read references/instruction-style.md.
 disable-model-invocation: true
 argument-hint: <skill or agent to create, edit or size>
 ---
@@ -11,7 +11,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 ## When to use
 
-- Creating, changing or sizing a skill or agent.
+- Creating, changing or sizing a skill, agent, hook or skill script.
 - Borrowed by a stage → hand control back once done; otherwise own the turn.
 - Not for a one-time fix, one project's habit, or a limit a regex can check: a commit, `CLAUDE.md` or the verifier holds those; a skill is for a call needing judgment.
 
@@ -61,10 +61,13 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `scripts/rename-skill.mjs` | Renaming a skill: `node scripts/rename-skill.mjs --from <old> --to <new>` moves its folder, docs page and pressure folder and rewrites every mention in one pass. |
 | `references/pressure-scenarios.md` | Step 1. |
 | `references/where-a-fix-lives.md` | Step 3, before the first rule is written. |
-| `references/instruction-style.md` | Step 3, before writing or editing any instruction file, `CLAUDE.md`, rule, agent, output style or hook included. |
+| `references/instruction-style.md` | Step 3, before writing or editing any instruction file: `CLAUDE.md`, a rule or an output style. |
 | `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |
 | `references/description.md` | Step 3 for the frontmatter; step 5 when a symptom joins the description. |
 | `references/skill-shape.md` | Step 3 for a skill started from nothing; never for a change to an existing skill. |
+| `references/agent-shape.md` | Step 3 for an agent started from nothing. |
+| `references/hook-shape.md` | Step 3 for a hook started from nothing. |
+| `references/script-shape.md` | Step 3 for a skill script started from nothing. |
 | `../../docs/principles/README.md` | Step 3, when the edit designs a prompt, context, agent, tool, harness or eval. |
 | `references/plugging-holes.md` | Step 5, once a run with the skill loaded still produced a justification. |
 | `references/blind-eval.md` | Step 7, when step 4's `with`/`without` read is a close call. |
