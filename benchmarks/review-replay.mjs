@@ -179,9 +179,10 @@ async function repairRound(context, model, { round, merged }) {
   const { pluginDir, paths } = context;
   const findingsText = fs.readFileSync(merged.report, 'utf8');
   if (merged.clean ?? isClean(findingsText)) return { clean: true, findingsText };
+  const before = git(paths.repository, ['rev-parse', 'HEAD']).trim();
   await model(fixerPrompt(pluginDir, { ...paths, findings: merged.report }), paths.repository);
   runVerifyScript(pluginDir, 'run-probes.mjs', ['--report', merged.report, '--root', paths.repository]);
-  const diff = git(paths.repository, ['diff', '-U0', 'HEAD']);
+  const diff = git(paths.repository, ['diff', '-U0', before]);
   commitRepair(paths.repository, round);
   return { clean: false, findingsText, diff };
 }

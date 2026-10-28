@@ -24,7 +24,13 @@ const REVIEW_FINDINGS = [
   ''
 ].join('\n');
 
-function scriptedModel(calls, { costUsd, onCall } = {}) {
+function commitAll(repository) {
+  const identity = ['-c', 'user.name=fixer', '-c', 'user.email=fixer@example.com', '-c', 'commit.gpgsign=false'];
+  spawnSync('git', ['-C', repository, 'add', '-A'], { encoding: 'utf8' });
+  spawnSync('git', ['-C', repository, ...identity, 'commit', '-q', '-m', 'fix(safe): repair'], { encoding: 'utf8' });
+}
+
+function scriptedModel(calls, { costUsd, onCall, commits = false } = {}) {
   const own = [];
   return async (prompt, repository) => {
     calls.push(prompt);
@@ -38,6 +44,7 @@ function scriptedModel(calls, { costUsd, onCall } = {}) {
       const lines = fs.readFileSync(file, 'utf8').split('\n');
       lines[4] = `${lines[4]} `;
       fs.writeFileSync(file, lines.join('\n'));
+      if (commits) commitAll(repository);
       return costUsd;
     }
     fs.writeFileSync(findings, reviews === 1 ? REVIEW_FINDINGS : 'CLEAN\n\nCount: defect 0, concern 0, question 0, note 0\n');
@@ -94,6 +101,11 @@ test('a replay with a stubbed model reaches CLEAN in two rounds and grades the f
   assert.equal(cell.falseFixLines.mean, 0);
   assert.equal(calls.filter((call) => call.includes('exo:fix-review')).length, 2);
   assert.match(calls[0], /DISPATCH Branch: .*scope=branch main\.\.HEAD/);
+});
+
+test('a repair the fixer commits itself still grades as fixed', async () => {
+  const [cell] = await replayAll({ ...OPTIONS, repeat: 1 }, () => scriptedModel([], { commits: true }));
+  assert.equal(cell.fixedAfterOneRepair.mean, 1);
 });
 
 test('the fixer reads the merged branch review, where demotions land, not the raw review', async () => {

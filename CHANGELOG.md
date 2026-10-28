@@ -51,6 +51,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- `node benchmarks/review-replay.mjs` grades a repair from the commit before the fixer ran, so fixes the `exo:fix-review` agent commits itself count; since the fixer started committing each fix, every repair graded as `fixed 0` and `benchmarks/improve-all-score.mjs` refused every score at the 0.69 fix-rate floor.
 - Benchmark cells (`makeCellHome`) turn off every installed plugin, not only `exo@*`, so a user plugin such as `tokeneconomizer@tokeneconomizer` no longer runs its hooks inside a scored cell.
 - exo hooks do nothing when `TE_SIDECALL=1`, so TokenEconomizer's headless `claude -p` side calls carry no exo session-start text or hook work.
 - `routing`, `pressure`, the pressure grader and `pressure/drive` start `claude` with no user-installed plugin loaded, like the other benchmark cells; each arm loads only its own `--plugin-dir`.
