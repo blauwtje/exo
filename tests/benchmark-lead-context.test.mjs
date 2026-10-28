@@ -70,7 +70,7 @@ test('split entries of one assistant message count as one turn past each limit',
 
 const typedSpec = { type: 'user', message: { role: 'user', content: '<command-name>/exo:spec</command-name>' } };
 
-test('a typed /exo:spec gives the growth up to the next assistant entry to spec, also at session start', async () => {
+test('a typed /exo:spec after the first assistant entry gives the growth up to the next assistant entry to spec', async () => {
   const line = await sessionLine([typedSpec, turn(30_000, bash('ls')), typedSpec, turn(70_000)]);
   assert.match(line, /spec 100% next-task 0% unit 0% merge-reviews 0% other 0%/);
 });
