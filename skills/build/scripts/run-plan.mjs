@@ -9,7 +9,7 @@ import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
 import { commitsOf, criterionCommand, defaultBranch, driftOf, frameOf, isInputDrift, isUnreachableInput, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
-import { INHERIT, readKindTable } from '#model-kinds';
+import { INHERIT, readKindTable, TABLE_PATH } from '#model-kinds';
 import { CONTEXT_LIMIT, softLimit } from '#context-limits';
 import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
@@ -43,10 +43,19 @@ class Refusal extends Error {}
 // why: the run's one app process; the entry point's `finally` kills its tree.
 let appPid = null;
 
+function listedProvider(name) {
+  const { providers } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
+  return Object.hasOwn(providers, name);
+}
+
+const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
+
 export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingValue('budget') } = {}) {
-  if (name !== 'claude' || flags.model !== undefined || flags.effort !== undefined) return {};
+  if (flags.model !== undefined || flags.effort !== undefined) return {};
+  if (!listedProvider(name)) return {};
   if (budget === 'off') return { model: null, effort: null };
-  const { model, effort } = readKindTable(undefined, { budget, retry }).kinds[kind];
+  const { model, effort } = readKindTable(undefined, { provider: name, budget, retry }).kinds[kind];
+  if (name !== 'claude') return { effort };
   return { model: model === INHERIT ? null : model, effort };
 }
 
@@ -61,9 +70,9 @@ export function chooseProvider(flags, home, project) {
   } catch (error) {
     throw new Refusal(`${path.join(configDir(home), 'run.json')} does not load: ${error.message}`);
   }
-  const asked = flags.effort ?? config.defaults.effort;
-  if (!config.efforts.includes(asked)) throw new Refusal(`unknown effort "${asked}"; use one of ${config.efforts.join(', ')}`);
   const name = flags.provider ?? config.defaults.provider;
+  const asked = flags.effort ?? config.providers[name]?.effort ?? config.defaults.effort;
+  if (!config.efforts.includes(asked)) throw new Refusal(`unknown effort "${asked}"; use one of ${config.efforts.join(', ')}`);
   const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
   if (provider.refused !== undefined) throw new Refusal(provider.refused);
   if (!Number.isInteger(config.defaults.attemptCap) || config.defaults.attemptCap < 1) throw new Refusal(`run.json defaults.attemptCap must be a positive integer, got ${JSON.stringify(config.defaults.attemptCap)}`);
@@ -702,9 +711,9 @@ async function main(argv) {
     }
     const retrying = retryNote !== '';
     const docPin = retrying ? provider.docRetryPin : provider.docPin;
-    const basePin = retrying && resume === null && provider.retryPin.model !== undefined ? provider.retryPin : { model, effort };
-    const taskPin = isDocTask(task) && docPin.model !== undefined ? docPin : basePin;
-    const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model, sessionEffort: taskPin.effort, resume });
+    const basePin = retrying && resume === null && hasPin(provider.retryPin) ? provider.retryPin : { model, effort };
+    const taskPin = isDocTask(task) && hasPin(docPin) ? docPin : basePin;
+    const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model ?? model, sessionEffort: taskPin.effort, resume });
     sayIdle(startedTask);
     writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
     const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;

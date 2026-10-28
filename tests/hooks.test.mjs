@@ -10,6 +10,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+// The hook reads the session provider from the environment; these tests expect the claude column.
+delete process.env.EXO_PROVIDER;
+
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
 const PLUGIN_PATH = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"\s]+)/g;

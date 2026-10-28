@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
-import { BUDGETS, INHERIT, readKindTable } from '../lib/model-kinds.mjs';
+import { BUDGETS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
 import { withReceipt } from './context-limit.mjs';
@@ -27,6 +28,13 @@ function isUnnamed(table, input) {
   return table.unnamed.types.includes(input.subagent_type ?? 'general-purpose') && input.model === undefined && input.effort === undefined;
 }
 
+function sessionProvider() {
+  const name = process.env.EXO_PROVIDER;
+  if (!name) return 'claude';
+  const { providers } = JSON.parse(readFileSync(TABLE_PATH, 'utf8'));
+  return Object.hasOwn(providers, name) ? name : 'claude';
+}
+
 function labelOf(table, input) {
   const label = /^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1];
   return table.kinds[label] ? label : undefined;
@@ -34,7 +42,7 @@ function labelOf(table, input) {
 
 function unlabelled(input, budget) {
   if (!BUDGETS.includes(budget)) return false;
-  const table = readKindTable(undefined, { budget });
+  const table = readKindTable(undefined, { budget, provider: sessionProvider() });
   return isUnnamed(table, input) && !labelOf(table, input) && !jobKind(table.unnamed.jobs, input.description);
 }
 
@@ -48,7 +56,7 @@ function unlabelledFields({ tool_name: tool, tool_input: input } = {}, budget = 
 function filled(input, budget) {
   if (!BUDGETS.includes(budget)) return input;
   const retry = /^exo-retry$/m.test(input.prompt ?? '');
-  const table = readKindTable(undefined, { budget, retry });
+  const table = readKindTable(undefined, { budget, provider: sessionProvider(), retry });
   const agent = /^exo:(.+)$/.exec(input.subagent_type ?? '')?.[1];
   const unnamed = isUnnamed(table, input);
   const kind = table.kinds[labelOf(table, input) ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined)];

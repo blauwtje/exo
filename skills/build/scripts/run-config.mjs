@@ -69,11 +69,11 @@ export function resolveProvider(config, name, keys, effort, home) {
   if (!CACHE_TTLS.includes(promptCacheTtl)) {
     return { refused: `Bad promptCacheTtl ${JSON.stringify(promptCacheTtl)}. Allowed: ${CACHE_TTLS.map((ttl) => `"${ttl}"`).join(', ')}. Fix "defaults" in ${path.join(configDir(home ?? '~'), 'run.json')}.` };
   }
-  const env = {};
+  const env = { EXO_PROVIDER: name };
   for (const [variable, value] of Object.entries(entry.env ?? {})) {
     env[variable] = String(value).replace(/\$\{(\w+)\}/g, (_, ref) => keys[ref] ?? '');
   }
-  const wanted = effort ?? config.defaults.effort;
+  const wanted = effort ?? entry.effort ?? config.defaults.effort;
   return {
     name,
     model: entry.model,

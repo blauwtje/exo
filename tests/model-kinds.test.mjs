@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
+import { INHERIT, TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
 import { findInheritanceGaps } from '../verify/model-kinds.mjs';
 
 const JOBS = [
@@ -38,6 +38,28 @@ test('every job kind is a kind of the table', () => {
 test('a job word naming an unknown kind is rejected', () => {
   const file = tableWith((table) => { table.unnamed.jobs.fix = 'no-such-kind'; });
   assert.throws(() => readKindTable(file), /unnamed job fix: unknown kind no-such-kind/);
+});
+
+test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
+  const { kinds } = readKindTable(undefined, { provider: 'deepseek' });
+  for (const name of ['build-task', 'doc-task', 'coordinate', 'run-unit']) assert.equal(kinds[name].effort, 'low', name);
+  for (const name of ['review', 'build', 'hardest', 'chore']) assert.equal(kinds[name].effort, 'high', name);
+  for (const kind of Object.values(kinds)) assert.equal(kind.model, INHERIT, kind.model);
+});
+
+test('kindEfforts leaves the retry column at the provider mapping', () => {
+  const { kinds } = readKindTable(undefined, { provider: 'deepseek', retry: true });
+  assert.equal(kinds['build-task'].effort, 'high');
+});
+
+test('a provider kindEfforts naming an unknown kind is rejected', () => {
+  const file = tableWith((table) => { table.providers.deepseek.kindEfforts['no-such-kind'] = 'low'; });
+  assert.throws(() => readKindTable(file, { provider: 'deepseek' }), /provider deepseek: kindEfforts names unknown kind no-such-kind/);
+});
+
+test('a provider kindEfforts naming an effort its efforts do not list is rejected', () => {
+  const file = tableWith((table) => { table.providers.deepseek.kindEfforts.build = 'medium'; });
+  assert.throws(() => readKindTable(file, { provider: 'deepseek' }), /provider deepseek: kindEfforts build names medium, which efforts does not list/);
 });
 
 function rootWith(files) {

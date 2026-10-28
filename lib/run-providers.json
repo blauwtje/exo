@@ -9,6 +9,7 @@
     },
     "deepseek": {
       "model": "deepseek-flash",
+      "effort": "low",
       "efforts": ["low", "high", "max"],
       "key": "DEEPSEEK_API_KEY",
       "env": {

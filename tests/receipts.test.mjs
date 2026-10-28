@@ -12,6 +12,9 @@ import { contextHook, receiptsOn } from '../hooks/context-limit.mjs';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 
+// The hook reads the session provider from the environment; these tests expect the claude column.
+delete process.env.EXO_PROVIDER;
+
 const REPOSITORY = path.resolve(import.meta.dirname, '..');
 const ON = () => true;
 const OFF = () => false;

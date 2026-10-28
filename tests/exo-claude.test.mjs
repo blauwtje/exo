@@ -30,13 +30,13 @@ async function launch(args, { keys = `DEEPSEEK_API_KEY=${SECRET}\n`, extra = {},
   return { result, recorded };
 }
 
-test('a deepseek session gets the provider env, the stored key and no ANTHROPIC_API_KEY', async () => {
+test('a deepseek session gets the provider env, the provider effort, the stored key and no ANTHROPIC_API_KEY', async () => {
   const { result, recorded } = await launch(['--provider', 'deepseek']);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(recorded.env.ANTHROPIC_API_KEY, undefined);
   assert.equal(recorded.env.ANTHROPIC_AUTH_TOKEN, SECRET);
   assert.equal(recorded.env.ANTHROPIC_MODEL, 'deepseek-flash');
-  assert.equal(recorded.env.CLAUDE_CODE_EFFORT_LEVEL, undefined);
+  assert.equal(recorded.env.CLAUDE_CODE_EFFORT_LEVEL, 'low');
   assert.doesNotMatch(result.stdout + result.stderr, new RegExp(SECRET));
 });
 
@@ -52,10 +52,11 @@ test('the child exit code becomes the exit code', async () => {
   assert.equal(result.code, 7);
 });
 
-test('the claude provider keeps ANTHROPIC_API_KEY and needs no stored key', async () => {
+test('the claude provider keeps ANTHROPIC_API_KEY, sets no effort and needs no stored key', async () => {
   const { result, recorded } = await launch([], { keys: null });
   assert.equal(result.code, 0, result.stderr);
   assert.equal(recorded.env.ANTHROPIC_API_KEY, ANTHROPIC);
+  assert.equal(recorded.env.CLAUDE_CODE_EFFORT_LEVEL, undefined);
 });
 
 test('a missing key refuses naming exo key set and starts nothing', async () => {

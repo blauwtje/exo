@@ -29,8 +29,9 @@ export function claudeEnvironment({ config, keys, home, env, provider: name, eff
   if (resolved.refused !== undefined) return { refused: `refused: ${resolved.refused}` };
   const inherited = { ...env };
   if (name !== 'claude') delete inherited.ANTHROPIC_API_KEY;
+  const setsEffort = effort !== undefined || config.providers[name].effort !== undefined;
   return {
-    env: { ...inherited, ...resolved.env, ...(effort === undefined ? {} : { CLAUDE_CODE_EFFORT_LEVEL: resolved.effort }) }
+    env: { ...inherited, ...resolved.env, ...(setsEffort ? { CLAUDE_CODE_EFFORT_LEVEL: resolved.effort } : {}) }
   };
 }
 

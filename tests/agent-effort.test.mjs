@@ -12,6 +12,8 @@ import { SCHEMA } from '../lib/settings-store.mjs';
 
 const call = (input, budget = 'on') => agentEffort({ tool_name: 'Agent', tool_input: input }, budget)?.hookSpecificOutput.updatedInput;
 
+delete process.env.EXO_PROVIDER;
+
 test('the budget setting defaults to on', () => {
   assert.equal(SCHEMA.budget.default, 'on');
 });
@@ -128,6 +130,27 @@ test('an exo call has its passed model and effort replaced by the table, a gener
   const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.lookup;
   assert.deepEqual(call({ subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus', effort: 'max' }), { subagent_type: 'exo:locate-code', prompt: 'x', model, effort });
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup', model: 'opus', effort: 'max' }), undefined);
+});
+
+test('the session provider picks its kind column, an unlisted or unset one keeps the claude column', () => {
+  const before = process.env.EXO_PROVIDER;
+  const outputs = () => [call({ subagent_type: 'exo:build-task', prompt: 'x' }), call({ subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x' })];
+  try {
+    delete process.env.EXO_PROVIDER;
+    const claude = outputs();
+    assert.deepEqual(claude[0], { subagent_type: 'exo:build-task', prompt: 'x', model: 'sonnet', effort: 'high' });
+    process.env.EXO_PROVIDER = 'zai';
+    assert.deepEqual(outputs(), claude);
+    process.env.EXO_PROVIDER = 'deepseek';
+    assert.deepEqual(outputs(), [
+      { subagent_type: 'exo:build-task', prompt: 'x', effort: 'low' },
+      { subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x', effort: 'high' }
+    ]);
+    assert.deepEqual(call({ subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus' }), { subagent_type: 'exo:locate-code', prompt: 'x', effort: 'high' });
+  } finally {
+    if (before === undefined) delete process.env.EXO_PROVIDER;
+    else process.env.EXO_PROVIDER = before;
+  }
 });
 
 test('an inherit kind drops a passed model on an exo call so the session model applies', () => {
