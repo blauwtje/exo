@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
-import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
+import { comparisonArm, driveArguments, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags } from '#script-flags';
 
 const USAGE = 'usage: drive.mjs <scenario> <model> <arm> [maxTurns] [--dry-run] [--full] [--label <text>] [--plugin-dir <dir>] [--main-dir <dir>]';
@@ -56,8 +56,7 @@ const log = (m) => { const l = `[${new Date().toISOString().slice(11,19)}] ${id}
 function turn(prompt, sessionId, n) {
   // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case;
   // #confine-claude picks the mode and confines each turn to the run folder.
-  const args = ['-p', prompt, '--model', model, '--effort', 'high', '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', ...armFlags];
-  if (sessionId) args.push('--resume', sessionId);
+  const args = driveArguments({ prompt, model, armFlags, sessionId });
   return new Promise((resolve) => {
     const run = confinedClaude({ args, roots: [dir], cwd, tmp });
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });

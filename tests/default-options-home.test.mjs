@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome, withoutExoOptions } from '../lib/default-options-home.mjs';
-import { withHome as withPressureHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { pressureHome, withHome as withPressureHome } from '../skills/edit-skills/scripts/pressure.mjs';
 
 function withHome(home, body) {
   const before = process.env.HOME;
@@ -133,6 +133,21 @@ test('with withoutClaudeMd the mirror has no CLAUDE.md and links the rest', () =
     } finally {
       fs.rmSync(kept, { recursive: true, force: true });
     }
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+    if (mirror) fs.rmSync(mirror, { recursive: true, force: true });
+  }
+});
+
+test('the pressure home turns off every installed plugin', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-home-test-'));
+  let mirror;
+  try {
+    fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ enabledPlugins: { 'exo@blauwtje': true, 'tokeneconomizer@tokeneconomizer': true } }));
+    mirror = withHome(home, () => pressureHome());
+    const settings = JSON.parse(fs.readFileSync(path.join(mirror, '.claude', 'settings.json'), 'utf8'));
+    assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'tokeneconomizer@tokeneconomizer': false });
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
     if (mirror) fs.rmSync(mirror, { recursive: true, force: true });

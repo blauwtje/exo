@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { baselineProblem, costOfLine, descriptionHashes, dryRunLine, evaluate, gradeStream, medianCost, modelInvocableSkills, quickPrompts, withBaseline } from '../benchmarks/routing.mjs';
+import { baselineProblem, costOfLine, descriptionHashes, dryRunLine, evaluate, gradeStream, medianCost, modelInvocableSkills, quickPrompts, routingHome, withBaseline } from '../benchmarks/routing.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const line = (content) => JSON.stringify({ type: 'assistant', message: { content } });
@@ -182,4 +182,22 @@ test('the default run is the quick set once; --write-baseline is the no-hook arm
   const splitWithoutFull = spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--split', 'train'], { encoding: 'utf8' });
   assert.equal(splitWithoutFull.status, 2);
   assert.match(splitWithoutFull.stderr, /--split needs --full/);
+});
+
+test('the routing home turns off every installed plugin', () => {
+  const home = mkdtempSync(join(tmpdir(), 'routing-home-test-'));
+  const before = process.env.HOME;
+  let mirror;
+  try {
+    mkdirSync(join(home, '.claude'), { recursive: true });
+    writeFileSync(join(home, '.claude', 'settings.json'), JSON.stringify({ enabledPlugins: { 'exo@blauwtje': true, 'tokeneconomizer@tokeneconomizer': true } }));
+    process.env.HOME = home;
+    mirror = routingHome();
+    const settings = JSON.parse(readFileSync(join(mirror, '.claude', 'settings.json'), 'utf8'));
+    assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'tokeneconomizer@tokeneconomizer': false });
+  } finally {
+    process.env.HOME = before;
+    rmSync(home, { recursive: true, force: true });
+    if (mirror) rmSync(mirror, { recursive: true, force: true });
+  }
 });

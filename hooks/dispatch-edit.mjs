@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import process from 'node:process';
-import { readHookText } from '#hook-input';
+import { inSidecall, readHookText } from '#hook-input';
 import { impactFields } from '../lib/edit-impact.mjs';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -31,7 +31,7 @@ export function dispatchEdit(hookInput, enabled) {
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: contexts.join('\n') } };
 }
 
-if (isMain(import.meta.url)) {
+if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const text = await readHookText();
     const output = text.trim() === '' ? null : dispatchEdit(JSON.parse(text));

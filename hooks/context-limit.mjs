@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import { readHookText } from '#hook-input';
+import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields, persistedReadDecision } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
@@ -49,7 +49,7 @@ export function contextHook(input, enabled) {
   return withReceipt(output, input, fields, undefined, enabled);
 }
 
-if (isMain(import.meta.url)) {
+if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const output = contextHook(JSON.parse(await readHookText()));
     if (output) process.stdout.write(`${JSON.stringify(output)}\n`);

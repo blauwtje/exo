@@ -121,6 +121,10 @@ export function gradeStream(text) {
   return null;
 }
 
+export function routingHome() {
+  return makeDefaultOptionsHome({ withoutInstalledPlugins: true });
+}
+
 function claudeSession({ prompt, cell, arm, home }) {
   const [model, effort] = cell.split(':');
   const { scratch, tmp, roots } = makeRunFolder(arm);
@@ -292,7 +296,7 @@ async function main() {
   const refusal = confineRefusal();
   if (refusal) throw new UsageError(refusal);
   const all = readPrompts();
-  const home = makeDefaultOptionsHome();
+  const home = routingHome();
   try {
     const runSession = (job) => claudeSession({ ...job, home });
     if (flags.smoke) return await smoke(all, flags, runSession);

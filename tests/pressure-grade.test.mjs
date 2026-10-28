@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { aggregate, gradeLine, gradeRun, judgeClauses, lintCriteria, linesForCase, newcombe, parseCriteria, parseMargins, runsNeeded, verdictFor } from '../skills/edit-skills/scripts/pressure-grade.mjs';
+import { aggregate, gradeLine, judgeArguments, gradeRun, judgeClauses, lintCriteria, linesForCase, newcombe, parseCriteria, parseMargins, runsNeeded, verdictFor } from '../skills/edit-skills/scripts/pressure-grade.mjs';
 import { regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
 
 const CRITERIA = `# x: criteria
@@ -271,4 +271,10 @@ test('self-test: regrading a good and a bad reference answer passes every line o
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('the judge call reads project and local settings only, so no installed plugin loads', () => {
+  const args = judgeArguments('sonnet:low', 'PROMPT');
+  assert.deepEqual(args.slice(args.indexOf('--setting-sources'), args.indexOf('--setting-sources') + 2), ['--setting-sources', 'project,local']);
+  assert.deepEqual(args.slice(0, 2), ['-p', 'PROMPT']);
 });

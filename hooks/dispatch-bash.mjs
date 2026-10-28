@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import { readHookText } from '#hook-input';
+import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { sharesGitState } from '../lib/git-deny.mjs';
 import { fixShell } from '../lib/shell-fixes.mjs';
@@ -77,7 +77,7 @@ function mergeOutputs(outputs) {
   return { verdict, output: Object.keys(merged).length === 1 ? null : { hookSpecificOutput: merged } };
 }
 
-if (isMain(import.meta.url)) {
+if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const text = await readHookText();
     const output = text.trim() === '' ? null : await dispatchBash(JSON.parse(text));

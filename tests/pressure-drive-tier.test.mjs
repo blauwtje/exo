@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { driveArguments } from '../lib/plugin-copy.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'pressure', 'drive.mjs');
 const RUNS = '/tmp/exo-pressure/runs';
@@ -43,4 +44,13 @@ test('an explicit turn count with full is a usage error', () => {
   const result = drive('B', 'sonnet', 'with', '5', '--dry-run', '--full');
   assert.equal(result.status, 2);
   assert.match(result.stderr, /full/);
+});
+
+test('every drive turn reads project and local settings only, whichever arm', () => {
+  for (const armFlags of [['--plugin-dir', '/exo'], ['--settings', '{"enabledPlugins":{"exo@x":false}}']]) {
+    const args = driveArguments({ prompt: 'hi', model: 'sonnet', armFlags, sessionId: 'abc' });
+    assert.deepEqual(args.slice(args.indexOf('--setting-sources'), args.indexOf('--setting-sources') + 2), ['--setting-sources', 'project,local']);
+    assert.deepEqual(args.slice(-2), ['--resume', 'abc']);
+    assert.equal(args.includes('--strict-mcp-config'), true);
+  }
 });

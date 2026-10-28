@@ -28,7 +28,7 @@ test('the cell home has no .claude/CLAUDE.md while the real home keeps it', () =
   }
 });
 
-test('the cell home turns off the installed exo plugin and keeps the others', () => {
+test('the cell home turns off every installed plugin', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-home-test-'));
   const before = process.env.HOME;
   let cellHome;
@@ -38,7 +38,7 @@ test('the cell home turns off the installed exo plugin and keeps the others', ()
     process.env.HOME = home;
     cellHome = makeCellHome();
     const settings = JSON.parse(fs.readFileSync(path.join(cellHome, '.claude', 'settings.json'), 'utf8'));
-    assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'other@market': true });
+    assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'other@market': false });
     assert.equal(JSON.parse(fs.readFileSync(path.join(home, '.claude', 'settings.json'), 'utf8')).enabledPlugins['exo@blauwtje'], true);
   } finally {
     process.env.HOME = before;

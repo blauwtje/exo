@@ -50,6 +50,9 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- Benchmark cells (`makeCellHome`) turn off every installed plugin, not only `exo@*`, so a user plugin such as `tokeneconomizer@tokeneconomizer` no longer runs its hooks inside a scored cell.
+- exo hooks do nothing when `TE_SIDECALL=1`, so TokenEconomizer's headless `claude -p` side calls carry no exo session-start text or hook work.
+- `routing`, `pressure`, the pressure grader and `pressure/drive` start `claude` with no user-installed plugin loaded, like the other benchmark cells; each arm loads only its own `--plugin-dir`.
 - `merge-reviews.mjs` counts an absolute `Read:` path under the checkout root as read, so review coverage no longer shows 0 of N files when the reviewer lists absolute paths.
 - `run-probes.mjs` opens a finding only at a `<file>:<line>` line, so a prose line such as `Seam:` in a clean section is no longer an unmarked finding, and the verify fixer prompt shows `Guard: <file>` and `Guard: none (<reason>)` as two separate forms.
 - `land-task.mjs --fix` takes `--body`, so a verify fixer commit carries the `Proof:`, `Sweep:` and `Guard:` lines `fixer-no-guard` checks, and `run-probes.mjs` reads the `Probe:`, `Class:`, `Sweep:` and `Guard:` lines under a fixed finding in any order.

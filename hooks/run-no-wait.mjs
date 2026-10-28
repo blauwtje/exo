@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readHookText } from '#hook-input';
+import { inSidecall, readHookText } from '#hook-input';
 import { inRun } from '../lib/run-decision.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
@@ -67,7 +67,7 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
   return atLimit ? null : { decision: 'block', reason: why };
 }
 
-if (isMain(import.meta.url)) {
+if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const output = runNoWait(JSON.parse(await readHookText()));
     if (output) process.stdout.write(`${JSON.stringify(output)}\n`);

@@ -2,7 +2,7 @@
 
 Paired headless runs that measure exo against a session without it. The fixture, task set, task names, no-run instruction and run settings follow the agentic benchmark in [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail) (MIT).
 
-Every cell is one `claude -p --output-format json` call on a fresh checkout of `tiangolo/full-stack-fastapi-template` at commit `cd83fc1`. `--setting-sources project,local` keeps your own plugins out of the cell and `--plugin-dir` loads exactly one.
+Every cell is one `claude -p --output-format json` call on a fresh checkout of `tiangolo/full-stack-fastapi-template` at commit `cd83fc1`. `--setting-sources project,local` keeps your own plugins out of the cell, as measured from the plugin list of the init event, and `--plugin-dir` loads exactly one.
 
 ## Arms
 

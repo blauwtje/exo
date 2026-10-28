@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
-import { readHookText } from '#hook-input';
+import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { BUDGETS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -100,7 +100,7 @@ export function agentHook(hookInput, budget, enabled) {
   return receipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: context } }, null);
 }
 
-if (isMain(import.meta.url)) {
+if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const output = agentHook(JSON.parse(await readHookText()));
     if (output) process.stdout.write(`${JSON.stringify(output)}\n`);

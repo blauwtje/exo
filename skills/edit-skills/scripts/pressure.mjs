@@ -234,6 +234,10 @@ export function withHome(run, home) {
   return { ...run, env: { ...run.env, HOME: home } };
 }
 
+export function pressureHome() {
+  return makeDefaultOptionsHome({ withoutInstalledPlugins: true });
+}
+
 function runArm(run) {
   return new Promise((resolve) => {
     const started = Date.now();
@@ -541,7 +545,7 @@ async function main() {
     return;
   }
   console.log(`answers: ${outDir}`);
-  const home = makeDefaultOptionsHome();
+  const home = pressureHome();
   const gradesByCell = {};
   try {
     for (const cell of flags.cells) {

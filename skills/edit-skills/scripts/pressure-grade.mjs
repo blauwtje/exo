@@ -142,10 +142,14 @@ function judgeLine(line, answer, judge, votes) {
   return { pass, reason, votes: cast.map((vote) => vote.pass), agreement, unstable: agreement < UNSTABLE_BELOW };
 }
 
-export function defaultJudge(judgeCell) {
+export function judgeArguments(judgeCell, prompt) {
   const [model, effort] = judgeCell.split(':');
+  return ['-p', prompt, '--model', model, '--effort', effort, '--setting-sources', 'project,local', '--strict-mcp-config'];
+}
+
+export function defaultJudge(judgeCell) {
   return (prompt) => {
-    const run = spawnSync('claude', ['-p', prompt, '--model', model, '--effort', effort, '--strict-mcp-config'], { encoding: 'utf8' });
+    const run = spawnSync('claude', judgeArguments(judgeCell, prompt), { encoding: 'utf8' });
     if (run.status !== 0) throw new Error(`judge call failed: ${run.stderr.slice(0, 200)}`);
     return run.stdout;
   };

@@ -7,7 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
 import { memoryOn } from '#memory-store';
-import { readHookText } from '#hook-input';
+import { inSidecall, readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { environmentMs } from '../lib/script-flags.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
@@ -79,6 +79,8 @@ function pointersFor(cwd, source) {
   const top = gitDirectory === null ? null : git(cwd, 'rev-parse', '--show-toplevel');
   return handoffPointer(cwd, gitDirectory, top) + memoryPointer(cwd, top) + progressPointer(cwd, source, top);
 }
+
+if (inSidecall()) process.exit(0);
 
 let input = {};
 try {
