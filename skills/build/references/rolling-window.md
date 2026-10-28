@@ -19,13 +19,13 @@
    - A repair takes a fresh slot worktree at the current `HEAD`.
    - The run's checkout never holds uncommitted work while the window is open.
 6. **Missing report.**
-   - A notified child with no report is resumed once with SendMessage to write it. Still no report → a dead child: each such slot folder stays in place, not removed, since `remove-worktree.mjs --report` refuses while the report is absent; the return names the folder and that refusal.
+   - A returned build with no report is resumed once with SendMessage to write it. Still no report → a dead child: each such slot folder stays in place, not removed, since `remove-worktree.mjs --report` refuses while the report is absent; the return names the folder and that refusal.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
-   - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build also returns async.
+   - Each window build goes to `exo:build-task` in the foreground, never `run_in_background`; a `Next:` build too.
    - A landing's refill is in `land-slot.mjs`'s output, slots opened; else run `next-task.mjs --in-flight <running task numbers, comma separated>`; read its `Start: Task <n>[, Task <m>]` line.
-   - `Start: none` → no refill; end the turn for a running slot's notification.
+   - `Start: none` → no refill; land the returned slots, then step 1.
 8. **Wait.**
-   - End the turn after every dispatch, no wait command; each build's completion notification resumes it with that slot's report.
-   - Land each notified slot per step 3 at once, unless `Land all:` follows: then land only once every running slot has notified.
-   - Every wait, also after a land or a repair message, is a turn end, never a shell loop or `sleep`; each notified report lands before the turn ends again.
+   - Every `Prompt:` of a block goes as a foreground call in the one message; it returns after each build's report.
+   - Land each returned slot per step 3 at once, unless `Land all:` follows: then land only once every build of the block returned.
+   - Never end the turn while a build, repair or land runs, no shell loop or `sleep`: every returned report lands before the next dispatch.

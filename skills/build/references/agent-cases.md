@@ -8,7 +8,7 @@ Read on a rare case. Each unit has its own section.
 - A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`; the lead asks it after the wave and re-dispatches with the answer.
 - Edit, write or commit no file yourself: builds edit, land-task commits.
 - No tool dispatches → return `BLOCKED all nested dispatch unavailable`, alone.
-- A repair → `exo:solve-hard` with the dispatch's `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`; run it in the background, end the turn, and read that report on its completion notification.
+- A repair → `exo:solve-hard` with the dispatch's `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`; run it in the foreground, never `run_in_background`, and read that report when it returns.
 - A build report that ends on a context limit → fresh `exo:build-task` from the same `Prompt:` plus the report path, same kind and model; no `exo-retry`, no `exo:solve-hard`.
 - Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`.
 - `input unreachable` `Then:` line, or `BLOCKED input unreadable` → return `BLOCKED <n> <path>` with no repair.

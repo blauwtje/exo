@@ -271,7 +271,7 @@ function openedLines({ wave, frame, planPath, root, inFlight, briefDirectory, si
   const fresh = inFlight.length === 0;
   const opened = openSlots({ root, numbers: wave.map((task) => task.number), setup: frame.worktreeSetup, inputs: relativeInputPaths(frame), fresh, since });
   if (opened.reason !== undefined) return { reason: opened.reason, lines: [] };
-  const lines = [`Base: ${opened.base}`, `Baseline: ${opened.baseline}`, '', `Dispatch all in one message, run_in_background: true; Since: ${since}`];
+  const lines = [`Base: ${opened.base}`, `Baseline: ${opened.baseline}`, '', `Dispatch all in one message as foreground Agent calls, no run_in_background; Since: ${since}`];
   for (const task of wave) {
     const slot = slotOf(opened.toplevel, task.number);
     const brief = path.join(briefDirectory, `task-${task.number}.md`);

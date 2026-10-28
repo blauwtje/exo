@@ -170,7 +170,8 @@ test('--open-slots on a Wave writes the baseline, opens each slot and prints the
     assert.match(result.stdout, new RegExp(`^Report to: ${slot}/\\.exo/implementer-${number}\\.md$`, 'm'));
     assert.match(result.stdout, new RegExp(`^Land ${number}: node ".+land-slot\\.mjs" --plan "${planPath}" --task ${number} --root "${root}" --slot "${slot}" --base ${head} --baseline "${root}/\\.exo/baseline\\.txt" --in-flight ${5 - number}$`, 'm'));
   }
-  assert.match(result.stdout, /^Dispatch all in one message, run_in_background: true; Since: \d{10}$/m);
+  assert.match(result.stdout, /^Dispatch all in one message as foreground Agent calls, no run_in_background; Since: \d{10}$/m);
+  assert.doesNotMatch(result.stdout, /run_in_background: true/);
   assert.doesNotMatch(result.stdout, /^Wait:/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '?? preexisting.txt');
 });

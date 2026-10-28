@@ -17,12 +17,12 @@ experimental: { cacheTtl: 1h }
 2. **Take tasks from script output**, never the plan.
   - `Design:` task → `BLOCKED <n> Design: task`.
 3. **Dispatch the printed block.** Each `Prompt:` verbatim, only that text, to `exo:build-task` with its `Dispatch:` flag, in one message; no `implementer-prompt.md` read.
-  - A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
-  - End the turn after every dispatch, no wait command; each build's completion notification resumes it with that slot's report.
-  - Land each notified slot via `Land <n>:`, all via `Land all:`; `LANDED` refill block dispatches likewise.
-  - A notified child with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command.
+  - A `Wave:` or `Start:` build runs in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
+  - Dispatch each build and repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: run-unit gets no completion notification, so its turn end is its return.
+  - Every `Prompt:` of a block goes as a foreground call in one message; it returns after each build's report.
+  - Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill block likewise.
+  - A returned build with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command.
   - Landed task → next, no review.
-  - A command or agent result saying it runs in the background → end the turn; never poll, its notification resumes it.
   - `REFUSED`, `CONFLICT`, `NEWPATH`, missing report, repair, context limit, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## run-unit`, `<skill>/implementer-prompt.md` first.
 4. **Commit a green foreground task.** Done = `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000; last block = next dispatch, not a rerun.

@@ -305,10 +305,11 @@ function planIntroSection(repository) {
 }
 
 function planScopeSection() {
+  const helperTests = FLOW_HELPERS.map((helper) => helper.test).join(' ');
   return [
     '## Success criterion',
     '',
-    '`npm test` passes.',
+    `\`node --test ${helperTests}\` passes.`,
     '',
     '## Non-goals',
     '',

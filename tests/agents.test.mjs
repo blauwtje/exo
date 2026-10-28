@@ -305,15 +305,19 @@ test('review-branch reads its opening inputs together in its first message', () 
   assert.match(reviewer.body, /^- First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE\.md`\/`AGENTS\.md` together; then changed ranges\.$/m);
 });
 
-test('run-unit runs wait-report only after a background Wave: build', () => {
+test('run-unit dispatches every build and repair in the foreground and never ends its turn on a dispatch', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'run-unit');
-  assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- End the turn after every dispatch, no wait command; each build's completion notification resumes it with that slot's report\.$/m);
-  assert.doesNotMatch(unit.body, /`Wait:`/);
+  assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
+  assert.match(unit.body, /^ {2}- Dispatch each build and repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: run-unit gets no completion notification, so its turn end is its return\.$/m);
+  assert.match(unit.body, /^ {2}- Every `Prompt:` of a block goes as a foreground call in one message; it returns after each build's report\.$/m);
+  assert.match(unit.body, /^ {2}- Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill block likewise\.$/m);
+  assert.match(unit.body, /^ {2}- A returned build with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command\.$/m);
   assert.match(unit.body, /^ {2}- Loop until every block task has a `LANDED` or `BLOCKED` line\.$/m);
-  assert.match(unit.body, /^ {2}- A command or agent result saying it runs in the background → end the turn; never poll, its notification resumes it\.$/m);
   assert.match(unit.body, /land-task\.mjs[^\n]* --next` with timeout 600000/);
-  assert.match(unit.body, /^ {2}- A notified child with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command\.$/m);
+  assert.doesNotMatch(unit.body, /(?<!never )end the turn/i);
+  assert.doesNotMatch(unit.body, /runs in the background in a/);
+  assert.doesNotMatch(unit.body, /notification resumes|notified/);
+  assert.doesNotMatch(unit.body, /`Wait:`/);
   assert.doesNotMatch(unit.body, /no report`/);
 });
 

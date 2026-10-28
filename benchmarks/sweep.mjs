@@ -252,11 +252,14 @@ function measureReplay(cell, review) {
   return { defectsFound: hits, falseAlarms: extra, detail, hits, truth: truth.length, extra };
 }
 
+const PLAN_TASK_TRAILER = /^Plan-task: (?:[^/\s]+\/)?(\d+)$/gm;
+
 // Counted over every ref by trailer number, because a wave's commit reaches
 // the branch as a cherry-pick with the same message.
-function landedTasks(repository) {
+export function landedTasks(repository) {
   const messages = git(repository, ['log', '--all', '--format=%B']);
-  return new Set(messages.match(/^Plan-task: \d+$/gm) ?? []).size;
+  const numbers = [...messages.matchAll(PLAN_TASK_TRAILER)].map((match) => match[1]);
+  return new Set(numbers).size;
 }
 
 function flowTranscripts(repository, usage) {
