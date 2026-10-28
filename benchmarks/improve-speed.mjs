@@ -225,7 +225,7 @@ function runQuick(options) {
     console.error(error);
     return 2;
   }
-  const out = options.from ?? runSweep({ ...options, repeat: 1 });
+  const out = options.from ?? runSweep(options);
   const { rows, measures } = fs.existsSync(out) ? scoreOutDir(out) : { rows: [] };
   if (rows.length === 0) {
     console.log('FAIL no cells');

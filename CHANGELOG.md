@@ -51,6 +51,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- `node benchmarks/improve-speed.mjs` quick screen runs every cell `--repeat` asks for; it ran one, so `benchmarks/improve-all-score.mjs` failed every score with "1 of 3 cells recorded".
 - `node benchmarks/improve-speed.mjs` looks up the pooled base under the installed Claude Code version when `--claude-version` is absent; `benchmarks/improve-all-score.mjs` passes no version, so every lookup used `unrecorded`, missed the pooled row and failed the score.
 - `exo:run-unit` dispatches its builds and repairs in the foreground and ends no turn while a build runs; since the subagent ended its turn to wait, the build notices went to the build lead, nothing landed, and 7 of 15 `flow-unit` cells stopped at about 70 s with 0 of 4 tasks landed.
 - The `flow-unit` fixture plan names a `node --test` Success criterion apart from its `Land gate: npm test`, so it passes the plan check; 6 of 15 cells stopped at that check before building.

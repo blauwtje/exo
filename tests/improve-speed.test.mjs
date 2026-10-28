@@ -246,6 +246,21 @@ test('flagless runs reject a failing cell or a cost above the base and stay sile
   assert.match(quickRun(middle, pool).stdout, /^verdict no signal$/m);
 });
 
+test('a flagless run starts as many cells as --repeat asks and one without it', () => {
+  const pool = pooledBase([0.5, 0.7, 0.9]);
+  const checkout = fixture();
+  const argsFile = path.join(fixture(), 'sweep-args.json');
+  fs.mkdirSync(path.join(checkout, 'benchmarks'));
+  fs.writeFileSync(path.join(checkout, 'benchmarks', 'sweep.mjs'), `import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(argsFile)}, JSON.stringify(process.argv.slice(2)));\n`);
+  const repeatOf = (extra) => {
+    spawnSync(process.execPath, [SCRIPT, checkout, '--base', 'HEAD', '--pool', pool, ...extra], { encoding: 'utf8', env: { ...process.env, PATH: STUB_PATH } });
+    const args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
+    return args[args.indexOf('--repeat') + 1];
+  };
+  assert.equal(repeatOf(['--repeat', '3']), '3');
+  assert.equal(repeatOf([]), '1');
+});
+
 test('a flagless run with no pooled base refuses before any cell and names baseline-pool.mjs add', () => {
   const empty = path.join(fixture(), 'pool.jsonl');
   fs.writeFileSync(empty, '');
