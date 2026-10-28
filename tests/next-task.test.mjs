@@ -7,7 +7,7 @@ import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { refreshProgress } from '../skills/build/scripts/next-task.mjs';
+import { refreshProgress, taskBrief } from '../skills/build/scripts/next-task.mjs';
 import { commitFiles, git, planFixture, run } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 
@@ -54,6 +54,25 @@ async function planWithInput(input, region = 'greet') {
   await commitFiles(root, { 'docs/plans/fixture.md': plan }, 'chore: plan');
   return run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
 }
+
+function briefTask(files) {
+  return { number: 1, files: files.map((file) => ({ path: file, region: null, kind: 'Modify' })), section: '### Task 1: x', runs: [], proof: null, design: false };
+}
+
+function briefFrame(decisions) {
+  return { goal: 'goal', successCriterion: null, nonGoals: [], context: [], decisions, assumptions: [], visualDirection: null };
+}
+
+test('every Decision reaches a task brief, even one naming only another task\'s file', async () => {
+  const decisions = ['4. keep `lib/other.mjs` unchanged', '5. no file named'];
+  const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame(decisions), (await landingCheckout()).root);
+  assert.ok(brief.includes('Decisions for these paths:\n- 4. keep `lib/other.mjs` unchanged\n- 5. no file named\n'), brief);
+});
+
+test('a small task with no Decision prints no Decisions section', async () => {
+  const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame([]), (await landingCheckout()).root);
+  assert.doesNotMatch(brief, /^Decisions for these paths:/m);
+});
 
 test('an input the plan names outside the checkout reaches the brief', async () => {
   const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'notes.md');

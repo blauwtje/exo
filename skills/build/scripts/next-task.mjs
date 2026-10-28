@@ -29,10 +29,17 @@ function bulletsFor(task, bullets) {
   return bullets.filter((bullet) => named.includes(bullet) || inputPaths(bullet).length > 0);
 }
 
+function headedLines(task, heading, bullets) {
+  if (bullets.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
+  return [heading, ...bulletLines(bullets)];
+}
+
 function sectionLines(task, heading, bullets) {
-  const lines = bulletsFor(task, bullets);
-  if (lines.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
-  return [heading, ...bulletLines(lines)];
+  return headedLines(task, heading, bulletsFor(task, bullets));
+}
+
+function decisionLines(task, decisions) {
+  return headedLines(task, 'Decisions for these paths:', decisions);
 }
 
 function bulletLines(bullets) {
@@ -56,9 +63,7 @@ function modifyRanges(task, root) {
 }
 
 function modifyRangeLines(task, root) {
-  const ranges = modifyRanges(task, root);
-  if (ranges.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
-  return ['Modify ranges:', ...bulletLines(ranges)];
+  return headedLines(task, 'Modify ranges:', modifyRanges(task, root));
 }
 
 function successCriterionLines(frame) {
@@ -131,7 +136,7 @@ export function taskBrief(task, frame, root) {
   const sections = [
     ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
     ...sectionLines(task, 'Context for these paths and symbols:', frame.context),
-    ...sectionLines(task, 'Decisions for these paths:', frame.decisions),
+    ...decisionLines(task, frame.decisions),
     ...sectionLines(task, 'Assumptions for these paths and inputs:', frame.assumptions)
   ];
   return [

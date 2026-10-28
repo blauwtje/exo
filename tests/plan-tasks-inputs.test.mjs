@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import test from 'node:test';
-import { coversCompanion, driftOf, INPUT_UNREADABLE, isCovered, isUnreachableInput, inputPaths, parsePlan, relativeInputPaths } from '../lib/plan-tasks.mjs';
+import { coversCompanion, driftOf, frameOf, INPUT_UNREADABLE, isCovered, isUnreachableInput, inputPaths, parsePlan, relativeInputPaths } from '../lib/plan-tasks.mjs';
 
 test('a relative input under a dot folder is an input', () => {
   const frame = { assumptions: ['- assume: the hint is `.exo/carry/task1-partial.patch`'], context: [] };
@@ -91,4 +91,14 @@ test('one predicate names both unreachable-input stop texts', () => {
   assert.ok(isUnreachableInput(`PLAN DRIFT ${item}`));
   assert.ok(isUnreachableInput(`Task 1: BLOCKED ${INPUT_UNREADABLE}: /tmp/x.md`));
   assert.ok(!isUnreachableInput('PLAN DRIFT region `greet` moved'));
+});
+
+test('frameOf reads dash and numbered lines as bullets and ignores the rest', () => {
+  const lines = '1. first\n- second\n  - nested\n2) other\nplain\n10. tenth';
+  const frame = frameOf({ Decisions: lines, Context: lines, Assumptions: lines, 'Non-goals': lines });
+  const expected = ['1. first', 'second', '10. tenth'];
+  assert.deepEqual(frame.decisions, expected);
+  assert.deepEqual(frame.context, expected);
+  assert.deepEqual(frame.assumptions, expected);
+  assert.deepEqual(frame.nonGoals, expected);
 });

@@ -72,6 +72,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:build` refuses to start a run whose plan fails `plan-check --loop --run`, so a task whose Proof starts a nested claude never reaches a unit.
 - `benchmarks/improve-speed.mjs` writes `mode` in its quick verdict and its `--full` output, and `benchmarks/run.mjs` writes a `summary.json` with `mode` for every run mode, not only the quick tier.
 - `benchmarks/improve-all-score.mjs` rescoring a saved repeat-2 replay without `--full` no longer doubles the verify-cost ratio: it reads the repeat count from the saved run records instead of the tier.
+- Each `exo:build` task brief now holds the plan's numbered Decisions: `frameOf` reads numbered lines, so a Decision no longer stops short of the task that must follow it.
 
 ## 0.137.0 - 2026-10-26
 
