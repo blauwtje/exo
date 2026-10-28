@@ -38,10 +38,6 @@ function sectionLines(task, heading, bullets) {
   return headedLines(task, heading, bulletsFor(task, bullets));
 }
 
-function decisionLines(task, decisions) {
-  return headedLines(task, 'Decisions for these paths:', decisions);
-}
-
 function bulletLines(bullets) {
   return bullets.length === 0 ? ['- none'] : bullets.map((bullet) => `- ${bullet}`);
 }
@@ -136,7 +132,7 @@ export function taskBrief(task, frame, root) {
   const sections = [
     ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
     ...sectionLines(task, 'Context for these paths and symbols:', frame.context),
-    ...decisionLines(task, frame.decisions),
+    ...headedLines(task, 'Decisions for these paths:', frame.decisions),
     ...sectionLines(task, 'Assumptions for these paths and inputs:', frame.assumptions)
   ];
   return [

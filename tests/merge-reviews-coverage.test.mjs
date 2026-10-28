@@ -49,6 +49,12 @@ test('without a changed-file list no coverage is judged', () => {
   assert.equal(merged.verdict, 'CLEAN');
 });
 
+test('absolute Read: paths inside the checkout root count as read and paths outside it do not', () => {
+  const root = path.join(os.tmpdir(), 'abs-root');
+  const merged = mergeReviews([report('review-branch', path.join(root, 'a.js'), path.join(root, 'b.js'), path.join(os.tmpdir(), 'other', 'c.js'), 'd.js')], new Map(), FILES, root);
+  assert.deepEqual(merged.coverage, { read: 3, total: 4, unread: ['c.js'] });
+});
+
 test('merge-reviews.mjs prints COVERAGE and one UNREAD-FILE line per changed file nobody read', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'coverage-'));
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });

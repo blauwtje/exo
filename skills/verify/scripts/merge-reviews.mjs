@@ -82,16 +82,23 @@ export function appendLedger(root, findings, round) {
   fs.appendFileSync(ledgerPath(root), rows.join(''));
 }
 
-function readPaths(text) {
-  return text.split('\n').flatMap((line) => READ_LINE.exec(line)?.[1].split(/[\s,]+/) ?? [])
-    .map((entry) => entry.replaceAll('`', '').replace(/^\.\//, ''))
-    .filter(Boolean);
+function repoRelative(entry, root) {
+  if (!root || !path.isAbsolute(entry)) return entry;
+  const relative = path.relative(root, entry);
+  return relative.startsWith('..') || path.isAbsolute(relative) ? entry : relative;
 }
 
-function coverageOf(reports, changed) {
+function readPaths(text, root) {
+  return text.split('\n').flatMap((line) => READ_LINE.exec(line)?.[1].split(/[\s,]+/) ?? [])
+    .map((entry) => entry.replaceAll('`', '').replace(/^\.\//, ''))
+    .filter(Boolean)
+    .map((entry) => repoRelative(entry, root));
+}
+
+function coverageOf(reports, changed, root) {
   const branch = reports.filter(({ name }) => BRANCH_REPORT.test(name));
   if (changed === null || branch.length === 0) return null;
-  const read = new Set(branch.flatMap(({ text }) => readPaths(text)));
+  const read = new Set(branch.flatMap(({ text }) => readPaths(text, root)));
   const unread = changed.filter((file) => !read.has(file));
   return { read: changed.length - unread.length, total: changed.length, unread };
 }
@@ -123,7 +130,7 @@ function recurringOf(findings, prior) {
 
 const reading = ({ round, path: file, range, weight }) => `round ${round}: ${file}:${range} ${weight}`;
 
-export function mergeReviews(reports, prior = new Map(), changed = null) {
+export function mergeReviews(reports, prior = new Map(), changed = null, root = null) {
   const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0, 'out-of-scope': 0 };
   let demoted = 0;
   let unread = 0;
@@ -166,7 +173,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null) {
   }
   const recurring = recurringOf(findings, prior);
   if (recurring.length > 0) verdict = 'BLOCKED';
-  const coverage = coverageOf(reports, changed);
+  const coverage = coverageOf(reports, changed, root);
   if (verdict === 'CLEAN' && coverage?.unread.length > 0) verdict = 'FINDINGS';
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
@@ -184,7 +191,7 @@ function main(argv) {
   }));
   const round = latestRound(flags.root) + 1;
   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
-  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed);
+  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root);
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
