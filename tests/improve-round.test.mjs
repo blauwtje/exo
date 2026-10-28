@@ -112,12 +112,12 @@ test('a run over the limit is killed and rerun once', () => {
   assert.equal(fs.readFileSync(path.join(root, 'runs.log'), 'utf8').trim().split('\n').length, 2);
 });
 
-test('--wait prints the status line, or WAIT when none arrives', () => {
+test('--wait is not a flag: the round ends on its own process exit', () => {
   const root = setup();
-  const run = (env) => spawnSync(process.execPath, [script, '--root', root, '--tag', 't', '--wait'], { encoding: 'utf8', env: { ...process.env, ...env } }).stdout.trim();
-  assert.equal(run({ EXO_IMPROVE_WAIT_MS: '300' }), 'WAIT');
   fs.writeFileSync(path.join(root, '.exo/improve/t.status'), 'ROW abc 1 keep best=1\n');
-  assert.equal(run({}), 'ROW abc 1 keep best=1');
+  const run = spawnSync(process.execPath, [script, '--root', root, '--tag', 't', '--wait'], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /unknown flag '--wait'/);
 });
 
 test('--adopt cherry-picks a prepared commit, scores it, and refuses a conflict', () => {

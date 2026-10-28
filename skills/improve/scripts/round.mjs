@@ -5,12 +5,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
-import { environmentMs, isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
+import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
 import { gate, outOfScope } from './gate.mjs';
 
-const USAGE = 'usage: node round.mjs --root <dir> --tag <tag> (--commit <hash> --idea <path> [--adopt] | --wait)';
-const WAIT_MS = environmentMs('EXO_IMPROVE_WAIT_MS', 540_000);
-const FINAL = /^(ROW|STOP|REFUSED) /;
+const USAGE = 'usage: node round.mjs --root <dir> --tag <tag> --commit <hash> --idea <path> [--adopt]';
 
 const keyText = (key) => `${key.area}/${key.lever}/${key.target}`;
 const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -186,29 +184,16 @@ function runRound(flags) {
   finish(row);
 }
 
-function wait(flags) {
-  const statusFile = path.join(path.resolve(flags.root), '.exo', 'improve', `${flags.tag}.status`);
-  const sleeper = new Int32Array(new SharedArrayBuffer(4));
-  for (let waited = 0; waited <= WAIT_MS; waited += 1000) {
-    const text = fs.existsSync(statusFile) ? fs.readFileSync(statusFile, 'utf8').trim() : '';
-    if (FINAL.test(text)) return process.stdout.write(`${text}\n`);
-    Atomics.wait(sleeper, 0, 0, 1000);
-  }
-  process.stdout.write('WAIT\n');
-}
-
 function main() {
   let flags;
   try {
-    flags = parseFlags(process.argv.slice(2), { root: 'string', tag: 'string', commit: 'string', idea: 'string', adopt: 'boolean', wait: 'boolean' }, { usage: USAGE });
-    const need = flags.wait ? ['root', 'tag'] : ['root', 'tag', 'commit', 'idea'];
-    for (const name of need) if (!flags[name]) throw new UsageError(`--${name} is required`);
+    flags = parseFlags(process.argv.slice(2), { root: 'string', tag: 'string', commit: 'string', idea: 'string', adopt: 'boolean' }, { usage: USAGE });
+    for (const name of ['root', 'tag', 'commit', 'idea']) if (!flags[name]) throw new UsageError(`--${name} is required`);
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exit(2);
   }
-  if (flags.wait) wait(flags);
-  else runRound(flags);
+  runRound(flags);
 }
 
 if (isMain(import.meta.url)) main();

@@ -286,12 +286,13 @@ test('review-branch reads its opening inputs together in its first message', () 
 test('run-unit runs wait-report only after a background Wave: build', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'run-unit');
   assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a slot\.$/m);
-  assert.match(unit.body, /^ {2}- `Next:` also returns async; run its printed `Wait:`, no foreground return\.$/m);
+  assert.match(unit.body, /^ {2}- End the turn after every dispatch, no wait command; each build's completion notification resumes it with that slot's report\.$/m);
+  assert.doesNotMatch(unit.body, /`Wait:`/);
   assert.match(unit.body, /^ {2}- Loop until every block task has a `LANDED` or `BLOCKED` line\.$/m);
-  assert.match(unit.body, /^ {2}- A command or agent result saying it runs in the background → run the printed `Wait:`; never end the turn while a build, repair or land runs\.$/m);
+  assert.match(unit.body, /^ {2}- A command or agent result saying it runs in the background → end the turn; never poll, its notification resumes it\.$/m);
   assert.match(unit.body, /land-task\.mjs[^\n]* --next` with timeout 600000/);
-  assert.match(unit.body, /^ {2}- Wait after every landing; exit 2 reruns, at most three runs, then `BLOCKED <n> no report`; never a `sleep` command\.$/m);
+  assert.match(unit.body, /^ {2}- A notified child with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command\.$/m);
+  assert.doesNotMatch(unit.body, /no report`/);
 });
 
 test('run-unit runs on its own kind, at low effort', () => {

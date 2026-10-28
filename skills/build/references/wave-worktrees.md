@@ -17,14 +17,14 @@ Each task of a wave, as `build` step 4 forms it, builds in its own worktree, so 
    - First rerun `git -C <root> status --porcelain` and compare it with step 1's baseline.
    - New path → a build wrote into the run's checkout; `.exo/` never shows, excluded by `lib/scratch-exclude.mjs`.
    - New path outranks every green report: stop, show the listed paths, land nothing from this wave.
-   - Then go to step 4, which removes it as a discarded wave; end the turn naming those paths.
+   - Then go to step 4, which removes it as a discarded wave; return naming those paths.
    - A failed sibling never discards a green task: for each green task in plan order run `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root "<root>-task-<n>"`.
    - Then on the run branch `git cherry-pick <sha>`, the sha `git -C "<root>-task-<n>" rev-parse HEAD` prints.
    - Failed task or land-task refusal → route as a failed build.
    - Cherry-pick conflict → `git cherry-pick --abort`, no manual resolve: a resolved conflict is a commit no task branch holds.
-   - Landed tasks stay; after step 4 end the turn naming the conflicting task.
+   - Landed tasks stay; after step 4 return naming the conflicting task.
 4. **Remove.**
-   - First wait with `wait-report.mjs --any` (three runs) for every running build of the wave.
+   - First end the turn until every running build of the wave has notified.
    - For each folder the run made, then save its diff: `git -C "<root>-task-<n>" add -A && git -C "<root>-task-<n>" diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"`.
    - Folder differing from `<base>` → the patch counts as written only once `test -s` finds it non-empty.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root> --report "<root>-task-<n>/.exo/implementer-<n>.md"`, the report a build writes last.
@@ -32,4 +32,4 @@ Each task of a wave, as `build` step 4 forms it, builds in its own worktree, so 
    - A dirty folder whose task did not land adds `--patch "<root>-task-<n>/.exo/task-<n>.patch"` only once it is written; `--force` is refused.
    - A folder with an unsaved diff, or one it refused, is never removed: it stays, and the return names it.
    - A saved diff outranks a clean `git worktree list`: a worktree leaves only once its work is on the branch or in `.exo/`.
-   - Else no turn ends, stops or asks while `git worktree list` still prints a wave worktree this run made, other than a refused folder.
+   - Else no return, stop or question while `git worktree list` still prints a wave worktree this run made, other than a refused folder.

@@ -55,15 +55,15 @@ Setup done → never ask the user anything; the user may be away. Read only each
 1. Dispatch one `general-purpose` delegate whose prompt opens with `exo-kind: improve-round`: the text of `references/worker.md` with `<worktree>` = settled `worktree`, `<idea>` = `<root>/.exo/improve/<tag>.idea.json`, and the settled model and effort.
 2. `IDEA <hash> <key>` → run `node "${CLAUDE_SKILL_DIR}/scripts/round.mjs" --root <root> --tag <tag> --commit <hash> --idea <idea>` in the background.
 3. Prepare ahead → right after step 2 starts, dispatch the next worker the same way, with `<worktree>` = settled `next` and `<idea>` = `<root>/.exo/improve/<tag>.next.idea.json`.
-4. Wait → `node "${CLAUDE_SKILL_DIR}/scripts/round.mjs" --root <root> --tag <tag> --wait` with a 590 s command timeout; `WAIT` → call it again; `ROW <hash> <score> <status> best=<score>` → round done.
-5. Prepared `IDEA <hash>` → `round.mjs --root <root> --tag <tag> --commit <hash> --idea <next idea path> --adopt` in the background, then step 3; no prepared idea → step 1.
+4. Wait → end the turn; step 2's completion notification ends the round, and its output holds `ROW <hash> <score> <status> best=<score>` → round done.
+5. Prepared `IDEA <hash>` → hold it until the round's `ROW` arrives, then `round.mjs --root <root> --tag <tag> --commit <hash> --idea <next idea path> --adopt` in the background, then step 3; no prepared idea → step 1.
 6. `REFUSED <reason>` → drop any idea prepared meanwhile, step 1.
 7. `NO-IDEA <reason>` → step 1 with the reason as `<note>`.
 8. Third `NO-IDEA` in a row → step 1 with `<note>` = `out-of-ideas`; the loop goes on.
 
 - Prepare ahead → every round, except when the settled line says `no-overlap=true`; the worker's load would skew a wall-time score.
-- Waits → at most ceil((m·limit+30)/540) `--wait` calls per round, m = 6 with `--confirm`, else 2; none printed `ROW` or `STOP` → stall, go to Stop.
-- `STOP <reason> <detail>` (`scorer-changed <path>`, `reset-failed <hash>`, `checkout-failed <hash>`, `no-keep <n>`) → go to Stop, naming both.
+- Waits → the round's notification without `ROW`, `STOP` or `REFUSED` in its output → go to Stop.
+- `STOP <reason> <detail>` (`scorer-changed <path>`, `reset-failed <hash>`, `checkout-failed <hash>`, `no-keep <n>`) → drop any prepared idea, go to Stop, naming both.
 - Score → the lead runs no score command after setup; `round.mjs` owns all scoring, rows, keeps and resets.
 
 ## Crash

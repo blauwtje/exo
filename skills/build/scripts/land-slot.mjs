@@ -33,7 +33,7 @@ function removeSlot({ slot, root, base, number }) {
   }
 }
 
-// why: the rebuild rewrites the slot's report, so its wait counts only a report written after this refusal.
+// why: the rebuild rewrites the slot's report, so its record restarts its since at this refusal.
 function rebuildLines({ planPath, number, root, slot, base, inFlight, unlanded, chained }) {
   const records = restartRecord(root, number, { slot, base, since: Math.floor(Date.now() / 1000) });
   if (chained) return '';

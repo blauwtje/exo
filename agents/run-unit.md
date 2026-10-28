@@ -17,14 +17,13 @@ experimental: { cacheTtl: 1h }
 2. **Take tasks from script output**, never the plan.
   - `Design:` task → `BLOCKED <n> Design: task`.
 3. **Dispatch the printed block.** Each `Prompt:` verbatim, only that text, to `exo:build-task` with its `Dispatch:` flag, in one message; no `implementer-prompt.md` read.
-  - `Next:` also returns async; run its printed `Wait:`, no foreground return.
   - A `Wave:` or `Start:` build runs in the background in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
-  - Then run the printed `Wait:` command, timeout 600000; exit 0 prints fresh reports, each a slot.
-  - Land each fresh slot via `Land <n>:`, all via `Land all:`; `LANDED` refill block dispatches likewise.
-  - Wait after every landing; exit 2 reruns, at most three runs, then `BLOCKED <n> no report`; never a `sleep` command.
+  - End the turn after every dispatch, no wait command; each build's completion notification resumes it with that slot's report.
+  - Land each notified slot via `Land <n>:`, all via `Land all:`; `LANDED` refill block dispatches likewise.
+  - A notified child with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command.
   - Landed task → next, no review.
-  - A command or agent result saying it runs in the background → run the printed `Wait:`; never end the turn while a build, repair or land runs.
-  - `REFUSED`, `CONFLICT`, `NEWPATH`, stall, repair, context limit, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## run-unit`, `<skill>/implementer-prompt.md` first.
+  - A command or agent result saying it runs in the background → end the turn; never poll, its notification resumes it.
+  - `REFUSED`, `CONFLICT`, `NEWPATH`, missing report, repair, context limit, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## run-unit`, `<skill>/implementer-prompt.md` first.
 4. **Commit a green foreground task.** Done = `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000; last block = next dispatch, not a rerun.
   - Off-brief return or `no build report at` → SendMessage once (`hooks/session-rules.md`); no SendMessage or second off-brief → fresh agent.
