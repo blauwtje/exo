@@ -34,7 +34,8 @@ import { buildPhases } from './build-phases.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
-import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
+import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, providerCells, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
+import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/build/scripts/run-config.mjs';
 import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
@@ -116,7 +117,7 @@ function withTier(options) {
 }
 
 export function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null };
+  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null, provider: 'claude', efforts: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
@@ -131,6 +132,8 @@ export function parseArguments(argv) {
     else if (flag === '--models') options.models = argv[++index].split(',');
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else if (flag === '--keep-repo') options.keepRepo = argv[++index];
+    else if (flag === '--provider') options.provider = argv[++index];
+    else if (flag === '--effort') options.efforts = argv[++index].split(',');
     else if (flag === '--reviewer-bodies') options.reviewerBodies = parseReviewerBodies(argv[++index]);
     else throw new Error(`unknown flag ${flag}`);
   }
@@ -149,7 +152,7 @@ function git(directory, args) {
 // A cell with a plugin variant loads that variant's copy from `copies`; every
 // other cell loads this clone, as before. The run is confined to its cell root,
 // which holds the repository, its origin and its temporary directory.
-export function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
+export function runClaude(cell, workdir, cellRoot, cellDirectory, copies, providerEnv = null) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
@@ -164,7 +167,7 @@ export function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
       : confinedClaude({ args: claudeArguments(cell, pluginDir), roots: [cellRoot], cwd: workdir, tmp });
     const child = spawn(run.command, run.args, {
       cwd: run.cwd,
-      env: cellEnvironment(cell, process.env, run.env),
+      env: cellEnvironment(cell, process.env, run.env, providerEnv),
       stdio: ['ignore', stdout, stderr],
       detached: process.platform !== 'win32'
     });
@@ -371,7 +374,7 @@ export function keepRepository(cellRoot, keep, name) {
   return destination;
 }
 
-async function runCell(cell, runDirectory, copies, keep = null) {
+async function runCell(cell, runDirectory, copies, keep = null, providerEnv = null) {
   const cellDirectory = path.join(runDirectory, cell.directory ?? cell.id);
   fs.mkdirSync(cellDirectory, { recursive: true });
   const cellRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `exo-sweep-${cell.id}-`)));
@@ -380,7 +383,7 @@ async function runCell(cell, runDirectory, copies, keep = null) {
   try {
     const started = cell.kind === 'replay' ? addReplayWorktree(cell, repository) : cell;
     if (cell.kind !== 'replay') prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
-    const outcome = await runClaude(started, repository, cellRoot, cellDirectory, copies);
+    const outcome = await runClaude(started, repository, cellRoot, cellDirectory, copies, providerEnv);
     if (stopping) return null;
     const result = readResult(cellDirectory);
     const usage = cell.runSession
@@ -446,6 +449,7 @@ function readOrWriteMeta(runDirectory, options, cellCount) {
     pluginCommits: pluginCommits(),
     pluginDirty: git(ROOT, ['status', '--porcelain']).trim() !== '',
     sets: options.sets,
+    provider: options.provider,
     cells: cellCount
   };
   fs.writeFileSync(file, `${JSON.stringify(meta, null, 2)}\n`);
@@ -470,12 +474,30 @@ export function repeatCells(cells, repeat) {
   return cells.flatMap((cell) => cell.kind === 'replay' ? [cell] : Array.from({ length: repeat }, (_, index) => ({ ...cell, directory: `${cell.id}-${index + 1}`, repeat: index + 1 })));
 }
 
+function sweepProvider(options) {
+  if (options.provider === 'claude' && options.efforts === null) return null;
+  const home = os.homedir();
+  const config = loadRunConfig({ home });
+  const entry = config.providers[options.provider];
+  if (entry === undefined) throw new Error(`unknown provider ${options.provider}; one of ${Object.keys(config.providers).join(', ')}`);
+  const efforts = options.efforts ?? [config.defaults.effort];
+  const refused = efforts.filter((effort) => !entry.efforts.includes(effort));
+  if (refused.length > 0) throw new Error(`${options.provider} takes no effort ${refused.join(', ')}; one of ${entry.efforts.join(', ')}`);
+  const provider = { name: options.provider, model: entry.model, efforts };
+  if (!options.confirm || options.dryRun) return provider;
+  const resolved = resolveProvider(config, options.provider, readKeys(path.join(configDir(home), 'keys.env')), efforts[0], home);
+  if (resolved.refused !== undefined) throw new Error(resolved.refused);
+  return { ...provider, env: options.provider === 'claude' ? null : resolved.env };
+}
+
 async function main() {
   const options = parseArguments(process.argv.slice(2));
+  const provider = sweepProvider(options);
   const replay = options.cases === null ? [] : replayCells(JSON.parse(fs.readFileSync(options.cases, 'utf8')), options);
   const judged = options.reviewerBodies === null ? sweepCells()
     : judgeCells(sweepCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
-  const cells = repeatCells(keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells), options.repeat);
+  const chosen = keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells);
+  const cells = repeatCells(provider === null ? chosen : providerCells(chosen, provider, provider.efforts), options.repeat);
   console.log(`${options.tier} tier, ${cells.length} claude -p calls planned, one per cell and repeat:`);
   for (const cell of cells) console.log(`  ${cell.directory ?? cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (options.keepRepo !== null) console.log(`keeps each cell repository under ${options.keepRepo}`);
@@ -509,7 +531,7 @@ async function main() {
         records[index] = JSON.parse(fs.readFileSync(recordFile, 'utf8'));
       } else {
         running.add(cell.directory ?? cell.id);
-        records[index] = await runCell(cell, runDirectory, copies, options.keepRepo);
+        records[index] = await runCell(cell, runDirectory, copies, options.keepRepo, provider?.env ?? null);
         running.delete(cell.directory ?? cell.id);
         // Null once the sweep's own signal ended the cell; the sweep exits when its last cell closes.
         if (records[index] === null) return;

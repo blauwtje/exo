@@ -270,8 +270,22 @@ export function pluginVariants(cells) {
 
 // A run arm's exo run refuses under a Claude Code session's CLAUDECODE, so it starts clean of the
 // parent session, as from a terminal; a claude cell keeps the environment its past results were measured in.
-export function cellEnvironment(cell, base, extra) {
-  return { ...(cell.runSession ? withoutParentSession(base) : base), ...extra };
+export function cellEnvironment(cell, base, extra, providerEnv = null) {
+  const inherited = { ...(cell.runSession ? withoutParentSession(base) : base) };
+  if (providerEnv === null) return { ...inherited, ...extra };
+  delete inherited.ANTHROPIC_API_KEY;
+  return { ...inherited, ...providerEnv, ...extra };
+}
+
+function effortId(cell, provider, effort) {
+  const base = cell.id.endsWith(`-${cell.effort}`) ? cell.id.slice(0, -cell.effort.length - 1) : cell.id;
+  return `${base}-${provider}-${effort}`;
+}
+
+export function providerCells(cells, provider, efforts) {
+  const seen = new Set();
+  const expanded = efforts.flatMap((effort) => cells.map((cell) => ({ ...cell, id: effortId(cell, provider.name, effort), provider: provider.name, model: provider.model, effort })));
+  return expanded.filter((cell) => !seen.has(cell.id) && seen.add(cell.id));
 }
 
 // The `node` arguments of a run arm: exo run builds the fixed plan with one
@@ -281,7 +295,7 @@ export function cellEnvironment(cell, base, extra) {
 export function runArguments(cell, pluginDir = ROOT) {
   return [
     path.join(pluginDir, 'skills', 'build', 'scripts', 'exo-cli.mjs'), 'run', FLOW_PLAN,
-    '--provider', 'claude', '--model', cell.model, '--effort', cell.effort,
+    '--provider', cell.provider ?? 'claude', '--model', cell.model, '--effort', cell.effort,
     '--session', cell.runSession,
     '--max-run-usd', cell.budgetUsd,
     '--plugin-dir', pluginDir,
