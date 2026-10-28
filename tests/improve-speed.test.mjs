@@ -189,13 +189,32 @@ function pooledBase(costs) {
   const directory = fixture();
   const results = path.join(directory, '2026-01-01-base.md');
   fs.writeFileSync(results, `| run | cost $ | tokens | wall s |\n|---|---|---|---|\n${costs.map((cost, index) => `| b-${index} | ${cost} | 100 | 60 |`).join('\n')}\n`);
-  const key = contentKey({ commit: 'HEAD', cell: 'flow-unit', model: 'claude-sonnet-5-5', effort: 'high', claudeVersion: 'unrecorded' });
+  const key = contentKey({ commit: 'HEAD', cell: 'flow-unit', model: 'claude-sonnet-5-5', effort: 'high', claudeVersion: STUB_VERSION });
   const pool = path.join(directory, 'pool.jsonl');
   fs.writeFileSync(pool, `${JSON.stringify({ key, results, arm: 'b-' })}\n`);
   return pool;
 }
 
-const quickRun = (out, pool) => spawnSync(process.execPath, [SCRIPT, '--from', out, '--base', 'HEAD', '--pool', pool], { encoding: 'utf8' });
+const STUB_VERSION = '9.9.9';
+
+function stubClaudePath() {
+  const directory = fixture();
+  fs.writeFileSync(path.join(directory, 'claude'), `#!/bin/sh\necho "${STUB_VERSION} (Claude Code)"\n`, { mode: 0o755 });
+  return `${directory}${path.delimiter}${process.env.PATH}`;
+}
+
+const STUB_PATH = stubClaudePath();
+const quickRun = (out, pool, extra = []) => spawnSync(process.execPath, [SCRIPT, '--from', out, '--base', 'HEAD', '--pool', pool, ...extra], { encoding: 'utf8', env: { ...process.env, PATH: STUB_PATH } });
+
+test('the pooled base is looked up under the installed Claude Code version unless --claude-version overrides it', () => {
+  const pool = pooledBase([0.5, 0.7, 0.9]);
+  const out = fixture();
+  makeCell(out, 'ok', { record: { costUsd: 0.4 } });
+  assert.equal(quickRun(out, pool).status, 0);
+  const overridden = quickRun(out, pool, ['--claude-version', '1.0.0']);
+  assert.equal(overridden.status, 2);
+  assert.match(overridden.stderr, /no pooled base/);
+});
 
 test('flagless runs screen the cell against the pooled base and print the verdict beside the score', () => {
   const pool = pooledBase([0.5, 0.7, 0.9]);

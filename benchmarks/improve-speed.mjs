@@ -13,6 +13,7 @@ const CELL_ID = 'flow-unit';
 const FULL_REPEAT = 15;
 const LOOKUP_MODEL = 'claude-sonnet-5-5';
 const LOOKUP_EFFORT = 'high';
+const UNRECORDED_VERSION = 'unrecorded';
 const POOL_SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'baseline-pool.mjs');
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -136,7 +137,7 @@ export function scoreOutDir(outDirectory) {
 }
 
 function parseArgs(argv) {
-  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: 'unrecorded', pool: null };
+  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: null, pool: null };
   for (let index = 0; index < argv.length; index++) {
     const flag = argv[index];
     if (flag === '--from') options.from = argv[++index];
@@ -182,10 +183,16 @@ function mergeBase(checkout) {
   return run.status === 0 ? run.stdout.trim() : null;
 }
 
+function installedClaudeVersion() {
+  const run = spawnSync('claude', ['--version'], { encoding: 'utf8' });
+  const version = run.status === 0 ? run.stdout.trim().split(/\s+/)[0] : '';
+  return version || UNRECORDED_VERSION;
+}
+
 function lookupBase(options) {
   const commit = options.base ?? mergeBase(checkoutOf(options));
   if (!commit) return { error: 'no base commit: git merge-base HEAD main failed; pass --base <commit>' };
-  const args = [POOL_SCRIPT, 'lookup', '--metric', 'cost', '--commit', commit, '--cell', CELL_ID, '--model', LOOKUP_MODEL, '--effort', LOOKUP_EFFORT, '--claude-version', options.claudeVersion];
+  const args = [POOL_SCRIPT, 'lookup', '--metric', 'cost', '--commit', commit, '--cell', CELL_ID, '--model', LOOKUP_MODEL, '--effort', LOOKUP_EFFORT, '--claude-version', options.claudeVersion ?? installedClaudeVersion()];
   if (options.pool) args.push('--pool', options.pool);
   const run = spawnSync(process.execPath, args, { encoding: 'utf8' });
   if (run.status === 1) return { error: `no pooled base for commit ${commit}; add its results with node benchmarks/baseline-pool.mjs add` };
