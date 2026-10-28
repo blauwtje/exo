@@ -10,6 +10,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `benchmarks/results/2026-10-28-flow-speed-research.md` records where real spec, build and verify session time goes; the speed ideas it queues for an `exo:improve` run are `build-task-stall-guard`, `lead-stages-verify-while-run-unit-builds` and `verdict-first-review-output-with-a-finding`.
 - `memory=off` (set through `/exo:configure`) switches the project memory off: the session start adds no memory pointer and `/exo:remember` writes and reads nothing; the memory file stays in place.
 - `node benchmarks/adhd-score.mjs --screen` scores one idea on a reduced case set for about $0.92 and under 2 min; `--dry-run` projects the cost before any call, `--rescore` re-judges stored replies with zero reply calls, `--cases` picks cases, and `--resume` continues a partial run; the score log records per-case cost and wall time.
 - `node benchmarks/adhd-score.mjs --ablate <slug>` scores the `exo:adhd` style minus one `BREVITY_LINES` sentence; the score log records the slug in `ablate`.
