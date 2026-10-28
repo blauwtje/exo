@@ -122,7 +122,7 @@ A quick value run stops with the `--stock-baseline` command in its message when 
 | `flow` | 4: a fixed four-task plan run through `build` (`flow-c7`, `flow-session`), the same plan with no plugin (`flow-base`, no `--plugin-dir`), and through `exo run` as one plan session (`flow-run`), at most $1 each | Sonnet 5 at `high` (run arms: the run's default model) |
 
 ```bash
-node benchmarks/sweep.mjs --set all                    # prints the 50 calls it would make and starts none
+node benchmarks/sweep.mjs --full                       # prints every call it would make and starts none; --set all does the same
 node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three hours at the default --concurrency 2
 node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
 node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # writes the results file under <dir> instead of results/
@@ -148,11 +148,25 @@ A review cell runs the body of the `review-branch` agent as its own session, bec
 
 ### Quick sweep review cells
 
-The review set has a quick tier that needs no flag of its own: name the seeded and control cells of two tasks at `high`, 4 cells, about $0.65 at the cost of the 2026-10-18 review-high cells. Without `--confirm` it prints the cells and starts none; a rerun on the same `--out` skips cells that kept a `record.json`.
+The bare `node benchmarks/sweep.mjs` is the quick tier: the seeded and control cells of two review tasks at `high`, 4 cells, about $0.65 at the cost of the 2026-10-18 review-high cells. Without `--confirm` it prints the cells and starts none; `--dry-run` prints them with the projected cost and exits 0 without starting any. `--full` plans every set, and an explicit `--set` leaves the quick tier. A rerun on the same `--out` skips cells that kept a `record.json`.
 
 ```bash
-node benchmarks/sweep.mjs --set review --cells review-safe-path-seeded-high,review-safe-path-control-high,review-sql-user-seeded-high,review-sql-user-control-high --confirm --out benchmarks/runs/<dir>
+node benchmarks/sweep.mjs --dry-run                                  # the 4 quick cells and the projection, no call
+node benchmarks/sweep.mjs --confirm --out benchmarks/runs/<dir>      # runs the quick cells
+node benchmarks/sweep.mjs --full --dry-run                           # every set, no call
 ```
+
+### Other hand-run scripts with a quick tier
+
+Each of these prints its plan and spends nothing under `--dry-run`, runs a small default under no flag, and restores the old default under `--full`; an explicit count overrides the tier.
+
+| Script | Quick default | `--full` |
+|---|---|---|
+| `node benchmarks/checkpoint-fork.mjs --checkpoints <keep> --full-runs <sweep out> --out <dir>` | 1 fork per kept cell, still needs `--confirm` to run | 2 forks per kept cell; `--forks <n>` overrides either |
+| `node benchmarks/pressure/drive.mjs <scenario> <model> <arm> [maxTurns]` | 2 turns | 99 turns; an explicit `maxTurns` overrides the tier |
+| `node benchmarks/replay/grade.mjs <cellDir\|runDir>` | the first 3 cells, 1 judge vote each | every cell, 3 judge votes each; `--dry-run` prints the judge calls and the `calls x JUDGE_BUDGET_USD` upper bound |
+
+`verify/checks/paid-benchmarks.mjs` scans `benchmarks/` and its subfolders (not `fixtures`, `results`, `runs`, `value`) for an entry point that calls `claude -p`, the API or `confinedClaude`, and flags one with neither `--dry-run` nor a quick tier. `benchmarks/confined-child.mjs` is exempt because its callers `run.mjs` and `sweep.mjs` both have both guards; the check prints that reason.
 
 ## Review replay
 
@@ -179,13 +193,22 @@ The quick tier is a screen, not a verdict: with 2 tasks x 1 run a task flips onl
 
 ## Routing eval
 
-`node benchmarks/routing.mjs` measures which exo skill a real session picks per prompt. It sends every prompt of `benchmarks/routing/prompts.json` (a train and a held-out split) in a fresh `claude -p` session per cell, arm (`hook`, or `no-hook` with all hooks disabled) and run, and writes per-arm, per-split, per-skill recall and false-trigger rate, plus a hash of each model-invocable skill description and of `hooks/session-routing.md`, to `benchmarks/results/routing.json`. Flags: `--cells <model:effort,...>` (default `sonnet:low`), `--runs` (default 3), `--arms`, `--split`, `--concurrency` (default 4), `--out`. `--smoke` runs one known-good prompt and exits 1 on a miss. The run is paid and local: it never runs inside `npm run check` or `npm test`.
+`node benchmarks/routing.mjs` measures which exo skill a real session picks per prompt; the bare command runs the quick set below, and `--full` sends every prompt of `benchmarks/routing/prompts.json` (a train and a held-out split) in a fresh `claude -p` session per cell, arm (`hook`, or `no-hook` with all hooks disabled) and run, and writes per-arm, per-split, per-skill recall and false-trigger rate, plus a hash of each model-invocable skill description and of `hooks/session-routing.md`, to `benchmarks/results/routing.json`. Flags: `--cells <model:effort,...>` (default `sonnet:low`), `--runs` (default 1, 3 with `--full`), `--arms`, `--split`, `--concurrency` (default 4), `--out`. `--smoke` runs one known-good prompt and exits 1 on a miss. The run is paid and local: it never runs inside `npm run check` or `npm test`.
 
-`npm run check` has a `routing` check that compares the recorded hashes with the current files. It fails with `routing result is stale for <name> (changed)` after a description or `hooks/session-routing.md` edit, and the fix is to rerun `node benchmarks/routing.mjs` and commit the result.
+```bash
+node benchmarks/routing.mjs --dry-run                  # quick set, no session: prints the session count times the median recorded cost
+node benchmarks/routing.mjs                            # quick: the first held-out prompt per skill plus 4 null prompts, 1 run, hook arm against the stored no-hook baseline, writes routing-quick.json
+node benchmarks/routing.mjs --write-baseline           # runs the no-hook arm on the quick set and stores it in benchmarks/results/routing-baseline.json
+node benchmarks/routing.mjs --full                     # every prompt, 3 runs, both arms, writes routing.json; only --full takes --split
+```
+
+A quick run whose cells, prompt ids or description hashes differ from the stored baseline prints `baseline stale` and runs the no-hook arm live too.
+
+`npm run check` has a `routing` check that compares the recorded hashes with the current files. It fails with `routing result is stale for <name> (changed)` after a description or `hooks/session-routing.md` edit, and the fix is to rerun `node benchmarks/routing.mjs --full` and commit the result.
 
 ## Ideas set
 
-`node benchmarks/ideas.mjs` measures how original and varied the design options `spec` offers. Each case (`fx-tide-export`, `fx-shopping-share`, `fx-notes-export`, listed in `benchmarks/ideas/cases.json`) sends one neutral request, `/exo:spec <feature> Which designs could do this? Recommend one.`, in a fresh `claude -p` session on a fresh copy of the fixture, with maker model `opus` at effort `high`. Baseline is 5 runs per case.
+`node benchmarks/ideas.mjs` measures how original and varied the design options `spec` offers. Each case (`fx-tide-export`, `fx-shopping-share`, `fx-notes-export`, listed in `benchmarks/ideas/cases.json`) sends one neutral request, `/exo:spec <feature> Which designs could do this? Recommend one.`, in a fresh `claude -p` session on a fresh copy of the fixture, with maker model `opus` at effort `high`. The quick tier is 1 run per case; `--full` is the baseline of 5 runs per case.
 
 Methods: fluency, flexibility and originality from divergent-thinking tests (Guilford, Torrance); the Consensual Assessment Technique with an LLM judge rating each option alone on anchored 1-5 scales; creativity as novelty and usefulness, so originality and fit are rated apart. A blind judge (`claude-sonnet-5-5`, no plugin, no tools) extracts options from the final message, clusters all options of a case into shapes, then scores each option three times and keeps the median. Hidden control options with known keys calibrate it: under 80% of control scores within 1 of the key marks the results `judge uncalibrated` and draws no decision.
 
@@ -194,11 +217,15 @@ Metrics: `strong` (options per run with originality and fit both >= 4, primary),
 Decision rule, written into the results file before any score: variant A1 (wider sketch) is worth an arm when mean `shapes` < 3 or `originality` < 3; A2 (one subagent per candidate) when `duplicateShare` >= 0.2; A3 (code-cliché list) when `modalShare` >= 0.6 or `rare` < 0.2. Adopting a variant still needs it to beat baseline by more than the minimum detectable effect.
 
 ```bash
-node benchmarks/ideas.mjs --arm base --n 5               # prints the planned cells and spends nothing
-node benchmarks/ideas.mjs --arm base --n 5 --confirm     # runs them, writing benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/
+node benchmarks/ideas.mjs --arm base                     # quick, one answer per case: prints the planned cells and the projected USD, spends nothing
+node benchmarks/ideas.mjs --arm base --confirm           # runs them, writing benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/
+node benchmarks/ideas.mjs --arm base --full --confirm    # full: 5 answers per case, the baseline run
 node benchmarks/ideas.mjs --score <dir>                  # judges a run dir, writes benchmarks/results/<date>-ideas-<arm>.md
+node benchmarks/ideas.mjs --score <dir> --baseline <dir> # also compares the scored arm to <dir>/base/records.json
 node benchmarks/ideas.mjs --compare <dirA> <dirB>        # compareMeans per metric between two arms
 ```
+
+Without `--confirm` a run is the dry run. An answer with no parsable option fails before any judge call. `--n` overrides the tier's count.
 
 Every paid run waits for the user to request it; agents run the dry mode and the tests only.
 
@@ -218,6 +245,8 @@ node benchmarks/tbench/import.mjs --out /tmp/tb-runs --model claude-opus-5-5 --j
 node benchmarks/score.mjs /tmp/tb-runs --compare exo-before,cand-1
 ```
 
+`node benchmarks/tbench/watch.mjs --dry-run --job <job dir> --tasks <n> --trials <n>` starts no process and prints the cost a job of that many tasks and trials would reach before you launch Harbor. The runner has no quick tier and no `--full`: its task set and calibration stay per goal, chosen with a paid calibration run.
+
 - The agent pins Claude Code 2.1.302, caps a trial at `max_turns=60` (override with `--ak max_turns=N`), uploads the plugin dir without `.git`, `benchmarks`, `docs` and `node_modules` to `/opt/exo-plugin`, and puts a `claude --plugin-dir /opt/exo-plugin` wrapper first on PATH.
 - The importer writes one value-tier cell per trial (`<task>/<arm>/<n>`). A rate-limit, authentication or other infrastructure error sets `harnessError`, so `score.mjs` leaves the cell out of every mean; `max_turns` and a timeout are fails. A task where an `exo-before` (`--control`) cell is infra drops from every arm. Cost is Claude Code's `total_cost_usd` (list prices, not billed on a subscription); tokens come from the stream's `modelUsage`; time is the agent execution span.
 - The watcher sums finished-trial cost, charges each running trial the job's highest finished cost (`--running`, $1.5 by default, until a trial in that job finishes), and at `--limit` (default $55) sends SIGTERM to Harbor. Harbor has no stop-starting mode, so running trials end too; the importer skips the `CancelledError` trials.
@@ -230,3 +259,18 @@ node benchmarks/score.mjs /tmp/tb-runs --compare exo-before,cand-1
 |---|---|
 | `node benchmarks/adhd-score.mjs` | Quick run: runs the quick repo-style eval of `exo:adhd` on the 10 cases in `benchmarks/adhd/quick.json` once each, capped at $0.30 (`--max-usd` overrides) and meant to finish under 60 s, and prints the median output-token ratio against an "Answer concisely." arm plus answer-in-first-line %, clean-deliverable %, question-last % and facts-kept %; `--concise-baseline` stores that reference arm in `<git common dir>/exo/adhd/concise.json` (`--all` rebuilds every case) and the quick run needs it; `--arm caveman` swaps the measured arm for the caveman reference style in `benchmarks/adhd/arms/caveman.md`; `--full` or any full-run flag (`--screen`, `--baseline`, `--rescore`, `--resume`, `--ablate`, `--runs`) runs the full score below, and `--arm` cannot combine with them. |
 | `node benchmarks/adhd-score.mjs --full` | Prints one number, lower is better: the mean per-case ratio of `exo:adhd` output tokens to default-style output tokens, where a case scores 1.0 if any gate fails. Gates: every reply ends on its last `?` with no prose after it, a reply to a case with `ask` holds a `?`, a case with a `deliverable` pattern replies with only that deliverable (code fence unwrapped), and an explain case lists one literal per required fact, so a dropped fact fails a code gate. stderr shows each case's visible and billed output tokens (adhd/default) and the billed totals. The adhd arm runs 3 times per case and `--max-usd` defaults to $3. Flags: `--baseline` (fills only the cases missing from `baseline.json` and saves after each case; `--all` rebuilds every case), `--check`, `--to-label`, `--add-fail-labels` (appends known-FAIL rows: facts rows built by deleting one required fact from a human PASS row, a judged reply in the newest 3 logs of `--log-dir` or one baseline reply per case), `--calibrate` (facts judge agreement, split by PASS and FAIL rows, in batches of up to 3), `--stability` (re-judges the replies of one score log, `--log` or the newest, `--repeats` times, default 5, and prints the facts judge flip rate), `--runs`, `--max-usd`, `--judge-model`, `--model`, `--log-dir`, `--log`, `--repeats`, `--votes`. The only judge is facts; each verdict is the majority of 3 parallel calls (`--votes` for calibration and stability); a judge answer missing a verdict line is retried once, then an error. `baseline.json` and `labels.jsonl` are stored in `<git common dir>/exo/adhd/`, shared by all worktrees. |
+
+## improve-all-score
+
+`node benchmarks/improve-all-score.mjs` compares a checkout to the recorded `main` constants over a review replay and a build measurement. The default is the quick tier (replay repeat 1, build repeat 3), a screen whose printed ratio line carries a `quick` marker because the constants were measured at repeat 2 and 10.
+
+```bash
+node benchmarks/improve-all-score.mjs --dry-run            # prints the child commands and the projected USD, spends nothing
+node benchmarks/improve-all-score.mjs                      # quick
+node benchmarks/improve-all-score.mjs --full               # replay repeat 2, build repeat 10
+node benchmarks/improve-all-score.mjs --from-replay <runs dir> --from-build <out dir>   # rescore saved dirs offline
+```
+
+## Lean gates
+
+`benchmarks/lean-gates.mjs` runs one fixture in one session, so it has no `--full`; repeats are `--run <n>`. `--dry-run` prepares the run dir, prints the argv, prompt and env diff, and the projected USD from recorded runs. `node benchmarks/lean-gates-metrics.mjs <out> --baseline <metrics.json>` prints the deltas against a stored baseline.

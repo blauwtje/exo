@@ -57,7 +57,12 @@ export function shuffled(items, random = Math.random) {
   return copy;
 }
 
+const OPTION_LINE = /^\s*(?:[-*+]\s|\d+[.)]\s|#{1,6}\s|\*\*|(?:option|approach|design|alternative)\b)/im;
+
+const hasParsableOption = (finalText) => OPTION_LINE.test(finalText);
+
 export async function extractRun({ judge, finalText }) {
+  if (!hasParsableOption(finalText)) return { options: [], recommended: null, failed: true };
   const prompt = `${template('extract')}\n\n${finalText}`;
   const valid = (reply) => Array.isArray(reply.options) && reply.options.every((o) => typeof o.title === 'string');
   const reply = await ask({ judge, prompt, valid });

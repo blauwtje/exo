@@ -6,7 +6,7 @@ import test from 'node:test';
 import { parseArguments } from '../benchmarks/run-args.mjs';
 import { loadValueTasks } from '../benchmarks/value.mjs';
 import { VALUE_QUICK_TASKS } from '../benchmarks/tasks.mjs';
-import { mergeStock, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from '../benchmarks/value-stock.mjs';
+import { mergeStock, modeSummary, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from '../benchmarks/value-stock.mjs';
 
 const cell = (task, pass, cost) => ({ task, pass, cost_usd: cost, wallMs: 1000 });
 
@@ -100,4 +100,16 @@ test('quickSummary leaves the cost delta null for a cell without a reported cost
   assert.equal(summary.cost_usd, 0);
   assert.equal(summary.tasks[0].costDelta, null);
   assert.equal(summary.tasks[0].passDelta, -1);
+});
+
+test('modeSummary records the run mode, the summed cost, the duration and the cell count', () => {
+  const summary = modeSummary({ mode: 'full', cells: [cell('a', true, 0.5), cell('b', false, 0.25), { task: 'c', pass: false, cost_usd: undefined, wallMs: 1 }], durationMs: 900 });
+  assert.deepEqual(summary, { mode: 'full', cost_usd: 0.75, durationMs: 900, cells: 3 });
+});
+
+test('modeSummary keeps every parsed run mode', () => {
+  for (const argv of [['--full'], ['--smoke'], ['--tasks', 'a', '--arms', 'baseline']]) {
+    const { mode } = parseArguments(argv);
+    assert.equal(modeSummary({ mode, cells: [], durationMs: 1 }).mode, mode);
+  }
 });

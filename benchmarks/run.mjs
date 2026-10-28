@@ -35,7 +35,7 @@ import { BEFORE_ARM, buildCopies, copyKey, exoRootOf, loadsCopy } from './plugin
 import { pluginDirty } from './plugin-state.mjs';
 import { parseArguments, TIERS, tierTasks } from './run-args.mjs';
 import { ARMS, FIXTURE, MODELS, NO_RUN, ROOT } from './tasks.mjs';
-import { quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from './value-stock.mjs';
+import { modeSummary, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from './value-stock.mjs';
 import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, newestRunLedger, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
@@ -464,12 +464,13 @@ async function main() {
     writeStock(stockStorePath(), stockRows({ cells: storedCells(cells), model: MODELS[options.model], claudeVersion: claudeVersion() }));
     console.log(`stock baseline written to ${stockStorePath()}`);
   }
-  if (quick !== null) {
-    const finished = cells.filter((cell) => cell.arm !== 'baseline' && fs.existsSync(path.join(cell.cellDirectory, 'checks.json')));
-    const summary = quickSummary({ stock: quick.stock, cells: storedCells(finished), durationMs: Date.now() - startedAt });
-    fs.writeFileSync(path.join(runDirectory, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
-    console.log(JSON.stringify(summary, null, 2));
-  }
+  const finished = cells.filter((cell) => !(quick !== null && cell.arm === 'baseline') && fs.existsSync(path.join(cell.cellDirectory, 'checks.json')));
+  const durationMs = Date.now() - startedAt;
+  const summary = quick === null
+    ? modeSummary({ mode: options.mode, cells: storedCells(finished), durationMs })
+    : quickSummary({ stock: quick.stock, cells: storedCells(finished), durationMs });
+  fs.writeFileSync(path.join(runDirectory, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
+  console.log(JSON.stringify(summary, null, 2));
   if (options.maxTotalUsd !== null) console.log(`spent $${spent.toFixed(3)} of $${options.maxTotalUsd}; ${skipped.length} cells skipped`);
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);
 }

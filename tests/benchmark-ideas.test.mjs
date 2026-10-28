@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { HEADLESS_LINE, MAKER_LINE, makerArguments, makerPrompt, rawRecordsFile, runFailure, scoreDirectory, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
-import { JUDGE_ARGUMENTS, addRarity, calibration, compareMarkdown, decisions, modalShare, resultsMarkdown, runRecord } from '../benchmarks/ideas-score.mjs';
+import { HEADLESS_LINE, MAKER_LINE, caseMeans, compareToBaseline, makerArguments, makerPrompt, projectedCostLine, rawRecordsFile, recordedCosts, runFailure, scoreDirectory, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
+import { JUDGE_ARGUMENTS, addRarity, calibration, compareMarkdown, decisions, extractRun, modalShare, resultsMarkdown, runRecord } from '../benchmarks/ideas-score.mjs';
 
 const IDEAS = path.join(import.meta.dirname, '..', 'benchmarks', 'ideas.mjs');
 const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'benchmarks', 'ideas', 'cases.json'), 'utf8'));
@@ -16,12 +16,72 @@ test('cases and the maker line hold no steering word', () => {
   assert.doesNotMatch(`${MAKER_LINE} ${HEADLESS_LINE} ${makerPrompt('x')}`, STEERING);
 });
 
+test('the default plans one quick answer per case, --full plans five, an explicit --n wins', () => {
+  const planned = (...args) => spawnSync(process.execPath, [IDEAS, ...args], { encoding: 'utf8' }).stdout.split('\n').filter((line) => line.startsWith('planned '));
+  const cases = Object.keys(CASES).length;
+  assert.equal(planned().length, cases);
+  assert.ok(planned().every((line) => line.includes('(quick)')));
+  assert.equal(planned('--full').length, 5 * cases);
+  assert.ok(planned('--full').every((line) => line.includes('(full)')));
+  assert.equal(planned('--full', '--n', '2').length, 2 * cases);
+});
+
+test('caseMeans averages each metric per case, skipping null values', () => {
+  const means = caseMeans([{ case: 'a', run: 1, fit: 2, costUsd: null }, { case: 'a', run: 2, fit: 4, costUsd: 1 }, { case: 'b', run: 1, fit: 5, costUsd: null }]);
+  assert.deepEqual(means, [{ case: 'a', fit: 3, costUsd: 1 }, { case: 'b', fit: 5, costUsd: null }]);
+});
+
+test('compareToBaseline reads the stored base arm and prints each side\'s run count above the table', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-baseline-'));
+  const stored = ['tide', 'shopping', 'notes'].flatMap((id) => [1, 2, 3, 4, 5].map((run) => ({ case: id, run, fit: 3, originality: 2 })));
+  savedRecords(dir, 'base', JSON.stringify(stored));
+  const text = compareToBaseline({ baselineDir: dir, records: [{ case: 'tide', run: 1, fit: 4, originality: 2 }] });
+  assert.match(text, /^runs: baseline 15 \(per-case mean of 3 cases\), new 1\n/);
+  assert.match(text, /\| metric \| diff \| two SE \| verdict \|/);
+  assert.match(text, /\| fit \| /);
+});
+
+test('--baseline without --score is a usage error', () => {
+  const run = spawnSync(process.execPath, [IDEAS, '--baseline', os.tmpdir()], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /--baseline needs --score/);
+});
+
 test('dry mode prints one planned cell per case and run and spends nothing', () => {
   const run = spawnSync(process.execPath, [IDEAS, '--n', '2'], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
   const planned = run.stdout.split('\n').filter((line) => line.startsWith('planned '));
   assert.equal(planned.length, 2 * Object.keys(CASES).length);
   assert.match(run.stdout, /nothing spent/);
+});
+
+function savedRecords(out, arm, records) {
+  fs.mkdirSync(path.join(out, arm), { recursive: true });
+  fs.writeFileSync(path.join(out, arm, 'records.json'), records);
+}
+
+test('recordedCosts reads costUsd from the arm records file, skipping null costs and a missing file, and throws on an unreadable one', () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-costs-'));
+  savedRecords(out, 'base', JSON.stringify([{ costUsd: 1 }, { costUsd: 3 }, { costUsd: null }, {}]));
+  savedRecords(out, 'broken', '{not json');
+  assert.deepEqual(recordedCosts(out, 'base'), [1, 3]);
+  assert.throws(() => recordedCosts(out, 'broken'), SyntaxError);
+  assert.deepEqual(recordedCosts(out, 'absent'), []);
+});
+
+test('projectedCostLine multiplies planned cells by the median recorded USD, else cost unknown', () => {
+  assert.equal(projectedCostLine(10, [1, 3, 8]), 'projected cost: $30.00 (10 cells x median $3.0000 of 3 recorded runs)');
+  assert.equal(projectedCostLine(10, []), 'projected cost: cost unknown');
+});
+
+test('dry mode projects cost from the records file of --out, else prints cost unknown', () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-dry-'));
+  const ideas = () => spawnSync(process.execPath, [IDEAS, '--n', '1', '--out', out], { encoding: 'utf8' });
+  const cells = Object.keys(CASES).length;
+  assert.match(ideas().stdout, /projected cost: cost unknown/);
+  savedRecords(out, 'base', JSON.stringify([{ costUsd: 2 }]));
+  assert.match(ideas().stdout, new RegExp(`projected cost: \\$${(2 * cells).toFixed(2).replace('.', '\\.')} `));
+  assert.match(ideas().stdout, /nothing spent/);
 });
 
 test('metrics, rarity and modal share compute on fixed options', () => {
@@ -67,6 +127,9 @@ test('decision rule follows the pre-registered thresholds', () => {
   assert.match(high[2], /: needed/);
 });
 
+const GOOD_ANSWER = '1. alpha: a first design\n2. beta: a second design';
+const BAD_ANSWER = 'I decided to keep it as is.';
+
 function fakeJudge(options, controlsOk) {
   const keys = new Map(Object.values(CASES).flatMap((spec) => spec.controls.map((c) => [c.title, c])));
   return ({ prompt }) => {
@@ -89,7 +152,7 @@ async function scoreWith(controlsOk) {
   for (const caseId of Object.keys(CASES)) {
     const folder = path.join(dir, 'base', caseId, '1');
     fs.mkdirSync(folder, { recursive: true });
-    fs.writeFileSync(path.join(folder, 'final.md'), 'options here');
+    fs.writeFileSync(path.join(folder, 'final.md'), GOOD_ANSWER);
   }
   const results = path.join(dir, 'results.md');
   await scoreDirectory({ dir, arm: 'base', judge: fakeJudge(['alpha', 'beta'], controlsOk), results });
@@ -111,7 +174,7 @@ test('score keeps the raw maker answers beside the results file so a later judge
   const kept = JSON.parse(fs.readFileSync(rawRecordsFile(path.join(dir, 'results.md')), 'utf8'));
   assert.equal(kept.arm, 'base');
   assert.equal(kept.runs.length, Object.keys(CASES).length);
-  assert.ok(kept.runs.every((run) => run.finalText === 'options here' && run.run === 1));
+  assert.ok(kept.runs.every((run) => run.finalText === GOOD_ANSWER && run.run === 1));
   assert.equal(kept.records.length, kept.runs.length);
   assert.equal(rawRecordsFile('/r/2026-10-20-ideas-base.md'), '/r/2026-10-20-ideas-base.records.json');
 });
@@ -140,13 +203,12 @@ test('a maker run that crashed, timed out or ended without an answer is failed; 
 test('failed runs are listed in the results and left out of metrics and n', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-test-'));
   const ids = Object.keys(CASES);
-  for (const caseId of ids) {
-    for (const run of ['1', '2']) {
-      const folder = path.join(dir, 'base', caseId, run);
-      fs.mkdirSync(folder, { recursive: true });
-      if (caseId === ids[0] && run === '2') fs.writeFileSync(path.join(folder, 'failed.json'), JSON.stringify({ reason: 'exit code 1' }));
-      else fs.writeFileSync(path.join(folder, 'final.md'), 'options here');
-    }
+  for (const [caseId, run] of ids.flatMap((id) => ['1', '2'].map((number) => [id, number]))) {
+    const folder = path.join(dir, 'base', caseId, run);
+    fs.mkdirSync(folder, { recursive: true });
+    const failed = caseId === ids[0] && run === '2';
+    const [file, content] = failed ? ['failed.json', JSON.stringify({ reason: 'exit code 1' })] : ['final.md', GOOD_ANSWER];
+    fs.writeFileSync(path.join(folder, file), content);
   }
   const results = path.join(dir, 'results.md');
   await scoreDirectory({ dir, arm: 'base', judge: fakeJudge(['alpha', 'beta'], true), results });
@@ -194,4 +256,31 @@ test('a metric with sd 0 prints no MDE, is named at a floor or ceiling, and a co
   const table = compareMarkdown({ left: base, right: variant });
   assert.match(table, /\| strong \| 1 \| 0 \| no SE \(sd 0\) \|/);
   assert.doesNotMatch(table, /\| strong \|[^\n]*rise/);
+});
+
+test('an answer with no parsable option fails before any judge call; a listed answer reaches the judge', async () => {
+  let calls = 0;
+  const judge = (input) => {
+    calls += 1;
+    return fakeJudge(['alpha', 'beta'], true)(input);
+  };
+  const bad = await extractRun({ judge, finalText: BAD_ANSWER });
+  assert.deepEqual([bad.failed, bad.options.length, calls], [true, 0, 0]);
+  const empty = await extractRun({ judge, finalText: '' });
+  assert.deepEqual([empty.failed, calls], [true, 0]);
+  const good = await extractRun({ judge, finalText: GOOD_ANSWER });
+  assert.deepEqual([good.failed, good.options.length, calls], [false, 2, 1]);
+});
+
+test('a run whose answer has no parsable option is listed as unscored', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-test-'));
+  const ids = Object.keys(CASES);
+  for (const caseId of ids) {
+    const folder = path.join(dir, 'base', caseId, '1');
+    fs.mkdirSync(folder, { recursive: true });
+    fs.writeFileSync(path.join(folder, 'final.md'), caseId === ids[0] ? BAD_ANSWER : GOOD_ANSWER);
+  }
+  const results = path.join(dir, 'results.md');
+  await scoreDirectory({ dir, arm: 'base', judge: fakeJudge(['alpha', 'beta'], true), results });
+  assert.match(fs.readFileSync(results, 'utf8'), new RegExp(`Unscored items: ${ids[0]}/1 extract`));
 });

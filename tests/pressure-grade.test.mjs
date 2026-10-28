@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { aggregate, gradeLine, gradeRun, judgeClauses, lintCriteria, linesForCase, newcombe, parseCriteria, parseMargins, runsNeeded, verdictFor } from '../skills/edit-skills/scripts/pressure-grade.mjs';
+import { regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
 
 const CRITERIA = `# x: criteria
 
@@ -252,4 +253,22 @@ test('gradeRun fails a judge line whose judge call throws instead of rejecting t
 test('parseCriteria keeps unindented prose after a bullet as its context when no case heading scopes it', () => {
   const [group] = parseCriteria('- A. `grade: judge`\n\nNote.\n');
   assert.deepEqual(group.lines[0].context, ['Note.']);
+});
+
+test('self-test: regrading a good and a bad reference answer passes every line of the good and fails the bad, under a stub judge', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-selftest-'));
+  try {
+    const criteriaFile = path.join(dir, 'criteria.md');
+    fs.writeFileSync(criteriaFile, '- Names the cause. `grade: answer =~ /toCents/`\n- Gives no fix before the cause. `grade: answer !~ /^Fix:/`\n- Explains the mechanism. `grade: judge`\n');
+    fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-with-1.md'), 'The cause is toCents: it floors the product, so 29 comes out as 28.');
+    fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-without-1.md'), 'Fix: round the value.');
+    const judge = (prompt) => (/floors the product/.test(prompt) ? 'PASS\nexplains it' : 'FAIL\nno mechanism');
+    const runs = regradeFolder(dir, { promptFile: 'a.txt', grade: { criteriaFile, votes: 1 }, judge })['claude-sonnet-4:low'];
+    const [good, bad] = ['with', 'without'].map((arm) => runs.find((graded) => graded.arm === arm));
+    assert.deepEqual(good.lines.map((line) => line.pass), [true, true, true]);
+    assert.deepEqual(bad.lines.map((line) => line.pass), [false, false, false]);
+    assert.equal(bad.lines[2].skipped, true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // replay/grade.mjs
-// Grades replay cells. node grade.mjs <cellDir|runDir> grades every cell under the path
-// that holds a result.json and case.json, writes grade.json beside it and prints one line.
+// Grades replay cells. node grade.mjs <cellDir|runDir> [--dry-run] [--full] grades the cells under the path
+// that hold a result.json and case.json, writes grade.json beside each and prints one line.
+// Quick tier (default): the first 3 cells, 1 judge vote each. --full: every cell, JUDGE_CALLS votes each.
+// --dry-run prints the planned cells, judge calls and cost cap, spends nothing.
 //
 // Grade values: pass, fail, unknown (rubric judge gave no verbatim evidence, or the cell
 // errored without output), leak (set by runner.mjs, never overwritten here).
@@ -17,6 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { withoutParentSession, ISOLATION_ENV } from '../lean-gates.mjs';
+import { parseFlags, UsageError } from '../../lib/script-flags.mjs';
 
 export const JUDGE_MODEL = 'claude-haiku-5-5';
 export const JUDGE_EFFORT = 'low';
@@ -81,18 +84,18 @@ function judgeWithRetry(rubric, output) {
 
 // Grade = majority of valid votes over JUDGE_CALLS calls; a tie or no valid vote is unknown.
 export const JUDGE_CALLS = 3;
-export function judgeMajority(rubric, output) {
-  const calls = Array.from({ length: JUDGE_CALLS }, () => judgeWithRetry(rubric, output));
-  const votes = calls.map((call) => call.grade);
-  const count = (value) => votes.filter((vote) => vote === value).length;
+export function judgeMajority(rubric, output, votes = JUDGE_CALLS) {
+  const calls = Array.from({ length: votes }, () => judgeWithRetry(rubric, output));
+  const cast = calls.map((call) => call.grade);
+  const count = (value) => cast.filter((vote) => vote === value).length;
   const passes = count('pass');
   const fails = count('fail');
   const grade = passes > fails ? 'pass' : fails > passes ? 'fail' : 'unknown';
   const winner = calls.find((call) => call.grade === grade) ?? calls[0];
-  return { grade, evidence: winner.evidence, votes, retried: calls.some((call) => call.retried) || undefined, judgeCostUsd: calls.reduce((sum, call) => sum + (call.judgeCostUsd ?? 0), 0) };
+  return { grade, evidence: winner.evidence, votes: cast, retried: calls.some((call) => call.retried) || undefined, judgeCostUsd: calls.reduce((sum, call) => sum + (call.judgeCostUsd ?? 0), 0) };
 }
 
-export function gradeCell(cellDirectory) {
+export function gradeCell(cellDirectory, { judgeCalls = JUDGE_CALLS } = {}) {
   const gradeFile = path.join(cellDirectory, 'grade.json');
   const prior = fs.existsSync(gradeFile) ? JSON.parse(fs.readFileSync(gradeFile, 'utf8')) : null;
   if (prior?.grade === 'leak') return prior;
@@ -103,7 +106,7 @@ export function gradeCell(cellDirectory) {
   if (output === '') graded = { grade: 'unknown', evidence: 'cell produced no output' };
   else if (caseDef.grade.type === 'regex') graded = gradeRegex(caseDef.grade, output);
   else if (caseDef.grade.type === 'rubric') {
-    graded = judgeMajority(caseDef.grade.rubric, output);
+    graded = judgeMajority(caseDef.grade.rubric, output, judgeCalls);
     // The regex stays a free cross-check; baseline.md counts where it disagrees with the judge.
     if (caseDef.grade.pass || caseDef.grade.fail) graded = { ...graded, regex: gradeRegex(caseDef.grade, output).grade };
   }
@@ -118,11 +121,57 @@ function cellsUnder(directory) {
   return fs.readdirSync(directory).sort().flatMap((name) => cellsUnder(path.join(directory, name)));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const target = process.argv[2];
-  if (!target) { console.error('usage: node grade.mjs <cellDir|runDir>'); process.exit(2); }
-  for (const cell of cellsUnder(path.resolve(target))) {
-    const graded = gradeCell(cell);
+export const QUICK_CELLS = 3;
+export const QUICK_VOTES = 1;
+const USAGE = 'usage: node grade.mjs <cellDir|runDir> [--dry-run] [--full]';
+
+export function parseGradeArguments(argv) {
+  const targets = argv.filter((token) => !token.startsWith('--'));
+  const flags = parseFlags(argv.filter((token) => token.startsWith('--')), { 'dry-run': 'boolean', full: 'boolean' });
+  if (targets.length !== 1) throw new UsageError(USAGE);
+  return { target: targets[0], dryRun: flags['dry-run'] === true, full: flags.full === true };
+}
+
+export function selectCells(cells, { full }) {
+  return full ? cells : cells.slice(0, QUICK_CELLS);
+}
+
+function needsJudge(cellDirectory) {
+  const gradeFile = path.join(cellDirectory, 'grade.json');
+  if (fs.existsSync(gradeFile) && JSON.parse(fs.readFileSync(gradeFile, 'utf8')).grade === 'leak') return false;
+  const caseDef = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'case.json'), 'utf8'));
+  const result = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'result.json'), 'utf8'));
+  return caseDef.grade.type === 'rubric' && typeof result.result === 'string' && result.result !== '';
+}
+
+export function planGrade(cells, { votes }) {
+  const judgedCells = cells.filter(needsJudge).length;
+  const calls = judgedCells * votes;
+  return { cells: cells.length, judgedCells, calls, maxCostUsd: calls * 2 * JUDGE_BUDGET_USD };
+}
+
+function main(argv) {
+  let options;
+  try { options = parseGradeArguments(argv); } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    console.error(error.message);
+    return 2;
+  }
+  const tier = options.full ? 'full' : 'quick';
+  const votes = options.full ? JUDGE_CALLS : QUICK_VOTES;
+  const cells = selectCells(cellsUnder(path.resolve(options.target)), options);
+  if (options.dryRun) {
+    const plan = planGrade(cells, { votes });
+    console.log(`${tier} tier, ${plan.cells} cells, ${plan.calls} judge calls (${plan.judgedCells} cells x ${votes} votes), cost cap $${plan.maxCostUsd.toFixed(2)} (calls x 2 retries x $${JUDGE_BUDGET_USD} budget)`);
+    return 0;
+  }
+  for (const cell of cells) {
+    const graded = gradeCell(cell, { judgeCalls: votes });
     console.log(`${path.relative(process.cwd(), cell)}\t${graded.grade}\t${graded.evidence}`);
   }
+  return 0;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  process.exitCode = main(process.argv.slice(2));
 }

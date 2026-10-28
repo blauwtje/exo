@@ -756,16 +756,39 @@ export function collectRuns(out) {
     .sort();
 }
 
+function versionDeltas(version, stats, baselineStats = {}) {
+  const lines = [];
+  for (const [metric, summary] of Object.entries(stats)) {
+    const before = baselineStats[metric]?.median;
+    if (metric === 'runs' || metric === 'excluded' || typeof before !== 'number' || typeof summary.median !== 'number') continue;
+    const delta = summary.median - before;
+    lines.push(`${version} ${metric}: ${before} -> ${summary.median} (${delta > 0 ? '+' : ''}${Number(delta.toFixed(4))})`);
+  }
+  return lines;
+}
+
+export function metricDeltas(metrics, baseline) {
+  return Object.entries(metrics.aggregate).flatMap(([version, stats]) => versionDeltas(version, stats, baseline.aggregate?.[version]));
+}
+
 function main(argv) {
-  const out = argv.find((arg) => !arg.startsWith('--'));
-  if (!out) {
-    process.stderr.write('usage: node benchmarks/lean-gates-metrics.mjs <out> [--no-recheck] [--force-recheck]\n');
+  const baselineAt = argv.indexOf('--baseline');
+  const baselineFile = baselineAt === -1 ? null : argv[baselineAt + 1];
+  const out = argv.find((arg, index) => !arg.startsWith('--') && (baselineAt === -1 || index !== baselineAt + 1));
+  if (!out || (baselineAt !== -1 && !baselineFile)) {
+    process.stderr.write('usage: node benchmarks/lean-gates-metrics.mjs <out> [--no-recheck] [--force-recheck] [--baseline <metrics.json>]\n');
+    return 2;
+  }
+  const baseline = baselineFile ? readJson(path.resolve(baselineFile)) : null;
+  if (baselineFile && !baseline) {
+    process.stderr.write(`cannot read baseline ${baselineFile}\n`);
     return 2;
   }
   const runs = collectRuns(path.resolve(out)).map((directory) => runMetrics(directory, { recheck: !argv.includes('--no-recheck'), forceRecheck: argv.includes('--force-recheck') }));
   const metrics = { generatedAt: new Date().toISOString(), host: os.hostname(), runs, aggregate: aggregate(runs) };
   fs.writeFileSync(path.join(out, 'metrics.json'), `${JSON.stringify(metrics, null, 2)}\n`);
   process.stdout.write(`${markdownTable(metrics)}\n`);
+  if (baseline) process.stdout.write(`\nDeltas against ${baselineFile}\n${metricDeltas(metrics, baseline).join('\n')}\n`);
   return 0;
 }
 

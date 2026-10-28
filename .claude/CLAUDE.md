@@ -41,6 +41,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 
 - `npm run check` gates every commit; clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`; lead runs it once, in background, output to a log; delegate runs only its proof.
 - Plan tasks here → `Land gate: npm run validate:static` (static checks, no test suite); `npm run check` runs once as Success criterion.
+- Paid eval → quick tier first; full tier only for an idea that passes it; `npm run check` flags a paid `benchmarks/*.mjs` entry point with no `--dry-run` and no quick default tier.
 
 ## Editing
 

@@ -6,13 +6,18 @@ import { confinedClaude } from '#confine-claude';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags } from '#script-flags';
 
-const USAGE = 'usage: drive.mjs <scenario> <model> <arm> [maxTurns] [--label <text>] [--plugin-dir <dir>] [--main-dir <dir>]';
+const USAGE = 'usage: drive.mjs <scenario> <model> <arm> [maxTurns] [--dry-run] [--full] [--label <text>] [--plugin-dir <dir>] [--main-dir <dir>]';
+const QUICK_TURNS = 2;
+const FULL_TURNS = 99;
 const argv = process.argv.slice(2);
 const flagStart = argv.findIndex((arg) => arg.startsWith('--'));
 const [scenario, model, arm, maxTurnsArg] = flagStart === -1 ? argv : argv.slice(0, flagStart);
-let flags, PLUGIN, MAIN_DIR, pluginId;
+let flags, PLUGIN, MAIN_DIR, pluginId, tier, maxTurns;
 try {
-  flags = parseFlags(flagStart === -1 ? [] : argv.slice(flagStart), { label: 'value', 'plugin-dir': 'value', 'main-dir': 'value' });
+  flags = parseFlags(flagStart === -1 ? [] : argv.slice(flagStart), { label: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'dry-run': 'boolean', full: 'boolean' });
+  if (maxTurnsArg !== undefined && flags.full) throw new UsageError('--full and an explicit maxTurns exclude each other');
+  tier = maxTurnsArg !== undefined ? 'custom' : flags.full ? 'full' : 'quick';
+  maxTurns = maxTurnsArg !== undefined ? Number(maxTurnsArg) : flags.full ? FULL_TURNS : QUICK_TURNS;
   PLUGIN = resolvePluginDir('--plugin-dir', flags['plugin-dir'] ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'), process.cwd());
   MAIN_DIR = flags['main-dir'] === undefined ? undefined : resolvePluginDir('--main-dir', flags['main-dir'], process.cwd());
   pluginId = installedPluginId(PLUGIN, '--plugin-dir');
@@ -33,6 +38,10 @@ const PROMPTS = {
 const armSetup = arm === 'with' ? { name: 'with', pluginDir: PLUGIN, flags: ['--plugin-dir', PLUGIN] } : comparisonArm({ pluginId, mainDir: MAIN_DIR });
 const id = `${scenario}-${model}-${armSetup.name}${flags.label ? `-${flags.label}` : ''}`;
 const dir = path.join(S, 'runs', id);
+if (flags['dry-run']) {
+  console.log(`${tier} tier, scenario ${scenario}, model ${model}, arm ${armSetup.name}, up to ${maxTurns} turns, run folder ${dir}; dry run, no claude call made`);
+  process.exit(0);
+}
 // A rerun with the same id starts from a fresh work copy, not over the last run's leftovers.
 fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(dir, { recursive: true });
@@ -77,7 +86,6 @@ const isQuestion = (t) => /\?|Reply /i.test(t ?? '');
 const isCheckpoint = (t) => /write the brief/i.test(t ?? '');
 const replies = { B: ["I don't know", "I don't know", '1', '1'], C: ['2', 'go'], D: ['ok'], E: ['ok', 'go'] }[scenario];
 let aOnes = 0, aOk = false;
-const maxTurns = Number(maxTurnsArg || 99);
 let prompt = PROMPTS[scenario], sid, n = 1;
 const transcript = [];
 while (true) {

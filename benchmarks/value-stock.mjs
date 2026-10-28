@@ -60,3 +60,8 @@ export function quickSummary({ stock, cells, durationMs }) {
   const total = cells.map((cell) => cell.cost_usd).filter((cost) => typeof cost === 'number');
   return { mode: 'quick', cost_usd: total.reduce((sum, cost) => sum + cost, 0), durationMs, tasks };
 }
+
+export function modeSummary({ mode, cells, durationMs }) {
+  const costs = cells.map((cell) => cell.cost_usd).filter((cost) => typeof cost === 'number');
+  return { mode, cost_usd: costs.reduce((sum, cost) => sum + cost, 0), durationMs, cells: cells.length };
+}

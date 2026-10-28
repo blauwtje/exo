@@ -54,7 +54,7 @@ test('keepRepository copies the cell repository with its commits and excluded .e
 
 test('--keep-repo names its folder in the dry run', () => {
   const run = dryRun('--set', 'flow', '--cells', 'flow-unit', '--keep-repo', '/tmp/kept-cells');
-  assert.match(run.stdout, /^1 claude -p calls planned/);
+  assert.match(run.stdout, /^custom tier, 1 claude -p calls planned/);
   assert.match(run.stdout, /keeps each cell repository under \/tmp\/kept-cells/);
 });
 

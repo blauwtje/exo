@@ -6,14 +6,18 @@
 // and record.json under benchmarks/runs/<date>-sweep/<cell>/, and the run ends
 // by writing <date>-sweep.md under --results, benchmarks/results/ by default.
 //
-//   node benchmarks/sweep.mjs --set all                    prints the calls, starts none
-//   node benchmarks/sweep.mjs --set all --confirm          runs every cell
+//   node benchmarks/sweep.mjs                              quick tier: prints the 4 review cells, starts none
+//   node benchmarks/sweep.mjs --confirm                    runs the quick tier, about $0.65
+//   node benchmarks/sweep.mjs --dry-run                    prints the calls and the projected cost, starts none, exit 0
+//   node benchmarks/sweep.mjs --full                       the full tier, every set: prints the calls, starts none
+//   node benchmarks/sweep.mjs --full --confirm             runs every cell
+//   node benchmarks/sweep.mjs --set all                    names the sets itself and leaves the quick tier: prints the calls, starts none
 //   node benchmarks/sweep.mjs --set review,plan --confirm --concurrency 1 --out benchmarks/runs/<dir>
 //   node benchmarks/sweep.mjs --set fixer --confirm --results <dir>   writes the results file outside the tree
 //   node benchmarks/sweep.mjs --set flow --cells flow-c7,flow-base   keeps only the named cells of the sets
 //   node benchmarks/sweep.mjs --set flow --cells flow-unit --confirm --keep-repo <dir>   keeps each cell repository as a checkpoint
 //
-// Every call is billed, so no cell starts without --confirm. A cell whose
+// Every call is billed, so no cell starts without --confirm, and --dry-run never starts one. A cell whose
 // record.json exists is not run again, so a rerun on the same --out resumes.
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -88,6 +92,13 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
   });
 }
 
+export const QUICK_CELLS = [
+  'review-safe-path-seeded-high',
+  'review-safe-path-control-high',
+  'review-sql-user-seeded-high',
+  'review-sql-user-control-high'
+];
+
 export const JUDGE_NAMES = ['plan-fit', 'standard', 'tests'];
 
 function parseReviewerBodies(value) {
@@ -97,13 +108,22 @@ function parseReviewerBodies(value) {
   return Object.fromEntries(pairs);
 }
 
-function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null };
+function withTier(options) {
+  if (options.sets !== null) return { ...options, tier: 'custom' };
+  if (options.cells !== null) throw new Error('name --set all, or a comma list of review, build, plan, flow, replay');
+  if (options.full) return { ...options, sets: ['all'], tier: 'full' };
+  return { ...options, sets: ['review'], cells: QUICK_CELLS, tier: 'quick' };
+}
+
+export function parseArguments(argv) {
+  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
     else if (flag === '--cells') options.cells = argv[++index].split(',');
     else if (flag === '--confirm') options.confirm = true;
+    else if (flag === '--dry-run') options.dryRun = true;
+    else if (flag === '--full') options.full = true;
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else if (flag === '--out') options.out = argv[++index];
     else if (flag === '--results') options.results = argv[++index];
@@ -115,11 +135,11 @@ function parseArguments(argv) {
     else throw new Error(`unknown flag ${flag}`);
   }
   if (!Number.isInteger(options.repeat) || options.repeat < 1) throw new Error('--repeat must be a positive integer');
-  if (options.sets === null) throw new Error('name --set all, or a comma list of review, build, plan, flow, replay');
-  if (options.keepRepo === undefined) throw new Error('--keep-repo needs a folder');
-  if (options.keepRepo !== null && options.sets.includes('replay')) throw new Error('--keep-repo does not apply to the replay set: a replay cell is a worktree of this clone');
-  if (options.sets.includes('replay') && options.cases === null) throw new Error('--set replay needs --cases <path>');
-  return options;
+  const tiered = withTier(options);
+  if (tiered.keepRepo === undefined) throw new Error('--keep-repo needs a folder');
+  if (tiered.keepRepo !== null && tiered.sets.includes('replay')) throw new Error('--keep-repo does not apply to the replay set: a replay cell is a worktree of this clone');
+  if (tiered.sets.includes('replay') && tiered.cases === null) throw new Error('--set replay needs --cases <path>');
+  return tiered;
 }
 
 function git(directory, args) {
@@ -456,12 +476,13 @@ async function main() {
   const judged = options.reviewerBodies === null ? sweepCells()
     : judgeCells(sweepCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
   const cells = repeatCells(keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells), options.repeat);
-  console.log(`${cells.length} claude -p calls planned, one per cell and repeat:`);
+  console.log(`${options.tier} tier, ${cells.length} claude -p calls planned, one per cell and repeat:`);
   for (const cell of cells) console.log(`  ${cell.directory ?? cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (options.keepRepo !== null) console.log(`keeps each cell repository under ${options.keepRepo}`);
-  if (!options.confirm) {
+  if (options.dryRun || !options.confirm) {
     const projection = projectSweep(cells.map((cell) => cell.id), RUNS);
     console.log(sweepProjectionLine(projection, cells.length));
+    if (options.dryRun) return;
     console.log('Every call is billed. Re-run with --confirm to start them.');
     process.exitCode = 2;
     return;

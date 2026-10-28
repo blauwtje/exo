@@ -4,18 +4,22 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { parseFlags } from '#script-flags';
 import { scoreOutDir } from './improve-speed.mjs';
 
-const USAGE = 'Usage: node benchmarks/improve-all-score.mjs [--serial] [--from-replay <runs dir>] [--from-build <out dir>]';
+const USAGE = 'Usage: node benchmarks/improve-all-score.mjs [--full] [--dry-run] [--serial] [--from-replay <runs dir>] [--from-build <out dir>]';
 const MAIN = { rounds: 1.857, verifyCost: 4.6, buildWall: 294.9487, buildCost: 0.95046258 };
 const MAIN_FIX_RATE = { mean: 0.841, sd: 0.049 };
 const FIX_RATE_SIGMAS = 3;
 const FIX_RATE_FLOOR = Math.floor((MAIN_FIX_RATE.mean - FIX_RATE_SIGMAS * MAIN_FIX_RATE.sd) * 100) / 100;
 const NEVER_CLEAN = 4;
-const REPLAY_REPEAT = 2;
 const REPLAY_ROUNDS = 3;
-const BUILD_REPEAT = 10;
+const TIERS = {
+  quick: { name: 'quick', replayRepeat: 1, buildRepeat: 3 },
+  full: { name: 'full', replayRepeat: 2, buildRepeat: 10 }
+};
+const MAIN_REPLAY_REPEAT = TIERS.full.replayRepeat;
 const BUILD_CONCURRENCY = 10;
 const FAILED_CELL_PENALTY = 2;
 const OUT_LINE = /^out (.+)$/m;
@@ -63,7 +67,7 @@ export function replayMeasures(directory) {
   const rate = fixRate(cells);
   if (rate < FIX_RATE_FLOOR) throw new GateFailure(`replay fix rate ${rate.toFixed(3)} is below the floor ${FIX_RATE_FLOOR}: main ${MAIN_FIX_RATE.mean} minus ${FIX_RATE_SIGMAS} sd ${MAIN_FIX_RATE.sd}`);
   const rounds = mean(cells.map((cell) => mean(cell.list.map(roundsScored))));
-  return { rounds, verifyCost: sum(runs.map((run) => run.costUsd)), falseFixRuns: runs.filter(raisedFalseFix).length, runCount: runs.length };
+  return { rounds, verifyCost: sum(runs.map((run) => run.costUsd)), falseFixRuns: runs.filter(raisedFalseFix).length, runCount: runs.length, replayRepeat: Math.max(...cells.map((cell) => cell.list.length)) };
 }
 
 function buildCell(directory, row) {
@@ -95,26 +99,42 @@ export function buildMeasures(directory, expected) {
   return { buildWall: mean(walls), buildCost: mean(penalizedCosts(cells)), failedCells, cellCount: cells.length };
 }
 
-async function liveReplay(checkout, work) {
+export const tierFor = (flags) => (flags.full ? TIERS.full : TIERS.quick);
+
+const mainVerifyCost = (replayRepeat) => (MAIN.verifyCost * replayRepeat) / MAIN_REPLAY_REPEAT;
+export const projectedUsd = (tier) => mainVerifyCost(tier.replayRepeat) + MAIN.buildCost * tier.buildRepeat;
+
+const replayArgs = (checkout, tier, out) => ['benchmarks/review-replay.mjs', '--checkout', checkout, '--rounds', String(REPLAY_ROUNDS), '--repeat', String(tier.replayRepeat), '--out', out];
+const buildArgs = (checkout, tier) => ['benchmarks/improve-speed.mjs', checkout, '--measure', 'cost', '--repeat', String(tier.buildRepeat), '--concurrency', String(BUILD_CONCURRENCY)];
+
+function printDryRun(checkout, tier) {
+  console.log(`tier ${tier.name}`);
+  console.log(`node ${replayArgs(checkout, tier, '<work>/replay.md').join(' ')}`);
+  console.log(`node ${buildArgs(checkout, tier).join(' ')}`);
+  console.log(`projected usd ${projectedUsd(tier).toFixed(2)}`);
+}
+
+async function liveReplay(checkout, work, tier) {
   const out = path.join(work, 'replay.md');
-  const args = ['benchmarks/review-replay.mjs', '--checkout', checkout, '--rounds', String(REPLAY_ROUNDS), '--repeat', String(REPLAY_REPEAT), '--out', out];
+  const args = replayArgs(checkout, tier, out);
   const finished = await runLogged(checkout, args, path.join(work, 'replay.log'));
   if (finished.status !== 0) throw new GateFailure(`review replay exited ${finished.status}\n${tail(finished.log)}`);
   return replayMeasures(`${out}.runs`);
 }
 
-async function liveBuild(checkout, work) {
-  const args = ['benchmarks/improve-speed.mjs', checkout, '--measure', 'cost', '--repeat', String(BUILD_REPEAT), '--concurrency', String(BUILD_CONCURRENCY)];
+async function liveBuild(checkout, work, tier) {
+  const args = buildArgs(checkout, tier);
   const finished = await runLogged(checkout, args, path.join(work, 'build.log'));
   const text = fs.readFileSync(finished.log, 'utf8');
   const out = text.match(OUT_LINE)?.[1];
   if (!out || !fs.existsSync(out)) throw new GateFailure(`build sweep produced no out directory (exit ${finished.status})\n${tail(finished.log)}`);
-  return buildMeasures(out, BUILD_REPEAT);
+  return buildMeasures(out, tier.buildRepeat);
 }
 
 async function measure(flags, checkout, work) {
-  const replay = () => (flags['from-replay'] ? replayMeasures(path.resolve(flags['from-replay'])) : liveReplay(checkout, work));
-  const build = () => (flags['from-build'] ? buildMeasures(path.resolve(flags['from-build'])) : liveBuild(checkout, work));
+  const tier = tierFor(flags);
+  const replay = () => (flags['from-replay'] ? replayMeasures(path.resolve(flags['from-replay'])) : liveReplay(checkout, work, tier));
+  const build = () => (flags['from-build'] ? buildMeasures(path.resolve(flags['from-build'])) : liveBuild(checkout, work, tier));
   if (flags.serial) return { ...(await replay()), ...(await build()) };
   const [replayResult, buildResult] = await Promise.allSettled([replay(), build()]);
   const failure = [replayResult, buildResult].find((result) => result.status === 'rejected');
@@ -122,10 +142,10 @@ async function measure(flags, checkout, work) {
   return { ...replayResult.value, ...buildResult.value };
 }
 
-export function ratios(measured) {
+export function ratios(measured, tier) {
   return [
     ['rounds', measured.rounds / MAIN.rounds],
-    ['verify-cost', measured.verifyCost / MAIN.verifyCost],
+    ['verify-cost', measured.verifyCost / mainVerifyCost(measured.replayRepeat ?? tier.replayRepeat)],
     ['build-wall', measured.buildWall / MAIN.buildWall],
     ['build-cost', measured.buildCost / MAIN.buildCost]
   ];
@@ -147,15 +167,20 @@ function reportFalseFix(falseFixRuns, total) {
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { serial: 'boolean', 'from-replay': 'value', 'from-build': 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { full: 'boolean', 'dry-run': 'boolean', serial: 'boolean', 'from-replay': 'value', 'from-build': 'value' }, { usage: USAGE });
   const checkout = path.resolve('.');
+  const tier = tierFor(flags);
+  if (flags['dry-run']) {
+    printDryRun(checkout, tier);
+    return 0;
+  }
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-improve-all-'));
   try {
     const measured = await measure(flags, checkout, work);
-    const parts = ratios(measured);
+    const parts = ratios(measured, tier);
     reportFalseFix(measured.falseFixRuns, measured.runCount);
     reportFailedCells(measured.failedCells, measured.cellCount);
-    for (const [id, ratio] of parts) console.log(`${id} ratio=${ratio.toFixed(3)}`);
+    for (const [id, ratio] of parts) console.log(`${id} ratio=${ratio.toFixed(3)}${tier.name === 'quick' ? ' quick' : ''}`);
     console.log(geometricMean(parts.map(([, ratio]) => ratio)).toFixed(3));
     fs.rmSync(work, { recursive: true, force: true });
     return 0;
@@ -165,4 +190,6 @@ async function main(argv) {
   }
 }
 
-process.exitCode = await main(process.argv.slice(2));
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = await main(process.argv.slice(2));
+}

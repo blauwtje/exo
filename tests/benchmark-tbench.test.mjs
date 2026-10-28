@@ -6,7 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { importJobs } from '../benchmarks/tbench/import.mjs';
 import { bootstrapPerSolved, calibrate, isAsk, readCells, renderReport, scoreStream } from '../benchmarks/tbench/readouts.mjs';
-import { projectedSpend, watch } from '../benchmarks/tbench/watch.mjs';
+import { projectedCostLine, projectedSpend, watch } from '../benchmarks/tbench/watch.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
 
@@ -140,6 +140,22 @@ test('W3 the watcher stops after its rounds, and when the process has ended', as
   assert.equal(sleeps, 3);
   const done = await watch({ jobs: [job], pid: 1, limit: 55, rounds: 3, kill, alive: () => false, sleep: async () => {} });
   assert.equal(done.status, 'done');
+});
+
+test('W4 --dry-run projects tasks x trials x median trial cost of a saved job, else cost unknown, without --pid or polling', () => {
+  const job = tmp();
+  trial(job, 'a', { cost: 1 });
+  trial(job, 'b', { cost: 3 });
+  trial(job, 'c', { cost: 2 });
+  trial(job, 'd', { finished: false });
+  assert.equal(projectedCostLine([job], 5, 3), 'projected cost: 5 tasks x 3 trials x median $2.00 = $30.00');
+  const fresh = tmp();
+  trial(fresh, 'x', { finished: false });
+  assert.equal(projectedCostLine([fresh], 5, 3), 'projected cost: cost unknown');
+  const watcher = path.join(import.meta.dirname, '..', 'benchmarks', 'tbench', 'watch.mjs');
+  const run = spawnSync(process.execPath, [watcher, '--dry-run', '--job', job, '--tasks', '5', '--trials', '3'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout, 'projected cost: 5 tasks x 3 trials x median $2.00 = $30.00\n');
 });
 
 test('A1 the agent declares plugin_dir in its options model, which Harbor validates --ak against', (t) => {

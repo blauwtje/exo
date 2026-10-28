@@ -204,7 +204,7 @@ function verdictOf(row, cost, base) {
 
 export function quickVerdict(row, base) {
   const cost = row.cost ?? null;
-  return { verdict: verdictOf(row, cost, base), hiddenPass: row.hiddenPass === true, cost_usd: cost, durationMs: row.durationMs ?? null, base };
+  return { mode: 'quick', verdict: verdictOf(row, cost, base), hiddenPass: row.hiddenPass === true, cost_usd: cost, durationMs: row.durationMs ?? null, base };
 }
 
 function printMeasures(measures, measure) {
@@ -249,6 +249,7 @@ function main(argv) {
     console.log(failures.join('\n'));
     return 1;
   }
+  console.log(JSON.stringify({ mode: 'full', measures }));
   printMeasures(measures, options.measure);
   return 0;
 }

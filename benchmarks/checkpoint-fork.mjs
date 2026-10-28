@@ -6,8 +6,10 @@
 // come from `sweep.mjs --keep-repo`, which keeps each cell repository, its
 // origin and (with preserved timestamps) its .exo/ files.
 //
-//   node benchmarks/checkpoint-fork.mjs --checkpoints <keep> --full-runs <sweep out> --forks 2 --out <dir>
-//       prints the forks planned, starts none
+//   node benchmarks/checkpoint-fork.mjs --checkpoints <keep> --full-runs <sweep out> --out <dir>
+//       prints the forks planned for the quick tier (1 fork per kept cell), starts none
+//   ... --full   plans 2 forks per kept cell; --forks <n> overrides either tier
+//   ... --dry-run   prints the plan and the cost cap, spends nothing, exits 0
 //   ... --confirm [--max-usd 6]   runs them, stopping before a fork that would pass the cap
 //   node benchmarks/checkpoint-fork.mjs --analyse --full-runs <sweep out> --out <dir>
 //       prints the comparison of the full cells with the forks recorded under --out
@@ -36,6 +38,8 @@ const MINUTE_MS = 60 * 1000;
 const FORK_BUDGET_USD = 1;
 const FORK_TIMEOUT_MS = 30 * MINUTE_MS;
 const DEFAULT_MAX_USD = 6;
+const QUICK_FORKS = 1;
+const FULL_FORKS = 2;
 const FORK_CELL = 'flow-unit';
 
 function git(directory, args) {
@@ -294,8 +298,8 @@ export function analysis(fulls, forks) {
   ];
 }
 
-function parseArguments(argv) {
-  const options = { checkpoints: null, fullRuns: null, forks: 2, out: null, confirm: false, analyse: false, maxUsd: DEFAULT_MAX_USD };
+export function parseArguments(argv) {
+  const options = { checkpoints: null, fullRuns: null, forks: null, out: null, confirm: false, analyse: false, dryRun: false, full: false, maxUsd: DEFAULT_MAX_USD };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--checkpoints') options.checkpoints = argv[++index];
@@ -305,10 +309,15 @@ function parseArguments(argv) {
     else if (flag === '--max-usd') options.maxUsd = Number(argv[++index]);
     else if (flag === '--confirm') options.confirm = true;
     else if (flag === '--analyse') options.analyse = true;
+    else if (flag === '--dry-run') options.dryRun = true;
+    else if (flag === '--full') options.full = true;
     else throw new Error(`unknown flag ${flag}`);
   }
   if (options.fullRuns === null || options.out === null) throw new Error('name --full-runs <sweep out> and --out <dir>');
   if (!options.analyse && options.checkpoints === null) throw new Error('name --checkpoints <the --keep-repo folder>');
+  if (options.dryRun && options.confirm) throw new Error('--dry-run starts nothing, so it cannot combine with --confirm');
+  options.tier = options.full ? 'full' : 'quick';
+  options.forks ??= options.full ? FULL_FORKS : QUICK_FORKS;
   if (!Number.isInteger(options.forks) || options.forks < 1) throw new Error('--forks must be a positive integer');
   if (!(options.maxUsd > 0)) throw new Error('--max-usd must be positive');
   return options;
@@ -326,8 +335,12 @@ async function main() {
   const checkpoints = path.resolve(options.checkpoints);
   const usable = fulls.filter((full) => full.block.atMs !== null && fs.existsSync(path.join(checkpoints, full.name, 'repo')));
   const plan = usable.flatMap((full) => Array.from({ length: options.forks }, (_, index) => ({ full, directory: path.join(out, `${full.name}-fork-${index + 1}`) })));
-  console.log(`${plan.length} verify-only forks planned from ${usable.length} kept cells, ${options.forks} each (${fulls.length - usable.length} cells skipped: no verify call or no kept repository):`);
+  console.log(`${plan.length} verify-only forks planned (${options.tier} tier) from ${usable.length} kept cells, ${options.forks} each (${fulls.length - usable.length} cells skipped: no verify call or no kept repository):`);
   for (const { directory } of plan) console.log(`  ${path.basename(directory)}: --model ${forkCell().model} --effort ${forkCell().effort} --max-budget-usd ${FORK_BUDGET_USD}`);
+  if (options.dryRun) {
+    console.log(`dry run: nothing started; the plan costs ${Math.min(plan.length * FORK_BUDGET_USD, options.maxUsd)} USD at most.`);
+    return;
+  }
   if (!options.confirm) {
     console.log(`Every fork is billed, ${FORK_BUDGET_USD} USD at most each and ${options.maxUsd} USD at most together. Re-run with --confirm to start them.`);
     process.exitCode = 2;

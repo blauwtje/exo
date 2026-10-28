@@ -17,12 +17,18 @@ node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/check-
 
 ## Graded runs
 
-Add `--grade` to score every run pass or fail against the tagged lines of the case's `criteria.md` (`--criteria <file>` picks another). A line ending in `grade: run <shell command>` passes when the command exits 0; `grade: judge` goes to the judge prompt in `judge.md`, run on `--judge-cell` (default `sonnet:low`). A judge line takes the majority of `--judge-votes` calls (default 3) and prints `UNSTABLE JUDGE` when its votes agree under 0.8; it is skipped for a run whose `grade: run` line already failed. Keep one claim per judge line: `--check <criteria file>` prints a `LINT` line for a judge line of more than 2 clauses. A run counts only when every line of its case passes. Every run defaults to 3 runs per arm; `--runs <n>` changes that.
+Add `--grade` to score every run pass or fail against the tagged lines of the case's `criteria.md` (`--criteria <file>` picks another). A line ending in `grade: run <shell command>` passes when the command exits 0; `grade: judge` goes to the judge prompt in `judge.md`, run on `--judge-cell` (default `sonnet:low`). A judge line takes the majority of `--judge-votes` calls (default 1, 3 under `--full`) and prints `UNSTABLE JUDGE` when its votes agree under 0.8; it is skipped for a run whose `grade: run` line already failed. Keep one claim per judge line: `--check <criteria file>` prints a `LINT` line for a judge line of more than 2 clauses. A run counts only when every line of its case passes. The default is the quick tier: 1 run per arm and 1 judge vote, a screen rather than a verdict, with `mode: quick` in `grades.json`. With one run per arm most cases print `INCONCLUSIVE`, with the runs per arm that would decide it; `--full` runs 3 runs per arm and 3 judge votes, and a screen result that would change a skill reruns with `--full`. An explicit `--runs <n>` or `--judge-votes <n>` overrides the tier value.
 
 ```sh
 node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/compression/a-test-heavy.txt \
   --cells sonnet:high --plugin-dir <exo clone> --setup benchmarks/pressure/compression/setup.sh --grade \
   --contrast-style exo:adhd,default
+```
+
+```sh
+node skills/edit-skills/scripts/pressure.mjs <same flags> --grade --dry-run    # spends nothing: sessions times the median recorded cost_usd, plus the judge calls
+node skills/edit-skills/scripts/pressure.mjs <same flags> --grade --full       # 3 runs per arm, 3 judge votes
+node skills/edit-skills/scripts/pressure.mjs --regrade <run folder> --prompt <file>   # regrades saved answers offline, no session
 ```
 
 With two arms the verdict per case is `PASS`, `FAIL` or `INCONCLUSIVE`: the 95 percent Newcombe interval of the with-minus-comparison pass-rate difference against the margin, set by a `margin: <0-1>` line in `criteria.md` (default 0.2). `PASS` when the interval lies wholly above minus the margin, `FAIL` when wholly below, else `INCONCLUSIVE` with the runs per arm that would decide it. `--threshold <0-1>` (default 1) is the pass rate only a case with one arm needs. The run writes `grades.json` to the output folder and prints a pass-rate table per cell with the with-minus-comparison delta and the verdict. Graded runs stay out of `npm run check` and `npm test`.
@@ -33,7 +39,7 @@ With two arms the verdict per case is `PASS`, `FAIL` or `INCONCLUSIVE`: the 95 p
 
 A skill's cases run once on Sonnet by default, and only when that skill changes, never in the build or ship flow.
 
-`drive.mjs` runs one spec case over several turns: it resumes the session and sends the case's scripted replies while the model asks questions, up to `maxTurns` turns (99 by default).
+`drive.mjs` runs one spec case over several turns: it resumes the session and sends the case's scripted replies while the model asks questions, up to `maxTurns` turns. The default is the quick tier, 2 turns; `--full` restores 99, an explicit `maxTurns` overrides the tier, and `--dry-run` prints the scenario, model, arm and turns and exits 0 before any `claude` call.
 Run the spec setup first. Each run writes its transcript and one `turn<n>.jsonl` per turn to `/tmp/exo-pressure/runs/<case>-<model>-<with|without>[-<label>]/`. Add `--label <text>` to keep repeated runs of one case from overwriting each other, and `--plugin-dir <dir>` to load the `with` arm's plugin from another exo clone instead of the checkout `drive.mjs` lives in. Add `--main-dir <dir>` to make any other arm a `main` arm that loads that copy instead of no exo.
 
 ```sh

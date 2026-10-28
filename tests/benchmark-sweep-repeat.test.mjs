@@ -14,7 +14,7 @@ function dryRun(...args) {
 
 test('--repeat 2 plans two calls for a non-replay cell, with the base id and distinct result dirs', () => {
   const run = dryRun('--set', 'flow', '--cells', 'flow-unit', '--repeat', '2');
-  assert.match(run.stdout, /^2 claude -p calls planned/);
+  assert.match(run.stdout, /^custom tier, 2 claude -p calls planned/);
   assert.match(run.stdout, /^ {2}flow-unit-1:/m);
   assert.match(run.stdout, /^ {2}flow-unit-2:/m);
   assert.match(run.stdout, /one per cell and repeat/);
@@ -22,7 +22,7 @@ test('--repeat 2 plans two calls for a non-replay cell, with the base id and dis
 
 test('without --repeat a cell keeps its id and one call', () => {
   const run = dryRun('--set', 'flow', '--cells', 'flow-unit');
-  assert.match(run.stdout, /^1 claude -p calls planned/);
+  assert.match(run.stdout, /^custom tier, 1 claude -p calls planned/);
   assert.match(run.stdout, /^ {2}flow-unit:/m);
 });
 

@@ -9,6 +9,7 @@ import { UsageError, environmentMs, isMain, parseFlags } from '#script-flags';
 import { claudeJudge, compareMarkdown, resultsMarkdown, scoreArm } from './ideas-score.mjs';
 import { makeCellHome } from './cell-home.mjs';
 import { applyVariant } from './variants.mjs';
+import { medianCost } from './routing.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -16,18 +17,19 @@ const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'ideas',
 const FIXTURES = '/tmp/exo-pressure/spec';
 const SETUP = path.join(import.meta.dirname, 'pressure', 'spec', 'setup.sh');
 const RUN_FILES = 'benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/{stdout.json,final.md}';
-const USAGE = 'usage: ideas.mjs [--arm base|<variant>] [--n <int>] [--cases <ids>] [--confirm] [--jobs <int>] [--out <dir>] | --score <dir> [--arm <name>] [--results <file>] | --compare <dir> <dir>; each run writes ' + RUN_FILES;
-const SPEC = { arm: 'value', n: 'value', cases: 'value', confirm: 'boolean', jobs: 'value', out: 'value', score: 'value', results: 'value' };
+const USAGE = 'usage: ideas.mjs [--arm base|<variant>] [--full] [--n <int>] [--cases <ids>] [--confirm] [--jobs <int>] [--out <dir>] | --score <dir> [--arm <name>] [--results <file>] [--baseline <dir>] | --compare <dir> <dir>; default one answer per case (quick), --full five; --baseline compares the scored arm to <dir>/base/records.json; each run writes ' + RUN_FILES + '/run.json';
+const SPEC = { arm: 'value', full: 'boolean', baseline: 'value', n: 'value', cases: 'value', confirm: 'boolean', jobs: 'value', out: 'value', score: 'value', results: 'value' };
 export const MAKER_LINE = 'Which designs could do this? Recommend one.';
 export const HEADLESS_LINE = 'No one will answer questions; decide any open point yourself.';
-const DEFAULT_N = 5;
+const QUICK_N = 1;
+const FULL_N = 5;
 
 export function makerPrompt(feature) {
   return `/exo:spec ${feature} ${MAKER_LINE} ${HEADLESS_LINE}`;
 }
 
-export function plannedCells({ arm, n, caseIds }) {
-  return caseIds.flatMap((caseId) => Array.from({ length: n }, (_, index) => ({ arm, caseId, run: index + 1 })));
+export function plannedCells({ arm, n, caseIds, mode = 'quick' }) {
+  return caseIds.flatMap((caseId) => Array.from({ length: n }, (_, index) => ({ arm, caseId, run: index + 1, mode })));
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -148,6 +150,7 @@ async function runCell({ cell, out, plugin, scratch }) {
     fs.mkdirSync(folder, { recursive: true });
     fs.writeFileSync(path.join(folder, 'stdout.json'), outcome.stdout);
     fs.writeFileSync(path.join(folder, 'stderr.log'), outcome.stderr);
+    fs.writeFileSync(path.join(folder, 'run.json'), `${JSON.stringify({ arm: cell.arm, case: cell.caseId, run: cell.run, mode: cell.mode })}\n`);
     for (const name of ['final.md', 'failed.json']) fs.rmSync(path.join(folder, name), { force: true });
     const reason = runFailure(outcome);
     if (reason === null) fs.writeFileSync(path.join(folder, 'final.md'), finalText(outcome.stdout));
@@ -210,6 +213,28 @@ function compareDirectories([left, right]) {
   return compareMarkdown({ left: load(left), right: load(right) });
 }
 
+function meanOf(values) {
+  const numbers = values.filter(Number.isFinite);
+  if (numbers.length === 0) return null;
+  return numbers.reduce((total, value) => total + value, 0) / numbers.length;
+}
+
+export function caseMeans(records) {
+  const byCase = Object.groupBy(records, (record) => record.case);
+  const metrics = Object.keys(records[0] ?? {}).filter((key) => key !== 'case' && key !== 'run');
+  return Object.entries(byCase).map(([caseId, rows]) => {
+    const means = metrics.map((metric) => [metric, meanOf(rows.map((row) => row[metric]))]);
+    return { case: caseId, ...Object.fromEntries(means) };
+  });
+}
+
+export function compareToBaseline({ baselineDir, records }) {
+  const stored = JSON.parse(fs.readFileSync(path.join(baselineDir, 'base', 'records.json'), 'utf8'));
+  const storedCases = Object.keys(Object.groupBy(stored, (record) => record.case)).length;
+  const counts = `runs: baseline ${stored.length} (per-case mean of ${storedCases} cases), new ${records.length}`;
+  return `${counts}\n${compareMarkdown({ left: caseMeans(stored), right: caseMeans(records) })}`;
+}
+
 function splitCompare(argv) {
   const at = argv.indexOf('--compare');
   if (at === -1) return { rest: argv, compare: null };
@@ -218,26 +243,48 @@ function splitCompare(argv) {
   return { rest: [...argv.slice(0, at), ...argv.slice(at + 3)], compare };
 }
 
+export function recordedCosts(out, arm) {
+  const file = path.join(out, arm, 'records.json');
+  if (!fs.existsSync(file)) return [];
+  const records = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return records.map((record) => record.costUsd).filter((cost) => typeof cost === 'number');
+}
+
+export function projectedCostLine(cellCount, costs) {
+  const median = medianCost(costs.map((cost_usd) => ({ cost_usd })));
+  if (median === null) return 'projected cost: cost unknown';
+  return `projected cost: $${(cellCount * median).toFixed(2)} (${cellCount} cells x median $${median.toFixed(4)} of ${costs.length} recorded runs)`;
+}
+
 function plan(flags) {
   const arm = flags.arm ?? 'base';
-  const n = Number(flags.n ?? DEFAULT_N);
+  const mode = flags.full === true ? 'full' : 'quick';
+  const n = Number(flags.n ?? (flags.full === true ? FULL_N : QUICK_N));
   const caseIds = flags.cases === undefined ? Object.keys(CASES) : flags.cases.split(',');
   const unknown = caseIds.filter((id) => !CASES[id]);
   if (!Number.isInteger(n) || n < 1 || unknown.length > 0) throw new UsageError(`bad --n or unknown case ${unknown.join(',')}`);
-  return plannedCells({ arm, n, caseIds });
+  return plannedCells({ arm, n, caseIds, mode });
 }
 
 async function main(argv) {
   const { rest, compare } = splitCompare(argv);
   if (compare !== null) return console.log(compareDirectories(compare));
   const flags = parseFlags(rest, SPEC);
+  if (flags.baseline !== undefined && flags.score === undefined) throw new UsageError('--baseline needs --score');
   if (flags.score !== undefined) {
-    return console.log(`wrote ${await scoreDirectory({ dir: flags.score, arm: flags.arm ?? 'base', judge: claudeJudge, results: flags.results })}`);
+    const arm = flags.arm ?? 'base';
+    console.log(`wrote ${await scoreDirectory({ dir: flags.score, arm, judge: claudeJudge, results: flags.results })}`);
+    if (flags.baseline === undefined) return;
+    const records = JSON.parse(fs.readFileSync(path.join(flags.score, arm, 'records.json'), 'utf8'));
+    return console.log(compareToBaseline({ baselineDir: flags.baseline, records }));
   }
   const cells = plan(flags);
   const out = flags.out ?? path.join(ROOT, 'benchmarks', 'runs', `${today()}-ideas`);
-  for (const cell of cells) console.log(`planned ${cell.arm}/${cell.caseId}/${cell.run} -> ${out}`);
-  if (flags.confirm !== true) return console.log(`${cells.length} cells planned, nothing spent; add --confirm to run`);
+  for (const cell of cells) console.log(`planned ${cell.arm}/${cell.caseId}/${cell.run} (${cell.mode}) -> ${out}`);
+  if (flags.confirm !== true) {
+    console.log(projectedCostLine(cells.length, recordedCosts(out, cells[0].arm)));
+    return console.log(`${cells.length} cells planned, nothing spent; add --confirm to run`);
+  }
   const jobs = Number(flags.jobs ?? 1);
   if (!Number.isInteger(jobs) || jobs < 1) throw new UsageError('--jobs needs a positive integer');
   await runCells({ cells, out, jobs });

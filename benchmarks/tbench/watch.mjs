@@ -3,6 +3,7 @@ import os from 'node:os';
 import process from 'node:process';
 import { loadRunConfig } from '../../skills/build/scripts/run-config.mjs';
 import { environmentMs } from '../../lib/script-flags.mjs';
+import { medianCost } from '../routing.mjs';
 import { readTrials, trialCost } from './job.mjs';
 
 const tbenchDefaults = () => loadRunConfig({ home: os.homedir() }).defaults.tbench;
@@ -22,6 +23,13 @@ export function projectedSpend(jobDirectories, trialUsd = tbenchDefaults().trial
     projected += spent + open * charge;
   }
   return { finished, running, projected };
+}
+
+export function projectedCostLine(jobDirectories, tasks, trials) {
+  const recorded = jobDirectories.flatMap((directory) => readTrials(directory).map((trial) => ({ cost_usd: trialCost(trial) })));
+  const median = medianCost(recorded);
+  if (median === null) return 'projected cost: cost unknown';
+  return `projected cost: ${tasks} tasks x ${trials} trials x median $${median.toFixed(2)} = $${(tasks * trials * median).toFixed(2)}`;
 }
 
 function isAlive(pid) {
@@ -61,19 +69,32 @@ function parse(argv) {
     else if (flag === '--running') options.trialUsd = Number(value());
     else if (flag === '--interval') options.intervalMs = Number(value()) * 1000;
     else if (flag === '--rounds') options.rounds = Number(value());
+    else if (flag === '--dry-run') options.dryRun = true;
+    else if (flag === '--tasks') options.tasks = Number(value());
+    else if (flag === '--trials') options.trials = Number(value());
     else throw new Error(`unknown argument ${flag}`);
   }
-  if (!Number.isInteger(options.pid) || options.jobs.length === 0) {
-    throw new Error('usage: watch.mjs --pid <harbor pid> --job <job dir> [--job ...] [--limit <usd>] [--running <usd>] [--interval <s>] [--rounds 200]');
+  const ready = options.dryRun ? Number.isInteger(options.tasks) && Number.isInteger(options.trials) : Number.isInteger(options.pid);
+  if (!ready || options.jobs.length === 0) {
+    throw new Error('usage: watch.mjs --pid <harbor pid> --job <job dir> [--job ...] [--limit <usd>] [--running <usd>] [--interval <s>] [--rounds 200]\n       watch.mjs --dry-run --job <job dir> --tasks <n> --trials <n>');
   }
   return options;
 }
 
+async function main() {
+  const options = parse(process.argv.slice(2));
+  if (options.dryRun) {
+    process.stdout.write(`${projectedCostLine(options.jobs, options.tasks, options.trials)}\n`);
+    return 0;
+  }
+  const result = await watch({ ...options, log: (line) => process.stdout.write(`${line}\n`) });
+  process.stdout.write(`${result.status} at round ${result.round}: projected $${result.projected.toFixed(2)}\n`);
+  return { done: 0, cancelled: 3, rounds: 2 }[result.status];
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
-    const result = await watch({ ...parse(process.argv.slice(2)), log: (line) => process.stdout.write(`${line}\n`) });
-    process.stdout.write(`${result.status} at round ${result.round}: projected $${result.projected.toFixed(2)}\n`);
-    process.exit({ done: 0, cancelled: 3, rounds: 2 }[result.status]);
+    process.exit(await main());
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exit(1);

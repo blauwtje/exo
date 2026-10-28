@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { configDirectory } from '#config-directory';
 import { exoLoaded } from './cell-usage.mjs';
+import { medianCost } from './routing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BENCH = path.join(ROOT, 'benchmarks', 'lean-gates');
@@ -220,6 +221,28 @@ export function claudeArguments(options, pluginDir, sessionId, prompt = PROMPT) 
     '--max-budget-usd', String(options.budget),
     '--session-id', sessionId
   ];
+}
+
+function recordedCost(file) {
+  if (!fs.existsSync(file)) return null;
+  try {
+    const cost = JSON.parse(fs.readFileSync(file, 'utf8')).total_cost_usd;
+    return typeof cost === 'number' ? cost : null;
+  } catch {
+    return null;
+  }
+}
+
+export function recordedRunCosts(out) {
+  if (!fs.existsSync(out)) return [];
+  const runs = fs.readdirSync(out, { withFileTypes: true }).filter((entry) => entry.isDirectory() && !entry.name.startsWith('probe-'));
+  return runs.map((run) => recordedCost(path.join(out, run.name, 'stdout.json'))).filter((cost) => cost !== null);
+}
+
+export function projectedCostLine(costs) {
+  const median = medianCost(costs.map((cost_usd) => ({ cost_usd })));
+  if (median === null) return 'projected cost: cost unknown';
+  return `projected cost: $${median.toFixed(2)} (median of ${costs.length} recorded runs)`;
 }
 
 function sha256(file) {
@@ -414,6 +437,7 @@ async function main() {
     console.log(`env removed: ${meta.env.removed.join(' ') || '(none)'}`);
     console.log(`env added: ${meta.env.added.join(' ')}`);
     console.log(`transcript dir: ${meta.transcriptDir}`);
+    console.log(projectedCostLine(recordedRunCosts(path.resolve(options.out))));
     console.log('dry run: no session started');
     return;
   }

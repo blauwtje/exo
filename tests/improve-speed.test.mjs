@@ -121,6 +121,9 @@ test('the command prints score on a good out dir and exits 1 with FAIL lines oth
   const good = spawnSync(process.execPath, [SCRIPT, '--from', out, '--full', '--measure', 'calls'], { encoding: 'utf8' });
   assert.equal(good.status, 0);
   assert.match(good.stdout, /^score: 2$/m);
+  const verdict = JSON.parse(good.stdout.split('\n').find((line) => line.startsWith('{')));
+  assert.equal(verdict.mode, 'full');
+  assert.equal(verdict.measures.calls, 2);
   makeCell(out, 'bad', { record: { hiddenPass: false } });
   const bad = spawnSync(process.execPath, [SCRIPT, '--from', out, '--full'], { encoding: 'utf8' });
   assert.equal(bad.status, 1);
@@ -179,7 +182,7 @@ test('quickVerdict rejects a failure or a cost above the base maximum, promotes 
 });
 
 test('quickVerdict carries the cell hidden result, cost, duration and the base', () => {
-  assert.deepEqual(quickVerdict(row(), BASE), { verdict: 'promote', hiddenPass: true, cost_usd: 0.5, durationMs: 1000, base: BASE });
+  assert.deepEqual(quickVerdict(row(), BASE), { mode: 'quick', verdict: 'promote', hiddenPass: true, cost_usd: 0.5, durationMs: 1000, base: BASE });
 });
 
 function pooledBase(costs) {
@@ -203,6 +206,7 @@ test('flagless runs screen the cell against the pooled base and print the verdic
   assert.match(promoted.stdout, /^verdict promote$/m);
   assert.match(promoted.stdout, /"cost_usd":0.4,"durationMs":5000,"base":\{[^}]*"mean":0.7,"max":0.9\}/);
   assert.match(promoted.stdout, /^score: 2$/m);
+  assert.equal(JSON.parse(promoted.stdout.split('\n').find((line) => line.startsWith('{'))).mode, 'quick');
 });
 
 test('flagless runs reject a failing cell or a cost above the base and stay silent in between', () => {
