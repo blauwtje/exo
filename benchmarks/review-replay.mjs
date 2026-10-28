@@ -11,9 +11,12 @@ import { meanAndSd } from './statistics.mjs';
 import { defectRange, prepareReviewBranch, reviewPlanText } from './sweep-fixtures.mjs';
 import { MODELS, ROOT, SAFE_TASKS } from './tasks.mjs';
 
-const USAGE = 'Usage: node benchmarks/review-replay.mjs [--checkout <exo checkout>] [--task <fixture or safe task id>]... [--rounds <n>] [--repeat <n>] [--jobs <n>] [--budget-usd <n>] [--out <path>] [--model <id>]';
+const USAGE = 'Usage: node benchmarks/review-replay.mjs [--checkout <exo checkout>] [--full] [--dry-run] [--rescore <runs dir>] [--resume] [--task <fixture or safe task id>]... [--rounds <n>] [--repeat <n>] [--jobs <n>] [--budget-usd <n>] [--save-baseline] [--out <path>] [--model <id>]';
 const SAFE = path.join(ROOT, 'benchmarks', 'safe');
 const REPLAY = path.join(ROOT, 'benchmarks', 'review-replay');
+const QUICK_BUDGET_USD = 1;
+const QUICK_REPEAT = 1;
+const FULL_REPEAT = 3;
 const SEED_SUFFIX = '.seed';
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];
 const FINDING = /^([^\s:;]+):(\d+)(?:-(\d+))?\s*;?\s*(defect|concern|question|note)\b(.*)$/;
@@ -235,21 +238,22 @@ export function claudeModel({ pluginDir, model, base }) {
   };
 }
 
-function keepRecord({ keepDir, task, base }, paths, result) {
+function keepRecord({ keepDir, task, index }, paths, result) {
   if (!keepDir) return;
-  const target = path.join(keepDir, `${task.id}-${path.basename(base).slice(RUN_PREFIX.length)}`);
+  const target = path.join(keepDir, `${task.id}-r${index}`);
   fs.mkdirSync(target, { recursive: true });
   fs.cpSync(path.join(paths.repository, '.exo'), target, { recursive: true });
-  fs.writeFileSync(path.join(target, 'run.json'), `${JSON.stringify(result, null, 2)}\n`);
+  fs.writeFileSync(path.join(target, 'run.json'), `${JSON.stringify({ task: task.id, ...result }, null, 2)}\n`);
 }
 
-async function runOnce(options, task, modelFor) {
+async function runOnce(options, { task, index }, modelFor) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), RUN_PREFIX));
   try {
     const paths = prepareCase(base, task, options.safeRoot);
     const context = { pluginDir: options.pluginDir, paths, plants: loadPlants(task, options.safeRoot), rounds: options.rounds };
-    const result = await replayCase(context, modelFor(base));
-    keepRecord({ keepDir: options.keepDir, task, base }, paths, result);
+    const startedAt = Date.now();
+    const result = { ...await replayCase(context, modelFor(base)), durationMs: Date.now() - startedAt };
+    keepRecord({ keepDir: options.keepDir, task, index }, paths, result);
     return result;
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
@@ -271,17 +275,29 @@ export function summarize(task, runs) {
   };
 }
 
+function keptResult(options, { task, index }) {
+  if (!options.resume || !options.keepDir) return null;
+  const file = path.join(options.keepDir, `${task.id}-r${index}`, 'run.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
+}
+
 export async function replayAll(options, modelFor) {
-  const queue = options.tasks.flatMap((task) => Array.from({ length: options.repeat }, () => task));
+  const items = options.tasks.flatMap((task) => Array.from({ length: options.repeat }, (_, index) => ({ task, index })));
   const finished = new Map(options.tasks.map((task) => [task, []]));
+  const queue = [];
+  for (const item of items) {
+    const kept = keptResult(options, item);
+    if (kept) finished.get(item.task).push(kept);
+    else queue.push(item);
+  }
   const budget = options.budgetUsd ?? Infinity;
   let spent = 0;
   const worker = async () => {
     while (queue.length > 0 && spent <= budget) {
-      const task = queue.shift();
-      const run = await runOnce(options, task, modelFor);
+      const item = queue.shift();
+      const run = await runOnce(options, item, modelFor);
       spent += run.costUsd;
-      finished.get(task).push(run);
+      finished.get(item.task).push(run);
     }
   };
   await Promise.all(Array.from({ length: Math.min(options.jobs ?? 1, queue.length) }, worker));
@@ -293,39 +309,123 @@ function spread({ mean, sd }) {
   return sd === null ? mean.toFixed(2) : `${mean.toFixed(2)} ± ${sd.toFixed(2)}`;
 }
 
+function baselineText(row) {
+  if (!row) return '-';
+  return `fixed ${row.fixedAfterOneRepair?.toFixed(2) ?? '-'}, never clean ${row.neverClean}, $${row.costUsdPerRun.toFixed(2)}/run`;
+}
+
+export function withBaseline(cells, rows) {
+  return cells.map((cell) => ({ ...cell, baseline: rows.find((row) => row.task === cell.task) ?? null }));
+}
+
+export function saveBaseline(file, cells, { model, source }) {
+  const measured = cells.filter((cell) => cell.runs > 0).map((cell) => ({
+    task: cell.task,
+    runs: cell.runs,
+    costUsdPerRun: Number((cell.costUsd / cell.runs).toFixed(4)),
+    fixedAfterOneRepair: cell.fixedAfterOneRepair.mean,
+    neverClean: cell.neverClean,
+    model,
+    source
+  }));
+  const kept = JSON.parse(fs.readFileSync(file, 'utf8')).filter((row) => !measured.some((fresh) => fresh.task === row.task));
+  const rows = [...kept, ...measured].sort((left, right) => left.task.localeCompare(right.task));
+  fs.writeFileSync(file, `[\n${rows.map((row) => `  ${JSON.stringify(row)}`).join(',\n')}\n]\n`);
+}
+
 export function renderTable(cells) {
-  const header = ['task', 'runs', 'skipped', 'failures', 'fixed after one repair', 'false fix lines', 'rounds to clean', 'never clean', 'cost usd'];
-  const rows = cells.map((cell) => [cell.task, cell.runs, cell.skipped, cell.failures, spread(cell.fixedAfterOneRepair), spread(cell.falseFixLines), spread(cell.roundsToClean), cell.neverClean, cell.costUsd.toFixed(2)]);
+  const header = ['task', 'runs', 'skipped', 'failures', 'fixed after one repair', 'false fix lines', 'rounds to clean', 'never clean', 'cost usd', 'baseline'];
+  const rows = cells.map((cell) => [cell.task, cell.runs, cell.skipped, cell.failures, spread(cell.fixedAfterOneRepair), spread(cell.falseFixLines), spread(cell.roundsToClean), cell.neverClean, cell.costUsd.toFixed(2), baselineText(cell.baseline)]);
   return `${[header, header.map(() => '---'), ...rows].map((row) => `| ${row.join(' | ')} |`).join('\n')}\n`;
+}
+
+export function writeReport({ out, keepDir, mode, cells, durationMs }) {
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  fs.writeFileSync(out, `${renderTable(cells)}\nRun records: ${keepDir}\n`);
+  const log = { mode, cost_usd: cells.reduce((sum, cell) => sum + cell.costUsd, 0), durationMs, cells };
+  fs.writeFileSync(`${out}.json`, `${JSON.stringify(log, null, 2)}\n`);
+}
+
+function readReplayJson(name) {
+  return JSON.parse(fs.readFileSync(path.join(REPLAY, name), 'utf8'));
+}
+
+function resolveTask(known, id) {
+  const task = known.find((candidate) => candidate.id === id);
+  if (!task) throw new Error(`unknown task '${id}'`);
+  return task;
 }
 
 function optionsOf(flags) {
   const fixtures = loadFixtures();
   const known = [...fixtures, ...SAFE_TASKS];
-  const defaults = fixtures.length > 0 ? fixtures : SAFE_TASKS;
-  const tasks = flags.task ? flags.task.map((id) => known.find((task) => task.id === id) ?? (() => { throw new Error(`unknown task '${id}'`); })()) : defaults;
+  const mode = flags.full ? 'full' : 'quick';
+  const defaults = mode === 'quick' ? readReplayJson('quick.json').map((id) => resolveTask(known, id)) : fixtures;
+  const budget = flags['budget-usd'] ?? (mode === 'quick' ? QUICK_BUDGET_USD : undefined);
   return {
-    tasks,
+    tasks: flags.task ? flags.task.map((id) => resolveTask(known, id)) : defaults,
     pluginDir: path.resolve(flags.checkout ?? ROOT),
     rounds: Number(flags.rounds ?? 3),
-    repeat: Number(flags.repeat ?? 1),
+    repeat: Number(flags.repeat ?? (mode === 'quick' ? QUICK_REPEAT : FULL_REPEAT)),
     jobs: Number(flags.jobs ?? os.availableParallelism()),
-    budgetUsd: flags['budget-usd'] === undefined ? undefined : Number(flags['budget-usd']),
+    budgetUsd: budget === undefined ? undefined : Number(budget),
+    mode,
+    resume: flags.resume,
     model: flags.model ?? MODELS.sonnet,
     safeRoot: SAFE,
     keepDir: flags.out ? path.resolve(`${flags.out}.runs`) : undefined
   };
 }
 
-async function main(argv) {
-  const flags = parseFlags(argv, { checkout: 'value', task: 'list', rounds: 'value', repeat: 'value', jobs: 'value', 'budget-usd': 'value', out: 'value', model: 'value' }, { usage: USAGE });
-  const options = optionsOf(flags);
-  const modelFor = (base) => claudeModel({ pluginDir: options.pluginDir, model: options.model, base });
-  const cells = await replayAll(options, modelFor);
-  if (flags.out) {
-    fs.mkdirSync(path.dirname(path.resolve(flags.out)), { recursive: true });
-    fs.writeFileSync(flags.out, `${renderTable(cells)}\nRun records: ${options.keepDir}\n`);
+export function projectRun(options, rows = readReplayJson('baseline.json')) {
+  const fallback = rows.reduce((sum, row) => sum + row.costUsdPerRun, 0) / rows.length;
+  const cells = options.tasks.flatMap((task) => Array.from({ length: options.repeat }, (_, run) => ({
+    task: task.id,
+    run,
+    projectedUsd: rows.find((row) => row.task === task.id)?.costUsdPerRun ?? fallback
+  })));
+  const projectedUsd = Number(cells.reduce((sum, cell) => sum + cell.projectedUsd, 0).toFixed(2));
+  return { mode: options.mode, cells, projectedUsd, budgetUsd: options.budgetUsd ?? null };
+}
+
+export function rescoreRuns(runsDir) {
+  const byTask = new Map();
+  const names = fs.readdirSync(runsDir).sort();
+  for (const name of names) {
+    const file = path.join(runsDir, name, 'run.json');
+    if (!fs.existsSync(file)) continue;
+    if (!/-r\d+$/.test(name)) continue;
+    const task = name.replace(/-r\d+$/, '');
+    byTask.set(task, [...byTask.get(task) ?? [], JSON.parse(fs.readFileSync(file, 'utf8'))]);
   }
+  return [...byTask].map(([task, runs]) => ({ ...summarize({ id: task }, runs), skipped: 0 }));
+}
+
+function rescoreReport(flags) {
+  const keepDir = path.resolve(flags.rescore);
+  const cells = withBaseline(rescoreRuns(keepDir), readReplayJson('baseline.json'));
+  if (flags.out) writeReport({ out: flags.out, keepDir, mode: 'rescore', cells, durationMs: 0 });
+  process.stdout.write(`${JSON.stringify(cells, null, 2)}\n`);
+}
+
+export async function main(argv, { modelFor: injected } = {}) {
+  const flags = parseFlags(argv, { checkout: 'value', task: 'list', rounds: 'value', repeat: 'value', jobs: 'value', 'budget-usd': 'value', out: 'value', rescore: 'value', model: 'value', full: 'boolean', resume: 'boolean', 'dry-run': 'boolean', 'save-baseline': 'boolean' }, { usage: USAGE });
+  if (flags.rescore) return rescoreReport(flags);
+  if (flags.resume && !flags.out) throw new Error('--resume needs --out <path>: it reads the kept runs under <path>.runs; nothing was run');
+  const options = optionsOf(flags);
+  const projection = projectRun(options);
+  if (flags['dry-run']) {
+    process.stdout.write(`${JSON.stringify(projection, null, 2)}\n`);
+    return;
+  }
+  if (projection.projectedUsd > (options.budgetUsd ?? Infinity)) throw new Error(`projected ${projection.projectedUsd} usd is over --budget-usd ${options.budgetUsd}; nothing was run`);
+  const modelFor = injected ?? ((base) => claudeModel({ pluginDir: options.pluginDir, model: options.model, base }));
+  const startedAt = Date.now();
+  const stored = readReplayJson('baseline.json');
+  const measured = await replayAll(options, modelFor);
+  const cells = withBaseline(measured, stored);
+  if (flags['save-baseline']) saveBaseline(path.join(REPLAY, 'baseline.json'), measured, { model: options.model, source: `benchmarks/review-replay.mjs ${options.mode} ${new Date().toISOString().slice(0, 10)}` });
+  if (flags.out) writeReport({ out: flags.out, keepDir: options.keepDir, mode: options.mode, cells, durationMs: Date.now() - startedAt });
   process.stdout.write(`${JSON.stringify(cells, null, 2)}\n`);
 }
 

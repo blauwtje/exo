@@ -5,7 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
@@ -24,35 +24,47 @@ function tallyFrom(lines, key) {
   return value;
 }
 
-export function checkSkillScriptBehavior(report, repository) {
+function runNode(args) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', () => resolve({ status: null, output: stdout + stderr }));
+    child.on('close', (status) => resolve({ status, output: stdout + stderr }));
+  });
+}
+
+const NAME = 'skill script behavior';
+
+function outcomeOf(run) {
+  const lines = run.output.split('\n');
+  const tally = Object.fromEntries(TALLY_KEYS.map((key) => [key, tallyFrom(lines, key)]));
+  const summary = `${tally.pass} passed, ${tally.fail} failed, ${tally.skipped} skipped of ${tally.tests} behavioral tests`;
+
+  if (run.status !== 0) {
+    const failing = lines.filter((line) => line.startsWith('not ok '));
+    return { status: 'FAIL', name: NAME, detail: `${summary}; ${failing.join('; ')}` };
+  }
+  return { status: 'PASS', name: NAME, detail: summary };
+}
+
+export function startSkillScriptBehavior(repository) {
   const testsRoot = repository.join('tests');
   if (!(fs.existsSync(testsRoot) && fs.statSync(testsRoot).isDirectory())) {
-    report.result('UNRUN', 'skill script behavior', 'this repository copy has no tests/ folder');
-    return;
+    return Promise.resolve({ status: 'UNRUN', name: NAME, detail: 'this repository copy has no tests/ folder' });
   }
   const testFiles = fs.readdirSync(testsRoot).sort()
     .filter((name) => name.endsWith('.test.mjs'))
     .map((name) => path.join(testsRoot, name))
     .filter((file) => fs.statSync(file).isFile());
   if (testFiles.length === 0) {
-    report.result('UNRUN', 'skill script behavior', 'tests/ holds no *.test.mjs file');
-    return;
+    return Promise.resolve({ status: 'UNRUN', name: NAME, detail: 'tests/ holds no *.test.mjs file' });
   }
 
   // why: the check can run inside `exo run`, whose variables would make the tests park gates in the live run.
   const stripFile = repository.join('tests', 'clean-run-env.mjs');
   const strip = fs.existsSync(stripFile) ? ['--import', pathToFileURL(stripFile).href] : [];
-  const run = spawnSync(process.execPath, [...strip, '--test', '--test-reporter=tap', ...testFiles], {
-    encoding: 'utf8'
-  });
-  const lines = `${run.stdout ?? ''}${run.stderr ?? ''}`.split('\n');
-  const tally = Object.fromEntries(TALLY_KEYS.map((key) => [key, tallyFrom(lines, key)]));
-  const summary = `${tally.pass} passed, ${tally.fail} failed, ${tally.skipped} skipped of ${tally.tests} behavioral tests`;
-
-  if (run.status !== 0) {
-    const failing = lines.filter((line) => line.startsWith('not ok '));
-    report.result('FAIL', 'skill script behavior', `${summary}; ${failing.join('; ')}`);
-    return;
-  }
-  report.result('PASS', 'skill script behavior', summary);
+  return runNode([...strip, '--test', '--test-reporter=tap', ...testFiles]).then(outcomeOf);
 }

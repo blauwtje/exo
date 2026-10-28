@@ -31,10 +31,12 @@ import { exoLoaded, writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { confinedClaude } from '#confine-claude';
 import { makeCellHome } from './cell-home.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
-import { BEFORE_ARM, beforePluginProblem, buildCopies, copyKey, exoRootOf, loadsCopy, resolveDirectory, withBeforeArm } from './plugin-copies.mjs';
+import { BEFORE_ARM, buildCopies, copyKey, exoRootOf, loadsCopy } from './plugin-copies.mjs';
 import { pluginDirty } from './plugin-state.mjs';
-import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
-import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { parseArguments, TIERS, tierTasks } from './run-args.mjs';
+import { ARMS, FIXTURE, MODELS, NO_RUN, ROOT } from './tasks.mjs';
+import { quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from './value-stock.mjs';
+import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, newestRunLedger, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -46,58 +48,10 @@ const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta
 const EXO_COPY_LABEL = '<copy of this checkout without benchmarks/>';
 let armTable = ARMS;
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
-const FULL_RUNS = 4;
 const HEARTBEAT_MS = 60 * 1000;
 // Tiers whose cells run as a real session: Bash allowed, no NO_RUN, and the
 // user's CLAUDE.md files and auto memory dropped.
 const OPEN_TIERS = new Set(['git', 'value']);
-const TIERS = { template: TEMPLATE_TASKS, safe: SAFE_TASKS, git: GIT_TASKS, calibration: CALIBRATION_TASKS };
-
-// Value tasks are read from disk only when asked for, so a task directory still
-// being written never stops a run of another tier.
-function tierTasks(tier) {
-  if (tier === 'value') return loadValueTasks();
-  if (!(tier in TIERS)) throw new Error(`unknown tier ${tier}; one of ${[...Object.keys(TIERS), 'value'].join(', ')}`);
-  return TIERS[tier];
-}
-
-function parseArguments(argv) {
-  const options = { mode: 'custom', tasks: null, tier: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, maxTotalUsd: null, confirm: false, out: null, effort: null, dryRun: false, beforePlugin: null };
-  for (let index = 0; index < argv.length; index += 1) {
-    const flag = argv[index];
-    const value = () => argv[++index];
-    if (flag === '--smoke') options.mode = 'smoke';
-    else if (flag === '--full') options.mode = 'full';
-    else if (flag === '--confirm') options.confirm = true;
-    else if (flag === '--tasks') options.tasks = value().split(',');
-    else if (flag === '--tier') options.tier = value();
-    else if (flag === '--arms') options.arms = value().split(',');
-    else if (flag === '--runs') options.runs = Number(value());
-    else if (flag === '--model') options.model = value();
-    else if (flag === '--concurrency') options.concurrency = Number(value());
-    else if (flag === '--max-total-usd') options.maxTotalUsd = parseSpendCap(value());
-    else if (flag === '--out') options.out = value();
-    else if (flag === '--effort') options.effort = value();
-    else if (flag === '--dry-run') options.dryRun = true;
-    else if (flag === '--before-plugin') options.beforePlugin = value();
-    else throw new Error(`unknown flag ${flag}`);
-  }
-  if (options.tier !== null) options.tasks = options.tasks ?? tierTasks(options.tier).map((task) => task.id);
-  if (options.mode === 'smoke') options.tasks = options.tasks ?? SMOKE_TASKS;
-  if (options.mode === 'full') {
-    options.tasks = options.tasks ?? [...TEMPLATE_TASKS, ...SAFE_TASKS].map((task) => task.id);
-    if (!argv.includes('--runs')) options.runs = FULL_RUNS;
-  }
-  if (options.tasks === null) throw new Error('name --tasks or --tier, or pick --smoke or --full');
-  if (options.tasks.length === 0) throw new Error(`tier ${options.tier} has no tasks`);
-  if (!(options.model in MODELS)) throw new Error(`unknown model ${options.model}; one of ${Object.keys(MODELS).join(', ')}`);
-  const problem = beforePluginProblem(options.beforePlugin, options.arms);
-  if (problem !== null) throw new Error(problem);
-  if (options.beforePlugin !== null) options.beforePlugin = resolveDirectory(options.beforePlugin);
-  options.armTable = withBeforeArm(ARMS, options.beforePlugin);
-  for (const arm of options.arms) if (!(arm in options.armTable)) throw new Error(`unknown arm ${arm}`);
-  return options;
-}
 
 function findTask(taskId) {
   for (const tier of [...Object.keys(TIERS), 'value']) {
@@ -363,6 +317,10 @@ function costGate(options, cellCount) {
   process.exit(2);
 }
 
+function plannedCells(cells) {
+  return cells.map((cell) => ({ task: cell.task, arm: cell.arm === BEFORE_ARM ? 'exo' : cell.arm, modelId: MODELS[cell.model] }));
+}
+
 // Prints one line per cell: the environment additions, then the argv; then the
 // cell count and projected cost. Starts no session and builds no cell.
 function printDryRun(cells, effort, concurrency) {
@@ -376,7 +334,7 @@ function printDryRun(cells, effort, concurrency) {
     const { command, args } = cellCommand(cell.arm, cell.task, cell.model, effort, labels);
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, command, ...args.map((argument) => JSON.stringify(argument))].join(' ')}`);
   }
-  const planned = cells.map((cell) => ({ task: cell.task, arm: cell.arm === BEFORE_ARM ? 'exo' : cell.arm, modelId: MODELS[cell.model] }));
+  const planned = plannedCells(cells);
   const projection = projectCost(planned, RUNS, effort);
   console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default); ${projection.fromFallback} cells use a fallback that does not match model and effort`);
   const time = projectTime(planned, RUNS, effort);
@@ -407,6 +365,16 @@ function claudeVersion() {
   return execFileSync('claude', ['--version'], { encoding: 'utf8' }).trim();
 }
 
+function storedCells(cells) {
+  return cells.map((cell) => {
+    const checksFile = path.join(cell.cellDirectory, 'checks.json');
+    if (!fs.existsSync(checksFile)) throw new Error(`stock baseline: ${cell.task.id} #${cell.run} has no result, so nothing is stored`);
+    const checks = JSON.parse(fs.readFileSync(checksFile, 'utf8'));
+    const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
+    return { task: cell.task.id, pass: checks.pass, cost_usd: result.total_cost_usd, wallMs: checks.wallMs };
+  });
+}
+
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   armTable = options.armTable;
@@ -435,6 +403,9 @@ async function main() {
     throw new Error('CLAUDE_CONFIG_DIR is set, but the default-options mirror covers only ~/.claude; unset it');
   }
   costGate(options, cells.length);
+  const quick = options.mode === 'quick' ? quickStock({ rows: readStock(stockStorePath()), tasks: options.tasks, model: MODELS[options.model], claudeVersion: claudeVersion() }) : null;
+  if (quick?.warning) console.log(quick.warning);
+  const startedAt = Date.now();
   const fixtureDirectory = tasks.some((task) => task.tier === 'template') ? ensureTemplateFixture() : null;
   fs.mkdirSync(runDirectory, { recursive: true });
   fs.writeFileSync(path.join(runDirectory, 'meta.json'), `${JSON.stringify({
@@ -445,6 +416,7 @@ async function main() {
     ...(options.beforePlugin === null ? {} : { beforePlugin: options.beforePlugin })
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
+  if (options.stockBaseline) console.log(`stock baseline into ${stockStorePath()}: projected $${projectCost(plannedCells(cells), RUNS, options.effort).total.toFixed(2)}, run it once`);
   let done = 0;
   let spent = 0;
   const skipped = [];
@@ -487,6 +459,16 @@ async function main() {
     clearInterval(heartbeat);
     fs.rmSync(cellHome, { recursive: true, force: true });
     for (const copy of Object.values(copies)) fs.rmSync(copy, { recursive: true, force: true });
+  }
+  if (options.stockBaseline) {
+    writeStock(stockStorePath(), stockRows({ cells: storedCells(cells), model: MODELS[options.model], claudeVersion: claudeVersion() }));
+    console.log(`stock baseline written to ${stockStorePath()}`);
+  }
+  if (quick !== null) {
+    const finished = cells.filter((cell) => cell.arm !== 'baseline' && fs.existsSync(path.join(cell.cellDirectory, 'checks.json')));
+    const summary = quickSummary({ stock: quick.stock, cells: storedCells(finished), durationMs: Date.now() - startedAt });
+    fs.writeFileSync(path.join(runDirectory, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
+    console.log(JSON.stringify(summary, null, 2));
   }
   if (options.maxTotalUsd !== null) console.log(`spent $${spent.toFixed(3)} of $${options.maxTotalUsd}; ${skipped.length} cells skipped`);
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);

@@ -34,7 +34,7 @@ import { checkSharedContracts } from './verify/checks/shared-contracts.mjs';
 import { checkReturnCaps } from './verify/checks/return-caps.mjs';
 import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
 import { checkSkillScripts } from './verify/checks/skill-scripts.mjs';
-import { checkSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
+import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkGitWhitespace } from './verify/checks/git-whitespace.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkModelKinds } from './verify/checks/model-kinds.mjs';
@@ -72,6 +72,7 @@ if (!fs.existsSync(path.join(root, 'skills'))) {
 
 const report = createReport();
 const repository = createRepository(root);
+const behavior = values.static ? null : startSkillScriptBehavior(repository);
 
 checkSkillFrontmatter(report, repository);
 checkProcessStructure(report, repository);
@@ -99,7 +100,10 @@ checkReturnCaps(report, repository);
 checkScriptSyntax(report, repository);
 checkSkillScripts(report, repository);
 checkCodeComments(report, repository);
-if (!values.static) checkSkillScriptBehavior(report, repository);
+if (behavior) {
+  const outcome = await behavior;
+  report.result(outcome.status, outcome.name, outcome.detail);
+}
 checkGitWhitespace(report, repository);
 if (!values.static) checkPluginVersion(report, repository);
 checkModelKinds(report, repository);

@@ -133,3 +133,26 @@ test('run-plan inside a Claude Code session refuses before it starts a headless 
   assert.match(result.stdout, new RegExp(`^run-plan: ${SESSION_REFUSAL.source}`, 'm'));
   assert.deepEqual(await calls(context), []);
 });
+
+test('exo key dispatches to key set and exo setup names the key commands', async () => {
+  const context = await setup();
+  const bare = await run(CLI, ['key'], { cwd: context.root, env: { HOME: context.home } });
+  assert.equal(bare.code, 2);
+  assert.match(bare.stderr, /usage: exo key set <provider>/);
+  const set = await run(CLI, ['key', 'set', 'deepseek'], { cwd: context.root, env: { HOME: context.home }, input: 'k1\n' });
+  assert.equal(set.code, 0, set.stderr);
+  const setupRun = await run(CLI, ['setup'], { cwd: context.root, env: { HOME: context.home } });
+  assert.match(setupRun.stdout, /^exo key set deepseek$/m);
+  assert.match(setupRun.stdout, /^exo key set zai$/m);
+  assert.doesNotMatch(setupRun.stdout, /_API_KEY=/);
+});
+
+test('exo claude dispatches to the launcher and the usage names it', async () => {
+  const context = await setup();
+  const env = { HOME: context.home, CLAUDECODE: '' };
+  const bad = await run(CLI, ['claude', 'deepseek'], { cwd: context.root, env });
+  assert.equal(bad.code, 2);
+  assert.match(bad.stderr, /usage: exo claude/);
+  const help = await run(CLI, ['--help'], { cwd: context.root, env });
+  assert.match(help.stdout, /exo claude \[--provider <name>\]/);
+});

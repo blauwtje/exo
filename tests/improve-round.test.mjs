@@ -115,7 +115,7 @@ test('a run over the limit is killed and rerun once', () => {
 test('--wait prints the status line, or WAIT when none arrives', () => {
   const root = setup();
   const run = (env) => spawnSync(process.execPath, [script, '--root', root, '--tag', 't', '--wait'], { encoding: 'utf8', env: { ...process.env, ...env } }).stdout.trim();
-  assert.equal(run({ EXO_IMPROVE_WAIT_MS: '1000' }), 'WAIT');
+  assert.equal(run({ EXO_IMPROVE_WAIT_MS: '300' }), 'WAIT');
   fs.writeFileSync(path.join(root, '.exo/improve/t.status'), 'ROW abc 1 keep best=1\n');
   assert.equal(run({}), 'ROW abc 1 keep best=1');
 });

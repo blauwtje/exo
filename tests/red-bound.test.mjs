@@ -13,7 +13,6 @@ import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs
 const inBase = (body) => `if pwd | grep -q red-green-; then ${body}; fi`;
 const HANGS_AFTER_FAILING = inBase('echo "not ok 1 - boom"; sleep 300');
 const PASSES_AFTER_MINUTES = inBase('sleep 300');
-const PASSES_AFTER_SECONDS = inBase('sleep 4');
 
 async function withEnv(settings, body) {
   const saved = Object.fromEntries(Object.keys(settings).map((name) => [name, process.env[name]]));
@@ -28,7 +27,7 @@ async function withEnv(settings, body) {
   }
 }
 
-const TINY = { EXO_RED_BASE_MARGIN_MS: '1500', EXO_PROOF_TIMEOUT_MS: '8000' };
+const TINY = { EXO_RED_BASE_MARGIN_MS: '1000', EXO_PROOF_TIMEOUT_MS: '4000' };
 
 async function landWith(command) {
   const { root, planPath } = await landingCheckout();
@@ -48,14 +47,14 @@ test('a base that prints a failure and never exits is red within head plus margi
   const land = await landWith(HANGS_AFTER_FAILING);
   const { result, ms } = await timed(() => withEnv(TINY, land));
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.ok(ms < 7000, `took ${ms} ms`);
+  assert.ok(ms < 3500, `took ${ms} ms`);
 });
 
 test('a base that passes only after far more than head plus margin is red at the bound', async () => {
   const land = await landWith(PASSES_AFTER_MINUTES);
   const { result, ms } = await timed(() => withEnv(TINY, land));
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.ok(ms < 7000, `took ${ms} ms`);
+  assert.ok(ms < 3500, `took ${ms} ms`);
 });
 
 test('a base that exits non-zero fast is red, as before', async () => {
@@ -77,12 +76,12 @@ test('a base that passes within head plus margin is no red proof', async () => {
 test('runOnBase names both times in the red line of a base stopped at the bound', async () => {
   const { root } = await landingCheckout();
   const { result, ms } = await timed(() => withEnv(TINY, () => runOnBase({
-    root, base: 'HEAD', command: HANGS_AFTER_FAILING, timeoutMs: 8000, headMs: 100
+    root, base: 'HEAD', command: HANGS_AFTER_FAILING, timeoutMs: 4000, headMs: 100
   })));
   assert.equal(result.status, 'red');
   assert.match(result.output, /not ok 1 - boom/);
-  assert.match(result.output, /base run did not finish within 1\.6 s; head run took 0\.1 s/);
-  assert.ok(ms < 7000, `took ${ms} ms`);
+  assert.match(result.output, /base run did not finish within 1\.1 s; head run took 0\.1 s/);
+  assert.ok(ms < 3500, `took ${ms} ms`);
 });
 
 test('runOnBase without a head time still reports the proof timeout as error', async () => {
@@ -102,7 +101,7 @@ test('redGreen proves a Success criterion whose base never exits after failing',
   const root = await gitRepository({ 'a.txt': 'a\n' });
   await commitFiles(root, { ok: 'x\n' }, 'feat: the fix');
   const command = 'if test -f ok; then exit 0; fi; echo "not ok"; sleep 300';
-  const { result, ms } = await timed(() => withEnv(TINY, () => redGreen({ root, base: 'HEAD~1', command, timeoutMs: 8000 })));
+  const { result, ms } = await timed(() => withEnv(TINY, () => redGreen({ root, base: 'HEAD~1', command, timeoutMs: 4000 })));
   assert.equal(result.outcome, 'proved', result.lines.join('\n'));
-  assert.ok(ms < 7000, `took ${ms} ms`);
+  assert.ok(ms < 3500, `took ${ms} ms`);
 });

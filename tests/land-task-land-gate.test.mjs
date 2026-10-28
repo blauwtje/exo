@@ -108,7 +108,7 @@ test('a Land gate past its deadline is stopped and refused with timed out after 
 });
 
 // A grandchild the gate started must die with it, else it outlives the refusal.
-const survivorCommand = (marker) => `(sleep 1.5; touch ${marker}) & sleep 10`;
+const survivorCommand = (marker) => `(sleep 1; touch ${marker}) & sleep 10`;
 
 test('a timed-out Land gate stops the processes it started too', async () => {
   const { root, planPath } = await landingCheckout();
@@ -120,7 +120,7 @@ test('a timed-out Land gate stops the processes it started too', async () => {
   } finally {
     delete process.env.EXO_LAND_GATE_TIMEOUT_MS;
   }
-  await new Promise((resolve) => setTimeout(resolve, 2500));
+  await new Promise((resolve) => setTimeout(resolve, 1600));
   await assert.rejects(fs.access(marker));
 });
 
@@ -134,7 +134,7 @@ test('a timed-out Proof is refused with timed out after <n>s, its process tree s
   assert.equal(result.code, 1, result.stderr);
   assert.match(result.stderr, /failed \(timed out after 0\.3s\)/);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
-  await new Promise((resolve) => setTimeout(resolve, 2500));
+  await new Promise((resolve) => setTimeout(resolve, 1600));
   await assert.rejects(fs.access(marker));
 });
 
@@ -342,9 +342,9 @@ test('out-of-scope: a failing covering test of a changed file refuses the land, 
 test('out-of-scope: a covering test that times out refuses the land, naming the test file and the timeout', async () => {
   const checkout = await coveringCheckout({ 'tests/covers.test.mjs': COVERING_HANG });
   const head = git(checkout.root, 'rev-parse', 'HEAD');
-  const result = await landFromCli(checkout, { EXO_PROOF_TIMEOUT_MS: '4000' });
+  const result = await landFromCli(checkout, { EXO_PROOF_TIMEOUT_MS: '2000' });
   assert.equal(result.code, 1, result.stderr);
-  assert.match(result.stderr, /Task 1: 1 covering test\(s\) of the changed files failed:\ntests\/covers\.test\.mjs failed \(timed out after 4s\):/);
+  assert.match(result.stderr, /Task 1: 1 covering test\(s\) of the changed files failed:\ntests\/covers\.test\.mjs failed \(timed out after 2s\):/);
   assert.equal(git(checkout.root, 'rev-parse', 'HEAD'), head);
 });
 

@@ -4,12 +4,15 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { sharedStateDenyRules } from '../../../lib/git-deny.mjs';
+import { environmentMs } from '../../../lib/script-flags.mjs';
 import { loopCommands } from '#plan-tasks';
 import { ECOSYSTEM_MANIFESTS } from '#size-facts';
 import { sumCounts, usageCounts } from '#token-weights';
 
 const KILL_GRACE_MS = 5000;
 const PARENT_POLL_MS = 5000;
+const PROVIDER_RETRIES = 3;
+const TRANSIENT_PROVIDER_ERROR = /\b(?:429|503|529)\b|rate_limit_error|overloaded_error/;
 
 export function appendLog(file, text, write = fs.appendFileSync) {
   try {
@@ -335,7 +338,7 @@ export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, rep
   return refuseCommits === null ? merged : refusingCommits(merged, refuseCommits);
 }
 
-export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {
+function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {
   return new Promise((resolve) => {
     let text = '';
     let timedOut = false;
@@ -379,7 +382,7 @@ export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, re
       clearTimeout(graceTimer);
       clearInterval(parentWatch);
       for (const signal of signals) process.off(signal, onSignal);
-      resolve({ text, code, signal, timedOut });
+      resolve({ text, code, signal, timedOut, aborted });
     };
     const record = (chunk) => {
       text += chunk;
@@ -427,4 +430,31 @@ export function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, re
       }, KILL_GRACE_MS);
     }, timeoutMs);
   });
+}
+
+function isModelContentEvent(line) {
+  try {
+    return ['assistant', 'user', 'system'].includes(JSON.parse(line)?.type);
+  } catch {
+    return false;
+  }
+}
+
+export function isTransientProviderError(text) {
+  if (!TRANSIENT_PROVIDER_ERROR.test(text)) return false;
+  const { final, resultText } = parseStream(text);
+  if (final === null) return text.split(/\r?\n/).some((line) => TRANSIENT_PROVIDER_ERROR.test(line) && !isModelContentEvent(line));
+  return final.is_error === true && TRANSIENT_PROVIDER_ERROR.test(resultText);
+}
+
+const retriesProviderError = (outcome) => !outcome.timedOut && !outcome.aborted && isTransientProviderError(outcome.text);
+
+export async function spawnClaude(claude, args, options) {
+  const baseMs = environmentMs('EXO_PROVIDER_RETRY_MS', 30_000);
+  let outcome = await spawnOnce(claude, args, options);
+  for (let retry = 0; retry < PROVIDER_RETRIES && retriesProviderError(outcome); retry += 1) {
+    await new Promise((resolve) => setTimeout(resolve, baseMs * 2 ** retry));
+    outcome = await spawnOnce(claude, args, options);
+  }
+  return outcome;
 }

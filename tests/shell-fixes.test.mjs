@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -103,6 +103,14 @@ test('the fixed timeout exits with the command status', { timeout: 20000 }, () =
   assert.equal(runBounded("timeout 5 sh -c 'exit 3'").status, 3);
 });
 
+const runBoundedAsync = (command) => new Promise((resolve) => {
+  const started = Date.now();
+  const child = spawn('bash', ['-c', fix(command)], { timeout: 10000 });
+  let stdout = '';
+  child.stdout.on('data', (chunk) => { stdout += chunk; });
+  child.on('close', (status) => resolve({ status, stdout, ms: Date.now() - started }));
+});
+
 const gone = (pid) => {
   for (let round = 0; round < 20; round++) {
     try {
@@ -139,7 +147,7 @@ test('the fixed timeout leaves no child behind when the bash group is killed', {
   assert.equal(result.status, 124);
 });
 
-test('a timeout anywhere the shell runs one is bounded: after do, after a fake heredoc opener, before more commands, with a unit', { timeout: 20000 }, () => {
+test('a timeout anywhere the shell runs one is bounded: after do, after a fake heredoc opener, before more commands, with a unit', { timeout: 20000 }, async () => {
   const commands = [
     'for f in a; do timeout 1 sleep 15; echo "done $?"; done',
     'echo "a <<b"\ntimeout 1 sleep 15; echo "done $?"',
@@ -147,11 +155,12 @@ test('a timeout anywhere the shell runs one is bounded: after do, after a fake h
     'timeout 1 sh -c "sleep 15"; echo "done $?"',
     'timeout 0.01m sleep 15; echo "done $?"'
   ];
-  for (const command of commands) {
-    const result = runBounded(command);
+  const results = await Promise.all(commands.map(runBoundedAsync));
+  results.forEach((result, index) => {
+    const command = commands[index];
     assert.match(result.stdout, /done 124/, command);
     assert.ok(result.ms < 5000, `${command}: ${result.ms} ms`);
-  }
+  });
 });
 
 test('a timeout word in any command position or as an argument gets the prefix on a host without timeout', () => {

@@ -19,7 +19,7 @@ const PROOF = [
   "if (base) fs.appendFileSync(process.argv[2], `${mode ?? 'x'}\\n`);",
   "if (mode === 'red' && base) process.exit(1);",
   "if (mode === 'fail') process.exit(1);",
-  "if (mode === 'slow') { const end = Date.now() + 8000; while (Date.now() < end); }",
+  "if (mode === 'slow') { const end = Date.now() + 5000; while (Date.now() < end); }",
   ''
 ].join('\n');
 
@@ -82,7 +82,7 @@ const CASES = [
   { name: 'the Proof still has no red', mode: 'x', gate: 'none' },
   { name: 'the Proof fails on the head', mode: 'fail', gate: 'none' },
   { name: 'the Land gate refuses', mode: 'red', gate: 'node -e "process.exit(1)"' },
-  { name: 'land-task is killed by the timeout', mode: 'slow', gate: 'none', extra: ['--timeout', '0.1'] }
+  { name: 'land-task is killed by the timeout', mode: 'slow', gate: 'none', extra: ['--timeout', '0.05'] }
 ];
 
 for (const { name, mode, gate, extra } of CASES) {

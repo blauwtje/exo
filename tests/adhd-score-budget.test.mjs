@@ -73,3 +73,13 @@ test('a paid run still fails once spend passes --max-usd', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('--concise-baseline gets the baseline cap, and --max-usd overrides it', () => {
+  assert.equal(parseArgs(['--concise-baseline']).maxUsd, 4);
+  assert.equal(parseArgs(['--concise-baseline', '--max-usd', '1']).maxUsd, 1);
+});
+
+test('--arm caveman keeps the quick cap and --max-usd overrides it', () => {
+  assert.equal(parseArgs(['--arm', 'caveman']).maxUsd, 0.3);
+  assert.equal(parseArgs(['--arm', 'caveman', '--max-usd', '0.5']).maxUsd, 0.5);
+});

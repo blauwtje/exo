@@ -1,0 +1,27 @@
+[
+  {
+    "task": "safe-path",
+    "good": "FINDINGS\n\nuploads.js:4-6 defect: safeUploadPath joins baseDir with the raw filename, so a value like `../../etc/passwd` escapes baseDir. fix\n\nCount: defect 1, concern 0, question 0\n",
+    "bad": "FINDINGS\n\nuploads.js:1-2 defect: the module header names no export. fix\n\nCount: defect 1, concern 0, question 0\n"
+  },
+  {
+    "task": "sql-user",
+    "good": "FINDINGS\n\ndb.js:11-13 defect: getUser interpolates username into the query text, so a value like `x' OR 1=1 --` changes the query. fix\n\nCount: defect 1, concern 0, question 0\n",
+    "bad": "FINDINGS\n\ndb.js:1-2 defect: the import line is unused. fix\n\nCount: defect 1, concern 0, question 0\n"
+  },
+  {
+    "task": "auth-token",
+    "good": "FINDINGS\n\nauth.js:9-11 defect: verifyToken returns the claimed userId without checking the signature, so a forged token is accepted. fix\n\nCount: defect 1, concern 0, question 0\n",
+    "bad": "FINDINGS\n\nauth.js:1-2 defect: the import line is unused. fix\n\nCount: defect 1, concern 0, question 0\n"
+  },
+  {
+    "task": "csv-sum",
+    "good": "FINDINGS\n\nsales.js:4-7 defect: sumAmount takes Number() of every row without checking it is finite, so one broken row turns the sum into NaN. fix\n\nCount: defect 1, concern 0, question 0\n",
+    "bad": "FINDINGS\n\nsales.js:1-2 defect: the import line is unused. fix\n\nCount: defect 1, concern 0, question 0\n"
+  },
+  {
+    "task": "rate-limit",
+    "good": "FINDINGS\n\nlimiter.js:10-13 defect: allow counts calls on one counter that never resets, so a key is blocked forever after maxCalls calls instead of per period. fix\n\nCount: defect 1, concern 0, question 0\n",
+    "bad": "FINDINGS\n\nlimiter.js:1-2 defect: the class header has no comment. fix\n\nCount: defect 1, concern 0, question 0\n"
+  }
+]

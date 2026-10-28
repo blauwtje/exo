@@ -9,13 +9,17 @@ import { BREVITY_LINES, withoutSentence } from './tasks.mjs';
 import { gateReply } from './adhd/gates.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
+import { repoMetrics } from './adhd/metrics.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CASES = path.join(import.meta.dirname, 'adhd', 'cases.jsonl');
 const SATURATED = path.join(import.meta.dirname, 'adhd', 'saturated.json');
+const QUICK = path.join(import.meta.dirname, 'adhd', 'quick.json');
+const CAVEMAN = path.join(import.meta.dirname, 'adhd', 'arms', 'caveman.md');
 // why: the baseline and labels are gitignored, so inside the checkout every new worktree lacks them and removing one deletes them; the git common dir is shared by all worktrees and never committed.
 const STORE = path.resolve(ROOT, execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8' }).trim(), 'exo', 'adhd');
 const BASELINE = path.join(STORE, 'baseline.json');
+const CONCISE = path.join(STORE, 'concise.json');
 const LOG_DIR = path.join(ROOT, '.exo', 'adhd-score');
 const LABELS = path.join(STORE, 'labels.jsonl');
 const LABELS_TO_WRITE = 5;
@@ -25,6 +29,7 @@ const RUNS = 3;
 export const ADHD_RUNS = 3;
 const CONCURRENCY = 8;
 export const SCORE_MAX_USD = 3;
+export const QUICK_MAX_USD = 0.3;
 const FAIL_SOURCE_LOGS = 3;
 const STABILITY_REPEATS = 5;
 const BASELINE_MAX_USD = 4;
@@ -33,6 +38,8 @@ export const readCases = (file = CASES) =>
   fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 
 export const readSaturated = (file = SATURATED) => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+export const readQuick = (file = QUICK) => JSON.parse(fs.readFileSync(file, 'utf8'));
 
 export function selectCases(cases, { screen, caseIds }, saturated = readSaturated()) {
   const unknown = (caseIds ?? []).find((id) => !cases.some((c) => c.id === id));
@@ -58,11 +65,21 @@ export function makeStylePlugin(ablate = null) {
   return dir;
 }
 
+const CONCISE_PROMPT = 'Answer concisely.';
+
+const ARM_ARGS = {
+  default: () => [],
+  concise: () => ['--append-system-prompt', CONCISE_PROMPT],
+  caveman: () => ['--append-system-prompt', `${CONCISE_PROMPT}\n\n${fs.readFileSync(CAVEMAN, 'utf8').trim()}`],
+  adhd: (pluginDir) => ['--plugin-dir', pluginDir, '--settings', JSON.stringify({ outputStyle: 'exo:adhd' })],
+};
+
 // why: one real `claude -p` in a clean HOME and the arm's fixed empty cwd, so every call shares one system-prompt prefix; a fresh HOME per call put a per-call value in that prefix and each call rewrote ~2.1k cache tokens. Tokens and cost come from its JSON result.
 export function claudeReply({ arm, prompt, model = REPLY_MODEL, pluginDir, cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-case-')), keepCwd = false, home: fixedHome }) {
   const home = fixedHome ?? makeCellHome();
-  const args = ['-p', '--model', model, '--tools', '', '--output-format', 'json', '--setting-sources', 'project,local', '--strict-mcp-config', '--disable-slash-commands', '--exclude-dynamic-system-prompt-sections'];
-  if (arm === 'adhd') args.push('--plugin-dir', pluginDir, '--settings', JSON.stringify({ outputStyle: 'exo:adhd' }));
+  const armArgs = ARM_ARGS[arm];
+  if (!armArgs) throw new Error(`unknown arm ${arm}`);
+  const args = ['-p', '--model', model, '--tools', '', '--output-format', 'json', '--setting-sources', 'project,local', '--strict-mcp-config', '--disable-slash-commands', '--exclude-dynamic-system-prompt-sections', ...armArgs(pluginDir)];
   return spawnClaude({ args, input: prompt, cwd, home })
     .then((out) => {
       const json = JSON.parse(out);
@@ -98,17 +115,17 @@ export function makeStager() {
   };
 }
 
-// why: a baseline run costs real money and one hung call must not lose finished cases, so existing rows are kept unless `all`, `save` runs after each case, and a failed call names its case and arm.
-export async function buildBaseline({ cases, reply, spend, runs = RUNS, existing = {}, all = false, save = () => {} }) {
+// why: a baseline run costs real money and one hung call must not lose finished cases, so existing rows are kept unless `all`, `save` runs after each case, and a failed call names its case and arm; with a `model`, rows carry it and a row from another model counts as missing.
+export async function buildBaseline({ cases, reply, spend, runs = RUNS, existing = {}, all = false, save = () => {}, arm = 'default', model }) {
   const stage = makeStager();
   const baseline = all ? {} : { ...existing };
   for (const c of cases) {
-    if (baseline[c.id]) continue;
-    const results = await stage('default', runs, () => Promise.resolve(reply({ arm: 'default', prompt: promptOf(c) })).catch((error) => {
-      throw new Error(`reply failed for case ${c.id}, arm default: ${error.message}`, { cause: error });
+    if (baseline[c.id] && (!model || baseline[c.id].model === model)) continue;
+    const results = await stage(arm, runs, () => Promise.resolve(reply({ arm, prompt: promptOf(c) })).catch((error) => {
+      throw new Error(`reply failed for case ${c.id}, arm ${arm}: ${error.message}`, { cause: error });
     }));
     results.forEach((r) => spend.add(r.cost));
-    baseline[c.id] = { replies: results.map((r) => r.text), tokens: results.map((r) => r.tokens), mean: mean(results.map((r) => r.tokens)), cost: results.reduce((sum, r) => sum + r.cost, 0) };
+    baseline[c.id] = { replies: results.map((r) => r.text), tokens: results.map((r) => r.tokens), mean: mean(results.map((r) => r.tokens)), cost: results.reduce((sum, r) => sum + r.cost, 0), ...(model ? { model } : {}) };
     save(baseline);
   }
   return baseline;
@@ -287,15 +304,17 @@ export async function calibrateLines({ labels, judge, model, onCost, votes }) {
   return [`facts ${ratio(r)} pass_rows=${ratio(r.pass)} fail_rows=${ratio(r.fail)} built_fail_rows=${ratio(r.built)} deleted_fact_only=${ratio(r.deleted)}`];
 }
 
-function isPartialLog(file) {
+// why: a partial log and a quick-run log hold no full-run replies, so the readers that expect full-run data skip both.
+function isSkippedLog(file) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')).partial === true;
+    const log = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return log.partial === true || log.mode === 'quick';
   } catch (error) {
     throw new Error(`${file}: ${error.message}`);
   }
 }
 
-const logFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.json') && !isPartialLog(path.join(dir, f))).sort() : []);
+const logFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.json') && !isSkippedLog(path.join(dir, f))).sort() : []);
 
 // why: rows are rebuilt from the human labels and the newest score logs, so the same inputs give the same rows; a row id already in the file is never written again, and no existing line changes.
 export function runAddFailLabels(cases, { file = LABELS, logDir = LOG_DIR, baseline = readBaseline() } = {}) {
@@ -326,23 +345,36 @@ function latestAdhdReplies() {
   return Object.fromEntries(perCase.filter((p) => p.replies).map((p) => [p.id, p.replies]));
 }
 
-const FLAGS = { '--baseline': 'baseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all', '--dry-run': 'dryRun', '--screen': 'screen', '--rescore': 'rescore' };
-const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')] };
+const FLAGS = { '--full': 'full', '--baseline': 'baseline', '--concise-baseline': 'conciseBaseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all', '--dry-run': 'dryRun', '--screen': 'screen', '--rescore': 'rescore' };
+const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')], '--arm': ['arm', String] };
+const FULL_RUN_FLAGS = ['--full', '--screen', '--baseline', '--rescore', '--resume', '--ablate', '--runs'];
+const OTHER_ACTIONS = ['check', 'dryRun', 'toLabel', 'calibrate', 'addFailLabels', 'stability', 'conciseBaseline'];
+const QUICK_ARMS = ['adhd', 'caveman'];
+
+function defaultMaxUsd({ building, mode }) {
+  if (building) return BASELINE_MAX_USD;
+  return mode === 'quick' ? QUICK_MAX_USD : SCORE_MAX_USD;
+}
 
 export function parseArgs(argv) {
-  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, all: false, dryRun: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null, screen: false, rescore: false, caseIds: null, resume: null };
+  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, conciseBaseline: false, all: false, dryRun: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null, screen: false, rescore: false, full: false, arm: 'adhd', caseIds: null, resume: null };
   for (let i = 0; i < argv.length; i += 1) {
     if (FLAGS[argv[i]]) opts[FLAGS[argv[i]]] = true;
     else if (VALUES[argv[i]]) { const [key, cast] = VALUES[argv[i]]; opts[key] = cast(argv[++i]); }
     else throw new Error(`unknown argument: ${argv[i]}`);
   }
   if (opts.ablate !== null && !Object.hasOwn(BREVITY_LINES, opts.ablate)) throw new Error(`--ablate needs one of: ${Object.keys(BREVITY_LINES).join(', ')}`);
-  if (opts.all && !opts.baseline) throw new Error('--all needs --baseline');
-  if (opts.rescore && (opts.baseline || opts.dryRun)) throw new Error('--rescore cannot combine with --baseline or --dry-run');
+  if (opts.baseline && opts.conciseBaseline) throw new Error('--baseline cannot combine with --concise-baseline');
+  const building = opts.baseline || opts.conciseBaseline;
+  if (opts.all && !building) throw new Error('--all needs --baseline or --concise-baseline');
+  if (opts.rescore && (building || opts.dryRun)) throw new Error('--rescore cannot combine with --baseline or --dry-run');
   if (opts.rescore && !opts.log) throw new Error('--rescore needs --log <file>');
-  if (opts.resume && (opts.baseline || opts.dryRun || opts.rescore)) throw new Error('--resume cannot combine with --baseline, --dry-run or --rescore');
+  if (opts.resume && (building || opts.dryRun || opts.rescore)) throw new Error('--resume cannot combine with --baseline, --dry-run or --rescore');
   if (opts.screen && !argv.includes('--runs')) opts.runs = 1;
-  if (opts.maxUsd === null) opts.maxUsd = opts.baseline ? BASELINE_MAX_USD : SCORE_MAX_USD;
+  opts.mode = FULL_RUN_FLAGS.some((flag) => argv.includes(flag)) || OTHER_ACTIONS.some((key) => opts[key]) ? 'full' : 'quick';
+  if (!QUICK_ARMS.includes(opts.arm)) throw new Error(`--arm needs one of: ${QUICK_ARMS.join(', ')}`);
+  if (argv.includes('--arm') && opts.mode !== 'quick') throw new Error('--arm cannot combine with a full-run flag');
+  if (opts.maxUsd === null) opts.maxUsd = defaultMaxUsd({ building, mode: opts.mode });
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
   if (!Number.isInteger(opts.runs) || opts.runs < 1) throw new Error('--runs needs a positive integer');
   if (!Number.isInteger(opts.repeats) || opts.repeats < 2) throw new Error('--repeats needs an integer of at least 2');
@@ -465,21 +497,75 @@ export async function runRescore({ opts, cases, judge, spend, baseline = readBas
   reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - started, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
 }
 
+const readConcise = () => {
+  if (!fs.existsSync(CONCISE)) throw new Error(`${CONCISE} is missing; run with --concise-baseline`);
+  return JSON.parse(fs.readFileSync(CONCISE, 'utf8'));
+};
+
+function assertConciseCovers(cases, concise, model) {
+  const missing = cases.filter((c) => concise[c.id]?.model !== model).map((c) => c.id);
+  if (missing.length > 0) throw new Error(`concise arm lacks cases for model ${model}: ${missing.join(', ')}; run with --concise-baseline`);
+}
+
+// why: the facts judge reads only replies that pass the literals gate, so a missing literal never costs a judge call; each case makes one reply, the first alone to write the prompt cache, then the rest together.
+async function quickRows({ opts, cases, reply, judge, spend, concise }) {
+  const judgeCall = limited(judge, JUDGE_CONCURRENCY);
+  const rowOf = async (c, answer) => {
+    const failed = gateReply(answer.text, c).failed;
+    const [missing = []] = failed.includes('literals') ? [] : await judgeMissing({ c, texts: [answer.text], judge: judgeCall, judgeModel: opts.judgeModel, spend });
+    return { testCase: c, reply: answer.text, tokens: answer.tokens, baselineTokens: concise[c.id].mean, ratio: answer.tokens / concise[c.id].mean, missing };
+  };
+  const ask = (c) => Promise.resolve(reply({ arm: opts.arm, prompt: promptOf(c) })).then((answer) => {
+    spend.add(answer.cost);
+    return rowOf(c, answer);
+  });
+  const [first, ...rest] = cases;
+  const firstAnswer = await reply({ arm: opts.arm, prompt: promptOf(first) });
+  spend.add(firstAnswer.cost);
+  assertProjection({ spend, doneUsd: firstAnswer.cost, done: 1, total: cases.length });
+  return Promise.all([rowOf(first, firstAnswer), ...rest.map(ask)]);
+}
+
+const percentLabel = (value) => (value === null ? 'n/a' : `${value.toFixed(1)}%`);
+
+export async function runQuick({ opts, cases, reply, judge, spend, concise = readConcise() }) {
+  const started = Date.now();
+  assertConciseCovers(cases, concise, opts.model);
+  const base = { mode: 'quick', arm: opts.arm, model: opts.model, cases: cases.map((c) => c.id) };
+  const rows = await quickRows({ opts, cases, reply, judge, spend, concise }).catch((error) => {
+    writeLog({ ...base, error: error.message, ...costRecord(spend), durationMs: Date.now() - started }, logPath(opts.logDir));
+    throw error;
+  });
+  const metrics = repoMetrics(rows);
+  const perCase = rows.map((row) => ({ id: row.testCase.id, reply: row.reply, tokens: row.tokens, baselineTokens: row.baselineTokens, ratio: row.ratio, failed: gateReply(row.reply, row.testCase).failed, missing: row.missing }));
+  const record = { ...base, ...metrics, ...costRecord(spend), durationMs: Date.now() - started, perCase };
+  writeLog(record, logPath(opts.logDir));
+  return record;
+}
+
+function printQuick({ perCase, medianRatio, answerFirst, cleanDeliverable, questionLast, factsKept }) {
+  for (const p of perCase) process.stderr.write(`${p.id} ratio=${p.ratio.toFixed(3)} billed=${p.tokens}/${Math.round(p.baselineTokens)} failed=${p.failed.join(',') || 'none'} missing=${p.missing.map((k) => k + 1).join(',') || 'none'}\n`);
+  process.stdout.write(`median_ratio=${medianRatio.toFixed(3)} answer_first=${percentLabel(answerFirst)} clean_deliverable=${percentLabel(cleanDeliverable)} question_last=${percentLabel(questionLast)} facts_kept=${percentLabel(factsKept)}\n`);
+}
+
 async function runApi({ opts, cases }) {
   const spend = new Spend(opts.maxUsd);
   const pluginDir = makeStylePlugin(opts.ablate);
-  const armDirs = { default: fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-default-')), adhd: fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-adhd-')) };
+  const armDirs = Object.fromEntries(Object.keys(ARM_ARGS).map((arm) => [arm, fs.mkdtempSync(path.join(os.tmpdir(), `exo-adhd-${arm}-`))]));
   const judgeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-judge-'));
-  const armHomes = { default: makeCellHome(), adhd: makeCellHome() };
+  const armHomes = Object.fromEntries(Object.keys(ARM_ARGS).map((arm) => [arm, makeCellHome()]));
   const judgeHome = makeCellHome();
   const reply = ({ arm, prompt }) => claudeReply({ arm, prompt, model: opts.model, pluginDir, cwd: armDirs[arm], keepCwd: true, home: armHomes[arm] });
   const judge = (call) => claudeJudge({ ...call, cwd: judgeDir, home: judgeHome });
   try {
-    if (opts.baseline) fs.mkdirSync(STORE, { recursive: true });
-    if (opts.baseline) {
-      const existing = !opts.all && fs.existsSync(BASELINE) ? readBaseline() : {};
-      await buildBaseline({ cases, reply, spend, existing, all: opts.all, save: (rows) => fs.writeFileSync(BASELINE, JSON.stringify(rows, null, 2)) });
+    if (opts.baseline || opts.conciseBaseline) {
+      fs.mkdirSync(STORE, { recursive: true });
+      const concise = opts.conciseBaseline;
+      const file = concise ? CONCISE : BASELINE;
+      const existing = !opts.all && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+      await buildBaseline({ cases, reply, spend, existing, all: opts.all, arm: concise ? 'concise' : 'default', model: concise ? opts.model : undefined, save: (rows) => fs.writeFileSync(file, JSON.stringify(rows, null, 2)) });
     }
+    else if (opts.mode === 'quick') printQuick(await runQuick({ opts, cases, reply, judge, spend }));
     else await runScore({ opts, cases, reply, judge, spend });
   } finally {
     process.stderr.write(`${spend.line().trimEnd()} call_timeouts=${callStats.timeouts} parse_retries=${callStats.parseRetries} dropped_votes=${callStats.droppedVotes}\n`);
@@ -490,7 +576,7 @@ async function runApi({ opts, cases }) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const cases = readCases();
-  const selected = selectCases(cases, opts);
+  const selected = selectCases(cases, opts.conciseBaseline || opts.mode === 'quick' ? { ...opts, caseIds: opts.caseIds ?? readQuick() } : opts);
   if (opts.check) runCheck(cases);
   else if (opts.dryRun) runDryRun(opts, selected);
   else if (opts.toLabel) runToLabel(cases);

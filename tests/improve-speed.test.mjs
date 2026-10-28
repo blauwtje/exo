@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { scoreOutDir } from '../benchmarks/improve-speed.mjs';
+import { contentKey } from '../benchmarks/baseline-pool.mjs';
+import { quickVerdict, scoreOutDir } from '../benchmarks/improve-speed.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'improve-speed.mjs');
 const GOOD_RECORD = { exitCode: 0, timedOut: false, hiddenPass: true, defects: [], verifyRan: true, outputTokens: 100 };
@@ -108,7 +109,7 @@ test('cost is the mean of the record costUsd per cell and stays unscored when a 
   const scored = scoreOutDir(out);
   assert.equal(scored.rows[0].cost, 0.5);
   assert.equal(scored.measures.cost, 0.625);
-  const cell = spawnSync(process.execPath, [SCRIPT, '--from', out, '--measure', 'cost'], { encoding: 'utf8' });
+  const cell = spawnSync(process.execPath, [SCRIPT, '--from', out, '--full', '--measure', 'cost'], { encoding: 'utf8' });
   assert.match(cell.stdout, /^score: 0.625$/m);
   makeCell(out, 'three');
   assert.equal(scoreOutDir(out).measures.cost, null);
@@ -117,15 +118,15 @@ test('cost is the mean of the record costUsd per cell and stays unscored when a 
 test('the command prints score on a good out dir and exits 1 with FAIL lines otherwise', () => {
   const out = fixture();
   makeCell(out, 'ok');
-  const good = spawnSync(process.execPath, [SCRIPT, '--from', out, '--measure', 'calls'], { encoding: 'utf8' });
+  const good = spawnSync(process.execPath, [SCRIPT, '--from', out, '--full', '--measure', 'calls'], { encoding: 'utf8' });
   assert.equal(good.status, 0);
   assert.match(good.stdout, /^score: 2$/m);
   makeCell(out, 'bad', { record: { hiddenPass: false } });
-  const bad = spawnSync(process.execPath, [SCRIPT, '--from', out], { encoding: 'utf8' });
+  const bad = spawnSync(process.execPath, [SCRIPT, '--from', out, '--full'], { encoding: 'utf8' });
   assert.equal(bad.status, 1);
   assert.match(bad.stdout, /^FAIL bad hidden tests failed$/m);
   assert.doesNotMatch(bad.stdout, /score:/);
-  const empty = spawnSync(process.execPath, [SCRIPT, '--from', fixture()], { encoding: 'utf8' });
+  const empty = spawnSync(process.execPath, [SCRIPT, '--from', fixture(), '--full'], { encoding: 'utf8' });
   assert.equal(empty.status, 1);
   assert.match(empty.stdout, /FAIL no cells/);
 });
@@ -134,4 +135,101 @@ test('an unknown measure exits 2 and starts no sweep', () => {
   const run = spawnSync(process.execPath, [SCRIPT, '--from', fixture(), '--measure', 'wall'], { encoding: 'utf8' });
   assert.equal(run.status, 2);
   assert.match(run.stderr, /usage:/);
+});
+
+function pastFlowUnit(checkout, records) {
+  records.forEach((record, index) => {
+    const directory = path.join(checkout, 'benchmarks', 'runs', `old-${index}`, 'flow-unit');
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, 'record.json'), JSON.stringify({ id: 'flow-unit', ...record }));
+  });
+}
+
+test('--dry-run prints the projection for the repeat count and starts no cell', () => {
+  const checkout = fixture();
+  pastFlowUnit(checkout, [{ costUsd: 0.5, wallMs: 60000 }, { costUsd: 0.7, wallMs: 120000 }]);
+  const run = spawnSync(process.execPath, [SCRIPT, checkout, '--dry-run', '--repeat', '3'], { encoding: 'utf8' });
+  assert.equal(run.status, 0);
+  assert.match(run.stdout, /^projected \$1\.80 and 4\.5 min of cell time from past records \(3 of 3 cells; 0 have no past record/m);
+  assert.doesNotMatch(run.stdout, /^(log|out) /m);
+});
+
+test('--dry-run says the cost is unknown when no past record exists', () => {
+  const run = spawnSync(process.execPath, [SCRIPT, fixture(), '--dry-run', '--repeat', '2'], { encoding: 'utf8' });
+  assert.equal(run.status, 0);
+  assert.match(run.stdout, /projected cost and time unknown: none of the 2 cells has a past record/);
+});
+
+test('--dry-run without --repeat projects the one quick cell', () => {
+  const run = spawnSync(process.execPath, [SCRIPT, fixture(), '--dry-run'], { encoding: 'utf8' });
+  assert.equal(run.status, 0);
+  assert.match(run.stdout, /none of the 1 cells has a past record/);
+});
+
+const BASE = { commit: 'abc', n: 3, mean: 0.6, max: 0.8 };
+const row = (options = {}) => ({ cell: 'c', failures: [], hiddenPass: true, cost: 0.5, durationMs: 1000, ...options });
+
+test('quickVerdict rejects a failure or a cost above the base maximum, promotes below the mean and is silent otherwise', () => {
+  assert.equal(quickVerdict(row({ failures: ['hidden tests failed'], hiddenPass: false }), BASE).verdict, 'reject');
+  assert.equal(quickVerdict(row({ cost: 0.81 }), BASE).verdict, 'reject');
+  assert.equal(quickVerdict(row({ cost: 0.59 }), BASE).verdict, 'promote');
+  assert.equal(quickVerdict(row({ cost: 0.7 }), BASE).verdict, 'no signal');
+  assert.equal(quickVerdict(row({ cost: 0.8 }), BASE).verdict, 'no signal');
+  assert.equal(quickVerdict(row({ cost: undefined }), BASE).verdict, 'no signal');
+});
+
+test('quickVerdict carries the cell hidden result, cost, duration and the base', () => {
+  assert.deepEqual(quickVerdict(row(), BASE), { verdict: 'promote', hiddenPass: true, cost_usd: 0.5, durationMs: 1000, base: BASE });
+});
+
+function pooledBase(costs) {
+  const directory = fixture();
+  const results = path.join(directory, '2026-01-01-base.md');
+  fs.writeFileSync(results, `| run | cost $ | tokens | wall s |\n|---|---|---|---|\n${costs.map((cost, index) => `| b-${index} | ${cost} | 100 | 60 |`).join('\n')}\n`);
+  const key = contentKey({ commit: 'HEAD', cell: 'flow-unit', model: 'claude-sonnet-5-5', effort: 'high', claudeVersion: 'unrecorded' });
+  const pool = path.join(directory, 'pool.jsonl');
+  fs.writeFileSync(pool, `${JSON.stringify({ key, results, arm: 'b-' })}\n`);
+  return pool;
+}
+
+const quickRun = (out, pool) => spawnSync(process.execPath, [SCRIPT, '--from', out, '--base', 'HEAD', '--pool', pool], { encoding: 'utf8' });
+
+test('flagless runs screen the cell against the pooled base and print the verdict beside the score', () => {
+  const pool = pooledBase([0.5, 0.7, 0.9]);
+  const cheap = fixture();
+  makeCell(cheap, 'ok', { record: { costUsd: 0.4, wallMs: 5000 } });
+  const promoted = quickRun(cheap, pool);
+  assert.equal(promoted.status, 0);
+  assert.match(promoted.stdout, /^verdict promote$/m);
+  assert.match(promoted.stdout, /"cost_usd":0.4,"durationMs":5000,"base":\{[^}]*"mean":0.7,"max":0.9\}/);
+  assert.match(promoted.stdout, /^score: 2$/m);
+});
+
+test('flagless runs reject a failing cell or a cost above the base and stay silent in between', () => {
+  const pool = pooledBase([0.5, 0.7, 0.9]);
+  const costly = fixture();
+  makeCell(costly, 'ok', { record: { costUsd: 1.2 } });
+  const rejected = quickRun(costly, pool);
+  assert.equal(rejected.status, 1);
+  assert.match(rejected.stdout, /^verdict reject$/m);
+  const failing = fixture();
+  makeCell(failing, 'bad', { record: { costUsd: 0.4, hiddenPass: false } });
+  const failed = quickRun(failing, pool);
+  assert.equal(failed.status, 1);
+  assert.match(failed.stdout, /^FAIL bad hidden tests failed$/m);
+  assert.match(failed.stdout, /^verdict reject$/m);
+  const middle = fixture();
+  makeCell(middle, 'ok', { record: { costUsd: 0.8 } });
+  assert.match(quickRun(middle, pool).stdout, /^verdict no signal$/m);
+});
+
+test('a flagless run with no pooled base refuses before any cell and names baseline-pool.mjs add', () => {
+  const empty = path.join(fixture(), 'pool.jsonl');
+  fs.writeFileSync(empty, '');
+  const out = fixture();
+  makeCell(out, 'ok');
+  const run = quickRun(out, empty);
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /baseline-pool\.mjs add/);
+  assert.doesNotMatch(run.stdout, /verdict/);
 });

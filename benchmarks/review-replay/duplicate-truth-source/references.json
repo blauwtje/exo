@@ -1,0 +1,22 @@
+{
+  "good": [
+    {
+      "path": "retry.js",
+      "range": "5-5"
+    },
+    {
+      "path": "retry.js",
+      "range": "10-10"
+    },
+    {
+      "path": "retry.js",
+      "range": "17-17"
+    }
+  ],
+  "bad": [
+    {
+      "path": "retry.js",
+      "range": "20-21"
+    }
+  ]
+}

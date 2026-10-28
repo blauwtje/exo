@@ -1,0 +1,22 @@
+{
+  "good": [
+    {
+      "path": "discount.js",
+      "range": "7-40"
+    },
+    {
+      "path": "discount.js",
+      "range": "8-40"
+    },
+    {
+      "path": "discount.js",
+      "range": "14-40"
+    }
+  ],
+  "bad": [
+    {
+      "path": "discount.js",
+      "range": "1-3"
+    }
+  ]
+}

@@ -147,3 +147,5 @@ export const CALIBRATION_TASKS = [
 ];
 
 export const SMOKE_TASKS = ['tmpl-be-recent', 'safe-path'];
+
+export const VALUE_QUICK_TASKS = ['value-test-pollution', 'value-rename-propagation', 'value-export-mismatch'];

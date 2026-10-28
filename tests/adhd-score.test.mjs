@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { ADHD_RUNS, SCORE_MAX_USD, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, makeStylePlugin, parseArgs, projectDryRun, readCases, readSaturated, runAddFailLabels, rescoreCases, runRescore, runScore, runToLabel, scoreCases, selectCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
+import { ADHD_RUNS, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, makeStylePlugin, parseArgs, projectDryRun, readCases, readSaturated, runAddFailLabels, rescoreCases, runRescore, runScore, runToLabel, scoreCases, selectCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
 import { buildFailRows, dropFact } from '../benchmarks/adhd/labels.mjs';
 import { BREVITY_LINES, withoutSentence } from '../benchmarks/tasks.mjs';
 
@@ -398,14 +398,6 @@ test('caseLine rounds the baseline means like the adhd side', () => {
   assert.equal(caseLine(p), 'a ratio=0.500 visible=13/133 billed=333/413 failed=none\n');
 });
 
-test('the adhd arm defaults to 3 runs and a $3 cap', () => {
-  const opts = parseArgs([]);
-  assert.equal(ADHD_RUNS, 3);
-  assert.equal(opts.runs, 3);
-  assert.equal(SCORE_MAX_USD, 3);
-  assert.equal(opts.maxUsd, 3);
-});
-
 test('buildBaseline keeps existing rows and replies only for missing cases', async () => {
   const seen = [];
   const reply = async ({ prompt }) => { seen.push(prompt); return { text: 'new', tokens: 5, cost: 0 }; };
@@ -433,11 +425,6 @@ test('buildBaseline saves after each case and a failure names the case and arm',
   assert.deepEqual(saves, [[cases[0].id]]);
 });
 
-test('--all needs --baseline', () => {
-  assert.equal(parseArgs(['--baseline', '--all']).all, true);
-  assert.throws(() => parseArgs(['--all']), /--baseline/);
-});
-
 const STYLE_FILE = fs.readFileSync(new URL('../output-styles/adhd.md', import.meta.url), 'utf8');
 const pluginStyle = (ablate) => {
   const dir = makeStylePlugin(ablate);
@@ -447,15 +434,6 @@ const pluginStyle = (ablate) => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 };
-
-test('--ablate takes a brevity slug and defaults to null', () => {
-  assert.equal(parseArgs([]).ablate, null);
-  assert.equal(parseArgs(['--ablate', 'no-why']).ablate, 'no-why');
-});
-
-test('--ablate with an unknown slug lists the valid slugs', () => {
-  assert.throws(() => parseArgs(['--ablate', 'nope']), (error) => Object.keys(BREVITY_LINES).every((slug) => error.message.includes(slug)));
-});
 
 test('the style plugin without --ablate carries the full style file', () => {
   assert.equal(pluginStyle(null), STYLE_FILE);
@@ -577,14 +555,6 @@ test('rescoreCases rejects a log with no replies for the selected cases', async 
   await assert.rejects(rescoreCases({ cases: [cases[1]], baseline, log: storedLog([storedRow('a', ['x'])]), judge: pass, spend: spendOf(1) }), /no replies to rescore/);
 });
 
-test('--rescore needs --log and refuses --baseline and --dry-run', () => {
-  assert.equal(parseArgs(['--rescore', '--log', 'f.json']).rescore, true);
-  assert.equal(parseArgs([]).rescore, false);
-  assert.throws(() => parseArgs(['--rescore']), /--rescore needs --log/);
-  assert.throws(() => parseArgs(['--rescore', '--log', 'f', '--dry-run']), /cannot combine/);
-  assert.throws(() => parseArgs(['--rescore', '--log', 'f', '--baseline']), /cannot combine/);
-});
-
 test('the rescore log names its source, keeps screen and the case ids, and makes no reply cost', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
   try {
@@ -615,14 +585,6 @@ test('a --screen rescore of a full-arm log records screen true', async () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
-});
-
-test('--resume takes a log file and refuses --baseline, --dry-run and --rescore', () => {
-  assert.equal(parseArgs(['--resume', 'p.json']).resume, 'p.json');
-  assert.equal(parseArgs([]).resume, null);
-  assert.throws(() => parseArgs(['--resume', 'p', '--dry-run']), /cannot combine/);
-  assert.throws(() => parseArgs(['--resume', 'p', '--baseline']), /cannot combine/);
-  assert.throws(() => parseArgs(['--resume', 'p', '--rescore', '--log', 'f']), /cannot combine/);
 });
 
 function cutShort(logDir, reply) {

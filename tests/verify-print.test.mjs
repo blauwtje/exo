@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -253,4 +254,30 @@ test('one reader parses .exo/review-ledger.jsonl', async () => {
   assert.match(summary, /ledgerRows\(checkout\)/);
   assert.doesNotMatch(summary, /JSON\.parse/);
   assert.equal((merge.match(/JSON\.parse/g) ?? []).length, 1);
+});
+
+test('skill script behavior tally survives a stderr write landing inside a TAP footer line', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'behavior-'));
+  await fs.mkdir(path.join(dir, 'tests'));
+  await fs.writeFile(path.join(dir, 'tests', 'a.test.mjs'), '');
+  const fakeNode = path.join(dir, 'fake-node.sh');
+  await fs.writeFile(fakeNode, [
+    '#!/bin/sh',
+    "printf '# tests 1\\n# pa'",
+    'sleep 0.2',
+    "printf 'noise\\n' >&2",
+    'sleep 0.2',
+    "printf 'ss 1\\n# fail 0\\n# skipped 0\\n'",
+    ''
+  ].join('\n'), { mode: 0o755 });
+  const { startSkillScriptBehavior } = await import('../verify/checks/skill-script-behavior.mjs');
+  const realExec = process.execPath;
+  process.execPath = fakeNode;
+  try {
+    const result = await startSkillScriptBehavior({ join: (...parts) => path.join(dir, ...parts) });
+    assert.equal(result.status, 'PASS');
+    assert.match(result.detail, /^1 passed, 0 failed, 0 skipped of 1 behavioral tests$/);
+  } finally {
+    process.execPath = realExec;
+  }
 });

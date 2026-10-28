@@ -1,0 +1,22 @@
+{
+  "good": [
+    {
+      "path": "settings.js",
+      "range": "6-8"
+    },
+    {
+      "path": "settings.js",
+      "range": "15-17"
+    },
+    {
+      "path": "settings.js",
+      "range": "23-25"
+    }
+  ],
+  "bad": [
+    {
+      "path": "settings.js",
+      "range": "10-12"
+    }
+  ]
+}

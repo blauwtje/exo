@@ -1,0 +1,22 @@
+{
+  "good": [
+    {
+      "path": "inventory.js",
+      "range": "2-2"
+    },
+    {
+      "path": "inventory.js",
+      "range": "4-4"
+    },
+    {
+      "path": "inventory.js",
+      "range": "18-18"
+    }
+  ],
+  "bad": [
+    {
+      "path": "inventory.js",
+      "range": "8-10"
+    }
+  ]
+}

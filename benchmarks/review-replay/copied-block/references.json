@@ -1,0 +1,22 @@
+{
+  "good": [
+    {
+      "path": "profile.js",
+      "range": "2-6"
+    },
+    {
+      "path": "profile.js",
+      "range": "10-14"
+    },
+    {
+      "path": "profile.js",
+      "range": "18-22"
+    }
+  ],
+  "bad": [
+    {
+      "path": "profile.js",
+      "range": "25-26"
+    }
+  ]
+}

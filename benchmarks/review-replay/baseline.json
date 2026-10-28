@@ -1,0 +1,9 @@
+[
+  { "task": "copied-block", "runs": 3, "costUsdPerRun": 0.4933, "fixedAfterOneRepair": 0.33, "neverClean": 1, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" },
+  { "task": "dead-code", "runs": 3, "costUsdPerRun": 0.55, "fixedAfterOneRepair": 1, "neverClean": 1, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" },
+  { "task": "duplicate-truth-source", "runs": 3, "costUsdPerRun": 0.36, "fixedAfterOneRepair": 0.5, "neverClean": 1, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" },
+  { "task": "narrating-comment", "runs": 3, "costUsdPerRun": 0.3833, "fixedAfterOneRepair": 1, "neverClean": 0, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" },
+  { "task": "swallowed-failure", "runs": 3, "costUsdPerRun": 0.5833, "fixedAfterOneRepair": 1, "neverClean": 1, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" },
+  { "task": "two-rounds", "runs": 3, "costUsdPerRun": 0.3133, "fixedAfterOneRepair": 0.5, "neverClean": 0, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" },
+  { "task": "untested-branch", "runs": 3, "costUsdPerRun": 0.3533, "fixedAfterOneRepair": 1, "neverClean": 0, "model": "claude-sonnet-5-5", "source": "benchmarks/results/2026-10-26-review-replay-baseline.md" }
+]

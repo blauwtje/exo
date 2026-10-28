@@ -13,10 +13,12 @@ import { environmentMs, isMain } from '#script-flags';
 import { layers, resolve as resolveSetting } from '#settings-store';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
+import { startClaude } from './exo-claude.mjs';
+import { readKeyInput, writeKey } from './run-keys.mjs';
 import { SESSION_REFUSAL, insideClaudeCode } from './run-session.mjs';
 import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, keepRun, keptDir, listRuns, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
-const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo run config [<key> <value>] | exo setup';
+const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo run config [<key> <value>] | exo key set <provider> | exo claude [--provider <name>] [--effort <level>] [-- <claude args>] | exo setup';
 const CLI = fileURLToPath(import.meta.url);
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
 // why: a plan run with several tasks and 30-minute gates can take hours; the deadline only ends a wait nobody reads.
@@ -197,14 +199,36 @@ function setupCommand() {
   fs.mkdirSync(configDir(home), { recursive: true });
   process.stdout.write([
     `exo: launcher ${target}`,
-    `exo: keys file ${path.join(configDir(home), 'keys.env')}; copy in the lines for the providers you use:`,
-    'DEEPSEEK_API_KEY=',
-    'ZAI_API_KEY=',
+    `exo: keys file ${path.join(configDir(home), 'keys.env')}; store the key for each provider you use:`,
+    'exo key set deepseek',
+    'exo key set zai',
     ''
   ].join('\n'));
   if (!(process.env.PATH ?? '').split(path.delimiter).includes(bin)) {
     process.stdout.write(`exo: warning: ${bin} is not on PATH; add it to your shell profile\n`);
   }
+}
+
+async function claudeCommand(args) {
+  const outcome = await startClaude(args, { home: os.homedir() });
+  if (outcome.refused) throw new Refusal(outcome.refused);
+  process.exitCode = outcome.code;
+}
+
+async function keyCommand(args) {
+  if (args[0] !== 'set' || args.length !== 2) throw new Refusal('usage: exo key set <provider>');
+  const home = os.homedir();
+  const name = args[1];
+  const providers = loadRunConfig({ home }).providers;
+  const variable = Object.hasOwn(providers, name) ? providers[name].key : undefined;
+  if (!variable) throw new Refusal(`refused: ${JSON.stringify(name)} is not a provider with a key; known: ${Object.keys(providers).filter((known) => providers[known].key).join(', ')}`);
+  const file = path.join(configDir(home), 'keys.env');
+  try {
+    writeKey(file, variable, await readKeyInput(process.stdin, process.stderr));
+  } catch (error) {
+    throw new Refusal(`refused: ${error.message}`);
+  }
+  process.stdout.write(`exo: ${variable} stored in ${file}\n`);
 }
 
 function leaves(value, prefix = '') {
@@ -609,6 +633,8 @@ async function waitCommand(args) {
 
 async function dispatch(command, rest) {
   if (command === 'setup') return setupCommand();
+  if (command === 'key') return keyCommand(rest);
+  if (command === 'claude') return claudeCommand(rest);
   if (command === 'run' && rest[0] === 'config') return configCommand(rest.slice(1));
   if ((command === 'run' || command === 'approve') && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
   if (command === 'approve') {

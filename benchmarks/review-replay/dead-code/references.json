@@ -1,0 +1,22 @@
+{
+  "good": [
+    {
+      "path": "report.js",
+      "range": "1-6"
+    },
+    {
+      "path": "report.js",
+      "range": "19-19"
+    },
+    {
+      "path": "report.js",
+      "range": "23-25"
+    }
+  ],
+  "bad": [
+    {
+      "path": "report.js",
+      "range": "10-12"
+    }
+  ]
+}

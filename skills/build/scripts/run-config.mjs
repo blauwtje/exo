@@ -63,7 +63,7 @@ export function resolveProvider(config, name, keys, effort, home) {
     return { refused: `Unknown provider "${name}". Known: ${known}. Add one under "providers" in ${path.join(configDir(home ?? '~'), 'run.json')}.` };
   }
   if (entry.key && !keys[entry.key]) {
-    return { refused: `Missing key for ${name}. Add the line ${entry.key}=<your key> to ${path.join(configDir(home ?? '~'), 'keys.env')}.` };
+    return { refused: `Missing key for ${name}. Run: exo key set ${name}` };
   }
   const promptCacheTtl = config.defaults.promptCacheTtl ?? '5m';
   if (!CACHE_TTLS.includes(promptCacheTtl)) {

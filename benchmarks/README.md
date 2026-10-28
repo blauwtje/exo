@@ -91,6 +91,24 @@ node benchmarks/score.mjs benchmarks/runs/<dir> --baseline-arm <arm>   # overhea
 
 The projection takes each cell's cost from the mean of its finished twins under `benchmarks/runs/`, else the task's `estimateUsd`, else $1.50.
 
+## Quick tiers
+
+Two screens answer "did this change help?" for under $1.00 by running only the exo arm and comparing it with a stored stock arm. `--full` on either one restores the complete measurement.
+
+| Tier | Command | What runs | Compared with | Cap | `--full` |
+|---|---|---|---|---|---|
+| Value | `node benchmarks/run.mjs --tier value` | The exo arm on `value-test-pollution`, `value-rename-propagation` and `value-export-mismatch`, sonnet, 1 run, concurrency 1 | The stock arm stored in `<git common dir>/exo/value/stock.json`, per task: pass-rate and cost delta in `summary.json` | `--max-total-usd 1` unless you pass your own | `node benchmarks/run.mjs --tier value --full` runs every value task |
+| Flow | `node benchmarks/improve-speed.mjs <checkout>` | One `flow-unit` cell | The pooled base arm of `benchmarks/baseline-pool.jsonl` at the merge base with `main` (`--base <commit>` names another): `reject` when a check fails or the cost is above the base maximum, `promote` below the base mean, else `no signal` | `--dry-run` prints the projected cost before any cell | `--full` runs 15 cells and prints the measures |
+
+Store the stock arm once, and again after a Claude Code upgrade (a quick run warns when the stored version differs from the one in use):
+
+```bash
+node benchmarks/run.mjs --tier value --stock-baseline   # baseline arm, the 3 quick tasks, sonnet, 3 runs each; replaces the stored rows for that model
+node benchmarks/run.mjs --tier value --dry-run          # the cell count and projected cost, no session
+```
+
+A quick value run stops with the `--stock-baseline` command in its message when a task has no stored stock row. Naming `--tasks` or `--smoke` or `--full` leaves the quick tier.
+
 ## Model and effort sweep
 
 `node benchmarks/sweep.mjs` measures exo's routing on the models it names. Every cell is its own `claude -p --plugin-dir <this clone> --model <id> --effort <level>` process in a fresh repository:
@@ -127,6 +145,37 @@ node benchmarks/sweep.mjs --set replay --cases <path> --models opus,sonnet --rep
 `--cases` names a JSON array of `{ id, scope, base, head, plan, findings }`: `scope` is `branch` or `fix diff`, `base` and `head` are refs of this clone, `plan` is the plan path the reviewer gets, and `findings` is the known defect lines as `{ file, start, end }`. `--models` (default `opus`) and `--repeat` (default 1) give one cell per case, model and repeat, `replay-<id>-<model>-<k>`, at the `review` kind's `balanced` effort. A cell checks out a detached worktree at `head`, runs the reviewer there with the prompt `run-tail.mjs` gives it, removes the worktree, and writes `hits`, `truth` and `extra` to `record.json`: the known defects a `fix` finding overlaps, the known defects, and the `fix` findings that overlap none. The results file adds a replay table with the hit rate per model.
 
 A review cell runs the body of the `review-branch` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or concern reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.
+
+### Quick sweep review cells
+
+The review set has a quick tier that needs no flag of its own: name the seeded and control cells of two tasks at `high`, 4 cells, about $0.65 at the cost of the 2026-10-18 review-high cells. Without `--confirm` it prints the cells and starts none; a rerun on the same `--out` skips cells that kept a `record.json`.
+
+```bash
+node benchmarks/sweep.mjs --set review --cells review-safe-path-seeded-high,review-safe-path-control-high,review-sql-user-seeded-high,review-sql-user-control-high --confirm --out benchmarks/runs/<dir>
+```
+
+## Review replay
+
+`node benchmarks/review-replay.mjs` replays the build-loop review on the fixtures under `benchmarks/review-replay/`: a reviewer finds the planted defects, a repair round fixes them, and `plants.json` grades the repair, with no judge model. Cost per idea:
+
+| Tier | Command | Cells | Projected cost |
+|---|---|---|---|
+| quick (default) | `node benchmarks/review-replay.mjs` | 2 tasks (`copied-block`, `duplicate-truth-source`, listed in `review-replay/quick.json`) x 1 run | $0.85 against a $1.00 `--budget-usd` |
+| full | `node benchmarks/review-replay.mjs --full` | every fixture x 3 runs, 21 cells | $9.11, no default budget |
+
+```bash
+node benchmarks/review-replay.mjs --dry-run                 # prints { mode, cells, projectedUsd, budgetUsd } from review-replay/baseline.json; no model call, exit 0 even over budget
+node benchmarks/review-replay.mjs --out <path>.md           # quick run; also writes <path>.md.json with mode, cost_usd, durationMs and cells
+node benchmarks/review-replay.mjs --full --dry-run          # projects the full tier
+node benchmarks/review-replay.mjs --full --out <path>.md    # full run, 3 repeats
+node benchmarks/review-replay.mjs --resume --out <path>.md  # skips each run dir `<task>-r<n>` under `<path>.md.runs` whose run.json is kept; without --out it exits non-zero
+node benchmarks/review-replay.mjs --rescore <runs dir>      # rebuilds cells, table and log from the kept run.json files with zero model calls; it re-aggregates the stored grades and does not regrade
+node benchmarks/review-replay.mjs --save-baseline           # rewrites the baseline.json rows of the tasks it ran
+```
+
+A real run whose projection is over `--budget-usd` exits non-zero before its first model call. `--task` and `--repeat` override either tier and keep the tier's budget. A quick run prints each task's stored baseline (`baseline.json`, seeded from `results/2026-10-26-review-replay-baseline.md`) beside the measured branch arm.
+
+The quick tier is a screen, not a verdict: with 2 tasks x 1 run a task flips only on a large change in its rate, such as 0.33 to 1.00. A keep or reject decision still runs `--full`. The scorer is checked offline: `references.json` in each fixture holds a good and a bad repair, and `tests/benchmark-review-replay-references.test.mjs` fails when the grader passes the bad one or fails the good one.
 
 ## Routing eval
 
@@ -179,4 +228,5 @@ node benchmarks/score.mjs /tmp/tb-runs --compare exo-before,cand-1
 
 | Command | What it does |
 |---|---|
-| `node benchmarks/adhd-score.mjs` | Prints one number, lower is better: the mean per-case ratio of `exo:adhd` output tokens to default-style output tokens, where a case scores 1.0 if any gate fails. Gates: every reply ends on its last `?` with no prose after it, a reply to a case with `ask` holds a `?`, a case with a `deliverable` pattern replies with only that deliverable (code fence unwrapped), and an explain case lists one literal per required fact, so a dropped fact fails a code gate. stderr shows each case's visible and billed output tokens (adhd/default) and the billed totals. The adhd arm runs 3 times per case and `--max-usd` defaults to $3. Flags: `--baseline` (fills only the cases missing from `baseline.json` and saves after each case; `--all` rebuilds every case), `--check`, `--to-label`, `--add-fail-labels` (appends known-FAIL rows: facts rows built by deleting one required fact from a human PASS row, a judged reply in the newest 3 logs of `--log-dir` or one baseline reply per case), `--calibrate` (facts judge agreement, split by PASS and FAIL rows, in batches of up to 3), `--stability` (re-judges the replies of one score log, `--log` or the newest, `--repeats` times, default 5, and prints the facts judge flip rate), `--runs`, `--max-usd`, `--judge-model`, `--model`, `--log-dir`, `--log`, `--repeats`, `--votes`. The only judge is facts; each verdict is the majority of 3 parallel calls (`--votes` for calibration and stability); a judge answer missing a verdict line is retried once, then an error. `baseline.json` and `labels.jsonl` are stored in `<git common dir>/exo/adhd/`, shared by all worktrees. |
+| `node benchmarks/adhd-score.mjs` | Quick run: runs the quick repo-style eval of `exo:adhd` on the 10 cases in `benchmarks/adhd/quick.json` once each, capped at $0.30 (`--max-usd` overrides) and meant to finish under 60 s, and prints the median output-token ratio against an "Answer concisely." arm plus answer-in-first-line %, clean-deliverable %, question-last % and facts-kept %; `--concise-baseline` stores that reference arm in `<git common dir>/exo/adhd/concise.json` (`--all` rebuilds every case) and the quick run needs it; `--arm caveman` swaps the measured arm for the caveman reference style in `benchmarks/adhd/arms/caveman.md`; `--full` or any full-run flag (`--screen`, `--baseline`, `--rescore`, `--resume`, `--ablate`, `--runs`) runs the full score below, and `--arm` cannot combine with them. |
+| `node benchmarks/adhd-score.mjs --full` | Prints one number, lower is better: the mean per-case ratio of `exo:adhd` output tokens to default-style output tokens, where a case scores 1.0 if any gate fails. Gates: every reply ends on its last `?` with no prose after it, a reply to a case with `ask` holds a `?`, a case with a `deliverable` pattern replies with only that deliverable (code fence unwrapped), and an explain case lists one literal per required fact, so a dropped fact fails a code gate. stderr shows each case's visible and billed output tokens (adhd/default) and the billed totals. The adhd arm runs 3 times per case and `--max-usd` defaults to $3. Flags: `--baseline` (fills only the cases missing from `baseline.json` and saves after each case; `--all` rebuilds every case), `--check`, `--to-label`, `--add-fail-labels` (appends known-FAIL rows: facts rows built by deleting one required fact from a human PASS row, a judged reply in the newest 3 logs of `--log-dir` or one baseline reply per case), `--calibrate` (facts judge agreement, split by PASS and FAIL rows, in batches of up to 3), `--stability` (re-judges the replies of one score log, `--log` or the newest, `--repeats` times, default 5, and prints the facts judge flip rate), `--runs`, `--max-usd`, `--judge-model`, `--model`, `--log-dir`, `--log`, `--repeats`, `--votes`. The only judge is facts; each verdict is the majority of 3 parallel calls (`--votes` for calibration and stability); a judge answer missing a verdict line is retried once, then an error. `baseline.json` and `labels.jsonl` are stored in `<git common dir>/exo/adhd/`, shared by all worktrees. |

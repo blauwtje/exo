@@ -1,0 +1,18 @@
+{
+  "good": [
+    {
+      "path": "config.js",
+      "range": "9-11"
+    },
+    {
+      "path": "config.js",
+      "range": "16-16"
+    }
+  ],
+  "bad": [
+    {
+      "path": "config.js",
+      "range": "1-2"
+    }
+  ]
+}
