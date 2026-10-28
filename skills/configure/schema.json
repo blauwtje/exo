@@ -71,6 +71,19 @@
       "off": { "label": "Hide them", "gives": "no such lines; the work and the refusals are the same" }
     }
   },
+  "memory": {
+    "type": "string",
+    "options": ["on", "off"],
+    "default": "on",
+    "description": "whether exo keeps a project memory: on lets sessions read it, book lessons and decisions into it; off writes nothing and reads nothing, and the memory file is never deleted",
+    "label": "Memory",
+    "about": "whether I keep notes about this project between sessions",
+    "question": "Should exo keep notes about this project between sessions?",
+    "choices": {
+      "on": { "label": "Keep notes", "gives": "sessions read the project memory and add lessons and decisions to it" },
+      "off": { "label": "Keep none", "gives": "nothing is read or written; any existing memory file stays as it is" }
+    }
+  },
   "env": {
     "type": "string",
     "options": ["ask", "copy", "never"],

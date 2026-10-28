@@ -45,6 +45,13 @@
       "options": ["on", "off"],
       "default": "on"
     },
+    "memory": {
+      "type": "string",
+      "title": "Keep a project memory",
+      "description": "on: sessions read the project memory and book lessons and decisions into it. off: nothing is read or written; an existing memory file is never deleted. A project overrides this in .claude/exo.json.",
+      "options": ["on", "off"],
+      "default": "on"
+    },
     "env": {
       "type": "string",
       "title": "Local env files in a run",

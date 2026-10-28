@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
+import { memoryOn } from '#memory-store';
 import { readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { environmentMs } from '../lib/script-flags.mjs';
@@ -64,6 +65,7 @@ function handoffPointer(cwd, gitDirectory, top) {
 }
 
 function memoryPointer(cwd, top) {
+  if (!memoryOn(cwd)) return '';
   const commonDirectory = git(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir');
   const memoryFile = commonDirectory === null
     ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')

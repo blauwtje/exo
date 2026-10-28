@@ -12,6 +12,7 @@ Keep only what two sessions attested and the repository still supports. The enem
 
 ## When to use
 
+- `memory=off` in the `exo settings:` line, or a script printing `exo memory is off (memory=off); nothing written` → report memory is off, write nothing, skip the loop.
 - Not for a plan another session runs: `spec` owns that.
 - Not for a build, test or run command: `find-cause` step 6 appends that to `AGENTS.md` or `CLAUDE.md`; two writers of project knowledge produce two truths.
 

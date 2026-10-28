@@ -5,7 +5,7 @@ import process from 'node:process';
 import { Buffer } from 'node:buffer';
 import { parseArgs } from 'node:util';
 import { MEMORY_BUDGET } from '#budgets';
-import { ATTESTATIONS_REQUIRED, memoryDirectory } from '#memory-store';
+import { ATTESTATIONS_REQUIRED, memoryDirectory, memoryOn } from '#memory-store';
 
 function stateFile(cwd) {
   return path.join(memoryDirectory(cwd), 'memory.json');
@@ -222,6 +222,7 @@ const USAGE = [
   '       node memory.mjs reject --session <id> (--key <key> | --claim "<the claim>")',
   '       node memory.mjs write --decision --claim "<the decision>" --refs <paths>',
   '       node memory.mjs decisions',
+  'With memory=off every write command prints one line and writes nothing, and every read command prints nothing; both exit 0.',
   'Every command takes --cwd naming the repository, defaulting to the process working directory.',
 ].join('\n');
 
@@ -244,9 +245,16 @@ const { values, positionals } = parseArgs({
 
 const cwd = values.cwd ?? process.cwd();
 const command = positionals[0];
+const OFF_LINE = 'exo memory is off (memory=off); nothing written';
+const WRITE_COMMANDS = ['book', 'write', 'retire', 'reject', 'verify'];
+const READ_COMMANDS = ['render', 'propose', 'decisions'];
 
 if (values.help) {
   console.log(USAGE);
+} else if (WRITE_COMMANDS.includes(command) && !memoryOn(cwd)) {
+  console.log(OFF_LINE);
+} else if (READ_COMMANDS.includes(command) && !memoryOn(cwd)) {
+  process.exit(0);
 } else if (command === 'paths') {
   console.log(stateFile(cwd));
   console.log(memoryFile(cwd));
