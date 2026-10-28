@@ -30,8 +30,8 @@ test('zai maps the haiku tier to glm-5.3-flash and keeps glm-5.3 elsewhere', () 
   assert.equal(zai.env.CLAUDE_CODE_SUBAGENT_MODEL, 'glm-5.3')
 })
 
-test('resolveProvider picks a provider entry effort before the default effort', () => {
-  assert.equal(resolveProvider(catalog, 'deepseek', KEYS, undefined, HOME).effort, 'low')
+test('resolveProvider maps the default effort onto a provider that names none', () => {
+  assert.equal(resolveProvider(catalog, 'deepseek', KEYS, undefined, HOME).effort, 'high')
   assert.equal(resolveProvider(catalog, 'deepseek', KEYS, 'high', HOME).effort, 'high')
 })
 

@@ -79,6 +79,7 @@ export function chooseProvider(flags, home, project) {
   return {
     ...provider,
     asked,
+    explicitEffort: flags.effort !== undefined,
     model: flags.model ?? provider.model,
     ...budgetPin(name, flags),
     docPin: budgetPin(name, flags, { kind: 'doc-task' }),

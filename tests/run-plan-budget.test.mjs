@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { budgetPin, chooseProvider } from '../skills/build/scripts/run-plan.mjs';
+import { childEnv } from '../skills/build/scripts/run-session.mjs';
 import { CONTEXT_LIMIT, softLimit } from '../lib/context-limits.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 
@@ -46,12 +47,24 @@ test('a resumed headless retry keeps the session pin, only a fresh retry uses th
   assert.ok(source.includes('const basePin = retrying && resume === null && hasPin(provider.retryPin) ? provider.retryPin : { model, effort }'));
 });
 
-test('chooseProvider takes the provider default effort before the config default', () => {
+test('chooseProvider takes the caller effort before the config default', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'keys.env'), 'DEEPSEEK_API_KEY=x\n');
-  assert.equal(chooseProvider({ provider: 'deepseek' }, home, home).asked, 'low');
+  assert.equal(chooseProvider({ provider: 'deepseek' }, home, home).asked, 'medium');
   assert.equal(chooseProvider({ provider: 'deepseek', effort: 'high' }, home, home).asked, 'high');
+});
+
+test('an explicit effort reaches the session env, a default or a bare model does not', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'keys.env'), 'DEEPSEEK_API_KEY=x\n');
+  const medium = childEnv(null, chooseProvider({ provider: 'deepseek', effort: 'medium' }, home, home));
+  assert.equal(medium.CLAUDE_CODE_EFFORT_LEVEL, 'high');
+  const none = childEnv(null, chooseProvider({ provider: 'deepseek' }, home, home));
+  assert.equal(none.CLAUDE_CODE_EFFORT_LEVEL, undefined);
+  const model = childEnv(null, chooseProvider({ provider: 'deepseek', model: 'deepseek-flash' }, home, home));
+  assert.equal(model.CLAUDE_CODE_EFFORT_LEVEL, undefined);
 });
 
 test('the run plan budgets the fixed 80k limit and ignores a contextLimit setting', () => {

@@ -30,13 +30,13 @@ async function launch(args, { keys = `DEEPSEEK_API_KEY=${SECRET}\n`, extra = {},
   return { result, recorded };
 }
 
-test('a deepseek session gets the provider env, the provider effort, the stored key and no ANTHROPIC_API_KEY', async () => {
+test('a deepseek session gets the provider env, the stored key and no ANTHROPIC_API_KEY, and names no effort', async () => {
   const { result, recorded } = await launch(['--provider', 'deepseek']);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(recorded.env.ANTHROPIC_API_KEY, undefined);
   assert.equal(recorded.env.ANTHROPIC_AUTH_TOKEN, SECRET);
   assert.equal(recorded.env.ANTHROPIC_MODEL, 'deepseek-flash');
-  assert.equal(recorded.env.CLAUDE_CODE_EFFORT_LEVEL, 'low');
+  assert.equal(recorded.env.CLAUDE_CODE_EFFORT_LEVEL, undefined);
   assert.doesNotMatch(result.stdout + result.stderr, new RegExp(SECRET));
 });
 

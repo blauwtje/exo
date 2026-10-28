@@ -334,7 +334,7 @@ export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, rep
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
   if (provider.name === 'claude' && provider.promptCacheTtl === '5m') env.FORCE_PROMPT_CACHING_5M = '1';
   if (provider.name === 'claude' && provider.promptCacheTtl === '1h') delete env.FORCE_PROMPT_CACHING_5M;
-  const merged = { ...ecosystemEnv, ...env, ...provider.env, ...(provider.effort === null ? {} : { CLAUDE_CODE_EFFORT_LEVEL: provider.effort }) };
+  const merged = { ...ecosystemEnv, ...env, ...provider.env, ...(provider.explicitEffort === true ? { CLAUDE_CODE_EFFORT_LEVEL: provider.effort } : {}) };
   return refuseCommits === null ? merged : refusingCommits(merged, refuseCommits);
 }
 
