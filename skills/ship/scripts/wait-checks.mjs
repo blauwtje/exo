@@ -7,6 +7,7 @@ import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
 export const DEFAULT_MINUTES = 20;
+const USAGE = 'usage: wait-checks.mjs --pr <number> [--minutes <n>] [--grace-seconds <n>]';
 const DEFAULT_GRACE_SECONDS = 120;
 const RETRY_MS = 15_000;
 export const TIMEOUT_EXIT = 124;
@@ -23,7 +24,7 @@ function positiveNumber(text, fallback, name, allowZero) {
 }
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { pr: 'value', minutes: 'value', 'grace-seconds': 'value' });
+  const flags = parseFlags(argv, { pr: 'value', minutes: 'value', 'grace-seconds': 'value' }, { usage: USAGE });
   if (!/^[1-9][0-9]*$/.test(flags.pr ?? '')) throw new UsageError('--pr needs a pull request number');
   const minutes = positiveNumber(flags.minutes, DEFAULT_MINUTES, '--minutes', false);
   const graceSeconds = positiveNumber(flags['grace-seconds'], DEFAULT_GRACE_SECONDS, '--grace-seconds', true);
@@ -75,7 +76,7 @@ async function main() {
     flags = readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: wait-checks.mjs --pr <number> [--minutes <n>] [--grace-seconds <n>]: ${error.message}`);
+    console.error(`${USAGE}: ${error.message}`);
     process.exitCode = 2;
     return;
   }

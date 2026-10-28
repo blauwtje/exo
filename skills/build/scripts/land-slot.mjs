@@ -66,8 +66,14 @@ export function landSlot({ planPath, number, root, slot, base, baseline, inFligh
   return `LANDED ${number} ${sha}\n${kept}${removeSlot({ slot, root, base, number })}${chained ? '' : nextTaskReport({ planPath, planText, root, inFlight, open: true })}`;
 }
 
+const USAGE = [
+  'usage: land-slot.mjs --plan <plan> --task <n> --root <dir> --slot <dir> --base <sha> --baseline <file> [--in-flight <n,n>] [--chained]',
+  "Lands a task's slot worktree onto the run checkout and prints LANDED, REFUSED or CONFLICT; exits 2 on a usage error.",
+  '--in-flight names the task numbers still running, comma separated; --chained skips the next-task report.'
+].join('\n');
+
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', slot: 'value', base: 'value', baseline: 'value', 'in-flight': 'value', chained: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', slot: 'value', base: 'value', baseline: 'value', 'in-flight': 'value', chained: 'boolean' }, { usage: USAGE });
   for (const name of ['plan', 'root', 'slot', 'base', 'baseline']) {
     if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required`);
   }

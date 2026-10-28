@@ -1,4 +1,4 @@
 - Lead keeps decisions and the user dialogue, and itself does only a lone small edit or single-fact lookup.
-- Brief → goal, pointers not pasted content, stop condition; lead reads no file the brief points to; agent writes findings to a named file under `.exo/<topic>/`, returns verdict and path in a few lines; long command output goes to a log under `.exo/`, read only failing lines and the summary.
+- Brief → goal, pointers not pasted content, stop condition; lead reads no file the brief points to; agent writes findings to a named file under `.exo/<topic>/` (`exo:fetch-docs` returns inline, no file), returns verdict and path in a few lines; long command output goes to a log under `.exo/`, read only failing lines and the summary.
 - `exo:` agent call → pass no `model` or `effort`, the kind table decides; name a model in text only when you pass that model.
 - Unnamed delegate → brief leaves a design, architecture or solution choice open, or asks for an unknown cause → first brief line `exo-kind: hardest`; brief is a fully decided fix → `exo-kind: build`.

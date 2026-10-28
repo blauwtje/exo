@@ -5,6 +5,7 @@ import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
 export const GH_ERROR_EXIT = 3;
+const USAGE = 'usage: ship-gate.mjs --pr <number> | --order <number>...';
 const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup';
 const ORDER_FIELDS = 'number,baseRefName,headRefName';
 const PASSING_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
@@ -72,7 +73,7 @@ function viewPullRequest(number, fields) {
 function readFlags(argv) {
   const orderAt = argv.indexOf('--order');
   const numbers = orderAt === -1 ? [] : argv.slice(orderAt + 1);
-  const flags = parseFlags(orderAt === -1 ? argv : argv.slice(0, orderAt), { pr: 'value' });
+  const flags = parseFlags(orderAt === -1 ? argv : argv.slice(0, orderAt), { pr: 'value' }, { usage: USAGE });
   if (orderAt !== -1) {
     if (flags.pr !== undefined) throw new UsageError('--pr and --order do not combine');
     if (numbers.length === 0 || !numbers.every((number) => PR_NUMBER.test(number))) {
@@ -90,7 +91,7 @@ function main() {
     flags = readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: ship-gate.mjs --pr <number> | --order <number>...: ${error.message}`);
+    console.error(`${USAGE}: ${error.message}`);
     process.exitCode = 2;
     return;
   }

@@ -135,8 +135,15 @@ function gitRemoveFailure({ worktree, run, discard }) {
   return undefined;
 }
 
+const USAGE = [
+  'usage: remove-worktree.mjs --worktree <dir> --run <dir> [--report <file>] [--patch <file>] [--kept]',
+  "Copies the worktree's .exo/ files into the run's .exo/ and removes the worktree; exits 2 on a usage error.",
+  '--report refuses removal until that build report exists; --patch discards the worktree once that non-empty patch saves its work.',
+  '--kept copies into .exo/kept/<name>/ instead.'
+].join('\n');
+
 function main(argv) {
-  const flags = parseFlags(argv, { worktree: 'value', run: 'value', report: 'value', patch: 'value', kept: 'boolean' });
+  const flags = parseFlags(argv, { worktree: 'value', run: 'value', report: 'value', patch: 'value', kept: 'boolean' }, { usage: USAGE });
   if (flags.worktree === undefined) throw new UsageError("flag '--worktree' names the worktree to remove");
   if (flags.run === undefined) throw new UsageError("flag '--run' names the run's checkout");
   process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, report: flags.report, patch: flags.patch, kept: flags.kept ?? false }));

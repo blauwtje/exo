@@ -373,3 +373,9 @@ test('next-task keeps the record of another plan even when this plan is fully la
   assert.equal(result.code, 0, result.stderr);
   assert.equal((await readProgress(file)).plan, '/elsewhere/other.md');
 });
+
+test('next-task prints usage and exits 0 on --help', async () => {
+  const result = await run(NEXT_TASK, ['--help']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^usage: next-task\.mjs --plan <file>/);
+});

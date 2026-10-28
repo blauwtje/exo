@@ -104,3 +104,11 @@ test('the command line prints the ENV refusal with no exo-retry line', async () 
   assert.match(result.stderr, /land-task: ENV: docker down/);
   assert.doesNotMatch(result.stderr, /exo-retry/);
 });
+
+test('--help prints the usage and exits 0', async () => {
+  const help = await run(SCRIPT, ['--help']);
+  assert.equal(help.code, 0);
+  assert.match(help.stdout, /^usage: land-task\.mjs --plan <plan> --task <n>/);
+  assert.match(help.stdout, /--check/);
+  assert.match(help.stdout, /--fix/);
+});

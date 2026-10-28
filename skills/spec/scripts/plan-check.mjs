@@ -788,8 +788,14 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
   return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`, ...sizeLines(plan.tasks.filter((task) => !landed.includes(task.number)), resolvedRoot, forkPoint), ...warnings] };
 }
 
+const USAGE = [
+  'usage: plan-check.mjs --plan <plan> [--root <dir>] [--loop] [--run]',
+  'Checks a plan file against the plan rules and prints each problem; exits 1 when the plan fails, 2 on a usage error.',
+  '--loop adds the checks a headless run needs; --run lets a plan leave out the Land: line.'
+].join('\n');
+
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', loop: 'boolean', run: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', loop: 'boolean', run: 'boolean' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');

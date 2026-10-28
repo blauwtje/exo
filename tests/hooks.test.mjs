@@ -289,6 +289,13 @@ test('the dispatch rules leave agent models to the kind table and send long comm
   assert.doesNotMatch(rules, /cheapest and low for lookups/);
 });
 
+test('the dispatch file rule names exo:fetch-docs as returning inline', () => {
+  const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
+  assert.match(rules, /agent writes findings to a named file under `\.exo\/<topic>\/`[^\n]*`exo:fetch-docs` returns inline/);
+  const contributing = fs.readFileSync(path.join(REPOSITORY, 'CONTRIBUTING.md'), 'utf8');
+  assert.match(contributing, /\*\*Dispatch rules\*\*[^\n]*`exo:fetch-docs` returns inline/);
+});
+
 test('the dispatch rules send a brief with an open choice or unknown cause to the hardest kind and a decided fix to build', async () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
   assert.match(rules, /design, architecture or solution choice open, or asks for an unknown cause → first brief line `exo-kind: hardest`/);

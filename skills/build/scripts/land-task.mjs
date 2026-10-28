@@ -885,8 +885,14 @@ export function withNext(output, { planPath, planText, root }) {
   return `${kept}${nextTaskReport({ planPath, planText, root, open: true })}`;
 }
 
+const USAGE = [
+  'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>] [--check] [--code-rules] [--next]',
+  '       land-task.mjs --fix <subject> [--plan <plan>] [--root <dir>]',
+  "Lands a plan task from its implementer report, or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer. Exits 2 on a usage error."
+].join('\n');
+
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' }, { usage: USAGE });
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
   const codeRulesOnly = flags['code-rules'] === true;

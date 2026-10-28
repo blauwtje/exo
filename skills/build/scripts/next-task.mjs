@@ -343,8 +343,14 @@ export function refreshProgress({ planPath, planText, root }) {
   }
 }
 
+const USAGE = [
+  'usage: next-task.mjs --plan <file> [--root <checkout>] [--frame | --block | --proofs]',
+  '  [--open-slots] [--in-flight <n,n,...>]',
+  'Prints the next unlanded task of the plan, or the report the chosen flag names; exit 0 ok, 2 bad argument.',
+].join('\n');
+
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');

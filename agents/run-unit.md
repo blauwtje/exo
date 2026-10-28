@@ -1,7 +1,7 @@
 ---
 name: run-unit
 description: "Dispatched by build only."
-tools: Read, Bash, Agent, SendMessage
+tools: Read, Bash, Agent, SendMessage, TaskStop
 maxTurns: 90
 omitClaudeMd: true
 experimental: { cacheTtl: 1h }

@@ -1,7 +1,7 @@
 ---
 name: solve-hard
 description: "Dispatched by build and find-cause only."
-tools: Read, Edit, Write, Glob, Grep, Bash, Skill
+tools: Read, Edit, Write, Glob, Grep, Bash, Skill, TaskStop
 maxTurns: 60
 ---
 

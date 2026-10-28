@@ -4,7 +4,9 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const USAGE = 'usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]... [--state "<name>=<js>"]...';
 const args = process.argv.slice(2);
+if (args.includes('--help')) { console.log(USAGE); process.exit(0); }
 let target = null, out = '/tmp/look', app = false, shots = true;
 const expects = [], states = [];
 for (let i = 0; i < args.length; i++) {
@@ -15,7 +17,7 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--state') { const [name, ...js] = args[++i].split('='); states.push({ name: name.replace(/[^\w-]/g, '-'), js: js.join('=') }); }
   else target = args[i];
 }
-if (!target) { console.log('usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]... [--state "<name>=<js>"]...'); process.exit(2); }
+if (!target) { console.log(USAGE); process.exit(2); }
 
 async function loadPlaywright() {
   try { return await import('playwright'); } catch {}

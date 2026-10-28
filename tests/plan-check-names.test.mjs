@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
-import { compactPlanFixture, compactTask, gitRepository } from './harness.mjs';
+import { compactPlanFixture, compactTask, gitRepository, run } from './harness.mjs';
+
+const PLAN_CHECK = new URL('../skills/spec/scripts/plan-check.mjs', import.meta.url).pathname;
 
 async function existingTestProblems(testFiles) {
   const root = await gitRepository({ 'benchmarks/run.mjs': 'export {};\n', ...testFiles });
@@ -30,4 +32,12 @@ test('a name-matched test reaching the source through a relative helper is still
     'tests/run-dry.test.mjs': "import { target } from './run-helper.mjs';\n"
   });
   assert.equal(problems.length, 1);
+});
+
+test('--help prints the usage and exits 0', async () => {
+  const help = await run(PLAN_CHECK, ['--help']);
+  assert.equal(help.code, 0);
+  assert.match(help.stdout, /^usage: plan-check\.mjs --plan <plan>/);
+  assert.match(help.stdout, /--loop/);
+  assert.match(help.stdout, /--run/);
 });

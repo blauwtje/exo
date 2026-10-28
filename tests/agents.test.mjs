@@ -21,7 +21,7 @@ const SUPPORTED_KEYS = [
   'experimental',
 ];
 const KNOWN_TOOLS = [
-  'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage',
+  'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage', 'TaskStop',
 ];
 const ORDINAL_TURNS = { tenth: 10, fifteenth: 15, twentieth: 20, thirtieth: 30, fortieth: 40, fiftieth: 50 };
 
@@ -105,6 +105,20 @@ test('every listed tool is a tool the harness has', () => {
     const unknown = agent.frontmatter.tools.split(', ').filter((tool) => !KNOWN_TOOLS.includes(tool));
     assert.deepEqual(unknown, [], `${agent.fileName} lists unknown tools`);
   }
+});
+
+test('fix-review, solve-hard and run-unit hold the TaskStop their bodies tell them to run', () => {
+  for (const name of ['fix-review', 'solve-hard', 'run-unit']) {
+    const agent = agents.find((candidate) => candidate.frontmatter.name === name);
+    assert.ok(agent.body.includes('TaskStop'), `${name} body names TaskStop`);
+    assert.ok(agent.frontmatter.tools.split(', ').includes('TaskStop'), `${name} lists TaskStop in tools`);
+  }
+});
+
+test('fetch-docs has no Write tool and gives no rule about a file it writes', () => {
+  const docs = agents.find((agent) => agent.frontmatter.name === 'fetch-docs');
+  assert.ok(!docs.frontmatter.tools.split(', ').includes('Write'), 'fetch-docs lists Write');
+  assert.ok(!docs.body.includes('any file you write'), 'fetch-docs body still gives a rule for a file it writes');
 });
 
 test('an agent that only locates or reviews carries no tool that edits the repository', () => {

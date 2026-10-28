@@ -13,6 +13,7 @@ import { returnToDefault } from './return-to-default.mjs';
 
 export const USAGE_EXIT = 2;
 export const DIRTY_EXIT = 4;
+const USAGE = 'usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes | --verdict-current <patch-id>';
 const ROUTES = new Set(['push', 'open-pr', 'pr-merge']);
 const METHODS = new Set(['squash', 'merge', 'rebase']);
 const MAX_BEHIND_UPDATES = 2;
@@ -52,7 +53,7 @@ function readFlags(argv) {
     }
     return { merge: numbers };
   }
-  const flags = parseFlags(argv, { route: 'value', title: 'value', body: 'value', issue: 'value', method: 'value' });
+  const flags = parseFlags(argv, { route: 'value', title: 'value', body: 'value', issue: 'value', method: 'value' }, { usage: USAGE });
   if (!flags.route) throw new UsageError('needs --route <push|open-pr|pr-merge>');
   if (!ROUTES.has(flags.route)) throw new UsageError(`unknown route '${flags.route}'`);
   if (flags.route !== 'push' && (!flags.title || !flags.body)) {
@@ -364,7 +365,7 @@ function main() {
     flags = readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes | --verdict-current <patch-id>: ${error.message}`);
+    console.error(`${USAGE}: ${error.message}`);
     process.exitCode = USAGE_EXIT;
     return;
   }

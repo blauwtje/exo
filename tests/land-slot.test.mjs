@@ -132,3 +132,11 @@ test('a landed slot refreshes the session record', async () => {
   assert.equal(record.landed, 1);
   assert.equal(record.total, 4);
 });
+
+test('--help prints the usage and exits 0', async () => {
+  const help = await run(SCRIPT, ['--help']);
+  assert.equal(help.code, 0);
+  assert.match(help.stdout, /^usage: land-slot\.mjs --plan <plan> --task <n>/);
+  assert.match(help.stdout, /--in-flight/);
+  assert.match(help.stdout, /--chained/);
+});

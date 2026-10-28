@@ -12,7 +12,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
-import { git, gitRepository } from './harness.mjs';
+import { git, gitRepository, run } from './harness.mjs';
 
 // `.exo/` is excluded (lib/scratch-exclude.mjs), not gitignored, the same as a
 // real wave worktree, so `git worktree remove` sees it as clean rather than
@@ -359,4 +359,13 @@ test('git refusal restores an existing kept folder moved aside for a brief', asy
   assert.deepEqual(fs.readdirSync(keptRoot), [path.basename(worktree)]);
   assert.deepEqual(fs.readdirSync(path.join(keptRoot, path.basename(worktree))), ['earlier.md']);
   assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+});
+
+test('--help prints the usage and exits 0', async () => {
+  const script = new URL('../skills/build/scripts/remove-worktree.mjs', import.meta.url).pathname;
+  const help = await run(script, ['--help']);
+  assert.equal(help.code, 0);
+  assert.match(help.stdout, /^usage: remove-worktree\.mjs --worktree <dir> --run <dir>/);
+  assert.match(help.stdout, /--kept/);
+  assert.match(help.stdout, /--patch/);
 });

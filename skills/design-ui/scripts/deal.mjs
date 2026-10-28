@@ -13,10 +13,12 @@ const SEEDS = [
   ['Greenhouse', 'leaf-green chrome, cool off-white panels, item fills in fruit and sky colors', 'a calligraphic-leaning sans display over a plain text face', 'generous radius, leaf-dark border, gentle shadow', 'airy'],
 ];
 
+const USAGE = 'usage: node deal.mjs [--seed <n>]';
 const args = process.argv.slice(2);
+if (args.includes('--help')) { console.log(USAGE); process.exit(0); }
 const at = args.indexOf('--seed');
 let seed = at >= 0 ? Number(args[at + 1]) : Math.floor(Math.random() * 2 ** 31);
-if (!Number.isFinite(seed)) { console.log('usage: node deal.mjs [--seed <n>]'); process.exit(2); }
+if (!Number.isFinite(seed)) { console.log(USAGE); process.exit(2); }
 const next = () => { seed = (seed * 1103515245 + 12345) % 2 ** 31; return seed / 2 ** 31; };
 
 const pool = [...SEEDS];

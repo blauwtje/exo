@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
+const USAGE = 'usage: return-to-default.mjs [--merged <branch>]...';
 const USAGE_EXIT = 2;
 
 function git(dir, args) {
@@ -55,10 +56,10 @@ export function returnToDefault({ dir = process.cwd(), base = null, merged = [] 
 function main() {
   let flags;
   try {
-    flags = parseFlags(process.argv.slice(2), { merged: 'list' });
+    flags = parseFlags(process.argv.slice(2), { merged: 'list' }, { usage: USAGE });
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: return-to-default.mjs [--merged <branch>]...: ${error.message}`);
+    console.error(`${USAGE}: ${error.message}`);
     process.exitCode = USAGE_EXIT;
     return;
   }

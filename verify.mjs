@@ -49,6 +49,7 @@ import { checkEditEvidence } from './verify/checks/edit-evidence.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { checkCodeComments } from './verify/checks/code-comments.mjs';
 import { checkFixClassLoad } from './verify/checks/fix-class-load.mjs';
+import { checkScriptHelp } from './verify/checks/script-help.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -118,6 +119,7 @@ checkInstructionDensity(report, repository);
 checkBoundaryWords(report, repository);
 checkEditEvidence(report, repository);
 checkFixClassLoad(report, repository);
+checkScriptHelp(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);

@@ -1,7 +1,7 @@
 ---
 name: fix-review
 description: "Dispatched by verify only."
-tools: Read, Edit, Write, Grep, Bash
+tools: Read, Edit, Write, Grep, Bash, TaskStop
 maxTurns: 40
 omitClaudeMd: true
 ---
