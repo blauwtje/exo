@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 
-const QUICK_SLUGS = ['test-pollution', 'rename-propagation', 'export-mismatch'];
+const QUICK_SLUGS = ['test-pollution', 'rename-propagation', 'export-mismatch', 'web-research'];
 const tasks = loadValueTasks().filter((task) => QUICK_SLUGS.includes(path.basename(task.directory)));
 
 async function scoreRepoWith(task, solved) {

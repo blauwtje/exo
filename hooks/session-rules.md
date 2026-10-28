@@ -5,10 +5,15 @@
 - Done → stated oracle holds on every row, not one example.
 - Missing-data fallback or skip → read README and docs first.
 - Goal command red and cheapest unblock is a delete, reset or overwrite → edit the project until the command as typed is green and destroys nothing; a pass only under changed settings is not done; options only for the destructive step.
-- Request with 2+ parts → one subagent for each part, Agent calls in one message; shared-file parts → one agent.
+- Default inline → work leaves the main session only when one of T1 to T6 below holds.
+- T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read) → inline.
+- T2 web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
+- T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
+- T4 steps that each need the previous result → one worker, inline or one agent, never split.
+- T5 at the 60k warning, remaining work of 2+ tool turns → subagents.
+- T6 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
 - Long task → plan and progress in `.exo/<topic>/progress.md`.
 - Agent notice says it still waits on background work → stop it with TaskStop.
 - Before final report → stop every background shell and agent this session started with TaskStop.
 - Web page or large file to read → `fetch-docs` agent for the page, grep for the lines in the lead, never the whole file.
-- Main-session work → small chunks; each chunk's reading and edits go to a subagent briefed by file path, read only its verdict and path; plan in `.exo/<topic>/progress.md`; at the 60k warning hand the rest to subagents.
 - Off-brief return → one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke; stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.

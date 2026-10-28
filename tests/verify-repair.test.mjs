@@ -9,7 +9,7 @@ import { editApp, landingCheckout } from './land-task-fixture.mjs';
 import { findingsDigest } from '../skills/verify/scripts/merge-reviews.mjs';
 
 const VERIFY = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
-const FINDINGS = '- fix src/app.js:1-3 greet returns nothing fixed\n  Probe: grep -q hello src/app.js\n';
+const FINDINGS = 'src/app.js:1-3; defect; greet returns nothing; fix | fixed\n  Probe: grep -q hello src/app.js\n';
 const env = { ...process.env, EXO_RUN: '', EXO_RUN_DIR: '' };
 
 const GUARDED = 'Sweep: 1 fixed\nGuard: none (one-off)';
@@ -63,7 +63,7 @@ test('--repair fails fixer-no-commits when a finding is fixed and no commit foll
 
 test('--repair fails stale-findings when a finding line changed since review', async () => {
   const checkout = await repairCheckout();
-  await fs.appendFile(checkout.findingsPath, '- fix src/app.js:9 added after review fixed\n');
+  await fs.appendFile(checkout.findingsPath, 'src/app.js:9; concern; added after review; fix | fixed\n');
   const { status, lines } = verifyRepair(checkout);
   assert.equal(status, 1);
   assert.ok(lines.some((line) => line.startsWith('FAIL stale-findings')), lines.join('\n'));
@@ -72,10 +72,10 @@ test('--repair fails stale-findings when a finding line changed since review', a
 });
 
 test('--repair keeps stale-findings quiet for the marks and detail lines a fixer writes', async () => {
-  const reviewed = '- fix src/app.js:1-3 greet returns nothing\n- report src/app.js:5 naming\n';
+  const reviewed = 'src/app.js:1-3; defect; greet returns nothing; fix\nsrc/app.js:5; note; naming; report\n';
   const checkout = await repairCheckout(reviewed);
   const hash = findingsDigest(reviewed);
-  await fs.writeFile(checkout.findingsPath, '- fix src/app.js:1-3 greet returns nothing fixed\n  Probe: grep -q hello src/app.js\n  Class: missing return\n- report src/app.js:5 naming reported: out of scope\nFAIL repair-test tests/x.test.mjs\n  stderr line\n');
+  await fs.writeFile(checkout.findingsPath, 'src/app.js:1-3; defect; greet returns nothing; fix | fixed\n  Probe: grep -q hello src/app.js\n  Class: missing return\nsrc/app.js:5; note; naming; report | reported: out of scope\nFAIL repair-test tests/x.test.mjs\n  stderr line\n');
   const { lines } = verifyRepair(checkout, hash);
   assert.ok(!lines.some((line) => line.startsWith('FAIL stale-findings')), lines.join('\n'));
 });
@@ -96,7 +96,7 @@ test('--repair passes a guarded commit, dispatches the fix-diff review and count
 });
 
 test('--repair accepts a clean tree with no commit when no finding was fixed', async () => {
-  const unfixed = '- fix src/app.js:1-3 greet returns nothing reported: unproven\n';
+  const unfixed = 'src/app.js:1-3; defect; greet returns nothing; fix | reported: unproven\n';
   const checkout = await repairCheckout(unfixed);
   const { status, lines } = verifyRepair(checkout, findingsDigest(unfixed));
   assert.deepEqual(lines, ['PASS fixer-committed', 'LOOP next=done round=1/2']);

@@ -13,7 +13,7 @@ Read it when: you design or change an agent loop, a workflow of several agents, 
 - **Separate the agent doing the work from the one judging it.** Tune the evaluator to be skeptical. [4] exo: `skills/build/references/fresh-eyes.md`, `agents/review-branch.md`
 - **Lower effort to cut thinking, not prompt text.** Opus 5.5 defaults to medium and cannot disable thinking. [5] exo: `lib/model-kinds.json`, `hooks/agent-effort.mjs`
 - **Name the kinds of early stop to avoid in unattended runs.** [5] exo: gap, `agents/build-task.md` `## Stop` lists when to stop, but no agent or build prompt names the early stops to avoid
-- **Give delegation criteria or a cap.** Opus 5.5 delegates readily. [5] exo: gap, `agents/run-unit.md` names no delegation criteria and sets no cap
+- **Give delegation criteria or a cap.** Opus 5.5 delegates readily. [5] exo: `hooks/session-rules.md` names triggers T1 to T6 (inline by default, delegate only when one holds), `agents/run-unit.md` names no delegation criteria and sets no cap
 - **Load detail on demand: a short always-loaded part, references one level deep.** The spec sets about 100 tokens of metadata and a body under 5000 tokens. [6] exo: `skills/edit-skills/references/instruction-style.md`
 
 ## Sources

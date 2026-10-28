@@ -16,4 +16,10 @@
 - **Isolated commands.** Worktree-isolated delegate's Bash refuses some shapes: double-quote a runtime value with a literal prefix, or put `--` before it; run plain commands one at a time, not `;` chains with variables; wait with a background run, never `sleep`.
 - **Files.** Create files with Write, not compound Bash; one simple command per Bash call.
 - **Scope.** Write only the artifacts a skill names, at the length needed.
-- Main-session work → small chunks; each chunk's reading and edits go to a subagent briefed by file path, read only its verdict and path; plan in `.exo/<topic>/progress.md`; at the 60k warning hand the rest to subagents.
+- Default inline → work leaves the main session only when one of T1 to T6 below holds.
+- T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read) → inline.
+- T2 web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
+- T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
+- T4 steps that each need the previous result → one worker, inline or one agent, never split.
+- T5 at the 60k warning, remaining work of 2+ tool turns → subagents.
+- T6 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.

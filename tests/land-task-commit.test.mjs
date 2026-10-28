@@ -10,7 +10,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
-import { checkTask, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { checkTask, fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { compactPlanFixture, git, gitRepository, planFixture, run } from './harness.mjs';
 import {
   taskSection, SCRIPT, PLAN, landingCheckout, editApp, withLint, compactTask, compactCheckout, writeReport, PASS_REPORT, assertRefused
@@ -314,4 +314,28 @@ test('land-task CLI refreshes the session record and a refused landing leaves it
   const record = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(record.landed, 1);
   assert.equal(record.total, 4);
+});
+
+test('--fix commits the body after a blank line below the subject', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const body = 'Proof: node --test → pass\nSweep: 2 fixed\nGuard: tests/app.test.mjs';
+  const result = await run(SCRIPT, ['--fix', 'fix(app): greet returns', '--body', body, '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(git(root, 'log', '-1', '--format=%B'), `fix(app): greet returns\n\n${body}`);
+});
+
+test('--fix without a body commits the subject alone', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  fixLand({ root, subject: 'fix(app): greet returns' });
+  assert.equal(git(root, 'log', '-1', '--format=%B'), 'fix(app): greet returns');
+});
+
+test('--fix refuses a body that attributes the work to an AI and commits nothing', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const head = git(root, 'rev-parse', 'HEAD');
+  assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Co-Authored-By: Claude <noreply@anthropic.com>' }), /commit text refused/);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
 });

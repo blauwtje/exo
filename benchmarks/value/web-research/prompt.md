@@ -1,0 +1,1 @@
+What is the default value of the Claude Code setting `cleanupPeriodDays`, the number of days Claude Code keeps session transcripts before deleting them? Look it up in the official Claude Code documentation at code.claude.com and write just the number to `answer.txt`.

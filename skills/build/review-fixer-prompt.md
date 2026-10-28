@@ -24,7 +24,7 @@ Give each command a timeout of at most 120 seconds; a timeout fails it, rerun on
 A fix whose command or probe fails twice is reverted; reported, outputs in the findings file.
 
 End each finding line, not its `Probe:` line, as `a:3; x; fix | fixed` or `b:9; y; report | reported: <one-clause reason>`.
-Commit each proven fix: `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --fix "fix(<scope>): <subject>" --plan <plan> --root <root>`, a blank line, then `Proof:`, `Sweep: <n> fixed` and `Guard: <file> | none (<reason>)` lines. Run no other git write; leave no changed path.
+Commit each proven fix: `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --fix "fix(<scope>): <subject>" --body "<body>" --plan <plan> --root <root>`, the body holding `Proof:`, `Sweep: <n> fixed` and one Guard line, one per line. Guard line = `Guard: <file>` when you added a guard, else `Guard: none (<reason>)`; not both. Run no other git write; leave no changed path.
 
 Return this one line: `fixed=<n> reported=<n> report=<path>`. Only a blocked stop adds a second line naming it, at most two lines.
 ```

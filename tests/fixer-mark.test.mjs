@@ -76,3 +76,8 @@ test('unprovenRisks names a reported-unproven concern without its mark', () => {
   fs.writeFileSync(file, FIXER_WRITTEN);
   assert.deepEqual(unprovenRisks(file), ['hooks/run-unit.md:29; concern; plan fit; a red Proof goes to SendMessage first; report']);
 });
+
+test('the fixer prompt shows each Guard form as its own line, not alternatives joined by a bar', () => {
+  const forms = [...PROMPT.matchAll(/`(Guard: [^`]*)`/g)].map((match) => match[1]);
+  assert.deepEqual(forms, ['Guard: <file>', 'Guard: none (<reason>)']);
+});

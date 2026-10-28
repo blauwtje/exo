@@ -83,9 +83,8 @@ test('the first lead Agent call of a session gets the dispatch rules once, a sub
   }
 });
 
-test('the session text keeps the fan-out line and leaves the dispatch-only rules out', () => {
+test('the session text leaves the dispatch-only rules out', () => {
   const sessionText = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
-  assert.match(sessionText, /one subagent for each part/);
   for (const line of readDispatchRules().split('\n')) assert.ok(!sessionText.includes(line.slice(2)), line);
 });
 
@@ -95,13 +94,35 @@ test('the session text has one TaskStop bullet for the agent notice and one for 
   assert.ok(lines.includes('- Before final report → stop every background shell and agent this session started with TaskStop.'));
 });
 
-test('the session text and the context reference carry the same chunking line', () => {
+const TRIGGER_LINES = [
+  [/^- Default inline →/, /only when one of T1 to T6/],
+  [/^- T1 /, /at most 5 tool turns.*one file to edit with at most 2 to read\) → inline\.$/],
+  [/^- T2 /, /6\+ tool turns.*→ `fetch-docs` or `locate-code`/],
+  [/^- T3 /, /2\+ independent parts, each 6\+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent\.$/],
+  [/^- T4 /, /each need the previous result → one worker.*never split\.$/],
+  [/^- T5 /, /60k warning, remaining work of 2\+ tool turns → subagents\.$/],
+  [/^- T6 /, /over 5 minutes → `run_in_background`/],
+];
+
+test('the session text and the context reference carry the same trigger lines T1 to T6', () => {
   const root = path.join(import.meta.dirname, '..');
-  const line = fs.readFileSync(path.join(root, 'hooks', 'session-rules.md'), 'utf8').split('\n').find((l) => l.startsWith('- Main-session work'));
-  assert.ok(line);
-  assert.match(line, /at the 60k warning hand the rest to subagents\.$/);
-  assert.doesNotMatch(line, /fresh session/);
-  assert.ok(fs.readFileSync(path.join(root, 'skills', 'route-skills', 'references', 'context.md'), 'utf8').split('\n').includes(line));
+  const session = fs.readFileSync(path.join(root, 'hooks', 'session-rules.md'), 'utf8').split('\n');
+  const context = fs.readFileSync(path.join(root, 'skills', 'route-skills', 'references', 'context.md'), 'utf8').split('\n');
+  for (const [start, shape] of TRIGGER_LINES) {
+    const lines = session.filter((l) => start.test(l));
+    assert.equal(lines.length, 1, String(start));
+    assert.match(lines[0], shape);
+    assert.ok(context.includes(lines[0]), lines[0]);
+  }
+});
+
+test('the blanket delegation lines are gone from the session text and the context reference', () => {
+  const root = path.join(import.meta.dirname, '..');
+  for (const file of [['hooks', 'session-rules.md'], ['skills', 'route-skills', 'references', 'context.md']]) {
+    const text = fs.readFileSync(path.join(root, ...file), 'utf8');
+    assert.doesNotMatch(text, /^- Request with 2\+ parts/m);
+    assert.doesNotMatch(text, /^- Main-session work/m);
+  }
 });
 
 test('the session text has one off-brief return line: a SendMessage correction before any redispatch, fix rounds kept for review findings', () => {

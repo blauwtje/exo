@@ -5,25 +5,35 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { fixerMark } from '#fixer-mark';
 import { appendLedger, latestRound, parseFinding } from './merge-reviews.mjs';
 
-const PROBE_LINE = /^\s*Probe:\s*(.*)$/;
-const SWEEP_LINE = /^\s*Sweep:\s*(.*)$/;
+const FIELD_LINE = /^\s*(Probe|Class|Sweep|Guard):\s*(.*)$/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
 Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding.
+A finding line starts with <file>:<line>; the Probe:, Class:, Sweep: and Guard: lines under it belong to it, in any order. Any other line ends the finding, so a field line under prose belongs to no finding.
 A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding); a fixed finding with no Probe: line under it prints FAIL probe (no Probe line). Exits 1 on any FAIL.`;
 
+function findingBlocks(report) {
+  const blocks = [];
+  let current = null;
+  for (const line of report.split('\n')) {
+    const field = FIELD_LINE.exec(line);
+    if (field !== null) {
+      if (current !== null) current.fields[field[1]] ??= field[2].trim();
+      continue;
+    }
+    current = parseFinding(line) === null ? null : { finding: line.trim(), mark: fixerMark(line), fields: {} };
+    if (current !== null) blocks.push(current);
+  }
+  return blocks;
+}
+
 export function fixedProbes(report) {
-  const lines = report.split('\n');
-  const probes = [];
-  lines.forEach((line, index) => {
-    if (PROBE_LINE.test(line)) return;
-    const next = PROBE_LINE.exec(lines[index + 1] ?? '');
-    const mark = fixerMark(line);
-    if (mark?.state === 'fixed') probes.push({ finding: line.trim(), command: next?.[1].trim() || null, sweep: SWEEP_LINE.exec(lines[index + 3] ?? '')?.[1].trim() || null });
-    else if (next && mark === null) probes.push({ finding: line.trim(), command: null, unmarked: true });
+  return findingBlocks(report).flatMap(({ finding, mark, fields }) => {
+    if (mark?.state === 'fixed') return [{ finding, command: fields.Probe || null, sweep: fields.Sweep || null }];
+    if (fields.Probe !== undefined && mark === null) return [{ finding, command: null, unmarked: true }];
+    return [];
   });
-  return probes;
 }
 
 function runProbe(command, root, { sweep = false } = {}) {

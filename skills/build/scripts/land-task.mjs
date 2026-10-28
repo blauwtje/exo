@@ -121,21 +121,22 @@ function refuseBadCommitText(subject, rest = '') {
   if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
 }
 
-export function fixLand({ root, subject, plan = null, pin = null }) {
+export function fixLand({ root, subject, body = null, plan = null, pin = null }) {
   if (pin !== null) throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
   refuseMismatchedToplevel(root);
-  refuseBadCommitText(subject);
-  return locked(root, () => fixLandLocked({ root, subject, plan }));
+  refuseBadCommitText(subject, body ?? '');
+  return locked(root, () => fixLandLocked({ root, subject, body, plan }));
 }
 
-function fixLandLocked({ root, subject, plan }) {
+function fixLandLocked({ root, subject, body, plan }) {
   const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
   if (status.trim() === '') {
     throw new LandingError('no changed path to commit');
   }
   if (plan !== null) runLint(frameOf(parsePlan(fs.readFileSync(plan, 'utf8')).frame).lint, changedPaths(root), root);
   execFileSync('git', ['-C', root, 'add', '-A'], { encoding: 'utf8' });
-  execFileSync('git', ['-C', root, 'commit', '-m', subject], { encoding: 'utf8' });
+  const messages = body === null ? ['-m', subject] : ['-m', subject, '-m', body];
+  execFileSync('git', ['-C', root, 'commit', ...messages], { encoding: 'utf8' });
   const sha = execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
   return `Committed: ${sha}\n`;
 }
@@ -887,18 +888,18 @@ export function withNext(output, { planPath, planText, root }) {
 
 const USAGE = [
   'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>] [--check] [--code-rules] [--next]',
-  '       land-task.mjs --fix <subject> [--plan <plan>] [--root <dir>]',
-  "Lands a plan task from its implementer report, or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer. Exits 2 on a usage error."
+  '       land-task.mjs --fix <subject> [--body <text>] [--plan <plan>] [--root <dir>]',
+  "Lands a plan task from its implementer report, or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer, --body adds the commit body after a blank line. Exits 2 on a usage error."
 ].join('\n');
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' }, { usage: USAGE });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', body: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' }, { usage: USAGE });
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
   const codeRulesOnly = flags['code-rules'] === true;
   if (pin !== null && !codeRulesOnly && flags.check !== true) quiet.file = proofRecordPath(root, pin.planId, pin.number);
   if (flags.fix !== undefined) {
-    process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null, pin }));
+    process.stdout.write(fixLand({ root, subject: flags.fix, body: flags.body ?? null, plan: flags.plan ?? null, pin }));
     return;
   }
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
