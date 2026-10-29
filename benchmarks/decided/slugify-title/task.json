@@ -1,0 +1,6 @@
+{
+  "split": "train",
+  "choice": "accented letters are stripped to plain ones (Café becomes cafe)",
+  "alternative": "accented letters stay in the slug (Café becomes café)",
+  "timeoutMinutes": 10
+}

@@ -22,3 +22,11 @@ test('question rule 4 has no route draft and the example title has no progress c
   assert.doesNotMatch(rule, /draft|routes|first to mind/);
   assert.doesNotMatch(text, /\*\*\d+\/\d+ /);
 });
+
+test('When to ask sends a safe-default choice to the Decided for you list and keeps the three asking cases', () => {
+  const gate = text.split('## When to ask')[1].split('\n## ')[0];
+  assert.match(gate, /\*\*Decided for you\*\*/);
+  assert.match(gate, /irreversible/);
+  assert.match(gate, /no safe default/);
+  assert.match(gate, /account or eyes/);
+});

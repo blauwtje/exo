@@ -4,6 +4,8 @@
 
 Ask only when the answer is a preference or product outcome only the user knows and a wrong guess is costly to undo. A question that cannot be phrased in everyday words about what the user sees or gets is exo's to decide: decide it, and record it where the skill says. Default is zero questions.
 
+A choice with a safe default is no question: take it and list it under `**Decided for you**` at the end of the reply, as `hooks/session-rules.md` sets. Still ask an irreversible step, a choice with no safe default, and a choice only the user's account or eyes can settle.
+
 ## One question
 
 A message asks exactly one question, so the user answers with one letter. Several decisions open → the one whose answer matters most comes first; the next comes only after the answer, if one is still open. Each question has this shape.

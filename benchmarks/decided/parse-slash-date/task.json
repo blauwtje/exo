@@ -1,0 +1,6 @@
+{
+  "split": "train",
+  "choice": "the first number is the day (03/04/2025 is 3 April)",
+  "alternative": "the first number is the month (03/04/2025 is 4 March)",
+  "timeoutMinutes": 10
+}

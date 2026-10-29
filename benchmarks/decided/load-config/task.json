@@ -1,0 +1,6 @@
+{
+  "split": "held-out",
+  "choice": "a missing file gives the defaults",
+  "alternative": "a missing file throws an error",
+  "timeoutMinutes": 10
+}

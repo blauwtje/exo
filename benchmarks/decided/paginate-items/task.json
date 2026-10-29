@@ -1,0 +1,6 @@
+{
+  "split": "train",
+  "choice": "pages are numbered from 1",
+  "alternative": "pages are numbered from 0",
+  "timeoutMinutes": 10
+}

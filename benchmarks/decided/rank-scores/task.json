@@ -1,0 +1,6 @@
+{
+  "split": "held-out",
+  "choice": "tied scores share a rank and the next rank is skipped ([90, 90, 80] gives [1, 1, 3])",
+  "alternative": "tied scores share a rank and the next rank follows on ([90, 90, 80] gives [1, 1, 2])",
+  "timeoutMinutes": 10
+}

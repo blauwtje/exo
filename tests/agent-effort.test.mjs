@@ -132,6 +132,16 @@ test('the session text has one off-brief return line: a SendMessage correction b
   assert.doesNotMatch(lines[0], /fresh session/);
 });
 
+test('the session text has one Decided for you line within 380 bytes: list shape, 5-item cap, still-asked cases, number reply', () => {
+  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n').filter((l) => l.includes('**Decided for you**'));
+  assert.equal(lines.length, 1);
+  assert.ok(Buffer.byteLength(lines[0] + '\n') <= 380);
+  assert.match(lines[0], /up to 5 lines/);
+  assert.match(lines[0], /hardest to undo first/);
+  assert.match(lines[0], /irreversible, no safe default/);
+  assert.match(lines[0], /only a number → apply that alternative, no question; unknown number → repeat list/);
+});
+
 test('the Codex host note maps TaskStop to killing the process', () => {
   const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'codex', 'host-note.md'), 'utf8');
   assert.match(note, /^- Run TaskStop as killing the process\.$/m);

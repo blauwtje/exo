@@ -1,0 +1,6 @@
+{
+  "split": "train",
+  "choice": "the leftover cents go to the first people in the list",
+  "alternative": "the leftover cents go to the last people in the list",
+  "timeoutMinutes": 10
+}
