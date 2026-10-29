@@ -10,6 +10,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- The session start prunes `.exo/` entries whose newest file is older than `defaults.pruneAfterDays` (7, overridable in `~/.config/exo/run.json`), judging each child of `kept/`, `run-plan/` and `logs/` on its own; it keeps `.exo/run/`, symlinks and the folder with the newest `progress.md`, walks at most once per 24 hours through the `.exo/pruned-at` stamp, and build and task logs now go to `.exo/logs/<name>.log`.
 - `benchmarks/results/2026-10-28-flow-speed-research.md` records where real spec, build and verify session time goes; the speed ideas it queues for an `exo:improve` run are `build-task-stall-guard`, `lead-stages-verify-while-run-unit-builds` and `verdict-first-review-output-with-a-finding`.
 - `memory=off` (set through `/exo:configure`) switches the project memory off: the session start adds no memory pointer and `/exo:remember` writes and reads nothing; the memory file stays in place.
 - `node benchmarks/adhd-score.mjs --screen` scores one idea on a reduced case set for about $0.92 and under 2 min; `--dry-run` projects the cost before any call, `--rescore` re-judges stored replies with zero reply calls, `--cases` picks cases, and `--resume` continues a partial run; the score log records per-case cost and wall time.
@@ -54,6 +55,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - `node benchmarks/improve-speed.mjs` quick screen runs every cell `--repeat` asks for; it ran one, so `benchmarks/improve-all-score.mjs` failed every score with "1 of 3 cells recorded".
+- `node skills/spec/scripts/repo-map.mjs` writes an uncapped map by default, so it names all tracked files and a grep of the repo map finds files under `skills/` and `benchmarks/`; it named 318 of 1547 and showed those folders as one line each. `--cap <bytes>` still bounds the map.
 - `node benchmarks/improve-speed.mjs` looks up the pooled base under the installed Claude Code version when `--claude-version` is absent; `benchmarks/improve-all-score.mjs` passes no version, so every lookup used `unrecorded`, missed the pooled row and failed the score.
 - `exo:run-unit` dispatches its builds and repairs in the foreground and ends no turn while a build runs; since the subagent ended its turn to wait, the build notices went to the build lead, nothing landed, and 7 of 15 `flow-unit` cells stopped at about 70 s with 0 of 4 tasks landed.
 - The `flow-unit` fixture plan names a `node --test` Success criterion apart from its `Land gate: npm test`, so it passes the plan check; 6 of 15 cells stopped at that check before building.

@@ -52,3 +52,7 @@ test('deepseek and zai set no long-context window override', () => {
     for (const value of Object.values(provider.env)) assert.equal(value.includes('[1m]'), false)
   }
 })
+
+test('the catalog sets pruneAfterDays to a positive integer of 7 days', () => {
+  assert.equal(catalog.defaults.pruneAfterDays, 7)
+})

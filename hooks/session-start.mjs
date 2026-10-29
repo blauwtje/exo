@@ -9,6 +9,7 @@ import { currentHost } from '#host';
 import { memoryOn } from '#memory-store';
 import { inSidecall, readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
+import { pruneExo } from '#exo-prune';
 import { environmentMs } from '../lib/script-flags.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
 
@@ -103,6 +104,8 @@ try {
 
 // why: a detached run session (EXO_RUN_DIR, set by exo-cli.mjs for every spawned kind) reads no human-facing context; its final report is machine-read.
 if (process.env.EXO_RUN_DIR) process.exit(0);
+
+if (typeof input.cwd === 'string' && input.cwd !== '') pruneExo({ cwd: input.cwd });
 
 const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(input.cwd, input.source) : '';
 // why: the hook process starts wherever the host ran it; the session's folder, input.cwd, holds the project settings.

@@ -22,7 +22,7 @@ maxTurns: 60
 - 5 read-only calls in a row, named references aside → next call edits a `Files:` path; brief too thin → `BLOCKED <what is missing>`.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line`, a down service or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine`.
-- Run only the brief's `Proof:`, `Run:` or `--check` foreground, `timeout: 600000`, log to `.exo/<name>.log`, read only summary, failing lines; never `Monitor`, never `sleep` first.
+- Run only the brief's `Proof:`, `Run:` or `--check` foreground, `timeout: 600000`, log to `.exo/logs/<name>.log`, read only summary, failing lines; never `Monitor`, never `sleep` first.
 - Red `Proof:` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`, rerun at most once per edit; timeout or hang → finding, no rerun.
 
 ## Stop

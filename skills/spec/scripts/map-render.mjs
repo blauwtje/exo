@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 
-export const DEFAULT_CAP = 12000;
+export const DEFAULT_CAP = 0;
 
 const ROOT = '.';
 

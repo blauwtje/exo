@@ -19,6 +19,7 @@
     "#default-options-home": "./lib/default-options-home.mjs",
     "#derivation": "./verify/checks/derivation.mjs",
     "#evidence-rules": "./lib/evidence-rules.mjs",
+    "#exo-prune": "./lib/exo-prune.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",
     "#host": "./lib/host.mjs",
