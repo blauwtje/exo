@@ -38,6 +38,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Verify demotes a `fix` finding whose finding quote is not in its cited file to `report`, so no fixer runs for it; the `exo:improve` loop runs the tests covering the touched files in its fast check, rejects a reworded duplicate idea at 0.6 token overlap, and drafts a wider slate with a lever style per round.
 
 ### Changed
+- `exo:improve` runs its round workers on sonnet instead of opus: on the sort benchmark it reached the same score as `/goal` for $0.37 in 255 s, down from $1.15 in 460 s; `/goal` still costs $0.06 in 35 s, and the speed ledger records the tried and deferred improve cost ideas.
 - `exo:improve` runs in one step in the current session and the model starts it from a plain request: setup takes one baseline run, the lead dispatches one worker per round with a constant prompt pointing at a script-written brief, and `round.mjs` scores, keeps or resets; the gate, idea slate, confirm runs and keep margin are gone, `benchmarks/routing.mjs` takes `--skill` to rerun the routing eval for one skill, and `benchmarks/improve-vs-goal.mjs` compares improve with `/goal` on a sort fixture; its description adds 18 words to the session load, so `SESSION_LOAD_LOCK` is 1098.
 - The `exo:verify` skill is now `exo:gate` (`skills/gate/`, script `skills/gate/scripts/gate.mjs`), so it no longer shares its name with Claude Code's built-in verify skill; the run phase `verify` and `.exo/verify-state.json` keep their names, and the benchmark transcript parsers read both names, covered by `tests/lean-gates-metrics.test.mjs` and `tests/build-phases.test.mjs`.
 - Replies end with one short report of at most 3 lines when all work is done, no interim reports; the next step appears once, on the last line, as a bold action with its command in inline code, and every phrase and option label is in the user's language, not English only.
@@ -68,6 +69,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- The orchestrate agent works in phases, writes its result file first and updates it after each phase, has workers return at most 5 lines with detail in a file, reads only cited lines, and returns that file at exo's 60k context note, covered by `tests/agents.test.mjs`.
 - The gate no longer reports an assertion replaced in the same hunk as a removed assertion, so a test updated for an intended behavior change no longer shows as a weakened test; Node CPU profiles (`*.cpuprofile`) stay out of git.
 - The gate review diff shows a deleted file as its header only (`git diff --irreversible-delete`), so a branch that deletes many files no longer splits into one `DISPATCH Branch` reviewer per deleted file; covered by `tests/verify-shards.test.mjs`.
 - The statusline `ctx` count stays green at every token count; the cyan band from 60k and the purple band from 80k are gone.

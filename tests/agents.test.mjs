@@ -371,3 +371,12 @@ test('orchestrate holds Agent, Write and TaskStop, loads the project CLAUDE.md a
   assert.equal(orchestrate.frontmatter.omitClaudeMd, undefined);
   assert.equal(kindTable.agents['agents/orchestrate.md'].kind, 'coordinate');
 });
+
+test('orchestrate works in phases, keeps worker detail in files and hands over at the exo context note', () => {
+  const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrate');
+  assert.match(body, /Before the first dispatch → write the result file/);
+  assert.match(body, /After each phase → [^\n]*result file/);
+  assert.match(body, /at most 5 lines, detail in a named file/);
+  assert.match(body, /never a whole log, diff or detail file/);
+  assert.match(body, /exo context note → [^\n]*no new phase[^\n]*return its path/);
+});

@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-29",
+  "tier": "quick",
+  "model": "sonnet",
+  "capUsd": 1.5,
+  "goal": "Lower the comparisons= count that node score.mjs prints; sort.mjs must keep sorting correctly, using only the compare function it is given",
+  "prompts": {
+    "improve": "/exo:improve Lower the comparisons= count that node score.mjs prints; sort.mjs must keep sorting correctly, using only the compare function it is given",
+    "goal": "/goal Lower the comparisons= count that node score.mjs prints; sort.mjs must keep sorting correctly, using only the compare function it is given; score.mjs stays unchanged; or stop after 10 turns"
+  },
+  "baseline": {
+    "score": 398000,
+    "heldOut": 132790,
+    "correct": true,
+    "scorerUnchanged": true
+  },
+  "runs": [
+    {
+      "arm": "improve",
+      "costUsd": 0.6969,
+      "costSource": "result",
+      "wallS": 377,
+      "killed": false,
+      "subtype": "success",
+      "numTurns": 1,
+      "models": [
+        "claude-sonnet-5-5"
+      ],
+      "finalRef": "refs/heads/improve/oct29",
+      "score": 24971,
+      "heldOut": 7145,
+      "correct": true,
+      "scorerUnchanged": true,
+      "log": "/var/folders/tv/clc4z5g11k7dqz71wkq3k9kh0000gn/T/improve-vs-goal-improve-1793298628556.jsonl"
+    }
+  ]
+}

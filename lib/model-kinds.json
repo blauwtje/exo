@@ -36,7 +36,7 @@
       "on": { "tier": "strong", "effort": "high" }
     },
     "improve-round": {
-      "on": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "review": {
       "on": { "tier": "strong", "effort": "high" }
