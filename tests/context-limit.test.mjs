@@ -166,3 +166,24 @@ test('the SubagentStart hook gives every subagent the limits and the hand-over r
   assert.equal(out.hookSpecificOutput.additionalContext, subagentStartNote());
   assert.match(subagentStartNote(), /60k.*80k.*except Write.*result file/s);
 });
+
+test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {
+  const { hookAgentType } = await import('../lib/context-limits.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-type-'));
+  const transcript_path = path.join(dir, 'session.jsonl');
+  const subagents = path.join(dir, 'session', 'subagents');
+  fs.mkdirSync(subagents, { recursive: true });
+  fs.writeFileSync(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'exo:build-task' }));
+  fs.writeFileSync(path.join(subagents, 'agent-a2.meta.json'), '{broken');
+  fs.writeFileSync(path.join(subagents, 'agent-a3.meta.json'), JSON.stringify({ agentType: '' }));
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'exo:fix-review', transcript_path }), 'fix-review');
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'build-task', transcript_path }), 'build-task');
+  assert.equal(hookAgentType({ agent_id: 'a1', transcript_path }), 'build-task');
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_transcript_path: path.join(subagents, 'agent-a1.jsonl') }), 'build-task');
+  assert.equal(hookAgentType({ agent_id: 'a2', transcript_path }), null);
+  assert.equal(hookAgentType({ agent_id: 'a3', transcript_path }), null);
+  assert.equal(hookAgentType({ agent_id: 'missing', transcript_path }), null);
+  assert.equal(hookAgentType({ transcript_path }), null);
+  assert.equal(hookAgentType({}), null);
+  assert.equal(hookAgentType(undefined), null);
+});

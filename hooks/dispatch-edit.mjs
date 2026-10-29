@@ -3,11 +3,13 @@ import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { impactFields } from '../lib/edit-impact.mjs';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
+import { syntaxFields } from '../lib/edit-syntax.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';
 
 const STEPS = [
   { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) },
+  { name: 'edit-syntax', run: syntaxFields },
   { name: 'edit-impact', run: impactFields }
 ];
 

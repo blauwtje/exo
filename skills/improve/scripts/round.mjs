@@ -6,10 +6,11 @@ import path from 'node:path';
 import process from 'node:process';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { gate, outOfScope } from './gate.mjs';
+import { gate, outOfScope, RATIO_LINE } from './gate.mjs';
 
 const USAGE = 'usage: node round.mjs --root <dir> --tag <tag> --commit <hash> --idea <path> [--adopt]';
 
+const IDEA_TAGS = ['mechanism', 'revisits', 'merges'];
 const keyText = (key) => `${key.area}/${key.lever}/${key.target}`;
 const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
@@ -34,6 +35,11 @@ function readScore(output, cfg) {
   const last = matches.at(-1);
   const value = last === undefined ? NaN : Number(last[1] ?? last[0]);
   return Number.isFinite(value) ? value : null;
+}
+
+function readRatios(log) {
+  const lines = [...fs.readFileSync(log, 'utf8').matchAll(RATIO_LINE)];
+  return Object.fromEntries(lines.map((line) => [line[1], Number(line[2])]));
 }
 
 function scoreOnce(cfg, cwd, log) {
@@ -95,17 +101,18 @@ function scoreAt(cfg, cwd, commit, log) {
 function confirm({ cfg, cwd, kept, commit, screen, pool, log }) {
   const again = runScore(cfg, cwd, log);
   if (again.stop) return { stop: `scorer-changed ${again.stop}` };
-  if (again.crash) return { status: 'crash', score: 0, crash: true, note: 'confirm crash candidate', kept, scores: [screen] };
+  if (again.crash) return { status: 'crash', score: 0, crash: true, note: 'confirm crash candidate', reason: 'crash', kept, scores: [screen] };
   const fresh = scoreAt(cfg, cwd, kept.commit, log);
   if (fresh.stop) return { stop: fresh.stop };
-  if (fresh.crash) return { status: 'crash', score: 0, crash: true, note: 'confirm crash kept', kept, scores: [screen, again.score] };
+  if (fresh.crash) return { status: 'crash', score: 0, crash: true, note: 'confirm crash kept', reason: 'crash', kept, scores: [screen, again.score] };
   const scores = [screen, again.score];
   const keptScores = [...pool, fresh.score];
   const score = mean(scores);
   const base = mean(keptScores);
   const status = keepOrDiscard({ cfg, cwd, kept, commit, score, base });
   const note = `confirm: candidate ${scores.join(',')}, kept fresh ${fresh.score} pool mean ${base}`;
-  return { status, score, delta: score - base, flat: Math.abs(score - base) <= 2 * (cfg.sd ?? 0), kept, note, scores, keptScores: [fresh.score] };
+  const reason = status === 'discard' ? confirmReason({ cfg, score, base }) : undefined;
+  return { status, score, delta: score - base, flat: Math.abs(score - base) <= 2 * (cfg.sd ?? 0), kept, note, reason, scores, keptScores: [fresh.score] };
 }
 
 function adopt({ cwd, commit, idea, cfg, root, tag }) {
@@ -126,15 +133,31 @@ function decide({ cfg, cwd, root, dir, tag, commit, idea, rows, log }) {
   const verdict = gate({ root, tag, idea });
   const scope = outOfScope(git(cwd, 'diff', '--name-only', kept.commit, commit).out.split('\n').filter(Boolean), cfg);
   const refusal = (verdict.ok ? null : `gate: ${verdict.reason}`) ?? scope;
-  if (refusal) return { status: 'discard', score: kept.score, crash: true, note: refusal, kept };
+  if (refusal) return { status: 'discard', score: kept.score, crash: true, note: refusal, reason: refusal, kept };
   const result = runScore(cfg, cwd, log);
   if (result.stop) return { stop: `scorer-changed ${result.stop}` };
-  if (result.crash) return { status: 'crash', score: 0, crash: true, note: 'crash', kept };
+  const ratios = readRatios(log);
+  if (result.crash) return { status: 'crash', score: 0, crash: true, note: 'crash', reason: 'crash', kept, ratios };
+  return { ...judge({ cfg, cwd, dir, tag, commit, kept, result, log }), ratios };
+}
+
+function judge({ cfg, cwd, dir, tag, commit, kept, result, log }) {
   const pool = keptPool(readIdeas(dir, tag), kept);
   const base = mean(pool);
   if (cfg.confirm && gain(cfg, result.score, base) > margin(cfg)) return confirm({ cfg, cwd, kept, commit, screen: result.score, pool, log });
   const status = keepOrDiscard({ cfg, cwd, kept, commit, score: result.score, base });
-  return { status, score: result.score, delta: result.score - base, flat: Math.abs(result.score - base) <= 2 * (cfg.sd ?? 0), kept, scores: [result.score] };
+  const flat = Math.abs(result.score - base) <= 2 * (cfg.sd ?? 0);
+  const reason = status === 'discard' ? discardReason({ cfg, score: result.score, base, flat }) : undefined;
+  return { status, score: result.score, delta: result.score - base, flat, kept, reason, scores: [result.score] };
+}
+
+function discardReason({ cfg, score, base, flat }) {
+  if (flat) return 'flat within 2*sd';
+  return gain(cfg, score, base) > 0 ? 'below-margin' : 'worse';
+}
+
+function confirmReason({ cfg, score, base }) {
+  return gain(cfg, score, base) > 2 * (cfg.sd ?? 0) ? 'below-margin' : 'confirm failed';
 }
 
 function record({ dir, tag, rows, commit, idea, outcome, started, cwd }) {
@@ -144,6 +167,9 @@ function record({ dir, tag, rows, commit, idea, outcome, started, cwd }) {
   const line = {
     round: rows.length, key: keyText(idea.key), parts: (idea.parts ?? [idea.key]).map(keyText), commit, score, status,
     delta: outcome.delta ?? 0, flat: outcome.flat ?? false, crash: outcome.crash ?? false, started, at: new Date().toISOString(),
+    ...(outcome.reason ? { reason: outcome.reason } : {}),
+    ...(outcome.ratios && Object.keys(outcome.ratios).length > 0 ? { ratios: outcome.ratios } : {}),
+    ...Object.fromEntries(IDEA_TAGS.filter((name) => idea[name] !== undefined).map((name) => [name, idea[name]])),
     ...(outcome.scores ? { scores: outcome.scores } : {}), ...(outcome.keptScores ? { kept: outcome.kept.commit, keptScores: outcome.keptScores } : {}),
   };
   fs.appendFileSync(path.join(dir, `${tag}.ideas.jsonl`), `${JSON.stringify(line)}\n`);

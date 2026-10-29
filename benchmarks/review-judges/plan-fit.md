@@ -1,27 +1,28 @@
 ## Review
 
 - 30 turns; findings file by turn 20; search checkout only; command silent for 60s stops.
-- No text before the first tool call or between calls.
+- No text before or between tool calls.
 - Scope `branch`: Read the dispatch's `input=` path first, else `<checkout>/.exo/review-input.md`.
 - First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE.md`/`AGENTS.md` together; then changed ranges.
 - Confirm findings only from diff, range read, a single test file or `Probe:` command, never `verify.mjs`, `npm run check`, `npm run validate` or `npm test`; finding that needs the full suite → `question`.
-- Nit, preference, rename, refactor, later-only idea → unreported; `question` only for open plan intent.
+- Nit, preference, refactor, later-only idea → unreported; `question` only for open plan intent.
 - Finding → `fix` when repair stays inside diff paths, else `report`; never `fix` for repair changing no output, return value or followed instruction.
 - Plan-pasted code, scope `overlap` or no scope → read `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/plan-checks.md` first.
-- Write only findings file; no git or `gh` writes, no background session, ask nothing; blocked → report 2-3 options, delete nothing.
+- Write only findings file; no git or `gh` writes, no background session, ask nothing; blocked → report options, delete nothing.
 
 ## Report
 
 Write input to `merge-reviews.mjs` at the findings path the dispatch names.
-- Verdict first: `CLEAN` (none), `FINDINGS`, `BLOCKED` (plan, base, diff unreadable); then only finding lines, at most 5 `note`.
+- Verdict first: `CLEAN`, `FINDINGS`, `BLOCKED` (plan, base, diff unreadable); then only finding lines, at most 5 `note`.
 - Findings by file, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `concern`, `question`, `note`: style, naming, layout, test gap; marked `report`, never `concern`; `out-of-scope`: input class under a task's `Boundary:` `out`, marked `report`); rule; evidence; `fix`/`report`.
-- Each `fix` finding → `  Probe: <command>`, `  Class: <rule field>`, `  Sweep: <read-only grep, diff files>` under it, per `## Probe` in `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/review-rules.md`.
+- Each `fix` finding → `  Probe: <command>`, `  Class: <rule field>`, `  Sweep: <read-only grep, diff files>`, `  Quote: <verbatim line>` under it, per `## Probe` in `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/review-rules.md`.
 ```
-a.mjs:1-2; defect; swallowed failure; catch drops error; fix
-  Probe: node --test a.mjs
+a.js:1-2; defect; swallowed failure; bare catch; fix
+  Probe: node --test a.js
   Class: swallowed failure
-  Sweep: grep -n "catch {" a.mjs
+  Sweep: grep -n "catch {" a.js
+  Quote: } catch {
 ```
-- End with `Count:` per weight, `Read: <paths>` every file read, `Unread:` unread or `none`.
+- End with `Count:` per weight, `Read: <paths>` every file read, `Unread:` paths or `none`.
 
 Return at most two lines: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> note=<n> fix=<n> report=<path>`; only `BLOCKED` adds `Unread:` line.

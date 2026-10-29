@@ -241,3 +241,74 @@ test('--stop-after n prints STOP no-keep n after n rounds without a keep, and a 
   assert.equal(status, 0);
   assert.equal(fs.readFileSync(path.join(root, '.exo/improve/t.status'), 'utf8').trim(), 'STOP no-keep 2');
 });
+
+test('a scored round stores the per-case ratios of its run log, and a keep carries no reason', () => {
+  const root = setup();
+  const commit = commitEdit(root, 'c1 ratio=0.25\nc2 ratio=1\nscore=7\n');
+  round(root, commit, idea('one'));
+  const line = ideas(root).at(-1);
+  assert.deepEqual(line.ratios, { c1: 0.25, c2: 1 });
+  assert.equal(line.reason, undefined);
+});
+
+test('a discard stores worse, flat within 2*sd, or confirm failed as its reason', () => {
+  const root = setup();
+  round(root, commitEdit(root, 'score=12\n'), idea('one'));
+  assert.equal(ideas(root).at(-1).reason, 'worse');
+  configure(root, { sd: 1 });
+  round(root, commitEdit(root, 'score=10.5\npad\n'), idea('two'));
+  assert.equal(ideas(root).at(-1).reason, 'flat within 2*sd');
+  configure(root, { sd: 1, keepMargin: 1, confirm: true, ...sequence(root, [7, 11, 9]) });
+  round(root, commitEdit(root, 'score=0\npad\n'), idea('three'));
+  assert.equal(ideas(root).at(-1).reason, 'confirm failed');
+});
+
+test('a discard past 2*sd better but under the keep margin stores below-margin, and one past 2*sd worse stores worse', () => {
+  const root = setup();
+  configure(root, { sd: 1, keepMargin: 4 });
+  round(root, commitEdit(root, 'score=7\npad\n'), idea('one'));
+  assert.equal(ideas(root).at(-1).status, 'discard');
+  assert.equal(ideas(root).at(-1).reason, 'below-margin');
+  round(root, commitEdit(root, 'score=13\npad\n'), idea('two'));
+  assert.equal(ideas(root).at(-1).reason, 'worse');
+});
+
+test('a failed confirm past 2*sd better but under the keep margin stores below-margin', () => {
+  const root = setup();
+  configure(root, { sd: 1, keepMargin: 4, confirm: true, ...sequence(root, [5, 7, 10]) });
+  round(root, commitEdit(root, 'score=0\npad\n'), idea('one'));
+  assert.equal(ideas(root).at(-1).status, 'discard');
+  assert.equal(ideas(root).at(-1).reason, 'below-margin');
+});
+
+test('a crash row stores crash, and a refusal row stores its note with no ratios', () => {
+  const root = setup({ command: 'echo nothing' });
+  round(root, commitEdit(root, 'score=7\n'), idea('one'));
+  assert.equal(ideas(root).at(-1).reason, 'crash');
+  round(root, commitEdit(root, 'other\n', 'lib.txt'), idea('two'));
+  const refused = ideas(root).at(-1);
+  assert.match(refused.reason, /out of scope/);
+  assert.equal(refused.ratios, undefined);
+});
+
+test('a confirm round keeps the ratios of the screen run, not the confirm reruns', () => {
+  const root = setup();
+  const counted = sequence(root, [7, 8, 10]);
+  configure(root, { sd: 1, keepMargin: 1, confirm: true, ...counted, command: `${counted.command}; echo "c1 ratio=$(cat .exo/seq.n)"` });
+  round(root, commitEdit(root, 'score=0\npad\n'), idea('one'));
+  assert.deepEqual(ideas(root).at(-1).ratios, { c1: 1 });
+});
+
+test('mechanism, revisits and merges are copied from the idea file when set', () => {
+  const root = setup();
+  round(root, commitEdit(root, 'score=7\n'), idea('one', { mechanism: 'skip the parse', revisits: [2], merges: [3, 4] }));
+  const line = ideas(root).at(-1);
+  assert.equal(line.mechanism, 'skip the parse');
+  assert.deepEqual(line.revisits, [2]);
+  assert.deepEqual(line.merges, [3, 4]);
+  round(root, commitEdit(root, 'score=6\n'), idea('two'));
+  const plain = ideas(root).at(-1);
+  assert.equal('mechanism' in plain, false);
+  assert.equal('revisits' in plain, false);
+  assert.equal('merges' in plain, false);
+});

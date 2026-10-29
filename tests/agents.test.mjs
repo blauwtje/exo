@@ -261,6 +261,12 @@ test('the branch reviewer keeps each finding on one line and shows an example th
   assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|concern|question|note)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
 });
 
+test('the branch reviewer quotes one verbatim line under each fix finding, after Probe, Class and Sweep', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  assert.match(reviewer.body, /`  Sweep: <read-only grep, diff files>`, `  Quote: <verbatim line>` under it/, 'the fix rule names the Quote line after Sweep');
+  assert.match(reviewer.body, /^ {2}Probe: \S.*\n {2}Class: \S.*\n {2}Sweep: \S.*\n {2}Quote: \S/m, 'the example finding ends with a Quote line');
+});
+
 test('the branch reviewer confirms with one test file or Probe command, never the full suite', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.match(reviewer.body, /single test file or `Probe:` command/, 'only a single test file or Probe command');

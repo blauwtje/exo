@@ -7,6 +7,7 @@ import process from 'node:process';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
 
 const FLAT_RUN = 3;
+const SAME_IDEA = 0.6;
 const USAGE = 'usage: node gate.mjs --root <dir> --tag <tag> --idea <path> (round.mjs calls gate() directly)';
 
 const keyText = (key) => (typeof key === 'string' ? key : `${key?.area}/${key?.lever}/${key?.target}`);
@@ -59,12 +60,14 @@ export function outOfScope(files, cfg) {
   return at < 0 ? null : `file out of scope: ${files[at]}`;
 }
 
+export const RATIO_LINE = /^(\S+) ratio=(\d+(?:\.\d+)?)/gm;
+
 // why: each `<id> ratio=<n>` line is one case; its headroom is the distance to the best bound, 0 when lower is better and 1 when higher is.
 function caseHeadroom(root, direction) {
   const source = path.join(root, '.exo', 'improve', 'run.log');
   if (!fs.existsSync(source)) return null;
   const best = direction === 'higher' ? 1 : 0;
-  const cases = [...fs.readFileSync(source, 'utf8').matchAll(/^(\S+) ratio=(\d+(?:\.\d+)?)/gm)].map((m) => ({ id: m[1], room: Math.abs(Number(m[2]) - best) }));
+  const cases = [...fs.readFileSync(source, 'utf8').matchAll(RATIO_LINE)].map((m) => ({ id: m[1], room: Math.abs(Number(m[2]) - best) }));
   return cases.length === 0 ? null : cases;
 }
 
@@ -86,14 +89,32 @@ function checkEvidence(idea) {
   return /[\w./-]+:\d+/.test(text) || /\brow \d+\b/i.test(text) ? null : 'evidence needs file:line or an earlier row';
 }
 
+const tokensOf = (text) => new Set(String(text).toLowerCase().match(/[a-z0-9]+/g) ?? []);
+const ideaText = (line) => line.mechanism ?? [line.key, ...(line.parts ?? [])].map(keyText).join(' ');
+
+function overlap(left, right) {
+  const shared = [...left].filter((token) => right.has(token)).length;
+  const union = left.size + right.size - shared;
+  return union === 0 ? 0 : shared / union;
+}
+
+const flatTail = (live) => {
+  const tail = live.slice(-FLAT_RUN);
+  return tail.length === FLAT_RUN && tail.every((line) => line.flat);
+};
+
 function checkHistory(idea, ideas) {
+  const lifted = new Set([idea.revisits, ...(idea.merges ?? [])].filter((round) => round !== undefined));
   const mine = new Set([idea.key, ...(idea.parts ?? [])].map(keyText));
   const live = ideas.filter((line) => !line.crash);
-  const seen = new Set(live.flatMap((line) => [line.key, ...(line.parts ?? [])].map(keyText)));
+  const compared = live.filter((line) => !lifted.has(line.round));
+  const seen = new Set(compared.flatMap((line) => [line.key, ...(line.parts ?? [])].map(keyText)));
   const dup = [...mine].find((key) => seen.has(key));
   if (dup) return `duplicate key ${dup}`;
-  const tail = live.slice(-FLAT_RUN);
-  if (tail.length === FLAT_RUN && tail.every((line) => line.flat)) {
+  const words = tokensOf(ideaText(idea));
+  const reworded = compared.find((line) => overlap(words, tokensOf(ideaText(line))) >= SAME_IDEA);
+  if (reworded) return `reworded duplicate of round ${reworded.round}: revisit or merge it, or change the mechanism`;
+  if (flatTail(live)) {
     const touched = new Set(ideas.map((line) => areaOf(line.key)));
     if (touched.has(idea.key.area)) return `${FLAT_RUN} flat rounds in a row: pick an untouched area, not ${idea.key.area}`;
   }
@@ -119,7 +140,8 @@ export function gate({ root, tag, idea }) {
     ?? checkEvidence(idea)
     ?? checkHistory(idea, ideas)
     ?? checkHeadroom(idea, caseHeadroom(root, cfg.direction), cfg.sd);
-  return found ? { ok: false, reason: found } : { ok: true };
+  const radical = flatTail(ideas.filter((line) => !line.crash));
+  return found ? { ok: false, reason: found, radical } : { ok: true, radical };
 }
 
 function main() {
@@ -132,6 +154,7 @@ function main() {
     process.exit(2);
   }
   const result = gate({ root: flags.root, tag: flags.tag, idea: readJson(flags.idea) });
+  if (result.radical) process.stdout.write('NOTE radical\n');
   process.stdout.write(result.ok ? 'PASS\n' : `REJECT ${result.reason}\n`);
   process.exit(result.ok ? 0 : 1);
 }

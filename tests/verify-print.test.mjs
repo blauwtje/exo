@@ -118,6 +118,17 @@ test('merge-reviews.mjs prints the FINDING lines after its verdict line and the 
   await assert.rejects(fs.access(path.join(root, 'rundir', 'decisions.md')), 'inside a run the merge records no decision');
 });
 
+test('merge-reviews.mjs prints one DEMOTED-QUOTE line per fix finding whose quote is not in its file and lists it as a FINDING', async () => {
+  const { root } = await landingCheckout();
+  const report = path.join(root, 'review-branch.md');
+  const quoted = (quote) => ['src/app.js:1; defect; wrong greeting; greet returns nothing; fix', '  Probe: true', '  Class: wrong greeting', '  Sweep: true', `  Quote: ${quote}`, ''].join('\n');
+  await fs.writeFile(report, `FINDINGS\n${quoted('`export function greet() {}`')}${quoted('`return "bye"`').replace('app.js:1', 'app.js:2')}`);
+  const lines = run('merge-reviews.mjs', ['--root', root, '--report', report]).trim().split('\n');
+  assert.match(lines[0], /^verdict=FINDINGS .* fix=1 /);
+  assert.deepEqual(lines.filter((line) => line.startsWith('DEMOTED')), ['DEMOTED-QUOTE src/app.js:2']);
+  assert.ok(lines.includes('FINDING src/app.js:2; defect; wrong greeting; greet returns nothing; report'), lines.join('\n'));
+});
+
 test('the task list states the 15,000-token task cap that plan-check enforces', async () => {
   const taskList = await fs.readFile(path.join(SCRIPTS, '..', '..', 'spec', 'references', 'task-list.md'), 'utf8');
   assert.equal(TASK_SPLIT_TOKENS, 15_000);

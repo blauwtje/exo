@@ -55,6 +55,52 @@ test('three flat rounds redirect to an untouched area', () => {
   assert.equal(run(root, good).ok, true);
 });
 
+const worded = (area, mechanism, extra = {}) => line(area, { mechanism, ...extra });
+const reword = (mechanism, extra = {}) => ({ ...good, key: key('b', 'x'), parts: [key('b', 'x')], mechanism, ...extra });
+const cache = 'cache the parsed plan so every unit reads it once';
+
+test('rejects a reworded duplicate by mechanism overlap, passes a different mechanism', () => {
+  const root = setup({ ideas: [worded('a', cache, { round: 2 })] });
+  assert.match(run(root, reword('cache the parsed plan so each unit reads it once')).reason, /reworded duplicate of round 2/);
+  assert.equal(run(root, reword('skip the lint step when no source file changed')).ok, true);
+});
+
+test('overlap falls back to key and parts text when a mechanism is missing', () => {
+  const root = setup({ ideas: [line('a', { key: 'a/trim/skills/build/agents/worker.md', parts: ['a/trim/skills/build/agents/worker.md'], round: 4 })] });
+  const near = { ...good, key: key('a', 'trim', 'skills/build/agents/worker.mjs'), parts: [key('a', 'trim', 'skills/build/agents/worker.mjs')] };
+  assert.match(run(root, near).reason, /reworded duplicate of round 4/);
+});
+
+test('a revisit or merge lifts the duplicate and overlap reject for that round only', () => {
+  const root = setup({ ideas: [worded('a', cache, { round: 2 }), worded('c', 'run the unit tests in parallel workers', { round: 3 })] });
+  const same = reword(cache);
+  assert.equal(run(root, { ...same, revisits: 2 }).ok, true);
+  assert.match(run(root, { ...same, revisits: 3 }).reason, /round 2/);
+  assert.equal(run(root, { ...same, merges: [2, 3] }).ok, true);
+  const keyed = setup({ ideas: [line('a', { round: 1 })] });
+  assert.equal(run(keyed, { ...good, revisits: 1 }).ok, true);
+  assert.match(run(keyed, { ...good, revisits: 9 }).reason, /duplicate key/);
+});
+
+test('a crashed row is not compared for overlap', () => {
+  const root = setup({ ideas: [worded('a', cache, { crash: true })] });
+  assert.equal(run(root, reword(cache)).ok, true);
+});
+
+test('cli prints NOTE radical before the verdict after three flat rounds', () => {
+  const flat = ['b', 'c', 'd'].map((area) => line(area, { flat: true }));
+  const root = setup({ ideas: flat });
+  const file = path.join(root, 'idea.json');
+  fs.writeFileSync(file, JSON.stringify(good));
+  const flatRun = spawnSync('node', [script, '--root', root, '--tag', 't', '--idea', file], { encoding: 'utf8' });
+  assert.equal(flatRun.stdout, 'NOTE radical\nPASS\n');
+  const mixed = setup({ ideas: [line('b', { flat: true }), line('c'), line('d', { flat: true })] });
+  const plain = spawnSync('node', [script, '--root', mixed, '--tag', 't', '--idea', file], { encoding: 'utf8' });
+  assert.equal(plain.stdout, 'PASS\n');
+  const crashed = setup({ ideas: [...flat, line('e', { crash: true })] });
+  assert.equal(spawnSync('node', [script, '--root', crashed, '--tag', 't', '--idea', file], { encoding: 'utf8' }).stdout, 'NOTE radical\nPASS\n');
+});
+
 test('rejects an idea whose targeted cases have less headroom than 2*sd, whatever it expects', () => {
   const log = 'c1 ratio=0.10\nc2 ratio=0.95\n';
   const root = setup({ log, cfg: { sd: 0.2 } });

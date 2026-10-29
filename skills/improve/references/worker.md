@@ -17,7 +17,7 @@ Propose one idea that raises the score of an unattended improve run, make it as 
 
 - `<tag>.json` → goal, scope globs, read-only paths, score command, direction, sd, fast check.
 - `<tag>.tsv` → every earlier round: commit, score, status, description.
-- `<tag>.ideas.jsonl` → every earlier idea: key, parts, delta, flat and crash flags.
+- `<tag>.ideas.jsonl` → every earlier idea: key, parts, delta, flat and crash flags, `ratios`, discard `reason`, `mechanism`, `revisits`, `merges`; per area, read the best keep beside the worst discard, their `ratios` and `reason`.
 - `run.log` → the last score run; its `<id> ratio=<n>` lines show which cases hold the most headroom.
 - Then the in-scope files the goal's outcome depends on.
 - `<note>` = `out-of-ideas` → reread every in-scope file, combine near-misses from earlier rows, and aim at a larger change than any earlier key.
@@ -25,15 +25,18 @@ Propose one idea that raises the score of an unattended improve run, make it as 
 ## Steps
 
 1. `git -C <worktree> reset --hard <base>`, `<base>` = the commit of the last `keep` row in the tsv; the worktree holds no other work.
-2. Draft a slate of ideas across at least 3 areas; an area is one part the score depends on, such as a prompt section, a module or a config file.
-3. Pick the idea with the largest expected gain that has evidence.
+2. Draft a slate of 8-10 ideas across at least 3 areas; an area is one part the score depends on, such as a prompt section, a module or a config file.
+   - Each idea is as different as it can be from every earlier row, with no near-duplicate left.
+   - Round = rows in the tsv; the round's lever style is item (round mod 4) of: remove a stage, change who owns a step, merge two steps, change the model tier.
+   - Rate each idea 1-10 for gain and 1-10 for novelty, then one reflection pass: re-read the slate, fix a rating that does not hold.
+3. Pick the idea with the largest gain times novelty that has evidence.
 4. Write it to `<idea>` in the shape below.
 5. Run `node <skill>/scripts/gate.mjs --root <root> --tag <tag> --idea <idea>`.
-6. `REJECT <reason>` → next idea on the slate, rewrite the file, gate again; slate used up → draft one new slate; still no `PASS` → return `NO-IDEA <last reason>`.
+6. `REJECT <reason>` → next idea on the slate, rewrite the file, gate again; slate used up → draft one new slate; still no `PASS` → return `NO-IDEA <last reason>`. `NOTE radical` → the next slate drops small tweaks.
 7. `PASS` → edit only files the scope globs match, in `<worktree>`.
-8. Fast check set → run it once in `<worktree>`, output to a file, not the chat; it fails → fix the error it names, no rerun.
+8. Run `node <skill>/scripts/fast-check.mjs --root <root> --tag <tag>` once, output to a file, not the chat; it runs the fast check and the tests covering the touched files; `FAST-CHECK fail <command>` → fix the error that command names, no rerun.
 9. Commit once in `<worktree>`: subject = the change in plain words under 72 characters, since it becomes the row's description.
-10. Commit body → `Proof: <fast check> → <result>`, or `Proof: no fast check set`; then one `Improve-key: <area>/<lever>/<target>` trailer per part.
+10. Commit body → `Proof: fast-check.mjs → <FAST-CHECK line>`; then one `Improve-key: <area>/<lever>/<target>` trailer per part.
 11. Return the line.
 
 ## Idea rules
@@ -44,6 +47,8 @@ Propose one idea that raises the score of an unattended improve run, make it as 
 - Same lever on the same target → same idea under any name; give it the earlier key's exact words, so the gate rejects it.
 - Crashed key → may be retried, with the crash's cause fixed.
 - Last 3 rows within 2·sd of each other → pick from the largest area no earlier key touched.
+- Revisit → after a keep, an earlier discard whose `reason` the keep voids may be proposed again with `revisits` = that round.
+- Merge → two discards from different areas that each won a ratio in `ratios` may be proposed as one idea with `merges` = both rounds; `parts` is the key itself.
 - Evidence → each idea cites a `file:line` or an earlier row that shows why it should help.
 - Unsure whether a file is in scope → it is not; take another idea.
 - Scorer gaming → out of bounds even when the gate passes it: no edit to what the scorer reads, no special case for its cases, no cut of content the goal needs.
@@ -57,10 +62,13 @@ Propose one idea that raises the score of an unattended improve run, make it as 
  "parts": [{"area": "parser", "lever": "single-pass", "target": "src/parse.ts"}],
  "files": ["src/parse.ts"],
  "evidence": ["src/parse.ts:88", "run.log case-12 ratio=0.41"],
+ "mechanism": "parse the file once and reuse the tree for every rule",
  "expected": 0.08}
 ```
 
 - `parts` → the key itself for a single idea, up to 3 same-area keys for a bundle.
+- `mechanism` → one sentence on how the idea works; the gate rejects a mechanism that overlaps an earlier row's by 0.6 or more.
+- `revisits` → optional, one earlier round number; `merges` → optional, two earlier round numbers; the gate then accepts those rounds' keys again.
 - `expected` → the gain you expect, in the score's units.
 
 ## Return

@@ -14,7 +14,8 @@ const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
 const PROBE_LINE = /^\s*Probe:\s*\S/;
 const CLASS_LINE = /^\s*Class:\s*\S/;
 const SWEEP_LINE = /^\s*Sweep:\s*\S/;
-const FIX_DETAIL_LINE = /^\s*(?:Probe|Class|Sweep):\s*\S/;
+const QUOTE_LINE = /^\s*Quote:\s*(\S.*)$/;
+const FIX_DETAIL_LINE = /^\s*(?:Probe|Class|Sweep|Quote):\s*\S/;
 const MECHANICAL_REPORT = 'code-rules';
 const UNREAD = /\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\W*$/;
 const LOCATION = /^\s*(?:[-*]\s*)?(\S+?):(\d+)(?:-(\d+))?\b(.*)$/;
@@ -123,6 +124,16 @@ function hasFixDetails(lines, index, name) {
   return CLASS_LINE.test(lines[index + 2] ?? '') && SWEEP_LINE.test(lines[index + 3] ?? '');
 }
 
+const collapsed = (text) => text.replace(/\s+/g, ' ').trim();
+
+function quoteAbsent(quoteLine, file, root) {
+  const quote = QUOTE_LINE.exec(quoteLine ?? '')?.[1];
+  if (quote === undefined) return false;
+  const shown = spawnSync('git', ['-C', root, 'show', `HEAD:${repoRelative(file, root)}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  if (shown.status !== 0) return true;
+  return !collapsed(shown.stdout).includes(collapsed(quote.replace(/^`(.*)`$/, '$1')));
+}
+
 function recurringOf(findings, prior) {
   return findings.filter((finding) => finding.state === 'open' && prior.has(findingKey(finding)))
     .map((finding) => ({ now: finding, before: prior.get(findingKey(finding)) }));
@@ -133,6 +144,7 @@ const reading = ({ round, path: file, range, weight }) => `round ${round}: ${fil
 export function mergeReviews(reports, prior = new Map(), changed = null, root = null) {
   const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0, 'out-of-scope': 0 };
   let demoted = 0;
+  const quoteDemoted = [];
   let unread = 0;
   let unreadFix = 0;
   let verdict = 'CLEAN';
@@ -158,15 +170,19 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
       }
       counts[match[1]] += 1;
       const outOfScope = match[1] === 'out-of-scope';
+      const parsed = parseFinding(line);
       let reported = match[2] !== 'fix';
-      if (!reported && !outOfScope && hasFixDetails(lines, index, name)) {
+      const detailed = !reported && !outOfScope && hasFixDetails(lines, index, name);
+      const unquoted = detailed && name !== MECHANICAL_REPORT && root !== null && quoteAbsent(lines[index + 4], parsed.path, root);
+      if (detailed && !unquoted) {
         counts.fix += 1;
       } else if (!reported) {
-        if (!outOfScope) demoted += 1;
+        if (unquoted) quoteDemoted.push(`${parsed.path}:${parsed.range}`);
+        else if (!outOfScope) demoted += 1;
         reported = true;
         lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
       }
-      findings.push({ ...parseFinding(line), weight: match[1], state: reported ? 'reported' : 'open' });
+      findings.push({ ...parsed, weight: match[1], state: reported ? 'reported' : 'open' });
       if (reported || match[1] === 'question' || match[1] === 'note') shown.push(lines[index].trim());
     });
     sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
@@ -178,7 +194,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix}\n`;
-  return { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, quoteDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
@@ -191,7 +207,7 @@ function main(argv) {
   }));
   const round = latestRound(flags.root) + 1;
   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
-  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root);
+  const { verdict, counts, demoted, quoteDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root);
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
@@ -205,6 +221,7 @@ function main(argv) {
     process.stdout.write(`BLOCKED recurring ${now.rule} ${now.path}\n  ${reading(before)}\n  ${reading({ ...now, round })}\n`);
   }
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe:, Class: and Sweep: lines under them\n`);
+  for (const location of quoteDemoted) process.stdout.write(`DEMOTED-QUOTE ${location}\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
   for (const line of shown) process.stdout.write(`FINDING ${line}\n`);
   process.stdout.write(`FINDINGS-SHA ${findingsDigest(text)}\n`);
