@@ -80,6 +80,22 @@ async function flaggedForSize(file, data) {
   return planCheckReport(plan, { root }).lines.some((line) => /^Task 1: split Task 1 \(about \d+ tokens/.test(line));
 }
 
+async function flaggedForFiles(contents, listed) {
+  const root = await gitRepository(contents);
+  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit', files: listed })] });
+  return planCheckReport(plan, { root }).lines.some((line) => /^Task 1: split Task 1 \(about \d+ tokens/.test(line));
+}
+
+test('a Files entry that names another Files entry counts only by its matching lines', async () => {
+  const reference = `see src/a.mjs\n${'x'.repeat(SIZE_LIMIT_BYTES)}\n`;
+  assert.equal(await flaggedForFiles({ 'src/a.mjs': 'a\n', 'docs/big.md': reference }, ['src/a.mjs', 'docs/big.md']), false);
+});
+
+test('a large Files entry that names no other Files entry counts whole', async () => {
+  const unrelated = `${'x'.repeat(SIZE_LIMIT_BYTES)}\n`;
+  assert.equal(await flaggedForFiles({ 'src/a.mjs': 'a\n', 'docs/big.md': unrelated }, ['src/a.mjs', 'docs/big.md']), true);
+});
+
 test('a task naming one heading of a markdown file is sized by that heading section, not the whole file', async () => {
   assert.equal(await flaggedForSize(changelog(SIZE_LIMIT_BYTES), 'one `## Unreleased` `### Changed` line'), false);
 });

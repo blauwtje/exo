@@ -155,12 +155,20 @@ function headingSectionBytes(text, taskText) {
   return Buffer.byteLength(section.join('\n'));
 }
 
+function referencingLinesBytes(text, others) {
+  const paths = others.map((other) => other.path).filter((otherPath) => !otherPath.endsWith('/'));
+  const matching = text.split('\n').filter((line) => paths.some((otherPath) => line.includes(otherPath)));
+  return matching.length === 0 ? null : Buffer.byteLength(matching.join('\n'));
+}
+
 function taskBytes(task, root, forkPoint) {
   const wholeSize = (file) => (forkPoint === null ? bytesUnder(path.join(root, file.path)) : bytesAtCommit(root, forkPoint, file.path));
   const textOf = (file) => (forkPoint === null ? textOnDisk(path.join(root, file.path)) : textAtCommit(root, forkPoint, file.path));
   const sizeOf = (file) => {
-    if (!file.path.endsWith('.md')) return wholeSize(file);
     const text = textOf(file);
+    const referencing = text === null ? null : referencingLinesBytes(text, task.files.filter((other) => other !== file));
+    if (referencing !== null) return referencing;
+    if (!file.path.endsWith('.md')) return wholeSize(file);
     return (text === null ? null : headingSectionBytes(text, task.section)) ?? wholeSize(file);
   };
   return Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + sizeOf(file), 0);
