@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-month-end",
+  "claim": "off-by-one at a range boundary: the last day of a month is missing from statements, in the comparison and in the month table",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

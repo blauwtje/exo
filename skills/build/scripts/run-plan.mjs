@@ -10,7 +10,7 @@ import process from 'node:process';
 import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
 import { commitsOf, criterionCommand, defaultBranch, driftOf, frameOf, isInputDrift, isUnreachableInput, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { INHERIT, readKindTable, TABLE_PATH } from '#model-kinds';
-import { CONTEXT_LIMIT, softLimit } from '#context-limits';
+import { contextLimit, softLimit } from '#context-limits';
 import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { redGreen, testPaths } from '#red-green';
@@ -86,7 +86,7 @@ export function chooseProvider(flags, home, project) {
     retryPin: budgetPin(name, flags, { retry: true }),
     docRetryPin: budgetPin(name, flags, { kind: 'doc-task', retry: true }),
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
-    contextBudget: softLimit(CONTEXT_LIMIT),
+    contextBudget: softLimit(contextLimit(home)),
     cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
     attemptCap: config.defaults.attemptCap,
     sandbox: sandboxMode(config, project)

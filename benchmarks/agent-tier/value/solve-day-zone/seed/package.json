@@ -1,0 +1,9 @@
+{
+  "name": "solve-day-zone",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "TZ=UTC node --test test/*.test.mjs"
+  }
+}

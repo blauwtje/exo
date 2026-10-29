@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-queue-race",
+  "claim": "async race: a shared work index advanced after an await, so with concurrency above one the same message goes out twice",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

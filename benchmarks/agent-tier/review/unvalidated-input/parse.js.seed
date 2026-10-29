@@ -1,0 +1,20 @@
+export function parsePort(text) {
+  return Number(text);
+}
+
+export function parseRatio(text) {
+  const [numerator, denominator] = text.split('/');
+  return Number(numerator) / Number(denominator);
+}
+
+export function clampPercent(value) {
+  return Math.min(100, Math.max(0, value));
+}
+
+export function parseDuration(text) {
+  return Number.parseInt(text, 10) * 1000;
+}
+
+export function formatPercent(value) {
+  return `${clampPercent(value).toFixed(1)}%`;
+}

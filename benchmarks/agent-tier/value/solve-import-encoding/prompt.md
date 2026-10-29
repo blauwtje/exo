@@ -1,0 +1,1 @@
+The user import breaks on files exported from a spreadsheet: some say `missing column: email` although the header has it, and in big files some names show a replacement character where an accented letter should be. Small plain files import fine. `importUsers(source)` in `src/import.mjs` takes a readable stream of Buffers. Find the causes and fix them, and keep `npm test` green.

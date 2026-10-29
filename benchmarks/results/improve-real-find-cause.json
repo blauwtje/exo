@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-29",
+  "target": "routing",
+  "runs": [
+    {
+      "target": "routing",
+      "arm": "improve-sonnet",
+      "run": 1,
+      "model": "sonnet",
+      "capUsd": 1,
+      "armCostUsd": 0.4089,
+      "scorerSpendInArm": 1.3497385,
+      "harnessScoringSpend": 1.3466245,
+      "totalCost": 3.105263,
+      "wallS": 247,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 3,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.5333333333333333,
+          "spend": 0.44878150000000006
+        },
+        {
+          "n": 2,
+          "score": 0.4,
+          "spend": 0.4520055
+        },
+        {
+          "n": 3,
+          "score": 0.5333333333333333,
+          "spend": 0.44895150000000006
+        }
+      ],
+      "trainScore": 0.5333333333333333,
+      "heldOutScores": [
+        0.5333333333333333,
+        0.5333333333333333
+      ],
+      "heldOutMean": 0.5333333333333333,
+      "finalRef": "refs/heads/improve/oct29",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/route-find-cause/benchmarks/results/improve-real-find-cause/routing-improve-sonnet-1.diff",
+      "changedOutside": [],
+      "error": null
+    }
+  ]
+}

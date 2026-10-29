@@ -1,0 +1,5 @@
+[
+  { "path": "parse.js", "range": "2-2", "class": "unvalidated input" },
+  { "path": "parse.js", "range": "6-7", "class": "unvalidated input" },
+  { "path": "parse.js", "range": "15-15", "class": "unvalidated input" }
+]

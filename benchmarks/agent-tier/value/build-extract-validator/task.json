@@ -1,0 +1,6 @@
+{
+  "id": "value-build-extract-validator",
+  "claim": "build-task: refactor: two copies of one check become one shared module",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.15
+}

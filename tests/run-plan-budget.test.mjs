@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { budgetPin, chooseProvider } from '../skills/build/scripts/run-plan.mjs';
 import { childEnv } from '../skills/build/scripts/run-session.mjs';
-import { CONTEXT_LIMIT, softLimit } from '../lib/context-limits.mjs';
+import { contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 
 const cell = (kind, retry) => {
@@ -67,9 +67,10 @@ test('an explicit effort reaches the session env, a default or a bare model does
   assert.equal(model.CLAUDE_CODE_EFFORT_LEVEL, undefined);
 });
 
-test('the run plan budgets the fixed 80k limit and ignores a contextLimit setting', () => {
+test('the run plan budgets the soft limit and follows a run.json contextLimit', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
+  assert.equal(chooseProvider({}, home, home).contextBudget, softLimit(contextLimit(home)));
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":200000}}');
-  assert.equal(chooseProvider({}, home, home).contextBudget, softLimit(CONTEXT_LIMIT));
+  assert.equal(chooseProvider({}, home, home).contextBudget, 150_000);
 });

@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-cent-rounding",
+  "claim": "decoy symptom: a one-cent difference shows up in the number formatter, but the money arithmetic runs in floating-point euros, so the invoice lines and split shares do not add up",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

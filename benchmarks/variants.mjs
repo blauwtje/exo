@@ -29,7 +29,7 @@ const POINTER_EDIT = {
   from: "const additionalContext = parts.join('\\n\\n');",
   to: `const additionalContext = ['# Using exo', '', ${JSON.stringify(SKILL_LINE)}].join('\\n');`
 };
-const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: '- No one-command repro, or that proof still red after the fix → `find-cause`.\n', to: '' };
+const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: '- Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `find-cause`.\n', to: '' };
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
 const RUN_LOOP = 'skills/build/references/run-loop.md';
 const UNIT_AGENT = 'agents/run-unit.md';

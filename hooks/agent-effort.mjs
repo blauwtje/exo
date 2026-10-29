@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields } from '../lib/context-limits.mjs';
-import { BUDGETS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
+import { BUDGETS, EFFORTS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
 import { withReceipt } from './context-limit.mjs';
@@ -53,19 +53,22 @@ function unlabelledFields({ tool_name: tool, tool_input: input } = {}, budget = 
   return { permissionDecision: 'deny', permissionDecisionReason: UNLABELLED_REASON };
 }
 
-function filled(input, budget) {
-  if (!BUDGETS.includes(budget)) return input;
+function resolvedKind(input, budget) {
+  if (!BUDGETS.includes(budget)) return null;
   const retry = /^exo-retry$/m.test(input.prompt ?? '');
   const table = readKindTable(undefined, { budget, provider: sessionProvider(), retry });
   const agent = /^exo:(.+)$/.exec(input.subagent_type ?? '')?.[1];
   const unnamed = isUnnamed(table, input);
-  const kind = table.kinds[labelOf(table, input) ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined)];
+  const name = labelOf(table, input) ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined);
+  return table.kinds[name] ? { table, agent, kind: table.kinds[name] } : null;
+}
+
+function filled(input, budget) {
+  const kind = resolvedKind(input, budget)?.kind;
   if (!kind) return input;
-  const tableModel = kind.model === INHERIT ? undefined : kind.model;
   const { model: passedModel, ...rest } = input;
-  const model = agent ? tableModel : passedModel ?? tableModel;
-  const tableEffort = kind.effort ?? input.effort;
-  const effort = agent ? tableEffort : input.effort ?? kind.effort;
+  const model = passedModel ?? (kind.model === INHERIT ? undefined : kind.model);
+  const effort = input.effort ?? kind.effort;
   return { ...rest, ...(model && { model }), ...(effort && { effort }) };
 }
 
@@ -76,23 +79,40 @@ export function agentEffort({ tool_name: tool, tool_input: input, effort } = {},
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
 
-function replacedNote(passed = {}, ran = {}) {
-  const parts = ['model', 'effort'].filter((key) => passed[key] !== undefined && passed[key] !== ran[key]).map((key) => passed[key]);
-  return parts.length ? `replaced ${parts.join(', ')}` : '';
+function pairText(model, effort) {
+  return `${model ?? 'the session model'}, ${effort ?? 'the session effort'}`;
 }
 
-function withReplacedNote(output, hookInput, ran) {
-  const note = /^exo:/.test(ran?.subagent_type ?? '') ? replacedNote(hookInput.tool_input, ran) : '';
-  if (!note || !output?.systemMessage) return output;
-  const line = output.systemMessage;
-  return { ...output, systemMessage: line.endsWith(')') ? `${line.slice(0, -1)}; ${note})` : `${line} (${note})` };
+function kindLabels(kinds, passed) {
+  const entries = Object.entries(kinds);
+  const names = (list) => list.map(([name]) => name).join(', ');
+  const exact = entries.filter(([, kind]) => Object.entries(passed).every(([key, value]) => kind[key] === value));
+  if (exact.length) return `\`exo-kind:\` labels for ${pairText(passed.model, passed.effort)}: ${names(exact)}.`;
+  const gap = ([, kind]) => Math.abs(EFFORTS.indexOf(kind.effort) - EFFORTS.indexOf(passed.effort));
+  const sameModel = entries.filter(([, kind]) => kind.model === passed.model);
+  const nearest = sameModel.filter((entry) => gap(entry) === Math.min(...sameModel.map(gap)));
+  if (!nearest.length) return `No kind runs ${pairText(passed.model, passed.effort)}, and none runs ${passed.model ?? 'that model'}.`;
+  return `No kind runs ${pairText(passed.model, passed.effort)}; closest on ${passed.model}: ${names(nearest)}.`;
+}
+
+function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = settingValue('budget')) {
+  if (tool !== 'Agent' || !input) return null;
+  const resolved = resolvedKind(input, budget);
+  if (!resolved?.agent) return null;
+  const { kind, table, agent } = resolved;
+  const expected = { model: kind.model === INHERIT ? undefined : kind.model, effort: kind.effort ?? undefined };
+  const differs = (key) => input[key] !== undefined && input[key] !== expected[key] && (key === 'model' || expected.effort !== undefined);
+  if (!['model', 'effort'].some(differs)) return null;
+  const passed = Object.fromEntries(['model', 'effort'].filter((key) => input[key] !== undefined).map((key) => [key, input[key]]));
+  const reason = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} by the kind table; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)} Start the brief with the label to run that pair. No user request for that model → drop \`model\` and \`effort\`.`;
+  return { permissionDecision: 'deny', permissionDecisionReason: reason };
 }
 
 export function agentHook(hookInput, budget, enabled) {
   const output = agentEffort(hookInput, budget);
-  const fields = unlabelledFields(hookInput, budget) ?? contextFields(contextDecision(hookInput));
+  const fields = mismatchFields(hookInput, budget) ?? unlabelledFields(hookInput, budget) ?? contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
-  const receipt = (message, receiptFields) => withReplacedNote(withReceipt(message, hookInput, receiptFields, ran, enabled), hookInput, ran);
+  const receipt = (message, receiptFields) => withReceipt(message, hookInput, receiptFields, ran, enabled);
   if (fields?.permissionDecision) return receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
   const context = [dispatchRules(hookInput), fields?.additionalContext].filter(Boolean).join('\n\n');
   if (!context) return receipt(output, null);

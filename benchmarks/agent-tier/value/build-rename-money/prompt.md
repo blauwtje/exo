@@ -1,0 +1,1 @@
+Rename `fmtMoney` to `formatMoney` everywhere it appears: its definition in `src/money.mjs`, every caller, the tests and the README. Keep no alias or re-export under the old name. Behavior does not change.

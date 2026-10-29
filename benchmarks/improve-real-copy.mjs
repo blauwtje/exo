@@ -7,14 +7,11 @@ const IDENTITY = ['-c', 'user.name=exo-bench', '-c', 'user.email=exo-bench@local
 const DROPPED_PATHS = ['benchmarks/results'];
 const SKIPPED_DIRS = new Set(['.git', 'node_modules', '.exo', '.worktrees']);
 
+const ROUTING_DATA = { data: 'benchmarks/routing/prompts.json', train: 'train', heldOut: 'held-out' };
+
 export const SPLITS = {
-  routing: {
-    skill: 'find-cause',
-    file: 'skills/find-cause/SKILL.md',
-    data: 'benchmarks/routing/prompts.json',
-    train: 'train',
-    heldOut: 'held-out'
-  },
+  routing: { ...ROUTING_DATA, skill: 'find-cause', file: 'skills/find-cause/SKILL.md' },
+  'routing-start': { ...ROUTING_DATA, skill: 'start', file: 'skills/start/SKILL.md' },
   locate: {
     file: 'agents/locate-code.md',
     data: 'benchmarks/locate-recall/briefs.json',
@@ -22,6 +19,10 @@ export const SPLITS = {
     heldOut: ['git-deny', 'stall-guard', 'speed-ledger', 'remove-worktree']
   }
 };
+
+export function isRouting(target) {
+  return 'skill' in spec(target);
+}
 
 function spec(target) {
   const found = SPLITS[target];
@@ -57,8 +58,8 @@ export function scorerView(tree, target, split, commit) {
   const { data } = spec(target);
   const file = path.join(tree, data);
   const content = readJson(file);
-  if (target === 'routing') {
-    const label = split === 'held-out' ? SPLITS.routing.heldOut : SPLITS.routing.train;
+  if (isRouting(target)) {
+    const label = split === 'held-out' ? SPLITS[target].heldOut : SPLITS[target].train;
     writeJson(file, content.filter((entry) => entry.split === label));
     return file;
   }
@@ -94,8 +95,8 @@ function commitAll(dir, message) {
 export function heldOutItems(tree, target) {
   const { data } = spec(target);
   const content = readJson(path.join(tree, data));
-  if (target === 'routing') {
-    const entries = content.filter((entry) => entry.split === SPLITS.routing.heldOut);
+  if (isRouting(target)) {
+    const entries = content.filter((entry) => entry.split === SPLITS[target].heldOut);
     return { prompts: entries.map((entry) => entry.prompt), briefs: [] };
   }
   const wanted = new Set(SPLITS.locate.heldOut);
@@ -128,6 +129,19 @@ function findInText(name, text, items) {
     if (listed) hits.push({ file: name, kind: 'brief', item: brief.id });
   }
   return hits;
+}
+
+function trackedFiles(dir) {
+  const listing = spawnSync('git', ['-C', dir, 'ls-files', '-z'], { encoding: 'utf8', maxBuffer: MAX_BUFFER });
+  if (listing.status !== 0) return null;
+  return listing.stdout.split('\0')
+    .filter((entry) => entry !== '' && !entry.split('/').some((segment) => SKIPPED_DIRS.has(segment)))
+    .map((entry) => path.join(dir, entry))
+    .filter((full) => fs.existsSync(full) && fs.statSync(full).isFile());
+}
+
+function scannedFiles(dir) {
+  return trackedFiles(dir) ?? [...walk(dir)];
 }
 
 function* walk(dir) {
@@ -169,7 +183,7 @@ function historyObjects(dir) {
 
 export function leakScan(dir, target, { items = heldOutItems(dir, target), history = true } = {}) {
   const hits = [];
-  for (const file of walk(dir)) {
+  for (const file of scannedFiles(dir)) {
     const text = fs.readFileSync(file, 'utf8');
     hits.push(...findInText(path.relative(dir, file), text, items));
   }
@@ -225,10 +239,10 @@ function mean(values) {
   return values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-export function routingScore(outJson) {
+export function routingScore(outJson, skill = SPLITS.routing.skill) {
   const hook = outJson?.results?.['sonnet:low']?.hook ?? {};
   const recalls = Object.values(hook)
-    .map((split) => split?.[SPLITS.routing.skill]?.recall)
+    .map((split) => split?.[skill]?.recall)
     .filter((recall) => typeof recall === 'number');
   return mean(recalls);
 }

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { environmentMs } from '#script-flags';
-import { SPLITS, locateScore, pristineView, routingScore, scorerSpend } from './improve-real-copy.mjs';
+import { SPLITS, isRouting, locateScore, pristineView, routingScore, scorerSpend } from './improve-real-copy.mjs';
 
 const SCORER_MS = 30 * 60 * 1000;
 const BRIDGE_POLL_MS = 500;
@@ -20,8 +20,8 @@ function mean(values) {
 }
 
 function scorerArgs(target, outFile, transcripts) {
-  if (target === 'routing') {
-    return ['benchmarks/routing.mjs', '--full', '--skill', SPLITS.routing.skill, '--arms', 'hook', '--runs', '1', '--out', outFile];
+  if (isRouting(target)) {
+    return ['benchmarks/routing.mjs', '--full', '--skill', SPLITS[target].skill, '--arms', 'hook', '--runs', '1', '--out', outFile];
   }
   return ['benchmarks/locate-recall.mjs', '--full', '--models', 'sonnet', '--runs', '1', '--concurrency', '3', '--out', outFile, '--transcripts', transcripts];
 }
@@ -59,12 +59,12 @@ function runNode(args, cwd, timeoutMs) {
 }
 
 export async function realScorer({ view, target, outFile, transcripts }) {
-  if (target === 'routing') seedRouting(outFile);
+  if (isRouting(target)) seedRouting(outFile);
   await runNode(scorerArgs(target, outFile, transcripts), view, environmentMs('EXO_IMPROVE_REAL_SCORER_MS', SCORER_MS));
 }
 
 function scoreOf(target, outJson) {
-  return target === 'routing' ? routingScore(outJson) : locateScore(outJson);
+  return isRouting(target) ? routingScore(outJson, SPLITS[target].skill) : locateScore(outJson);
 }
 
 async function scoreOnce({ repo, target, split, targetText, scorer }) {

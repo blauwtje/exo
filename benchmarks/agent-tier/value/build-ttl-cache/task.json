@@ -1,0 +1,6 @@
+{
+  "id": "value-build-ttl-cache",
+  "claim": "build-task: edge case: expiry that must stay consistent across get, has and size",
+  "timeoutMinutes": 8,
+  "estimateUsd": 0.15
+}

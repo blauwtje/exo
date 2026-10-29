@@ -20,6 +20,8 @@ const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const CELL_PATTERN = /^[^:]+:[^:]+$/;
 const ARM_SETTINGS = { hook: undefined, 'no-hook': { disableAllHooks: true } };
 const STDERR_TAIL = 500;
+const SESSION_BUDGET_USD = '0.25';
+const MONEY = /^\d+(\.\d+)?$/;
 const SMOKE_SKILL = 'build';
 const RESULTS = path.join(ROOT, 'benchmarks/results');
 const BASELINE_FILE = path.join(RESULTS, 'routing-baseline.json');
@@ -32,11 +34,12 @@ const TIER_DEFAULTS = {
 };
 const QUICK_PER_SKILL = 1;
 const QUICK_PER_NULL = 4;
-const USAGE = `usage: routing.mjs [--full] [--write-baseline] [--cells <model:effort,...>] [--runs <n>] [--arms hook,no-hook] [--split train|held-out] [--concurrency <n>] [--smoke] [--skill <name>] [--dry-run] [--out <file>]
+const NO_SKILL = 'none';
+const USAGE = `usage: routing.mjs [--full] [--write-baseline] [--cells <model:effort,...>] [--runs <n>] [--arms hook,no-hook] [--split train|held-out] [--concurrency <n>] [--smoke] [--skill <name>] [--dry-run] [--max-budget-usd <usd>] [--out <file>]
 Default: a fixed quick set of held-out prompts of benchmarks/routing/prompts.json, one run, the hook arm live against the no-hook arm stored in benchmarks/results/routing-baseline.json, written to benchmarks/results/routing-quick.json. A baseline whose cells, prompts or description hashes differ prints 'baseline stale' and runs the no-hook arm live too.
 --write-baseline runs the no-hook arm on the quick set and stores it as the baseline. --full runs every prompt, 3 runs, both arms, and writes benchmarks/results/routing.json; --split needs --full.
---skill needs --full: it runs only the prompts that expect that skill and merges them into --out, replacing that skill's earlier sessions and stamping its description hash.
---smoke runs one known-good prompt and exits 1 on a miss. --dry-run spends nothing and prints the session count times the median cost_usd recorded in --out. Defaults: cell sonnet:low, --concurrency 4.`;
+--skill needs --full: it runs only the prompts that expect that skill, or none for the prompts that expect no skill, and merges them into --out, replacing that skill's earlier sessions and stamping its description hash.
+--smoke runs one known-good prompt and exits 1 on a miss. --dry-run spends nothing and prints the session count times the median cost_usd recorded in --out. --max-budget-usd starts no further session once the recorded cost reaches it; each session also runs under claude --max-budget-usd ${SESSION_BUDGET_USD}. Defaults: cell sonnet:low, --concurrency 4.`;
 
 function descriptionOf(text) {
   const front = text.split('\n---')[0];
@@ -130,7 +133,7 @@ function claudeSession({ prompt, cell, arm, home }) {
   const [model, effort] = cell.split(':');
   const { scratch, tmp, roots } = makeRunFolder(arm);
   const startedAt = Date.now();
-  const args = ['-p', prompt, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', ROOT];
+  const args = ['-p', prompt, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--max-budget-usd', SESSION_BUDGET_USD, '--plugin-dir', ROOT];
   const run = withHome(confinedClaude({ args, roots, cwd: scratch, tmp, settings: ARM_SETTINGS[arm] }), home);
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -203,12 +206,15 @@ function sessionRecord({ cell, arm, run, mode, entry }, outcome) {
   return error === undefined ? { ...base, pick } : { ...base, pick: null, error };
 }
 
-export async function evaluate({ prompts, cells, arms, runs, concurrency, skills, runSession, mode = 'full' }) {
+export async function evaluate({ prompts, cells, arms, runs, concurrency, skills, runSession, mode = 'full', maxBudgetUsd = Infinity }) {
   const jobs = [];
+  let spent = 0;
   for (const cell of cells) for (const arm of arms) for (const entry of prompts) {
     for (let run = 1; run <= runs; run += 1) {
       jobs.push(async () => {
+        if (spent >= maxBudgetUsd) return sessionRecord({ cell, arm, run, mode, entry }, { error: `budget cap $${maxBudgetUsd} reached` });
         const outcome = await runSession({ prompt: entry.prompt, cell, arm });
+        spent += outcome?.cost_usd ?? 0;
         return sessionRecord({ cell, arm, run, mode, entry }, outcome);
       });
     }
@@ -235,7 +241,11 @@ function tally(sessions, cells, arms, skills) {
 export function withSkillRun(recorded, outcome, { skill, hash, skills }) {
   const sessions = [...recorded.sessions.filter((session) => session.expect !== skill), ...outcome.sessions];
   const prompts = [...new Set([...recorded.prompts, ...outcome.sessions.map((session) => session.prompt)])];
-  return { ...recorded, ...tally(sessions, recorded.cells, recorded.arms, skills), sessions, prompts, hashes: { ...recorded.hashes, [skill]: hash } };
+  return { ...recorded, ...tally(sessions, recorded.cells, recorded.arms, skills), sessions, prompts, hashes: skill === null ? recorded.hashes : { ...recorded.hashes, [skill]: hash } };
+}
+
+function expectOf(skill) {
+  return skill === NO_SKILL ? null : skill;
 }
 
 function tierOf({ full, writeBaseline }) {
@@ -244,16 +254,17 @@ function tierOf({ full, writeBaseline }) {
 }
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { full: 'boolean', 'write-baseline': 'boolean', cells: 'value', runs: 'value', arms: 'value', split: 'value', concurrency: 'value', smoke: 'boolean', skill: 'value', 'dry-run': 'boolean', out: 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { full: 'boolean', 'write-baseline': 'boolean', cells: 'value', runs: 'value', arms: 'value', split: 'value', concurrency: 'value', smoke: 'boolean', skill: 'value', 'dry-run': 'boolean', 'max-budget-usd': 'value', out: 'value' }, { usage: USAGE });
   for (const name of ['runs', 'concurrency']) {
     if (flags[name] !== undefined && !POSITIVE_INTEGER.test(flags[name])) throw new UsageError(`--${name} needs a positive integer, got '${flags[name]}'`);
   }
+  if (flags['max-budget-usd'] !== undefined && !MONEY.test(flags['max-budget-usd'])) throw new UsageError(`--max-budget-usd needs a dollar amount, got '${flags['max-budget-usd']}'`);
   const full = flags.full === true;
   const writeBaseline = flags['write-baseline'] === true;
   if (full && writeBaseline) throw new UsageError('--full and --write-baseline exclude each other');
   if (flags.split !== undefined && !full) throw new UsageError('--split needs --full');
   if (flags.skill !== undefined && !full) throw new UsageError('--skill needs --full');
-  if (flags.skill !== undefined && !modelInvocableSkills(ROOT).includes(flags.skill)) throw new UsageError(`--skill '${flags.skill}' is no model-invocable skill`);
+  if (flags.skill !== undefined && flags.skill !== NO_SKILL && !modelInvocableSkills(ROOT).includes(flags.skill)) throw new UsageError(`--skill '${flags.skill}' is no model-invocable skill or none`);
   const cells = (flags.cells ?? 'sonnet:low').split(',');
   for (const cell of cells) if (!CELL_PATTERN.test(cell)) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort`);
   const tier = tierOf({ full, writeBaseline });
@@ -261,7 +272,7 @@ function readFlags(argv) {
   for (const arm of arms) if (!(arm in ARM_SETTINGS)) throw new UsageError(`--arms entry '${arm}' must be hook or no-hook`);
   if (flags.split !== undefined && !['train', 'held-out'].includes(flags.split)) throw new UsageError('--split must be train or held-out');
   const out = flags.out ?? TIER_DEFAULTS[tier].out;
-  return { cells, arms, full, writeBaseline, split: flags.split, skill: flags.skill, smoke: flags.smoke === true, dryRun: flags['dry-run'] === true, runs: Number(flags.runs ?? (full ? 3 : 1)), concurrency: Number(flags.concurrency ?? 4), out };
+  return { cells, arms, full, writeBaseline, split: flags.split, skill: expectOf(flags.skill), smoke: flags.smoke === true, dryRun: flags['dry-run'] === true, runs: Number(flags.runs ?? (full ? 3 : 1)), concurrency: Number(flags.concurrency ?? 4), maxBudgetUsd: Number(flags['max-budget-usd'] ?? Infinity), out };
 }
 
 async function smoke(all, flags, runSession) {
@@ -286,7 +297,7 @@ function readPrompts() {
 }
 
 function planRun(flags, all) {
-  if (flags.full) return { prompts: all.filter((entry) => (!flags.split || entry.split === flags.split) && (!flags.skill || entry.expect === flags.skill)), mode: 'full', arms: flags.arms, baseline: null };
+  if (flags.full) return { prompts: all.filter((entry) => (!flags.split || entry.split === flags.split) && (flags.skill === undefined || entry.expect === flags.skill)), mode: 'full', arms: flags.arms, baseline: null };
   const prompts = quickPrompts(all);
   const mode = flags.writeBaseline ? 'baseline' : 'quick';
   if (mode === 'baseline' || flags.arms.includes('no-hook')) return { prompts, mode, arms: flags.arms, baseline: null };
@@ -314,11 +325,11 @@ async function main() {
     const runSession = (job) => claudeSession({ ...job, home });
     if (flags.smoke) return await smoke(all, flags, runSession);
     const plan = planRun(flags, all);
-    const outcome = await evaluate({ prompts: plan.prompts, cells: flags.cells, arms: plan.arms, runs: flags.runs, concurrency: flags.concurrency, skills: modelInvocableSkills(ROOT), runSession, mode: plan.mode });
+    const outcome = await evaluate({ prompts: plan.prompts, cells: flags.cells, arms: plan.arms, runs: flags.runs, concurrency: flags.concurrency, skills: modelInvocableSkills(ROOT), runSession, mode: plan.mode, maxBudgetUsd: flags.maxBudgetUsd });
     const combined = plan.baseline ? withBaseline(outcome, plan.baseline) : outcome;
     const split = flags.full ? flags.split ?? 'all' : 'held-out';
     const fresh = { ...combined, split, prompts: plan.prompts.map((entry) => entry.prompt), hashes: descriptionHashes(ROOT) };
-    const result = flags.skill ? withSkillRun(JSON.parse(fs.readFileSync(flags.out, 'utf8')), outcome, { skill: flags.skill, hash: fresh.hashes[flags.skill], skills: modelInvocableSkills(ROOT) }) : fresh;
+    const result = flags.skill !== undefined ? withSkillRun(JSON.parse(fs.readFileSync(flags.out, 'utf8')), outcome, { skill: flags.skill, hash: fresh.hashes[flags.skill], skills: modelInvocableSkills(ROOT) }) : fresh;
     fs.mkdirSync(path.dirname(flags.out), { recursive: true });
     fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`wrote ${flags.out}\n`);

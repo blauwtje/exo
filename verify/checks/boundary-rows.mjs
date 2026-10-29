@@ -5,12 +5,16 @@ import { PlanError, parsePlan } from '../../lib/plan-tasks.mjs';
 const NAME = 'boundary rows';
 const OUT_OF_SCOPE_TITLE = /\b(?:test|it)\(\s*(['"`])(?:(?!\1).)*out-of-scope/;
 
-function boundaryRows(root) {
-  const folder = path.join(root, 'docs', 'specs');
-  if (!fs.existsSync(folder)) return [];
-  return fs.readdirSync(folder).filter((name) => name.endsWith('.md')).sort().flatMap((name) => {
+function specFiles(repository) {
+  const folder = repository.join('docs', 'specs');
+  return repository.trackedFiles().filter((file) => path.dirname(file) === folder && file.endsWith('.md'));
+}
+
+function boundaryRows(repository) {
+  return specFiles(repository).flatMap((file) => {
+    const name = path.basename(file);
     try {
-      const { tasks } = parsePlan(fs.readFileSync(path.join(folder, name), 'utf8'));
+      const { tasks } = parsePlan(fs.readFileSync(file, 'utf8'));
       return tasks.filter((task) => task.boundary !== null).map((task) => ({ plan: name, task: task.number, test: task.boundary.test }));
     } catch (error) {
       if (!(error instanceof PlanError)) throw error;
@@ -31,7 +35,7 @@ function describeMissing(row) {
 }
 
 export function checkBoundaryRows(report, repository) {
-  const missing = boundaryRows(repository.root).filter((row) => lacksOutOfScopeTest(repository.root, row));
+  const missing = boundaryRows(repository).filter((row) => lacksOutOfScopeTest(repository.root, row));
   report.assert(
     missing.length === 0,
     NAME,

@@ -1,0 +1,107 @@
+{
+  "tier": "quick",
+  "cells": [
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "medium",
+      "sessions": 1,
+      "graded": 1,
+      "score": 0.75,
+      "cost_usd": 0.08513280000000001,
+      "wallS": 21.976
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "medium",
+      "sessions": 1,
+      "graded": 1,
+      "score": 1,
+      "cost_usd": 0.1482922,
+      "wallS": 23.073
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "low",
+      "sessions": 1,
+      "graded": 1,
+      "score": 1,
+      "cost_usd": 0.06746210000000001,
+      "wallS": 14.104
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "low",
+      "sessions": 1,
+      "graded": 1,
+      "score": 1,
+      "cost_usd": 0.10577589999999999,
+      "wallS": 29.733
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "high",
+      "sessions": 1,
+      "graded": 1,
+      "score": 1,
+      "cost_usd": 0.20973239999999999,
+      "wallS": 41.662
+    }
+  ],
+  "sessions": [
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "context-limit-note",
+      "cost_usd": 0.08513280000000001,
+      "durationMs": 21976,
+      "numTurns": 7,
+      "score": 0.75
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "copied-block",
+      "cost_usd": 0.1482922,
+      "durationMs": 23073,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "copied-block",
+      "cost_usd": 0.06746210000000001,
+      "durationMs": 14104,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "lean-minimal-diff",
+      "cost_usd": 0.10577589999999999,
+      "durationMs": 29733,
+      "numTurns": 17,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "find-cause-decoy",
+      "cost_usd": 0.20973239999999999,
+      "durationMs": 41662,
+      "numTurns": 9,
+      "score": 1
+    }
+  ]
+}

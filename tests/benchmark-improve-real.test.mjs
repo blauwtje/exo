@@ -32,7 +32,7 @@ function git(dir, ...args) {
 }
 
 before(() => {
-  for (const target of ['routing', 'locate']) {
+  for (const target of ['routing', 'routing-start', 'locate']) {
     copies[target] = buildArmCopy({ repo: REPO, target, dest: path.join(scratch, `${target}-copy`) });
   }
 });
@@ -45,6 +45,30 @@ test('the routing arm copy holds only train prompts and no results folder', () =
   assert.ok(prompts.every((entry) => entry.split === 'train'));
   assert.equal(fs.existsSync(path.join(dest, 'benchmarks/results')), false);
   assert.equal(git(dest, 'rev-list', '--count', '--all'), '1');
+});
+
+test('the routing-start arm copy holds only train prompts and none of the start held-out prompts', () => {
+  const { dest } = copies['routing-start'];
+  const prompts = readJson(path.join(dest, SPLITS['routing-start'].data));
+  assert.ok(prompts.every((entry) => entry.split === 'train'));
+  const heldOut = readJson(path.join(REPO, SPLITS['routing-start'].data)).filter((entry) => entry.expect === 'start' && entry.split === 'held-out');
+  assert.equal(heldOut.length, 15);
+  const kept = new Set(prompts.map((entry) => entry.prompt));
+  assert.equal(heldOut.some((entry) => kept.has(entry.prompt)), false);
+  const scanned = new Set(heldOutItems(REPO, 'routing-start').prompts);
+  assert.ok(heldOut.every((entry) => scanned.has(entry.prompt)));
+});
+
+test('both routing targets split the current prompts file by its split labels', () => {
+  const all = readJson(path.join(REPO, SPLITS.routing.data));
+  for (const target of ['routing', 'routing-start']) {
+    const { skill } = SPLITS[target];
+    const own = all.filter((entry) => entry.expect === skill);
+    assert.ok(own.filter((entry) => entry.split === 'train').length > 0);
+    assert.ok(own.filter((entry) => entry.split === 'held-out').length > 0);
+    assert.equal(own.length, own.filter((entry) => ['train', 'held-out'].includes(entry.split)).length);
+  }
+  assert.equal(SPLITS['routing-start'].file, 'skills/start/SKILL.md');
 });
 
 test('the locate arm copy holds only train briefs on a leak-free fixture root commit', () => {
@@ -60,7 +84,7 @@ test('the locate arm copy holds only train briefs on a leak-free fixture root co
 });
 
 test('a built copy of the real repository passes the leak scan for both targets', () => {
-  for (const target of ['routing', 'locate']) {
+  for (const target of ['routing', 'routing-start', 'locate']) {
     const items = heldOutItems(REPO, target);
     assert.ok(items.prompts.length > 0);
     assert.deepEqual(leakScan(copies[target].dest, target, { items }), []);
@@ -68,7 +92,7 @@ test('a built copy of the real repository passes the leak scan for both targets'
 });
 
 test('the real repository carries held-out text only in the data files and the results folder', () => {
-  for (const target of ['routing', 'locate']) {
+  for (const target of ['routing', 'routing-start', 'locate']) {
     const files = new Set(leakScan(REPO, target, { history: false }).map((hit) => hit.file));
     const unexpected = [...files].filter((file) => file !== SPLITS[target].data && !file.startsWith('benchmarks/results/'));
     assert.deepEqual(unexpected, []);
@@ -83,12 +107,14 @@ test('the leak scan finds a planted held-out prompt, a planted brief and a promp
   fs.writeFileSync(path.join(dir, 'notes.md'), `see: ${locate.prompts[0]}\n`);
   const brief = locate.briefs[1];
   fs.writeFileSync(path.join(dir, 'list.txt'), `${brief.id}\n${brief.expected.join('\n')}\n`);
+  git(dir, 'add', '--all');
   const hits = leakScan(dir, 'locate', { items: locate, history: false });
   assert.deepEqual(hits.map((hit) => `${hit.file}:${hit.kind}`).sort(), ['list.txt:brief', 'notes.md:prompt']);
 
   const routingDir = path.join(scratch, 'planted-routing');
   fs.cpSync(copies.routing.dest, routingDir, { recursive: true });
   fs.writeFileSync(path.join(routingDir, 'x.json'), JSON.stringify({ q: routing.prompts[0] }));
+  git(routingDir, 'add', '--all');
   const [escaped] = leakScan(routingDir, 'routing', { items: routing, history: false });
   assert.equal(escaped.file, 'x.json');
 
@@ -99,6 +125,19 @@ test('the leak scan finds a planted held-out prompt, a planted brief and a promp
   git(dir, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '--quiet', '-m', 'unplant');
   const later = leakScan(dir, 'locate', { items: locate });
   assert.ok(later.some((hit) => hit.file === 'history:notes.md'));
+});
+
+test('the leak scan reads only tracked files, so a git-ignored local file never counts', () => {
+  const routing = heldOutItems(REPO, 'routing');
+  const dir = path.join(scratch, 'ignored');
+  fs.mkdirSync(path.join(dir, 'docs/specs'), { recursive: true });
+  git(dir, 'init', '--quiet');
+  fs.writeFileSync(path.join(dir, '.gitignore'), 'docs/*\n');
+  fs.writeFileSync(path.join(dir, 'docs/specs/plan.md'), `see: ${routing.prompts[0]}\n`);
+  git(dir, 'add', '--all');
+  assert.deepEqual(leakScan(dir, 'routing', { items: routing, history: false }), []);
+  git(dir, 'add', '--force', 'docs/specs/plan.md');
+  assert.deepEqual(leakScan(dir, 'routing', { items: routing, history: false }).map((hit) => hit.file), ['docs/specs/plan.md']);
 });
 
 test('an expected file alone is not a leak', () => {
@@ -146,6 +185,12 @@ test('routingScore reads the find-cause recall and treats no data as zero', () =
   assert.equal(routingScore(out), 2 / 3);
   assert.equal(routingScore({ results: { 'sonnet:low': { hook: { train: { 'find-cause': { recall: null } } } } } }), 0);
   assert.equal(routingScore({}), 0);
+});
+
+test('routingScore reads the recall of the skill it is given', () => {
+  const out = { results: { 'sonnet:low': { hook: { train: { 'find-cause': { recall: 1 }, start: { recall: 0.25 } } } } } };
+  assert.equal(routingScore(out, 'start'), 0.25);
+  assert.equal(routingScore(out), 1);
 });
 
 test('locateScore averages per-brief F1 and counts an error or null precision as zero', () => {

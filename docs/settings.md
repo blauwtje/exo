@@ -31,6 +31,9 @@ A session hook loads these rules at startup, resume, clear and compaction. They 
 ## Context limit
 
 A hook reads the context size of each session on every tool call. Past the soft limit it asks the agent to finish its step and hand off. Past the hard limit it refuses the tool of a subagent or detached run session. Your own session is never refused: it gets one note at the soft limit and one at the hard limit, telling it to send the rest of the work to subagents and stay in the session.
+
+The hard limit is `defaults.contextLimit` in `~/.config/exo/run.json`, else the plugin default in `lib/run-providers.json`; the soft limit is 75% of it.
+
 ## Status line
 
 Claude Code only. `/exo:configure` runs `node skills/configure/scripts/settings.mjs statusline`: it writes a launcher to `~/.claude/exo/statusline.mjs` (under `CLAUDE_CONFIG_DIR` when set) and prints a `statusLine` block for your `settings.json`, which exo never edits. The status line has two lines. Line 1 is where and who: a bold `exo` mark, the git branch (cut to 20 characters), the model with its effort, and `build 2/5` while this session runs `exo:build` (the task in progress of the plan total; it drops when the build ends or goes stale). Line 2 is what is left: `ctx 120k/200k`, the tokens against exo's context budget (the smaller of exo's limit and the window), then `5h 42%`, `7d 63%` only from 50% used, and `5h out in 1h 5m`, a warning in orange that shows only when, after at least 30 minutes of the window, your pace would use up the 5h limit before it resets. A part with no data drops. `NO_COLOR` turns the colors off. To remove it, delete the `statusLine` key.

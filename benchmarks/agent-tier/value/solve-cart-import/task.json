@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-cart-import",
+  "claim": "wrong layer: quantity validation lives only in the HTTP handler, so the batch import calls the domain method directly and drives stock negative",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

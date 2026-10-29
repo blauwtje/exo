@@ -91,6 +91,23 @@ test('a failed session keeps its duration and records no cost', async () => {
   assert.deepEqual([session.pick, session.error, session.cost_usd, session.durationMs], [null, 'timeout after 1ms', null, 1]);
 });
 
+test('maxBudgetUsd starts no session once the recorded cost reaches it and records the rest as errors', async () => {
+  let started = 0;
+  const outcome = await evaluate({
+    prompts: [{ prompt: 'a', expect: 'build', split: 'train' }], cells: ['sonnet:low'], arms: ['hook'], runs: 4, concurrency: 1, skills: ['build'], maxBudgetUsd: 0.05,
+    runSession: async () => { started += 1; return { pick: 'build', cost_usd: 0.03, durationMs: 1 }; }
+  });
+  assert.equal(started, 2);
+  assert.deepEqual(outcome.sessions.map((session) => session.error ?? null), [null, null, 'budget cap $0.05 reached', 'budget cap $0.05 reached']);
+  assert.equal(outcome.errors['sonnet:low'].hook, 2);
+});
+
+test('--max-budget-usd needs a dollar amount', () => {
+  const run = spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--max-budget-usd', 'lots'], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /--max-budget-usd needs a dollar amount/);
+});
+
 test('costOfLine prices the usage of the picking event, and is null for an unlisted model or no usage', () => {
   const picking = (message) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Skill', input: { skill: 'build' } }], ...message } });
   const listed = costOfLine(picking({ model: 'claude-sonnet-4-5', usage: { input_tokens: 1000, output_tokens: 100 } }));
@@ -196,12 +213,25 @@ test('withSkillRun swaps in the sessions of one skill, recounts every rate and s
   assert.deepEqual(merged.prompts, ['a', 'b']);
 });
 
-test('--skill runs only the prompts of that skill and needs --full and a model-invocable skill', () => {
+test('withSkillRun for no skill swaps in the null sessions and keeps every hash', async () => {
+  const prompts = [{ prompt: 'a', expect: 'build', split: 'held-out' }, { prompt: 'n', expect: null, split: 'held-out' }];
+  const recorded = { ...(await evaluate({ prompts, cells: ['sonnet:low'], arms: ['hook'], runs: 1, concurrency: 1, skills: ['build'], runSession: async () => 'build' })), prompts: ['a', 'n'], hashes: { build: 'b1' } };
+  const outcome = await evaluate({ prompts: [prompts[1]], cells: ['sonnet:low'], arms: ['hook'], runs: 1, concurrency: 1, skills: ['build'], runSession: async () => null });
+  const merged = withSkillRun(recorded, outcome, { skill: null, hash: undefined, skills: ['build'] });
+  assert.deepEqual(merged.sessions.map((session) => [session.expect, session.pick]), [['build', 'build'], [null, null]]);
+  assert.equal(merged.results['sonnet:low'].hook['held-out'].build.falseTrigger, 0);
+  assert.deepEqual(merged.hashes, { build: 'b1' });
+});
+
+test('--skill runs only the prompts of that skill, or of no skill for none, and needs --full and a model-invocable skill', () => {
   const prompts = JSON.parse(readFileSync(`${root}benchmarks/routing/prompts.json`, 'utf8'));
   const run = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(mkdtempSync(join(tmpdir(), 'routing-skill-')), 'none.json'), ...args], { encoding: 'utf8' });
   const full = run('--full', '--skill', 'improve');
   assert.equal(full.status, 0, full.stderr);
   assert.equal(Number(/dry-run: (\d+) sessions/.exec(full.stdout)[1]), prompts.filter((entry) => entry.expect === 'improve').length * 2 * 3);
+  const none = run('--full', '--skill', 'none', '--split', 'held-out', '--arms', 'hook');
+  assert.equal(none.status, 0, none.stderr);
+  assert.equal(Number(/dry-run: (\d+) sessions/.exec(none.stdout)[1]), prompts.filter((entry) => entry.expect === null && entry.split === 'held-out').length * 3);
   assert.match(run('--skill', 'improve').stderr, /--skill needs --full/);
   assert.match(run('--full', '--skill', 'nope').stderr, /no model-invocable skill/);
 });

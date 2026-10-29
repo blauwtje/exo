@@ -1,0 +1,1 @@
+Some customers get the same notification twice, but only in production, where `sendAll` runs with a concurrency of 3; locally, with the default, every message goes out once. Find the cause and fix it so each message is delivered once at any concurrency, still up to `concurrency` at a time. Keep `npm test` green.

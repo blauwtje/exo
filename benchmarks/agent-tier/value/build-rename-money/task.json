@@ -1,0 +1,6 @@
+{
+  "id": "value-build-rename-money",
+  "claim": "build-task: rename across source, tests and docs with no alias left",
+  "timeoutMinutes": 5,
+  "estimateUsd": 0.15
+}

@@ -21,6 +21,6 @@
 - T2 web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
 - T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
-- T5 at the 60k warning, remaining work of 2+ tool turns → subagents.
+- T5 at the soft limit, remaining work of 2+ tool turns → subagents.
 - T6 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
 - T7 multi-part task whose independent parts each need workers, lead keeping only the verdict → `exo:orchestrate` agent, one brief, verdict back.

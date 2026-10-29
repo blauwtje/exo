@@ -100,7 +100,7 @@ const TRIGGER_LINES = [
   [/^- T2 /, /6\+ tool turns.*→ `fetch-docs` or `locate-code`/],
   [/^- T3 /, /2\+ independent parts, each 6\+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent\.$/],
   [/^- T4 /, /each need the previous result → one worker.*never split\.$/],
-  [/^- T5 /, /60k warning, remaining work of 2\+ tool turns → subagents\.$/],
+  [/^- T5 /, /soft limit, remaining work of 2\+ tool turns → subagents\.$/],
   [/^- T6 /, /over 5 minutes → `run_in_background`/],
 ];
 
@@ -147,10 +147,34 @@ test('a prompt with an exo-retry line gets the retry cell of a build-task, other
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task' }, 'on').model, on.kinds['build-task'].model);
 });
 
-test('an exo call has its passed model and effort replaced by the table, a general-purpose call keeps them', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.lookup;
-  assert.deepEqual(call({ subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus', effort: 'max' }), { subagent_type: 'exo:locate-code', prompt: 'x', model, effort });
-  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup', model: 'opus', effort: 'max' }), undefined);
+const hookOutput = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: input }, budget, () => false)?.hookSpecificOutput;
+
+test('an exo call whose passed model or effort differs from the table is denied with the table pair, the passed pair and the matching labels', () => {
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.coordinate;
+  const output = hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'opus', effort: 'high' });
+  assert.equal(output.permissionDecision, 'deny');
+  assert.equal(output.updatedInput, undefined);
+  const reason = output.permissionDecisionReason;
+  assert.match(reason, new RegExp(`runs on ${model}, ${effort} by the kind table`));
+  assert.match(reason, /passed opus, high/);
+  assert.match(reason, /labels for opus, high: hardest, review, review-deep\./);
+  assert.match(reason, /No user request for that model → drop `model` and `effort`\./);
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', effort: 'high' }).permissionDecision, 'deny');
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'haiku' }).permissionDecision, 'deny');
+});
+
+test('a denied pair that no kind runs names the closest kinds on that model, or none', () => {
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: hardest, review, review-deep\./);
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'fable', effort: 'high' }).permissionDecisionReason, /No kind runs fable, high, and none runs fable\./);
+});
+
+test('an exo call passing the table model and effort, a label that makes the pair the table pair, off, and a general-purpose call pass through', () => {
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.coordinate;
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model, effort }), undefined);
+  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model })?.permissionDecision, 'deny');
+  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'exo-kind: hardest\nx', model: 'opus', effort: 'high' })?.permissionDecision, 'deny');
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'opus', effort: 'high' }, 'off'), undefined);
+  assert.equal(hookOutput({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup', model: 'opus', effort: 'max' }), undefined);
 });
 
 test('the session provider picks its kind column, an unlisted or unset one keeps the claude column', () => {
@@ -167,26 +191,27 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
       { subagent_type: 'exo:build-task', prompt: 'x', effort: 'low' },
       { subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x', effort: 'high' }
     ]);
-    assert.deepEqual(call({ subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus' }), { subagent_type: 'exo:locate-code', prompt: 'x', effort: 'high' });
+    assert.deepEqual(call({ subagent_type: 'exo:locate-code', prompt: 'x' }), { subagent_type: 'exo:locate-code', prompt: 'x', effort: 'high' });
   } finally {
     if (before === undefined) delete process.env.EXO_PROVIDER;
     else process.env.EXO_PROVIDER = before;
   }
 });
 
-test('an inherit kind drops a passed model on an exo call so the session model applies', () => {
-  const updated = call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', model: 'opus' });
-  assert.equal(Object.hasOwn(updated, 'model'), false);
+test('an inherit kind sets no model on an exo call, and a passed model is denied', () => {
+  assert.equal(call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover' }), undefined);
+  const output = hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', model: 'opus' });
+  assert.equal(output.permissionDecision, 'deny');
+  assert.match(output.permissionDecisionReason, /runs on the session model/);
 });
 
 test('the raised find-open-points effort still wins over the table', () => {
-  const run = (level) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:find-open-points', prompt: 'x', model: 'haiku', effort: 'low' }, effort: { level } }, 'on').hookSpecificOutput.updatedInput;
+  const run = (level) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:find-open-points', prompt: 'x' }, effort: { level } }, 'on').hookSpecificOutput.updatedInput;
   assert.equal(run('max').effort, 'max');
   assert.equal(run('xhigh').effort, 'xhigh');
 });
 
-test('the hook line names the replaced model and effort', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.lookup;
+test('the denied call shows its reason in the hook line', () => {
   const hook = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus', effort: 'max' } }, 'on', () => true);
-  assert.equal(hook.systemMessage, `exo › locate-code (${model}, ${effort}; replaced opus, max)`);
+  assert.match(hook.systemMessage, /^exo blocked: exo:locate-code runs on /);
 });

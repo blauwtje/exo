@@ -1,0 +1,10 @@
+{
+  "good": [
+    { "path": "parse.js", "range": "2-2" },
+    { "path": "parse.js", "range": "6-7" },
+    { "path": "parse.js", "range": "15-15" }
+  ],
+  "bad": [
+    { "path": "parse.js", "range": "11-11" }
+  ]
+}

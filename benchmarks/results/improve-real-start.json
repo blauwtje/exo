@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-29",
+  "target": "routing-start",
+  "runs": [
+    {
+      "target": "routing-start",
+      "arm": "improve-sonnet",
+      "run": 1,
+      "model": "sonnet",
+      "capUsd": 1,
+      "armCostUsd": 0.3585,
+      "scorerSpendInArm": 0.8662097,
+      "harnessScoringSpend": 0.8075190999999999,
+      "totalCost": 2.0322288,
+      "wallS": 172,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 3,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.6666666666666666,
+          "spend": 0.29872899999999997
+        },
+        {
+          "n": 2,
+          "score": 0.6,
+          "spend": 0.2687077
+        },
+        {
+          "n": 3,
+          "score": 0.6666666666666666,
+          "spend": 0.29877299999999996
+        }
+      ],
+      "trainScore": 0.6666666666666666,
+      "heldOutScores": [
+        0.5333333333333333,
+        0.4666666666666667
+      ],
+      "heldOutMean": 0.5,
+      "finalRef": "refs/heads/improve/oct29",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/route-start/benchmarks/results/improve-real-start/routing-start-improve-sonnet-1.diff",
+      "changedOutside": [],
+      "error": null
+    }
+  ]
+}

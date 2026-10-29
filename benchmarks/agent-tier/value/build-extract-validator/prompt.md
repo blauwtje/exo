@@ -1,0 +1,1 @@
+`src/signup.mjs` and `src/invite.mjs` each carry their own copy of the email check: trim, lowercase, reject a malformed address with `invalid email: <raw input>`. Move that into one function `normalizeEmail(raw)` in a new `src/normalize-email.mjs` and use it from both. Behavior of signup and invite does not change.

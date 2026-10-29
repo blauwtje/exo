@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { readKindTable } from '#model-kinds';
+import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
+import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 import { Budget, candidatesFor, dryRunText, estimateTotal, estimateUsd, flaggedShare, parseCandidate, planJobs, resolveFixtures, sessionCost, settingOf, summarizeCells, usageOfStream } from '../benchmarks/agent-tier.mjs';
 
 const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard'];
@@ -129,3 +134,83 @@ test('the shipped agents.json names fixtures that exist on disk for every agent 
     assert.doesNotThrow(() => resolveFixtures(jobs));
   }
 });
+
+const REVIEW_ROOT = path.join(import.meta.dirname, '..', 'benchmarks', 'agent-tier', 'review');
+const MIN_FULL_CASES = 10;
+
+test('locate-code, review-branch and fix-review each hold at least ten distinct full-tier cases', async () => {
+  const { default: shipped } = await import('../benchmarks/agent-tier/agents.json', { with: { type: 'json' } });
+  for (const agent of ['locate-code', 'review-branch', 'fix-review']) {
+    const full = shipped[agent].fixtures.full;
+    assert.ok(new Set(full).size >= MIN_FULL_CASES, `${agent} full ${full.length}`);
+  }
+});
+
+test('every benchmarks/agent-tier/review fixture plants one class inside its stripped source and ships good and bad references', () => {
+  const fixtures = loadFixtures(REVIEW_ROOT);
+  assert.ok(fixtures.length > 0);
+  for (const fixture of fixtures) {
+    const lines = fs.readFileSync(path.join(fixture.dir, `${fixture.file}.seed`), 'utf8').trimEnd().split('\n').length;
+    assert.ok(fixture.plants.length >= 2 && fixture.plants.length <= 3, `${fixture.id} plants ${fixture.plants.length}`);
+    assert.equal(new Set(fixture.plants.map((plant) => plant.class)).size, 1, fixture.id);
+    for (const plant of fixture.plants) {
+      const [start, end = start] = plant.range.split('-').map(Number);
+      assert.equal(plant.path, fixture.file, fixture.id);
+      assert.ok(start >= 1 && start <= end && end <= lines, `${fixture.id} ${plant.range}`);
+    }
+    const { good, bad } = JSON.parse(fs.readFileSync(path.join(fixture.dir, 'references.json'), 'utf8'));
+    const grade = (ranges) => gradeRepair(
+      fixture.plants,
+      ranges.map(({ path: file, range }) => `${file}:${range} defect: reference range; fix`).join('\n'),
+      ranges.map(({ path: file, range }) => {
+        const [start, end = start] = range.split('-').map(Number);
+        const count = end - start + 1;
+        return `--- a/${file}\n+++ b/${file}\n@@ -${start},${count} +${start},${count} @@`;
+      }).join('\n')
+    );
+    const fixed = grade(good);
+    assert.equal(fixed.fixed, fixed.planted, `${fixture.id} good`);
+    assert.equal(fixed.falseFix, 0, `${fixture.id} good false fix`);
+    const missed = grade(bad);
+    assert.ok(missed.fixed < missed.planted && missed.falseFix > 0, `${fixture.id} bad`);
+  }
+});
+
+test('review fixture ids stay distinct from the canonical review-replay ids', () => {
+  const canonical = new Set(loadFixtures().map((fixture) => fixture.id));
+  for (const fixture of loadFixtures(REVIEW_ROOT)) assert.ok(!canonical.has(fixture.id), fixture.id);
+});
+
+const AGENT_VALUE_ROOT = path.join(import.meta.dirname, '..', 'benchmarks', 'agent-tier', 'value');
+
+test('build-task and solve-hard each hold ten distinct full-tier cases that resolve', async () => {
+  const { default: shipped } = await import('../benchmarks/agent-tier/agents.json', { with: { type: 'json' } });
+  const table = readKindTable();
+  for (const agent of ['build-task', 'solve-hard']) {
+    assert.equal(new Set(shipped[agent].fixtures.full).size, MIN_FULL_CASES, agent);
+    const jobs = planJobs({ config: shipped, agents: [agent], tier: 'full', candidates: null, table });
+    assert.doesNotThrow(() => resolveFixtures(jobs));
+  }
+});
+
+async function scoreValueRoot(task, solved) {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-tier-value-'));
+  try {
+    const startTree = prepareValueRepo(task, repo);
+    if (solved) fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
+    return await scoreValueRepo(task, repo, startTree);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+}
+
+for (const task of loadValueTasks(AGENT_VALUE_ROOT)) {
+  test(`${task.id} fails its seed and passes its solution`, async () => {
+    const seed = await scoreValueRoot(task, false);
+    assert.equal(seed.harnessError, undefined);
+    assert.equal(seed.pass, false, `seed passed: ${seed.detail}`);
+    const solved = await scoreValueRoot(task, true);
+    assert.equal(solved.harnessError, undefined);
+    assert.equal(solved.pass, true, `solution failed: ${solved.detail}`);
+  });
+}

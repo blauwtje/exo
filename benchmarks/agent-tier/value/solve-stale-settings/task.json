@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-stale-settings",
+  "claim": "stale cache: the cache is read with a string key and invalidated with whatever type the caller passed, and deleting a user never invalidates",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

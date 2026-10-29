@@ -1,0 +1,19 @@
+export function sortedNames(users) {
+  users.sort((a, b) => a.name.localeCompare(b.name));
+  return users.map((user) => user.name);
+}
+
+export function withDefaults(options) {
+  options.retries = options.retries ?? 3;
+  options.timeoutMs = options.timeoutMs ?? 1000;
+  return options;
+}
+
+export function topScores(scores, count) {
+  return [...scores].sort((a, b) => b - a).slice(0, count);
+}
+
+export function withoutEmpty(rows) {
+  rows.splice(0, rows.length, ...rows.filter((row) => row.length > 0));
+  return rows;
+}

@@ -1,0 +1,6 @@
+{
+  "id": "value-build-empty-stats",
+  "claim": "build-task: edge case: empty and unusable input to a statistics summary",
+  "timeoutMinutes": 5,
+  "estimateUsd": 0.15
+}

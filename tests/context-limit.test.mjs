@@ -21,13 +21,40 @@ function homeWith(content) {
   return home;
 }
 
-test('contextLimit is the fixed 80k and ignores a leftover run.json setting', () => {
-  assert.equal(contextLimit(), 80_000);
-  assert.equal(contextLimit(homeWith('{"defaults":{"contextLimit":200000}}')), 80_000);
+const catalogLimit = JSON.parse(fs.readFileSync(new URL('../lib/run-providers.json', import.meta.url), 'utf8')).defaults.contextLimit;
+const SOFT = softLimit(catalogLimit) + 1000;
+const HARD = catalogLimit + 1000;
+
+test('contextLimit is the catalog default when run.json sets none', () => {
+  assert.equal(contextLimit(homeWith()), catalogLimit);
+  assert.equal(contextLimit(homeWith('{"defaults":{}}')), catalogLimit);
+});
+
+test('a run.json defaults.contextLimit overrides the catalog default', () => {
+  assert.equal(contextLimit(homeWith('{"defaults":{"contextLimit":200000}}')), 200_000);
+});
+
+test('an invalid run.json contextLimit falls back to the catalog default', () => {
+  for (const bad of ['{"defaults":{"contextLimit":0}}', '{"defaults":{"contextLimit":-5}}', '{"defaults":{"contextLimit":"big"}}', '{"defaults":{"contextLimit":1.5}}', 'not json']) {
+    assert.equal(contextLimit(homeWith(bad)), catalogLimit);
+  }
 });
 
 test('softLimit is 75% of the limit', () => {
   assert.equal(softLimit(80_000), 60_000);
+  assert.equal(softLimit(120_000), 90_000);
+});
+
+test('the hook limit follows an overriding run.json', () => {
+  const home = homeWith('{"defaults":{"contextLimit":40000}}');
+  const saved = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    assert.equal(contextLimit(), 40_000);
+    assert.match(subagentStartNote(), /30k.*40k/s);
+  } finally {
+    process.env.HOME = saved;
+  }
 });
 
 test('main session gets one note per level and is never denied', () => {
@@ -43,15 +70,15 @@ test('main session gets one note per level and is never denied', () => {
     const session_id = `s-${process.pid}-${Date.now()}`;
     const call = (tokens) => contextDecision({ session_id, transcript_path: at(tokens), tool_name: 'Read' });
     assert.equal(call(10_000), null);
-    const soft = call(70_000);
+    const soft = call(SOFT);
     assert.match(soft.additionalContext, /subagents/);
     assert.match(soft.additionalContext, /manager subagent/);
     assert.doesNotMatch(soft.additionalContext, /save-session|fresh session/);
     assert.ok(soft.additionalContext.indexOf('progress.md') >= 0);
     assert.ok(soft.additionalContext.indexOf('progress.md') < soft.additionalContext.indexOf('subagents'));
     assert.match(soft.additionalContext, /decisions, open points and next step in this turn/);
-    assert.equal(call(71_000), null);
-    const hard = call(120_000);
+    assert.equal(call(SOFT + 1000), null);
+    const hard = call(HARD);
     assert.ok(hard.additionalContext.indexOf('progress.md') >= 0);
     assert.ok(hard.additionalContext.indexOf('progress.md') < hard.additionalContext.indexOf('subagents'));
     assert.match(hard.additionalContext, /decisions, open points and next step in this turn/);
@@ -59,7 +86,7 @@ test('main session gets one note per level and is never denied', () => {
     assert.match(hard.additionalContext, /only decisions and user dialogue/);
     assert.doesNotMatch(hard.additionalContext, /save-session|fresh session/);
     assert.equal(hard.deny, undefined);
-    assert.equal(call(121_000), null);
+    assert.equal(call(HARD + 1000), null);
   } finally {
     if (savedRun !== undefined) process.env.EXO_RUN_HANDOFF = savedRun;
   }
@@ -77,16 +104,16 @@ test('main session is warned again after it shrinks below the soft limit', () =>
   try {
     const session_id = `s-shrink-${process.pid}-${Date.now()}`;
     const call = (tokens) => contextDecision({ session_id, transcript_path: at(tokens), tool_name: 'Read' });
-    assert.ok(call(70_000));
-    assert.equal(call(71_000), null);
+    assert.ok(call(SOFT));
+    assert.equal(call(SOFT + 1000), null);
     assert.equal(call(10_000), null);
-    assert.ok(call(70_000));
+    assert.ok(call(SOFT));
   } finally {
     if (savedRun !== undefined) process.env.EXO_RUN_HANDOFF = savedRun;
   }
 });
 
-test('Bash and Edit dispatchers give the main session one soft note at 61k, none at 59k, and a deny still wins', async () => {
+test('Bash and Edit dispatchers give the main session one soft note above the soft limit, none below it, and a deny still wins', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-dispatch-'));
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
@@ -164,7 +191,10 @@ test('the SubagentStart hook gives every subagent the limits and the hand-over r
   const out = JSON.parse(execFileSync(process.execPath, [hook.pathname], { input: '{}', encoding: 'utf8' }));
   assert.equal(out.hookSpecificOutput.hookEventName, 'SubagentStart');
   assert.equal(out.hookSpecificOutput.additionalContext, subagentStartNote());
-  assert.match(subagentStartNote(), /60k.*80k.*except Write.*result file/s);
+  const soft = `${softLimit(contextLimit()) / 1000}k`;
+  const hard = `${contextLimit() / 1000}k`;
+  assert.ok(subagentStartNote().includes(`From ${soft}`) && subagentStartNote().includes(`Past ${hard}`));
+  assert.match(subagentStartNote(), /except Write.*result file/s);
 });
 
 test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {

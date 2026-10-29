@@ -9,7 +9,7 @@ import { confineRefusal, confinedClaude } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { makeRunFolder, withHome } from '../skills/edit-skills/scripts/pressure.mjs';
-import { SPLITS, buildArmCopy, gains, spendRefusal } from './improve-real-copy.mjs';
+import { SPLITS, buildArmCopy, isRouting, gains, spendRefusal } from './improve-real-copy.mjs';
 import { scoreTarget, startScoreBridge, writeScoreClient } from './improve-real-bridge.mjs';
 import { improveTip, spawnSession, streamCost } from './improve-vs-goal.mjs';
 
@@ -20,13 +20,13 @@ const QUICK_RUNS = 1;
 const DEFAULT_CAP_USD = 1;
 const DEFAULT_SPEND_CAP_USD = 5;
 const DEFAULT_HELD_OUT_RUNS = 2;
-const DEFAULT_SCORE_CALLS = { routing: 3, locate: 2 };
+const DEFAULT_SCORE_CALLS = { routing: 3, 'routing-start': 3, locate: 2 };
 const LOCATE_SESSION_USD = 0.11;
 const FALLBACK_SESSION_USD = 0.03;
 const ROUTING_CELL = 'sonnet:low';
 const GIT_IDENTITY = ['-c', 'user.name=exo-bench', '-c', 'user.email=exo-bench@localhost', '-c', 'commit.gpgsign=false'];
-const USAGE = `usage: node benchmarks/improve-real.mjs [--target routing|locate] [--arm <list>] [--runs <n>] [--cap <usd>] [--score-calls <n>] [--held-out-runs <n>] [--spend-cap <usd>] [--baseline <file>] [--out <file>] [--smoke] [--dry-run]
-Compares exo:improve and Claude Code /goal, each on opus and on sonnet, on one real exo target: the find-cause skill description (routing) or the locate-code agent (locate).
+const USAGE = `usage: node benchmarks/improve-real.mjs [--target routing|routing-start|locate] [--arm <list>] [--runs <n>] [--cap <usd>] [--score-calls <n>] [--held-out-runs <n>] [--spend-cap <usd>] [--baseline <file>] [--out <file>] [--smoke] [--dry-run]
+Compares exo:improve and Claude Code /goal, each on opus and on sonnet, on one real exo target: the find-cause skill description (routing), the start skill description (routing-start) or the locate-code agent (locate).
 Each arm works in a leak-free copy with only the train split, scores through score.mjs (at most --score-calls answers), and is then scored on the train and held-out splits of the pristine tree.
 Default is the quick tier: ${QUICK_RUNS} run per arm, cap $${DEFAULT_CAP_USD} per arm session, --held-out-runs ${DEFAULT_HELD_OUT_RUNS}, --spend-cap $${DEFAULT_SPEND_CAP_USD}. --smoke runs goal-sonnet alone with one score call and one held-out run.
 --dry-run prints the plan and the most it can spend, then exits. --arm takes improve-opus, improve-sonnet, goal-opus, goal-sonnet. --baseline reads {"<target>":{"train":<n>,"heldOut":<n>}} and records the gains.
@@ -70,10 +70,10 @@ export function projectedSpend({ cap, calls, heldOutRuns, sessions, sessionUsd }
 }
 
 export function scorerSessions(tree, target) {
-  if (target === 'locate') return { train: SPLITS.locate.train.length, heldOut: SPLITS.locate.heldOut.length };
-  const prompts = JSON.parse(fs.readFileSync(path.join(tree, SPLITS.routing.data), 'utf8'));
-  const own = prompts.filter((entry) => entry.expect === SPLITS.routing.skill);
-  return { train: own.filter((entry) => entry.split === SPLITS.routing.train).length, heldOut: own.filter((entry) => entry.split === SPLITS.routing.heldOut).length };
+  if (!isRouting(target)) return { train: SPLITS.locate.train.length, heldOut: SPLITS.locate.heldOut.length };
+  const { data, skill, train, heldOut } = SPLITS[target];
+  const own = JSON.parse(fs.readFileSync(path.join(tree, data), 'utf8')).filter((entry) => entry.expect === skill);
+  return { train: own.filter((entry) => entry.split === train).length, heldOut: own.filter((entry) => entry.split === heldOut).length };
 }
 
 function median(values) {
@@ -83,7 +83,7 @@ function median(values) {
 }
 
 export function sessionUsd(tree, target) {
-  if (target === 'locate') return LOCATE_SESSION_USD;
+  if (!isRouting(target)) return LOCATE_SESSION_USD;
   const file = path.join(tree, 'benchmarks/results/routing.json');
   if (!fs.existsSync(file)) return FALLBACK_SESSION_USD;
   const sessions = JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
@@ -140,7 +140,7 @@ export function armRecord({ target, arm, run, cap, session, bridge, train, heldO
 export function parseOptions(argv) {
   const flags = parseFlags(argv, { target: 'string', arm: 'string', runs: 'string', cap: 'string', 'score-calls': 'string', 'held-out-runs': 'string', 'spend-cap': 'string', baseline: 'string', out: 'string', smoke: 'boolean', 'dry-run': 'boolean' }, { usage: USAGE });
   const target = flags.target ?? 'routing';
-  if (!(target in SPLITS)) throw new UsageError('--target takes routing or locate');
+  if (!(target in SPLITS)) throw new UsageError(`--target takes ${Object.keys(SPLITS).join(', ')}`);
   const smoke = flags.smoke === true;
   const names = flags.arm === undefined ? (smoke ? ['goal-sonnet'] : Object.keys(ARMS)) : flags.arm.split(',').filter(Boolean);
   for (const name of names) if (!(name in ARMS)) throw new UsageError(`--arm takes ${Object.keys(ARMS).join(', ')}`);

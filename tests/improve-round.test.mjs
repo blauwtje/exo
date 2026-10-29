@@ -84,6 +84,21 @@ test('an out-of-scope diff is discarded without scoring', () => {
   assert.equal(fs.existsSync(path.join(root, 'lib.txt')), false);
 });
 
+test('a scored discard prints the score output tail on stderr, a keep prints none', () => {
+  const root = setup();
+  assert.equal(round(root, commitEdit(root, 'score=7\n')).err, '');
+  const { out, err } = round(root, commitEdit(root, 'score=12\ncorrect=no\n'));
+  assert.match(out, /^ROW \S+ 12 discard best=7$/);
+  assert.equal(err, 'OUT score=12\nOUT correct=no\n');
+});
+
+test('a crash prints the error lines without stack frames', () => {
+  const root = setup({ command: "printf 'file:///s.mjs:3\\nTypeError: x is not a function\\n    at sort (file:///s.mjs:3:5)\\n\\nNode.js v24.0.0\\n'; exit 1" });
+  const { out, err } = round(root, commitEdit(root, 'score=7\n'));
+  assert.match(out, /^ROW \S+ 0 crash best=10$/);
+  assert.equal(err, 'OUT file:///s.mjs:3\nOUT TypeError: x is not a function\n');
+});
+
 test('a missing score is a crash row with score 0', () => {
   const root = setup({ command: 'echo nothing' });
   const commit = commitEdit(root, 'score=7\n');
@@ -144,4 +159,21 @@ test('requires --root, --tag and --commit', () => {
   const run = spawnSync(process.execPath, [script, '--root', '.', '--tag', 't'], { encoding: 'utf8' });
   assert.equal(run.status, 2);
   assert.match(run.stderr, /--commit is required/);
+});
+
+test('the brief shows in-scope and read-only files at the kept commit', () => {
+  const root = setup();
+  const commit = commitEdit(root, 'score=7\n```\n');
+  round(root, commit);
+  const text = brief(root);
+  assert.match(text, /### `src\/x\.txt`\n\n````\nscore=7\n```\n````/);
+  assert.match(text, /### `score\.sh` \(read-only\)/);
+});
+
+test('scoring runs on the commit, not on uncommitted edits', () => {
+  const root = setup();
+  const commit = commitEdit(root, 'score=12\n');
+  fs.writeFileSync(path.join(root, 'src/x.txt'), 'score=1\n');
+  const { out } = round(root, commit);
+  assert.equal(out, `ROW ${commit} 12 discard best=10`);
 });

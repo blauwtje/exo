@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-import-encoding",
+  "claim": "encoding: Buffer chunks decoded one by one split multibyte characters, and a BOM and CRLF from spreadsheet exports break the header and last column",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

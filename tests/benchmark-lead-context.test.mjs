@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import nodeFs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { contextSeries } from '#context-limits';
 import { fixture, run } from './harness.mjs';
+
+const limitHome = nodeFs.mkdtempSync(path.join(os.tmpdir(), 'exo-lead-home-'));
+nodeFs.mkdirSync(path.join(limitHome, '.config', 'exo'), { recursive: true });
+nodeFs.writeFileSync(path.join(limitHome, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":80000}}');
+process.env.HOME = limitHome;
 
 const TOOL = path.resolve('benchmarks/lead-context.mjs');
 

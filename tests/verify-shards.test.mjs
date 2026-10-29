@@ -5,10 +5,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import nodeFs from 'node:fs';
 import { contextLimit, reviewShardTokens, softLimit } from '../lib/context-limits.mjs';
 import { branchFiles, shardBranch } from '../skills/gate/scripts/review-shards.mjs';
 import { git } from './harness.mjs';
 import { editApp, landingCheckout } from './land-task-fixture.mjs';
+
+const limitHome = nodeFs.mkdtempSync(path.join(os.tmpdir(), 'exo-shards-home-'));
+nodeFs.mkdirSync(path.join(limitHome, '.config', 'exo'), { recursive: true });
+nodeFs.writeFileSync(path.join(limitHome, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":80000}}');
+process.env.HOME = limitHome;
 
 const VERIFY = fileURLToPath(new URL('../skills/gate/scripts/gate.mjs', import.meta.url));
 

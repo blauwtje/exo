@@ -1,0 +1,1 @@
+Customers say their monthly statement leaves out invoices issued on the last day of the month. `statement(invoices, customerId, '2026-03')` from `src/statement.mjs` is the entry point. Find the cause and fix it, and keep `npm test` green.

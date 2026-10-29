@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -48,6 +49,16 @@ test('a Boundary test file not on disk, or no specs folder, passes', () => {
 test('a spec that does not parse fails and names the spec', () => {
   const root = repo({ 'docs/specs/broken.md': '### Task 1: x\n\nDepends on: soon\n' });
   assert.match(boundaryRows(root), /^\[FAIL\] boundary rows: broken\.md does not parse: /);
+});
+
+test('a git-ignored spec never counts, a tracked one does', () => {
+  const root = repo({ '.gitignore': 'docs/*\n', 'docs/specs/p.md': PLAN, 'tests/guard.test.mjs': "test('rejects a path', () => {});\n" });
+  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'ignore' });
+  git('init', '--quiet');
+  git('add', '--all');
+  assert.match(boundaryRows(root), /^\[PASS\] boundary rows: /);
+  git('add', '--force', 'docs/specs/p.md');
+  assert.match(boundaryRows(root), /^\[FAIL\] boundary rows: p\.md task 1: /);
 });
 
 test('the real repository passes', () => {

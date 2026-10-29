@@ -1,0 +1,1 @@
+Add a `--limit <n>` option to the `list` command in `src/cli.mjs`. It keeps the first n tasks after the `--status` filter is applied, in either option order. A missing, non-integer or non-positive value must throw `Error("--limit needs a positive integer")`. Without the option nothing changes. Document the option in README.md and add a test.

@@ -1,0 +1,20 @@
+export function pageItems(items, page, size) {
+  const start = page * size;
+  return items.slice(start, start + size + 1);
+}
+
+export function pageCount(total, size) {
+  return Math.floor(total / size);
+}
+
+export function lastItems(items, count) {
+  return items.slice(items.length - count - 1);
+}
+
+export function isFirstPage(page) {
+  return page === 0;
+}
+
+export function hasNextPage(page, total, size) {
+  return (page + 1) * size < total;
+}

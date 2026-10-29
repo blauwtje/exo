@@ -110,7 +110,7 @@
     "agents/solve-hard.md": { "kind": "hardest" }
   },
   "dispatches": [
-    { "file": "skills/improve/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: improve-round`", "kind": "improve-round" },
+    { "file": "skills/improve/references/worker-round.md", "match": "delegate whose prompt opens with `exo-kind: improve-round`", "kind": "improve-round" },
     { "file": "skills/find-cause/SKILL.md", "match": "the prompt opening with `exo-kind: build`", "kind": "build" },
     { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: build` for phase (c)", "kind": "build" },
     { "file": "skills/build/reviewer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },

@@ -18,13 +18,12 @@ test('every entry has a prompt, a valid expect and a valid split', () => {
   assert.equal(new Set(prompts.map((p) => p.prompt)).size, prompts.length);
 });
 
-test('each model-invocable skill has 10 prompts split 6 train, 4 held-out; null has 30 split 18, 12', () => {
+test('each model-invocable skill and null has at least 30 prompts, at least 15 train and 15 held-out', () => {
   for (const key of [...invocable, null]) {
     const group = prompts.filter((p) => p.expect === key);
-    const scale = key === null ? 3 : 1;
-    assert.equal(group.length, 10 * scale, `${key} count`);
-    assert.equal(group.filter((p) => p.split === 'train').length, 6 * scale, `${key} train`);
-    assert.equal(group.filter((p) => p.split === 'held-out').length, 4 * scale, `${key} held-out`);
+    assert.ok(group.length >= 30, `${key} count ${group.length}`);
+    assert.ok(group.filter((p) => p.split === 'train').length >= 15, `${key} train`);
+    assert.ok(group.filter((p) => p.split === 'held-out').length >= 15, `${key} held-out`);
   }
 });
 

@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-day-zone",
+  "claim": "environment dependence: report days built from local-time getters, so the totals and the weekly schedule shift in a server zone that is not UTC while tests pin TZ=UTC",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}

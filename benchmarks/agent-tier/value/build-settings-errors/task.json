@@ -1,0 +1,6 @@
+{
+  "id": "value-build-settings-errors",
+  "claim": "build-task: error handling: a settings file that is missing, malformed or the wrong shape",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.15
+}

@@ -1,6 +1,6 @@
 ---
 name: start
-description: Use when the user asks which exo skills exist or what to run for a goal, not a skill name. Not for the session's routing rules, which route-skills owns.
+description: Use when the user asks anything about exo skills or commands, like which to run for a task or if one exists. Answer through this skill. Not for routing rules.
 argument-hint: "[goal or spec-path]"
 ---
 

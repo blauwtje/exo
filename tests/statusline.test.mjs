@@ -8,6 +8,9 @@ import { cacheUpdate, render } from '../lib/statusline.mjs';
 
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sl-'));
 const env = { HOME: home };
+process.env.HOME = home;
+fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":80000}}');
 const childEnv = (extra) => {
   const { CLAUDE_CODE_SESSION_ID: _drop, ...rest } = process.env;
   return { ...rest, HOME: home, ...extra };

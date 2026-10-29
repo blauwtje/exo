@@ -1,0 +1,1 @@
+After a user changes their settings in the app, the settings page keeps showing the old values until the server restarts. Our unit tests do not reproduce it, and the database row is correct. Users who were deleted also still show their settings. Find the cause and fix it without turning the cache off: repeated reads must still be served from the cache. Keep `npm test` green.

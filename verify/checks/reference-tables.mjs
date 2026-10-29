@@ -57,7 +57,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/check-docs/SKILL.md': [],
   'skills/run-plan/SKILL.md': [],
-  'skills/improve/SKILL.md': ['references/worker.md'],
+  'skills/improve/SKILL.md': ['references/worker-round.md', 'references/worker.md'],
   'skills/prompt/SKILL.md': ['references/examples.md', 'references/note.md'],
   'skills/gate/SKILL.md': ['references/review-rules.md', 'references/repair.md', 'references/gate-lines.md', 'references/plan-checks.md', 'references/lessons.md', '../route-skills/references/closing.md'],
   'skills/start/SKILL.md': [

@@ -32,7 +32,7 @@ test('setup creates branch, worktree, config, baseline row, brief and the settle
   const result = run(root, ...base);
   assert.equal(result.status, 0, result.stderr);
   const brief = path.join(fs.realpathSync(root), '.exo/improve/t1.brief.md');
-  assert.match(result.stdout, /^tag=t1 branch=improve\/t1 worktree=\.worktrees\/improve-t1 score=12 limit=\d+ model=\S+ effort=\S+ brief=\S+\n$/);
+  assert.match(result.stdout, /^tag=t1 branch=improve\/t1 worktree=\.worktrees\/improve-t1 score=12 limit=\d+ model=\S+ effort=\S+ noidea=\d+ mode=inline brief=\S+\n$/);
   assert.equal(fs.realpathSync(result.stdout.trim().split('brief=')[1]), brief);
   const cfg = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8'));
   assert.deepEqual([cfg.scope, cfg.readOnly, cfg.direction, cfg.worktree], [['code.txt'], ['check.mjs'], 'higher', '.worktrees/improve-t1']);
@@ -73,6 +73,17 @@ test('resume resets the worktree to the last kept row and prints the settled lin
   assert.equal(git(tree, 'rev-parse', '--short', 'HEAD'), kept);
   assert.match(result.stdout, /^tag=t1 branch=improve\/t1 .*score=12 .*brief=\S+\n$/);
   assert.equal(run(root, '--resume').status, 0);
+});
+
+test('a scope over defaults.improve.inlineBytes settles in worker mode', () => {
+  const root = repo();
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-home-'));
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { improve: { inlineBytes: 5 } } }));
+  const result = spawnSync('node', [SETUP, '--root', root, ...base], { encoding: 'utf8', env: { ...process.env, HOME: home } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, / mode=worker /);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8')).mode, 'worker');
 });
 
 test('a missing required flag is a usage error', () => {
@@ -127,5 +138,55 @@ test('a read-only path that does not exist fails before any branch', () => {
   const result = run(root, ...base.slice(0, -2), '--readonly', 'nope.mjs', '--tag', 'ty');
   assert.equal(result.status, 2);
   assert.match(result.stderr, /read-only path missing or empty: nope\.mjs/);
+  assert.equal(git(root, 'branch', '--list', 'improve/*'), '');
+});
+
+const identity = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
+const runFirst = (root, ...extra) => spawnSync('node', [SETUP, '--root', root, ...base, ...extra], { encoding: 'utf8', env: identity });
+
+function firstDir(root, files) {
+  const dir = path.join(root, '.exo', 'improve', 'first');
+  for (const [name, text] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });
+    fs.writeFileSync(path.join(dir, name), text);
+  }
+  return path.relative(root, dir);
+}
+
+test('--first commits the files under its dir as round 1 and prints the round row after the settled line', () => {
+  const root = repo();
+  const result = runFirst(root, '--first', firstDir(root, { 'code.txt': 'hello wide world\n' }), '--first-subject', 'Widen the greeting');
+  assert.equal(result.status, 0, result.stderr);
+  const [settledLine, row] = result.stdout.trim().split('\n');
+  assert.match(settledLine, /^tag=t1 .* score=12 .*mode=inline /);
+  assert.match(row, /^ROW [0-9a-f]+ 17 keep best=17$/);
+  const tree = path.join(root, '.worktrees/improve-t1');
+  assert.equal(git(tree, 'log', '-1', '--format=%s'), 'Widen the greeting');
+  assert.equal(fs.readFileSync(path.join(tree, 'code.txt'), 'utf8'), 'hello wide world\n');
+  assert.equal(fs.existsSync(path.join(root, '.exo/improve/first')), false);
+  assert.match(fs.readFileSync(path.join(root, '.exo/improve/t1.tsv'), 'utf8').trim().split('\n')[2], /\t17\tkeep\tWiden the greeting$/);
+});
+
+test('--first that scores worse is discarded and the worktree is reset to the baseline', () => {
+  const root = repo();
+  const result = runFirst(root, '--first', firstDir(root, { 'code.txt': 'hi\n' }), '--first-subject', 'Shorten');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout.trim().split('\n')[1], /^ROW [0-9a-f]+ 3 discard best=12$/);
+  assert.match(result.stderr, /^OUT /m);
+  assert.equal(fs.readFileSync(path.join(root, '.worktrees/improve-t1/code.txt'), 'utf8'), 'hello world\n');
+});
+
+test('--first with a read-only or out-of-scope file, no files or no subject fails before any branch', () => {
+  const root = repo();
+  const cases = [
+    [['--first', firstDir(root, { 'check.mjs': 'x' }), '--first-subject', 's'], /--first file out of scope: check\.mjs/],
+    [['--first', 'missing-dir', '--first-subject', 's'], /--first holds no files: missing-dir/],
+    [['--first', '.exo/improve/first'], /--first and --first-subject go together/],
+  ];
+  for (const [extra, message] of cases) {
+    const result = runFirst(root, ...extra);
+    assert.equal(result.status, 2, result.stderr);
+    assert.match(result.stderr, message);
+  }
   assert.equal(git(root, 'branch', '--list', 'improve/*'), '');
 });

@@ -1,0 +1,5 @@
+[
+  { "path": "collections.js", "range": "2-2", "class": "mutated argument" },
+  { "path": "collections.js", "range": "7-8", "class": "mutated argument" },
+  { "path": "collections.js", "range": "17-17", "class": "mutated argument" }
+]

@@ -19,6 +19,8 @@ import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRep
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
+const REVIEW_ROOT = path.join(ROOT, 'benchmarks/agent-tier/review');
+const AGENT_VALUE_ROOT = path.join(ROOT, 'benchmarks/agent-tier/value');
 const RESULTS = path.join(ROOT, 'benchmarks/results');
 const SESSION_MS = environmentMs('EXO_AGENT_TIER_SESSION_MS', 600_000);
 const MODEL_LADDER = ['haiku', 'sonnet', 'opus'];
@@ -274,8 +276,8 @@ const EXECUTORS = {
   'solve-hard': valueSession((task, repository) => `${task.prompt}\n\nCheckout: ${repository}.`)
 };
 
-const valueFixtures = () => new Map(loadValueTasks().map((task) => [task.id.replace(VALUE_PREFIX, ''), task]));
-const replayFixtures = () => new Map(loadFixtures().map((fixture) => [fixture.id, fixture]));
+const valueFixtures = () => new Map([...loadValueTasks(), ...loadValueTasks(AGENT_VALUE_ROOT)].map((task) => [task.id.replace(VALUE_PREFIX, ''), task]));
+const replayFixtures = () => new Map([...loadFixtures(), ...loadFixtures(REVIEW_ROOT)].map((fixture) => [fixture.id, fixture]));
 
 const FIXTURE_SOURCES = {
   'locate-code': () => new Map(readFixture().briefs.map((brief) => [brief.id, brief])),

@@ -1,0 +1,10 @@
+{
+  "good": [
+    { "path": "paging.js", "range": "3-3" },
+    { "path": "paging.js", "range": "7-7" },
+    { "path": "paging.js", "range": "11-11" }
+  ],
+  "bad": [
+    { "path": "paging.js", "range": "19-19" }
+  ]
+}

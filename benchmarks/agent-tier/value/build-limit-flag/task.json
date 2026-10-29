@@ -1,0 +1,6 @@
+{
+  "id": "value-build-limit-flag",
+  "claim": "build-task: feature: a new CLI option with input validation",
+  "timeoutMinutes": 5,
+  "estimateUsd": 0.15
+}

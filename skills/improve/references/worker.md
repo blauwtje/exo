@@ -8,7 +8,7 @@ Make one commit that raises the score; a script scores it afterwards and keeps i
 - Score: `<command>`, <direction>; best so far <best>.
 - Edit only: <scope>
 - Read-only, never edit: <readonly>
-- Worktree: `<worktree>`, base commit `<base>`.
+- Worktree: `<worktree>`, checked out at base commit `<base>`.
 - Fast check: `node <fastcheck> --root <root> --tag <tag>`.
 
 ## Earlier rounds
@@ -19,12 +19,12 @@ commit score status description
 
 ## Steps
 
-1. `git -C <worktree> reset --hard <base>`.
-2. Read the in-scope files the goal depends on and the earlier rounds; `<root>/.exo/improve/run.log` holds the last score run.
+1. File under `## Files at base` → its content is below; read it again only to use Edit on it.
+2. File not below → read only the ones the goal depends on; `<root>/.exo/improve/run.log` holds the last score run.
 3. Pick one idea no earlier round tried, with the largest expected gain; a gain smaller than the score's noise cannot be told apart.
-4. Edit files the scope matches, in `<worktree>`.
-5. Run the fast check once, output to a file; `FAST-CHECK fail <command>` → fix that error, no rerun.
-6. Commit once: subject = the change in plain words under 72 characters, since it becomes the row's description. No amend, no push.
+4. Edit, fast check and commit in one Bash command in `<worktree>`: write the edit, run the fast check with output to a file, then commit the edited files only on `FAST-CHECK pass`.
+5. `FAST-CHECK fail <command>` → fix that error, commit with no fast check rerun.
+6. Commit subject → the change in plain words under 72 characters, since it becomes the row's description. One commit; no amend, no push.
 7. Return `IDEA <short hash>`.
 
 ## Bounds
@@ -32,4 +32,8 @@ commit score status description
 - Scorer gaming → out of bounds: no edit to what the scorer reads, no special case for its cases, no cut of content the goal needs.
 - Scoring → leave it to the script; a score you measure costs the round's time and does not count.
 - Crash row → its idea may be retried with the cause fixed.
-- No idea left → return `NO-IDEA <reason>`.
+- No idea left → undo your edits with `git -C <worktree> reset --hard <base>`, return `NO-IDEA <reason>`.
+
+## Files at base
+
+<files>

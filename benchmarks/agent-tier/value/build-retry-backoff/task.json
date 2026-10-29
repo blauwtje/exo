@@ -1,0 +1,6 @@
+{
+  "id": "value-build-retry-backoff",
+  "claim": "build-task: feature: retry with exponential backoff and an injectable sleep",
+  "timeoutMinutes": 8,
+  "estimateUsd": 0.15
+}

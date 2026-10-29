@@ -7,14 +7,15 @@ import { readKindTable } from '../../../lib/model-kinds.mjs';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { excludeScratch } from '../../../lib/scratch-exclude.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { filesUnder, lastKeep, readRows, readScore, scorerHash, writeBrief } from './round.mjs';
-import { matchScope, ScopeError } from './scope.mjs';
+import { editableBytes, filesUnder, improveDefaults, lastKeep, readRows, readScore, scorerHash, writeBrief } from './round.mjs';
+import { matchScope, outOfScope, ScopeError } from './scope.mjs';
 
-const USAGE = 'usage: node setup.mjs --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--root <dir>] [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>]\n       node setup.mjs --resume [--root <dir>] [--tag <tag>]\nOutput: one line, tag= branch= worktree= score= limit= model= effort= brief=<path>. Exit 2 names the flag or step to fix.';
+const USAGE = 'usage: node setup.mjs --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--root <dir>] [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--first <dir> --first-subject <text>]\n       node setup.mjs --resume [--root <dir>] [--tag <tag>]\nOutput: one line, tag= branch= worktree= score= limit= model= effort= noidea= mode=inline|worker brief=<path>; with --first, the files under <dir> (repo-relative paths, in scope) move into the worktree, <dir> is deleted, they are committed as round 1 and round.mjs output follows, its OUT lines on stderr, its exit code passed on. Exit 2 names the flag or step to fix.';
 const SPEC = {
   root: 'string', goal: 'string', command: 'string', regex: 'string', direction: 'string', scope: 'string', readonly: 'string',
-  limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean',
+  limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean', first: 'string', 'first-subject': 'string',
 };
+const ROUND = new URL('./round.mjs', import.meta.url).pathname;
 const BASELINE_TIMEOUT_MS = 3_600_000;
 const LIMIT_FACTOR = 1.5;
 const LIMIT_SLACK_S = 60;
@@ -62,7 +63,7 @@ function freeTag(root, wanted) {
 
 function settled({ root, dir, cfg, tag, score }) {
   const brief = path.join(dir, `${tag}.brief.md`);
-  const fields = { tag, branch: `improve/${tag}`, worktree: cfg.worktree, score, limit: cfg.limit, model: cfg.model, effort: cfg.effort, brief: path.resolve(root, brief) };
+  const fields = { tag, branch: `improve/${tag}`, worktree: cfg.worktree, score, limit: cfg.limit, model: cfg.model, effort: cfg.effort, noidea: improveDefaults().noIdeaStop, mode: cfg.mode ?? 'worker', brief: path.resolve(root, brief) };
   process.stdout.write(`${Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ')}\n`);
 }
 
@@ -111,7 +112,37 @@ function buildConfig(flags, cwd, worktree) {
   };
   const baseline = baselineRun(cwd, cfg);
   cfg.limit = flags.limit ? Number(flags.limit) : deriveLimit(baseline.seconds);
+  cfg.mode = editableBytes({ cwd, cfg, base: 'HEAD' }) <= improveDefaults().inlineBytes ? 'inline' : 'worker';
   return { cfg, score: baseline.score };
+}
+
+function firstFiles(root, flags) {
+  if (!flags.first && !flags['first-subject']) return null;
+  if (!flags.first || !flags['first-subject']) throw new UsageError('--first and --first-subject go together');
+  const dir = path.resolve(root, flags.first);
+  const files = fs.existsSync(dir) && fs.statSync(dir).isDirectory() ? filesUnder(dir, '.').map((file) => path.posix.normalize(file)) : [];
+  if (files.length === 0) throw new SetupError(`--first holds no files: ${flags.first}`);
+  const refusal = outOfScope(files, { scope: list(flags.scope), readOnly: [...list(flags.readonly), ...list(flags.scorer)] });
+  if (refusal) throw new SetupError(`--first ${refusal}; write only scope files under ${flags.first}`);
+  return { dir, files, subject: flags['first-subject'] };
+}
+
+function firstRound({ root, cwd, tag, first }) {
+  for (const file of first.files) {
+    fs.mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true });
+    fs.copyFileSync(path.join(first.dir, file), path.join(cwd, file));
+  }
+  fs.rmSync(first.dir, { recursive: true });
+  git(cwd, 'add', '--', ...first.files);
+  if (gitOk(cwd, 'diff', '--cached', '--quiet')) {
+    process.stderr.write('--first files match the baseline; round 1 not scored, setup done\n');
+    return 0;
+  }
+  git(cwd, 'commit', '-q', '-m', first.subject);
+  const round = spawnSync(process.execPath, [ROUND, '--root', root, '--tag', tag, '--commit', git(cwd, 'rev-parse', '--short', 'HEAD')], { encoding: 'utf8' });
+  process.stdout.write(round.stdout);
+  process.stderr.write(round.stderr);
+  return round.status ?? 1;
 }
 
 function fresh(flags) {
@@ -119,6 +150,7 @@ function fresh(flags) {
   checkEntries('scope', list(flags.scope));
   checkEntries('readonly', list(flags.readonly));
   checkEntries('scorer', list(flags.scorer));
+  const first = firstFiles(root, flags);
   const tag = freeTag(root, flags.tag ?? defaultTag());
   const branch = `improve/${tag}`;
   const dir = path.join(root, '.exo', 'improve');
@@ -139,6 +171,7 @@ function fresh(flags) {
     if (left.length > 0) error.message += `\ncleanup left: ${left.join('; ')}`;
     throw error;
   }
+  return first ? firstRound({ root, cwd, tag, first }) : 0;
 }
 
 function newestTag(dir, root) {
@@ -170,7 +203,7 @@ function main() {
     for (const name of need) if (!flags[name]) throw new UsageError(`--${name} is required`);
     if (!flags.resume && !['higher', 'lower'].includes(flags.direction)) throw new UsageError('--direction must be higher or lower');
     if (flags.resume) resume(flags);
-    else fresh(flags);
+    else process.exitCode = fresh(flags);
   } catch (error) {
     if (!(error instanceof UsageError || error instanceof SetupError)) throw error;
     process.stderr.write(`${error.message}\n`);

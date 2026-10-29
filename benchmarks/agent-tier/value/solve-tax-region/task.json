@@ -1,0 +1,6 @@
+{
+  "id": "value-solve-tax-region",
+  "claim": "decoy symptom: a TypeError in the tax lookup hides that the rate loader keeps hand-written region keys unnormalized, so a null-guard yields wrong tax",
+  "timeoutMinutes": 6,
+  "estimateUsd": 0.25
+}
