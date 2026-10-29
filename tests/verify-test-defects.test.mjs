@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { weakenedTests } from '../skills/gate/scripts/gate.mjs';
 import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 import { git } from './harness.mjs';
 import { landingCheckout } from './land-task-fixture.mjs';
@@ -79,4 +80,49 @@ test('mergeReviews lists each of those lines as a report finding', async () => {
   const merged = mergeReviews([{ name: 'code-rules', text }]);
   assert.equal(merged.shown.filter((line) => line.includes('; defect; ')).length, 4);
   assert.equal(merged.shown.filter((line) => line.includes('tests/gone.test.js')).length, 1);
+});
+
+function patchOf(file, removed, added) {
+  return [
+    `--- a/${file}`,
+    `+++ b/${file}`,
+    `@@ -4,${removed.length} +4,${added.length} @@`,
+    ...removed.map((line) => `-${line}`),
+    ...added.map((line) => `+${line}`),
+    ''
+  ].join('\n');
+}
+
+test('an assertion rewritten in place is not reported as removed', () => {
+  const patch = patchOf('tests/hooks.test.mjs', [
+    "  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionStart', 'Stop']);",
+    '  assert.equal(entries.length, 8);'
+  ], [
+    "  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop']);",
+    '  assert.equal(entries.length, 9);'
+  ]);
+  assert.deepEqual(weakenedTests(patch), []);
+});
+
+test('an assertion removed with no assertion added beside it is still reported', () => {
+  const patch = patchOf('tests/hooks.test.mjs', ['  assert.equal(entries.length, 8);'], ['  const count = entries.length;']);
+  assert.deepEqual(weakenedTests(patch), ['tests/hooks.test.mjs:4 removed `assert.equal(entries.length, 8);`']);
+});
+
+test('two assertions replaced by one still report the unreplaced one', () => {
+  const patch = patchOf('tests/hooks.test.mjs', ['  assert.equal(a, 1);', '  assert.equal(b, 2);'], ['  assert.equal(a, 3);']);
+  assert.deepEqual(weakenedTests(patch), ['tests/hooks.test.mjs:5 removed `assert.equal(b, 2);`']);
+});
+
+test('an assertion added in an earlier hunk does not cover a removal in a later hunk', () => {
+  const patch = [
+    '--- a/tests/a.test.mjs',
+    '+++ b/tests/a.test.mjs',
+    '@@ -2,0 +3,1 @@',
+    '+  assert.ok(extra);',
+    '@@ -10,1 +11,0 @@',
+    '-  assert.equal(entries.length, 8);',
+    ''
+  ].join('\n');
+  assert.deepEqual(weakenedTests(patch), ['tests/a.test.mjs:10 removed `assert.equal(entries.length, 8);`']);
 });

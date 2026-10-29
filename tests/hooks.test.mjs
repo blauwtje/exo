@@ -60,8 +60,8 @@ test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script'
   for (const { hook } of entries) assert.ok(hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"'), hook.command);
 });
 
-test('only SessionStart, PreToolUse, SubagentStart and Stop have hooks, and the prompt dispatcher is gone', () => {
-  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionStart', 'Stop', 'SubagentStart']);
+test('only SessionStart, SessionEnd, PreToolUse, SubagentStart and Stop have hooks, and the prompt dispatcher is gone', () => {
+  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop', 'SubagentStart']);
   for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs']) {
     assert.equal(fs.existsSync(path.join(REPOSITORY, file)), false, file);
   }
@@ -79,6 +79,8 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /--git-common-dir/, 'the memory pointer does not resolve the common git directory');
   assert.match(hook, /fs\.existsSync\(memoryFile\)/, 'the memory pointer is added without testing for the file');
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
+  assert.match(hook, /and use \\`exo:remember\\` to change it/, 'the memory pointer does not name exo:remember');
+  assert.doesNotMatch(hook, /\/exo:remember/, 'the memory pointer names the slash command');
 });
 
 test('the session hook prints no book command', () => {
@@ -108,9 +110,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.ok(entry.hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"'), entry.hook.command);
 });
 
-test('the plugin registers eight hook commands, each under bash', () => {
+test('the plugin registers nine hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 8, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 9, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 

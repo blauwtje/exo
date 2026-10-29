@@ -27,3 +27,13 @@ test('outside git on codex the handoff sits under CODEX_HOME', () => {
   const { dir, out } = handoffPath('codex');
   assert.equal(out, path.join(dir, 'codex', 'exo', 'handoff', 'work.md'));
 });
+
+test('importing handoff.mjs runs no command and exports the path of a branch', async () => {
+  const { handoffFile } = await import('../skills/save-session/scripts/handoff.mjs');
+  const repository = fs.mkdtempSync(path.join(os.tmpdir(), 'handoff-git-'));
+  spawnSync('git', ['-C', repository, 'init', '-q', '-b', 'topic']);
+  spawnSync('git', ['-C', repository, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'start']);
+  const printed = spawnSync('node', [script, 'path', '--cwd', repository], { encoding: 'utf8' }).stdout.trim();
+  assert.equal(handoffFile(repository), printed);
+  assert.match(printed, /exo[\\/]handoff[\\/]topic\.md$/);
+});

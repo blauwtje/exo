@@ -1,8 +1,7 @@
 ---
 name: save-session
-description: Use when the user invokes it to save an unfinished session's state for a fresh session after a clear. Not for a plan another executor runs, which spec owns, or finished work, which the commit and pull request record.
+description: Use when the user asks to save this unfinished session for a fresh one. Not for a plan another executor runs (spec) or finished work.
 argument-hint: "[what the next session must not lose]"
-disable-model-invocation: true
 ---
 
 # Handoff

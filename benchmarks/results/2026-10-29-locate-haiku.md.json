@@ -1,0 +1,162 @@
+{
+  "commit": "2fb2e0bf",
+  "agent": "exo:locate-code",
+  "effort": "medium",
+  "tier": "quick",
+  "runs": 1,
+  "transcripts": ".exo/locate-recall/quick",
+  "summary": {
+    "haiku": {
+      "sessions": 3,
+      "errors": 0,
+      "recall": 0.8333333333333334,
+      "precision": 0.85,
+      "reportRecall": 0.9166666666666666,
+      "cost_usd": 0.024139920000000002,
+      "meanWallS": 35.115
+    },
+    "sonnet": {
+      "sessions": 3,
+      "errors": 0,
+      "recall": 1,
+      "precision": 0.7666666666666666,
+      "reportRecall": 1,
+      "cost_usd": 0.2575052,
+      "meanWallS": 30.38233333333333
+    }
+  },
+  "sessions": [
+    {
+      "model": "haiku",
+      "brief": "context-limit-note",
+      "run": 1,
+      "cost_usd": 0.008483560000000001,
+      "durationMs": 29764,
+      "numTurns": 10,
+      "recall": 0.75,
+      "precision": 0.8,
+      "found": [
+        "lib/context-limits.mjs",
+        "hooks/subagent-start.mjs",
+        "tests/context-limit.test.mjs"
+      ],
+      "missed": [
+        "hooks/hooks.json"
+      ],
+      "extra": [
+        "verify/checks/injected-context.mjs"
+      ],
+      "reportRecall": 0.75,
+      "returnText": "The start note is in `lib/context-limits.mjs:220-222` (`subagentStartNote`), emitted by `hooks/subagent-start.mjs:8-10`. The mid-run handover note is `lib/context-limits.mjs:136-139`, fired from `hooks/context-limit.mjs:46-50`.\nThe ratio is `lib/context-limits.mjs:7` (`SOFT_RATIO = 0.75`), read by `softLimit` at `:26-28`; `reviewShardTokens` at `:34-36` also derives from it.\nTests to update: `tests/context-limit.test.mjs:29-31`, `:46-47` and `:89-101` (hardcoded 70k, 61k, 59k), and `:161-168` (regex `/60k.*80k.*except Write.*result file/`).\nUnsure: docs and skill text quoting the 60k warning, not confirmed; `verify/checks/injected-context.mjs` may pin wording.\nReport: .exo/locate/soft-limit-budget.md"
+    },
+    {
+      "model": "sonnet",
+      "brief": "context-limit-note",
+      "run": 1,
+      "cost_usd": 0.11764349999999998,
+      "durationMs": 43508,
+      "numTurns": 9,
+      "recall": 1,
+      "precision": 0.5,
+      "found": [
+        "lib/context-limits.mjs",
+        "hooks/subagent-start.mjs",
+        "hooks/hooks.json",
+        "tests/context-limit.test.mjs"
+      ],
+      "missed": [],
+      "extra": [
+        "benchmarks/lead-context.mjs",
+        "docs/settings.md",
+        "skills/build/scripts/run-plan.mjs",
+        "tests/run-plan-budget.test.mjs",
+        "tests/verify-shards.test.mjs"
+      ],
+      "reportRecall": 1,
+      "returnText": "The start note lives in `lib/context-limits.mjs`, and the ratio is `SOFT_RATIO = 0.75` at line 7. The `Read next:` files are unread, so I don't know whether they state the ratio.\n- `lib/context-limits.mjs:220-222` `subagentStartNote` builds the start note. `hooks/subagent-start.mjs:4-9` injects it, and `hooks/hooks.json:79` registers the hook.\n- `lib/context-limits.mjs:26-28` `softLimit` and `:109-142` `contextDecision` apply the ratio and send the handoff note.\n- Also touched: `skills/build/scripts/run-plan.mjs:89` (`contextBudget`), `lib/context-limits.mjs:35` (`reviewShardTokens`), and `benchmarks/lead-context.mjs:48`.\n- Tests: `tests/context-limit.test.mjs:29-30,144-167` (asserts 75%, 60k/80k), `tests/run-plan-budget.test.mjs:74`, `tests/verify-shards.test.mjs:20`.\n- Read next: `CONTRIBUTING.md:144-150` and `docs/settings.md:33` (soft-limit prose).\nReport: .exo/locate/soft-limit.md"
+    },
+    {
+      "model": "haiku",
+      "brief": "exo-prune",
+      "run": 1,
+      "cost_usd": 0.00850105,
+      "durationMs": 43216,
+      "numTurns": 11,
+      "recall": 0.75,
+      "precision": 0.75,
+      "found": [
+        "lib/exo-prune.mjs",
+        "hooks/session-start.mjs",
+        "tests/exo-prune.test.mjs"
+      ],
+      "missed": [
+        "tests/session-start-prune.test.mjs"
+      ],
+      "extra": [
+        "hooks/hooks.json"
+      ],
+      "reportRecall": 1,
+      "returnText": "Paths:\nlib/exo-prune.mjs:93-108  pruneExo  deletes stale `.exo` entries, once per day\nEntry:\nhooks/hooks.json:4-16  SessionStart  runs hook on startup, resume, clear, compact\nCalled from:\nhooks/session-start.mjs:108  pruneExo call  skipped for run sessions (line 106)\nTested in:\ntests/exo-prune.test.mjs:41-60  stale removal, fresh folder kept\nCount: Paths 1, Entry 1, Called from 1, Tested in 1\nReport: .exo/locate/exo-prune.md"
+    },
+    {
+      "model": "sonnet",
+      "brief": "exo-prune",
+      "run": 1,
+      "cost_usd": 0.07397150000000001,
+      "durationMs": 24027,
+      "numTurns": 6,
+      "recall": 1,
+      "precision": 0.8,
+      "found": [
+        "lib/exo-prune.mjs",
+        "hooks/session-start.mjs",
+        "tests/exo-prune.test.mjs",
+        "tests/session-start-prune.test.mjs"
+      ],
+      "missed": [],
+      "extra": [
+        "hooks/hooks.json"
+      ],
+      "reportRecall": 1,
+      "returnText": "Finishing the report; the search is done.\n\nPaths:\nlib/exo-prune.mjs:93-102  pruneExo  prunes stale .exo units by cutoff\nlib/exo-prune.mjs:23  pruneAfterDays  reads defaults.pruneAfterDays\nEntry:\nhooks/session-start.mjs:108  pruneExo call  runs at SessionStart\nhooks/hooks.json:4-10  SessionStart  matcher startup|resume|clear|compact\nTested in:\ntests/exo-prune.test.mjs  unit tests for pruneExo\ntests/session-start-prune.test.mjs  hook-level prune test\nReport: .exo/locate/exo-prune.md"
+    },
+    {
+      "model": "haiku",
+      "brief": "paid-benchmark-guard",
+      "run": 1,
+      "cost_usd": 0.007155310000000001,
+      "durationMs": 32365,
+      "numTurns": 9,
+      "recall": 1,
+      "precision": 1,
+      "found": [
+        "verify/checks/paid-benchmarks.mjs",
+        "verify.mjs",
+        "tests/verify-paid-benchmarks.test.mjs"
+      ],
+      "missed": [],
+      "extra": [],
+      "reportRecall": 1,
+      "returnText": "Paths:\nverify/checks/paid-benchmarks.mjs:4-69  checkPaidBenchmarks  flags paid entry points lacking dry-run or quick tier\nEntry:\nverify.mjs:46  import checkPaidBenchmarks  registers the check module\nverify.mjs:115  checkPaidBenchmarks(report, repository)  runs under `npm run check`\nTested in:\ntests/verify-paid-benchmarks.test.mjs:32-117  paid-benchmarks cases  flagged, guarded, exempt, fixtures\nCount: Paths 1, Entry 2, Tested in 1\nReport: .exo/locate/paid-benchmark-check.md"
+    },
+    {
+      "model": "sonnet",
+      "brief": "paid-benchmark-guard",
+      "run": 1,
+      "cost_usd": 0.06589020000000001,
+      "durationMs": 23612,
+      "numTurns": 6,
+      "recall": 1,
+      "precision": 1,
+      "found": [
+        "verify/checks/paid-benchmarks.mjs",
+        "verify.mjs",
+        "tests/verify-paid-benchmarks.test.mjs"
+      ],
+      "missed": [],
+      "extra": [],
+      "reportRecall": 1,
+      "returnText": "Paths:\nverify/checks/paid-benchmarks.mjs:21-62  isUnguardedPaidEntry, checkPaidBenchmarks  check logic and report\nEntry:\nverify.mjs:46  import checkPaidBenchmarks  imports the check\nverify.mjs:115  checkPaidBenchmarks(report, repository)  registers check in runner\nTested in:\ntests/verify-paid-benchmarks.test.mjs:7  checkPaidBenchmarks, unguardedPaidBenchmarks  covers the check\nReport: .exo/locate/paid-benchmarks-check.md"
+    }
+  ]
+}

@@ -34,6 +34,7 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 3003, measured: '2026-10-28' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
+export const HOOK_SPAWN_MS_LOCK = { ms: 75, measured: '2026-10-29' };
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
 // large test file is split before it lands.
 export const TEST_FILE_CAP = { bytes: 40 * 1024 };
@@ -45,7 +46,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 886, measured: '2026-10-28' };
+export const SESSION_LOAD_LOCK = { words: 1076, measured: '2026-10-29' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.

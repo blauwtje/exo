@@ -37,7 +37,7 @@ test('evaluate writes cells, arms and per-arm per-split per-skill recall and fal
 test('descriptionHashes covers each model-invocable skill and session-routing', () => {
   const hashes = descriptionHashes(root);
   const skills = modelInvocableSkills(root);
-  assert.ok(skills.includes('build') && !skills.includes('prompt'));
+  assert.ok(skills.includes('build') && skills.includes('prompt') && !skills.includes('improve'));
   assert.deepEqual(Object.keys(hashes).sort(), [...skills, 'session-routing'].sort());
   const routing = readFileSync(`${root}hooks/session-routing.md`, 'utf8');
   assert.equal(hashes['session-routing'], createHash('sha256').update(routing).digest('hex'));

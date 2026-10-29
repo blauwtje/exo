@@ -10,6 +10,7 @@ Hook text and code run on every matching event, so each earns its cost in tokens
 - Command path → starts with `${CLAUDE_PLUGIN_ROOT}`.
 - Hook code stays Node with no `jq`; `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
 - Hook code size is locked by `verify/checks/hook-size.mjs` (`HOOK_LINES_LOCK` in `verify/budgets.mjs`): growth fails, and a raise is a hand edit in the commit that pays for it.
+- Hook spawn time is locked by `verify/checks/hook-latency.mjs` (`HOOK_SPAWN_MS_LOCK`): the median of seven `dispatch-bash.mjs` spawns above it fails → keep imports lazy and avoid reads on the hook path.
 
 ## Output
 

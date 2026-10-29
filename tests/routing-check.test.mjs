@@ -18,11 +18,11 @@ function fixture(description) {
   return root;
 }
 
-function run(root) {
+function run(root, options) {
   const lines = [];
   const original = console.log;
   console.log = (line) => lines.push(line);
-  try { checkRouting(createReport(), createRepository(root)); } finally { console.log = original; }
+  try { checkRouting(createReport(), createRepository(root), options); } finally { console.log = original; }
   return lines.join('\n');
 }
 
@@ -50,4 +50,21 @@ test('fails on a changed hash and names the key', () => {
   record(root, descriptionHashes(root));
   fs.writeFileSync(path.join(root, 'skills', 'build', 'SKILL.md'), '---\nname: build\ndescription: Build other things.\n---\nbody\n');
   assert.match(run(root), /\[FAIL\] routing.*build \(changed\).*node benchmarks\/routing\.mjs/);
+});
+
+test('warns instead of failing under the static gate when the record is stale', () => {
+  const root = fixture('Build things.');
+  record(root, descriptionHashes(root));
+  fs.writeFileSync(path.join(root, 'skills', 'build', 'SKILL.md'), '---\nname: build\ndescription: Build other things.\n---\nbody\n');
+  assert.match(run(root, { staticOnly: true }), /\[WARN\] routing.*build \(changed\).*node benchmarks\/routing\.mjs/);
+});
+
+test('warns under the static gate when the result file is missing', () => {
+  assert.match(run(fixture('Build things.'), { staticOnly: true }), /\[WARN\] routing.*missing.*node benchmarks\/routing\.mjs/);
+});
+
+test('still passes under the static gate when hashes match', () => {
+  const root = fixture('Build things.');
+  record(root, descriptionHashes(root));
+  assert.match(run(root, { staticOnly: true }), /^\[PASS\] routing/);
 });

@@ -72,7 +72,7 @@ function memoryPointer(cwd, top) {
     ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')
     : path.join(commonDirectory, 'exo', 'memory.md');
   if (!fs.existsSync(memoryFile) || !fs.statSync(memoryFile).isFile()) return '';
-  return `A project memory for this repository sits at ${located(memoryFile, top)}. Read it before changing code you have not read here, and run \`/exo:remember\` to change it.\n\n`;
+  return `A project memory for this repository sits at ${located(memoryFile, top)}. Read it before changing code you have not read here, and use \`exo:remember\` to change it.\n\n`;
 }
 
 function pointersFor(cwd, source) {

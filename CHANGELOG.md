@@ -11,8 +11,14 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Highlights
 - **`/exo:verify` is now `/exo:gate`.**
+- **Seven skills start when you ask in plain words, and a session that ends leaves a handoff stub.**
 
 ### Added
+- `save-session`, `prompt`, `remember`, `configure`, `start`, `write-docs` and `edit-skills` are model-invocable on request: each description opens `Use when the user asks`, so the model starts one only on the user's words; `improve`, `run-plan`, `route-skills`, `check-docs` and `file-issues` stay user-only, and `benchmarks/routing/prompts.json` records plain-words prompts for the seven.
+- A `SessionEnd` hook (`hooks/session-end.mjs`) writes a mechanical handoff stub at the `exo:save-session` path (HEAD, branch, uncommitted files, newest `progress.md`, marked `Source: auto`) only when no handoff was written during the session; a handoff the model wrote always wins.
+- `npm run check` fails when model-facing text in `skills/`, `agents/`, `hooks/` or `lib/` names a user-only skill as bare `exo:<name>`; `/exo:<name>` stays allowed as text for the user to type.
+- `npm run validate:static` reports a stale or missing routing record as a warning; `npm run check` keeps it a failure.
+- `npm run check` fails when the median spawn time of the Bash hook exceeds `HOOK_SPAWN_MS_LOCK` (75 ms), and `benchmarks/locate-recall.mjs` measures `exo:locate-code` file recall per model; the speed ledger records the 12 overhead research ideas with their verdicts.
 - The session start prunes `.exo/` entries whose newest file is older than `defaults.pruneAfterDays` (7, overridable in `~/.config/exo/run.json`), judging each child of `kept/`, `run-plan/` and `logs/` on its own; it keeps `.exo/run/`, symlinks and the folder with the newest `progress.md`, walks at most once per 24 hours through the `.exo/pruned-at` stamp, and build and task logs now go to `.exo/logs/<name>.log`.
 - `benchmarks/results/2026-10-28-flow-speed-research.md` records where real spec, build and verify session time goes; the speed ideas it queues for an `exo:improve` run are `build-task-stall-guard`, `lead-stages-verify-while-run-unit-builds` and `verdict-first-review-output-with-a-finding`.
 - `memory=off` (set through `/exo:configure`) switches the project memory off: the session start adds no memory pointer and `/exo:remember` writes and reads nothing; the memory file stays in place.
@@ -58,6 +64,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- The gate no longer reports an assertion replaced in the same hunk as a removed assertion, so a test updated for an intended behavior change no longer shows as a weakened test; Node CPU profiles (`*.cpuprofile`) stay out of git.
 - The gate review diff shows a deleted file as its header only (`git diff --irreversible-delete`), so a branch that deletes many files no longer splits into one `DISPATCH Branch` reviewer per deleted file; covered by `tests/verify-shards.test.mjs`.
 - The statusline `ctx` count stays green at every token count; the cyan band from 60k and the purple band from 80k are gone.
 - `node benchmarks/improve-speed.mjs` quick screen runs every cell `--repeat` asks for; it ran one, so `benchmarks/improve-all-score.mjs` failed every score with "1 of 3 cells recorded".

@@ -16,3 +16,4 @@ benchmarks/replay/**/runs/
 harnesses/codex/generated/
 __pycache__/
 benchmarks/results/*.runs/
+*.cpuprofile

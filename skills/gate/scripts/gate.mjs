@@ -307,9 +307,15 @@ function testLineHits({ file, line, pattern, at }) {
   return [{ file, at, text: line.slice(1).trim() }];
 }
 
+function unreplacedRemovals({ removed, assertions }, added) {
+  const removedTexts = new Set(removed.map(({ text }) => text));
+  const replacements = assertions.filter(({ text }) => !removedTexts.has(text)).length;
+  return removed.filter(({ text }) => !added.has(text)).slice(replacements);
+}
+
 export function weakenedTests(patch) {
   const added = new Set();
-  const removed = [];
+  const hunks = [];
   const skips = [];
   let file = null;
   let oldLine = 0;
@@ -322,14 +328,16 @@ export function weakenedTests(patch) {
     if (hunk !== null) {
       [oldLine, newLine] = [Number(hunk[1]), Number(hunk[3])];
       [oldLeft, newLeft] = [Number(hunk[2] ?? 1), Number(hunk[4] ?? 1)];
+      hunks.push({ removed: [], assertions: [] });
     } else if (header !== null) {
       if (header[1] !== '/dev/null') file = header[1];
     } else if (oldLeft > 0 && line.startsWith('-')) {
-      removed.push(...testLineHits({ file, line, pattern: REMOVED_ASSERTION, at: oldLine }));
+      hunks.at(-1).removed.push(...testLineHits({ file, line, pattern: REMOVED_ASSERTION, at: oldLine }));
       oldLeft -= 1;
       oldLine += 1;
     } else if (newLeft > 0 && line.startsWith('+')) {
       added.add(line.slice(1).trim());
+      hunks.at(-1).assertions.push(...testLineHits({ file, line, pattern: REMOVED_ASSERTION, at: newLine }));
       skips.push(...testLineHits({ file, line, pattern: ADDED_SKIP, at: newLine }));
       newLeft -= 1;
       newLine += 1;
@@ -337,7 +345,7 @@ export function weakenedTests(patch) {
   }
   const quote = (text) => `\`${text.slice(0, WARN_TEXT_LENGTH)}\``;
   return [
-    ...removed.filter(({ text }) => !added.has(text)).map(({ file: path, at, text }) => `${path}:${at} removed ${quote(text)}`),
+    ...hunks.flatMap((hunk) => unreplacedRemovals(hunk, added)).map(({ file: path, at, text }) => `${path}:${at} removed ${quote(text)}`),
     ...skips.map(({ file: path, at, text }) => `${path}:${at} added ${quote(text)}`)
   ];
 }

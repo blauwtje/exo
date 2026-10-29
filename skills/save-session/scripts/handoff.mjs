@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import os from 'node:os';
 import { currentHost } from '#host';
+import { isMain } from '#script-flags';
 
 function configDirectory() {
   return currentHost() === 'codex'
@@ -11,7 +12,7 @@ function configDirectory() {
     : process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
 
-function handoffFile(cwd) {
+export function handoffFile(cwd) {
   const gitDir = spawnSync('git', ['-C', cwd, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' });
   if (gitDir.status === 0) {
     const branch = spawnSync('git', ['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD'], { encoding: 'utf8' });
@@ -24,19 +25,21 @@ function handoffFile(cwd) {
 
 const USAGE = 'usage: node handoff.mjs path [--cwd <dir>]\nPrints where the handoff of the current branch sits, inside the repository\'s git directory.';
 
-const { values, positionals } = parseArgs({
-  allowPositionals: true,
-  options: { cwd: { type: 'string' }, help: { type: 'boolean' } }
-});
+if (isMain(import.meta.url)) {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: { cwd: { type: 'string' }, help: { type: 'boolean' } }
+  });
 
-const cwd = values.cwd ?? process.cwd();
-const command = positionals[0];
+  const cwd = values.cwd ?? process.cwd();
+  const command = positionals[0];
 
-if (values.help) {
-  console.log(USAGE);
-} else if (command === 'path') {
-  console.log(handoffFile(cwd));
-} else {
-  console.error(`unknown command ${command ?? '(none)'}; expected path`);
-  process.exitCode = 1;
+  if (process.argv.includes('--help')) {
+    console.log(USAGE);
+  } else if (command === 'path') {
+    console.log(handoffFile(cwd));
+  } else {
+    console.error(`unknown command ${command ?? '(none)'}; expected path`);
+    process.exitCode = 1;
+  }
 }

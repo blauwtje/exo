@@ -1,9 +1,8 @@
 ---
 name: remember
-description: "Use when the user wants a repository correction kept, or asks what exo remembers here, what still holds, or to forget a line. Not for a plan another session runs (spec) or a build or test command, which find-cause writes to AGENTS.md or CLAUDE.md."
+description: Use when the user asks to keep a repository correction, or what exo remembers here. Not for build or test commands (find-cause) or plans (spec).
 argument-hint: "[the correction this session must not lose]"
 allowed-tools: Bash(node *memory.mjs*)
-disable-model-invocation: true
 ---
 
 # Memory

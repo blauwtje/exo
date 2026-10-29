@@ -1,8 +1,7 @@
 ---
 name: prompt
-description: Use when the user invokes it to rewrite a rough prompt into a grounded, tagged prompt for Claude and run it after approval. Not for a prompt the user wants run unseen.
+description: Use when the user asks to rewrite a rough prompt into a grounded one and run it. Not for a prompt the user wants run unseen.
 argument-hint: "<rough prompt>"
-disable-model-invocation: true
 ---
 
 # Rewrite a rough prompt

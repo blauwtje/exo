@@ -1,7 +1,6 @@
 ---
 name: edit-skills
-description: Use when creating, editing or sizing a skill, agent, hook or skill script, and before it is done. Not for a rule or CLAUDE.md; read references/instruction-style.md.
-disable-model-invocation: true
+description: Use when the user asks to create, edit or size a skill, agent, hook or skill script. Not for a rule or CLAUDE.md; read references/instruction-style.md.
 argument-hint: <skill or agent to create, edit or size>
 ---
 

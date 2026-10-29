@@ -207,6 +207,19 @@ A quick run whose cells, prompt ids or description hashes differ from the stored
 
 `npm run check` has a `routing` check that compares the recorded hashes with the current files. It fails with `routing result is stale for <name> (changed)` after a description or `hooks/session-routing.md` edit, and the fix is to rerun `node benchmarks/routing.mjs --full` and commit the result.
 
+## Locate recall
+
+`node benchmarks/locate-recall.mjs` measures how many of the files a change would touch the `exo:locate-code` agent names, per model, on briefs written like spec questions. The fixture `benchmarks/locate-recall/briefs.json` pins the repository at one commit and lists per brief the expected and acceptable files; each session runs in a scratch copy of that commit. Recall is the share of expected files named in the return text, precision the share of named files that are expected or acceptable, and the report file in `.exo/locate` is graded separately on its first 30 lines.
+
+```bash
+node benchmarks/locate-recall.mjs --dry-run            # quick set, no session: prints the session count times the median recorded cost
+node benchmarks/locate-recall.mjs --brief exo-prune --models haiku   # one session, to confirm the agent shape
+node benchmarks/locate-recall.mjs                      # quick: 3 briefs, 1 run per model (haiku, sonnet), writes locate-recall-quick.json
+node benchmarks/locate-recall.mjs --full               # all 10 briefs, 3 runs per model, writes locate-recall.json
+```
+
+Raw stream transcripts of each session go to `--transcripts` (default `.exo/locate-recall/<time>`), so a miss can be read tool call by tool call.
+
 ## Ideas set
 
 `node benchmarks/ideas.mjs` measures how original and varied the design options `spec` offers. Each case (`fx-tide-export`, `fx-shopping-share`, `fx-notes-export`, listed in `benchmarks/ideas/cases.json`) sends one neutral request, `/exo:spec <feature> Which designs could do this? Recommend one.`, in a fresh `claude -p` session on a fresh copy of the fixture, with maker model `opus` at effort `high`. The quick tier is 1 run per case; `--full` is the baseline of 5 runs per case.

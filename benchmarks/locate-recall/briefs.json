@@ -1,0 +1,162 @@
+{
+  "commit": "2fb2e0bf",
+  "briefs": [
+    {
+      "id": "context-limit-note",
+      "quick": true,
+      "prompt": "A subagent should be told its context budget when it starts, and handed a note once it nears the limit. Where does that live, and which files would a change to the soft limit ratio touch, tests included?",
+      "expected": [
+        "lib/context-limits.mjs",
+        "hooks/subagent-start.mjs",
+        "hooks/hooks.json",
+        "tests/context-limit.test.mjs"
+      ],
+      "acceptable": [
+        "hooks/context-limit.mjs",
+        "CONTRIBUTING.md"
+      ]
+    },
+    {
+      "id": "model-kinds",
+      "prompt": "Each agent and dispatch has a kind that maps to a model tier and effort. Which files hold that table, apply the effort when an agent is dispatched, and check the kinds for drift, with their tests?",
+      "expected": [
+        "lib/model-kinds.json",
+        "lib/model-kinds.mjs",
+        "hooks/agent-effort.mjs",
+        "verify/checks/model-kinds.mjs",
+        "tests/model-kinds.test.mjs"
+      ],
+      "acceptable": [
+        "verify/model-kinds.mjs",
+        "tests/agent-effort.test.mjs"
+      ],
+      "quick": false
+    },
+    {
+      "id": "check-cache",
+      "prompt": "Re-running the full check on an unchanged tree is skipped through a cached pass. Which files hold that cache and which scripts read or write it, so I can change what counts as the same tree?",
+      "expected": [
+        "lib/check-cache.mjs",
+        "skills/build/scripts/land-task.mjs",
+        "skills/build/scripts/land-run.mjs",
+        "skills/build/scripts/run-tail.mjs",
+        "skills/gate/scripts/gate.mjs",
+        "lib/red-green.mjs"
+      ],
+      "acceptable": [
+        "skills/gate/references/gate-lines.md",
+        "package.json"
+      ],
+      "quick": false
+    },
+    {
+      "id": "git-deny",
+      "prompt": "Subagents must not run git commands that touch state shared between worktrees, such as stash. Where is that rule defined, where is it enforced for shell commands and for headless build sessions, and which tests cover it?",
+      "expected": [
+        "lib/git-deny.mjs",
+        "hooks/dispatch-bash.mjs",
+        "skills/build/scripts/run-session.mjs",
+        "tests/hooks.test.mjs",
+        "tests/run-session-no-commit.test.mjs"
+      ],
+      "acceptable": [
+        "package.json"
+      ],
+      "quick": false
+    },
+    {
+      "id": "exo-prune",
+      "prompt": "Old entries in the .exo folder are pruned after some days when a session starts. Which files do the pruning, which hook triggers it, and which tests cover it?",
+      "expected": [
+        "lib/exo-prune.mjs",
+        "hooks/session-start.mjs",
+        "tests/exo-prune.test.mjs",
+        "tests/session-start-prune.test.mjs"
+      ],
+      "acceptable": [
+        "package.json",
+        "CONTRIBUTING.md"
+      ],
+      "quick": true
+    },
+    {
+      "id": "stall-guard",
+      "prompt": "A shell command that stalls for about a minute in a headless build session gets cut off with exit 124. Where is that guard implemented, which hook wires it into Bash calls, which build scripts use it, and which tests cover it?",
+      "expected": [
+        "lib/stall-guard.mjs",
+        "hooks/run-stall-guard.mjs",
+        "skills/build/scripts/run-session.mjs",
+        "skills/build/scripts/run-prompts.mjs",
+        "tests/run-stall-guard.test.mjs"
+      ],
+      "acceptable": [
+        "skills/build/scripts/run-plan.mjs",
+        "tests/shell-fixes.test.mjs",
+        "package.json",
+        "CONTRIBUTING.md"
+      ],
+      "quick": false
+    },
+    {
+      "id": "statusline",
+      "prompt": "The status line shows a context count. Which files render it, which install the launcher into a user settings file, and which tests cover each?",
+      "expected": [
+        "lib/statusline.mjs",
+        "tests/statusline.test.mjs",
+        "skills/configure/scripts/settings.mjs",
+        "tests/configure-statusline.test.mjs",
+        "lib/plugin-pointer.mjs"
+      ],
+      "acceptable": [
+        "skills/configure/SKILL.md"
+      ],
+      "quick": false
+    },
+    {
+      "id": "paid-benchmark-guard",
+      "prompt": "The repository check flags a paid benchmark script that lacks a dry-run flag or a quick default tier. Where is that check written, where is it registered in the check runner, and which test covers it?",
+      "expected": [
+        "verify/checks/paid-benchmarks.mjs",
+        "verify.mjs",
+        "tests/verify-paid-benchmarks.test.mjs"
+      ],
+      "acceptable": [
+        "benchmarks/README.md",
+        "CONTRIBUTING.md"
+      ],
+      "quick": true
+    },
+    {
+      "id": "remove-worktree",
+      "prompt": "Removing a finished worktree goes through a script that keeps the excluded .exo folder safe. Where is it, which build scripts call it, and which test covers it?",
+      "expected": [
+        "skills/build/scripts/remove-worktree.mjs",
+        "skills/build/scripts/land-run.mjs",
+        "skills/build/scripts/land-slot.mjs",
+        "tests/remove-worktree.test.mjs"
+      ],
+      "acceptable": [
+        "skills/build/references/rolling-window.md",
+        "skills/build/references/wave-worktrees.md",
+        "skills/ship/SKILL.md"
+      ],
+      "quick": false
+    },
+    {
+      "id": "speed-ledger",
+      "prompt": "Build speed ideas are recorded in a ledger that is rendered to a markdown file and validated by the repository check. Which files implement the ledger tool, the validation, and their tests?",
+      "expected": [
+        "benchmarks/speed-ledger.mjs",
+        "verify/checks/speed-ledger.mjs",
+        "tests/verify-speed-ledger.test.mjs",
+        "tests/benchmark-speed-ledger.test.mjs"
+      ],
+      "acceptable": [
+        "benchmarks/speed-ledger.jsonl",
+        "benchmarks/speed-ledger.md",
+        "verify.mjs"
+      ],
+      "quick": false
+    }
+  ]
+}
