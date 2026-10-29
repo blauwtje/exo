@@ -58,6 +58,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- The statusline `ctx` count stays green at every token count; the cyan band from 60k and the purple band from 80k are gone.
 - `node benchmarks/improve-speed.mjs` quick screen runs every cell `--repeat` asks for; it ran one, so `benchmarks/improve-all-score.mjs` failed every score with "1 of 3 cells recorded".
 - `node skills/spec/scripts/repo-map.mjs` writes an uncapped map by default, so it names all tracked files and a grep of the repo map finds files under `skills/` and `benchmarks/`; it named 318 of 1547 and showed those folders as one line each. `--cap <bytes>` still bounds the map.
 - `node benchmarks/improve-speed.mjs` looks up the pooled base under the installed Claude Code version when `--claude-version` is absent; `benchmarks/improve-all-score.mjs` passes no version, so every lookup used `unrecorded`, missed the pooled row and failed the score.

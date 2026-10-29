@@ -16,7 +16,7 @@ const NOW = 1_000_000_000_000;
 const SEC = NOW / 1000;
 const D = (t) => `\x1b[2m${t}\x1b[0m`;
 const G = (t) => `\x1b[32m${t}\x1b[0m`;
-const C = (t) => `\x1b[36m${t}\x1b[0m`;
+const C = (t) => `\x1b[32m${t}\x1b[0m`;
 const MARK = '\x1b[1;38;5;141m◉ exo\x1b[0m';
 const payload = (tokens, extra = {}) => ({ context_window: { total_input_tokens: tokens, context_window_size: 1_000_000 }, ...extra });
 const line = (p, opts = {}) => render(p, { env, now: NOW, cache: null, ...opts });
@@ -35,21 +35,21 @@ test('parts without data drop', () => {
   assert.equal(plain(payload(1)), '◉ exo\n  ctx 0k/1M   5h –%   7d –%');
 });
 
-test('context shows used over the window with bands from the 80k limit: green, cyan and purple bands', () => {
+test('context shows used over the window and the count stays green at every size', () => {
   const second = (p) => line(p).split('\n')[1];
   const tail = `${D('5h')} –%   ${D('7d')} –%`;
   const colored = (code, used, limit) => `  ${D('ctx')} \x1b[${code}m${used}\x1b[0m${D(`/${limit}`)}   ${tail}`;
-  const PURPLE = '38;5;141';
   assert.equal(second(payload(59_000)), colored(32, '59k', '1M'));
-  assert.equal(second(payload(60_000)), colored(36, '60k', '1M'));
-  assert.equal(second(payload(79_000)), colored(36, '79k', '1M'));
-  assert.equal(second(payload(80_000)), colored(PURPLE, '80k', '1M'));
+  assert.equal(second(payload(60_000)), colored(32, '60k', '1M'));
+  assert.equal(second(payload(79_000)), colored(32, '79k', '1M'));
+  assert.equal(second(payload(80_000)), colored(32, '80k', '1M'));
   assert.equal(plain({ context_window: { total_input_tokens: 48_000 } }).split('\n')[1], '  ctx 48k/80k   5h –%   7d –%');
   const sized = (tokens, size) => ({ context_window: { total_input_tokens: tokens, context_window_size: size } });
   assert.equal(plain(sized(10_000, 200_000)).split('\n')[1], '  ctx 10k/200k   5h –%   7d –%');
   assert.equal(second(sized(59_000, 200_000)), colored(32, '59k', '200k'));
-  assert.equal(second(sized(60_000, 200_000)), colored(36, '60k', '200k'));
-  assert.equal(second(sized(80_000, 200_000)), colored(PURPLE, '80k', '200k'));
+  assert.equal(second(sized(60_000, 200_000)), colored(32, '60k', '200k'));
+  assert.equal(second(sized(80_000, 200_000)), colored(32, '80k', '200k'));
+  assert.equal(second(sized(200_000, 200_000)), colored(32, '200k', '200k'));
 });
 
 test('7d always shows and the cache fills a missing payload', () => {
