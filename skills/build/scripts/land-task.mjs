@@ -61,10 +61,10 @@ function dropsOf(task) {
   return task.section.match(/^Depends on: .*?\| Drops: ([^|\n]*?) *(?:\||$)/m)?.[1] || null;
 }
 
-// why: a Proof runs without the run's own variables, but with this task's Drops: words, as its Land gate does, so a Proof that runs the boundary-words check allows the same words.
-function proofEnvOf(task) {
+function proofEnvOf(task, pendingEvidence) {
   const drops = dropsOf(task);
-  return drops === null ? withoutRunVariables() : { ...withoutRunVariables(), EXO_DROPS: drops };
+  const env = drops === null ? withoutRunVariables() : { ...withoutRunVariables(), EXO_DROPS: drops };
+  return pendingEvidence === undefined ? env : { ...env, EXO_PENDING_EVIDENCE: pendingEvidence };
 }
 
 function deriveCommit(task, number, planId, signatures, root) {
@@ -266,9 +266,9 @@ function quietText(text, ok) {
   return `${[...kept, `Full output: ${quiet.file}`].join('\n')}\n`;
 }
 
-function proofAttempt(task, command, root) {
+function proofAttempt(task, command, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: proofEnvOf(task) });
+  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: proofEnvOf(task, pendingEvidence) });
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   return { proofRun, deadlineMs, tail, passed: proofRun.status === 0 && !proofRun.timedOut };
@@ -289,12 +289,12 @@ function proofFailure(attempt) {
   return `exit ${proofRun.status}`;
 }
 
-function runProof(task, command, { root, field, docker }) {
+function runProof(task, command, { root, field, docker, pendingEvidence }) {
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
   const before = workingTreeKey(root);
   const started = Date.now();
-  let attempt = proofAttempt(task, command, root);
-  if (!attempt.passed && startedServices(root, docker)) attempt = proofAttempt(task, command, root);
+  let attempt = proofAttempt(task, command, root, pendingEvidence);
+  if (!attempt.passed && startedServices(root, docker)) attempt = proofAttempt(task, command, root, pendingEvidence);
   if (attempt.passed) {
     recordPass(root, command, Date.now() - started, before);
     return { command, tail: attempt.tail };
@@ -311,9 +311,9 @@ function namedTestFiles(task, proofCommands, { root, planPath }) {
     && !proofCommands.some((command) => command.includes(file)));
 }
 
-function testFileFailure(task, file, root) {
+function testFileFailure(task, file, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task);
+  const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
   const testRun = runTreeSync(`node --test ${file}`, { cwd: root, timeoutMs: deadlineMs, env });
   if (quiet.file !== null) quiet.proofOutput += `node --test ${file}\n${testRun.output}\n`;
   if (testRun.status === 0 && !testRun.timedOut) return null;
@@ -324,15 +324,15 @@ function testFileFailure(task, file, root) {
 
 function runNamedTests(task, proofCommands, options) {
   for (const file of namedTestFiles(task, proofCommands, options)) {
-    const failure = testFileFailure(task, file, options.root);
+    const failure = testFileFailure(task, file, options.root, options.pendingEvidence);
     if (failure !== null) throw new LandingError(`Task ${task.number}: the test file ${failure}`);
   }
 }
 
-function runCoveringTests(task, proofCommands, root, changed) {
+function runCoveringTests(task, proofCommands, root, changed, pendingEvidence) {
   const failures = coveringTests(root, changed)
     .filter((file) => !proofCommands.some((command) => command.includes(file)))
-    .map((file) => testFileFailure(task, file, root))
+    .map((file) => testFileFailure(task, file, root, pendingEvidence))
     .filter((failure) => failure !== null);
   if (failures.length === 0) return;
   throw new LandingError([`Task ${task.number}: ${failures.length} covering test(s) of the changed files failed:`, ...failures].join('\n'));
@@ -500,12 +500,20 @@ function setGateEnv(values) {
   };
 }
 
-function pendingEvidenceOf(plan, task, root, planId) {
+function unlandedEvidenceOf(plan, root, planId, skip) {
   const landed = landedTasks(plan.tasks, root, planId);
   const values = plan.tasks
-    .filter((other) => other.number !== task.number && !landed.includes(other.number) && other.evidence !== null)
+    .filter((other) => other.number !== skip?.number && !landed.includes(other.number) && other.evidence !== null)
     .map((other) => other.evidence);
   return values.length === 0 ? undefined : values.join('\n');
+}
+
+function pendingEvidenceOf(plan, task, root, planId) {
+  return unlandedEvidenceOf(plan, root, planId, task);
+}
+
+function proofEvidenceOf(plan, root, planId) {
+  return unlandedEvidenceOf(plan, root, planId, null);
 }
 
 function gateEnvOf(plan, task, root, planId) {
@@ -726,11 +734,11 @@ function refuseBeforeProof(plan, task, { root, planPath, pin, planId }) {
   return block;
 }
 
-function proveTask(task, { root, planPath, docker, reportText, reportPath }) {
+function proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence }) {
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
-  const proofs = proofCommands.map((command) => runProof(task, command, { root, field: task.compact ? 'Proof' : 'Run', docker }));
-  runNamedTests(task, proofCommands, { root, planPath });
+  const proofs = proofCommands.map((command) => runProof(task, command, { root, field: task.compact ? 'Proof' : 'Run', docker, pendingEvidence }));
+  runNamedTests(task, proofCommands, { root, planPath, pendingEvidence });
   return { proofs, pending, redLine: redGreenLine(task, proofCommands, root, pending) };
 }
 
@@ -860,14 +868,15 @@ function landTaskLocked({ planText, number, root, reportText, reportPath, planPa
   clearStaleCandidate(root, planId);
   const task = taskOf(plan, number);
   const block = refuseBeforeProof(plan, task, { root, planPath, pin, planId });
-  const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath });
+  const pendingEvidence = proofEvidenceOf(plan, root, planId);
+  const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
   const frame = frameOf(plan.frame);
   const warnLines = runPreCommitGates(task, frame, root);
   const changed = taskChangedPaths(root);
   const candidate = commitCandidate(block, root, task, planId);
   const gateLine = warnLines + gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
   try {
-    runCoveringTests(task, proofs.map(({ command }) => command), root, changed);
+    runCoveringTests(task, proofs.map(({ command }) => command), root, changed, pendingEvidence);
   } catch (error) {
     dropCandidate(root, candidate);
     throw error;

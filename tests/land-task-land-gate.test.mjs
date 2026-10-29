@@ -244,14 +244,26 @@ test('the Land gate gets no pending Evidence for the task that carries it', asyn
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Evidence: none \(fixture\)$/m);
 });
 
-test('a Proof runs without the pending Evidence variable', async () => {
-  const proof = 'test -z "$EXO_PENDING_EVIDENCE"';
-  const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`), 'true')
-    .replace('### Task 1', '### Task 2: Later\nDepends on: none | Files: `src/later.js` | Data: a plain object | Proof: true | Red: none (fixture) | Evidence: none (fixture)\n\n### Task 1');
+const LATER_TASK = '### Task 2: Later\nDepends on: none | Files: `src/later.js` | Data: a plain object | Proof: true | Red: none (fixture) | Evidence: none (fixture)\n\n### Task 1';
+
+async function landProofOfTaskOne(proof, plan) {
   const { root, planPath } = await compactCheckout(plan);
   const report = PASS_REPORT.replace('`node tests/app.test.mjs`: pass', `\`${proof}\`: pass`);
-  const output = landTask({ planPath, planText: plan, number: 1, root, reportText: report });
-  assert.match(output, /^Proof: test -z "\$EXO_PENDING_EVIDENCE": pass \(exit 0\)$/m);
+  return landTask({ planPath, planText: plan, number: 1, root, reportText: report });
+}
+
+test('a Proof gets the Evidence value of a task not yet landed, as its Land gate does', async () => {
+  const proof = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
+  const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`), 'true').replace('### Task 1', LATER_TASK);
+  const output = await landProofOfTaskOne(proof, plan);
+  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0\)$/m);
+});
+
+test('a Proof gets the Evidence of the task that carries it, before its commit has the trailer', async () => {
+  const proof = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
+  const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`).replace('| Red: none (fixture)', '| Red: none (fixture) | Evidence: none (fixture)'), 'true');
+  const output = await landProofOfTaskOne(proof, plan);
+  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0\)$/m);
 });
 
 async function afterTaskOne() {

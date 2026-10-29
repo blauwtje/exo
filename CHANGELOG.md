@@ -78,6 +78,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - The agent hook denies an `exo:` agent call whose `model` or `effort` differs from the kind table, naming the table pair, the passed pair and the matching `exo-kind:` labels, instead of silently replacing them where only the user's screen showed it; covered by `tests/agent-effort.test.mjs`.
+- `land-task` gives a task's Proof the pending `Evidence:` of that task and of every unlanded task, so a `npm run validate:static` Proof no longer fails `edit evidence` before the commit carries its trailer.
 - `plan-check` counts a `Files:` entry that names another `Files:` path of the same task by its matching lines, so a large `CONTRIBUTING.md` listed for its cross-reference no longer pushes the task over the size limit.
 - The boundary-rows check and the held-out leak scan read only git-tracked files, so a git-ignored local plan under `docs/specs/` no longer fails `npm run check`; covered by `tests/check-boundary-rows.test.mjs` and `tests/benchmark-improve-real.test.mjs`.
 - The orchestrate agent works in phases, writes its result file first and updates it after each phase, has workers return at most 5 lines with detail in a file, reads only cited lines, and returns that file at exo's 60k context note, covered by `tests/agents.test.mjs`.
