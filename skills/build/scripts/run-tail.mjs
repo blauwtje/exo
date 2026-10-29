@@ -16,14 +16,14 @@ import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
 const SCRIPT = {
-  verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
-  mergeReviews: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'merge-reviews.mjs'),
-  runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
+  gate: path.join(PLUGIN_ROOT, 'skills', 'gate', 'scripts', 'gate.mjs'),
+  mergeReviews: path.join(PLUGIN_ROOT, 'skills', 'gate', 'scripts', 'merge-reviews.mjs'),
+  runProbes: path.join(PLUGIN_ROOT, 'skills', 'gate', 'scripts', 'run-probes.mjs'),
   landTask: path.join(HERE, 'land-task.mjs')
 };
 const REVIEW_AGENT = path.join(PLUGIN_ROOT, 'agents', 'review-branch.md');
 const FIXER_PROMPT = path.join(PLUGIN_ROOT, 'skills', 'build', 'review-fixer-prompt.md');
-const REVIEW_RULES = path.join(PLUGIN_ROOT, 'skills', 'verify', 'references', 'review-rules.md');
+const REVIEW_RULES = path.join(PLUGIN_ROOT, 'skills', 'gate', 'references', 'review-rules.md');
 const CODE_STANDARD = path.join(PLUGIN_ROOT, 'skills', 'route-skills', 'references', 'code-standard.md');
 
 const node = (script, args, root) => spawnSync(process.execPath, [script, ...args], {
@@ -216,8 +216,8 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const criterionStop = await proveCriterion({ planPath, plan, root, logDir, runSession, say });
   if (criterionStop !== null) return { stop: criterionStop };
   const reviewedTree = workingTreeKey(root);
-  const dispatched = exec(SCRIPT.verify, [...gateArgs, '--reviews-only'], root);
-  if (crashed(dispatched, REVIEW_LINES)) return { stop: crashStop('verify --reviews-only', dispatched) };
+  const dispatched = exec(SCRIPT.gate, [...gateArgs, '--reviews-only'], root);
+  if (crashed(dispatched, REVIEW_LINES)) return { stop: crashStop('gate --reviews-only', dispatched) };
   const { review: branchReview, branches, overlaps } = parseReviewLines(out(dispatched));
   const reviewModel = agentModel();
   const dispatches = [
@@ -277,17 +277,17 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       const preFixSha = headOf(root);
       const session = await runSession({ kind: 'fix', task: null, model: null, prompt: `${fixerPrompt({ planPath, root, base: baseText, findings })}${note}` });
       if (session.stop !== undefined) return { result: shelved(session.stop) };
-      const repaired = exec(SCRIPT.verify, [...gateArgs, '--repair', '--pre-fix-sha', preFixSha, '--findings', findings, '--findings-sha256', findingsSha], root);
-      if (crashed(repaired, REPAIR_LINES)) return { result: shelved(crashStop('verify --repair', repaired)) };
+      const repaired = exec(SCRIPT.gate, [...gateArgs, '--repair', '--pre-fix-sha', preFixSha, '--findings', findings, '--findings-sha256', findingsSha], root);
+      if (crashed(repaired, REPAIR_LINES)) return { result: shelved(crashStop('gate --repair', repaired)) };
       const { stopLine, failLine } = parseRepairLines(out(repaired));
-      if (stopLine !== undefined) return { result: shelved(stopOf(`fix repair stopped: ${stopLine}`, 'verify --repair stopped the review fix', `read ${findings}, repair on the branch, then run exo run again`)) };
-      if (failLine !== undefined) return { failure: { line: failLine, stop: stopOf(`fix repair failed: ${failLine}`, 'verify --repair refused the review fix', `read ${findings}, repair on the branch, then run exo run again`) } };
-      const gate = exec(SCRIPT.verify, gateArgs, root);
-      if (crashed(gate, GATE_LINES)) return { result: shelved(crashStop('verify', gate)) };
+      if (stopLine !== undefined) return { result: shelved(stopOf(`fix repair stopped: ${stopLine}`, 'gate --repair stopped the review fix', `read ${findings}, repair on the branch, then run exo run again`)) };
+      if (failLine !== undefined) return { failure: { line: failLine, stop: stopOf(`fix repair failed: ${failLine}`, 'gate --repair refused the review fix', `read ${findings}, repair on the branch, then run exo run again`) } };
+      const gate = exec(SCRIPT.gate, gateArgs, root);
+      if (crashed(gate, GATE_LINES)) return { result: shelved(crashStop('gate', gate)) };
       const failing = gateFailures(gate);
       const recheck = () => {
-        const without = exec(SCRIPT.verify, gateArgs, root);
-        if (crashed(without, GATE_LINES)) return crashStop('verify', without);
+        const without = exec(SCRIPT.gate, gateArgs, root);
+        if (crashed(without, GATE_LINES)) return crashStop('gate', without);
         return gateStop(failing, gateFailures(without), findings);
       };
       if (failing.length > 0) return { failure: { line: failing[0], stop: fixBrokeGate(failing[0], findings), recheck } };
@@ -324,7 +324,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
 
   function finish(reviewPassTree) {
     if (reports.length > 0) recordPass(root, BRANCH_REVIEW_KEY, 0, reviewPassTree);
-    const gate = exec(SCRIPT.verify, gateArgs, root);
+    const gate = exec(SCRIPT.gate, gateArgs, root);
     const unproven = unprovenRisks(path.join(exo, 'branch-review.md'));
     if (unproven.length === 0) return { gate };
     return { gate: { status: gate.status, stdout: `${gate.stdout ?? ''}${unproven.map((line) => `WARN Unproven risk: ${line}\n`).join('')}`, stderr: gate.stderr } };

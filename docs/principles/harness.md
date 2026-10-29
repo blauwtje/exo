@@ -8,7 +8,7 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 - **Give every task a runnable pass/fail check.** Require evidence, not claims. [4] exo: `skills/build/references/test-design.md`
 - **Prefer a context reset with a structured handoff over compaction.** The 2026-03-24 post supersedes the 2025-11-26 guidance. [1][2] exo: `skills/build/references/run-loop.md`, `skills/build/implementer-prompt.md`
 - **Keep a progress file and git history.** A fresh session then orients quickly. [2] exo: `skills/build/references/run-loop.md`
-- **Never let an agent remove or edit tests.** Let it change only status fields. [2] exo: `agents/build-task.md`, `skills/verify/scripts/verify.mjs`
+- **Never let an agent remove or edit tests.** Let it change only status fields. [2] exo: `agents/build-task.md`, `skills/gate/scripts/gate.mjs`
 - **Strip harness parts one at a time.** Keep only what the model cannot do alone. Assumptions "can go stale as models improve". [1][9] exo: gap
 - **Use hooks for what must happen every time.** CLAUDE.md is advisory, hooks are deterministic. [3] exo: `hooks/hooks.json`
 - **Use prompt or agent hooks only where judgment is needed.** Use an agent hook to check codebase state. [3] exo: gap, only command hooks

@@ -74,7 +74,7 @@ Describe what you want and Claude starts the skill that fits. A feature goes thr
 |---|---|---|
 | 1 | `spec` | Decides what to build. |
 | 2 | `build` | Builds a plan or a decided change with subagents. |
-| 3 | `verify` | Checks the branch before a pull request. |
+| 3 | `gate` | Checks the branch before a pull request. |
 | 4 | `ship` | Pushes, opens or merges the pull request. |
 
 Other skills, written as you call them. Those with `/exo:` start only when you type them:

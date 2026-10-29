@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 import fs from 'node:fs/promises';
 
-const RUN_PROBES = fileURLToPath(new URL('../skills/verify/scripts/run-probes.mjs', import.meta.url));
+const RUN_PROBES = fileURLToPath(new URL('../skills/gate/scripts/run-probes.mjs', import.meta.url));
 
 async function probes(report) {
   const root = await fixture();

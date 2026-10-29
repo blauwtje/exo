@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
+import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 import { JUDGE_NAMES, measureReview } from './sweep.mjs';
 import { sweepCells } from './sweep-cells.mjs';
 import { parseReview } from './sweep-score.mjs';

@@ -1,14 +1,14 @@
 ---
-name: verify
+name: gate
 description: "Use when a plan's tasks are landed and its branch needs the gate before a pull request: the scripted checks, the branch review and its repairs. Not for landing a task (build) or a change with no plan."
 argument-hint: "[plan path] [--land]"
 ---
 
-# Verify
+# Gate
 
 ## The loop
 
-1. **Run the gate.** `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base> --reviews-only` first.
+1. **Run the gate.** `node "${CLAUDE_SKILL_DIR}/scripts/gate.mjs" --plan <plan path> --root <checkout> --base <base> --reviews-only` first.
    - Then in one message: the full run in the background, step 2's dispatch; end the turn, no ScheduleWakeup, Monitor or sleep.
    - Dispatched agent → full run in the foreground, timeout 600000.
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.

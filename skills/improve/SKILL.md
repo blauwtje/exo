@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Each round one worker commits one idea; a script scores it, keeps it only when the score got better, else resets, and logs one row. The enemy is a loop that moves the goalposts: a changed scorer, a score read from chat, a kept commit that is not better. The overcorrection is a loop that stops to ask, so the user finds it idle.
 
-The run is its own plan: branch `improve/<tag>`, its rows and its kept commits replace spec, build and verify, so call none of them.
+The run is its own plan: branch `improve/<tag>`, its rows and its kept commits replace spec, build and gate, so call none of them.
 
 `<root>` = the checkout this session starts in; every script gets `--root <root>`, and all run state lives in `<root>/.exo/improve/`.
 

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { selfHostPlan, selfHostingGap } from '../skills/verify/scripts/verify.mjs';
+import { selfHostPlan, selfHostingGap } from '../skills/gate/scripts/gate.mjs';
 
 function repoWithBranch(changedFiles) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'self-host-'));
@@ -23,7 +23,7 @@ function repoWithBranch(changedFiles) {
   return root;
 }
 
-const SCRIPT = 'skills/verify/scripts/verify.mjs';
+const SCRIPT = 'skills/gate/scripts/gate.mjs';
 
 test('selfHostingGap splits changed script and agent paths', () => {
   const root = repoWithBranch([SCRIPT, 'skills/build/review-fixer-prompt.md', 'agents/review-branch.md', 'lib/other.mjs']);
@@ -37,7 +37,7 @@ test('selfHostingGap ignores unrelated paths', () => {
 
 test('selfHostPlan re-executes the branch copy when the loaded plugin is the same repository', () => {
   const root = repoWithBranch([SCRIPT]);
-  const running = path.join(repoWithBranch(['notes.txt']), 'verify.mjs');
+  const running = path.join(repoWithBranch(['notes.txt']), 'gate.mjs');
   fs.writeFileSync(running, '');
   const plan = selfHostPlan({ root, base: 'main', running, pluginRoot: root });
   assert.equal(plan.reexec, path.join(root, SCRIPT));
@@ -52,7 +52,7 @@ test('selfHostPlan does not re-execute when already running the branch copy', ()
 
 test('selfHostPlan only notes changed agents', () => {
   const root = repoWithBranch(['agents/a.md', 'agents/b.md']);
-  const plan = selfHostPlan({ root, base: 'main', running: path.join(os.tmpdir(), 'x', 'verify.mjs'), pluginRoot: root });
+  const plan = selfHostPlan({ root, base: 'main', running: path.join(os.tmpdir(), 'x', 'gate.mjs'), pluginRoot: root });
   assert.deepEqual(plan, { reexec: null, note: 'SELF-HOSTED agents=agents/a.md,agents/b.md' });
 });
 
@@ -65,5 +65,5 @@ test('selfHostPlan does nothing for a repository that is not the loaded plugin',
 
 test('selfHostPlan throws when the base ref does not resolve', () => {
   const root = repoWithBranch([SCRIPT]);
-  assert.throws(() => selfHostPlan({ root, base: 'no-such-ref', running: path.join(os.tmpdir(), 'x', 'verify.mjs'), pluginRoot: root }), /no-such-ref/);
+  assert.throws(() => selfHostPlan({ root, base: 'no-such-ref', running: path.join(os.tmpdir(), 'x', 'gate.mjs'), pluginRoot: root }), /no-such-ref/);
 });

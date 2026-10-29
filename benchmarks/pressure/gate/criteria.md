@@ -3,8 +3,8 @@
 Run the setup once, then each case from the root of an exo clone:
 
 ```sh
-bash benchmarks/pressure/verify/setup.sh
-node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/verify/a-skip-review.txt \
+bash benchmarks/pressure/gate/setup.sh
+node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/gate/a-skip-review.txt \
   --cells sonnet:high --plugin-dir <exo clone>
 ```
 

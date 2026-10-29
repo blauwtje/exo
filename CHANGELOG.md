@@ -9,6 +9,9 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Highlights
+- **`/exo:verify` is now `/exo:gate`.**
+
 ### Added
 - The session start prunes `.exo/` entries whose newest file is older than `defaults.pruneAfterDays` (7, overridable in `~/.config/exo/run.json`), judging each child of `kept/`, `run-plan/` and `logs/` on its own; it keeps `.exo/run/`, symlinks and the folder with the newest `progress.md`, walks at most once per 24 hours through the `.exo/pruned-at` stamp, and build and task logs now go to `.exo/logs/<name>.log`.
 - `benchmarks/results/2026-10-28-flow-speed-research.md` records where real spec, build and verify session time goes; the speed ideas it queues for an `exo:improve` run are `build-task-stall-guard`, `lead-stages-verify-while-run-unit-builds` and `verdict-first-review-output-with-a-finding`.
@@ -28,6 +31,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Verify demotes a `fix` finding whose finding quote is not in its cited file to `report`, so no fixer runs for it; the `exo:improve` loop runs the tests covering the touched files in its fast check, rejects a reworded duplicate idea at 0.6 token overlap, and drafts a wider slate with a lever style per round.
 
 ### Changed
+- The `exo:verify` skill is now `exo:gate` (`skills/gate/`, script `skills/gate/scripts/gate.mjs`), so it no longer shares its name with Claude Code's built-in verify skill; the run phase `verify` and `.exo/verify-state.json` keep their names, and the benchmark transcript parsers read both names, covered by `tests/lean-gates-metrics.test.mjs` and `tests/build-phases.test.mjs`.
 - `build-task` stops after 5 read-only calls in a row without an edit, and reads the code standard with its brief; `review-branch` caps notes at 5, and keeps later-round concerns to the fix diff; `fix-review` reads its findings, fix class and named files in its first call.
 - The `paid benchmarks` check scans `benchmarks/` subfolders and `confinedClaude` launches, and `sweep.mjs`, `checkpoint-fork.mjs`, `pressure/drive.mjs` and `replay/grade.mjs` gain `--dry-run`, `--full` and a quick default tier; `confined-child.mjs` is exempt because its callers have both, and the check prints that reason.
 - `node benchmarks/run.mjs --tier value` now scores the exo arm on 3 fixed value tasks against a stored stock arm for under $1.00 (store it once with `--stock-baseline`), and `node benchmarks/improve-speed.mjs <checkout>` screens one flow-unit cell against the stored base for under $1.00 and prints `reject`, `promote` or `no signal`; `--full` keeps the 13-task value run and the 15-run flow score, and `npm run check` fails when a quick value or flow scorer passes a bad reference or fails a good one.

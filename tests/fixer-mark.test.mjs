@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { findingsDigest } from '../skills/verify/scripts/merge-reviews.mjs';
-import { fixedProbes } from '../skills/verify/scripts/run-probes.mjs';
+import { findingsDigest } from '../skills/gate/scripts/merge-reviews.mjs';
+import { fixedProbes } from '../skills/gate/scripts/run-probes.mjs';
 import { unprovenRisks } from '../skills/build/scripts/run-tail.mjs';
 
 const PROMPT = fs.readFileSync(new URL('../skills/build/review-fixer-prompt.md', import.meta.url), 'utf8');

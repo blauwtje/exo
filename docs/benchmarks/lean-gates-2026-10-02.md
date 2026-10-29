@@ -2,7 +2,7 @@ Is new faster and cheaper without losing quality? No: new is faster (median wall
 
 # Benchmark lean-gates: exo old (d33adf37) against new (a8b27a45), 2026-10-02
 
-This report compares two versions of exo on the same task: `/exo:build` followed by `exo:verify` on a TypeScript fixture with five plan tasks. Each version ran three times. Every number below names its source. All source files are in `.git/exo/bench-lean-gates/` of the main checkout, unless an absolute path is given. The run directories are in `/Users/thomash/bench-runs/lean-gates-2026-10-02/`.
+This report compares two versions of exo on the same task: `/exo:build` followed by `exo:gate` on a TypeScript fixture with five plan tasks. Each version ran three times. Every number below names its source. All source files are in `.git/exo/bench-lean-gates/` of the main checkout, unless an absolute path is given. The run directories are in `/Users/thomash/bench-runs/lean-gates-2026-10-02/`.
 
 Percentage differences are always computed from the medians (or, where stated, the means) as `(new - old) / old x 100`. Example for the wall-clock time: `(434040 - 639223) / 639223 x 100 = -32.1%`.
 

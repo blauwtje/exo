@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `fix` or `concern` findings. The dispatch line carries this file's path and the fill values, never the prompt text.
+The prompt `gate` step 3 hands the `exo:fix-review` agent when the branch review returns `fix` or `concern` findings. The dispatch line carries this file's path and the fill values, never the prompt text.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>, findings file <findings path>, input to `run-probes.mjs`.

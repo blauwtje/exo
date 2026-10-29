@@ -1,4 +1,4 @@
-# verify
+# gate
 
 Checks a finished plan's branch, reviews it and fixes what the review finds.
 
@@ -19,4 +19,4 @@ Not for a change without a plan.
 
 ## Source
 
-`skills/verify/SKILL.md` and `skills/verify/scripts/verify.mjs`.
+`skills/gate/SKILL.md` and `skills/gate/scripts/gate.mjs`.

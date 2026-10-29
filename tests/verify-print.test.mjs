@@ -1,4 +1,4 @@
-// verify.mjs --reviews-only prints the review dispatch fields, and merge-reviews.mjs prints the
+// gate.mjs --reviews-only prints the review dispatch fields, and merge-reviews.mjs prints the
 // question and report findings with the Codex offer, so the lead reads neither file nor runs
 // pick-reviewer separately.
 
@@ -9,13 +9,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
-import { codeStandardPath } from '../skills/verify/scripts/review-input.mjs';
+import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
+import { codeStandardPath } from '../skills/gate/scripts/review-input.mjs';
 import { TASK_SPLIT_TOKENS } from '../lib/context-limits.mjs';
 import { git } from './harness.mjs';
 import { landingCheckout, editApp } from './land-task-fixture.mjs';
 
-const SCRIPTS = fileURLToPath(new URL('../skills/verify/scripts/', import.meta.url));
+const SCRIPTS = fileURLToPath(new URL('../skills/gate/scripts/', import.meta.url));
 const run = (name, args, env = {}) => execFileSync('node', [path.join(SCRIPTS, name), ...args], {
   encoding: 'utf8', env: { ...process.env, EXO_RUN: '', EXO_RUN_DIR: '', ...env }
 });
@@ -33,7 +33,7 @@ async function landedBranch() {
 
 test('--reviews-only prints one DISPATCH line with the filled review fields', async () => {
   const { root, planPath } = await landedBranch();
-  const output = run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']);
+  const output = run('gate.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']);
   const lines = output.trim().split('\n');
   assert.match(lines[0], /^REVIEW Branch main\.\.HEAD: review-branch/);
   const dispatch = lines.find((line) => line.startsWith('DISPATCH Branch: '));
@@ -52,7 +52,7 @@ test('--reviews-only prints one DISPATCH line with the filled review fields', as
 
 test('the DISPATCH line leaves the REVIEW and OVERLAP lines the run tail parses as they were', async () => {
   const { root, planPath } = await landedBranch();
-  const lines = run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']).trim().split('\n');
+  const lines = run('gate.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']).trim().split('\n');
   assert.ok(lines.some((line) => /^REVIEW Branch ([^:]*): (review-branch)(?: exo-kind: (\S+))?\s*$/.test(line)));
   assert.ok(lines.includes('OVERLAP none'));
   assert.ok(lines.filter((line) => !/^(REVIEW|OVERLAP|DISPATCH|FINDINGS-SHA|HEAD) /.test(line)).length === 0, 'no other line is printed');
@@ -188,14 +188,14 @@ test('a fixed row for that round, or another path, clears the recurrence', async
 
 test('the DISPATCH Branch line carries ledger= only once the ledger holds a row', async () => {
   const { root, planPath } = await landedBranch();
-  const dispatch = () => run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']).split('\n').find((line) => line.startsWith('DISPATCH Branch: '));
+  const dispatch = () => run('gate.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']).split('\n').find((line) => line.startsWith('DISPATCH Branch: '));
   assert.ok(!dispatch().includes('ledger='));
   await reviewRound(root, `FINDINGS\n${FIX_LINE('swallowed failure', 'src/f.js')}`);
   assert.ok(dispatch().endsWith(` ledger=${path.join(root, '.exo', 'review-ledger.jsonl')}`), dispatch());
 });
 
 const reviewInputOf = async (root, planPath) => {
-  run('verify.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']);
+  run('gate.mjs', ['--plan', planPath, '--root', root, '--base', 'main', '--reviews-only']);
   return fs.readFile(path.join(root, '.exo', 'review-input.md'), 'utf8');
 };
 

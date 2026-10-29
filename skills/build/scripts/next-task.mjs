@@ -188,13 +188,13 @@ function inlineTaskLines(task, frame, root) {
 }
 
 const SKILL_DIRECTORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const VERIFY_DIRECTORY = path.join(path.dirname(SKILL_DIRECTORY), 'verify');
+const GATE_DIRECTORY = path.join(path.dirname(SKILL_DIRECTORY), 'gate');
 
 function inlineSteps(planPath, root) {
   const reference = fs.readFileSync(path.join(SKILL_DIRECTORY, 'references', 'run-loop-inline.md'), 'utf8');
   return reference.split('\n')
     .filter((line) => line.startsWith('- '))
-    .map((line) => line.replaceAll('${CLAUDE_SKILL_DIR}/../verify', VERIFY_DIRECTORY).replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIRECTORY)
+    .map((line) => line.replaceAll('${CLAUDE_SKILL_DIR}/../gate', GATE_DIRECTORY).replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIRECTORY)
       .replaceAll('<plan>', planPath).replaceAll('<checkout>', root).replaceAll('<base>', defaultBranch(root) ?? 'main'));
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the verify fixture under /tmp/exo-pressure/verify/:
+# Builds the verify fixture under /tmp/exo-pressure/gate/:
 # make-app.sh, which each case prompt runs in its empty directory with a
 # variant (green, red or noplan) to lay down the `app` checkout on
 # feat/greeting. The checkout is a two-task Node app whose plan
@@ -16,9 +16,9 @@
 # of setup.sh proves the fixture still gates as described.
 set -euo pipefail
 
-root=/tmp/exo-pressure/verify
+root=/tmp/exo-pressure/gate
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-verify="$here/../../../skills/verify/scripts/verify.mjs"
+verify="$here/../../../skills/gate/scripts/gate.mjs"
 
 rm -rf "$root"
 mkdir -p "$root"

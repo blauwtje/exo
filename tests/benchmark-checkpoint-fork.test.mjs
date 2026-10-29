@@ -40,9 +40,9 @@ function usageLine(id, time, output, extra = {}) {
   });
 }
 
-const VERIFY_CALL = { content: [{ type: 'tool_use', id: 't1', name: 'Skill', input: { skill: 'exo:verify' } }] };
+const VERIFY_CALL = { content: [{ type: 'tool_use', id: 't1', name: 'Skill', input: { skill: 'exo:gate' } }] };
 
-// A main transcript whose lead loads exo:verify at 00:15:00, with two subagents.
+// A main transcript whose lead loads exo:gate at 00:15:00, with two subagents.
 function writeTranscript(directory) {
   fs.mkdirSync(directory, { recursive: true });
   const main = path.join(directory, 'session.jsonl');
@@ -88,7 +88,7 @@ function writeKeptCell(base) {
   return keepRepository(cellRoot, path.join(base, 'keep'), 'flow-unit-1');
 }
 
-test('verifyPoint finds the lead\'s first exo:verify call, and verifyBlock counts from there on', () => {
+test('verifyPoint finds the lead\'s first exo:gate call, and verifyBlock counts from there on', () => {
   const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'fork-block-')));
   try {
     const main = writeTranscript(base);

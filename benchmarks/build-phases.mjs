@@ -54,12 +54,12 @@ function trigger(tools) {
       const kind = agentKind(input);
       if (kind === 'build') found.push({ to: 'wave', id: tool.id });
       else if (kind === 'review') found.push({ to: 'verify' });
-    } else if (tool.name === 'Skill' && /(^|:)verify$/.test(input.skill ?? '')) {
+    } else if (tool.name === 'Skill' && /(^|:)(verify|gate)$/.test(input.skill ?? '')) {
       found.push({ to: 'verify' });
     } else if (tool.name === 'Bash') {
       const command = input.command ?? '';
       if (LANDING.test(command)) found.push({ to: 'landing' });
-      else if (/\bnode\b[^|;&\n]*\bverify\.mjs/.test(command)) found.push({ to: 'verify', script: true });
+      else if (/\bnode\b[^|;&\n]*\b(verify|gate)\.mjs/.test(command)) found.push({ to: 'verify', script: true });
     }
   }
   return found;

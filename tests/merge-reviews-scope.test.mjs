@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { mergeReviews, parseFinding } from '../skills/verify/scripts/merge-reviews.mjs';
-import { boundaryLines, writeReviewInput } from '../skills/verify/scripts/review-input.mjs';
+import { mergeReviews, parseFinding } from '../skills/gate/scripts/merge-reviews.mjs';
+import { boundaryLines, writeReviewInput } from '../skills/gate/scripts/review-input.mjs';
 
 const SCOPE_LINE = 'lib/a.mjs:4-6; out-of-scope; path escape; symlink bypass sits in an out class; report';
 

@@ -185,27 +185,27 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
   assert.ok(fixerPrompt.includes('hands the `exo:fix-review` agent when the branch review'));
   const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
-  const verifying = fs.readFileSync(path.join(skillsRoot, 'verify', 'SKILL.md'), 'utf8');
+  const verifying = fs.readFileSync(path.join(skillsRoot, 'gate', 'SKILL.md'), 'utf8');
   assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
   const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*[\s\S]*?(?=^4\. )/m)[0];
-  const repairAfter = fs.readFileSync(path.join(skillsRoot, 'verify', 'references', 'repair.md'), 'utf8');
+  const repairAfter = fs.readFileSync(path.join(skillsRoot, 'gate', 'references', 'repair.md'), 'utf8');
   assert.ok(repairStep.includes('`references/repair.md`'), 'step 3 hands the work after the fixer to repair.md');
-  const repairRun = repairAfter.indexOf('verify.mjs" --repair');
+  const repairRun = repairAfter.indexOf('gate.mjs" --repair');
   const probeRun = repairAfter.indexOf('run-probes.mjs');
   const loopFollow = repairAfter.indexOf('Follow the `LOOP` line');
   const fixDiffReview = repairAfter.indexOf('per the `DISPATCH Repair` line');
-  assert.ok(repairRun !== -1 && probeRun !== -1 && repairRun < loopFollow && probeRun < loopFollow, 'verify starts the repair recheck and the probes together, before it follows LOOP');
-  assert.ok(loopFollow !== -1 && loopFollow < fixDiffReview, 'verify follows the LOOP line before the fix diff review');
+  assert.ok(repairRun !== -1 && probeRun !== -1 && repairRun < loopFollow && probeRun < loopFollow, 'gate starts the repair recheck and the probes together, before it follows LOOP');
+  assert.ok(loopFollow !== -1 && loopFollow < fixDiffReview, 'gate follows the LOOP line before the fix diff review');
   for (const next of ['next=fix', 'next=stop', 'next=done']) assert.ok(repairAfter.slice(loopFollow, fixDiffReview).includes(`\`${next}\``), `repair.md acts on ${next}`);
   assert.ok(!repairAfter.includes('land-task.mjs'), 'the fixer commits, so repair.md runs no land-task');
   assert.match(repairAfter, /A `FAIL probe` line ends the turn/, 'a FAIL probe line ends the turn');
   assert.match(repairAfter, /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`/, 'a missing fix-review.md ends the turn BLOCKED');
-  assert.doesNotMatch(repairAfter, /A `FAIL` or `UNPLANNED` line from `verify\.mjs`/, 'the prose exit the script replaces is gone');
-  assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
-  assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'verify points to the report rule and ends on one decision');
+  assert.doesNotMatch(repairAfter, /A `FAIL` or `UNPLANNED` line from `gate\.mjs`/, 'the prose exit the script replaces is gone');
+  assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'gate skips the fixer when the review holds no fix finding');
+  assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'gate points to the report rule and ends on one decision');
   assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
-  assert.match(verifying, /^Report:[^\n]*`FAIL`, else `question`, else `ship`/m, 'verify orders the one decision');
+  assert.match(verifying, /^Report:[^\n]*`FAIL`, else `question`, else `ship`/m, 'gate orders the one decision');
   assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');
   assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');
 });
@@ -270,7 +270,7 @@ test('the branch reviewer quotes one verbatim line under each fix finding, after
 test('the branch reviewer confirms with one test file or Probe command, never the full suite', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.match(reviewer.body, /single test file or `Probe:` command/, 'only a single test file or Probe command');
-  for (const banned of ['`verify.mjs`', '`npm run check`', '`npm run validate`', '`npm test`']) {
+  for (const banned of ['`gate.mjs`', '`npm run check`', '`npm run validate`', '`npm test`']) {
     assert.ok(reviewer.body.includes(banned), `${banned} is named as forbidden`);
   }
   assert.match(reviewer.body, /needs the full suite → `question`/, 'a full-suite finding goes to question');
@@ -335,16 +335,16 @@ test('run-unit runs on its own kind, at low effort', () => {
 test('every skill that cites the report rule names closing.md, which defines it', () => {
   const closing = fs.readFileSync(path.join(skillsRoot, 'route-skills/references/closing.md'), 'utf8');
   assert.match(closing, /^## Report rule$/m, 'closing.md defines the report rule');
-  for (const file of ['check-docs/SKILL.md', 'edit-skills/references/skill-shape.md', 'verify/SKILL.md', 'ship/SKILL.md', 'refactor/SKILL.md', 'build/references/tail.md', 'find-cause/SKILL.md']) {
+  for (const file of ['check-docs/SKILL.md', 'edit-skills/references/skill-shape.md', 'gate/SKILL.md', 'ship/SKILL.md', 'refactor/SKILL.md', 'build/references/tail.md', 'find-cause/SKILL.md']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /closing\.md/, `${file} cites closing.md`);
   }
-  for (const owner of ['edit-skills', 'verify', 'ship', 'refactor', 'build', 'find-cause']) {
+  for (const owner of ['edit-skills', 'gate', 'ship', 'refactor', 'build', 'find-cause']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, owner, 'SKILL.md'), 'utf8'), /^\| `\.\.\/route-skills\/references\/closing\.md` \|/m, `${owner} lists closing.md in its References table`);
   }
 });
 
 test('every lead wait on a background dispatch bans a wakeup, since a pending one keeps claude -p alive', () => {
-  for (const file of ['build/references/run-loop.md', 'build/references/design-tasks.md', 'verify/SKILL.md', 'verify/references/repair.md', 'spec/references/watching.md']) {
+  for (const file of ['build/references/run-loop.md', 'build/references/design-tasks.md', 'gate/SKILL.md', 'gate/references/repair.md', 'spec/references/watching.md']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /ScheduleWakeup[^\n]*Monitor or sleep/, `${file} bans ScheduleWakeup while it waits`);
   }
 });

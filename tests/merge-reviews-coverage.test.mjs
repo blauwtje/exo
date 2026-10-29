@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { changedFiles, findingsDigest, mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
+import { changedFiles, findingsDigest, mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 
-const MERGE = fileURLToPath(new URL('../skills/verify/scripts/merge-reviews.mjs', import.meta.url));
+const MERGE = fileURLToPath(new URL('../skills/gate/scripts/merge-reviews.mjs', import.meta.url));
 const FILES = ['a.js', 'b.js', 'c.js', 'd.js'];
 const report = (name, ...read) => ({ name, text: `CLEAN\n\nCount: defect=0 concern=0 question=0 note=0\nRead: ${read.join(', ')}\nUnread: none\n` });
 

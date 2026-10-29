@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // benchmarks/checkpoint-fork.mjs
 // Starts a verify-only session from the state a full flow-unit cell had just
-// before its lead first loaded exo:verify, and compares what that session
+// before its lead first loaded exo:gate, and compares what that session
 // spends with what the full cell spent from the same point on. The full cells
 // come from `sweep.mjs --keep-repo`, which keeps each cell repository, its
 // origin and (with preserved timestamps) its .exo/ files.
@@ -33,7 +33,7 @@ import { reviewStages } from './sweep-score.mjs';
 import { runClaude } from './sweep.mjs';
 import { mannWhitney, meanAndSd } from './statistics.mjs';
 
-const VERIFY_SKILL = /(^|:)verify$/;
+const VERIFY_SKILL = /(^|:)(verify|gate)$/;
 const MINUTE_MS = 60 * 1000;
 const FORK_BUDGET_USD = 1;
 const FORK_TIMEOUT_MS = 30 * MINUTE_MS;
@@ -99,7 +99,7 @@ function agentType(file) {
 }
 
 // What a session spent from its verify call on, priced at list price: the lead's
-// calls from the message that loaded exo:verify, plus every subagent that
+// calls from the message that loaded exo:gate, plus every subagent that
 // started at or after it. A transcript with no verify call counts whole
 // (`atMs` null). The same function reads a full cell and a fork, so the two
 // blocks cover the same work. `costUsd` is null when a model has no price.
@@ -188,7 +188,7 @@ function transcriptBefore(transcriptFile, atMs) {
 }
 
 export function forkPrompt() {
-  return `Load the exo:verify skill and run it on the plan ${FLOW_PLAN}, branch ${FLOW_BRANCH}, base main. Push nothing and open no pull request.\n${NO_ANSWER}`;
+  return `Load the exo:gate skill and run it on the plan ${FLOW_PLAN}, branch ${FLOW_BRANCH}, base main. Push nothing and open no pull request.\n${NO_ANSWER}`;
 }
 
 function forkCell() {

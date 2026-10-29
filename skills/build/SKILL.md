@@ -14,7 +14,7 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
-7. **The tail.** Read `references/tail.md`, then run `verify`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
+7. **The tail.** Read `references/tail.md`, then run `gate`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
 
 ## No spec
 
@@ -41,7 +41,7 @@ Decided change with no plan file → `references/no-spec.md`. After a compaction
 | `implementer-prompt.md` | Never here: unit reads it. |
 | `drift-repairer-prompt.md` | Never here: unit reads it. |
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |
-| `review-fixer-prompt.md` | Never here: `verify` reads it. |
+| `review-fixer-prompt.md` | Never here: `gate` reads it. |
 | `references/design-tasks.md` | Step 4, `Design:` line. |
 | `run-task-prompt.md` | Never here: `run-plan.mjs` fills it. |
 | `reviewer-prompt.md` | No spec step 7. |

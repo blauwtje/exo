@@ -72,6 +72,15 @@ test('a passing cell has no failure and the last verify run decides', () => {
   assert.deepEqual(reasons(out), []);
 });
 
+test('a gate.mjs run is read as the gate run, passing or failing', () => {
+  const out = fixture();
+  makeCell(out, 'pass', { gate: [bash('g1', 'node skills/gate/scripts/gate.mjs --plan p', 1), result('g1', 'PASS Task 1')] });
+  makeCell(out, 'fail', { gate: [bash('g2', 'node gate.mjs', 1), result('g2', 'PASS a\nFAIL Task 2')] });
+  makeCell(out, 'late', { gate: [bash('g3', 'node verify.mjs', 1), result('g3', 'FAIL Task 1'), bash('g4', 'node gate.mjs', 2), result('g4', 'PASS Task 1')] });
+  const byCell = Object.fromEntries(scoreOutDir(out).rows.map((row) => [row.cell, row.failures]));
+  assert.deepEqual(byCell, { pass: [], fail: ['verify gate failed'], late: [] });
+});
+
 test('calls dedupe by message id across agents and outputTokens and fixRounds come from the saved files', () => {
   const out = fixture();
   const { transcript } = makeCell(out, 'c', { types: ['exo:fix-review', 'exo:build-task', 'exo:fix-review'], record: { outputTokens: 7 } });

@@ -1,6 +1,6 @@
 ---
 name: fix-review
-description: "Dispatched by verify only."
+description: "Dispatched by gate only."
 tools: Read, Edit, Write, Grep, Bash, TaskStop
 maxTurns: 40
 omitClaudeMd: true
@@ -20,7 +20,7 @@ Each `concern` no test can show (dead code, comment, duplicated literal, structu
 
 After a repair, rerun each `Sweep:` of the findings you fixed. A Sweep that still prints the repaired code → rewrite its line in the findings file once to the defect form: a read-only grep matching the defect, not its repair. Rerun it once. It still prints the repaired code → mark the finding `reported: sweep matches repair`.
 
-First call → one message that reads the findings file, `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md` (`../build/references/fix-class.md` from `skills/verify/`) and every file a finding names, each once; read none of them again. Commit each proven fix as the prompt says, with `Sweep:` and `Guard:` lines beside `Proof:`.
+First call → one message that reads the findings file, `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md` (`../build/references/fix-class.md` from `skills/gate/`) and every file a finding names, each once; read none of them again. Commit each proven fix as the prompt says, with `Sweep:` and `Guard:` lines beside `Proof:`.
 
 New test file → keep only when the plan names it; else move the test into a test file the branch diff lists, or delete it before returning.
 

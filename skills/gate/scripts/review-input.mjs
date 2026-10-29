@@ -6,9 +6,9 @@ import { ledgerPath, latestRound, ledgerRows } from './merge-reviews.mjs';
 import { reviewShardTokens } from '#context-limits';
 import { branchFiles, shardBranch, shardDiffText, shardFileLines } from './review-shards.mjs';
 
-const VERIFY_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
-const REVIEW_RULES = path.join(VERIFY_DIRECTORY, '..', 'references', 'review-rules.md');
-const DEFAULT_CODE_STANDARD = path.join(VERIFY_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
+const GATE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
+const REVIEW_RULES = path.join(GATE_DIRECTORY, '..', 'references', 'review-rules.md');
+const DEFAULT_CODE_STANDARD = path.join(GATE_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
 const STANDARD_FILES = ['CLAUDE.md', path.join('.claude', 'CLAUDE.md'), 'AGENTS.md'];
 const MARKDOWN_PATH = /`([^`\s]+\.md)`|\]\(([^)\s]+\.md)\)/g;
 

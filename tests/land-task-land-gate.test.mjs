@@ -57,7 +57,7 @@ test('a Land gate whose last pass was slow is skipped with one line and the land
   await fs.mkdir(path.dirname(cacheFile(root)), { recursive: true });
   await fs.writeFile(cacheFile(root), JSON.stringify({ 'echo ran >> gate.log && exit 1': { tree: 'old', ms: 60000 } }));
   const output = landTask({ planPath, planText: withLandGate('echo ran >> gate.log && exit 1'), number: 1, root });
-  assert.match(output, /^Land gate "echo ran >> gate\.log && exit 1" skipped: its last pass took 60000 ms, so verify runs it once\.$/m);
+  assert.match(output, /^Land gate "echo ran >> gate\.log && exit 1" skipped: its last pass took 60000 ms, so gate runs it once\.$/m);
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   await assert.rejects(fs.access(path.join(root, 'gate.log')));
 });

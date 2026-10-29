@@ -59,7 +59,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exportSignatures } from '#export-signatures';
-import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { REVIEWER_AGENTS } from '../skills/gate/scripts/pick-reviewer.mjs';
 import { sumCounts, usageCounts } from '#token-weights';
 import { findTranscript } from './cell-usage.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
@@ -71,7 +71,7 @@ const MANIFESTS = new Set(['package.json', 'package-lock.json', 'npm-shrinkwrap.
 const OLD_FILE_LIMIT = 5;
 const OLD_LINE_LIMIT = 200;
 const RECHECK_TIMEOUT_MS = 10 * 60 * 1000;
-const GATE_COMMAND = /verify\.mjs|\bnpm\s+(test|t|run\s+(test|typecheck|lint|check))\b|\btsc\b|\beslint\b|node\s+--test|\bvitest\b/;
+const GATE_COMMAND = /(verify|gate)\.mjs|\bnpm\s+(test|t|run\s+(test|typecheck|lint|check))\b|\btsc\b|\beslint\b|node\s+--test|\bvitest\b/;
 
 // ---------- transcripts ----------
 
@@ -199,15 +199,15 @@ export function toolCalls(entries) {
 
 // The gates one session's main transcript shows, from its tool calls
 // (.git/branch-review.md misses a review whose report went elsewhere):
-// - verify ran: a Skill call to verify (`exo:verify`), else a Bash call whose
+// - verify ran: a Skill call to verify (`exo:gate`), else a Bash call whose
 //   command runs `node <path>/verify.mjs`; verifyCall is the first of these.
 // - review dispatched: an Agent (older harness: Task) call whose
 //   subagent_type holds review-branch.
 // - routes: the `Route: <name>` lines a Bash call running next-task.mjs
 //   printed, in order; a reference read that quotes one does not count.
 export function gateFacts(calls) {
-  const verifyCall = calls.find((call) => call.name === 'Skill' && /(^|:)verify$/.test(String(call.input.skill ?? '')))
-    ?? calls.find((call) => call.name === 'Bash' && /\bnode\s+\S*verify\.mjs/.test(String(call.input.command ?? '')));
+  const verifyCall = calls.find((call) => call.name === 'Skill' && /(^|:)(verify|gate)$/.test(String(call.input.skill ?? '')))
+    ?? calls.find((call) => call.name === 'Bash' && /\bnode\s+\S*(verify|gate)\.mjs/.test(String(call.input.command ?? '')));
   const reviewDispatched = calls.some((call) => (call.name === 'Agent' || call.name === 'Task') && /review-branch/.test(String(call.input.subagent_type ?? '')));
   const routes = calls
     .filter((call) => call.name === 'Bash' && /next-task\.mjs/.test(String(call.input.command ?? '')))
@@ -430,8 +430,8 @@ export function phasesOf({ calls, subagents, meta, facts, mainBounds }) {
   const byTool = new Map(subagents.map((subagent) => [subagent.meta.toolUseId, subagent]));
   const agentCalls = calls.filter((call) => call.name === 'Agent' || call.name === 'Task');
   const typeOf = (call) => String(call.input.subagent_type ?? byTool.get(call.id)?.meta.agentType ?? '');
-  const verifySkill = calls.find((call) => call.name === 'Skill' && /(^|:)verify$/.test(String(call.input.skill ?? call.input.command ?? '')));
-  const verifyRuns = calls.filter((call) => call.name === 'Bash' && /verify\.mjs/.test(String(call.input.command ?? '')));
+  const verifySkill = calls.find((call) => call.name === 'Skill' && /(^|:)(verify|gate)$/.test(String(call.input.skill ?? call.input.command ?? '')));
+  const verifyRuns = calls.filter((call) => call.name === 'Bash' && /(verify|gate)\.mjs/.test(String(call.input.command ?? '')));
   const verifyStart = verifySkill?.ts ?? verifyRuns[0]?.ts ?? null;
   const review = agentCalls.find((call) => /review-branch/.test(typeOf(call)));
   const fix = agentCalls.find((call) => /fix-review/.test(typeOf(call)));
@@ -601,13 +601,13 @@ export function runMetrics(runDirectory, { recheck: doRecheck = true, forceReche
     log,
     warmUp: warmUp ? 1 : 0,
     byAgentType: perType(counted),
-    bash: { full: counted.length, verifyCalls: bashCalls.filter((call) => /verify\.mjs/.test(call.command)).length, landTaskCalls: bashCalls.filter((call) => /land-task\.mjs/.test(call.command)).length, source: 'transcript-bash' }
+    bash: { full: counted.length, verifyCalls: bashCalls.filter((call) => /(verify|gate)\.mjs/.test(call.command)).length, landTaskCalls: bashCalls.filter((call) => /land-task\.mjs/.test(call.command)).length, source: 'transcript-bash' }
   };
 
   // reviewer
   const reviewerLines = [];
   for (const call of calls) {
-    for (const match of (call.resultText ?? '').matchAll(/^REVIEWER:[ \t]*(.*\S)/gm)) reviewerLines.push({ ts: call.resultTs, agent: match[1], fromVerify: /verify\.mjs/.test(String(call.input.command ?? '')) });
+    for (const match of (call.resultText ?? '').matchAll(/^REVIEWER:[ \t]*(.*\S)/gm)) reviewerLines.push({ ts: call.resultTs, agent: match[1], fromVerify: /(verify|gate)\.mjs/.test(String(call.input.command ?? '')) });
   }
   const pickedLine = reviewerLines.find((line) => line.fromVerify) ?? reviewerLines[0] ?? null;
   const dispatched = phases.review.agentType?.replace(/^exo:/, '') ?? null;

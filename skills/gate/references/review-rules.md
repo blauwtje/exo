@@ -8,7 +8,7 @@ Branch reviewer follows these when the dispatch names this file. Dispatcher read
 - Pass: this file's path, plan path, branch, checkout, base.
 - Pass: scope `branch <base>..HEAD` from `REVIEW Branch`, or `overlap` with the `OVERLAP` lines.
 - Pass: findings path, input to `merge-reviews.mjs`: scope `branch` → `<checkout>/.exo/review-branch.md`; scope `overlap` → `<checkout>/.exo/review-overlap.md`.
-- Scope `fix diff` → findings path `<checkout>/.exo/fix-review.md`, input to verify's repair step 3, never to `merge-reviews.mjs`.
+- Scope `fix diff` → findings path `<checkout>/.exo/fix-review.md`, input to gate's repair step 3, never to `merge-reviews.mjs`.
 - Scope `branch` → also pass three to five questions from the plan's Goal and each task's `Data:`, `Risk:` and Acceptance line.
 - Reviewer reads only the plan, diff and `Red:` lines; its only `Red:` source is `## Red lines` of the dispatch's `input=` file, else `<checkout>/.exo/review-input.md`.
 - Reviewer return with no file at its findings path, whatever its return line (`BLOCKED`, `CLEAN` included) → dispatcher resumes it once with SendMessage, per `${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.md`, before any `BLOCKED` handling, naming the path and its consumer. SendMessage unavailable → dispatch a fresh agent with the prior result path.

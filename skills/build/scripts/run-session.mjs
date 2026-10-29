@@ -26,8 +26,8 @@ export const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
 export const SCRIPT = {
   landTask: path.join(HERE, 'land-task.mjs'),
   runDecision: path.join(PLUGIN_ROOT, 'lib', 'run-decision.mjs'),
-  verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
-  runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
+  gate: path.join(PLUGIN_ROOT, 'skills', 'gate', 'scripts', 'gate.mjs'),
+  runProbes: path.join(PLUGIN_ROOT, 'skills', 'gate', 'scripts', 'run-probes.mjs'),
   planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs')
 };
 
@@ -164,7 +164,7 @@ const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${
 const fileRule = (tool, file) => spellings(file).map((spelling) => `${tool}(${ruleSpelling(spelling)})`);
 const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((spelling) => [`Bash(node "${spelling}" *)`, `Bash(node ${spelling} *)`]));
 
-const unsandboxedScripts = (tail) => [...(tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), SCRIPT.runDecision];
+const unsandboxedScripts = (tail) => [...(tail ? [SCRIPT.gate, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), SCRIPT.runDecision];
 
 const ECOSYSTEMS = [
   { manifests: ECOSYSTEM_MANIFESTS.npm, domains: ['registry.npmjs.org'] },
@@ -248,7 +248,7 @@ export function allowRules({ root, planPath, plan, tail = false, repair = false,
     ...(repair ? fileRule('Edit', planPath) : [])
   ];
   if (sandbox) return [...new Set([...paths, ...scriptRules(unsandboxedScripts(tail))])];
-  const scripts = [...(tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), ...(decisions ? [SCRIPT.runDecision] : [])];
+  const scripts = [...(tail ? [SCRIPT.gate, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), ...(decisions ? [SCRIPT.runDecision] : [])];
   const commands = loopCommands(plan)
     .filter((entry) => entry.field !== 'Success criterion')
     .flatMap((entry) => entry.parts.map((part) => `Bash(${part} *)`));

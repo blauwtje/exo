@@ -34,7 +34,7 @@
             "recall": 1,
             "falseTrigger": 0
           },
-          "verify": {
+          "gate": {
             "recall": 1,
             "falseTrigger": 0
           }
@@ -64,7 +64,7 @@
             "recall": 1,
             "falseTrigger": 0
           },
-          "verify": {
+          "gate": {
             "recall": 1,
             "falseTrigger": 0
           }
@@ -623,90 +623,90 @@
       "arm": "hook",
       "run": 1,
       "prompt": "All tasks of the plan are landed; run the gate before the pull request.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "train",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Run the verify gate on this branch and review it against the plan.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "train",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "The plan's tasks are done. Check the branch and repair what the scripted checks flag.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "train",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Before I open the PR, run the scripted checks and the branch review for the plan.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "train",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Gate the run branch: all plan tasks have landed.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "train",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Do the branch review and repairs for the finished plan.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "train",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Plan tasks 1 to 5 landed. Now verify the branch.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "held-out",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Run the post-build gate and fix anything it finds before the pull request.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "held-out",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "The build is complete; review the whole branch against the plan's success criterion.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "held-out",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
       "arm": "hook",
       "run": 1,
       "prompt": "Check the landed plan branch with the scripted checks and fix the unplanned-file flags.",
-      "expect": "verify",
+      "expect": "gate",
       "split": "held-out",
-      "pick": "verify"
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
@@ -897,7 +897,7 @@
     "refactor": "edd8c13b3eb45a4e968dcce07f91d54cda9eab5b2483d48fb7ed50ece1655049",
     "ship": "469ca26ee83d6f02bbae796b1b57531e8ed58c910d71f6f6861bd94d6de7dc97",
     "spec": "d23f69b543e162c25fe4395a1998278f1c3c5e3891d603b613f3e9c45499ea64",
-    "verify": "135872823444d92ea2b8b45c644a4fcdd925c7d08ea1decae4f4af2b73cffff3",
+    "gate": "135872823444d92ea2b8b45c644a4fcdd925c7d08ea1decae4f4af2b73cffff3",
     "session-routing": "eeb18ee10a683eab11675f5b2f9d413910b1e585712583f5ecf1cf41f89c3c2c"
   }
 }

@@ -33,8 +33,8 @@ function scenario({ root, verifyDispatch, merged, repair = '', fixer = 'commit',
     calls.push({ name, args });
     const reply = replies(name, args);
     if (reply !== undefined) return reply;
-    if (name === 'verify' && args.includes('--reviews-only')) return answer(verifyDispatch);
-    if (name === 'verify' && args.includes('--repair')) return answer(repair);
+    if (name === 'gate' && args.includes('--reviews-only')) return answer(verifyDispatch);
+    if (name === 'gate' && args.includes('--repair')) return answer(repair);
     if (name === 'merge-reviews') return answer(merged);
     return answer();
   };
@@ -100,7 +100,7 @@ const REPAIR_OK = 'PASS fixer-committed\nPASS repair-recheck (no Land gate; 1 te
 
 test('a committed fix is checked with verify --repair and reviewed as the diff since the pre-fix commit', async () => {
   const { calls, prompts, result, preFix } = await repairedRun({ repair: REPAIR_OK });
-  const repair = calls.find((call) => call.name === 'verify' && call.args.includes('--repair'));
+  const repair = calls.find((call) => call.name === 'gate' && call.args.includes('--repair'));
   assert.equal(flagValue(repair.args, '--pre-fix-sha'), preFix);
   assert.equal(flagValue(repair.args, '--findings-sha256'), 'abc123');
   const fixReview = prompts.filter((entry) => entry.kind === 'review').at(-1);
@@ -131,29 +131,29 @@ test('a stop from verify --repair stops the run', async () => {
 });
 
 const CRASH = { status: 1, stdout: '', stderr: 'TypeError: boom\n' };
-const USAGE = { status: 2, stdout: '', stderr: "verify: flag '--plan' needs a path\n" };
-const isGate = (name, args) => name === 'verify' && !args.includes('--reviews-only') && !args.includes('--repair');
+const USAGE = { status: 2, stdout: '', stderr: "gate: flag '--plan' needs a path\n" };
+const isGate = (name, args) => name === 'gate' && !args.includes('--reviews-only') && !args.includes('--repair');
 const afterFix = (target, reply) => {
   let fixed = false;
   return (name, args) => {
-    if (name === 'verify' && args.includes('--repair')) fixed = true;
+    if (name === 'gate' && args.includes('--repair')) fixed = true;
     if (fixed && target(name, args)) return reply;
     return undefined;
   };
 };
 
 const SWEPT_CALLS = [
-  ['verify --reviews-only', (name, args) => name === 'verify' && args.includes('--reviews-only')],
+  ['gate --reviews-only', (name, args) => name === 'gate' && args.includes('--reviews-only')],
   ['merge-reviews', (name) => name === 'merge-reviews'],
-  ['verify --repair', (name, args) => name === 'verify' && args.includes('--repair')],
-  ['verify', isGate],
+  ['gate --repair', (name, args) => name === 'gate' && args.includes('--repair')],
+  ['gate', isGate],
   ['run-probes', (name) => name === 'run-probes']
 ];
 
 for (const [command, target] of SWEPT_CALLS) {
   for (const [kind, reply] of [['crash', CRASH], ['usage error', USAGE]]) {
     test(`a ${kind} of ${command} stops the run with a reason naming it`, async () => {
-      const gateCall = command === 'verify';
+      const gateCall = command === 'gate';
       const { result } = await repairedRun({ repair: REPAIR_OK, replies: gateCall ? afterFix(target, reply) : (name, args) => (target(name, args) ? reply : undefined) });
       assert.ok(result.stop, `${command} ${kind} must stop the run`);
       assert.ok(result.stop.line.includes(command), result.stop.line);
@@ -170,5 +170,5 @@ test('a crash of the gate re-run after a failing fix stops the run with a reason
     return gates === 1 ? answer('FAIL check (x)\n', 1) : CRASH;
   };
   const { result } = await repairedRun({ repair: REPAIR_OK, replies });
-  assert.match(result.stop?.line ?? '', /^verify failed: exit 1/);
+  assert.match(result.stop?.line ?? '', /^gate failed: exit 1/);
 });

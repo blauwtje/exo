@@ -6,9 +6,9 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { git } from './harness.mjs';
 import { editApp, landingCheckout } from './land-task-fixture.mjs';
-import { findingsDigest } from '../skills/verify/scripts/merge-reviews.mjs';
+import { findingsDigest } from '../skills/gate/scripts/merge-reviews.mjs';
 
-const VERIFY = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
+const VERIFY = fileURLToPath(new URL('../skills/gate/scripts/gate.mjs', import.meta.url));
 const FINDINGS = 'src/app.js:1-3; defect; greet returns nothing; fix | fixed\n  Probe: grep -q hello src/app.js\n';
 const env = { ...process.env, EXO_RUN: '', EXO_RUN_DIR: '' };
 

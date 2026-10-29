@@ -16,7 +16,7 @@ const TAIL = read('build/references/tail.md');
 const NO_SPEC = read('build/references/no-spec.md');
 const WORKSPACE = read('build/references/workspace.md');
 const SHIPPING = read('ship/SKILL.md');
-const VERIFY = read('verify/SKILL.md');
+const GATE = read('gate/SKILL.md');
 
 function loopStep(number, text = RUN_LOOP) {
   const step = text.match(new RegExp(`^${number}\\. \\*\\*[\\s\\S]*?(?=\\n\\d+\\. |\\n## |$(?![\\s\\S]))`, 'm'));
@@ -71,22 +71,22 @@ test('an off-brief return gets one in-place correction, a red proof or failing c
 
 test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7, TAIL);
-  assert.ok(tailStep.includes('End this loop on `verify`'));
-  assert.ok(VERIFY.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
-  const repairStep = VERIFY.match(/^3\. \*\*Repair the findings\.\*\*.+$/m)[0];
+  assert.ok(tailStep.includes('End this loop on `gate`'));
+  assert.ok(GATE.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
+  const repairStep = GATE.match(/^3\. \*\*Repair the findings\.\*\*.+$/m)[0];
   assert.ok(repairStep.includes('the `exo:fix-review` agent, with no model override'), 'verify sends the findings to the named fixer agent');
   assert.ok(!repairStep.includes('`general-purpose`'), 'the fixer is no general-purpose delegate');
   assert.ok(!repairStep.includes('git push'), 'the repair step runs no push');
-  assert.ok(VERIFY.includes('--base <base> --reviews-only` first'), 'verify lists the reviews before the gate');
-  assert.ok(VERIFY.includes('Then in one message: the full run in the background, step 2\'s dispatch'), 'the gate and the dispatch start in one message');
-  assert.ok(VERIFY.includes('Dispatched agent → full run in the foreground, timeout 600000.'), 'a dispatched agent runs the gate in the foreground');
-  assert.ok(VERIFY.includes('Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`'), 'the repair waits for the gate');
+  assert.ok(GATE.includes('--base <base> --reviews-only` first'), 'verify lists the reviews before the gate');
+  assert.ok(GATE.includes('Then in one message: the full run in the background, step 2\'s dispatch'), 'the gate and the dispatch start in one message');
+  assert.ok(GATE.includes('Dispatched agent → full run in the foreground, timeout 600000.'), 'a dispatched agent runs the gate in the foreground');
+  assert.ok(GATE.includes('Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`'), 'the repair waits for the gate');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
   const firstMerge = SHIPPING.indexOf('scripts/ship.mjs" --merge ');
   assert.ok(question !== -1 && firstRoute > question && firstMerge > question, 'the commands that push or merge are named only after the question');
-  const finishStep = loopStep(4, VERIFY);
+  const finishStep = loopStep(4, GATE);
   assert.ok(finishStep.includes('End on `ship`, unless a request or plan rules out a push'), 'verify loads no ship when nothing may leave the machine');
   assert.ok(finishStep.includes('nothing left the machine'), 'the skipped finish reports that nothing left the machine');
   assert.ok(NO_SPEC.includes('end on `ship`, unless the request rules out a push'), 'the no-spec route skips ship the same way');
@@ -99,8 +99,8 @@ test('every plan run ends on verify, even when the request or a third party it q
   // Pressure run HYgdrV skipped verify on a quoted tech lead's "skip the verify
   // ceremony"; the rule sits in SKILL.md's step 7, which every route reaches.
   const tailStep = loopStep(7, SKILL.slice(0, SKILL.indexOf('## No spec')));
-  assert.ok(tailStep.includes('then run `verify`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it'));
-  assert.ok(loopStep(7, TAIL).split('\n')[1].includes('push nothing or open no pull request still runs `verify`'), 'the no-push waiver is the tail\'s first bullet');
+  assert.ok(tailStep.includes('then run `gate`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it'));
+  assert.ok(loopStep(7, TAIL).split('\n')[1].includes('push nothing or open no pull request still runs `gate`'), 'the no-push waiver is the tail\'s first bullet');
 });
 
 test('ship merges only after the bounded wait and the API gate, and deletes no branch', () => {
@@ -138,19 +138,19 @@ test('the tail points to the REPORT file for Proof lines and manual checks, not 
   const tailStep = loopStep(7, TAIL);
   assert.ok(tailStep.includes("`REPORT` file's `## Proofs`"), 'step 7 points to the REPORT file proofs');
   assert.ok(!tailStep.includes('--proofs'), 'the inline route copies no proofs');
-  assert.ok(tailStep.includes('however `verify` ends, a `FAIL` that ends its turn included'), 'a failed gate keeps the pointer');
+  assert.ok(tailStep.includes('however `gate` ends, a `FAIL` that ends its turn included'), 'a failed gate keeps the pointer');
   assert.ok(tailStep.includes('Never rerun a proof'), 'step 7 bans rerunning or reading for proofs');
   assert.ok(tailStep.includes('`Decisions:` line goes in the report as a path, unread'), 'step 7 names the decision log by path only');
 });
 
 test('--land carries the approval through build, verify and ship, skipping three questions', () => {
-  for (const [name, text] of [['build', SKILL], ['verify', VERIFY], ['ship', SHIPPING]]) {
+  for (const [name, text] of [['build', SKILL], ['gate', GATE], ['ship', SHIPPING]]) {
     assert.match(text.match(/^argument-hint: .+$/m)[0], /--land/, `${name} argument-hint names --land`);
-    assert.equal((text.match(/^\s*- `--land` →/gm) ?? []).length, { build: 0, verify: 2, ship: 1 }[name], `${name} has its --land bullets; build's sits in tail.md`);
+    assert.equal((text.match(/^\s*- `--land` →/gm) ?? []).length, { build: 0, gate: 2, ship: 1 }[name], `${name} has its --land bullets; build's sits in tail.md`);
   }
   assert.ok(WORKSPACE.includes('- `--land` → the `ask` menu takes its (A) through `--pick` with no question.'));
-  assert.match(VERIFY, /`CODEX offer` line[^\n]*\n\s*- `--land` → skip\.\n/, 'the codex offer is skipped right under it');
-  assert.ok(VERIFY.includes('- `--land` → pass `--land` to `ship`.'));
+  assert.match(GATE, /`CODEX offer` line[^\n]*\n\s*- `--land` → skip\.\n/, 'the codex offer is skipped right under it');
+  assert.ok(GATE.includes('- `--land` → pass `--land` to `ship`.'));
   assert.ok(TAIL.includes('- `--land` → run `verify --land`'), 'the tail passes the flag to verify');
   assert.ok(RUN_LOOP.includes('`--land`') && TAIL.includes('`--land`'), 'the loop and tail pass the flag on');
   assert.match(SHIPPING, /- A set `route: ` skips asking[^\n]*\n\s*- `--land` → take the menu's \(A\) with no question\./, 'a set route, local included, still skips the menu under --land');

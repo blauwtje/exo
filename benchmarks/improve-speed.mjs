@@ -88,7 +88,7 @@ function toolBlocks(entries) {
   return entries.flatMap((entry) => (Array.isArray(entry.message?.content) ? entry.message.content : []));
 }
 
-const isVerifyRun = (block) => block.type === 'tool_use' && block.name === 'Bash' && /verify\.mjs/.test(String(block.input?.command));
+const isVerifyRun = (block) => block.type === 'tool_use' && block.name === 'Bash' && /(verify|gate)\.mjs/.test(String(block.input?.command));
 
 const resultText = (content) => (Array.isArray(content) ? content.map((part) => part.text ?? '').join('\n') : String(content ?? ''));
 

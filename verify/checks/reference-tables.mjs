@@ -59,7 +59,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/run-plan/SKILL.md': [],
   'skills/improve/SKILL.md': ['references/worker.md'],
   'skills/prompt/SKILL.md': ['references/examples.md', 'references/note.md'],
-  'skills/verify/SKILL.md': ['references/review-rules.md', 'references/repair.md', 'references/gate-lines.md', 'references/plan-checks.md', 'references/lessons.md', '../route-skills/references/closing.md'],
+  'skills/gate/SKILL.md': ['references/review-rules.md', 'references/repair.md', 'references/gate-lines.md', 'references/plan-checks.md', 'references/lessons.md', '../route-skills/references/closing.md'],
   'skills/start/SKILL.md': [
     'references/cheat-sheet.md',
   ],
@@ -239,7 +239,7 @@ function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
   }
 }
 
-const REVIEW_RULES = 'skills/verify/references/review-rules.md';
+const REVIEW_RULES = 'skills/gate/references/review-rules.md';
 const LATER_ROUND_RULE = 'raise `fix` only for a defect inside the fix diff';
 const RED_SOURCE_RULE = 'only `Red:` source is `## Red lines` of the dispatch\'s `input=` file, else `<checkout>/.exo/review-input.md`';
 

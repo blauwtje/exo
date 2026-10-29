@@ -6,11 +6,11 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { contextLimit, reviewShardTokens, softLimit } from '../lib/context-limits.mjs';
-import { branchFiles, shardBranch } from '../skills/verify/scripts/review-shards.mjs';
+import { branchFiles, shardBranch } from '../skills/gate/scripts/review-shards.mjs';
 import { git } from './harness.mjs';
 import { editApp, landingCheckout } from './land-task-fixture.mjs';
 
-const VERIFY = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
+const VERIFY = fileURLToPath(new URL('../skills/gate/scripts/gate.mjs', import.meta.url));
 
 const file = ({ name, task, tokens, hunks = [{ start: 1, end: 10, tokens }] }) => ({ path: name, task, tokens, header: '', hunks });
 const names = (shard) => shard.files.map((entry) => entry.path);

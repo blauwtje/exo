@@ -517,7 +517,7 @@ function runLandGate(landGate, root, gateEnv = {}) {
   if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: it already passed on this tree.\n`;
   const last = lastPassMs(root, landGate);
   if (last !== null && last >= SLOW_GATE_MS) {
-    return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so verify runs it once.\n`;
+    return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so gate runs it once.\n`;
   }
   const before = workingTreeKey(root);
   const started = Date.now();
@@ -595,7 +595,7 @@ function redGreenLine(task, proofCommands, root, pending) {
   throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}`);
 }
 
-// why: verify's claims-diff check refuses the same commit, but only at the end of the run.
+// why: gate's claims-diff check refuses the same commit, but only at the end of the run.
 function refuseUntestedTestFirst(task, root) {
   if (isTestFirst(task) && testPaths(taskChangedPaths(root)).length === 0) {
     throw new LandingError(`Task ${task.number} is test-first, but its change adds or changes no test file; add the failing test the task names`);

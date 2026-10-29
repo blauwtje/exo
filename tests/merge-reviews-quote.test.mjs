@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
+import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 import { git, gitRepository } from './harness.mjs';
 
 const finding = (quote, file = 'src/a.js') => [

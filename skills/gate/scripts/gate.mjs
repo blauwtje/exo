@@ -24,8 +24,8 @@ import { findingsDigest } from './merge-reviews.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 import { fixedProbes } from './run-probes.mjs';
 
-const USAGE = `Usage: node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
-       node verify.mjs --repair --plan <path> --root <checkout> --pre-fix-sha <sha> --findings <path> --findings-sha256 <hash>
+const USAGE = `Usage: node gate.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
+       node gate.mjs --repair --plan <path> --root <checkout> --pre-fix-sha <sha> --findings <path> --findings-sha256 <hash>
 Runs a plan's gate: each landed task's Proof, the Success criterion command and an unplanned-path check.
 Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, UNPLANNED or FIX-ONLY line per check,
 then one REVIEW Branch line and the OVERLAP lines, one DONE or OPEN line per task,
@@ -64,9 +64,9 @@ const PROSE_FILE = /\.(?:md|mdx|txt|rst)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*?)\t?$/;
 const WARN_TEXT_LENGTH = 100;
-const SELF_HOSTED_SCRIPTS = ['skills/verify/', 'skills/build/review-fixer-prompt.md', 'skills/route-skills/references/code-standard.md'];
+const SELF_HOSTED_SCRIPTS = ['skills/gate/', 'skills/build/review-fixer-prompt.md', 'skills/route-skills/references/code-standard.md'];
 const SELF_HOSTED_AGENTS = ['agents/'];
-const VERIFY_SCRIPT = 'skills/verify/scripts/verify.mjs';
+const GATE_SCRIPT = 'skills/gate/scripts/gate.mjs';
 const REPAIR_BOUND = 2;
 const REPAIR_REVIEW_LINE = 'REVIEW Branch repair: review-branch';
 const COMMIT_SEPARATOR = '\u001e';
@@ -103,7 +103,7 @@ function sharesRepository(root, pluginRoot) {
 function hostingFor({ root, base, running, pluginRoot }) {
   if (!sharesRepository(root, pluginRoot)) return null;
   const gap = selfHostingGap(root, base);
-  const branchScript = path.join(path.resolve(root), VERIFY_SCRIPT);
+  const branchScript = path.join(path.resolve(root), GATE_SCRIPT);
   const branchRuns = fs.existsSync(branchScript) && fs.realpathSync(branchScript) !== fs.realpathSync(running);
   return { reexec: gap.scripts.length > 0 && branchRuns ? branchScript : null, note: gap.agents.length > 0 ? `SELF-HOSTED agents=${gap.agents.join(',')}` : null };
 }
@@ -742,7 +742,7 @@ if (isMain(import.meta.url)) {
     await main(process.argv.slice(2));
   } catch (error) {
     if (error instanceof UsageError) {
-      process.stderr.write(`verify: ${error.message}\n`);
+      process.stderr.write(`gate: ${error.message}\n`);
       process.exitCode = 2;
     } else {
       throw error;

@@ -132,7 +132,7 @@ export function prepareCase(base, task, safeRoot = SAFE) {
 }
 
 export function dispatchLine(pluginDir, { repository, plan }) {
-  const verify = path.join(pluginDir, 'skills', 'verify', 'scripts', 'verify.mjs');
+  const verify = path.join(pluginDir, 'skills', 'gate', 'scripts', 'gate.mjs');
   const printed = execFileSync(process.execPath, [verify, '--reviews-only', '--plan', plan, '--root', repository, '--base', 'main'], { encoding: 'utf8' });
   return printed.split('\n').find((line) => line.startsWith('DISPATCH Branch:')) ?? null;
 }
@@ -152,7 +152,7 @@ function commitRepair(repository, round) {
 }
 
 function runVerifyScript(pluginDir, script, args) {
-  const file = path.join(pluginDir, 'skills', 'verify', 'scripts', script);
+  const file = path.join(pluginDir, 'skills', 'gate', 'scripts', script);
   if (!fs.existsSync(file)) return null;
   return spawnSync(process.execPath, [file, ...args], { encoding: 'utf8' }).stdout;
 }

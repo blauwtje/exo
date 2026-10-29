@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'design-ui', 'save-session', 'build', 'verify', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve'
+  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -75,7 +75,7 @@ export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 // cap because its pinned gate sentences hold it at its measured 790.
 // Raised 783 -> 790: the principles row names AI agent work (0/3 -> 3/3 runs opened the index, benchmarks/results/2026-10-22-spec-principles-read-reworded.md).
 export const STAGE_BODY_TOKENS = {
-  'start': 750, 'spec': 840, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
+  'start': 750, 'spec': 840, 'build': 750, 'gate': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. An agent is exempt only by exact name, never by pattern.
@@ -97,7 +97,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/run-task-prompt.md': 788,
   'skills/ship/references/pr-prep.md': 772,
   'skills/spec/references/brief.md': 909,
-  'skills/spec/references/task-list.md': 904,
+  'skills/spec/references/task-list.md': 903,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in

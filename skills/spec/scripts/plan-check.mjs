@@ -680,7 +680,7 @@ function checkRunCommands(plan) {
   return problems;
 }
 
-const NESTED_CLAUDE = "exo run's sandbox cannot start a nested claude; move the measurement to the Success line, which verify runs outside the sandbox, with a cost cap in that line";
+const NESTED_CLAUDE = "exo run's sandbox cannot start a nested claude; move the measurement to the Success line, which gate runs outside the sandbox, with a cost cap in that line";
 const CLAUDE_COMMAND = /^(?:npx\s+)?claude(?:\s|$)/;
 const CLAUDE_IN_SCRIPT = /confinedClaude\(|\(\s*['"`]claude['"`]/;
 

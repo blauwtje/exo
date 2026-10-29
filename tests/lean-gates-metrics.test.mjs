@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aggregate, incompleteReason, metricDeltas, runMetrics } from '../benchmarks/lean-gates-metrics.mjs';
+import { aggregate, gateFacts, incompleteReason, metricDeltas, phasesOf, runMetrics } from '../benchmarks/lean-gates-metrics.mjs';
 
 function referenceRun(out, name, meta) {
   const directory = join(out, name);
@@ -47,3 +47,53 @@ test('metricDeltas prints the median change per version and metric against a bas
   const lines = metricDeltas({ aggregate: { new: stats(45000) } }, { aggregate: { new: stats(60000), old: stats(1) } });
   assert.deepEqual(lines, ['new wallMs: 60000 -> 45000 (-15000)']);
 });
+
+const call = (id, name, input, ts, resultTs) => ({ id, name, input, ts, resultTs });
+
+for (const skill of ['exo:verify', 'exo:gate', 'verify', 'gate']) {
+  test(`gateFacts takes a Skill call to ${skill} as the verify call`, () => {
+    const skillCall = call('s1', 'Skill', { skill }, '2026-01-01T00:01:00Z');
+    const facts = gateFacts([call('b1', 'Bash', { command: 'ls' }, '2026-01-01T00:00:00Z'), skillCall]);
+    assert.equal(facts.verifyRan, true);
+    assert.equal(facts.verifyCall, skillCall);
+  });
+}
+
+for (const script of ['verify.mjs', 'gate.mjs']) {
+  test(`gateFacts takes a Bash call to node ${script} as the verify call`, () => {
+    const bashCall = call('b1', 'Bash', { command: `node skills/x/scripts/${script} --plan p.md` }, '2026-01-01T00:01:00Z');
+    const facts = gateFacts([bashCall]);
+    assert.equal(facts.verifyRan, true);
+    assert.equal(facts.verifyCall, bashCall);
+  });
+}
+
+test('gateFacts ignores other skills and scripts', () => {
+  const facts = gateFacts([call('s1', 'Skill', { skill: 'exo:gated' }, 't'), call('b1', 'Bash', { command: 'node skills/x/scripts/gated.mjs' }, 't')]);
+  assert.equal(facts.verifyRan, false);
+});
+
+const phaseInput = (calls) => ({
+  calls,
+  subagents: [],
+  meta: { startedAt: '2026-01-01T00:00:00Z', endedAt: '2026-01-01T00:10:00Z' },
+  facts: null,
+  mainBounds: { first: '2026-01-01T00:00:00Z', last: '2026-01-01T00:10:00Z' }
+});
+
+for (const skill of ['exo:verify', 'exo:gate']) {
+  test(`phasesOf starts the gate phase at a Skill call to ${skill}`, () => {
+    const phases = phasesOf(phaseInput([call('s1', 'Skill', { skill }, '2026-01-01T00:04:00Z')]));
+    assert.equal(phases.build.ms, 4 * 60000);
+  });
+}
+
+for (const script of ['verify.mjs', 'gate.mjs']) {
+  test(`phasesOf starts the gate phase at a Bash call to ${script} and counts it as a gate command`, () => {
+    const phases = phasesOf(phaseInput([call('b1', 'Bash', { command: `node skills/x/scripts/${script}` }, '2026-01-01T00:04:00Z', '2026-01-01T00:05:00Z')]));
+    assert.equal(phases.build.ms, 4 * 60000);
+    assert.equal(phases.gate.commands, 1);
+    assert.equal(phases.gate.busyMs, 60000);
+    assert.equal(phases._verifyRuns.length, 1);
+  });
+}

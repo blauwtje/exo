@@ -63,7 +63,7 @@ A skill loaded through the Skill tool ran every call on the session model, so it
 
 ## Consequence for exo
 
-Build ends its turn after every dispatch (`skills/build/references/run-loop.md:17`: "Dispatch silently, then end the turn; each completion notification resumes it."). A `model:` line on `skills/build/SKILL.md` or `skills/verify/SKILL.md` would therefore at most cover the work before the first dispatch of a typed `/exo:build`. If build is loaded through the Skill tool, as in the lean-gates benchmark and after spec's "Build here", it covers nothing.
+Build ends its turn after every dispatch (`skills/build/references/run-loop.md:17`: "Dispatch silently, then end the turn; each completion notification resumes it."). A `model:` line on `skills/build/SKILL.md` or `skills/gate/SKILL.md` would therefore at most cover the work before the first dispatch of a typed `/exo:build`. If build is loaded through the Skill tool, as in the lean-gates benchmark and after spec's "Build here", it covers nothing.
 
 Decision: no `model:` line on build or verify. The `/model sonnet` line for the next step of the fresh-chat route stays, because only a session-level model switch survives the turns that a notification opens.
 
