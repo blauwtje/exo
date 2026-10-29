@@ -58,7 +58,7 @@ export function loadPlants(task, safeRoot = SAFE) {
   return [{ path: task.file, range: `${start}-${end}`, class: 'defect' }];
 }
 
-function parseRange(range) {
+export function parseRange(range) {
   const [start, end = start] = String(range).split('-').map(Number);
   return { start, end };
 }
@@ -91,7 +91,7 @@ export function changedRanges(diff) {
   return ranges;
 }
 
-function overlaps(left, right) {
+export function overlaps(left, right) {
   return left.path === right.path && left.start <= right.end && right.start <= left.end;
 }
 

@@ -168,5 +168,15 @@
   {"prompt":"How do people usually structure a docs folder in a monorepo?","expect":null,"split":"held-out"},
   {"prompt":"Explain what a shift handoff is in a hospital.","expect":null,"split":"held-out"},
   {"prompt":"What does configuration mean in the twelve-factor app?","expect":null,"split":"held-out"},
-  {"prompt":"Is it better to write READMEs in the first or second person?","expect":null,"split":"held-out"}
+  {"prompt":"Is it better to write READMEs in the first or second person?","expect":null,"split":"held-out"},
+  {"prompt":"Run a loop that keeps raising the benchmark score of the parser; keep a commit only when the score gets better.","expect":"improve","split":"train"},
+  {"prompt":"Keep trying ideas to lower the bundle size, and keep only the ones that measurably shrink it.","expect":"improve","split":"train"},
+  {"prompt":"Loop on the test runtime: try a change, measure it, keep it if the suite gets faster, otherwise reset.","expect":"improve","split":"train"},
+  {"prompt":"Raise the pass rate of the evals in benchmarks/qa.mjs round after round while I am away.","expect":"improve","split":"train"},
+  {"prompt":"Iterate on the prompt in skills/summarize until the score from npm run eval goes up as high as it can.","expect":"improve","split":"train"},
+  {"prompt":"Improve the lint warning count in a loop: one idea per round, keep it only when the number drops.","expect":"improve","split":"train"},
+  {"prompt":"Start an improvement loop on the p95 latency number that scripts/bench.sh prints and keep whatever lowers it.","expect":"improve","split":"held-out"},
+  {"prompt":"Keep optimizing the compile time overnight; commit an idea only when the measured time goes down.","expect":"improve","split":"held-out"},
+  {"prompt":"Run rounds against the accuracy score from npm run score and stop when I interrupt you.","expect":"improve","split":"held-out"},
+  {"prompt":"Loop until the coverage figure is higher: try one idea, score it, reset if it does not help.","expect":"improve","split":"held-out"}
 ]

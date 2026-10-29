@@ -201,6 +201,7 @@ node benchmarks/routing.mjs --dry-run                  # quick set, no session: 
 node benchmarks/routing.mjs                            # quick: the first held-out prompt per skill plus 4 null prompts, 1 run, hook arm against the stored no-hook baseline, writes routing-quick.json
 node benchmarks/routing.mjs --write-baseline           # runs the no-hook arm on the quick set and stores it in benchmarks/results/routing-baseline.json
 node benchmarks/routing.mjs --full                     # every prompt, 3 runs, both arms, writes routing.json; only --full takes --split
+node benchmarks/routing.mjs --full --skill improve     # only the prompts that expect improve, merged into routing.json with the improve hash; a new skill needs no paid full rerun
 ```
 
 A quick run whose cells, prompt ids or description hashes differ from the stored baseline prints `baseline stale` and runs the no-hook arm live too.
@@ -219,6 +220,40 @@ node benchmarks/locate-recall.mjs --full               # all 10 briefs, 3 runs p
 ```
 
 Raw stream transcripts of each session go to `--transcripts` (default `.exo/locate-recall/<time>`), so a miss can be read tool call by tool call.
+
+## Agent tier
+
+`node benchmarks/agent-tier.mjs` measures whether an exo agent keeps its quality at a cheaper model or effort. For each agent in `benchmarks/agent-tier/agents.json` it runs the agent's fixtures at its current setting and at cheaper candidates, grades each session with a deterministic check, and prints the score, the cost and the wall time per agent and candidate. The current setting is read from `lib/model-kinds.json`, so it follows the table when the table changes.
+
+```bash
+node benchmarks/agent-tier.mjs --dry-run               # no session: prints the session count and estimated USD per agent
+node benchmarks/agent-tier.mjs                         # quick: 1 fixture per agent, every candidate, writes agent-tier-quick.json
+node benchmarks/agent-tier.mjs --tier full             # 3 fixtures per agent, writes agent-tier-full.json
+node benchmarks/agent-tier.mjs --agent locate-code --candidate sonnet:low --candidate haiku:medium   # one agent, chosen candidates
+node benchmarks/agent-tier.mjs --max-usd 3             # stops starting sessions at the cap, writes the results so far, exits 1
+```
+
+Flags: `--agent <name>` (repeatable, default every agent), `--tier quick|full` (default `quick`), `--candidate <model:effort>` (repeatable, replaces the default list), `--max-usd`, `--concurrency` (default 2), `--transcripts` (raw stream of each session), `--out`, `--dry-run`. Exit codes: 0 done, 1 sessions skipped by `--max-usd` or a failed run, 2 usage error.
+
+Candidates per agent: the current setting; the same model one and two effort steps lower, down to `low`; one model lower (opus, sonnet, haiku) at the current effort. `locate-code` at `sonnet:medium` therefore runs `sonnet:medium`, `sonnet:low` and `haiku:medium`.
+
+The dry run prices a session at the median cost recorded in the `--out` file for that agent, model and effort, else at the token profile of the agent in `agents.json` at the model's list price. Profile estimates do not model effort. A real run measures cost from the usage block of the result event.
+
+| Agent | Metric | Quick fixture | Added by `--tier full` |
+|---|---|---|---|
+| `locate-code` | share of expected files named in the return | `context-limit-note` | `model-kinds`, `check-cache` |
+| `review-branch` | share of planted defects overlapped by a defect or concern finding | `copied-block` | `duplicate-truth-source`, `dead-code` |
+| `fix-review` | share of planted defects fixed, given findings written from the plants | `copied-block` | `duplicate-truth-source`, `dead-code` |
+| `build-task` | value-task check passes (1 or 0) | `lean-minimal-diff` | `rename-propagation`, `refactor-no-shim` |
+| `solve-hard` | value-task check passes (1 or 0) | `find-cause-decoy` | `test-pollution`, `export-mismatch` |
+
+`locate-code` sessions reuse the scratch copy and grading of `locate-recall.mjs`, `review-branch` and `fix-review` the cases of `review-replay.mjs`, and `build-task` and `solve-hard` the tasks and hidden checks of the value tier.
+
+Three agents are left out because they have no deterministic metric:
+
+- `fetch-docs` answers from live web pages, so there is no stable ground truth, and an on-disk document would need invented fixtures that would not separate models.
+- `find-open-points` has no fixture with planted open points, and keyword matching on its output would be a weak metric.
+- `run-unit` orchestrates `build-task` and lands commits, so it is measurable only through a whole build run, which `lean-gates.mjs` and the flow cells already cover at dollars per cell.
 
 ## Ideas set
 

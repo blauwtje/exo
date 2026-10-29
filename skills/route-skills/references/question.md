@@ -26,7 +26,7 @@ Recommended: (A), because seeing beats reading about them.
 5. **Recommendation.** `Recommended: (<letter>), because <why that option beats the others>`, naming any shown letter, reason at most 8 words, one line. Options keep their order and letters, whoever recommends.
 6. **Size.** Simple beats complete. Nothing follows the recommendation.
 7. **No tool.** Options are text in the reply; a question tool, a form or a picker is never used.
-8. **Language.** Title, context, labels and recommendation go in the reply's language, as the language rule in route-skills' `references/context.md` sets. Letters stay.
+8. **Language.** Title, context, labels, the word `Recommended` and the recommendation go in the reply's language, as the language rule in route-skills' `references/context.md` sets. Letters stay.
 9. **Order.** Stopping or keeping things as they are comes last, unless the menu is a configure menu, where the current value stays A.
 
 ## Replies

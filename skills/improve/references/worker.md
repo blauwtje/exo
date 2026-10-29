@@ -1,79 +1,35 @@
-exo-kind: improve-round
-
 # Improve round
 
-Propose one idea that raises the score of an unattended improve run, make it as one commit, and return one line. A script scores your commit afterwards and keeps it only when the score got better; your work ends at the commit.
+Make one commit that raises the score; a script scores it afterwards and keeps it only when the score got better. Your work ends at the commit.
 
-## Inputs
+## Run
 
-- Repo root: `<root>`; run state: `<root>/.exo/improve/`.
-- Tag: `<tag>`.
-- Worktree to edit and commit in: `<worktree>`.
-- Idea file to write: `<idea>`.
-- Skill directory: `<skill>`.
-- Note from the lead: `<note>` (empty on most rounds).
+- Goal: <goal>
+- Score: `<command>`, <direction>; best so far <best>.
+- Edit only: <scope>
+- Read-only, never edit: <readonly>
+- Worktree: `<worktree>`, base commit `<base>`.
+- Fast check: `node <fastcheck> --root <root> --tag <tag>`.
 
-## Read first
+## Earlier rounds
 
-- `<tag>.json` → goal, scope globs, read-only paths, score command, direction, sd, fast check.
-- `<tag>.tsv` → every earlier round: commit, score, status, description.
-- `<tag>.ideas.jsonl` → every earlier idea: key, parts, delta, flat and crash flags, `ratios`, discard `reason`, `mechanism`, `revisits`, `merges`; per area, read the best keep beside the worst discard, their `ratios` and `reason`.
-- `run.log` → the last score run; its `<id> ratio=<n>` lines show which cases hold the most headroom.
-- Then the in-scope files the goal's outcome depends on.
-- `<note>` = `out-of-ideas` → reread every in-scope file, combine near-misses from earlier rows, and aim at a larger change than any earlier key.
+commit score status description
+
+<rows>
 
 ## Steps
 
-1. `git -C <worktree> reset --hard <base>`, `<base>` = the commit of the last `keep` row in the tsv; the worktree holds no other work.
-2. Draft a slate of 8-10 ideas across at least 3 areas; an area is one part the score depends on, such as a prompt section, a module or a config file.
-   - Each idea is as different as it can be from every earlier row, with no near-duplicate left.
-   - Round = rows in the tsv; the round's lever style is item (round mod 4) of: remove a stage, change who owns a step, merge two steps, change the model tier.
-   - Rate each idea 1-10 for gain and 1-10 for novelty, then one reflection pass: re-read the slate, fix a rating that does not hold.
-3. Pick the idea with the largest gain times novelty that has evidence.
-4. Write it to `<idea>` in the shape below.
-5. Run `node <skill>/scripts/gate.mjs --root <root> --tag <tag> --idea <idea>`.
-6. `REJECT <reason>` → next idea on the slate, rewrite the file, gate again; slate used up → draft one new slate; still no `PASS` → return `NO-IDEA <last reason>`. `NOTE radical` → the next slate drops small tweaks.
-7. `PASS` → edit only files the scope globs match, in `<worktree>`.
-8. Run `node <skill>/scripts/fast-check.mjs --root <root> --tag <tag>` once, output to a file, not the chat; it runs the fast check and the tests covering the touched files; `FAST-CHECK fail <command>` → fix the error that command names, no rerun.
-9. Commit once in `<worktree>`: subject = the change in plain words under 72 characters, since it becomes the row's description.
-10. Commit body → `Proof: fast-check.mjs → <FAST-CHECK line>`; then one `Improve-key: <area>/<lever>/<target>` trailer per part.
-11. Return the line.
+1. `git -C <worktree> reset --hard <base>`.
+2. Read the in-scope files the goal depends on and the earlier rounds; `<root>/.exo/improve/run.log` holds the last score run.
+3. Pick one idea no earlier round tried, with the largest expected gain; a gain smaller than the score's noise cannot be told apart.
+4. Edit files the scope matches, in `<worktree>`.
+5. Run the fast check once, output to a file; `FAST-CHECK fail <command>` → fix that error, no rerun.
+6. Commit once: subject = the change in plain words under 72 characters, since it becomes the row's description. No amend, no push.
+7. Return `IDEA <short hash>`.
 
-## Idea rules
+## Bounds
 
-- Size → aim at a gain well past 2·sd, from the cases with the most headroom or the biggest lever in scope; the score cannot tell a smaller change from noise.
-- Bundle → at most 3 parts, all in one area, when each part alone is too small to show.
-- New → its key differs from every earlier key in `<tag>.ideas.jsonl`.
-- Same lever on the same target → same idea under any name; give it the earlier key's exact words, so the gate rejects it.
-- Crashed key → may be retried, with the crash's cause fixed.
-- Last 3 rows within 2·sd of each other → pick from the largest area no earlier key touched.
-- Revisit → after a keep, an earlier discard whose `reason` the keep voids may be proposed again with `revisits` = that round.
-- Merge → two discards from different areas that each won a ratio in `ratios` may be proposed as one idea with `merges` = both rounds; `parts` is the key itself.
-- Evidence → each idea cites a `file:line` or an earlier row that shows why it should help.
-- Unsure whether a file is in scope → it is not; take another idea.
-- Scorer gaming → out of bounds even when the gate passes it: no edit to what the scorer reads, no special case for its cases, no cut of content the goal needs.
-- Scoring → leave it to `round.mjs`; a score you measure costs the round's time and does not count.
-- Git → one commit, no amend, no push.
-
-## Idea file
-
-```json
-{"key": {"area": "parser", "lever": "single-pass", "target": "src/parse.ts"},
- "parts": [{"area": "parser", "lever": "single-pass", "target": "src/parse.ts"}],
- "files": ["src/parse.ts"],
- "evidence": ["src/parse.ts:88", "run.log case-12 ratio=0.41"],
- "mechanism": "parse the file once and reuse the tree for every rule",
- "expected": 0.08}
-```
-
-- `parts` → the key itself for a single idea, up to 3 same-area keys for a bundle.
-- `mechanism` → one sentence on how the idea works; the gate rejects a mechanism that overlaps an earlier row's by 0.6 or more.
-- `revisits` → optional, one earlier round number; `merges` → optional, two earlier round numbers; the gate then accepts those rounds' keys again.
-- `expected` → the gain you expect, in the score's units.
-
-## Return
-
-One line, nothing else:
-
-- `IDEA <short hash> <area>/<lever>/<target>`, the first part's key for a bundle.
-- `NO-IDEA <reason>`
+- Scorer gaming → out of bounds: no edit to what the scorer reads, no special case for its cases, no cut of content the goal needs.
+- Scoring → leave it to the script; a score you measure costs the round's time and does not count.
+- Crash row → its idea may be retried with the cause fixed.
+- No idea left → return `NO-IDEA <reason>`.

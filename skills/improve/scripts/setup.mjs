@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -8,15 +7,17 @@ import { readKindTable } from '../../../lib/model-kinds.mjs';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { excludeScratch } from '../../../lib/scratch-exclude.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { matchScope, ScopeError } from './gate.mjs';
+import { filesUnder, lastKeep, readRows, readScore, scorerHash, writeBrief } from './round.mjs';
+import { matchScope, ScopeError } from './scope.mjs';
 
-const USAGE = 'usage: node setup.mjs --root <dir> --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--no-overlap] [--built-scorer] [--keep-margin <k>] [--confirm] [--stop-after <n>]\n       node setup.mjs --root <dir> --resume [--tag <tag>]';
+const USAGE = 'usage: node setup.mjs --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--root <dir>] [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>]\n       node setup.mjs --resume [--root <dir>] [--tag <tag>]\nOutput: one line, tag= branch= worktree= score= limit= model= effort= brief=<path>. Exit 2 names the flag or step to fix.';
 const SPEC = {
   root: 'string', goal: 'string', command: 'string', regex: 'string', direction: 'string', scope: 'string', readonly: 'string',
-  limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean', 'no-overlap': 'boolean', 'built-scorer': 'boolean',
-  'keep-margin': 'string', confirm: 'boolean', 'stop-after': 'string',
+  limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean',
 };
-const RUNS = 3;
+const BASELINE_TIMEOUT_MS = 3_600_000;
+const LIMIT_FACTOR = 1.5;
+const LIMIT_SLACK_S = 60;
 
 class SetupError extends Error {}
 
@@ -28,64 +29,19 @@ function git(cwd, ...args) {
 
 const gitOk = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).status === 0;
 const list = (text) => (text ?? '').split(',').map((item) => item.trim()).filter(Boolean);
-const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
-function filesUnder(cwd, entry) {
-  const full = path.join(cwd, entry);
-  if (!fs.existsSync(full)) throw new SetupError(`read-only path missing: ${entry}`);
-  if (!fs.statSync(full).isDirectory()) return [entry];
-  return fs.readdirSync(full, { recursive: true, withFileTypes: true })
-    .filter((item) => item.isFile())
-    .map((item) => path.relative(cwd, path.join(item.parentPath, item.name)));
+function baselineRun(cwd, { command, regex }) {
+  const started = Date.now();
+  const run = runTreeSync(command, { cwd, timeoutMs: BASELINE_TIMEOUT_MS });
+  const score = readScore(run.output, regex);
+  if (run.status !== 0 || score === null) throw new SetupError(`score command failed on the baseline run: ${run.output.slice(-300)}`);
+  return { score, seconds: (Date.now() - started) / 1000 };
 }
 
-function hashPaths(cwd, entries) {
-  const hashes = {};
-  for (const file of entries.flatMap((entry) => filesUnder(cwd, entry))) hashes[file] = sha256(path.join(cwd, file));
-  return hashes;
-}
+const deriveLimit = (seconds) => Math.ceil(Math.max(LIMIT_FACTOR * seconds, seconds + LIMIT_SLACK_S));
 
-function readScore(output, regex) {
-  const last = [...output.matchAll(new RegExp(regex, 'g'))].at(-1);
-  const value = last === undefined ? NaN : Number(last[1] ?? last[0]);
-  return Number.isFinite(value) ? value : null;
-}
-
-function scoreRuns(cwd, { command, regex }, count) {
-  const runs = [];
-  for (let index = 0; index < count; index += 1) {
-    const started = Date.now();
-    const run = runTreeSync(command, { cwd, timeoutMs: 3_600_000 });
-    const score = readScore(run.output, regex);
-    if (run.status !== 0 || score === null) throw new SetupError(`score command failed on run ${index + 1}: ${run.output.slice(-300)}`);
-    runs.push({ score, seconds: (Date.now() - started) / 1000 });
-  }
-  return runs;
-}
-
-const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
-
-function sampleSd(values) {
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  return Math.sqrt(values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1));
-}
-
-// why: a scorer setup built must prove it notices damage, so one scope file is emptied in a throwaway worktree.
-function probeSensitivity({ root, worktree, cfg, baseline }) {
-  const probe = fs.mkdtempSync(path.join(path.dirname(path.resolve(root)), '.improve-probe-'));
-  const dir = path.join(probe, 'tree');
-  git(root, 'worktree', 'add', '--detach', dir, git(worktree, 'rev-parse', 'HEAD'));
-  try {
-    const target = git(dir, 'ls-files', '--', ...cfg.scope.map((glob) => `:(glob)${glob}`))?.split('\n').find(Boolean);
-    if (!target) throw new SetupError('sensitivity probe found no tracked scope file to degrade');
-    fs.writeFileSync(path.join(dir, target), '');
-    const [{ score }] = scoreRuns(dir, cfg, 1);
-    const worse = cfg.direction === 'higher' ? baseline - score : score - baseline;
-    if (worse <= 2 * cfg.sd) throw new SetupError(`scorer rejected: emptying ${target} moved the score ${worse}, not more than 2*sd (${2 * cfg.sd})`);
-  } finally {
-    spawnSync('git', ['worktree', 'remove', '--force', dir], { cwd: root });
-    fs.rmSync(probe, { recursive: true, force: true });
-  }
+function checkReadOnly(cwd, entries) {
+  for (const entry of entries) if (filesUnder(cwd, entry).length === 0) throw new SetupError(`read-only path missing or empty: ${entry}`);
 }
 
 function modelFor() {
@@ -97,7 +53,6 @@ function defaultTag() {
   return `${now.toLocaleString('en-US', { month: 'short' }).toLowerCase()}${now.getDate()}`;
 }
 
-// why: a taken tag gets -2, -3 instead of a question, since the user may be away.
 function freeTag(root, wanted) {
   const taken = (tag) => gitOk(root, 'rev-parse', '--verify', '--quiet', `refs/heads/improve/${tag}`);
   let tag = wanted;
@@ -105,8 +60,9 @@ function freeTag(root, wanted) {
   return tag;
 }
 
-function settled(cfg, tag, score) {
-  const fields = { tag, branch: `improve/${tag}`, worktree: cfg.worktree, next: cfg.next, score, sd: cfg.sd, limit: cfg.limit, model: cfg.model, effort: cfg.effort, 'no-overlap': Boolean(cfg.noOverlap) };
+function settled({ root, dir, cfg, tag, score }) {
+  const brief = path.join(dir, `${tag}.brief.md`);
+  const fields = { tag, branch: `improve/${tag}`, worktree: cfg.worktree, score, limit: cfg.limit, model: cfg.model, effort: cfg.effort, brief: path.resolve(root, brief) };
   process.stdout.write(`${Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ')}\n`);
 }
 
@@ -120,18 +76,15 @@ function commitScorer(root, worktree, paths) {
   if (!gitOk(worktree, 'diff', '--cached', '--quiet')) git(worktree, '-c', 'user.name=exo', '-c', 'user.email=exo@localhost', 'commit', '-m', 'chore(improve): add the frozen scorer');
 }
 
-// why: a failure after `worktree add` must not leave a branch or worktree, since each lead retry takes a new -2, -3 tag; a removal that fails is named, not hidden.
-function discardBranches(root, pairs) {
+function discardBranch(root, worktree, branch) {
   const left = [];
-  for (const [tree, name] of pairs) {
-    if (fs.existsSync(path.join(root, tree))) {
-      const removed = spawnSync('git', ['worktree', 'remove', '--force', tree], { cwd: root, encoding: 'utf8' });
-      if (removed.status !== 0) left.push(`worktree ${tree}: ${removed.stderr.trim()}`);
-    }
-    if (gitOk(root, 'rev-parse', '--verify', '--quiet', `refs/heads/${name}`)) {
-      const dropped = spawnSync('git', ['branch', '-D', name], { cwd: root, encoding: 'utf8' });
-      if (dropped.status !== 0) left.push(`branch ${name}: ${dropped.stderr.trim()}`);
-    }
+  if (fs.existsSync(path.join(root, worktree))) {
+    const removed = spawnSync('git', ['worktree', 'remove', '--force', worktree], { cwd: root, encoding: 'utf8' });
+    if (removed.status !== 0) left.push(`worktree ${worktree}: ${removed.stderr.trim()}`);
+  }
+  if (gitOk(root, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`)) {
+    const dropped = spawnSync('git', ['branch', '-D', branch], { cwd: root, encoding: 'utf8' });
+    if (dropped.status !== 0) left.push(`branch ${branch}: ${dropped.stderr.trim()}`);
   }
   return left;
 }
@@ -149,8 +102,20 @@ function checkEntries(flag, entries) {
   }
 }
 
+function buildConfig(flags, cwd, worktree) {
+  const readOnly = [...new Set([...list(flags.readonly), ...list(flags.scorer)])];
+  checkReadOnly(cwd, readOnly);
+  const cfg = {
+    goal: flags.goal, scope: list(flags.scope), readOnly, scorerHash: scorerHash(cwd, readOnly), command: flags.command, regex: flags.regex,
+    direction: flags.direction, limit: 0, fastCheck: flags['fast-check'] ?? null, worktree, ...modelFor(),
+  };
+  const baseline = baselineRun(cwd, cfg);
+  cfg.limit = flags.limit ? Number(flags.limit) : deriveLimit(baseline.seconds);
+  return { cfg, score: baseline.score };
+}
+
 function fresh(flags) {
-  const root = path.resolve(flags.root);
+  const root = path.resolve(flags.root ?? process.cwd());
   checkEntries('scope', list(flags.scope));
   checkEntries('readonly', list(flags.readonly));
   checkEntries('scorer', list(flags.scorer));
@@ -160,37 +125,20 @@ function fresh(flags) {
   excludeScratch(root);
   fs.mkdirSync(dir, { recursive: true });
   const worktree = `.worktrees/improve-${tag}`;
-  const next = `${worktree}-next`;
   git(root, 'worktree', 'add', '-b', branch, worktree);
   const cwd = path.join(root, worktree);
-  let cfg;
-  let baseline;
   try {
     commitScorer(root, cwd, list(flags.scorer));
-    git(root, 'worktree', 'add', '-b', `${branch}-next`, next, branch);
-    const readOnly = [...new Set([...list(flags.readonly), ...list(flags.scorer)])];
-    cfg = {
-      goal: flags.goal, scope: list(flags.scope), readOnly, hashes: hashPaths(cwd, readOnly), command: flags.command, regex: flags.regex,
-      direction: flags.direction, sd: 0, limit: 0, fastCheck: flags['fast-check'] ?? null, worktree, next,
-      ...modelFor(), noOverlap: Boolean(flags['no-overlap']), builtScorer: Boolean(flags['built-scorer']),
-      keepMargin: Number(flags['keep-margin'] ?? 0), confirm: Boolean(flags.confirm), stopAfter: Number(flags['stop-after'] ?? 0),
-    };
-    const runs = scoreRuns(cwd, cfg, RUNS);
-    const scores = runs.map((run) => run.score);
-    const slowest = Math.max(...runs.map((run) => run.seconds));
-    baseline = median(scores);
-    cfg.sd = sampleSd(scores);
-    cfg.limit = flags.limit ? Number(flags.limit) : Math.ceil(Math.max(1.5 * slowest, slowest + 60));
-    if (cfg.builtScorer) probeSensitivity({ root, worktree: cwd, cfg, baseline });
+    const { cfg, score } = buildConfig(flags, cwd, worktree);
     fs.writeFileSync(path.join(dir, `${tag}.json`), `${JSON.stringify(cfg, null, 2)}\n`);
-    const commit = git(cwd, 'rev-parse', '--short', 'HEAD');
-    fs.writeFileSync(path.join(dir, `${tag}.tsv`), `commit\tscore\tstatus\tdescription\n${commit}\t${baseline}\tkeep\tbaseline\n`);
+    fs.writeFileSync(path.join(dir, `${tag}.tsv`), `commit\tscore\tstatus\tdescription\n${git(cwd, 'rev-parse', '--short', 'HEAD')}\t${score}\tkeep\tbaseline\n`);
+    writeBrief({ dir, tag, cfg, rows: readRows(path.join(dir, `${tag}.tsv`)) });
+    settled({ root, dir, cfg, tag, score });
   } catch (error) {
-    const left = discardBranches(root, [[next, `${branch}-next`], [worktree, branch]]);
+    const left = discardBranch(root, worktree, branch);
     if (left.length > 0) error.message += `\ncleanup left: ${left.join('; ')}`;
     throw error;
   }
-  settled(cfg, tag, baseline);
 }
 
 function newestTag(dir, root) {
@@ -202,28 +150,25 @@ function newestTag(dir, root) {
 }
 
 function resume(flags) {
-  const root = path.resolve(flags.root);
+  const root = path.resolve(flags.root ?? process.cwd());
   const dir = path.join(root, '.exo', 'improve');
   const tag = flags.tag ?? newestTag(dir, root);
   const cfg = JSON.parse(fs.readFileSync(path.join(dir, `${tag}.json`), 'utf8'));
-  const rows = fs.readFileSync(path.join(dir, `${tag}.tsv`), 'utf8').split('\n').slice(1).filter(Boolean).map((line) => line.split('\t'));
-  const kept = rows.filter((row) => row[2] === 'keep').at(-1);
+  const rows = readRows(path.join(dir, `${tag}.tsv`));
+  const kept = lastKeep(rows);
   if (!kept) throw new SetupError(`${tag}.tsv has no kept row`);
-  for (const [tree, branch] of [[cfg.worktree, `improve/${tag}`], [cfg.next, `improve/${tag}-next`]]) {
-    if (!fs.existsSync(path.join(root, tree))) git(root, 'worktree', 'add', tree, branch);
-    git(path.join(root, tree), 'reset', '--hard', kept[0]);
-  }
-  settled(cfg, tag, Number(kept[1]));
+  if (!fs.existsSync(path.join(root, cfg.worktree))) git(root, 'worktree', 'add', cfg.worktree, `improve/${tag}`);
+  git(path.join(root, cfg.worktree), 'reset', '--hard', kept.commit);
+  writeBrief({ dir, tag, cfg, rows });
+  settled({ root, dir, cfg, tag, score: kept.score });
 }
 
 function main() {
   try {
     const flags = parseFlags(process.argv.slice(2), SPEC, { usage: USAGE });
-    const need = flags.resume ? ['root'] : ['root', 'goal', 'command', 'regex', 'direction', 'scope'];
+    const need = flags.resume ? [] : ['goal', 'command', 'regex', 'direction', 'scope'];
     for (const name of need) if (!flags[name]) throw new UsageError(`--${name} is required`);
     if (!flags.resume && !['higher', 'lower'].includes(flags.direction)) throw new UsageError('--direction must be higher or lower');
-    if (flags['keep-margin'] !== undefined && !(Number.isFinite(Number(flags['keep-margin'])) && Number(flags['keep-margin']) >= 0)) throw new UsageError('--keep-margin must be a number >= 0');
-    if (flags['stop-after'] !== undefined && !(Number.isInteger(Number(flags['stop-after'])) && Number(flags['stop-after']) >= 1)) throw new UsageError('--stop-after must be an integer >= 1');
     if (flags.resume) resume(flags);
     else fresh(flags);
   } catch (error) {

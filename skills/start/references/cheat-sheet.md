@@ -19,7 +19,7 @@ Ordered by how often people use each skill. **type it** marks a skill the model 
 | `file-issues` **type it** | Files GitHub issues | Type `/exo:file-issues` |
 | `configure` **type it** | Shows or changes an exo setting | Type `/exo:configure` |
 | `prompt` **type it** | Rewrites a rough prompt for Claude, then runs it after you say yes | Type `/exo:prompt <rough prompt>` |
-| `improve` **type it** | Loops on code against one fixed score command, keeps a commit only when the score gets better | Type `/exo:improve <goal>` |
+| `improve` | Loops on code against one fixed score command, keeps a commit only when the score gets better | "keep raising the benchmark score in a loop" |
 | `remember` **type it** | Books a correction about this repository, or approves a claim two sessions have booked | Type `/exo:remember` |
 
 ## Rarely

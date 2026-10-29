@@ -35,6 +35,10 @@
             "recall": 1,
             "falseTrigger": 0
           },
+          "improve": {
+            "recall": 1,
+            "falseTrigger": 0
+          },
           "prompt": {
             "recall": 1,
             "falseTrigger": 0
@@ -90,6 +94,10 @@
             "falseTrigger": 0
           },
           "gate": {
+            "recall": 1,
+            "falseTrigger": 0
+          },
+          "improve": {
             "recall": 1,
             "falseTrigger": 0
           },
@@ -153,6 +161,10 @@
             "recall": 1,
             "falseTrigger": 0
           },
+          "improve": {
+            "recall": 0.8333333333333334,
+            "falseTrigger": 0
+          },
           "prompt": {
             "recall": 1,
             "falseTrigger": 0
@@ -209,6 +221,10 @@
           },
           "gate": {
             "recall": 0.9166666666666666,
+            "falseTrigger": 0
+          },
+          "improve": {
+            "recall": 1,
             "falseTrigger": 0
           },
           "prompt": {
@@ -12493,6 +12509,246 @@
       "cost_usd": null,
       "durationMs": 3455,
       "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Run a loop that keeps raising the benchmark score of the parser; keep a commit only when the score gets better.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.033549300000000004,
+      "durationMs": 5246,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Keep trying ideas to lower the bundle size, and keep only the ones that measurably shrink it.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.033405300000000006,
+      "durationMs": 4107,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Loop on the test runtime: try a change, measure it, keep it if the suite gets faster, otherwise reset.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.033557300000000005,
+      "durationMs": 4340,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Raise the pass rate of the evals in benchmarks/qa.mjs round after round while I am away.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0335453,
+      "durationMs": 10419,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Iterate on the prompt in skills/summarize until the score from npm run eval goes up as high as it can.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0291813,
+      "durationMs": 2670,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Improve the lint warning count in a loop: one idea per round, keep it only when the number drops.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.029165299999999998,
+      "durationMs": 2460,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Start an improvement loop on the p95 latency number that scripts/bench.sh prints and keep whatever lowers it.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.0292013,
+      "durationMs": 2344,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Keep optimizing the compile time overnight; commit an idea only when the measured time goes down.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.0290493,
+      "durationMs": 4435,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Run rounds against the accuracy score from npm run score and stop when I interrupt you.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.029161299999999998,
+      "durationMs": 13166,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Loop until the coverage figure is higher: try one idea, score it, reset if it does not help.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.0291693,
+      "durationMs": 3160,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Run a loop that keeps raising the benchmark score of the parser; keep a commit only when the score gets better.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0249773,
+      "durationMs": 2194,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Keep trying ideas to lower the bundle size, and keep only the ones that measurably shrink it.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0249693,
+      "durationMs": 2512,
+      "pick": null
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Loop on the test runtime: try a change, measure it, keep it if the suite gets faster, otherwise reset.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0249893,
+      "durationMs": 2310,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Raise the pass rate of the evals in benchmarks/qa.mjs round after round while I am away.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0249653,
+      "durationMs": 2015,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Iterate on the prompt in skills/summarize until the score from npm run eval goes up as high as it can.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.0249733,
+      "durationMs": 4153,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Improve the lint warning count in a loop: one idea per round, keep it only when the number drops.",
+      "expect": "improve",
+      "split": "train",
+      "cost_usd": 0.024957299999999998,
+      "durationMs": 3287,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Start an improvement loop on the p95 latency number that scripts/bench.sh prints and keep whatever lowers it.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.0250013,
+      "durationMs": 2148,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Keep optimizing the compile time overnight; commit an idea only when the measured time goes down.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.0249653,
+      "durationMs": 9769,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Run rounds against the accuracy score from npm run score and stop when I interrupt you.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.024957299999999998,
+      "durationMs": 2967,
+      "pick": "improve"
+    },
+    {
+      "cell": "sonnet:low",
+      "arm": "no-hook",
+      "run": 1,
+      "mode": "full",
+      "prompt": "Loop until the coverage figure is higher: try one idea, score it, reset if it does not help.",
+      "expect": "improve",
+      "split": "held-out",
+      "cost_usd": 0.0249493,
+      "durationMs": 3850,
+      "pick": "improve"
     }
   ],
   "split": "all",
@@ -12666,7 +12922,17 @@
     "How do people usually structure a docs folder in a monorepo?",
     "Explain what a shift handoff is in a hospital.",
     "What does configuration mean in the twelve-factor app?",
-    "Is it better to write READMEs in the first or second person?"
+    "Is it better to write READMEs in the first or second person?",
+    "Run a loop that keeps raising the benchmark score of the parser; keep a commit only when the score gets better.",
+    "Keep trying ideas to lower the bundle size, and keep only the ones that measurably shrink it.",
+    "Loop on the test runtime: try a change, measure it, keep it if the suite gets faster, otherwise reset.",
+    "Raise the pass rate of the evals in benchmarks/qa.mjs round after round while I am away.",
+    "Iterate on the prompt in skills/summarize until the score from npm run eval goes up as high as it can.",
+    "Improve the lint warning count in a loop: one idea per round, keep it only when the number drops.",
+    "Start an improvement loop on the p95 latency number that scripts/bench.sh prints and keep whatever lowers it.",
+    "Keep optimizing the compile time overnight; commit an idea only when the measured time goes down.",
+    "Run rounds against the accuracy score from npm run score and stop when I interrupt you.",
+    "Loop until the coverage figure is higher: try one idea, score it, reset if it does not help."
   ],
   "hashes": {
     "build": "03ce61f770bae31003aba1fe53cde9a9cf0248185b383f67220b103520295e6e",
@@ -12683,6 +12949,7 @@
     "spec": "d23f69b543e162c25fe4395a1998278f1c3c5e3891d603b613f3e9c45499ea64",
     "start": "3db98ec10b8b1cd79c0e893444a944250d076ac90f9cd17f7621077c27ac7d55",
     "write-docs": "2ecb327eadeaa099d3284a62bea1f4a48d08e264bdf65dc2cf7a13a54603edf8",
-    "session-routing": "eeb18ee10a683eab11675f5b2f9d413910b1e585712583f5ecf1cf41f89c3c2c"
+    "session-routing": "eeb18ee10a683eab11675f5b2f9d413910b1e585712583f5ecf1cf41f89c3c2c",
+    "improve": "0f8f92590811bc8e23aff860a69ac0470abcb90e41312a87cbb5fee704b6d075"
   }
 }

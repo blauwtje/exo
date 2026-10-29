@@ -1,0 +1,767 @@
+{
+  "tier": "full",
+  "cells": [
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "medium",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.9166666666666666,
+      "cost_usd": 0.22659790000000002,
+      "wallS": 19.656000000000002
+    },
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "low",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.9166666666666666,
+      "cost_usd": 0.20509719999999998,
+      "wallS": 18.637666666666668
+    },
+    {
+      "agent": "locate-code",
+      "model": "haiku",
+      "effort": "medium",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.6833333333333332,
+      "cost_usd": 0.3444791,
+      "wallS": 50.619
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.48725640000000003,
+      "wallS": 35.47666666666667
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "medium",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.40861359999999997,
+      "wallS": 27.575333333333333
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "low",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.237886,
+      "wallS": 15.563999999999998
+    },
+    {
+      "agent": "review-branch",
+      "model": "sonnet",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.7777777777777778,
+      "cost_usd": 0.21363559999999998,
+      "wallS": 24.08066666666667
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.19821629999999998,
+      "wallS": 30.920666666666666
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "medium",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.1658985,
+      "wallS": 23.416999999999998
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "low",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.1492449,
+      "wallS": 26.252
+    },
+    {
+      "agent": "fix-review",
+      "model": "haiku",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.3121385,
+      "wallS": 62.57966666666667
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.35283729999999996,
+      "wallS": 56.94666666666666
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "medium",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.2595227,
+      "wallS": 42.552
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "low",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.26057189999999997,
+      "wallS": 27.508666666666667
+    },
+    {
+      "agent": "build-task",
+      "model": "haiku",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.6666666666666666,
+      "cost_usd": 0.3366107,
+      "wallS": 61.49566666666667
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 1,
+      "cost_usd": 0.9548425999999999,
+      "wallS": 69.66166666666666
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "medium",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.6666666666666666,
+      "cost_usd": 0.6413526,
+      "wallS": 40.82833333333333
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "low",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.6666666666666666,
+      "cost_usd": 0.4575518,
+      "wallS": 34.51733333333333
+    },
+    {
+      "agent": "solve-hard",
+      "model": "sonnet",
+      "effort": "high",
+      "sessions": 3,
+      "graded": 3,
+      "score": 0.6666666666666666,
+      "cost_usd": 0.3412118,
+      "wallS": 29.292999999999996
+    }
+  ],
+  "sessions": [
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "context-limit-note",
+      "cost_usd": 0.0824014,
+      "durationMs": 27964,
+      "numTurns": 6,
+      "score": 0.75
+    },
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "model-kinds",
+      "cost_usd": 0.0741602,
+      "durationMs": 13755,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "check-cache",
+      "cost_usd": 0.07003630000000001,
+      "durationMs": 17249,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "context-limit-note",
+      "cost_usd": 0.0659565,
+      "durationMs": 18980,
+      "numTurns": 5,
+      "score": 0.75
+    },
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "model-kinds",
+      "cost_usd": 0.0709165,
+      "durationMs": 17860,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "locate-code",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "check-cache",
+      "cost_usd": 0.0682242,
+      "durationMs": 19073,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "locate-code",
+      "model": "haiku",
+      "effort": "medium",
+      "fixture": "context-limit-note",
+      "cost_usd": 0.09591369999999999,
+      "durationMs": 42385,
+      "numTurns": 9,
+      "score": 0.75
+    },
+    {
+      "agent": "locate-code",
+      "model": "haiku",
+      "effort": "medium",
+      "fixture": "model-kinds",
+      "cost_usd": 0.113429,
+      "durationMs": 45707,
+      "numTurns": 12,
+      "score": 0.8
+    },
+    {
+      "agent": "locate-code",
+      "model": "haiku",
+      "effort": "medium",
+      "fixture": "check-cache",
+      "cost_usd": 0.1351364,
+      "durationMs": 63765,
+      "numTurns": 19,
+      "score": 0.5
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "copied-block",
+      "cost_usd": 0.1509116,
+      "durationMs": 28699,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.1681868,
+      "durationMs": 37608,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "dead-code",
+      "cost_usd": 0.168158,
+      "durationMs": 40123,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "copied-block",
+      "cost_usd": 0.1209642,
+      "durationMs": 20833,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.128874,
+      "durationMs": 27703,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "dead-code",
+      "cost_usd": 0.15877539999999998,
+      "durationMs": 34190,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "copied-block",
+      "cost_usd": 0.0744036,
+      "durationMs": 13551,
+      "numTurns": 3,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.0861938,
+      "durationMs": 18246,
+      "numTurns": 4,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "dead-code",
+      "cost_usd": 0.0772886,
+      "durationMs": 14895,
+      "numTurns": 3,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "copied-block",
+      "cost_usd": 0.0630387,
+      "durationMs": 20463,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.079198,
+      "durationMs": 30710,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "review-branch",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "dead-code",
+      "cost_usd": 0.07139889999999999,
+      "durationMs": 21069,
+      "numTurns": 8,
+      "score": 0.3333333333333333
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "copied-block",
+      "cost_usd": 0.0666432,
+      "durationMs": 30260,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.0669681,
+      "durationMs": 24899,
+      "numTurns": 12,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "dead-code",
+      "cost_usd": 0.064605,
+      "durationMs": 37603,
+      "numTurns": 11,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "copied-block",
+      "cost_usd": 0.0571844,
+      "durationMs": 24121,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.053913800000000005,
+      "durationMs": 21634,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "dead-code",
+      "cost_usd": 0.0548003,
+      "durationMs": 24496,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "copied-block",
+      "cost_usd": 0.0522815,
+      "durationMs": 28279,
+      "numTurns": 7,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.0472653,
+      "durationMs": 25137,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "dead-code",
+      "cost_usd": 0.0496981,
+      "durationMs": 25340,
+      "numTurns": 7,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "haiku",
+      "effort": "high",
+      "fixture": "copied-block",
+      "cost_usd": 0.0618828,
+      "durationMs": 34099,
+      "numTurns": 11,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "haiku",
+      "effort": "high",
+      "fixture": "duplicate-truth-source",
+      "cost_usd": 0.11674910000000001,
+      "durationMs": 70558,
+      "numTurns": 18,
+      "score": 1
+    },
+    {
+      "agent": "fix-review",
+      "model": "haiku",
+      "effort": "high",
+      "fixture": "dead-code",
+      "cost_usd": 0.1335066,
+      "durationMs": 83082,
+      "numTurns": 19,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "lean-minimal-diff",
+      "cost_usd": 0.089387,
+      "durationMs": 54594,
+      "numTurns": 12,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "rename-propagation",
+      "cost_usd": 0.1721353,
+      "durationMs": 66327,
+      "numTurns": 16,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "refactor-no-shim",
+      "cost_usd": 0.091315,
+      "durationMs": 49919,
+      "numTurns": 10,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "lean-minimal-diff",
+      "cost_usd": 0.0733027,
+      "durationMs": 50589,
+      "numTurns": 12,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "rename-propagation",
+      "cost_usd": 0.11828810000000001,
+      "durationMs": 49268,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "refactor-no-shim",
+      "cost_usd": 0.06793189999999999,
+      "durationMs": 27799,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "lean-minimal-diff",
+      "cost_usd": 0.08222489999999999,
+      "durationMs": 28898,
+      "numTurns": 15,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "rename-propagation",
+      "cost_usd": 0.1101685,
+      "durationMs": 25640,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "sonnet",
+      "effort": "low",
+      "fixture": "refactor-no-shim",
+      "cost_usd": 0.0681785,
+      "durationMs": 27988,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "haiku",
+      "effort": "high",
+      "fixture": "lean-minimal-diff",
+      "cost_usd": 0.08002060000000001,
+      "durationMs": 47167,
+      "numTurns": 11,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "haiku",
+      "effort": "high",
+      "fixture": "rename-propagation",
+      "cost_usd": 0.19396329999999998,
+      "durationMs": 100823,
+      "numTurns": 20,
+      "score": 1
+    },
+    {
+      "agent": "build-task",
+      "model": "haiku",
+      "effort": "high",
+      "fixture": "refactor-no-shim",
+      "cost_usd": 0.0626268,
+      "durationMs": 36497,
+      "numTurns": 7,
+      "score": 0
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "find-cause-decoy",
+      "cost_usd": 0.21715679999999998,
+      "durationMs": 45371,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "test-pollution",
+      "cost_usd": 0.39056559999999996,
+      "durationMs": 101621,
+      "numTurns": 17,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "export-mismatch",
+      "cost_usd": 0.3471202,
+      "durationMs": 61993,
+      "numTurns": 11,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "find-cause-decoy",
+      "cost_usd": 0.1825338,
+      "durationMs": 36364,
+      "numTurns": 7,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "test-pollution",
+      "cost_usd": 0.14011720000000003,
+      "durationMs": 27267,
+      "numTurns": 6,
+      "score": 0
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "export-mismatch",
+      "cost_usd": 0.3187016,
+      "durationMs": 58854,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "find-cause-decoy",
+      "cost_usd": 0.1260238,
+      "durationMs": 25855,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "test-pollution",
+      "cost_usd": 0.1389848,
+      "durationMs": 34439,
+      "numTurns": 5,
+      "score": 0
+    },
+    {
+      "agent": "solve-hard",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "export-mismatch",
+      "cost_usd": 0.19254320000000003,
+      "durationMs": 43258,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "find-cause-decoy",
+      "cost_usd": 0.0908075,
+      "durationMs": 20076,
+      "numTurns": 8,
+      "score": 1
+    },
+    {
+      "agent": "solve-hard",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "test-pollution",
+      "cost_usd": 0.11813069999999999,
+      "durationMs": 34260,
+      "numTurns": 9,
+      "score": 0
+    },
+    {
+      "agent": "solve-hard",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "export-mismatch",
+      "cost_usd": 0.13227360000000002,
+      "durationMs": 33543,
+      "numTurns": 7,
+      "score": 1
+    }
+  ]
+}

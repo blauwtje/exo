@@ -129,7 +129,7 @@ function readFlags(argv) {
   };
 }
 
-function readFixture() {
+export function readFixture() {
   return JSON.parse(fs.readFileSync(FIXTURE_FILE, 'utf8'));
 }
 
@@ -138,7 +138,7 @@ function recordedSessions(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
 }
 
-function fixtureFiles(commit) {
+export function fixtureFiles(commit) {
   return execFileSync('git', ['-C', ROOT, 'ls-tree', '-r', '--name-only', commit], { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean);
 }
 
@@ -163,11 +163,10 @@ function saveTranscript(directory, name, stdout, reports) {
   if (reports.length > 0) fs.writeFileSync(path.join(directory, `${name}.report.md`), reports.join('\n'));
 }
 
-function claudeSession({ prompt, model, flags, commit, home }) {
-  const { folder, scratch, tmp } = makeScratch(commit);
+export function runAgent({ prompt, agent, model, effort, cwd, roots, tmp, home, pluginDir = ROOT, timeoutMs = SESSION_MS }) {
   const startedAt = Date.now();
-  const args = ['-p', prompt, '--agent', flags.agent, '--model', model, '--effort', flags.effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', ROOT];
-  const run = withHome(confinedClaude({ args, roots: [scratch, tmp], cwd: scratch, tmp }), home);
+  const args = ['-p', prompt, '--agent', agent, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', pluginDir];
+  const run = withHome(confinedClaude({ args, roots, cwd, tmp }), home);
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
@@ -178,11 +177,9 @@ function claudeSession({ prompt, model, flags, commit, home }) {
       settled = true;
       clearTimeout(timer);
       child.kill('SIGKILL');
-      const reports = reportTexts(scratch);
-      fs.rmSync(folder, { recursive: true, force: true });
-      resolve({ ...outcome, stdout, reports, durationMs: Date.now() - startedAt });
+      resolve({ ...outcome, stdout, durationMs: Date.now() - startedAt });
     };
-    const timer = setTimeout(() => finish({ error: `timeout after ${SESSION_MS} ms` }), SESSION_MS);
+    const timer = setTimeout(() => finish({ error: `timeout after ${timeoutMs} ms` }), timeoutMs);
     child.stderr.on('data', (chunk) => { stderr = `${stderr}${chunk}`.slice(-STDERR_TAIL); });
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.on('error', (error) => finish({ error: `spawn failed: ${error.message}` }));
@@ -194,7 +191,15 @@ function claudeSession({ prompt, model, flags, commit, home }) {
   });
 }
 
-async function inPool(jobs, concurrency) {
+export async function claudeSession({ prompt, model, flags, commit, home }) {
+  const { folder, scratch, tmp } = makeScratch(commit);
+  const outcome = await runAgent({ prompt, agent: flags.agent, model, effort: flags.effort, cwd: scratch, roots: [scratch, tmp], tmp, home });
+  const reports = reportTexts(scratch);
+  fs.rmSync(folder, { recursive: true, force: true });
+  return { ...outcome, reports };
+}
+
+export async function inPool(jobs, concurrency) {
   const results = new Array(jobs.length);
   let next = 0;
   const worker = async () => {

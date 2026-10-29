@@ -1,6 +1,6 @@
 # Context
 
-- **Language.** Replies, reports and questions go in the language of the user's latest message, whatever the skill's; a session opened only by a plan command writes in the plan's language.
+- **Language.** Replies, reports and questions go entirely in the language of the user's latest message, whatever the skill's, fixed or scripted phrases and option labels included, never mixed; a session opened only by a plan command writes in the plan's language.
 - **Written language.** Code, commits, issues and written files keep the repository's language.
 - **Progress.** No message between steps of a run except a block, a failed check or a question only the user can answer.
 - **Heartbeat.** Step that may pass two minutes → one progress line at least every minute; silence reads as a hang.
@@ -23,3 +23,4 @@
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
 - T5 at the 60k warning, remaining work of 2+ tool turns → subagents.
 - T6 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
+- T7 multi-part task whose independent parts each need workers, lead keeping only the verdict → `exo:orchestrate` agent, one brief, verdict back.

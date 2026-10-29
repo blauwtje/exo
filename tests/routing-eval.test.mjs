@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { baselineProblem, costOfLine, descriptionHashes, dryRunLine, evaluate, gradeStream, medianCost, modelInvocableSkills, quickPrompts, routingHome, withBaseline } from '../benchmarks/routing.mjs';
+import { baselineProblem, costOfLine, descriptionHashes, dryRunLine, evaluate, gradeStream, medianCost, modelInvocableSkills, quickPrompts, routingHome, withBaseline, withSkillRun } from '../benchmarks/routing.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const line = (content) => JSON.stringify({ type: 'assistant', message: { content } });
@@ -37,7 +37,7 @@ test('evaluate writes cells, arms and per-arm per-split per-skill recall and fal
 test('descriptionHashes covers each model-invocable skill and session-routing', () => {
   const hashes = descriptionHashes(root);
   const skills = modelInvocableSkills(root);
-  assert.ok(skills.includes('build') && skills.includes('prompt') && !skills.includes('improve'));
+  assert.ok(skills.includes('build') && skills.includes('prompt') && skills.includes('improve'));
   assert.deepEqual(Object.keys(hashes).sort(), [...skills, 'session-routing'].sort());
   const routing = readFileSync(`${root}hooks/session-routing.md`, 'utf8');
   assert.equal(hashes['session-routing'], createHash('sha256').update(routing).digest('hex'));
@@ -182,6 +182,28 @@ test('the default run is the quick set once; --write-baseline is the no-hook arm
   const splitWithoutFull = spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--split', 'train'], { encoding: 'utf8' });
   assert.equal(splitWithoutFull.status, 2);
   assert.match(splitWithoutFull.stderr, /--split needs --full/);
+});
+
+test('withSkillRun swaps in the sessions of one skill, recounts every rate and stamps only that hash', async () => {
+  const prompts = [{ prompt: 'a', expect: 'build', split: 'held-out' }, { prompt: 'b', expect: 'improve', split: 'held-out' }];
+  const recorded = { ...(await evaluate({ prompts, cells: ['sonnet:low'], arms: ['hook'], runs: 1, concurrency: 1, skills: ['build', 'improve'], runSession: async () => 'build' })), prompts: ['a', 'b'], hashes: { build: 'b1', improve: 'old' } };
+  const outcome = await evaluate({ prompts: [prompts[1]], cells: ['sonnet:low'], arms: ['hook'], runs: 1, concurrency: 1, skills: ['build', 'improve'], runSession: async () => 'improve' });
+  const merged = withSkillRun(recorded, outcome, { skill: 'improve', hash: 'new', skills: ['build', 'improve'] });
+  assert.deepEqual(merged.sessions.map((session) => session.pick), ['build', 'improve']);
+  assert.equal(merged.results['sonnet:low'].hook['held-out'].improve.recall, 1);
+  assert.equal(merged.results['sonnet:low'].hook['held-out'].build.falseTrigger, 0);
+  assert.deepEqual(merged.hashes, { build: 'b1', improve: 'new' });
+  assert.deepEqual(merged.prompts, ['a', 'b']);
+});
+
+test('--skill runs only the prompts of that skill and needs --full and a model-invocable skill', () => {
+  const prompts = JSON.parse(readFileSync(`${root}benchmarks/routing/prompts.json`, 'utf8'));
+  const run = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(mkdtempSync(join(tmpdir(), 'routing-skill-')), 'none.json'), ...args], { encoding: 'utf8' });
+  const full = run('--full', '--skill', 'improve');
+  assert.equal(full.status, 0, full.stderr);
+  assert.equal(Number(/dry-run: (\d+) sessions/.exec(full.stdout)[1]), prompts.filter((entry) => entry.expect === 'improve').length * 2 * 3);
+  assert.match(run('--skill', 'improve').stderr, /--skill needs --full/);
+  assert.match(run('--full', '--skill', 'nope').stderr, /no model-invocable skill/);
 });
 
 test('the routing home turns off every installed plugin', () => {

@@ -1,0 +1,27 @@
+{
+  "locate-code": {
+    "metric": "expected-file recall",
+    "fixtures": { "quick": ["context-limit-note"], "full": ["context-limit-note", "model-kinds", "check-cache"] },
+    "profile": { "input": 20000, "cacheRead": 100000, "output": 4000 }
+  },
+  "review-branch": {
+    "metric": "planted defects flagged",
+    "fixtures": { "quick": ["copied-block"], "full": ["copied-block", "duplicate-truth-source", "dead-code"] },
+    "profile": { "input": 40000, "cacheRead": 250000, "output": 10000 }
+  },
+  "fix-review": {
+    "metric": "planted defects fixed",
+    "fixtures": { "quick": ["copied-block"], "full": ["copied-block", "duplicate-truth-source", "dead-code"] },
+    "profile": { "input": 50000, "cacheRead": 350000, "output": 12000 }
+  },
+  "build-task": {
+    "metric": "value-task check pass",
+    "fixtures": { "quick": ["lean-minimal-diff"], "full": ["lean-minimal-diff", "rename-propagation", "refactor-no-shim"] },
+    "profile": { "input": 60000, "cacheRead": 400000, "output": 15000 }
+  },
+  "solve-hard": {
+    "metric": "value-task check pass",
+    "fixtures": { "quick": ["find-cause-decoy"], "full": ["find-cause-decoy", "test-pollution", "export-mismatch"] },
+    "profile": { "input": 80000, "cacheRead": 600000, "output": 25000 }
+  }
+}

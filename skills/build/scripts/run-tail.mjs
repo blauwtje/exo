@@ -33,7 +33,7 @@ const out = (answer) => `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
 
 const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN_ROOT).trim();
 
-function agentModel(kind = 'review') {
+function agentModel(kind = 'review-branch') {
   const budget = settingValue('budget');
   if (budget === 'off') return null;
   return readKindTable(undefined, { budget }).kinds[kind].model;
@@ -73,7 +73,7 @@ export function parseReviewLines(text) {
     const dispatch = line.match(/^DISPATCH Branch(?: (\d+)\/(\d+))?: .*\bscope=branch (\S+).*\bfindings=(\S+)/);
     if (dispatch !== null) branches.push({ range: dispatch[3], findings: dispatch[4], input: line.match(/\binput=(\S+)/)?.[1], number: dispatch[1] });
     const branchLine = line.match(/^REVIEW Branch ([^:]*): (review-branch)(?: exo-kind: (\S+))?\s*$/);
-    if (branchLine !== null) review = { range: branchLine[1], kind: branchLine[3] ?? 'review' };
+    if (branchLine !== null) review = { range: branchLine[1], kind: branchLine[3] ?? 'review-branch' };
     const overlap = line.match(/^OVERLAP (?!none)(.+?) \(Tasks [^)]*\)$/);
     if (overlap !== null) overlaps.push(overlap[1]);
   }
@@ -222,7 +222,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const reviewModel = agentModel();
   const dispatches = [
     ...(branchReview === null ? [] : branches.map((shard) => ({ task: null, name: shard.number === undefined ? 'branch' : `branch ${shard.number}`, key: shard.number === undefined ? BRANCH_REVIEW_KEY : `${BRANCH_REVIEW_KEY}-${shard.number}`, model: agentModel(branchReview.kind), findings: shard.findings, input: shard.input, scope: `branch ${shard.range}`, questions: BRANCH_QUESTIONS }))),
-    ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel('review'), findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
+    ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel(), findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
   const reports = dispatches.map((dispatch) => dispatch.findings);
   const review = async (dispatch) => {

@@ -20,7 +20,7 @@ or the reviewer of one landed task (--task). Only risk facts and numbers move a 
 
 function reviewerAgents() {
   const { agents } = readKindTable();
-  const [lightFile] = Object.entries(agents).find(([, entry]) => entry.kind === 'review');
+  const [lightFile] = Object.entries(agents).find(([, entry]) => entry.kind === 'review-branch');
   const light = basename(lightFile, '.md');
   return { light, deep: `${light} exo-kind: review-deep` };
 }

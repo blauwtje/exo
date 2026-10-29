@@ -363,3 +363,11 @@ test('the branch reviewer takes its input path from the dispatch and reports Rea
   assert.match(reviewer.body, /`out-of-scope`: input class under a task's `Boundary:` `out`/);
   assert.match(reviewer.body, /`Read: <paths>`/);
 });
+
+test('orchestrate holds Agent, Write and TaskStop, loads the project CLAUDE.md and runs on coordinate', () => {
+  const orchestrate = agents.find((agent) => agent.frontmatter.name === 'orchestrate');
+  const tools = orchestrate.frontmatter.tools.split(', ');
+  for (const tool of ['Agent', 'Write', 'TaskStop']) assert.ok(tools.includes(tool), `orchestrate lists ${tool}`);
+  assert.equal(orchestrate.frontmatter.omitClaudeMd, undefined);
+  assert.equal(kindTable.agents['agents/orchestrate.md'].kind, 'coordinate');
+});

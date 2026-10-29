@@ -6,173 +6,101 @@ import path from 'node:path';
 import process from 'node:process';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { gate, outOfScope, RATIO_LINE } from './gate.mjs';
+import { outOfScope } from './scope.mjs';
 
-const USAGE = 'usage: node round.mjs --root <dir> --tag <tag> --commit <hash> --idea <path> [--adopt]';
-
-const IDEA_TAGS = ['mechanism', 'revisits', 'merges'];
-const keyText = (key) => `${key.area}/${key.lever}/${key.target}`;
-const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const USAGE = 'usage: node round.mjs --root <dir> --tag <tag> --commit <hash>\nOutput: ROW <hash> <score> keep|discard|crash best=<score>, or STOP <reason> <detail> with exit 1 (scorer-changed, reset-failed, no-keep).';
+const NO_KEEP_STOP = 10;
+const BRIEF_ROWS = 15;
+const TEMPLATE = new URL('../references/worker.md', import.meta.url);
+const SKILL_DIR = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 
 function git(cwd, ...args) {
   const run = spawnSync('git', args, { cwd, encoding: 'utf8' });
   return { ok: run.status === 0, out: (run.stdout ?? '').trim() };
 }
 
-function readRows(file) {
-  return fs.readFileSync(file, 'utf8').split('\n').slice(1).filter(Boolean).map((line) => {
-    const [commit, score, status] = line.split('\t');
-    return { commit, score: Number(score), status };
-  });
+export function filesUnder(cwd, entry) {
+  const full = path.join(cwd, entry);
+  if (!fs.existsSync(full)) return [];
+  if (!fs.statSync(full).isDirectory()) return [entry];
+  return fs.readdirSync(full, { recursive: true, withFileTypes: true })
+    .filter((item) => item.isFile())
+    .map((item) => path.relative(cwd, path.join(item.parentPath, item.name)));
 }
 
-function changedHash(cfg, cwd) {
-  return Object.entries(cfg.hashes ?? {}).find(([file, hash]) => !fs.existsSync(path.join(cwd, file)) || sha256(path.join(cwd, file)) !== hash)?.[0];
+export function scorerHash(cwd, entries) {
+  const hash = crypto.createHash('sha256');
+  const files = [...new Set(entries.flatMap((entry) => filesUnder(cwd, entry)))].sort();
+  for (const file of files) hash.update(`${file}\0`).update(fs.readFileSync(path.join(cwd, file))).update('\0');
+  return hash.digest('hex');
 }
 
-function readScore(output, cfg) {
-  const matches = [...output.matchAll(new RegExp(cfg.regex, 'g'))];
-  const last = matches.at(-1);
+export function readScore(output, regex) {
+  const last = [...output.matchAll(new RegExp(regex, 'g'))].at(-1);
   const value = last === undefined ? NaN : Number(last[1] ?? last[0]);
   return Number.isFinite(value) ? value : null;
 }
 
-function readRatios(log) {
-  const lines = [...fs.readFileSync(log, 'utf8').matchAll(RATIO_LINE)];
-  return Object.fromEntries(lines.map((line) => [line[1], Number(line[2])]));
+export const readRows = (file) => fs.readFileSync(file, 'utf8').split('\n').slice(1).filter(Boolean).map((line) => {
+  const [commit, score, status, ...description] = line.split('\t');
+  return { commit, score: Number(score), status, description: description.join('\t') };
+});
+
+export const lastKeep = (rows) => rows.filter((row) => row.status === 'keep').at(-1);
+
+export function writeBrief({ dir, tag, cfg, rows }) {
+  const kept = lastKeep(rows);
+  const history = rows.slice(-BRIEF_ROWS).map((row) => `${row.commit} ${row.score} ${row.status} ${row.description}`).join('\n');
+  const values = {
+    '<goal>': cfg.goal, '<scope>': cfg.scope.join(', '), '<readonly>': cfg.readOnly.join(', ') || 'none', '<command>': cfg.command,
+    '<direction>': cfg.direction === 'higher' ? 'higher is better' : 'lower is better', '<worktree>': path.resolve(dir, '..', '..', cfg.worktree),
+    '<base>': kept.commit, '<best>': String(kept.score), '<fastcheck>': path.join(SKILL_DIR, 'scripts', 'fast-check.mjs'),
+    '<root>': path.resolve(dir, '..', '..'), '<tag>': tag, '<rows>': history,
+  };
+  const brief = Object.entries(values).reduce((text, [name, value]) => text.split(name).join(value), fs.readFileSync(TEMPLATE, 'utf8'));
+  const file = path.join(dir, `${tag}.brief.md`);
+  fs.writeFileSync(file, brief);
+  return file;
 }
 
 function scoreOnce(cfg, cwd, log) {
   const run = runTreeSync(cfg.command, { cwd, timeoutMs: cfg.limit * 1000 });
   fs.writeFileSync(log, run.output);
-  const score = readScore(run.output, cfg);
+  const score = readScore(run.output, cfg.regex);
   return { score, failed: run.status !== 0, infra: run.timedOut || (run.status === 0 && score === null) };
 }
 
-// why: a timeout or a zero exit with no score is the harness failing, so it gets one more run; a nonzero exit is the idea failing.
 function runScore(cfg, cwd, log) {
-  let result = scoreOnce(cfg, cwd, log);
-  if (result.infra) {
-    const changed = changedHash(cfg, cwd);
-    if (changed) return { stop: changed };
-    result = scoreOnce(cfg, cwd, log);
-  }
+  const first = scoreOnce(cfg, cwd, log);
+  const result = first.infra ? scoreOnce(cfg, cwd, log) : first;
   return result.failed || result.score === null ? { crash: true } : { score: result.score };
 }
 
-function linesAdded(cwd, from, to) {
-  const rows = git(cwd, 'diff', '--numstat', from, to).out.split('\n').filter(Boolean);
-  return rows.reduce((sum, row) => { const [add, del] = row.split('\t'); return sum + (Number(add) || 0) - (Number(del) || 0); }, 0);
-}
+const linesAdded = (cwd, from, to) => git(cwd, 'diff', '--numstat', from, to).out.split('\n').filter(Boolean)
+  .reduce((sum, row) => { const [add, del] = row.split('\t'); return sum + (Number(add) || 0) - (Number(del) || 0); }, 0);
 
 const gain = (cfg, score, base) => (cfg.direction === 'higher' ? score - base : base - score);
-const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
-const margin = (cfg) => (cfg.keepMargin ?? 0) * (cfg.sd ?? 0);
 
-// why: "simpler on equal" widens with the margin: a commit that leaves less code is kept on any gain from 0 up to the margin, never on a loss.
-function keepOrDiscard({ cfg, cwd, kept, commit, score, base }) {
-  const up = gain(cfg, score, base);
-  if (up > margin(cfg)) return 'keep';
-  return up >= 0 && linesAdded(cwd, kept.commit, commit) < 0 ? 'keep' : 'discard';
+function keepOrDiscard({ cfg, cwd, kept, commit, score }) {
+  const up = gain(cfg, score, kept.score);
+  if (up > 0) return 'keep';
+  return up === 0 && linesAdded(cwd, kept.commit, commit) < 0 ? 'keep' : 'discard';
 }
 
-function readIdeas(dir, tag) {
-  const file = path.join(dir, `${tag}.ideas.jsonl`);
-  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)) : [];
+function decide({ cfg, cwd, dir, commit, rows }) {
+  const kept = lastKeep(rows);
+  const files = git(cwd, 'diff', '--name-only', kept.commit, commit).out.split('\n').filter(Boolean);
+  const refusal = outOfScope(files, cfg);
+  if (refusal) return { status: 'discard', score: kept.score, kept, note: refusal };
+  const result = runScore(cfg, cwd, path.join(dir, 'run.log'));
+  if (result.crash) return { status: 'crash', score: 0, kept, note: 'crash' };
+  return { status: keepOrDiscard({ cfg, cwd, kept, commit, score: result.score }), score: result.score, kept };
 }
 
-// why: every score the kept commit ever got is pooled, so its estimate tightens each confirm round instead of staying at the one score that selected it.
-function keptPool(ideas, kept) {
-  const own = ideas.find((line) => line.commit === kept.commit && line.status === 'keep' && Array.isArray(line.scores))?.scores ?? [kept.score];
-  return [...own, ...ideas.flatMap((line) => (line.kept === kept.commit && Array.isArray(line.keptScores) ? line.keptScores : []))];
-}
-
-function scoreAt(cfg, cwd, commit, log) {
-  const head = git(cwd, 'rev-parse', 'HEAD').out;
-  const branch = git(cwd, 'symbolic-ref', '-q', '--short', 'HEAD').out;
-  if (!git(cwd, 'checkout', '-q', '--detach', commit).ok) return { stop: `checkout-failed ${commit}` };
-  const result = runScore(cfg, cwd, log);
-  const back = branch ? git(cwd, 'checkout', '-q', branch) : git(cwd, 'checkout', '-q', '--detach', head);
-  if (!back.ok) return { stop: `checkout-failed ${head}` };
-  return result.stop ? { stop: `scorer-changed ${result.stop}` } : result;
-}
-
-// why: the keep is never decided on the score that selected the candidate alone; one more candidate score and one fresh kept score, same round, same scorer state.
-function confirm({ cfg, cwd, kept, commit, screen, pool, log }) {
-  const again = runScore(cfg, cwd, log);
-  if (again.stop) return { stop: `scorer-changed ${again.stop}` };
-  if (again.crash) return { status: 'crash', score: 0, crash: true, note: 'confirm crash candidate', reason: 'crash', kept, scores: [screen] };
-  const fresh = scoreAt(cfg, cwd, kept.commit, log);
-  if (fresh.stop) return { stop: fresh.stop };
-  if (fresh.crash) return { status: 'crash', score: 0, crash: true, note: 'confirm crash kept', reason: 'crash', kept, scores: [screen, again.score] };
-  const scores = [screen, again.score];
-  const keptScores = [...pool, fresh.score];
-  const score = mean(scores);
-  const base = mean(keptScores);
-  const status = keepOrDiscard({ cfg, cwd, kept, commit, score, base });
-  const note = `confirm: candidate ${scores.join(',')}, kept fresh ${fresh.score} pool mean ${base}`;
-  const reason = status === 'discard' ? confirmReason({ cfg, score, base }) : undefined;
-  return { status, score, delta: score - base, flat: Math.abs(score - base) <= 2 * (cfg.sd ?? 0), kept, note, reason, scores, keptScores: [fresh.score] };
-}
-
-function adopt({ cwd, commit, idea, cfg, root, tag }) {
-  const verdict = gate({ root, tag, idea });
-  if (!verdict.ok) return { refused: verdict.reason };
-  const files = git(cwd, 'diff', '--name-only', `${commit}^`, commit).out.split('\n').filter(Boolean);
-  const scope = outOfScope(files, cfg);
-  if (scope) return { refused: scope };
-  if (!git(cwd, 'cherry-pick', commit).ok) {
-    git(cwd, 'cherry-pick', '--abort');
-    return { refused: 'cherry-pick conflict' };
-  }
-  return { commit: git(cwd, 'rev-parse', '--short', 'HEAD').out };
-}
-
-function decide({ cfg, cwd, root, dir, tag, commit, idea, rows, log }) {
-  const kept = rows.filter((r) => r.status === 'keep').at(-1);
-  const verdict = gate({ root, tag, idea });
-  const scope = outOfScope(git(cwd, 'diff', '--name-only', kept.commit, commit).out.split('\n').filter(Boolean), cfg);
-  const refusal = (verdict.ok ? null : `gate: ${verdict.reason}`) ?? scope;
-  if (refusal) return { status: 'discard', score: kept.score, crash: true, note: refusal, reason: refusal, kept };
-  const result = runScore(cfg, cwd, log);
-  if (result.stop) return { stop: `scorer-changed ${result.stop}` };
-  const ratios = readRatios(log);
-  if (result.crash) return { status: 'crash', score: 0, crash: true, note: 'crash', reason: 'crash', kept, ratios };
-  return { ...judge({ cfg, cwd, dir, tag, commit, kept, result, log }), ratios };
-}
-
-function judge({ cfg, cwd, dir, tag, commit, kept, result, log }) {
-  const pool = keptPool(readIdeas(dir, tag), kept);
-  const base = mean(pool);
-  if (cfg.confirm && gain(cfg, result.score, base) > margin(cfg)) return confirm({ cfg, cwd, kept, commit, screen: result.score, pool, log });
-  const status = keepOrDiscard({ cfg, cwd, kept, commit, score: result.score, base });
-  const flat = Math.abs(result.score - base) <= 2 * (cfg.sd ?? 0);
-  const reason = status === 'discard' ? discardReason({ cfg, score: result.score, base, flat }) : undefined;
-  return { status, score: result.score, delta: result.score - base, flat, kept, reason, scores: [result.score] };
-}
-
-function discardReason({ cfg, score, base, flat }) {
-  if (flat) return 'flat within 2*sd';
-  return gain(cfg, score, base) > 0 ? 'below-margin' : 'worse';
-}
-
-function confirmReason({ cfg, score, base }) {
-  return gain(cfg, score, base) > 2 * (cfg.sd ?? 0) ? 'below-margin' : 'confirm failed';
-}
-
-function record({ dir, tag, rows, commit, idea, outcome, started, cwd }) {
-  const { status, score } = outcome;
+function record({ dir, tag, commit, outcome, cwd }) {
   const note = outcome.note ? `${outcome.note}; ` : '';
-  fs.appendFileSync(path.join(dir, `${tag}.tsv`), `${commit}\t${score}\t${status}\t${note}${git(cwd, 'log', '-1', '--format=%s', commit).out || keyText(idea.key)}\n`);
-  const line = {
-    round: rows.length, key: keyText(idea.key), parts: (idea.parts ?? [idea.key]).map(keyText), commit, score, status,
-    delta: outcome.delta ?? 0, flat: outcome.flat ?? false, crash: outcome.crash ?? false, started, at: new Date().toISOString(),
-    ...(outcome.reason ? { reason: outcome.reason } : {}),
-    ...(outcome.ratios && Object.keys(outcome.ratios).length > 0 ? { ratios: outcome.ratios } : {}),
-    ...Object.fromEntries(IDEA_TAGS.filter((name) => idea[name] !== undefined).map((name) => [name, idea[name]])),
-    ...(outcome.scores ? { scores: outcome.scores } : {}), ...(outcome.keptScores ? { kept: outcome.kept.commit, keptScores: outcome.keptScores } : {}),
-  };
-  fs.appendFileSync(path.join(dir, `${tag}.ideas.jsonl`), `${JSON.stringify(line)}\n`);
+  const subject = git(cwd, 'log', '-1', '--format=%s', commit).out;
+  fs.appendFileSync(path.join(dir, `${tag}.tsv`), `${commit}\t${outcome.score}\t${outcome.status}\t${note}${subject}\n`);
 }
 
 const noKeepStreak = (rows) => rows.length - 1 - rows.findLastIndex((row) => row.status === 'keep');
@@ -180,41 +108,25 @@ const noKeepStreak = (rows) => rows.length - 1 - rows.findLastIndex((row) => row
 function runRound(flags) {
   const root = path.resolve(flags.root);
   const dir = path.join(root, '.exo', 'improve');
-  const statusFile = path.join(dir, `${flags.tag}.status`);
-  const idea = JSON.parse(fs.readFileSync(flags.idea, 'utf8'));
   const cfg = JSON.parse(fs.readFileSync(path.join(dir, `${flags.tag}.json`), 'utf8'));
-  const cwd = cfg.worktree ? path.resolve(root, cfg.worktree) : root;
-  const started = new Date().toISOString();
-  const finish = (line, code = 0) => { fs.writeFileSync(statusFile, `${line}\n`); process.stdout.write(`${line}\n`); process.exit(code); };
-  fs.writeFileSync(statusFile, 'RUNNING\n');
-  const changed = changedHash(cfg, cwd);
-  if (changed) finish(`STOP scorer-changed ${changed}`, 1);
-  let commit = flags.commit;
-  if (flags.adopt) {
-    const adopted = adopt({ cwd, commit, idea, cfg, root, tag: flags.tag });
-    if (adopted.refused) finish(`REFUSED ${adopted.refused}`);
-    commit = adopted.commit;
-  }
+  const cwd = path.resolve(root, cfg.worktree);
+  const finish = (line, code = 0) => { process.stdout.write(`${line}\n`); process.exit(code); };
+  if (scorerHash(cwd, cfg.readOnly) !== cfg.scorerHash) finish('STOP scorer-changed score-files', 1);
   const rows = readRows(path.join(dir, `${flags.tag}.tsv`));
-  const outcome = decide({ cfg, cwd, root, dir, tag: flags.tag, commit, idea, rows, log: path.join(dir, 'run.log') });
-  if (outcome.stop) finish(`STOP ${outcome.stop}`, 1);
-  if (outcome.status === 'keep') outcome.best = outcome.score;
-  else if (!git(cwd, 'reset', '--hard', outcome.kept.commit).ok) finish(`STOP reset-failed ${outcome.kept.commit}`, 1);
-  record({ dir, tag: flags.tag, rows, commit, idea, outcome, started, cwd });
-  const row = `ROW ${commit} ${outcome.score} ${outcome.status} best=${outcome.best ?? outcome.kept.score}`;
-  const dry = noKeepStreak([...rows, outcome]);
-  if (cfg.stopAfter > 0 && dry >= cfg.stopAfter) {
-    process.stdout.write(`${row}\n`);
-    finish(`STOP no-keep ${cfg.stopAfter}`);
-  }
-  finish(row);
+  const outcome = decide({ cfg, cwd, dir, commit: flags.commit, rows });
+  if (outcome.status !== 'keep' && !git(cwd, 'reset', '--hard', outcome.kept.commit).ok) finish(`STOP reset-failed ${outcome.kept.commit}`, 1);
+  record({ dir, tag: flags.tag, commit: flags.commit, outcome, cwd });
+  const after = readRows(path.join(dir, `${flags.tag}.tsv`));
+  writeBrief({ dir, tag: flags.tag, cfg, rows: after });
+  process.stdout.write(`ROW ${flags.commit} ${outcome.score} ${outcome.status} best=${lastKeep(after).score}\n`);
+  if (noKeepStreak(after) >= NO_KEEP_STOP) finish(`STOP no-keep ${NO_KEEP_STOP}`);
 }
 
 function main() {
   let flags;
   try {
-    flags = parseFlags(process.argv.slice(2), { root: 'string', tag: 'string', commit: 'string', idea: 'string', adopt: 'boolean' }, { usage: USAGE });
-    for (const name of ['root', 'tag', 'commit', 'idea']) if (!flags[name]) throw new UsageError(`--${name} is required`);
+    flags = parseFlags(process.argv.slice(2), { root: 'string', tag: 'string', commit: 'string' }, { usage: USAGE });
+    for (const name of ['root', 'tag', 'commit']) if (!flags[name]) throw new UsageError(`--${name} is required`);
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exit(2);

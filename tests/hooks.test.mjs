@@ -218,7 +218,7 @@ test('the session hook with no exo settings injects no reply rules, only the fix
 test('the exo:adhd output style carries its frontmatter and each outranking rule', () => {
   const style = fs.readFileSync(path.join(REPOSITORY, 'output-styles', 'adhd.md'), 'utf8');
   assert.match(style, /^---\nname: adhd\ndescription: .+\nkeep-coding-instructions: true\n---\n/);
-  for (const phrase of ['exactly as they are', 'every not, no, only and except', 'security warning in full sentences', 'ask the user to confirm', 'one question per message', 'reply in english, whatever language the user writes in', '.exo/run-report.md', 'lone `?`']) {
+  for (const phrase of ['exactly as they are', 'every not, no, only and except', 'security warning in full sentences', 'ask the user to confirm', 'one question per message', 'reply entirely in the user\'s language', '.exo/run-report.md', 'lone `?`']) {
     assert.ok(style.toLowerCase().includes(phrase.toLowerCase()), phrase);
   }
 });

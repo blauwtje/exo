@@ -5,5 +5,7 @@
 
 ## Report rule
 
-- Open with at most three short lines: what happened, whether it worked, what the user must do now.
+- Report once, when all work is done, check and push included; no earlier message in the turn carries results, and none repeats another.
+- At most three short lines: what happened, whether it worked, what the user must do now.
+- What the user must do now → the last line only, once, as `output-styles/adhd.md` Show sets: bold action, command in inline code.
 - Hashes, counts and paths go in the file the work wrote; name that file in one line.

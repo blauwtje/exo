@@ -159,7 +159,7 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
   try {
     delete process.env.EXO_PROVIDER;
     const claude = outputs();
-    assert.deepEqual(claude[0], { subagent_type: 'exo:build-task', prompt: 'x', model: 'sonnet', effort: 'high' });
+    assert.deepEqual(claude[0], { subagent_type: 'exo:build-task', prompt: 'x', model: 'sonnet', effort: 'low' });
     process.env.EXO_PROVIDER = 'zai';
     assert.deepEqual(outputs(), claude);
     process.env.EXO_PROVIDER = 'deepseek';

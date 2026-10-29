@@ -32,9 +32,10 @@ const TIER_DEFAULTS = {
 };
 const QUICK_PER_SKILL = 1;
 const QUICK_PER_NULL = 4;
-const USAGE = `usage: routing.mjs [--full] [--write-baseline] [--cells <model:effort,...>] [--runs <n>] [--arms hook,no-hook] [--split train|held-out] [--concurrency <n>] [--smoke] [--dry-run] [--out <file>]
+const USAGE = `usage: routing.mjs [--full] [--write-baseline] [--cells <model:effort,...>] [--runs <n>] [--arms hook,no-hook] [--split train|held-out] [--concurrency <n>] [--smoke] [--skill <name>] [--dry-run] [--out <file>]
 Default: a fixed quick set of held-out prompts of benchmarks/routing/prompts.json, one run, the hook arm live against the no-hook arm stored in benchmarks/results/routing-baseline.json, written to benchmarks/results/routing-quick.json. A baseline whose cells, prompts or description hashes differ prints 'baseline stale' and runs the no-hook arm live too.
 --write-baseline runs the no-hook arm on the quick set and stores it as the baseline. --full runs every prompt, 3 runs, both arms, and writes benchmarks/results/routing.json; --split needs --full.
+--skill needs --full: it runs only the prompts that expect that skill and merges them into --out, replacing that skill's earlier sessions and stamping its description hash.
 --smoke runs one known-good prompt and exits 1 on a miss. --dry-run spends nothing and prints the session count times the median cost_usd recorded in --out. Defaults: cell sonnet:low, --concurrency 4.`;
 
 function descriptionOf(text) {
@@ -213,6 +214,10 @@ export async function evaluate({ prompts, cells, arms, runs, concurrency, skills
     }
   }
   const sessions = await inPool(jobs, concurrency);
+  return { cells, arms, runs, ...tally(sessions, cells, arms, skills), sessions };
+}
+
+function tally(sessions, cells, arms, skills) {
   const results = {};
   const errors = {};
   for (const cell of cells) {
@@ -224,7 +229,13 @@ export async function evaluate({ prompts, cells, arms, runs, concurrency, skills
       errors[cell][arm] = inArm.filter((s) => s.error !== undefined).length;
     }
   }
-  return { cells, arms, runs, results, errors, sessions };
+  return { results, errors };
+}
+
+export function withSkillRun(recorded, outcome, { skill, hash, skills }) {
+  const sessions = [...recorded.sessions.filter((session) => session.expect !== skill), ...outcome.sessions];
+  const prompts = [...new Set([...recorded.prompts, ...outcome.sessions.map((session) => session.prompt)])];
+  return { ...recorded, ...tally(sessions, recorded.cells, recorded.arms, skills), sessions, prompts, hashes: { ...recorded.hashes, [skill]: hash } };
 }
 
 function tierOf({ full, writeBaseline }) {
@@ -233,7 +244,7 @@ function tierOf({ full, writeBaseline }) {
 }
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { full: 'boolean', 'write-baseline': 'boolean', cells: 'value', runs: 'value', arms: 'value', split: 'value', concurrency: 'value', smoke: 'boolean', 'dry-run': 'boolean', out: 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { full: 'boolean', 'write-baseline': 'boolean', cells: 'value', runs: 'value', arms: 'value', split: 'value', concurrency: 'value', smoke: 'boolean', skill: 'value', 'dry-run': 'boolean', out: 'value' }, { usage: USAGE });
   for (const name of ['runs', 'concurrency']) {
     if (flags[name] !== undefined && !POSITIVE_INTEGER.test(flags[name])) throw new UsageError(`--${name} needs a positive integer, got '${flags[name]}'`);
   }
@@ -241,6 +252,8 @@ function readFlags(argv) {
   const writeBaseline = flags['write-baseline'] === true;
   if (full && writeBaseline) throw new UsageError('--full and --write-baseline exclude each other');
   if (flags.split !== undefined && !full) throw new UsageError('--split needs --full');
+  if (flags.skill !== undefined && !full) throw new UsageError('--skill needs --full');
+  if (flags.skill !== undefined && !modelInvocableSkills(ROOT).includes(flags.skill)) throw new UsageError(`--skill '${flags.skill}' is no model-invocable skill`);
   const cells = (flags.cells ?? 'sonnet:low').split(',');
   for (const cell of cells) if (!CELL_PATTERN.test(cell)) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort`);
   const tier = tierOf({ full, writeBaseline });
@@ -248,7 +261,7 @@ function readFlags(argv) {
   for (const arm of arms) if (!(arm in ARM_SETTINGS)) throw new UsageError(`--arms entry '${arm}' must be hook or no-hook`);
   if (flags.split !== undefined && !['train', 'held-out'].includes(flags.split)) throw new UsageError('--split must be train or held-out');
   const out = flags.out ?? TIER_DEFAULTS[tier].out;
-  return { cells, arms, full, writeBaseline, split: flags.split, smoke: flags.smoke === true, dryRun: flags['dry-run'] === true, runs: Number(flags.runs ?? (full ? 3 : 1)), concurrency: Number(flags.concurrency ?? 4), out };
+  return { cells, arms, full, writeBaseline, split: flags.split, skill: flags.skill, smoke: flags.smoke === true, dryRun: flags['dry-run'] === true, runs: Number(flags.runs ?? (full ? 3 : 1)), concurrency: Number(flags.concurrency ?? 4), out };
 }
 
 async function smoke(all, flags, runSession) {
@@ -273,7 +286,7 @@ function readPrompts() {
 }
 
 function planRun(flags, all) {
-  if (flags.full) return { prompts: flags.split ? all.filter((entry) => entry.split === flags.split) : all, mode: 'full', arms: flags.arms, baseline: null };
+  if (flags.full) return { prompts: all.filter((entry) => (!flags.split || entry.split === flags.split) && (!flags.skill || entry.expect === flags.skill)), mode: 'full', arms: flags.arms, baseline: null };
   const prompts = quickPrompts(all);
   const mode = flags.writeBaseline ? 'baseline' : 'quick';
   if (mode === 'baseline' || flags.arms.includes('no-hook')) return { prompts, mode, arms: flags.arms, baseline: null };
@@ -304,7 +317,8 @@ async function main() {
     const outcome = await evaluate({ prompts: plan.prompts, cells: flags.cells, arms: plan.arms, runs: flags.runs, concurrency: flags.concurrency, skills: modelInvocableSkills(ROOT), runSession, mode: plan.mode });
     const combined = plan.baseline ? withBaseline(outcome, plan.baseline) : outcome;
     const split = flags.full ? flags.split ?? 'all' : 'held-out';
-    const result = { ...combined, split, prompts: plan.prompts.map((entry) => entry.prompt), hashes: descriptionHashes(ROOT) };
+    const fresh = { ...combined, split, prompts: plan.prompts.map((entry) => entry.prompt), hashes: descriptionHashes(ROOT) };
+    const result = flags.skill ? withSkillRun(JSON.parse(fs.readFileSync(flags.out, 'utf8')), outcome, { skill: flags.skill, hash: fresh.hashes[flags.skill], skills: modelInvocableSkills(ROOT) }) : fresh;
     fs.mkdirSync(path.dirname(flags.out), { recursive: true });
     fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`wrote ${flags.out}\n`);
