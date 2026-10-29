@@ -58,6 +58,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
 
 ### Fixed
+- The gate review diff shows a deleted file as its header only (`git diff --irreversible-delete`), so a branch that deletes many files no longer splits into one `DISPATCH Branch` reviewer per deleted file; covered by `tests/verify-shards.test.mjs`.
 - The statusline `ctx` count stays green at every token count; the cyan band from 60k and the purple band from 80k are gone.
 - `node benchmarks/improve-speed.mjs` quick screen runs every cell `--repeat` asks for; it ran one, so `benchmarks/improve-all-score.mjs` failed every score with "1 of 3 cells recorded".
 - `node skills/spec/scripts/repo-map.mjs` writes an uncapped map by default, so it names all tracked files and a grep of the repo map finds files under `skills/` and `benchmarks/`; it named 318 of 1547 and showed those folders as one line each. `--cap <bytes>` still bounds the map.

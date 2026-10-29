@@ -19,7 +19,7 @@ function fileOf(section, taskOf) {
 }
 
 export function branchFiles({ checkout, base, head, taskOf = new Map() }) {
-  const diff = execFileSync('git', ['-C', checkout, '-c', 'core.quotepath=off', 'diff', '--no-color', '--no-ext-diff', `${base}...${head}`], { encoding: 'utf8', maxBuffer: Infinity });
+  const diff = execFileSync('git', ['-C', checkout, '-c', 'core.quotepath=off', 'diff', '--no-color', '--no-ext-diff', '--irreversible-delete', `${base}...${head}`], { encoding: 'utf8', maxBuffer: Infinity });
   return diff.split(/^(?=diff --git )/m).filter((section) => section !== '').map((section) => fileOf(section, taskOf));
 }
 

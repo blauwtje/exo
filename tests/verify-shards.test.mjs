@@ -128,3 +128,19 @@ test('branchFiles diffs against the merge base, so files only the base gained st
   git(root, 'switch', '-q', 'work');
   assert.deepEqual(branchFiles({ checkout: root, base: 'main', head: 'HEAD' }).map((entry) => entry.path), ['branch.js']);
 });
+
+test('branchFiles keeps a deleted file as its header only, so deletions fill no review shard', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'branch-files-'));
+  git(root, 'init', '-q', '-b', 'main');
+  await fs.writeFile(path.join(root, 'old.md'), 'line\n'.repeat(5000));
+  git(root, 'add', '.');
+  git(root, 'commit', '-q', '-m', 'init');
+  git(root, 'switch', '-q', '-c', 'work');
+  git(root, 'rm', '-q', 'old.md');
+  git(root, 'commit', '-q', '-m', 'drop old');
+  const [deleted] = branchFiles({ checkout: root, base: 'main', head: 'HEAD' });
+  assert.equal(deleted.path, 'old.md');
+  assert.match(deleted.header, /^deleted file mode/m);
+  assert.deepEqual(deleted.hunks, []);
+  assert.ok(deleted.tokens < 100, String(deleted.tokens));
+});
