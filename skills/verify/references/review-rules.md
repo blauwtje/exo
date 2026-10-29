@@ -21,7 +21,7 @@ Branch reviewer follows these when the dispatch names this file. Dispatcher read
 - Each `fix` finding → line `  Probe: <command>` directly under it.
 - Probe = one read-only shell command, run from the root, exiting non-zero now and zero once fixed.
 - Run each probe once; keep only a non-zero exit; no such probe → mark the finding `report`.
-- DISPATCH line has `ledger=` (round 2 or later) → raise `fix` only for a defect inside the fix diff, or one an earlier round's `Sweep:` prints; any other defect → `report`.
+- `ledger=` (round 2 or later) → raise `fix` only for a defect inside the fix diff or an earlier round's `Sweep:` hit, `concern` likewise; other defect → `report`, other concern → `note`.
 - Sweep = the defect form: it matches the defect, not its repair, and prints nothing once every hit is repaired.
 - Fix diff = the commits in `<base>..HEAD` with no `Plan-task:` trailer.
 

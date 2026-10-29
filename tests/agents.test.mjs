@@ -295,9 +295,9 @@ test('spec dispatches locate-code and fetch-docs in one message, and find-open-p
   assert.doesNotMatch(finder.body, /before anything else/, 'no second opening call is ordered first');
 });
 
-test('build-task reads its brief and lean.md in its first message', () => {
+test('build-task reads its brief, lean.md and code-standard.md in its first message', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  assert.match(implementer.body, /^- No text before the first tool call; first call: Read brief and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` once, never a `<checkout>` copy\.$/m);
+  assert.match(implementer.body, /^- No text before the first tool call; first call: Read brief, `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/code-standard\.md` once, never a `<checkout>` copy\.$/m);
 });
 
 test('review-branch reads its opening inputs together in its first message', () => {

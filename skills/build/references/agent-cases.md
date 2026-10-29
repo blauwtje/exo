@@ -25,4 +25,5 @@ Task <n>: GREEN
 <each command under Proof>: pass
 Report: <report path>
 
+- Down service → `node ${CLAUDE_PLUGIN_ROOT}/lib/services.mjs --root <checkout>` once, rerun; still down → `BLOCKED <n> ENV`, never edit code.
 - `--check` fails → fix the failure inside `Files:`, rerun at most twice, then `FAIL` with last lines.

@@ -9,7 +9,7 @@ maxTurns: 60
 
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit/Write use absolute paths.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
-- No text before the first tool call; first call: Read brief and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, never a `<checkout>` copy.
+- No text before the first tool call; first call: Read brief, `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md` once, never a `<checkout>` copy.
 - No text between tool calls.
 
 ## Git
@@ -19,10 +19,11 @@ maxTurns: 60
 ## Build
 
 - Build `Files:` per `Data:`; green = `Proof:` passing, missing script written first, project tools only.
-- `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
+- 5 read-only calls in a row, named references aside → next call edits a `Files:` path; brief too thin → `BLOCKED <what is missing>`.
+- `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line`, a down service or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine`.
-- Run only the brief's `Proof:`, `Run:` or `--check` in the foreground, `timeout: 600000`, log to `.exo/<name>.log`, read only summary, failing lines; never `Monitor`, never `sleep` first.
-- Red `Proof:` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`, rerun at most once per edit; timeout or hang → finding, no rerun; down service → `node ${CLAUDE_PLUGIN_ROOT}/lib/services.mjs --root <checkout>` once, rerun; still down → `BLOCKED <n> ENV`, never edit code.
+- Run only the brief's `Proof:`, `Run:` or `--check` foreground, `timeout: 600000`, log to `.exo/<name>.log`, read only summary, failing lines; never `Monitor`, never `sleep` first.
+- Red `Proof:` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`, rerun at most once per edit; timeout or hang → finding, no rerun.
 
 ## Stop
 
@@ -49,7 +50,7 @@ Unresolved: none
 
 ## Return
 
-- Before `--check`, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md`; fix each rule your diff breaks, never by weakening a test.
+- Before `--check`, write the report; fix each rule your diff breaks.
 - Before GREEN, run `node ${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs --check --plan <plan> --task <n> --root <checkout>`; fix until `Report OK`, no proof rerun.
 - With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
 

@@ -29,6 +29,7 @@ test('measureReview leaves hits null without a report', async () => {
 const sourceLines = readFileSync(new URL('../agents/review-branch.md', import.meta.url), 'utf8').split('\n');
 const judgeLines = (name) => readFileSync(new URL(`../benchmarks/review-judges/${name}.md`, import.meta.url), 'utf8')
   .split('\n').filter((line) => line.trim() !== '');
+const frontmatterEnd = sourceLines.indexOf('---', 1) + 1;
 const focus = { 'plan-fit': [12], standard: [17], tests: [18, 19, 20, 21] };
 const allFocus = Object.values(focus).flat();
 
@@ -53,7 +54,7 @@ test('each focus line sits in exactly one judge and each shared line in all thre
   const bodies = Object.fromEntries(Object.keys(focus).map((name) => [name, judgeLines(name)]));
   sourceLines.forEach((line, index) => {
     const number = index + 1;
-    if (number <= 6 || line.trim() === '') return;
+    if (number <= frontmatterEnd || line.trim() === '') return;
     const holders = Object.keys(bodies).filter((name) => bodies[name].includes(line));
     const expected = allFocus.includes(number) ? Object.keys(focus).filter((name) => focus[name].includes(number)) : Object.keys(bodies);
     assert.deepEqual(holders, expected, `line ${number}`);
