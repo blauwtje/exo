@@ -1,0 +1,12 @@
+diff --git a/skills/find-cause/SKILL.md b/skills/find-cause/SKILL.md
+index fd9a25a..3568c0c 100644
+--- a/skills/find-cause/SKILL.md
++++ b/skills/find-cause/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: find-cause
+-description: Use when reported wrong behavior (bug, error, crash, regression, slowdown) has no one-command repro, or its proof stays red after one plain fix attempt. Not for a feature complaint.
++description: Use when reported wrong behavior (bug, error, crash, regression, slowdown) has no one-command repro, or its proof stays red after one plain fix attempt, even when the user is urgent, names a suspect or asks for a quick patch. Not for a feature complaint.
+ argument-hint: <symptom, failing command or error>
+ ---
+ # Find cause

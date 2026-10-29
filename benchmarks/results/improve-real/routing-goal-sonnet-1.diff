@@ -1,0 +1,28 @@
+diff --git a/skills/find-cause/SKILL.md b/skills/find-cause/SKILL.md
+index fd9a25a..d64762e 100644
+--- a/skills/find-cause/SKILL.md
++++ b/skills/find-cause/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: find-cause
+-description: Use when reported wrong behavior (bug, error, crash, regression, slowdown) has no one-command repro, or its proof stays red after one plain fix attempt. Not for a feature complaint.
++description: Use when reported wrong behavior (bug, error, crash, regression, flaky test, slowdown) has an unknown cause and no one-command repro, or its proof stays red after one plain fix attempt. Not for a feature request or complaint.
+ argument-hint: <symptom, failing command or error>
+ ---
+ # Find cause
+@@ -13,11 +13,11 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
+ 1. **Reproduce.** Read an existing log, profile or `.exo/` report on the path first. One command reproduces it, else evidence, no fix.
+    - Send long output to `<scratch>/debug-repro.log`, `<scratch>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`; read with `tail -n 40`.
+    - Steps 1-5 → read `references/loop.md` first.
+-2. **Instrument.**
+-3. **Isolate.**
+-4. **Predict, then fix.**
+-5. **Prove.**
+-6. **Retain project knowledge.** Per the table.
++2. **Instrument.** Keep two hypotheses; observe once at their first divergence.
++3. **Isolate.** Remove inputs or branches until one more clears it.
++4. **Predict, then fix.** State the causal line and changed output; change only that.
++5. **Prove.** Re-run the repro, isolated case and suite.
++6. **Retain project knowledge.** Record what the fix taught per `../build/references/project-knowledge.md`.
+ 7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../gate/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`); fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain; else end on `ship`.
+    - Invoked by a stage or workflow: ask nothing, return to caller.

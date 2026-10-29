@@ -323,3 +323,7 @@ node benchmarks/improve-all-score.mjs --from-replay <runs dir> --from-build <out
 ## Lean gates
 
 `benchmarks/lean-gates.mjs` runs one fixture in one session, so it has no `--full`; repeats are `--run <n>`. `--dry-run` prepares the run dir, prints the argv, prompt and env diff, and the projected USD from recorded runs. `node benchmarks/lean-gates-metrics.mjs <out> --baseline <metrics.json>` prints the deltas against a stored baseline.
+
+## improve-real
+
+`node benchmarks/improve-real.mjs --target routing|locate` compares `exo:improve` and Claude Code `/goal`, each on opus and on sonnet (arms `improve-opus`, `improve-sonnet`, `goal-opus`, `goal-sonnet`), on one real target: the `find-cause` skill description (`routing`) or the `locate-code` agent (`locate`). Each arm edits a leak-free copy that holds only the train split and asks `node score.mjs` for a train score, at most `--score-calls` times; the harness then scores the final target text on the train split and on the held-out split of the pristine tree. The quick tier is 1 run per arm, cap $1 per arm session and `--held-out-runs 2`. `--dry-run` prints the plan and the most it can spend; `--smoke` runs `goal-sonnet` with one score call and one held-out run; `--spend-cap` refuses an arm whose projection would pass it; `--baseline <file>` records the gains over `{"<target>":{"train":<n>,"heldOut":<n>}}`. Results append to `--out` per arm and run, and the final target diff goes to `<out>/<target>-<arm>-<run>.diff`.

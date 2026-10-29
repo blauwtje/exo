@@ -1,0 +1,286 @@
+{
+  "date": "2026-10-29",
+  "target": "routing",
+  "runs": [
+    {
+      "target": "routing",
+      "arm": "improve-opus",
+      "run": 1,
+      "model": "opus",
+      "capUsd": 1,
+      "armCostUsd": 0.7217,
+      "scorerSpendInArm": 0.5379134,
+      "harnessScoringSpend": 0.299319,
+      "totalCost": 1.5589324000000002,
+      "wallS": 212,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 3,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.5,
+          "spend": 0.1791378
+        },
+        {
+          "n": 2,
+          "score": 0.5,
+          "spend": 0.1791218
+        },
+        {
+          "n": 3,
+          "score": 0.6666666666666666,
+          "spend": 0.1796538
+        }
+      ],
+      "trainScore": 0.6666666666666666,
+      "heldOutScores": [
+        0.25
+      ],
+      "heldOutMean": 0.25,
+      "finalRef": "refs/heads/improve/oct29",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/routing-improve-opus-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": 0.11066666666666658,
+        "heldOut": 0
+      }
+    },
+    {
+      "target": "routing",
+      "arm": "improve-sonnet",
+      "run": 1,
+      "model": "sonnet",
+      "capUsd": 1,
+      "armCostUsd": 0.308,
+      "scorerSpendInArm": 0.5384374,
+      "harnessScoringSpend": 0.29833299999999996,
+      "totalCost": 1.1447703999999999,
+      "wallS": 151,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 3,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.3333333333333333,
+          "spend": 0.17904579999999998
+        },
+        {
+          "n": 2,
+          "score": 0.5,
+          "spend": 0.1790998
+        },
+        {
+          "n": 3,
+          "score": 0.5,
+          "spend": 0.1802918
+        }
+      ],
+      "trainScore": 0.6666666666666666,
+      "heldOutScores": [
+        0.25
+      ],
+      "heldOutMean": 0.25,
+      "finalRef": "refs/heads/improve/oct29",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/routing-improve-sonnet-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": 0.11066666666666658,
+        "heldOut": 0
+      }
+    },
+    {
+      "target": "routing",
+      "arm": "goal-opus",
+      "run": 1,
+      "model": "opus",
+      "capUsd": 1,
+      "armCostUsd": 1.0124,
+      "scorerSpendInArm": 0.3584256,
+      "harnessScoringSpend": 0.298555,
+      "totalCost": 1.6693805999999998,
+      "wallS": 577,
+      "killed": false,
+      "subtype": "error_max_budget_usd",
+      "scoreCallsUsed": 2,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.5,
+          "spend": 0.1792058
+        },
+        {
+          "n": 2,
+          "score": 0.6666666666666666,
+          "spend": 0.17921979999999998
+        }
+      ],
+      "trainScore": 0.5,
+      "heldOutScores": [
+        0.25
+      ],
+      "heldOutMean": 0.25,
+      "finalRef": "working tree",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/routing-goal-opus-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": -0.05600000000000005,
+        "heldOut": 0
+      }
+    },
+    {
+      "target": "routing",
+      "arm": "goal-sonnet",
+      "run": 1,
+      "model": "sonnet",
+      "capUsd": 1,
+      "armCostUsd": 0.0995,
+      "scorerSpendInArm": 0.5378753999999999,
+      "harnessScoringSpend": 0.299041,
+      "totalCost": 0.9364163999999999,
+      "wallS": 65,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 3,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.5,
+          "spend": 0.1791978
+        },
+        {
+          "n": 2,
+          "score": 0.5,
+          "spend": 0.17932579999999998
+        },
+        {
+          "n": 3,
+          "score": 0.6666666666666666,
+          "spend": 0.1793518
+        }
+      ],
+      "trainScore": 0.6666666666666666,
+      "heldOutScores": [
+        0.25
+      ],
+      "heldOutMean": 0.25,
+      "finalRef": "working tree",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/routing-goal-sonnet-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": 0.11066666666666658,
+        "heldOut": 0
+      }
+    },
+    {
+      "target": "locate",
+      "arm": "improve-opus",
+      "run": 1,
+      "model": "opus",
+      "capUsd": 1,
+      "armCostUsd": 0.1854,
+      "scorerSpendInArm": 0.4004569,
+      "harnessScoringSpend": 0.6691614,
+      "totalCost": 1.2550183000000001,
+      "wallS": 88,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 1,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.8063610755036478,
+          "spend": 0.4004569
+        }
+      ],
+      "trainScore": 0.8446766949673927,
+      "heldOutScores": [
+        0.8839743589743589
+      ],
+      "heldOutMean": 0.8839743589743589,
+      "finalRef": "working tree",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/locate-improve-opus-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": 0.0026766949673927565,
+        "heldOut": -0.045025641025641105
+      }
+    },
+    {
+      "target": "locate",
+      "arm": "improve-sonnet",
+      "run": 1,
+      "model": "sonnet",
+      "capUsd": 1,
+      "armCostUsd": 0.0694,
+      "scorerSpendInArm": 0.4159932,
+      "harnessScoringSpend": 0.6752164,
+      "totalCost": 1.1606096000000001,
+      "wallS": 55,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 1,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.8423414820473644,
+          "spend": 0.4159932
+        }
+      ],
+      "trainScore": 0.8758537758537758,
+      "heldOutScores": [
+        0.9110576923076923
+      ],
+      "heldOutMean": 0.9110576923076923,
+      "finalRef": "working tree",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/locate-improve-sonnet-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": 0.0338537758537758,
+        "heldOut": -0.017942307692307757
+      }
+    },
+    {
+      "target": "locate",
+      "arm": "goal-sonnet",
+      "run": 1,
+      "model": "sonnet",
+      "capUsd": 1,
+      "armCostUsd": 0.0586,
+      "scorerSpendInArm": 0.39848989999999995,
+      "harnessScoringSpend": 0.8163963000000001,
+      "totalCost": 1.2734862,
+      "wallS": 65,
+      "killed": false,
+      "subtype": "success",
+      "scoreCallsUsed": 1,
+      "scoreHistory": [
+        {
+          "n": 1,
+          "score": 0.8323417323417323,
+          "spend": 0.39848989999999995
+        }
+      ],
+      "trainScore": 0.8560305435305434,
+      "heldOutScores": [
+        0.8651515151515152
+      ],
+      "heldOutMean": 0.8651515151515152,
+      "finalRef": "working tree",
+      "diffFile": "/Users/thomash/Documents/Code/personal/plugins/exo/.worktrees/improve-real/benchmarks/results/improve-real/locate-goal-sonnet-1.diff",
+      "changedOutside": [],
+      "error": null,
+      "gains": {
+        "train": 0.014030543530543449,
+        "heldOut": -0.06384848484848482
+      }
+    }
+  ]
+}

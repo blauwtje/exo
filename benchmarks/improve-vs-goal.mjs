@@ -136,7 +136,7 @@ export function judge(sortText, cases) {
   }
 }
 
-function improveTip(scratch) {
+export function improveTip(scratch) {
   const refs = git(scratch, ['for-each-ref', '--format=%(refname)', 'refs/heads/improve/']).stdout.split('\n').filter(Boolean);
   return refs[0] ?? null;
 }
@@ -175,22 +175,18 @@ function sessionArgs(arm, cap) {
   return arm === 'improve' ? [...args, '--plugin-dir', ROOT] : args;
 }
 
-function runSession({ arm, cap, home }) {
-  const { scratch, tmp, roots } = makeRunFolder(`ivg-${arm}`);
-  writeFixture(scratch);
-  const run = withHome(confinedClaude({ args: sessionArgs(arm, cap), roots, cwd: scratch, tmp }), home);
-  const logFile = path.join(os.tmpdir(), `improve-vs-goal-${arm}-${Date.now()}.jsonl`);
+export function spawnSession({ run, env, logFile, wallMs }) {
   const log = fs.createWriteStream(logFile);
   const started = Date.now();
   return new Promise((resolve) => {
-    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env, CLAUDE_CODE_SUBAGENT_MODEL: 'sonnet' }, stdio: ['ignore', 'pipe', 'ignore'], detached: true });
+    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env, ...env }, stdio: ['ignore', 'pipe', 'ignore'], detached: true });
     let text = '';
     let rounds = 0;
     let killed = false;
     child.stdout.on('data', (chunk) => { text += chunk; log.write(chunk); });
     const timer = setInterval(() => {
       rounds += 1;
-      if (rounds * POLL_MS < SESSION_MS) return;
+      if (rounds * POLL_MS < wallMs) return;
       killed = true;
       try { process.kill(-child.pid, 'SIGKILL'); } catch {}
     }, POLL_MS);
@@ -198,17 +194,26 @@ function runSession({ arm, cap, home }) {
       clearInterval(timer);
       try { process.kill(-child.pid, 'SIGKILL'); } catch {}
       log.end();
-      const wallS = Math.round((Date.now() - started) / 1000);
-      const { costUsd, costSource, result } = streamCost(text.split('\n'));
-      const tree = finalTree(arm, scratch);
-      resolve({
-        arm, costUsd: Number(costUsd.toFixed(4)), costSource, wallS, killed,
-        subtype: result?.subtype ?? null, numTurns: result?.num_turns ?? null,
-        models: Object.keys(result?.modelUsage ?? {}), finalRef: tree.ref, ...quality(tree), log: logFile
-      });
-      fs.rmSync(path.dirname(scratch), { recursive: true, force: true });
+      resolve({ text, killed, wallS: Math.round((Date.now() - started) / 1000) });
     });
   });
+}
+
+async function runSession({ arm, cap, home }) {
+  const { scratch, tmp, roots } = makeRunFolder(`ivg-${arm}`);
+  writeFixture(scratch);
+  const run = withHome(confinedClaude({ args: sessionArgs(arm, cap), roots, cwd: scratch, tmp }), home);
+  const logFile = path.join(os.tmpdir(), `improve-vs-goal-${arm}-${Date.now()}.jsonl`);
+  const { text, killed, wallS } = await spawnSession({ run, env: { CLAUDE_CODE_SUBAGENT_MODEL: 'sonnet' }, logFile, wallMs: SESSION_MS });
+  const { costUsd, costSource, result } = streamCost(text.split('\n'));
+  const tree = finalTree(arm, scratch);
+  const record = {
+    arm, costUsd: Number(costUsd.toFixed(4)), costSource, wallS, killed,
+    subtype: result?.subtype ?? null, numTurns: result?.num_turns ?? null,
+    models: Object.keys(result?.modelUsage ?? {}), finalRef: tree.ref, ...quality(tree), log: logFile
+  };
+  fs.rmSync(path.dirname(scratch), { recursive: true, force: true });
+  return record;
 }
 
 function parseOptions(argv) {

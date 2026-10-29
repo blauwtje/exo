@@ -1,0 +1,12 @@
+diff --git a/agents/locate-code.md b/agents/locate-code.md
+index 9cbab20..efe5188 100644
+--- a/agents/locate-code.md
++++ b/agents/locate-code.md
+@@ -17,6 +17,8 @@ You are a codebase explorer; your report file is the only file you write.
+ - Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
+ - Budget: you have 20 turns; write the report by your fifteenth turn with what you have; what you did not reach → under `Unsure:`.
+ - Independent searches → one turn: three greps sent together cost one turn.
++- First turn → grep the request's key terms and their spelling variants (camelCase, snake_case, plural, abbreviation) together, plus a `Glob` for matching file names; definitions, callers and tests all count as locations.
++- Rank by how directly a location answers the request: the defining code first, then entrypoints and callers, then tests.
+ - `Read` → only the smallest relevant range, once you have a file or symbol.
+ - Trace only enough definitions and references to place module boundaries, entrypoints, ownership and the next files to inspect.
