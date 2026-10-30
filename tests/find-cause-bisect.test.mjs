@@ -194,3 +194,26 @@ test('a repro that never passed reports no passing commit', async () => {
   assert.equal(result.code, 1);
   assert.match(result.stdout, /^Bisect: no passing commit in \d+ candidates\n$/);
 });
+
+test('out-of-scope: the repro never runs in the fixture checkout and leaves it untouched', async () => {
+  const log = path.join(await fixture(), 'cwds.txt');
+  const recording = [
+    "import fs from 'node:fs';",
+    "fs.appendFileSync(process.env.CWD_LOG, fs.realpathSync(process.cwd()) + '\\n');",
+    "fs.writeFileSync('stray.txt', 'x');",
+    'process.exit(fs.existsSync(\'marker.txt\') ? 1 : 0);',
+    ''
+  ].join('\n');
+  const root = await gitRepository({ '.gitignore': `${GITIGNORE}stray.txt\n`, 'check.mjs': recording });
+  await commitFiles(root, { 'marker.txt': 'broken\n' }, 'feat: breaks it');
+  await appendCommits(root, 3);
+  const before = snapshot(root);
+  const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root, env: { CWD_LOG: log } });
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  const visited = fs.readFileSync(log, 'utf8').trim().split('\n');
+  assert.ok(visited.length > 0);
+  const checkout = fs.realpathSync(root);
+  for (const directory of visited) assert.notEqual(directory, checkout);
+  assert.equal(fs.existsSync(path.join(root, 'stray.txt')), false);
+  assert.deepEqual(snapshot(root), before);
+});
