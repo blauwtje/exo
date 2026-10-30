@@ -58,6 +58,23 @@ async function countingRepository() {
   return root;
 }
 
+async function longHistoryRepository({ total, culpritAge }) {
+  const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': PASSING, 'app.txt': 'commit 1\n' });
+  const culprit = total - culpritAge;
+  for (let number = 2; number <= total; number += 1) {
+    const files = { 'app.txt': `commit ${number}\n` };
+    if (number === culprit) files['check.mjs'] = FAILING;
+    await commitFiles(root, files, `feat: commit ${number}`);
+  }
+  return root;
+}
+
+async function appendCommits(root, count) {
+  for (let number = 1; number <= count; number += 1) {
+    await commitFiles(root, { 'app.txt': `commit ${number}\n` }, `feat: commit ${number}`);
+  }
+}
+
 test('the third of five commits that broke the repro is named', async () => {
   const root = await regressionRepository();
   const third = git(root, 'rev-parse', 'HEAD~2');
@@ -150,4 +167,30 @@ test('a confirmation run that errors names the cause instead of flaky', async ()
   });
   assert.equal(result.code, 1);
   assert.match(result.stdout, /^Bisect: error: .*timed out after 1500 ms\n$/);
+});
+
+test('a regression more than 32 commits back is named without a good ref', async () => {
+  const root = await longHistoryRepository({ total: 120, culpritAge: 54 });
+  const culprit = git(root, 'rev-parse', 'HEAD~54');
+  const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root });
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.equal(result.stdout.split('\n')[0], `First bad: ${culprit} feat: commit 66`);
+});
+
+test('a good commit only at the root is found by the root fallback', async () => {
+  const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': PASSING });
+  const rootSha = git(root, 'rev-parse', 'HEAD');
+  await commitFiles(root, { 'check.mjs': FAILING }, 'feat: breaks it');
+  await appendCommits(root, 40);
+  const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root });
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, new RegExp(`^Good: ${rootSha} \\(root commit\\)$`, 'm'));
+});
+
+test('a repro that never passed reports no passing commit', async () => {
+  const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': FAILING });
+  await appendCommits(root, 40);
+  const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.match(result.stdout, /^Bisect: no passing commit in \d+ candidates\n$/);
 });

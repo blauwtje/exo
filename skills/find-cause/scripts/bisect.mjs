@@ -13,13 +13,12 @@ const SCRIPT = fileURLToPath(import.meta.url);
 const PROBE_DEFAULT_MS = 600_000;
 const MAX_LINES = 30;
 const SKIP_EXIT = 125;
-const DOUBLING_STEPS = [1, 2, 4, 8, 16, 32];
 const PROOF_SEPARATOR = /^`?(?: → | -> |: pass)/;
 const FIRST_BAD = /^([0-9a-f]{40}) is the first bad commit/m;
 
 const USAGE = `Usage: node bisect.mjs --repro <command> [--good <ref>]
 Runs <command> in a temporary worktree at HEAD, picks the newest good commit that command passes at, and bisects history to the commit that first breaks it.
-Good ref: --good; else the newest ancestor whose body holds a Proof: line naming <command>; else the merge-base with origin/HEAD; else HEAD~1, ~2, ~4, ... where the command passes twice.
+Good ref: --good; else the newest ancestor whose body holds a Proof: line naming <command>; else the merge-base with origin/HEAD; else HEAD~1, ~2, ~4, ~8, ... doubling back to the root commit, the first where the command passes twice.
 Prints First bad, Good, Diff, Log and the changed files, up to 30 lines; the full diff and every run's output land in .exo/debug/.
 A repro that passes at HEAD, alternates, or cannot be bisected prints one Bisect: line and exits 1; a usage error exits 2.
 `;
@@ -94,7 +93,19 @@ function candidates(root, { flagSha, command, headSha }) {
   if (flagSha !== null) add(flagSha, 'flag');
   for (const sha of proofCommits(root, command)) add(sha, 'proof trailer');
   add(remoteBase(root, headSha), 'merge-base');
-  for (const step of DOUBLING_STEPS) add(commitSha(root, `HEAD~${step}`), `HEAD~${step}`);
+  for (const { sha, reason } of ancestorCandidates(root)) add(sha, reason);
+  return found;
+}
+
+function ancestorCandidates(root) {
+  const found = [];
+  for (let step = 1; ; step *= 2) {
+    const sha = commitSha(root, `HEAD~${step}`);
+    if (sha === null) break;
+    found.push({ sha, reason: `HEAD~${step}` });
+  }
+  const rootSha = git(root, 'rev-list', '--max-parents=0', 'HEAD').trim().split('\n').at(-1);
+  found.push({ sha: rootSha, reason: 'root commit' });
   return found;
 }
 
