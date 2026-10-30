@@ -1,0 +1,1 @@
+After the last deploy the service refuses to start with "database url is not configured", although the host still sets APP_DB_URL. `APP_DB_URL=postgres://localhost/app node test/settings.mjs` passed last week. Find which commit broke it, name it, and fix it in this checkout.

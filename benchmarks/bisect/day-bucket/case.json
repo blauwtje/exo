@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "full",
+  "repro": "TZ=Pacific/Auckland node test/buckets.mjs",
+  "culprit": "refactor: read date parts straight from Date",
+  "timeoutMinutes": 15
+}

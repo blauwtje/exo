@@ -1,0 +1,1 @@
+Our daily activity chart splits one day across two bars on the Auckland server: two events on 10 March end up in different buckets. `TZ=Pacific/Auckland node test/buckets.mjs` was green at the last release and fails now. Which commit broke it? Name it and fix it in this checkout.

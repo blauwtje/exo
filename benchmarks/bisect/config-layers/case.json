@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "quick",
+  "repro": "node test/config.mjs",
+  "culprit": "refactor: build config from a layer list",
+  "timeoutMinutes": 15
+}

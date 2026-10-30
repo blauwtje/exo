@@ -1,0 +1,1 @@
+Tags typed as `red, green ,blue` keep their stray spaces now. `node test/list.mjs` was passing a couple of weeks ago. Track down the commit that changed this, tell me which one it is, and fix it here.

@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "full",
+  "repro": "node test/slug.mjs",
+  "culprit": "chore: simplify slug regex",
+  "timeoutMinutes": 15
+}

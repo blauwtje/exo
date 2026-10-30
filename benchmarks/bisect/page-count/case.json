@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "quick",
+  "repro": "node test/page-count.mjs",
+  "culprit": "refactor: simplify page math",
+  "timeoutMinutes": 15
+}

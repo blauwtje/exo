@@ -1,0 +1,1 @@
+`wrap()` in src/wrap.mjs lets lines run one character past the width limit: wrapping "the quick brown fox jumps over the lazy dog" at 8 gives a 9-character line. `node --test test/wrap.test.mjs` fails. Please fix this bug.

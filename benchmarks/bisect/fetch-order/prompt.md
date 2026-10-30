@@ -1,0 +1,1 @@
+`node test/batch.mjs` fails every now and then with the two results in the wrong order, then passes on the next run. It was green every time last week. Find which change made the batch fetch misbehave, name that commit, and fix it in this checkout.

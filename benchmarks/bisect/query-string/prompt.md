@@ -1,0 +1,1 @@
+Searching for `a&b=c` only returns results for `a`, because the request URL carries the raw ampersand. `node test/query.mjs` passed on last week's build. Find which commit broke the encoding, name it, and fix it in this checkout.

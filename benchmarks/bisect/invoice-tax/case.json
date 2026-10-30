@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "full",
+  "repro": "node test/invoice.mjs",
+  "culprit": "chore: use integer helpers for money",
+  "timeoutMinutes": 15
+}

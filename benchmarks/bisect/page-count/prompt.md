@@ -1,0 +1,1 @@
+The pager footer in our list view shows one page too many when the item count is an exact multiple of the page size: 20 items at 10 per page says "Page 1 of 3". `node test/page-count.mjs` passed last week and fails now. Find which change broke it, name that commit, and fix it in this checkout.

@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "full",
+  "repro": "node test/messages.mjs",
+  "culprit": "perf: shorten cache keys",
+  "timeoutMinutes": 15
+}

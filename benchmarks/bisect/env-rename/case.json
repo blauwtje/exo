@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "full",
+  "repro": "APP_DB_URL=postgres://localhost/app node test/settings.mjs",
+  "culprit": "chore: align env var names with deploy docs",
+  "timeoutMinutes": 15
+}

@@ -1,0 +1,1 @@
+Setting APP_PORT in the environment no longer wins over the port in the config file: with a file port of 8080 and APP_PORT=9000 the service listens on 8080. `node test/config.mjs` passed last week. Which commit broke that? Name it and fix it in this checkout.

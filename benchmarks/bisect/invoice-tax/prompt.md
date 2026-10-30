@@ -1,0 +1,1 @@
+Invoices come out a cent short on odd tax amounts: 19.99 at 7.5% should total 21.49 and we print 21.48. `node test/invoice.mjs` was fine at last month's close. Find the commit that broke it, say which one it is, and fix it in this checkout.

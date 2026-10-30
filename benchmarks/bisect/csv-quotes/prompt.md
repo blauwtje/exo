@@ -1,0 +1,1 @@
+Quoted CSV fields with a comma inside get split into extra columns: `a,"b,c",d` comes back as four cells. As far as I remember the contact import handled this fine last sprint. `node test/quoted.mjs` fails now. Find which change broke it, name that commit, and fix it in this checkout.

@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "full",
+  "repro": "node test/query.mjs",
+  "culprit": "refactor: reuse encodeURI in query builder",
+  "timeoutMinutes": 15
+}

@@ -327,3 +327,17 @@ node benchmarks/improve-all-score.mjs --from-replay <runs dir> --from-build <out
 ## improve-real
 
 `node benchmarks/improve-real.mjs --target routing|routing-start|locate` compares `exo:improve` and Claude Code `/goal`, each on opus and on sonnet (arms `improve-opus`, `improve-sonnet`, `goal-opus`, `goal-sonnet`), on one real target: the `find-cause` skill description (`routing`), the `start` skill description (`routing-start`) or the `locate-code` agent (`locate`). Both routing targets score recall of their own skill on the `train` and `held-out` labels of `benchmarks/routing/prompts.json`. Each arm edits a leak-free copy that holds only the train split and asks `node score.mjs` for a train score, at most `--score-calls` times; the harness then scores the final target text on the train split and on the held-out split of the pristine tree. The quick tier is 1 run per arm, cap $1 per arm session and `--held-out-runs 2`. `--dry-run` prints the plan and the most it can spend; `--smoke` runs `goal-sonnet` with one score call and one held-out run; `--spend-cap` refuses an arm whose projection would pass it; `--baseline <file>` records the gains over `{"<target>":{"train":<n>,"heldOut":<n>}}`. Results append to `--out` per arm and run, and the final target diff goes to `<out>/<target>-<arm>-<run>.diff`.
+
+## Bisect benchmark
+
+`node benchmarks/bisect.mjs --before-plugin <worktree at the before commit>` measures `exo:find-cause` before and after a plugin change on the regression fixtures in `benchmarks/bisect/<slug>/` (`case.json`, `prompt.md`, `build.mjs`). Arms are `exo-before` (the `--before-plugin` dir) and `exo` (this checkout), interleaved, sonnet at medium effort.
+
+```bash
+node benchmarks/bisect.mjs --validate                                   # free: build each case and check its contract
+node benchmarks/bisect.mjs --dry-run --before-plugin <dir>              # planned cells, projected spend, cap
+node benchmarks/bisect.mjs --before-plugin <dir>                        # quick: the quick-tier cases, 3 runs per arm, cap $20
+node benchmarks/bisect.mjs --full --before-plugin <dir>                 # every case; cap is the remaining cells times the estimate
+node benchmarks/bisect.mjs --report                                     # summary of the latest commit pair, no runs
+```
+
+`--prompt-mode skill|natural` (default `skill`) sends `/exo:find-cause ` plus the bug report, or the bug report verbatim; each record keeps `promptMode` and `skillFired`, and the summary file holds one block per mode. `--cases a,b`, `--runs n`, `--arms`, `--max-budget-usd` (per cell, default 2), `--max-total-usd`, `--concurrency n` (default 4) and `--fresh` (ignore recorded cells) refine a run. Each finished cell is one line in `benchmarks/results/bisect.jsonl`, keyed by case, arm, run and the two plugin commits, so a rerun skips what is recorded. `benchmarks/results/bisect-summary.json` holds per-case means and the pooled after-minus-before sums per metric for regression cases and for controls, each with a fall, rise or noise verdict against 2 SE; raw streams go to `benchmarks/results/bisect.runs/`.

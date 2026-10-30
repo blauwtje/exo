@@ -1,0 +1,7 @@
+{
+  "kind": "regression",
+  "tier": "quick",
+  "repro": "node test/order.mjs",
+  "culprit": "refactor: drop hand-rolled version compare",
+  "timeoutMinutes": 15
+}
