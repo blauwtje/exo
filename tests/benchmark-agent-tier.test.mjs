@@ -11,7 +11,7 @@ import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
 import { Budget, apiKeySourceOf, candidatesFor, cellLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'run-unit'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }
@@ -44,7 +44,7 @@ test('settingOf reads the model and effort of each benchmarked agent from the ki
   assert.deepEqual(settingOf('build-task', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('solve-hard', table), { model: 'opus', effort: 'high' });
   assert.deepEqual(settingOf('orchestrator', table), { model: 'opus', effort: 'xhigh' });
-  assert.throws(() => settingOf('run-unit-x', table), /not in lib\/model-kinds.json/);
+  assert.throws(() => settingOf('task-runner-x', table), /not in lib\/model-kinds.json/);
 });
 
 test('planJobs crosses candidates with the tier fixtures, and --candidate replaces the ladder', () => {

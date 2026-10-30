@@ -68,11 +68,17 @@ test('the key allowlist accepts memory and color and rejects remember', () => {
   assert.deepEqual(unsupportedKeys({ name: 'a', remember: 'project' }), ['remember']);
 });
 
-test('only run-unit sets the one-hour prompt cache', () => {
+test('only task-runner sets the one-hour prompt cache', () => {
   for (const agent of agents) {
-    const expected = agent.fileName === 'run-unit.md' ? '{ cacheTtl: 1h }' : undefined;
+    const expected = agent.fileName === 'task-runner.md' ? '{ cacheTtl: 1h }' : undefined;
     assert.equal(agent.frontmatter.experimental, expected, `${agent.fileName} experimental key`);
   }
+});
+
+test('task-runner lists Write so it can hand over at the hard context limit', () => {
+  const taskRunner = agents.find((agent) => agent.fileName === 'task-runner.md');
+  const tools = taskRunner.frontmatter.tools.split(', ');
+  assert.ok(tools.includes('Write'), 'task-runner tools lack Write, the one tool the hard limit still allows');
 });
 
 test('every agent is named after its file', () => {
@@ -115,8 +121,8 @@ test('every listed tool is a tool the harness has', () => {
   }
 });
 
-test('fix-review, solve-hard and run-unit hold the TaskStop their bodies tell them to run', () => {
-  for (const name of ['fix-review', 'solve-hard', 'run-unit']) {
+test('fix-review, solve-hard and task-runner hold the TaskStop their bodies tell them to run', () => {
+  for (const name of ['fix-review', 'solve-hard', 'task-runner']) {
     const agent = agents.find((candidate) => candidate.frontmatter.name === name);
     assert.ok(agent.body.includes('TaskStop'), `${name} body names TaskStop`);
     assert.ok(agent.frontmatter.tools.split(', ').includes('TaskStop'), `${name} lists TaskStop in tools`);
@@ -311,10 +317,10 @@ test('review-branch reads its opening inputs together in its first message', () 
   assert.match(reviewer.body, /^- First message: Read plan `## Goal`, `## Non-goals`, `## Context`, standard, diff and nearest `CLAUDE\.md`\/`AGENTS\.md` together; then changed ranges\.$/m);
 });
 
-test('run-unit dispatches every build and repair in the foreground and never ends its turn on a dispatch', () => {
-  const unit = agents.find((agent) => agent.frontmatter.name === 'run-unit');
+test('task-runner dispatches every build and repair in the foreground and never ends its turn on a dispatch', () => {
+  const unit = agents.find((agent) => agent.frontmatter.name === 'task-runner');
   assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- Dispatch each build and repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: run-unit gets no completion notification, so its turn end is its return\.$/m);
+  assert.match(unit.body, /^ {2}- Dispatch each build and repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: task-runner gets no completion notification, so its turn end is its return\.$/m);
   assert.match(unit.body, /^ {2}- Every `Prompt:` of a block goes as a foreground call in one message; it returns after each build's report\.$/m);
   assert.match(unit.body, /^ {2}- Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill block likewise\.$/m);
   assert.match(unit.body, /^ {2}- A returned build with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command\.$/m);
@@ -327,9 +333,9 @@ test('run-unit dispatches every build and repair in the foreground and never end
   assert.doesNotMatch(unit.body, /no report`/);
 });
 
-test('run-unit runs on its own kind, at sonnet high', () => {
-  assert.equal(kindTable.agents['agents/run-unit.md'].kind, 'run-unit');
-  assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'high' });
+test('task-runner runs on its own kind, at sonnet high', () => {
+  assert.equal(kindTable.agents['agents/task-runner.md'].kind, 'task-runner');
+  assert.deepEqual(kindTable.kinds['task-runner'], { model: 'sonnet', effort: 'high' });
 });
 
 test('every skill that cites the report rule names closing.md, which defines it', () => {

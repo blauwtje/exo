@@ -21,7 +21,7 @@ const MERGE_REVIEWS = NODE_SCRIPT('merge-reviews');
 
 function stageOfCall(call) {
   if (call.name === 'Skill' && call.input?.skill === 'exo:spec') return 'spec';
-  if (call.name === 'Agent' && call.input?.subagent_type === 'exo:run-unit') return 'unit';
+  if (call.name === 'Agent' && call.input?.subagent_type === 'exo:task-runner') return 'unit';
   if (call.name !== 'Bash') return 'other';
   if (NEXT_TASK.test(call.input?.command ?? '')) return 'next-task';
   if (MERGE_REVIEWS.test(call.input?.command ?? '')) return 'merge-reviews';

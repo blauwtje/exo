@@ -16,7 +16,7 @@ const MERGED = [
   '  Sweep: grep -L "manager subagent" lib/context-limits.mjs',
   'hooks/agent-effort.mjs:26-34; concern; plan Decision 18; an unknown label gets no deny and no model; report',
   'tests/context-limit.test.mjs:47; defect; removed assertion; `assert.match(soft.additionalContext, /exo:save-session/);`; report',
-  'hooks/run-unit.md:29; concern; plan fit; a red Proof goes to SendMessage first; report',
+  'hooks/task-runner.md:29; concern; plan fit; a red Proof goes to SendMessage first; report',
   ''
 ].join('\n');
 
@@ -27,7 +27,7 @@ const FIXER_WRITTEN = [
   '  Sweep: grep -L "manager subagent" lib/context-limits.mjs',
   'hooks/agent-effort.mjs:26-34; concern; plan Decision 18; an unknown label gets no deny and no model; report | reported: already absent',
   'tests/context-limit.test.mjs:47; defect; removed assertion; `assert.match(soft.additionalContext, /exo:save-session/);`; report | reported: defect with action report, left unchanged',
-  'hooks/run-unit.md:29; concern; plan fit; a red Proof goes to SendMessage first; report | reported: unproven',
+  'hooks/task-runner.md:29; concern; plan fit; a red Proof goes to SendMessage first; report | reported: unproven',
   ''
 ].join('\n');
 
@@ -74,7 +74,7 @@ test('unprovenRisks names a reported-unproven concern without its mark', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fixer-mark-'));
   const file = path.join(dir, 'branch-review.md');
   fs.writeFileSync(file, FIXER_WRITTEN);
-  assert.deepEqual(unprovenRisks(file), ['hooks/run-unit.md:29; concern; plan fit; a red Proof goes to SendMessage first; report']);
+  assert.deepEqual(unprovenRisks(file), ['hooks/task-runner.md:29; concern; plan fit; a red Proof goes to SendMessage first; report']);
 });
 
 test('the fixer prompt shows each Guard form as its own line, not alternatives joined by a bar', () => {

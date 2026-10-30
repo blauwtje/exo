@@ -1,6 +1,6 @@
 import { coveringTests } from '../../lib/covering-tests.mjs';
 
-const KNOWN_PAIR = { changed: 'agents/run-unit.md', test: 'tests/agents.test.mjs' };
+const KNOWN_PAIR = { changed: 'agents/task-runner.md', test: 'tests/agents.test.mjs' };
 
 export function checkCoveringTests(report, repository) {
   const covering = coveringTests(repository.root, [KNOWN_PAIR.changed]);

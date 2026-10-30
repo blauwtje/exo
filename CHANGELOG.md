@@ -82,6 +82,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The skill, agent, hook and script authoring rules and checks follow the Agent Skills spec, the Claude Code docs and the Opus 5.5 prompting guide checked 2026-10-28: `exo:edit-skills` gains `agent-shape`, `hook-shape` and `script-shape` pages, the verify frontmatter check accepts the Agent Skills and Claude Code skill keys and the plugin subagent keys, and `docs/principles` gains the Opus 5.5 and Agent Skills rules.
 - The session rules in `hooks/session-rules.md` keep the main session inline by default and delegate only when trigger T1 to T6 holds (small task inline, web research or long reads to `fetch-docs` or `locate-code`, 2+ independent 6-turn parts to parallel subagents, dependent steps to one worker, the 60k warning with 2+ turns left, runs over 5 minutes in the background); `node benchmarks/delegation-readout.mjs` reads pass, cost, peak lead context and Agent calls per arm from value cells.
 - `next-task.mjs` builds the Decisions section with `headedLines` directly; the one-line `decisionLines` wrapper is removed.
+- The agent and kind `run-unit` are renamed to `task-runner`, with no alias.
 
 ### Fixed
 - `skills/find-cause/scripts/bisect.mjs` keeps doubling its good-commit search past HEAD~32 until it runs out of history, then tries the root commit, so a regression more than 32 commits back is bracketed instead of printing `Bisect: no passing commit`; `benchmarks/results/bisect.jsonl` records a quick skill-mode remeasure (6 runs, plus an A/A check) in which the script names the culprit in 36 of 36 regression cells and after vs 480be78e is noise: wall +1.7%, cost -0.9%, turns -6.1%.
@@ -129,6 +130,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/improve-speed.mjs` writes `mode` in its quick verdict and its `--full` output, and `benchmarks/run.mjs` writes a `summary.json` with `mode` for every run mode, not only the quick tier.
 - `benchmarks/improve-all-score.mjs` rescoring a saved repeat-2 replay without `--full` no longer doubles the verify-cost ratio: it reads the repeat count from the saved run records instead of the tier.
 - Each `exo:build` task brief now holds the plan's numbered Decisions: `frameOf` reads numbered lines, so a Decision no longer stops short of the task that must follow it.
+- `task-runner` lists `Write`, so it can write its result file at the hard context limit.
 
 ## 0.137.0 - 2026-10-26
 

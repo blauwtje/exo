@@ -7,16 +7,16 @@ import test from 'node:test';
 import { readKindTable } from '#model-kinds';
 import { parsePlan } from '#plan-tasks';
 import { planJobs, resolveFixtures } from '../benchmarks/agent-tier.mjs';
-import { landedFindings, outcomeFindings } from '../benchmarks/agent-tier/run-unit/grade.mjs';
-import { installStub } from '../benchmarks/agent-tier/run-unit/install-stub.mjs';
-import { applyPrepared } from '../benchmarks/agent-tier/run-unit/stub.mjs';
-import { runUnitChecks, runUnitFindings, runUnitPrompt } from '../benchmarks/agent-tier/run-unit/transcript.mjs';
+import { landedFindings, outcomeFindings } from '../benchmarks/agent-tier/task-runner/grade.mjs';
+import { installStub } from '../benchmarks/agent-tier/task-runner/install-stub.mjs';
+import { applyPrepared } from '../benchmarks/agent-tier/task-runner/stub.mjs';
+import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from '../benchmarks/agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
-const RUN_UNIT_ROOT = path.join(ROOT, 'benchmarks', 'agent-tier', 'run-unit');
+const TASK_RUNNER_ROOT = path.join(ROOT, 'benchmarks', 'agent-tier', 'task-runner');
 const LAND_TASK = path.join(ROOT, 'skills', 'build', 'scripts', 'land-task.mjs');
-const tasks = loadValueTasks(RUN_UNIT_ROOT);
+const tasks = loadValueTasks(TASK_RUNNER_ROOT);
 
 const plainEnvironment = () => Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('NODE_TEST')));
 const planIdOf = (task) => path.basename(task.directory);
@@ -31,7 +31,7 @@ function build(repo, task, number, attempt) {
 }
 
 async function inRepo(task, work) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-run-unit-'));
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-task-runner-'));
   try {
     const startTree = prepareValueRepo(task, repo);
     return await work(repo, startTree);
@@ -89,22 +89,22 @@ test('false-green: the first stub attempt of task 1 reports GREEN and land-task 
   });
 });
 
-test('the fixtures are the quick and full run-unit lists and resolve on disk', async () => {
+test('the fixtures are the quick and full task-runner lists and resolve on disk', async () => {
   const { default: shipped } = await import('../benchmarks/agent-tier/agents.json', { with: { type: 'json' } });
-  assert.deepEqual(shipped['run-unit'].fixtures.quick, ['false-green', 'ordered-three']);
-  assert.deepEqual(shipped['run-unit'].fixtures.full, ['false-green', 'ordered-three', 'resume-landed']);
+  assert.deepEqual(shipped['task-runner'].fixtures.quick, ['false-green', 'ordered-three']);
+  assert.deepEqual(shipped['task-runner'].fixtures.full, ['false-green', 'ordered-three', 'resume-landed']);
   for (const tier of ['quick', 'full']) {
-    const jobs = planJobs({ config: shipped, agents: ['run-unit'], tier, candidates: null, table: readKindTable() });
+    const jobs = planJobs({ config: shipped, agents: ['task-runner'], tier, candidates: null, table: readKindTable() });
     assert.doesNotThrow(() => resolveFixtures(jobs));
   }
 });
 
 test('installStub swaps build-task for the stub and runs it on haiku without touching the source plugin', () => {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-run-unit-stub-'));
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-task-runner-stub-'));
   try {
     const source = copyPluginWithoutTasks(ROOT, path.join(scratch, 'source'));
     const before = fs.readFileSync(path.join(source, 'agents', 'build-task.md'), 'utf8');
-    const copy = installStub({ pluginDir: source, fixture: path.join(RUN_UNIT_ROOT, 'false-green'), destination: path.join(scratch, 'copy') });
+    const copy = installStub({ pluginDir: source, fixture: path.join(TASK_RUNNER_ROOT, 'false-green'), destination: path.join(scratch, 'copy') });
     assert.match(fs.readFileSync(path.join(copy, 'agents', 'build-task.md'), 'utf8'), /stub-build-task\/stub\.mjs/);
     assert.equal(fs.readFileSync(path.join(source, 'agents', 'build-task.md'), 'utf8'), before);
     assert.ok(fs.existsSync(path.join(copy, 'stub-build-task', 'prepared', 'task1', 'bad')));
@@ -118,7 +118,7 @@ test('installStub swaps build-task for the stub and runs it on haiku without tou
 
 test('the installed stub applies the prepared change when reached through a symlinked directory', async () => {
   const task = tasks.find((each) => each.id === 'value-false-green');
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-run-unit-link-'));
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-task-runner-link-'));
   try {
     const source = copyPluginWithoutTasks(ROOT, path.join(scratch, 'source'));
     const copy = installStub({ pluginDir: source, fixture: task.directory, destination: path.join(scratch, 'copy') });
@@ -137,10 +137,10 @@ test('the installed stub applies the prepared change when reached through a syml
   }
 });
 
-test('runUnitPrompt fills the five-line dispatch shape', async () => {
+test('taskRunnerPrompt fills the five-line dispatch shape', async () => {
   const task = tasks.find((each) => each.id === 'value-false-green');
   await inRepo(task, async (repo) => {
-    const prompt = runUnitPrompt(task, repo);
+    const prompt = taskRunnerPrompt(task, repo);
     assert.match(prompt, new RegExp(`^- Plan: ${planOf(repo, task)}\\n- Branch: bench/false-green\\n- Checkout: ${fs.realpathSync(repo)}\\n- Tasks: 1, 2\\n- Return: `));
   });
 });
@@ -177,23 +177,23 @@ const landCall = (n, ok = true) => ['Bash', { command: `node land-task.mjs --pla
 const ORDERED = { tasks: [1, 2] };
 const CLAIM = { tasks: [1, 2], claim: { task: 1 } };
 
-test('a run-unit that dispatches the printed block verbatim and lands in plan order has no findings', () => {
+test('a task-runner that dispatches the printed block verbatim and lands in plan order has no findings', () => {
   const good = stream([next(1), dispatch(1), landCall(1), next(2), dispatch(2), landCall(2)], 'LANDED 1\nLANDED 2');
-  assert.deepEqual(runUnitFindings(good, ORDERED), []);
-  assert.equal(runUnitChecks(ORDERED), 5);
-  assert.equal(runUnitChecks(CLAIM), 6);
+  assert.deepEqual(taskRunnerFindings(good, ORDERED), []);
+  assert.equal(taskRunnerChecks(ORDERED), 5);
+  assert.equal(taskRunnerChecks(CLAIM), 6);
 });
 
 test('a refused false GREEN followed by a retry with the refusal and a landing has no findings', () => {
   const retry = dispatch(1, '\nland-task: 1 covering test(s) failed\nexo-retry');
   const good = stream([next(1), dispatch(1), landCall(1, false), retry, landCall(1), next(2), dispatch(2), landCall(2)], 'LANDED 1\nLANDED 2');
-  assert.deepEqual(runUnitFindings(good, CLAIM), []);
+  assert.deepEqual(taskRunnerFindings(good, CLAIM), []);
   const blocked = stream([next(1), dispatch(1), landCall(1, false)], 'BLOCKED 1 land gate failed /r/.exo/implementer-1.md\nBLOCKED 2 waits on 1');
-  assert.deepEqual(runUnitFindings(blocked, CLAIM), []);
+  assert.deepEqual(taskRunnerFindings(blocked, CLAIM), []);
 });
 
 test('bad transcripts: edited prompt, hand commit, LANDED without Committed, land with no GREEN, rerun, order, accepted false GREEN', () => {
-  const findingsOf = (steps, final, spec = ORDERED) => runUnitFindings(stream(steps, final), spec).join('\n');
+  const findingsOf = (steps, final, spec = ORDERED) => taskRunnerFindings(stream(steps, final), spec).join('\n');
   assert.match(findingsOf([next(1), ['Agent', { subagent_type: 'exo:build-task', prompt: 'Task 1 of /r/docs/specs/p.md: build it' }, 'Task 1: GREEN'], landCall(1)], 'LANDED 1\nBLOCKED 2 x'), /holds no printed Prompt: block verbatim/);
   assert.match(findingsOf([next(1), dispatch(1, '\nplease be careful'), landCall(1)], 'LANDED 1\nBLOCKED 2 x'), /adds text before any land-task refusal/);
   assert.match(findingsOf([next(1), dispatch(1), ['Bash', { command: 'git -C /r commit -am x' }, ''], landCall(1)], 'LANDED 1\nBLOCKED 2 x'), /forbidden command/);

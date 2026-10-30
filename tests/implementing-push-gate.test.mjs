@@ -28,7 +28,7 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
   const branchStep = loopStep(1);
   assert.ok(branchStep.includes('Settle where the run commits.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |'), 'the workspace is read before the first dispatch');
-  assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
+  assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:task-runner` agent'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
@@ -47,14 +47,14 @@ test('the workspace question offers a branch, a worktree and the current branch,
 });
 
 test('a green task commits and pushes nothing', () => {
-  const unit = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
+  const unit = fs.readFileSync(new URL('../agents/task-runner.md', import.meta.url), 'utf8');
   const commitStep = unit.match(/^4\. \*\*Commit a green foreground task\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m)[0];
   assert.ok(commitStep.includes('push nothing'));
   assert.ok(!commitStep.includes('git push'), 'the unit commit step runs no push');
 });
 
 test('an off-brief return gets one in-place correction, a red proof or failing command a fresh retry', () => {
-  const unit = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
+  const unit = fs.readFileSync(new URL('../agents/task-runner.md', import.meta.url), 'utf8');
   const commitStep = unit.match(/^4\. \*\*Commit a green foreground task\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m)[0];
   const lines = commitStep.split('\n');
   const offBrief = lines.find((line) => line.includes('Off-brief'));

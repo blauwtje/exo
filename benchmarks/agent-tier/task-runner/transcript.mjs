@@ -88,7 +88,7 @@ function verbatimFindings(builds, blocks, lands) {
 
 function forbiddenFindings(calls) {
   return calls.flatMap((call) => {
-    if (WRITE_TOOLS.has(call.name)) return [`transcript: run-unit used ${call.name}`];
+    if (WRITE_TOOLS.has(call.name)) return [`transcript: task-runner used ${call.name}`];
     if (call.name !== 'Bash') return [];
     const command = String(call.input.command ?? '');
     const found = [];
@@ -150,9 +150,9 @@ function falseClaimFindings(builds, lands, finalText, task) {
   return redispatched || blocked ? [] : [`transcript: task ${task} refused by land-task, then neither re-dispatched nor reported BLOCKED`];
 }
 
-export const runUnitChecks = (spec) => 5 + (spec?.claim ? 1 : 0);
+export const taskRunnerChecks = (spec) => 5 + (spec?.claim ? 1 : 0);
 
-export function runUnitFindings(stdout, spec) {
+export function taskRunnerFindings(stdout, spec) {
   const { items, finalText } = mainThread(stdout);
   const calls = annotated(items);
   const builds = buildRuns(calls);
@@ -172,7 +172,7 @@ function branchOf(planText) {
   return planText.match(/^Branch: (.+)$/m)[1].trim();
 }
 
-export function runUnitPrompt(task, repository) {
+export function taskRunnerPrompt(task, repository) {
   const checkout = fs.realpathSync(repository);
   const planId = path.basename(task.directory);
   const plan = path.join(checkout, 'docs', 'specs', `${planId}.md`);

@@ -37,8 +37,8 @@
       "wallScale": { "sonnet:medium": 0.99, "sonnet:high": 1.07, "sonnet:xhigh": 2.52, "sonnet:max": 14.46, "opus:low": 1.21, "opus:medium": 1.86, "opus:high": 2.23, "opus:xhigh": 3.41 }
     }
   },
-  "run-unit": {
-    "metric": "run-unit check pass",
+  "task-runner": {
+    "metric": "task-runner check pass",
     "fixtures": { "quick": ["false-green", "ordered-three"], "full": ["false-green", "ordered-three", "resume-landed"] },
     "profile": {
       "input": 12,

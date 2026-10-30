@@ -1,0 +1,12 @@
+{
+  "id": "value-resume-landed",
+  "claim": "task-runner: Task 1 of three is already landed; the dispatch names Tasks 2 and 3, and a good task-runner builds and lands only those, in order",
+  "timeoutMinutes": 20,
+  "estimateUsd": 0.9,
+  "transcript": {
+    "tasks": [
+      2,
+      3
+    ]
+  }
+}

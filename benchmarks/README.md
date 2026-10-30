@@ -259,7 +259,7 @@ Three agents are left out because they have no deterministic metric:
 
 - `fetch-docs` answers from live web pages, so there is no stable ground truth, and an on-disk document would need invented fixtures that would not separate models.
 - `find-open-points` has no fixture with planted open points, and keyword matching on its output would be a weak metric.
-- `run-unit` orchestrates `build-task` and lands commits, so it is measurable only through a whole build run, which `lean-gates.mjs` and the flow cells already cover at dollars per cell.
+- `task-runner` orchestrates `build-task` and lands commits, so it is measurable only through a whole build run, which `lean-gates.mjs` and the flow cells already cover at dollars per cell.
 
 ## Ideas set
 

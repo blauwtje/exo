@@ -453,7 +453,7 @@ export function phasesOf({ calls, subagents, meta, facts, mainBounds }) {
     previous = commit.time;
     return { task: commit.taskNumber, ms: value, at: new Date(commit.time).toISOString(), source: 'commit-ts' };
   });
-  const buildTaskAgents = agentCalls.filter((call) => /build-task|run-unit|solve-hard/.test(typeOf(call))).map((call) => ({
+  const buildTaskAgents = agentCalls.filter((call) => /build-task|task-runner|solve-hard/.test(typeOf(call))).map((call) => ({
     agentType: typeOf(call),
     description: call.input.description ?? byTool.get(call.id)?.meta.description ?? null,
     ...span(call.ts, agentReturn(call, byTool.get(call.id)), 'transcript-ts')

@@ -17,7 +17,7 @@
 4. **Take the block from the `Block:` line.**
    - A `Design:` line routes its task per the design tasks reference; step 3 repeats.
    - Open choice the user would miss → stop with a question; other → rule it, record it in the commit.
-5. **Dispatch the unit.** Send the `Block:` tasks to the `exo:run-unit` agent, silently, then end the turn; its completion notification resumes it.
+5. **Dispatch the unit.** Send the `Block:` tasks to the `exo:task-runner` agent, silently, then end the turn; its completion notification resumes it.
    - Name plan path, branch, checkout, task numbers.
    - Never build a task here; never call ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.
 6. **Route the return.** Each line: `LANDED <n>` or `BLOCKED <n> <reason> <report path>`.

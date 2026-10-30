@@ -17,7 +17,7 @@
       "models": ["deepseek-flash"],
       "tiers": { "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
-      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "orchestrator": "high", "run-unit": "low" }
+      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "orchestrator": "high", "task-runner": "low" }
     }
   },
   "kinds": {
@@ -59,7 +59,7 @@
     "orchestrator": {
       "on": { "tier": "strong", "effort": "xhigh" }
     },
-    "run-unit": {
+    "task-runner": {
       "on": { "tier": "standard", "effort": "high" }
     },
     "research": {
@@ -109,7 +109,7 @@
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/orchestrator.md": { "kind": "orchestrator" },
     "agents/review-branch.md": { "kind": "review-branch" },
-    "agents/run-unit.md": { "kind": "run-unit" },
+    "agents/task-runner.md": { "kind": "task-runner" },
     "agents/solve-hard.md": { "kind": "hardest" }
   },
   "dispatches": [

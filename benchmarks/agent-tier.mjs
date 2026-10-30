@@ -17,8 +17,8 @@ import { dispatchLine, gradeRepair, loadFixtures, loadPlants, overlaps, parseFin
 import { MODELS } from './tasks.mjs';
 import { RESULT_FILE } from './agent-tier/orchestrator/grade.mjs';
 import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrator/transcript.mjs';
-import { installStub } from './agent-tier/run-unit/install-stub.mjs';
-import { runUnitChecks, runUnitFindings, runUnitPrompt } from './agent-tier/run-unit/transcript.mjs';
+import { installStub } from './agent-tier/task-runner/install-stub.mjs';
+import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from './agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,7 +26,7 @@ const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
 const REVIEW_ROOT = path.join(ROOT, 'benchmarks/agent-tier/review');
 const AGENT_VALUE_ROOT = path.join(ROOT, 'benchmarks/agent-tier/value');
 const ORCHESTRATOR_ROOT = path.join(ROOT, 'benchmarks/agent-tier/orchestrator');
-const RUN_UNIT_ROOT = path.join(ROOT, 'benchmarks/agent-tier/run-unit');
+const TASK_RUNNER_ROOT = path.join(ROOT, 'benchmarks/agent-tier/task-runner');
 const RESULTS = path.join(ROOT, 'benchmarks/results');
 const SESSION_MS = environmentMs('EXO_AGENT_TIER_SESSION_MS', 600_000);
 const MODEL_LADDER = ['haiku', 'sonnet', 'opus'];
@@ -40,7 +40,7 @@ const WILSON_Z = 1.96;
 const API_KEY_SOURCE = 'ANTHROPIC_API_KEY';
 const AGENT_ALIASES = { orchestrate: 'orchestrator' };
 const USAGE = `usage: agent-tier.mjs [--agent <name>]... [--tier quick|full] [--candidate <model:effort>]... [--max-usd <n>] [--concurrency <n>] [--runs <n>] [--transcripts <dir>] [--dry-run] [--out <file>] [--history <file>]... [--merge] [--require-api-key]
-Default: the quick fixtures of every agent in benchmarks/agent-tier/agents.json (locate-code, review-branch, fix-review, build-task, solve-hard, orchestrator, run-unit), each run at its current model and effort from lib/model-kinds.json and at cheaper settings, written to benchmarks/results/agent-tier-quick.json.
+Default: the quick fixtures of every agent in benchmarks/agent-tier/agents.json (locate-code, review-branch, fix-review, build-task, solve-hard, orchestrator, task-runner), each run at its current model and effort from lib/model-kinds.json and at cheaper settings, written to benchmarks/results/agent-tier-quick.json.
 Candidates per agent: the current setting; the same model one and two effort steps lower, down to low; one model lower at the current effort. --candidate replaces that list and repeats.
 --tier full runs every fixture of each agent and writes benchmarks/results/agent-tier-full.json.
 --runs repeats every fixture of every candidate that many times; each cell records the min and max of its per-run mean score and check fraction as its spread.
@@ -400,8 +400,8 @@ function orchestratorTranscript(task, repository, stdout) {
   return { findings: transcriptFindings(stdout, resultText, task.transcript), checks: transcriptChecks(task.transcript) };
 }
 
-function runUnitTranscript(task, repository, stdout) {
-  return { findings: runUnitFindings(stdout, task.transcript), checks: runUnitChecks(task.transcript) };
+function taskRunnerTranscript(task, repository, stdout) {
+  return { findings: taskRunnerFindings(stdout, task.transcript), checks: taskRunnerChecks(task.transcript) };
 }
 
 const stubbedPlugin = (ctx, task, base) => installStub({ pluginDir: ctx.pluginDir, fixture: task.directory, destination: path.join(base, 'plugin') });
@@ -415,7 +415,7 @@ const EXECUTORS = {
   'build-task': valueSession((task, repository) => `Brief: ${repository}/.exo/brief.md. Checkout: ${repository}.`, { prepare: writeBrief }),
   'solve-hard': valueSession(checkoutPrompt),
   orchestrator: valueSession(checkoutPrompt, { transcript: orchestratorTranscript }),
-  'run-unit': valueSession(runUnitPrompt, { transcript: runUnitTranscript, pluginOf: stubbedPlugin })
+  'task-runner': valueSession(taskRunnerPrompt, { transcript: taskRunnerTranscript, pluginOf: stubbedPlugin })
 };
 
 const byFixtureId = (tasks) => new Map(tasks.map((task) => [task.id.replace(VALUE_PREFIX, ''), task]));
@@ -429,7 +429,7 @@ const FIXTURE_SOURCES = {
   'build-task': valueFixtures,
   'solve-hard': valueFixtures,
   orchestrator: () => byFixtureId(loadValueTasks(ORCHESTRATOR_ROOT)),
-  'run-unit': () => byFixtureId(loadValueTasks(RUN_UNIT_ROOT))
+  'task-runner': () => byFixtureId(loadValueTasks(TASK_RUNNER_ROOT))
 };
 
 export function resolveFixtures(jobs) {

@@ -17,7 +17,7 @@
 //
 // The agent sandbox approximates the tool allowlist: `read-only` for the agents in
 // READ_ONLY, whose tools hold no Edit or Write, `workspace-write` for the rest
-// (run-unit has neither tool but lands commits through Bash, so it writes).
+// (task-runner has neither tool but lands commits through Bash, so it writes).
 // `maxTurns` and `omitClaudeMd` have no Codex field and are dropped.
 
 import crypto from 'node:crypto';

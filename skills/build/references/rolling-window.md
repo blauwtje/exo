@@ -1,6 +1,6 @@
 # Rolling window
 
-`run-unit` starts the next ready task as soon as one lands, instead of waiting for a whole wave. Each slot is one task in its own worktree, per wave worktrees step 1, 3, 4.
+`task-runner` starts the next ready task as soon as one lands, instead of waiting for a whole wave. Each slot is one task in its own worktree, per wave worktrees step 1, 3, 4.
 
 1. **Baseline.** `next-task.mjs --open-slots` runs steps 1 and 2; by hand only after `Wave discarded:`. Before the first slot, write the run checkout's `git status --porcelain` once to `<root>/.exo/baseline.txt`.
 2. **Open a slot.**
@@ -14,7 +14,7 @@
    - `REFUSED` → route as a failed build; `CONFLICT` or `NEWPATH` → close the window to refills (step 4); each keeps the slot folder and names it.
 4. **Close the window.**
    - New path in the run's checkout against the baseline, or a cherry-pick conflict → close the window to refills.
-   - `run-unit` returns only after every in-flight slot returned or blocked and every slot folder left per wave worktrees step 4, or kept per step 6 and named in the return.
+   - `task-runner` returns only after every in-flight slot returned or blocked and every slot folder left per wave worktrees step 4, or kept per step 6 and named in the return.
 5. **Repair.**
    - A repair takes a fresh slot worktree at the current `HEAD`.
    - The run's checkout never holds uncommitted work while the window is open.

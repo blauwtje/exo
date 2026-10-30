@@ -70,12 +70,12 @@ test('dryRunLine multiplies the session count by the recorded median', () => {
 });
 
 test('agentArguments passes the prompt last after -- so a leading dash stays positional', () => {
-  const base = { agent: 'exo:run-unit', model: 'haiku', effort: 'low', pluginDir: '/plugin' };
+  const base = { agent: 'exo:task-runner', model: 'haiku', effort: 'low', pluginDir: '/plugin' };
   for (const prompt of ['- Plan: x', 'plain prompt']) {
     const args = agentArguments({ ...base, prompt });
     assert.equal(args.at(-1), prompt);
     assert.equal(args.at(-2), '--');
     assert.equal(args.filter((arg) => arg === prompt).length, 1);
-    assert.deepEqual(args.slice(0, 3), ['-p', '--agent', 'exo:run-unit']);
+    assert.deepEqual(args.slice(0, 3), ['-p', '--agent', 'exo:task-runner']);
   }
 });

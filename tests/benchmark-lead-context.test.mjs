@@ -29,7 +29,7 @@ const boundary = (preTokens) => ({ type: 'system', subtype: 'compact_boundary', 
 const LEAD = [
   turn(10_000, skill('exo:spec')),
   turn(40_000, bash('cd x && node "$ROOT/skills/build/scripts/next-task.mjs" --plan p')),
-  turn(50_000, agent('exo:run-unit')),
+  turn(50_000, agent('exo:task-runner')),
   turn(70_000, bash('cat skills/build/scripts/merge-reviews.mjs')),
   turn(90_000, bash('node skills/build/scripts/merge-reviews.mjs --plan p')),
   boundary(90_000),
@@ -66,7 +66,7 @@ async function sessionLine(entries) {
 
 test('a stage call that is not the last block of a split assistant message still gets the growth', async () => {
   const split = (id, call) => withId(turn(50_000, call), id);
-  const line = await sessionLine([split('msg_1', agent('exo:run-unit')), split('msg_1', bash('ls')), turn(70_000)]);
+  const line = await sessionLine([split('msg_1', agent('exo:task-runner')), split('msg_1', bash('ls')), turn(70_000)]);
   assert.match(line, /unit 100%/);
 });
 

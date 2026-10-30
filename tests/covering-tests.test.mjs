@@ -19,20 +19,20 @@ function repo(files) {
 }
 
 const FILES = {
-  'agents/run-unit.md': 'agent\n',
+  'agents/task-runner.md': 'agent\n',
   'skills/build/scripts/land-task.mjs': 'code\n',
   'skills/build/references/workspace.md': 'doc\n',
-  'tests/agents.test.mjs': "read('agents/run-unit.md');\n",
+  'tests/agents.test.mjs': "read('agents/task-runner.md');\n",
   'tests/zeta.test.mjs': 'const f = "skills/build/scripts/land-task.mjs";\n',
   'tests/alpha.test.mjs': 'const d = `skills/build`;\n',
   'tests/slash.test.mjs': "const d = 'agents/';\n",
-  'tests/near.test.mjs': "const f = 'agents/run-unit.mdx'; const g = 'skills/builder';\n",
-  'tests/helper.mjs': "'agents/run-unit.md'\n"
+  'tests/near.test.mjs': "const f = 'agents/task-runner.mdx'; const g = 'skills/builder';\n",
+  'tests/helper.mjs': "'agents/task-runner.md'\n"
 };
 
 test('a quoted literal equal to the changed path selects its test', () => {
   const root = repo(FILES);
-  assert.deepEqual(coveringTests(root, ['agents/run-unit.md']), ['tests/agents.test.mjs', 'tests/slash.test.mjs']);
+  assert.deepEqual(coveringTests(root, ['agents/task-runner.md']), ['tests/agents.test.mjs', 'tests/slash.test.mjs']);
 });
 
 test('a literal naming an ancestor folder selects its test, with or without a trailing slash', () => {
@@ -62,13 +62,13 @@ function covering(root) {
 }
 
 test('the covering-tests check passes when the known pair maps and fails when the scan loses it', () => {
-  const passing = covering(repo({ 'agents/run-unit.md': 'a\n', 'tests/agents.test.mjs': "read('agents/run-unit.md');\n" }));
+  const passing = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/task-runner.md');\n" }));
   assert.match(passing[0], /^\[PASS\] covering tests: /);
-  const failing = covering(repo({ 'agents/run-unit.md': 'a\n', 'tests/agents.test.mjs': "read('agents/other.md');\n" }));
-  assert.match(failing[0], /^\[FAIL\] covering tests: .*agents\/run-unit\.md to tests\/agents\.test\.mjs/);
+  const failing = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/other.md');\n" }));
+  assert.match(failing[0], /^\[FAIL\] covering tests: .*agents\/task-runner\.md to tests\/agents\.test\.mjs/);
 });
 
-test('the real repository still maps agents/run-unit.md to tests/agents.test.mjs', () => {
+test('the real repository still maps agents/task-runner.md to tests/agents.test.mjs', () => {
   const root = fileURLToPath(new URL('..', import.meta.url));
   assert.match(covering(root)[0], /^\[PASS\] covering tests: /);
 });
