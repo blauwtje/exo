@@ -23,5 +23,10 @@
     "metric": "value-task check pass",
     "fixtures": { "quick": ["find-cause-decoy"], "full": ["test-pollution", "export-mismatch", "solve-month-end", "solve-queue-race", "solve-stale-settings", "solve-import-encoding", "solve-day-zone", "solve-cart-import", "solve-tax-region", "solve-cent-rounding"] },
     "profile": { "input": 80000, "cacheRead": 600000, "output": 25000 }
+  },
+  "orchestrate": {
+    "metric": "orchestrate check pass",
+    "fixtures": { "quick": ["three-parts", "false-pass"], "full": ["five-parts", "false-pass", "open-choice"] },
+    "profile": { "input": 30000, "cacheRead": 215000, "output": 8500 }
   }
 }

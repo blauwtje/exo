@@ -42,7 +42,7 @@ test('a job word naming an unknown kind is rejected', () => {
 
 test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
   const { kinds } = readKindTable(undefined, { provider: 'deepseek' });
-  for (const name of ['build-task', 'doc-task', 'coordinate', 'run-unit']) assert.equal(kinds[name].effort, 'low', name);
+  for (const name of ['build-task', 'doc-task', 'coordinate', 'orchestrate', 'run-unit']) assert.equal(kinds[name].effort, 'low', name);
   for (const name of ['review', 'build', 'hardest', 'chore']) assert.equal(kinds[name].effort, 'high', name);
   for (const kind of Object.values(kinds)) assert.equal(kind.model, INHERIT, kind.model);
 });

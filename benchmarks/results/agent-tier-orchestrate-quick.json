@@ -1,0 +1,247 @@
+{
+  "tier": "quick",
+  "cells": [
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.11649980000000001,
+      "wallS": 16.6655
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.11804219999999999,
+      "wallS": 16.4115
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.3349131,
+      "wallS": 56.555499999999995
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.9061471000000001,
+      "wallS": 194.3755
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.1857142,
+      "wallS": 18.356
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.19280619999999998,
+      "wallS": 25.003500000000003
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.37550959999999994,
+      "wallS": 45.1415
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "sessions": 2,
+      "graded": 2,
+      "score": 1,
+      "cost_usd": 0.3873821,
+      "wallS": 51.5045
+    }
+  ],
+  "sessions": [
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "three-parts",
+      "cost_usd": 0.057473,
+      "durationMs": 18220,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "cost_usd": 0.059026800000000004,
+      "durationMs": 15111,
+      "numTurns": 6,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "three-parts",
+      "cost_usd": 0.061574,
+      "durationMs": 18691,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "false-pass",
+      "cost_usd": 0.056468199999999996,
+      "durationMs": 14132,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "three-parts",
+      "cost_usd": 0.2138132,
+      "durationMs": 64484,
+      "numTurns": 3,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "cost_usd": 0.1210999,
+      "durationMs": 48627,
+      "numTurns": 10,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "three-parts",
+      "cost_usd": 0.5067146,
+      "durationMs": 212654,
+      "numTurns": 14,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "false-pass",
+      "cost_usd": 0.3994325,
+      "durationMs": 176097,
+      "numTurns": 18,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "three-parts",
+      "cost_usd": 0.1101492,
+      "durationMs": 17967,
+      "numTurns": 4,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "false-pass",
+      "cost_usd": 0.075565,
+      "durationMs": 18745,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "three-parts",
+      "cost_usd": 0.0946338,
+      "durationMs": 24538,
+      "numTurns": 5,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "cost_usd": 0.09817239999999999,
+      "durationMs": 25469,
+      "numTurns": 7,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "three-parts",
+      "cost_usd": 0.25438059999999996,
+      "durationMs": 56854,
+      "numTurns": 11,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "false-pass",
+      "cost_usd": 0.121129,
+      "durationMs": 33429,
+      "numTurns": 9,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "three-parts",
+      "cost_usd": 0.2518279,
+      "durationMs": 65050,
+      "numTurns": 11,
+      "score": 1
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "cost_usd": 0.1355542,
+      "durationMs": 37959,
+      "numTurns": 9,
+      "score": 1
+    }
+  ]
+}

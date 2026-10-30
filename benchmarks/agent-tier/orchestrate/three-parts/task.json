@@ -1,0 +1,20 @@
+{
+  "id": "value-three-parts",
+  "claim": "orchestrate: two independent parts in one phase, a part that needs both in a later phase, the result file per part",
+  "timeoutMinutes": 15,
+  "estimateUsd": 0.8,
+  "transcript": {
+    "phases": {
+      "parallel": [
+        "slugify",
+        "clamp"
+      ],
+      "dependent": "report-format",
+      "files": {
+        "slugify": "src/text.mjs",
+        "clamp": "src/num.mjs",
+        "report-format": "src/report.mjs"
+      }
+    }
+  }
+}

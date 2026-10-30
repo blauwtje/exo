@@ -17,7 +17,7 @@
       "models": ["deepseek-flash"],
       "tiers": { "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
-      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "run-unit": "low" }
+      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "orchestrate": "low", "run-unit": "low" }
     }
   },
   "kinds": {
@@ -55,6 +55,9 @@
     },
     "coordinate": {
       "on": { "tier": "standard", "effort": "medium" }
+    },
+    "orchestrate": {
+      "on": { "tier": "strong", "effort": "xhigh" }
     },
     "run-unit": {
       "on": { "tier": "standard", "effort": "medium" }
@@ -104,7 +107,7 @@
     "agents/find-open-points.md": { "kind": "investigate" },
     "agents/fix-review.md": { "kind": "fix-review" },
     "agents/locate-code.md": { "kind": "lookup" },
-    "agents/orchestrate.md": { "kind": "coordinate" },
+    "agents/orchestrate.md": { "kind": "orchestrate" },
     "agents/review-branch.md": { "kind": "review-branch" },
     "agents/run-unit.md": { "kind": "run-unit" },
     "agents/solve-hard.md": { "kind": "hardest" }

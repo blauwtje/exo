@@ -6,9 +6,9 @@ import test from 'node:test';
 import { readKindTable } from '#model-kinds';
 import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
-import { Budget, candidatesFor, dryRunText, estimateTotal, estimateUsd, flaggedShare, parseCandidate, planJobs, resolveFixtures, sessionCost, settingOf, summarizeCells, usageOfStream } from '../benchmarks/agent-tier.mjs';
+import { Budget, candidatesFor, cellLine, dryRunText, estimateTotal, estimateUsd, flaggedShare, modelUsageCost, parseCandidate, planJobs, recordOf, resolveFixtures, sessionCost, settingOf, summarizeCells, usageOfStream, valueScore } from '../benchmarks/agent-tier.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrate'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }
@@ -40,6 +40,7 @@ test('settingOf reads the model and effort of each benchmarked agent from the ki
   assert.deepEqual(settingOf('fix-review', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('build-task', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('solve-hard', table), { model: 'opus', effort: 'high' });
+  assert.deepEqual(settingOf('orchestrate', table), { model: 'opus', effort: 'xhigh' });
   assert.throws(() => settingOf('run-unit-x', table), /not in lib\/model-kinds.json/);
 });
 
@@ -48,7 +49,13 @@ test('planJobs crosses candidates with the tier fixtures, and --candidate replac
   const ladder = planJobs({ config: CONFIG, agents: ['locate-code'], tier: 'full', candidates: null, table });
   assert.equal(ladder.length, 6);
   const chosen = planJobs({ config: CONFIG, agents: ['solve-hard'], tier: 'quick', candidates: [parseCandidate('haiku:low')], table });
-  assert.deepEqual(chosen, [{ agent: 'solve-hard', candidate: { model: 'haiku', effort: 'low' }, fixture: 'c' }]);
+  assert.deepEqual(chosen, [{ agent: 'solve-hard', candidate: { model: 'haiku', effort: 'low' }, fixture: 'c', run: 1 }]);
+});
+
+test('planJobs with runs repeats every fixture of every candidate once per run', () => {
+  const jobs = planJobs({ config: CONFIG, agents: ['solve-hard'], tier: 'quick', candidates: [parseCandidate('haiku:low'), parseCandidate('sonnet:low')], table: readKindTable(), runs: 3 });
+  assert.equal(jobs.length, 6);
+  assert.deepEqual(jobs.map((job) => job.run), [1, 1, 2, 2, 3, 3]);
 });
 
 test('estimateUsd prices the profile, and a recorded median for the same agent, model and effort wins', () => {
@@ -110,6 +117,18 @@ test('usageOfStream and sessionCost price the result usage and fall back to cost
   assert.equal(sessionCost({ stdout: '' }, 'sonnet'), null);
 });
 
+test('sessionCost prices every model in modelUsage, so subagent sessions count', () => {
+  const modelUsage = {
+    'claude-sonnet-5-5': { inputTokens: 1_000_000, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 },
+    'claude-opus-5-5': { inputTokens: 0, outputTokens: 1_000_000, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 }
+  };
+  assert.equal(modelUsageCost(modelUsage), 2 + 20);
+  assert.equal(modelUsageCost({ 'unknown-model': { inputTokens: 1 } }), null);
+  assert.equal(modelUsageCost(undefined), null);
+  const stream = JSON.stringify({ type: 'result', usage: { input_tokens: 1_000_000, output_tokens: 0 }, modelUsage });
+  assert.equal(sessionCost({ stdout: stream }, 'sonnet'), 22);
+});
+
 test('summarizeCells averages scores per agent and setting and leaves errors and skips out', () => {
   const sessions = [
     { agent: 'a', model: 'haiku', effort: 'low', score: 1, cost_usd: 0.1, durationMs: 10_000 },
@@ -123,6 +142,44 @@ test('summarizeCells averages scores per agent and setting and leaves errors and
   assert.equal(low.cost_usd, 0.2);
   assert.equal(low.wallS, 20);
   assert.equal(skipped.score, null);
+});
+
+test('summarizeCells gives each cell a mean check fraction and the min and max of its per-run means', () => {
+  const sessions = [
+    { agent: 'a', model: 'opus', effort: 'high', run: 1, score: 1, fraction: 1, cost_usd: 0.2, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', run: 1, score: 0, fraction: 0.5, cost_usd: 0.2, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', run: 2, score: 0, fraction: 0.75, cost_usd: 0.2, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', run: 2, score: 0, fraction: 0.25, cost_usd: 0.2, durationMs: 10_000 }
+  ];
+  const [cell] = summarizeCells(sessions);
+  assert.equal(cell.score, 0.25);
+  assert.equal(cell.fraction, 0.625);
+  assert.deepEqual(cell.spread, { score: { min: 0, max: 0.5 }, fraction: { min: 0.5, max: 0.75 } });
+  assert.equal(cell.costPerSession, 0.2);
+  assert.match(cellLine(cell, { a: { metric: 'm' } }), /^a opus:high m 25\.0% \(0\.0%-50\.0%\) checks 62\.5% \(50\.0%-75\.0%\) usd \$0\.80 wall 10s$/);
+});
+
+test('summarizeCells takes the score as the fraction of a session that records none, and run 1 for one with no run', () => {
+  const [cell] = summarizeCells([{ agent: 'a', model: 'haiku', effort: 'low', score: 0.4, cost_usd: 0, durationMs: 0 }]);
+  assert.equal(cell.fraction, 0.4);
+  assert.deepEqual(cell.spread.score, { min: 0.4, max: 0.4 });
+});
+
+test('valueScore fails a passing repo on a transcript finding and counts it in the fraction', () => {
+  const scored = { pass: true, defects: 0, total: 4, detail: [] };
+  assert.deepEqual(valueScore(scored, { findings: [], checks: 0 }), { score: 1, fraction: 1, detail: [] });
+  assert.deepEqual(valueScore(scored, { findings: ['transcript: x'], checks: 2 }), { score: 0, fraction: 5 / 6, detail: ['transcript: x'] });
+  assert.equal(valueScore({ pass: false, defects: 2, total: 4, detail: ['a', 'b'] }, { findings: [], checks: 0 }).fraction, 0.5);
+});
+
+test('recordOf keeps the run, the fraction and the detail, and falls back to the score as fraction', () => {
+  const job = { agent: 'orchestrate', candidate: { model: 'sonnet', effort: 'medium' }, fixture: 'f', run: 2 };
+  const outcome = { stdout: '', durationMs: 5, cost_usd: 0.1 };
+  const record = recordOf(job, { outcome, score: 0, fraction: 0.5, detail: ['x'] });
+  assert.equal(record.run, 2);
+  assert.equal(record.fraction, 0.5);
+  assert.deepEqual(record.detail, ['x']);
+  assert.equal(recordOf(job, { outcome, score: 0.3 }).fraction, 0.3);
 });
 
 test('the shipped agents.json names fixtures that exist on disk for every agent in both tiers', async () => {

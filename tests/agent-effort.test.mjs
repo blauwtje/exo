@@ -160,7 +160,7 @@ test('a prompt with an exo-retry line gets the retry cell of a build-task, other
 const hookOutput = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: input }, budget, () => false)?.hookSpecificOutput;
 
 test('an exo call whose passed model or effort differs from the table is denied with the table pair, the passed pair and the matching labels', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.coordinate;
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrate;
   const output = hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'opus', effort: 'high' });
   assert.equal(output.permissionDecision, 'deny');
   assert.equal(output.updatedInput, undefined);
@@ -174,12 +174,12 @@ test('an exo call whose passed model or effort differs from the table is denied 
 });
 
 test('a denied pair that no kind runs names the closest kinds on that model, or none', () => {
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: hardest, review, review-deep\./);
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: orchestrate\./);
   assert.match(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model: 'fable', effort: 'high' }).permissionDecisionReason, /No kind runs fable, high, and none runs fable\./);
 });
 
 test('an exo call passing the table model and effort, a label that makes the pair the table pair, off, and a general-purpose call pass through', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.coordinate;
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrate;
   assert.equal(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model, effort }), undefined);
   assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'x', model })?.permissionDecision, 'deny');
   assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrate', prompt: 'exo-kind: hardest\nx', model: 'opus', effort: 'high' })?.permissionDecision, 'deny');

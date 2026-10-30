@@ -1,0 +1,1193 @@
+{
+  "tier": "full",
+  "runs": 3,
+  "cells": [
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.2222222222222222,
+      "fraction": 0.8222222222222222,
+      "spread": {
+        "score": {
+          "min": 0,
+          "max": 0.3333333333333333
+        },
+        "fraction": {
+          "min": 0.7111111111111111,
+          "max": 0.8777777777777778
+        }
+      },
+      "cost_usd": 0.4946615,
+      "costPerSession": 0.05496238888888889,
+      "wallS": 20.432000000000002
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.3333333333333333,
+      "fraction": 0.8777777777777778,
+      "spread": {
+        "score": {
+          "min": 0.3333333333333333,
+          "max": 0.3333333333333333
+        },
+        "fraction": {
+          "min": 0.8777777777777778,
+          "max": 0.8777777777777778
+        }
+      },
+      "cost_usd": 0.488753,
+      "costPerSession": 0.05430588888888889,
+      "wallS": 22.402444444444445
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.7777777777777778,
+      "fraction": 0.9629629629629631,
+      "spread": {
+        "score": {
+          "min": 0.6666666666666666,
+          "max": 1
+        },
+        "fraction": {
+          "min": 0.9444444444444445,
+          "max": 1
+        }
+      },
+      "cost_usd": 1.4981276,
+      "costPerSession": 0.1664586222222222,
+      "wallS": 49.10722222222222
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.8888888888888888,
+      "fraction": 0.9814814814814814,
+      "spread": {
+        "score": {
+          "min": 0.6666666666666666,
+          "max": 1
+        },
+        "fraction": {
+          "min": 0.9444444444444445,
+          "max": 1
+        }
+      },
+      "cost_usd": 6.2542643,
+      "costPerSession": 0.6949182555555555,
+      "wallS": 310.22088888888885
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.3333333333333333,
+      "fraction": 0.8777777777777778,
+      "spread": {
+        "score": {
+          "min": 0.3333333333333333,
+          "max": 0.3333333333333333
+        },
+        "fraction": {
+          "min": 0.8777777777777778,
+          "max": 0.8777777777777778
+        }
+      },
+      "cost_usd": 0.9118397999999999,
+      "costPerSession": 0.10131553333333332,
+      "wallS": 25.577777777777776
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.5555555555555556,
+      "fraction": 0.8999999999999999,
+      "spread": {
+        "score": {
+          "min": 0.3333333333333333,
+          "max": 1
+        },
+        "fraction": {
+          "min": 0.8222222222222223,
+          "max": 1
+        }
+      },
+      "cost_usd": 1.5155569000000002,
+      "costPerSession": 0.16839521111111114,
+      "wallS": 39.7961111111111
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.7777777777777778,
+      "fraction": 0.9555555555555555,
+      "spread": {
+        "score": {
+          "min": 0.6666666666666666,
+          "max": 1
+        },
+        "fraction": {
+          "min": 0.9333333333333332,
+          "max": 1
+        }
+      },
+      "cost_usd": 1.6479679999999999,
+      "costPerSession": 0.18310755555555555,
+      "wallS": 44.58788888888889
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "sessions": 9,
+      "graded": 9,
+      "score": 0.8888888888888888,
+      "fraction": 0.9814814814814814,
+      "spread": {
+        "score": {
+          "min": 0.6666666666666666,
+          "max": 1
+        },
+        "fraction": {
+          "min": 0.9444444444444445,
+          "max": 1
+        }
+      },
+      "cost_usd": 2.6468533,
+      "costPerSession": 0.29409481111111113,
+      "wallS": 71.90466666666666
+    }
+  ],
+  "sessions": [
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.091824,
+      "durationMs": 31759,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.0591622,
+      "durationMs": 16965,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.053212800000000005,
+      "durationMs": 17478,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.0921294,
+      "durationMs": 32379,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.0422969,
+      "durationMs": 15283,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.0373814,
+      "durationMs": 16193,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.38801909999999995,
+      "durationMs": 93715,
+      "numTurns": 14,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.0586355,
+      "durationMs": 26683,
+      "numTurns": 9,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.0498895,
+      "durationMs": 25740,
+      "numTurns": 6,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 1.102906,
+      "durationMs": 441291,
+      "numTurns": 16,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.3494164,
+      "durationMs": 158395,
+      "numTurns": 14,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.6694776,
+      "durationMs": 350879,
+      "numTurns": 13,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.1741926,
+      "durationMs": 36759,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.08487860000000001,
+      "durationMs": 21591,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.06857039999999999,
+      "durationMs": 18066,
+      "numTurns": 4,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.1662072,
+      "durationMs": 45630,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.1015744,
+      "durationMs": 27067,
+      "numTurns": 7,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.1376995,
+      "durationMs": 38462,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.5666992,
+      "durationMs": 92642,
+      "numTurns": 4,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.1211036,
+      "durationMs": 34642,
+      "numTurns": 8,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.1044786,
+      "durationMs": 32072,
+      "numTurns": 6,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "five-parts",
+      "run": 1,
+      "cost_usd": 0.5578277,
+      "durationMs": 124299,
+      "numTurns": 15,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "run": 1,
+      "cost_usd": 0.1357604,
+      "durationMs": 50477,
+      "numTurns": 9,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "open-choice",
+      "run": 1,
+      "cost_usd": 0.117012,
+      "durationMs": 30850,
+      "numTurns": 7,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.0625578,
+      "durationMs": 23846,
+      "numTurns": 4,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.041071699999999996,
+      "durationMs": 15531,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.0375367,
+      "durationMs": 17924,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.0798755,
+      "durationMs": 38015,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.0397104,
+      "durationMs": 16140,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.039219699999999996,
+      "durationMs": 16675,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.3719657,
+      "durationMs": 93939,
+      "numTurns": 15,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.0509628,
+      "durationMs": 23460,
+      "numTurns": 7,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.0491251,
+      "durationMs": 21482,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 1.3055441,
+      "durationMs": 524751,
+      "numTurns": 31,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.3313179,
+      "durationMs": 151485,
+      "numTurns": 20,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.6425744,
+      "durationMs": 338155,
+      "numTurns": 11,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.13797679999999998,
+      "durationMs": 33569,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.085148,
+      "durationMs": 26174,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.076499,
+      "durationMs": 20952,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.4633517,
+      "durationMs": 71125,
+      "numTurns": 15,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.17693150000000002,
+      "durationMs": 51366,
+      "numTurns": 10,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.090617,
+      "durationMs": 21343,
+      "numTurns": 6,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.1997328,
+      "durationMs": 60397,
+      "numTurns": 8,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.1092858,
+      "durationMs": 32312,
+      "numTurns": 7,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.1503782,
+      "durationMs": 38348,
+      "numTurns": 8,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "five-parts",
+      "run": 2,
+      "cost_usd": 0.6420797,
+      "durationMs": 139518,
+      "numTurns": 15,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "run": 2,
+      "cost_usd": 0.17076,
+      "durationMs": 44299,
+      "numTurns": 12,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "open-choice",
+      "run": 2,
+      "cost_usd": 0.1547353,
+      "durationMs": 45448,
+      "numTurns": 7,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.0675249,
+      "durationMs": 24239,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.0418427,
+      "durationMs": 20155,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "medium",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.0399287,
+      "durationMs": 15991,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.5,
+      "detail": [
+        "rounding left for the user: src/price.mjs changed\n+ actual - expected\n\n+ 'export function roundPrice(cents) {\\n' +\n+   '  const floor = Math.floor(cents);\\n' +\n+   '  const diff = cents - floor;\\n' +\n+   '  if (diff < 0.5) return floor;\\n' +\n+   '  if (diff > 0.5) return floor + 1;\\n' +\n+   '  return floor % 2 === 0 ? floor : ",
+        "result file: rounding verdict DONE, expected BLOCKED"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.0767488,
+      "durationMs": 32418,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.043672800000000005,
+      "durationMs": 17113,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "high",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.0377181,
+      "durationMs": 17406,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.3322866,
+      "durationMs": 75541,
+      "numTurns": 13,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.14778439999999998,
+      "durationMs": 59166,
+      "numTurns": 12,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "xhigh",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.0494589,
+      "durationMs": 22239,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 1.1333058999999999,
+      "durationMs": 466915,
+      "numTurns": 14,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.337125,
+      "durationMs": 160798,
+      "numTurns": 16,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "sonnet",
+      "effort": "max",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.382597,
+      "durationMs": 199319,
+      "numTurns": 18,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.1325614,
+      "durationMs": 33185,
+      "numTurns": 5,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.0840392,
+      "durationMs": 25627,
+      "numTurns": 6,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "low",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.0679738,
+      "durationMs": 14277,
+      "numTurns": 4,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.1847316,
+      "durationMs": 50353,
+      "numTurns": 8,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.10555980000000001,
+      "durationMs": 26734,
+      "numTurns": 7,
+      "score": 0,
+      "fraction": 0.6666666666666667,
+      "detail": [
+        "result file: totals phase 2 not after negative-amount phase 2",
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "medium",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.0888842,
+      "durationMs": 26085,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.19776760000000002,
+      "durationMs": 55179,
+      "numTurns": 8,
+      "score": 0,
+      "fraction": 0.8,
+      "detail": [
+        "transcript: no message dispatches two of parse-duration, to-roman, wrap-text, median-of, csv-row at once",
+        "transcript: run-report never dispatched"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.1087356,
+      "durationMs": 30253,
+      "numTurns": 7,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "high",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.08978660000000001,
+      "durationMs": 25446,
+      "numTurns": 5,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "five-parts",
+      "run": 3,
+      "cost_usd": 0.5378297000000001,
+      "durationMs": 117778,
+      "numTurns": 15,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "false-pass",
+      "run": 3,
+      "cost_usd": 0.14835520000000002,
+      "durationMs": 42251,
+      "numTurns": 11,
+      "score": 0,
+      "fraction": 0.8333333333333334,
+      "detail": [
+        "transcript: negative-amount neither re-dispatched nor flagged BLOCKED or reopened in the result file"
+      ]
+    },
+    {
+      "agent": "orchestrate",
+      "model": "opus",
+      "effort": "xhigh",
+      "fixture": "open-choice",
+      "run": 3,
+      "cost_usd": 0.1824933,
+      "durationMs": 52222,
+      "numTurns": 7,
+      "score": 1,
+      "fraction": 1,
+      "detail": []
+    }
+  ]
+}

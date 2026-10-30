@@ -231,13 +231,16 @@ node benchmarks/agent-tier.mjs                         # quick: 1 fixture per ag
 node benchmarks/agent-tier.mjs --tier full             # 3 fixtures per agent, writes agent-tier-full.json
 node benchmarks/agent-tier.mjs --agent locate-code --candidate sonnet:low --candidate haiku:medium   # one agent, chosen candidates
 node benchmarks/agent-tier.mjs --max-usd 3             # stops starting sessions at the cap, writes the results so far, exits 1
+node benchmarks/agent-tier.mjs --agent orchestrate --tier full --runs 3   # every fixture 3 times per candidate, with a spread per cell
 ```
 
-Flags: `--agent <name>` (repeatable, default every agent), `--tier quick|full` (default `quick`), `--candidate <model:effort>` (repeatable, replaces the default list), `--max-usd`, `--concurrency` (default 2), `--transcripts` (raw stream of each session), `--out`, `--dry-run`. Exit codes: 0 done, 1 sessions skipped by `--max-usd` or a failed run, 2 usage error.
+Flags: `--agent <name>` (repeatable, default every agent), `--tier quick|full` (default `quick`), `--candidate <model:effort>` (repeatable, replaces the default list), `--max-usd`, `--concurrency` (default 2), `--runs` (default 1, repeats of every fixture per candidate), `--transcripts` (raw stream of each session, one file per fixture and run), `--out`, `--dry-run`. Exit codes: 0 done, 1 sessions skipped by `--max-usd` or a failed run, 2 usage error.
 
 Candidates per agent: the current setting; the same model one and two effort steps lower, down to `low`; one model lower (opus, sonnet, haiku) at the current effort. `locate-code` at `sonnet:medium` therefore runs `sonnet:medium`, `sonnet:low` and `haiku:medium`.
 
-The dry run prices a session at the median cost recorded in the `--out` file for that agent, model and effort, else at the token profile of the agent in `agents.json` at the model's list price. Profile estimates do not model effort. A real run measures cost from the usage block of the result event.
+The dry run prices a session at the median cost recorded in the `--out` file for that agent, model and effort, else at the token profile of the agent in `agents.json` at the model's list price. Profile estimates do not model effort. A real run prices the `modelUsage` block of the result event, every model including subagents, at list price, and falls back to its `usage` block, which counts the main session only.
+
+Each session records its score, a check fraction and its run number. The fraction is the share of checks passed: the defects and checks a value-task `check.mjs` reports plus the transcript checks of an `orchestrate` fixture, and the score itself for the share-based agents. Each cell adds the mean fraction, the cost per session and a spread: the lowest and highest per-run mean of its score and of its fraction, so a difference between cells smaller than that spread is noise between repeat sessions.
 
 | Agent | Metric | Quick fixture | Added by `--tier full` |
 |---|---|---|---|
@@ -246,8 +249,11 @@ The dry run prices a session at the median cost recorded in the `--out` file for
 | `fix-review` | share of planted defects fixed, given findings written from the plants | `copied-block` | `duplicate-truth-source`, `dead-code` |
 | `build-task` | value-task check passes (1 or 0) | `lean-minimal-diff` | `rename-propagation`, `refactor-no-shim` |
 | `solve-hard` | value-task check passes (1 or 0) | `find-cause-decoy` | `test-pollution`, `export-mismatch` |
+| `orchestrate` | orchestrate check passes (1 or 0): each part's hidden cases, `npm test`, the result file's verdict per part and phase order, and the transcript checks | `three-parts`, `false-pass` | `five-parts`, `open-choice`; drops `three-parts` |
 
-`locate-code` sessions reuse the scratch copy and grading of `locate-recall.mjs`, `review-branch` and `fix-review` the cases of `review-replay.mjs`, and `build-task` and `solve-hard` the tasks and hidden checks of the value tier.
+`locate-code` sessions reuse the scratch copy and grading of `locate-recall.mjs`, `review-branch` and `fix-review` the cases of `review-replay.mjs`, and `build-task` and `solve-hard` the tasks and hidden checks of the value tier. `orchestrate` runs value-tier tasks from `benchmarks/agent-tier/orchestrate/`, each graded by `grade.mjs` there: `three-parts` wants two independent parts in one phase and the part that needs both in a later one, `five-parts` the same with five independent parts and a sixth that imports all five, `false-pass` hands over a phase-1 worker verdict whose `npm test` pass and cited line are false, and `open-choice` wants the clear part landed and the contradicted part left `BLOCKED` with its file unchanged. Each fixture's `solution-result.md` is the reference result file, kept outside `solution/` because `.exo/` is git-excluded. A session's cost includes the workers it dispatches.
+
+`transcript.mjs` there grades the main session's stream-json, the events with no `parent_tool_use_id`, grouped by message id, against the `transcript` block of the fixture's `task.json`. An Agent call belongs to the later part when its description or prompt names that part's id or file, else to the part whose id or file it names first. `phases` fixtures pass when one message dispatches at least two independent parts and the dependent part goes out in a later message than every independent one, so a session that does every part itself fails. `false-pass` passes when the orchestrator runs `npm test` or `node --test`, or reads `src/parse.mjs`, in a message before it dispatches `totals` and before its last write to the result file, and then either re-dispatches `negative-amount` or marks it `BLOCKED` or reopened in the result file; fixing `src/parse.mjs` inline without either fails.
 
 Three agents are left out because they have no deterministic metric:
 
