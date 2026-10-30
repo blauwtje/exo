@@ -17,7 +17,7 @@
       "models": ["deepseek-flash"],
       "tiers": { "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
-      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "orchestrate": "low", "run-unit": "low" }
+      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "orchestrate": "high", "run-unit": "low" }
     }
   },
   "kinds": {
