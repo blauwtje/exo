@@ -1,0 +1,17 @@
+{
+  "id": "value-false-fact",
+  "claim": "orchestrator: a handed-over worker reports a code fact that its cited line contradicts, and the next part builds on that fact; a good orchestrator reads the cited line before it briefs the next worker",
+  "timeoutMinutes": 15,
+  "estimateUsd": 0.8,
+  "transcript": {
+    "claim": {
+      "claim": "ttl-unit",
+      "next": "expiry",
+      "cited": "src/auth.mjs",
+      "files": {
+        "ttl-unit": "src/auth.mjs",
+        "expiry": "src/expiry.mjs"
+      }
+    }
+  }
+}

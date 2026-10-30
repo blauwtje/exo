@@ -327,9 +327,9 @@ test('run-unit dispatches every build and repair in the foreground and never end
   assert.doesNotMatch(unit.body, /no report`/);
 });
 
-test('run-unit runs on its own kind, at low effort', () => {
+test('run-unit runs on its own kind, at sonnet high', () => {
   assert.equal(kindTable.agents['agents/run-unit.md'].kind, 'run-unit');
-  assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'medium' });
+  assert.deepEqual(kindTable.kinds['run-unit'], { model: 'sonnet', effort: 'high' });
 });
 
 test('every skill that cites the report rule names closing.md, which defines it', () => {
@@ -364,16 +364,16 @@ test('the branch reviewer takes its input path from the dispatch and reports Rea
   assert.match(reviewer.body, /`Read: <paths>`/);
 });
 
-test('orchestrate holds Agent, Write and TaskStop, loads the project CLAUDE.md and runs on orchestrate', () => {
-  const orchestrate = agents.find((agent) => agent.frontmatter.name === 'orchestrate');
-  const tools = orchestrate.frontmatter.tools.split(', ');
-  for (const tool of ['Agent', 'Write', 'TaskStop']) assert.ok(tools.includes(tool), `orchestrate lists ${tool}`);
-  assert.equal(orchestrate.frontmatter.omitClaudeMd, undefined);
-  assert.equal(kindTable.agents['agents/orchestrate.md'].kind, 'orchestrate');
+test('orchestrator holds Agent, Write and TaskStop, loads the project CLAUDE.md and runs on orchestrator', () => {
+  const orchestrator = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
+  const tools = orchestrator.frontmatter.tools.split(', ');
+  for (const tool of ['Agent', 'Write', 'TaskStop']) assert.ok(tools.includes(tool), `orchestrator lists ${tool}`);
+  assert.equal(orchestrator.frontmatter.omitClaudeMd, undefined);
+  assert.equal(kindTable.agents['agents/orchestrator.md'].kind, 'orchestrator');
 });
 
-test('orchestrate works in phases, keeps worker detail in files and hands over at the exo context note', () => {
-  const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrate');
+test('orchestrator works in phases, keeps worker detail in files and hands over at the exo context note', () => {
+  const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   assert.match(body, /Before the first dispatch → write the result file/);
   assert.match(body, /After each phase → [^\n]*result file/);
   assert.match(body, /at most 5 lines, detail in a named file/);

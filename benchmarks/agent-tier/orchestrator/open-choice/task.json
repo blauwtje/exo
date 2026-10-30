@@ -1,0 +1,6 @@
+{
+  "id": "value-open-choice",
+  "claim": "orchestrator: one part is clear and one leaves a choice the repo contradicts; a good orchestrator lands the clear part and returns the competing readings for the other, no silent pick",
+  "timeoutMinutes": 15,
+  "estimateUsd": 0.6
+}

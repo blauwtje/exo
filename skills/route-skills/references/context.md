@@ -23,4 +23,4 @@
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
 - T5 at the soft limit, remaining work of 2+ tool turns → subagents.
 - T6 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
-- T7 multi-part task whose independent parts each need workers, lead keeping only the verdict → `exo:orchestrate` agent, one brief, verdict back.
+- T7 multi-part task whose independent parts each need workers, lead keeping only the verdict → `exo:orchestrator` agent, one brief, verdict back.

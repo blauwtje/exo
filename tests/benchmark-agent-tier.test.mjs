@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,9 +7,11 @@ import test from 'node:test';
 import { readKindTable } from '#model-kinds';
 import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
-import { Budget, candidatesFor, cellLine, dryRunText, estimateTotal, estimateUsd, flaggedShare, modelUsageCost, parseCandidate, planJobs, recordOf, resolveFixtures, sessionCost, settingOf, summarizeCells, usageOfStream, valueScore } from '../benchmarks/agent-tier.mjs';
+import { confinedClaude } from '#confine-claude';
+import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { Budget, apiKeySourceOf, candidatesFor, cellLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrate'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'run-unit'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }
@@ -40,7 +43,7 @@ test('settingOf reads the model and effort of each benchmarked agent from the ki
   assert.deepEqual(settingOf('fix-review', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('build-task', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('solve-hard', table), { model: 'opus', effort: 'high' });
-  assert.deepEqual(settingOf('orchestrate', table), { model: 'opus', effort: 'xhigh' });
+  assert.deepEqual(settingOf('orchestrator', table), { model: 'opus', effort: 'xhigh' });
   assert.throws(() => settingOf('run-unit-x', table), /not in lib\/model-kinds.json/);
 });
 
@@ -156,7 +159,7 @@ test('summarizeCells gives each cell a mean check fraction and the min and max o
   assert.equal(cell.fraction, 0.625);
   assert.deepEqual(cell.spread, { score: { min: 0, max: 0.5 }, fraction: { min: 0.5, max: 0.75 } });
   assert.equal(cell.costPerSession, 0.2);
-  assert.match(cellLine(cell, { a: { metric: 'm' } }), /^a opus:high m 25\.0% \(0\.0%-50\.0%\) checks 62\.5% \(50\.0%-75\.0%\) usd \$0\.80 wall 10s$/);
+  assert.match(cellLine(cell, { a: { metric: 'm' } }), /^a opus:high m 25\.0% \(0\.0%-50\.0%\) checks 62\.5% \(50\.0%-75\.0%\) usd \$0\.80 \$0\.200\/session wall 10s median 10s wilson95 \[4\.6%-69\.9%\]$/);
 });
 
 test('summarizeCells takes the score as the fraction of a session that records none, and run 1 for one with no run', () => {
@@ -173,7 +176,7 @@ test('valueScore fails a passing repo on a transcript finding and counts it in t
 });
 
 test('recordOf keeps the run, the fraction and the detail, and falls back to the score as fraction', () => {
-  const job = { agent: 'orchestrate', candidate: { model: 'sonnet', effort: 'medium' }, fixture: 'f', run: 2 };
+  const job = { agent: 'orchestrator', candidate: { model: 'sonnet', effort: 'medium' }, fixture: 'f', run: 2 };
   const outcome = { stdout: '', durationMs: 5, cost_usd: 0.1 };
   const record = recordOf(job, { outcome, score: 0, fraction: 0.5, detail: ['x'] });
   assert.equal(record.run, 2);
@@ -271,3 +274,177 @@ for (const task of loadValueTasks(AGENT_VALUE_ROOT)) {
     assert.equal(solved.pass, true, `solution failed: ${solved.detail}`);
   });
 }
+
+const INIT_LINE = (source) => JSON.stringify({ type: 'system', subtype: 'init', apiKeySource: source });
+const SCRIPT = path.join(import.meta.dirname, '..', 'benchmarks', 'agent-tier.mjs');
+
+test('wilson95 matches the Wilson score interval and stays inside 0 and 1', () => {
+  assert.deepEqual(wilson95(0, 3), [0, 0.5615]);
+  assert.deepEqual(wilson95(3, 3), [0.4385, 1]);
+  assert.deepEqual(wilson95(5, 10), [0.2366, 0.7634]);
+  assert.equal(wilson95(0, 0), null);
+});
+
+test('summarizeCells records wilson95 over passes of non-skipped sessions, counting an error as not passed, and the median wall', () => {
+  const sessions = [
+    { agent: 'a', model: 'opus', effort: 'high', score: 1, cost_usd: 0.1, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', score: 1, cost_usd: 0.1, durationMs: 50_000 },
+    { agent: 'a', model: 'opus', effort: 'high', score: 0.5, cost_usd: 0.1, durationMs: 20_000 },
+    { agent: 'a', model: 'opus', effort: 'high', error: 'timeout', cost_usd: null, durationMs: 30_000 },
+    { agent: 'a', model: 'opus', effort: 'high', skipped: true }
+  ];
+  const [cell] = summarizeCells(sessions);
+  assert.deepEqual(cell.wilson95, wilson95(2, 4));
+  assert.equal(cell.wallMedianS, 25);
+  assert.match(cellLine(cell, { a: { metric: 'm' } }), /\$0\.075\/session .* median 25s wilson95 \[15\.0%-85\.0%\]$/);
+});
+
+test('apiKeySourceOf reads the init line of a stream and is null when there is none', () => {
+  const stream = `${JSON.stringify({ type: 'assistant' })}\n${INIT_LINE('ANTHROPIC_API_KEY')}\n${JSON.stringify({ type: 'result' })}`;
+  assert.equal(apiKeySourceOf(stream), 'ANTHROPIC_API_KEY');
+  assert.equal(apiKeySourceOf(INIT_LINE('none')), 'none');
+  assert.equal(apiKeySourceOf('not json\n'), null);
+  assert.equal(apiKeySourceOf(undefined), null);
+});
+
+test('recordOf records the apiKeySource of every session, error or not', () => {
+  const job = { agent: 'orchestrator', candidate: { model: 'sonnet', effort: 'medium' }, fixture: 'f', run: 1 };
+  assert.equal(recordOf(job, { outcome: { stdout: INIT_LINE('ANTHROPIC_API_KEY'), durationMs: 5 }, score: 1 }).apiKeySource, 'ANTHROPIC_API_KEY');
+  assert.equal(recordOf(job, { outcome: { stdout: INIT_LINE('none'), durationMs: 5, error: 'x' } }).apiKeySource, 'none');
+  assert.equal(recordOf(job, { outcome: { stdout: '', durationMs: 5 }, score: 1 }).apiKeySource, null);
+});
+
+test('runGated starts no other task when the first session did not use the api key, and names the value found', async () => {
+  const started = [];
+  const task = (name, apiKeySource) => async () => { started.push(name); return { name, apiKeySource }; };
+  const refusedRun = await runGated([task('a', 'none'), task('b', 'ANTHROPIC_API_KEY')], 2, usesApiKey);
+  assert.deepEqual(started, ['a']);
+  assert.equal(refusedRun.refused.name, 'a');
+  assert.match(refusalText(refusedRun.refused), /apiKeySource none, not ANTHROPIC_API_KEY/);
+  assert.match(refusalText({ apiKeySource: null }), /none \(no init line\)/);
+  const okRun = await runGated([task('c', 'ANTHROPIC_API_KEY'), task('d', 'ANTHROPIC_API_KEY'), task('e', 'ANTHROPIC_API_KEY')], 2, usesApiKey);
+  assert.equal(okRun.refused, null);
+  assert.deepEqual(okRun.sessions.map((session) => session.name), ['c', 'd', 'e']);
+  assert.equal(usesApiKey({ skipped: true }), true);
+});
+
+test('the session environment keeps ANTHROPIC_API_KEY from the caller and the isolated HOME', () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'tier-env-'));
+  try {
+    const run = withHome(confinedClaude({ args: ['-p', 'x'], roots: [folder], tmp: folder, platform: 'linux' }), '/isolated-home');
+    const env = { ...{ ANTHROPIC_API_KEY: 'sk-test', HOME: '/real' }, ...run.env };
+    assert.equal(env.ANTHROPIC_API_KEY, 'sk-test');
+    assert.equal(env.HOME, '/isolated-home');
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('offsetRuns numbers a merged round after the last recorded run of the same setting', () => {
+  const existing = [
+    { agent: 'orchestrator', model: 'opus', effort: 'xhigh', run: 3 },
+    { agent: 'orchestrator', model: 'opus', effort: 'xhigh', run: 2 },
+    { agent: 'orchestrator', model: 'sonnet', effort: 'high' }
+  ];
+  const jobs = [
+    { agent: 'orchestrator', candidate: { model: 'opus', effort: 'xhigh' }, fixture: 'f', run: 1 },
+    { agent: 'orchestrator', candidate: { model: 'opus', effort: 'xhigh' }, fixture: 'f', run: 2 },
+    { agent: 'orchestrator', candidate: { model: 'sonnet', effort: 'high' }, fixture: 'f', run: 1 },
+    { agent: 'orchestrator', candidate: { model: 'sonnet', effort: 'low' }, fixture: 'f', run: 1 }
+  ];
+  assert.deepEqual(offsetRuns(jobs, existing).map((job) => job.run), [4, 5, 2, 1]);
+});
+
+test('merged sessions recompute a cell from the old and new runs together', () => {
+  const old = [1, 2, 3].map((run) => ({ agent: 'a', model: 'opus', effort: 'high', run, score: run === 1 ? 0 : 1, cost_usd: 0.1, durationMs: 1000 }));
+  const added = [4, 5].map((run) => ({ agent: 'a', model: 'opus', effort: 'high', run, score: 1, cost_usd: 0.1, durationMs: 1000 }));
+  const [cell] = summarizeCells([...old, ...added]);
+  assert.equal(cell.sessions, 5);
+  assert.deepEqual(cell.wilson95, wilson95(4, 5));
+});
+
+test('estimateUsd uses the fixture median, else the mean of per-fixture medians, so a heavy fixture is not hidden', () => {
+  const candidate = { model: 'opus', effort: 'xhigh' };
+  const recorded = [
+    { agent: 'locate-code', ...candidate, fixture: 'heavy', cost_usd: 0.5, durationMs: 100_000 },
+    { agent: 'locate-code', ...candidate, fixture: 'light', cost_usd: 0.1, durationMs: 20_000 },
+    { agent: 'locate-code', ...candidate, fixture: 'light', cost_usd: 0.1, durationMs: 40_000 },
+    { agent: 'locate-code', ...candidate, fixture: 'light2', cost_usd: 0.1, durationMs: 30_000 }
+  ];
+  assert.equal(estimateUsd('locate-code', candidate, recorded, CONFIG, 'heavy'), 0.5);
+  assert.equal(estimateUsd('locate-code', candidate, recorded, CONFIG, 'light'), 0.1);
+  assert.ok(Math.abs(estimateUsd('locate-code', candidate, recorded, CONFIG, 'other') - 0.7 / 3) < 1e-9);
+  assert.equal(estimateWallS('locate-code', candidate, recorded, CONFIG, 'light'), 30);
+  assert.equal(estimateWallS('locate-code', candidate, [], CONFIG, 'light'), null);
+});
+
+test('a profile scales its priced counts and its wall by model:effort and prices cache writes', () => {
+  const config = { x: { metric: 'm', fixtures: { quick: ['a'], full: ['a'] }, profile: { cache5m: 1_000_000, wallS: 10, usdScale: { 'sonnet:high': 3 }, wallScale: { 'sonnet:high': 2 } } } };
+  const base = estimateUsd('x', { model: 'sonnet', effort: 'medium' }, [], config);
+  assert.ok(base > 0);
+  assert.ok(Math.abs(estimateUsd('x', { model: 'sonnet', effort: 'high' }, [], config) - 3 * base) < 1e-9);
+  assert.equal(estimateWallS('x', { model: 'sonnet', effort: 'high' }, [], config), 20);
+  assert.equal(estimateWallS('x', { model: 'sonnet', effort: 'medium' }, [], config), 10);
+});
+
+test('dryRunText prints the estimated wall as the summed session walls over the concurrency', () => {
+  const config = { x: { metric: 'm', fixtures: { quick: ['a'], full: ['a'] }, profile: { output: 1_000_000, wallS: 60 } } };
+  const jobs = Array.from({ length: 4 }, () => ({ agent: 'x', candidate: { model: 'sonnet', effort: 'medium' }, fixture: 'a' }));
+  assert.match(dryRunText(jobs, [], config, 2), /^total: 4 sessions, est \$\d+\.\d\d, est wall 2\.0 min at concurrency 2$/m);
+  assert.match(dryRunText(jobs, [], { x: { ...config.x, profile: { output: 1 } } }, 2), /est wall n\/a/);
+});
+
+test('recordedSessions reads the earlier agent key orchestrate as orchestrator', () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'tier-history-'));
+  try {
+    const file = path.join(folder, 'old.json');
+    fs.writeFileSync(file, JSON.stringify({ sessions: [{ agent: 'orchestrate', model: 'opus', effort: 'low', fixture: 'f', cost_usd: 0.1 }, { agent: 'solve-hard', model: 'opus', effort: 'low' }] }));
+    assert.deepEqual(recordedSessions(file).map((session) => session.agent), ['orchestrator', 'solve-hard']);
+    assert.deepEqual(recordedSessions(path.join(folder, 'missing.json')), []);
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('--dry-run with --history prices a candidate from the recorded old sessions and the shipped profile otherwise', () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'tier-dry-'));
+  try {
+    const file = path.join(folder, 'old.json');
+    const sessions = ['false-pass', 'false-check', 'false-fact', 'false-change', 'five-parts', 'open-choice'].map((fixture) => ({ agent: 'orchestrate', model: 'opus', effort: 'xhigh', fixture, cost_usd: 1, durationMs: 60_000 }));
+    fs.writeFileSync(file, JSON.stringify({ sessions }));
+    const args = [SCRIPT, '--agent', 'orchestrator', '--tier', 'full', '--candidate', 'opus:xhigh', '--dry-run', '--out', path.join(folder, 'none.json')];
+    const withHistory = spawnSync('node', [...args, '--history', file], { encoding: 'utf8' });
+    assert.equal(withHistory.status, 0, withHistory.stderr);
+    assert.match(withHistory.stdout, /^total: 6 sessions, est \$6\.00, est wall 3\.0 min at concurrency 2$/m);
+    const profileOnly = spawnSync('node', args, { encoding: 'utf8' });
+    assert.match(profileOnly.stdout, /^total: 6 sessions, est \$\d\.\d\d, est wall \d/m);
+    assert.doesNotMatch(profileOnly.stdout, /est \$6\.00/);
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('--require-api-key stops with a usage error before any session when ANTHROPIC_API_KEY is unset', () => {
+  const env = { ...process.env };
+  delete env.ANTHROPIC_API_KEY;
+  const run = spawnSync('node', [SCRIPT, '--agent', 'orchestrator', '--candidate', 'sonnet:low', '--require-api-key', '--out', path.join(os.tmpdir(), 'tier-never.json')], { encoding: 'utf8', env });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /needs ANTHROPIC_API_KEY set/);
+});
+
+test('the shipped orchestrator profile predicts each recorded round-1 setting within 15 percent', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'benchmarks', 'agent-tier', 'agents.json'), 'utf8'));
+  const results = ['full', 'quick'].flatMap((tier) => recordedSessions(path.join(import.meta.dirname, '..', 'benchmarks', 'results', `agent-tier-orchestrate-${tier}.json`)));
+  const settings = new Set(results.map((session) => `${session.model}:${session.effort}`));
+  assert.equal(settings.size, 8);
+  for (const setting of settings) {
+    const [model, effort] = setting.split(':');
+    const own = results.filter((session) => session.model === model && session.effort === effort);
+    const meanUsd = own.reduce((total, session) => total + session.cost_usd, 0) / own.length;
+    const meanWall = own.reduce((total, session) => total + session.durationMs / 1000, 0) / own.length;
+    const usd = estimateUsd('orchestrator', { model, effort }, [], config);
+    const wall = estimateWallS('orchestrator', { model, effort }, [], config);
+    assert.ok(Math.abs(usd / meanUsd - 1) < 0.15, `${setting} usd ${usd} vs ${meanUsd}`);
+    assert.ok(Math.abs(wall / meanWall - 1) < 0.15, `${setting} wall ${wall} vs ${meanWall}`);
+  }
+});

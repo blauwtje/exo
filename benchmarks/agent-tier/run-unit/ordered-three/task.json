@@ -1,0 +1,13 @@
+{
+  "id": "value-ordered-three",
+  "claim": "run-unit: three chained tasks, each built by build-task and landed through land-task.mjs in plan order, one at a time",
+  "timeoutMinutes": 20,
+  "estimateUsd": 0.9,
+  "transcript": {
+    "tasks": [
+      1,
+      2,
+      3
+    ]
+  }
+}

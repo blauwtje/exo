@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dryRunLine, gradedSession, gradeReturn, mentionedFiles, plannedBriefs, resultOfStream, summarize } from '../benchmarks/locate-recall.mjs';
+import { agentArguments, dryRunLine, gradedSession, gradeReturn, mentionedFiles, plannedBriefs, resultOfStream, summarize } from '../benchmarks/locate-recall.mjs';
 
 const FILES = ['lib/a.mjs', 'lib/b.mjs', 'hooks/c.mjs', 'tests/a.test.mjs', 'tests/hooks/c.mjs', 'docs/README.md', 'lib/README.md'];
 const BRIEF = { id: 'x', expected: ['lib/a.mjs', 'hooks/c.mjs', 'tests/a.test.mjs'], acceptable: ['lib/b.mjs'] };
@@ -67,4 +67,15 @@ test('plannedBriefs picks the quick set, every brief, or one by id', () => {
 test('dryRunLine multiplies the session count by the recorded median', () => {
   assert.equal(dryRunLine(6, [{ cost_usd: 0.1 }, { cost_usd: 0.3 }]), 'dry-run: 6 sessions x median $0.2000 = $1.20');
   assert.equal(dryRunLine(6, []), 'dry-run: 6 sessions, cost unknown');
+});
+
+test('agentArguments passes the prompt last after -- so a leading dash stays positional', () => {
+  const base = { agent: 'exo:run-unit', model: 'haiku', effort: 'low', pluginDir: '/plugin' };
+  for (const prompt of ['- Plan: x', 'plain prompt']) {
+    const args = agentArguments({ ...base, prompt });
+    assert.equal(args.at(-1), prompt);
+    assert.equal(args.at(-2), '--');
+    assert.equal(args.filter((arg) => arg === prompt).length, 1);
+    assert.deepEqual(args.slice(0, 3), ['-p', '--agent', 'exo:run-unit']);
+  }
 });

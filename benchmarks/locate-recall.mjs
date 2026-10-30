@@ -163,9 +163,13 @@ function saveTranscript(directory, name, stdout, reports) {
   if (reports.length > 0) fs.writeFileSync(path.join(directory, `${name}.report.md`), reports.join('\n'));
 }
 
+export function agentArguments({ prompt, agent, model, effort, pluginDir }) {
+  return ['-p', '--agent', agent, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', pluginDir, '--', prompt];
+}
+
 export function runAgent({ prompt, agent, model, effort, cwd, roots, tmp, home, pluginDir = ROOT, timeoutMs = SESSION_MS }) {
   const startedAt = Date.now();
-  const args = ['-p', prompt, '--agent', agent, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', pluginDir];
+  const args = agentArguments({ prompt, agent, model, effort, pluginDir });
   const run = withHome(confinedClaude({ args, roots, cwd, tmp }), home);
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });

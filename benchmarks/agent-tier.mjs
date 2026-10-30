@@ -11,19 +11,22 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { EFFORTS, readKindTable } from '#model-kinds';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { usageCounts } from '#token-weights';
-import { claudeSession, fixtureFiles, gradedSession, inPool, medianCost, readFixture, runAgent } from './locate-recall.mjs';
+import { claudeSession, fixtureFiles, gradedSession, inPool, readFixture, runAgent } from './locate-recall.mjs';
 import { countsCost } from './pricing.mjs';
 import { dispatchLine, gradeRepair, loadFixtures, loadPlants, overlaps, parseFindings, parseRange, prepareCase } from './review-replay.mjs';
 import { MODELS } from './tasks.mjs';
-import { RESULT_FILE } from './agent-tier/orchestrate/grade.mjs';
-import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrate/transcript.mjs';
+import { RESULT_FILE } from './agent-tier/orchestrator/grade.mjs';
+import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrator/transcript.mjs';
+import { installStub } from './agent-tier/run-unit/install-stub.mjs';
+import { runUnitChecks, runUnitFindings, runUnitPrompt } from './agent-tier/run-unit/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
 const REVIEW_ROOT = path.join(ROOT, 'benchmarks/agent-tier/review');
 const AGENT_VALUE_ROOT = path.join(ROOT, 'benchmarks/agent-tier/value');
-const ORCHESTRATE_ROOT = path.join(ROOT, 'benchmarks/agent-tier/orchestrate');
+const ORCHESTRATOR_ROOT = path.join(ROOT, 'benchmarks/agent-tier/orchestrator');
+const RUN_UNIT_ROOT = path.join(ROOT, 'benchmarks/agent-tier/run-unit');
 const RESULTS = path.join(ROOT, 'benchmarks/results');
 const SESSION_MS = environmentMs('EXO_AGENT_TIER_SESSION_MS', 600_000);
 const MODEL_LADDER = ['haiku', 'sonnet', 'opus'];
@@ -33,12 +36,18 @@ const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const FIXER_BLOCK = /```text\n([\s\S]*?)\n```/;
 const VALUE_PREFIX = /^value-/;
 const MS_PER_MINUTE = 60_000;
-const USAGE = `usage: agent-tier.mjs [--agent <name>]... [--tier quick|full] [--candidate <model:effort>]... [--max-usd <n>] [--concurrency <n>] [--runs <n>] [--transcripts <dir>] [--dry-run] [--out <file>]
-Default: the quick fixtures of every agent in benchmarks/agent-tier/agents.json (locate-code, review-branch, fix-review, build-task, solve-hard, orchestrate), each run at its current model and effort from lib/model-kinds.json and at cheaper settings, written to benchmarks/results/agent-tier-quick.json.
+const WILSON_Z = 1.96;
+const API_KEY_SOURCE = 'ANTHROPIC_API_KEY';
+const AGENT_ALIASES = { orchestrate: 'orchestrator' };
+const USAGE = `usage: agent-tier.mjs [--agent <name>]... [--tier quick|full] [--candidate <model:effort>]... [--max-usd <n>] [--concurrency <n>] [--runs <n>] [--transcripts <dir>] [--dry-run] [--out <file>] [--history <file>]... [--merge] [--require-api-key]
+Default: the quick fixtures of every agent in benchmarks/agent-tier/agents.json (locate-code, review-branch, fix-review, build-task, solve-hard, orchestrator, run-unit), each run at its current model and effort from lib/model-kinds.json and at cheaper settings, written to benchmarks/results/agent-tier-quick.json.
 Candidates per agent: the current setting; the same model one and two effort steps lower, down to low; one model lower at the current effort. --candidate replaces that list and repeats.
 --tier full runs every fixture of each agent and writes benchmarks/results/agent-tier-full.json.
 --runs repeats every fixture of every candidate that many times; each cell records the min and max of its per-run mean score and check fraction as its spread.
---dry-run spends nothing and prints the session count and estimated USD per agent: the median cost recorded in --out for that agent, model and effort, else the agent profile priced at the model's list price. Effort is not modeled in profile estimates.
+--dry-run spends nothing and prints the session count, estimated USD and estimated wall time per agent. Each session is estimated from the sessions recorded in --out and every --history file for that agent, model, effort and fixture, else the mean of that setting's per-fixture medians, else the agent profile: its token counts priced at the model's list price times the profile usdScale for model:effort, and its wallS times wallScale. Wall time is the summed session estimates over --concurrency. A history file of the earlier agent key orchestrate counts as orchestrator.
+--merge reads the existing --out, appends the new sessions with run numbers after the setting's last recorded run, and recomputes every cell from all sessions, so a later round with --candidate and --runs grows only those cells.
+--require-api-key runs the first session alone and reads apiKeySource from its stream-json init line; unless it is ANTHROPIC_API_KEY, no further session starts, nothing is written and the exit code is 1. Every session records its apiKeySource. ANTHROPIC_API_KEY must be set in the caller's environment.
+Each cell records wilson95, the Wilson 95% interval of the share of its sessions that passed (score 1; an errored session counts as not passed, a skipped one is left out), and the summary line adds the mean cost and median wall per session.
 --max-usd stops starting sessions once spent plus reserved estimates would pass the cap, writes the results so far and exits 1.
 Exit codes: 0 done, 1 sessions skipped by --max-usd or failed run, 2 usage error. Defaults: --tier quick, --concurrency 2, --runs 1.`;
 
@@ -77,26 +86,68 @@ export function planJobs({ config, agents, tier, candidates, table, runs = 1 }) 
   });
 }
 
-export function estimateUsd(agent, candidate, recorded, config) {
-  const own = recorded.filter((session) => session.agent === agent && session.model === candidate.model && session.effort === candidate.effort);
-  const median = medianCost(own);
-  if (median !== null) return median;
-  return countsCost(config[agent].profile, MODELS[candidate.model]) ?? 0;
+const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+
+const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
+const settingOfJob = (candidate) => (session) => session.model === candidate.model && session.effort === candidate.effort;
+const wallOf = (session) => (isNumber(session.durationMs) && session.durationMs > 0 ? session.durationMs / 1000 : null);
+
+function recordedEstimate(own, fixture, measure) {
+  const measured = own.map((session) => ({ fixture: session.fixture, value: measure(session) })).filter((entry) => isNumber(entry.value));
+  if (measured.length === 0) return null;
+  const exact = measured.filter((entry) => fixture !== undefined && entry.fixture === fixture);
+  if (exact.length > 0) return median(exact.map((entry) => entry.value));
+  const byFixture = new Map();
+  for (const entry of measured) byFixture.set(entry.fixture, [...(byFixture.get(entry.fixture) ?? []), entry.value]);
+  return mean([...byFixture.values()].map(median));
+}
+
+const recordedOwn = (agent, candidate, recorded) => recorded.filter((session) => session.agent === agent && !session.skipped && settingOfJob(candidate)(session));
+
+export function estimateUsd(agent, candidate, recorded, config, fixture) {
+  const seen = recordedEstimate(recordedOwn(agent, candidate, recorded), fixture, (session) => session.cost_usd);
+  if (seen !== null) return seen;
+  const profile = config[agent].profile;
+  const priced = countsCost(profile, MODELS[candidate.model]) ?? 0;
+  return priced * (profile.usdScale?.[labelOf(candidate)] ?? 1);
+}
+
+export function estimateWallS(agent, candidate, recorded, config, fixture) {
+  const seen = recordedEstimate(recordedOwn(agent, candidate, recorded), fixture, wallOf);
+  if (seen !== null) return seen;
+  const profile = config[agent].profile;
+  if (!isNumber(profile.wallS)) return null;
+  return profile.wallS * (profile.wallScale?.[labelOf(candidate)] ?? 1);
 }
 
 export function estimateTotal(jobs, recorded, config) {
-  return sum(jobs.map((job) => estimateUsd(job.agent, job.candidate, recorded, config)));
+  return sum(jobs.map((job) => estimateUsd(job.agent, job.candidate, recorded, config, job.fixture)));
 }
 
-export function dryRunText(jobs, recorded, config) {
+export function estimateWallTotalS(jobs, recorded, config, concurrency) {
+  const walls = jobs.map((job) => estimateWallS(job.agent, job.candidate, recorded, config, job.fixture));
+  if (walls.some((wall) => wall === null)) return null;
+  return sum(walls) / Math.max(1, Math.min(concurrency, jobs.length));
+}
+
+export function wallText(seconds) {
+  if (seconds === null) return 'n/a';
+  return seconds < 90 ? `${seconds.toFixed(0)} s` : `${(seconds / 60).toFixed(1)} min`;
+}
+
+export function dryRunText(jobs, recorded, config, concurrency = 2) {
   const agents = [...new Set(jobs.map((job) => job.agent))];
   const lines = agents.map((agent) => {
     const own = jobs.filter((job) => job.agent === agent);
     const labels = [...new Set(own.map((job) => labelOf(job.candidate)))].join(' ');
-    return `${agent}: ${own.length} sessions, est $${estimateTotal(own, recorded, config).toFixed(2)} (${labels})`;
+    return `${agent}: ${own.length} sessions, est $${estimateTotal(own, recorded, config).toFixed(2)}, est wall ${wallText(estimateWallTotalS(own, recorded, config, concurrency))} at concurrency ${concurrency} (${labels})`;
   });
-  const total = `total: ${jobs.length} sessions, est $${estimateTotal(jobs, recorded, config).toFixed(2)}`;
-  return `${[...lines, total, 'note: profile estimates do not model effort; a recorded median in --out does'].join('\n')}\n`;
+  const total = `total: ${jobs.length} sessions, est $${estimateTotal(jobs, recorded, config).toFixed(2)}, est wall ${wallText(estimateWallTotalS(jobs, recorded, config, concurrency))} at concurrency ${concurrency}`;
+  return `${[...lines, total, 'note: a recorded session of the same agent, model, effort and fixture in --out or --history wins; else the profile, whose usdScale and wallScale model effort where it lists them'].join('\n')}\n`;
 }
 
 export function flaggedShare(plants, findingsText) {
@@ -163,6 +214,16 @@ export function sessionCost(outcome, model) {
   return priced ?? outcome.cost_usd ?? null;
 }
 
+export function apiKeySourceOf(stdout) {
+  for (const line of String(stdout ?? '').split('\n')) {
+    if (!line.includes('"init"')) continue;
+    let event;
+    try { event = JSON.parse(line); } catch { continue; }
+    if (event?.type === 'system' && event.subtype === 'init') return event.apiKeySource ?? null;
+  }
+  return null;
+}
+
 const mean = (values) => (values.length === 0 ? null : sum(values) / values.length);
 
 function runSpread(graded, field) {
@@ -170,6 +231,16 @@ function runSpread(graded, field) {
   for (const session of graded) runs.set(session.run ?? 1, [...(runs.get(session.run ?? 1) ?? []), session[field]]);
   const means = [...runs.values()].map(mean).filter((value) => typeof value === 'number');
   return means.length === 0 ? null : { min: Math.min(...means), max: Math.max(...means) };
+}
+
+export function wilson95(passes, total) {
+  if (total === 0) return null;
+  const share = passes / total;
+  const z2 = WILSON_Z ** 2;
+  const denominator = 1 + z2 / total;
+  const centre = (share + z2 / (2 * total)) / denominator;
+  const half = (WILSON_Z * Math.sqrt((share * (1 - share)) / total + z2 / (4 * total ** 2))) / denominator;
+  return [Math.max(0, centre - half), Math.min(1, centre + half)].map((bound) => Number(bound.toFixed(4)));
 }
 
 export function summarizeCells(sessions) {
@@ -180,6 +251,8 @@ export function summarizeCells(sessions) {
   }
   return [...groups.values()].map((own) => {
     const graded = own.filter((session) => !session.error && !session.skipped && typeof session.score === 'number');
+    const attempted = own.filter((session) => !session.skipped);
+    const passes = graded.filter((session) => session.score >= 1).length;
     return {
       agent: own[0].agent,
       model: own[0].model,
@@ -190,17 +263,23 @@ export function summarizeCells(sessions) {
       fraction: mean(graded.map((session) => session.fraction ?? session.score)),
       spread: { score: runSpread(graded, 'score'), fraction: runSpread(graded, 'fraction') },
       cost_usd: sum(own.map((session) => session.cost_usd ?? 0)),
-      costPerSession: own.length === 0 ? null : sum(own.map((session) => session.cost_usd ?? 0)) / own.length,
-      wallS: own.length === 0 ? null : sum(own.map((session) => (session.durationMs ?? 0) / 1000)) / own.length
+      costPerSession: attempted.length === 0 ? null : sum(attempted.map((session) => session.cost_usd ?? 0)) / attempted.length,
+      wallS: own.length === 0 ? null : sum(own.map((session) => (session.durationMs ?? 0) / 1000)) / own.length,
+      wallMedianS: attempted.length === 0 ? null : median(attempted.map((session) => (session.durationMs ?? 0) / 1000)),
+      wilson95: wilson95(passes, attempted.length)
     };
   });
 }
 
 const spreadText = (spread) => (spread ? ` (${percent(spread.min)}-${percent(spread.max)})` : '');
 
+const intervalText = (interval) => (interval ? ` wilson95 [${percent(interval[0])}-${percent(interval[1])}]` : '');
+
 export function cellLine(cell, config) {
   const spread = cell.spread ?? {};
-  return `${cell.agent} ${labelOf(cell)} ${config[cell.agent].metric} ${percent(cell.score)}${spreadText(spread.score)} checks ${percent(cell.fraction)}${spreadText(spread.fraction)} usd $${cell.cost_usd.toFixed(2)} wall ${cell.wallS.toFixed(0)}s`;
+  const perSession = cell.costPerSession === null || cell.costPerSession === undefined ? '' : ` $${cell.costPerSession.toFixed(3)}/session`;
+  const medianWall = isNumber(cell.wallMedianS) ? ` median ${cell.wallMedianS.toFixed(0)}s` : '';
+  return `${cell.agent} ${labelOf(cell)} ${config[cell.agent].metric} ${percent(cell.score)}${spreadText(spread.score)} checks ${percent(cell.fraction)}${spreadText(spread.fraction)} usd $${cell.cost_usd.toFixed(2)}${perSession} wall ${cell.wallS.toFixed(0)}s${medianWall}${intervalText(cell.wilson95)}`;
 }
 
 const git = (repository, args) => execFileSync('git', ['-C', repository, ...args], { encoding: 'utf8' });
@@ -295,13 +374,13 @@ export function valueScore(scored, graded) {
   };
 }
 
-function valueSession(promptOf, { prepare = () => {}, transcript = NO_TRANSCRIPT } = {}) {
+function valueSession(promptOf, { prepare = () => {}, transcript = NO_TRANSCRIPT, pluginOf = (ctx) => ctx.pluginDir } = {}) {
   return (ctx, job, task) => inCase(async (base, tmp) => {
     const repository = path.join(base, 'repo');
     const startTree = prepareValueRepo(task, repository);
     prepare(task, repository);
     const timeoutMs = task.timeoutMinutes * MS_PER_MINUTE;
-    const outcome = await runIn(ctx, job, { prompt: promptOf(task, repository), cwd: repository, base, tmp, timeoutMs });
+    const outcome = await runIn({ ...ctx, pluginDir: pluginOf(ctx, task, base) }, job, { prompt: promptOf(task, repository), cwd: repository, base, tmp, timeoutMs });
     if (outcome.error) return { outcome };
     const graded = transcript(task, repository, outcome.stdout);
     const scored = await scoreValueRepo(task, repository, startTree);
@@ -315,11 +394,17 @@ function writeBrief(task, repository) {
   fs.writeFileSync(path.join(repository, '.exo', 'brief.md'), briefText(task));
 }
 
-function orchestrateTranscript(task, repository, stdout) {
+function orchestratorTranscript(task, repository, stdout) {
   const file = path.join(repository, RESULT_FILE);
   const resultText = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
   return { findings: transcriptFindings(stdout, resultText, task.transcript), checks: transcriptChecks(task.transcript) };
 }
+
+function runUnitTranscript(task, repository, stdout) {
+  return { findings: runUnitFindings(stdout, task.transcript), checks: runUnitChecks(task.transcript) };
+}
+
+const stubbedPlugin = (ctx, task, base) => installStub({ pluginDir: ctx.pluginDir, fixture: task.directory, destination: path.join(base, 'plugin') });
 
 const checkoutPrompt = (task, repository) => `${task.prompt}\n\nCheckout: ${repository}.`;
 
@@ -329,7 +414,8 @@ const EXECUTORS = {
   'fix-review': fixSession,
   'build-task': valueSession((task, repository) => `Brief: ${repository}/.exo/brief.md. Checkout: ${repository}.`, { prepare: writeBrief }),
   'solve-hard': valueSession(checkoutPrompt),
-  orchestrate: valueSession(checkoutPrompt, { transcript: orchestrateTranscript })
+  orchestrator: valueSession(checkoutPrompt, { transcript: orchestratorTranscript }),
+  'run-unit': valueSession(runUnitPrompt, { transcript: runUnitTranscript, pluginOf: stubbedPlugin })
 };
 
 const byFixtureId = (tasks) => new Map(tasks.map((task) => [task.id.replace(VALUE_PREFIX, ''), task]));
@@ -342,7 +428,8 @@ const FIXTURE_SOURCES = {
   'fix-review': replayFixtures,
   'build-task': valueFixtures,
   'solve-hard': valueFixtures,
-  orchestrate: () => byFixtureId(loadValueTasks(ORCHESTRATE_ROOT))
+  orchestrator: () => byFixtureId(loadValueTasks(ORCHESTRATOR_ROOT)),
+  'run-unit': () => byFixtureId(loadValueTasks(RUN_UNIT_ROOT))
 };
 
 export function resolveFixtures(jobs) {
@@ -358,13 +445,38 @@ function readConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
 }
 
-function recordedSessions(file) {
+export function recordedSessions(file) {
   if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
+  const sessions = JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
+  return sessions.map((session) => ({ ...session, agent: AGENT_ALIASES[session.agent] ?? session.agent }));
+}
+
+const lastRunOf = (sessions) => Math.max(0, ...sessions.map((session) => session.run ?? 1));
+
+export function offsetRuns(jobs, existing) {
+  return jobs.map((job) => {
+    const own = existing.filter((session) => session.agent === job.agent && settingOfJob(job.candidate)(session));
+    return { ...job, run: (job.run ?? 1) + lastRunOf(own) };
+  });
+}
+
+export async function runGated(tasks, concurrency, accepts) {
+  if (tasks.length === 0) return { sessions: [], refused: null };
+  const first = await tasks[0]();
+  if (!accepts(first)) return { sessions: [first], refused: first };
+  const rest = await inPool(tasks.slice(1), concurrency);
+  return { sessions: [first, ...rest], refused: null };
+}
+
+export const usesApiKey = (record) => record.skipped === true || record.apiKeySource === API_KEY_SOURCE;
+
+export function refusalText(record) {
+  const found = record.apiKeySource ?? 'none (no init line)';
+  return `--require-api-key: the first session reported apiKeySource ${found}, not ${API_KEY_SOURCE}; no other session started and nothing was written`;
 }
 
 function readFlags(argv, config) {
-  const flags = parseFlags(argv, { agent: 'list', tier: 'value', candidate: 'list', 'max-usd': 'value', concurrency: 'value', runs: 'value', transcripts: 'value', 'dry-run': 'boolean', out: 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { agent: 'list', tier: 'value', candidate: 'list', 'max-usd': 'value', concurrency: 'value', runs: 'value', transcripts: 'value', 'dry-run': 'boolean', out: 'value', history: 'list', merge: 'boolean', 'require-api-key': 'boolean' }, { usage: USAGE });
   const tier = flags.tier ?? 'quick';
   if (!TIERS.includes(tier)) throw new UsageError(`--tier needs ${TIERS.join(' or ')}, got '${tier}'`);
   if (flags.concurrency !== undefined && !POSITIVE_INTEGER.test(flags.concurrency)) throw new UsageError(`--concurrency needs a positive integer, got '${flags.concurrency}'`);
@@ -382,6 +494,9 @@ function readFlags(argv, config) {
     runs: Number(flags.runs ?? 1),
     transcripts: flags.transcripts,
     dryRun: flags['dry-run'] === true,
+    merge: flags.merge === true,
+    requireApiKey: flags['require-api-key'] === true,
+    history: flags.history ?? [],
     out: flags.out ?? path.join(RESULTS, `agent-tier-${tier}.json`)
   };
 }
@@ -394,7 +509,7 @@ function saveTranscript(directory, job, stdout) {
 
 export function recordOf(job, result) {
   const { outcome, score, fraction, detail } = result;
-  const base = { agent: job.agent, model: job.candidate.model, effort: job.candidate.effort, fixture: job.fixture, run: job.run ?? 1, cost_usd: sessionCost(outcome, job.candidate.model), durationMs: outcome.durationMs, numTurns: outcome.numTurns ?? null };
+  const base = { agent: job.agent, model: job.candidate.model, effort: job.candidate.effort, fixture: job.fixture, run: job.run ?? 1, cost_usd: sessionCost(outcome, job.candidate.model), durationMs: outcome.durationMs, numTurns: outcome.numTurns ?? null, apiKeySource: apiKeySourceOf(outcome.stdout) };
   if (outcome.error) return { ...base, error: outcome.error };
   return { ...base, score, fraction: fraction ?? score, ...(detail ? { detail } : {}) };
 }
@@ -402,7 +517,7 @@ export function recordOf(job, result) {
 function jobRunner(run) {
   const { ctx, sources, budget, recorded, config, transcripts } = run;
   return (job) => async () => {
-    const estimate = estimateUsd(job.agent, job.candidate, recorded, config);
+    const estimate = estimateUsd(job.agent, job.candidate, recorded, config, job.fixture);
     if (!budget.reserve(estimate)) return { agent: job.agent, model: job.candidate.model, effort: job.candidate.effort, fixture: job.fixture, run: job.run ?? 1, skipped: true };
     const result = await EXECUTORS[job.agent](ctx, job, sources[job.agent].get(job.fixture));
     const record = recordOf(job, result);
@@ -423,28 +538,48 @@ async function buildContext(jobs, home, pluginRoot) {
 
 function writeResults(flags, sessions, config) {
   const cells = summarizeCells(sessions);
-  const result = { tier: flags.tier, runs: flags.runs, cells, sessions };
+  const result = { tier: flags.tier, runs: lastRunOf(sessions), cells, sessions };
   fs.mkdirSync(path.dirname(flags.out), { recursive: true });
   fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
   process.stdout.write(`${cells.map((cell) => cellLine(cell, config)).join('\n')}\nwrote ${flags.out}\n`);
 }
 
-async function realRun(flags, jobs, config) {
+const knownSessions = (flags) => [...flags.history.flatMap(recordedSessions), ...recordedSessions(flags.out)];
+
+function requireKey(flags) {
+  if (flags.requireApiKey && !process.env[API_KEY_SOURCE]) throw new UsageError(`--require-api-key needs ${API_KEY_SOURCE} set in the environment`);
+}
+
+async function runAll(flags, tasks) {
+  if (!flags.requireApiKey) return { sessions: await inPool(tasks, flags.concurrency), refused: null };
+  return runGated(tasks, flags.concurrency, usesApiKey);
+}
+
+async function realRun(flags, plannedJobs, config) {
+  requireKey(flags);
   const refusal = confineRefusal();
   if (refusal) throw new UsageError(refusal);
+  const prior = flags.merge ? recordedSessions(flags.out) : [];
+  const jobs = flags.merge ? offsetRuns(plannedJobs, prior) : plannedJobs;
   const sources = resolveFixtures(jobs);
   const home = makeDefaultOptionsHome({ withoutInstalledPlugins: true });
   const pluginRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-tier-plugin-'));
   const budget = new Budget(flags.cap);
+  let refused = null;
   try {
     const ctx = await buildContext(jobs, home, pluginRoot);
     const transcripts = flags.transcripts ?? path.join(ROOT, '.exo', 'agent-tier', new Date().toISOString().replace(/[:.]/g, '-'));
-    const runner = jobRunner({ ctx, sources, budget, recorded: recordedSessions(flags.out), config, transcripts });
-    const sessions = await inPool(jobs.map(runner), flags.concurrency);
-    writeResults(flags, sessions, config);
+    const runner = jobRunner({ ctx, sources, budget, recorded: knownSessions(flags), config, transcripts });
+    const outcome = await runAll(flags, jobs.map(runner));
+    refused = outcome.refused;
+    if (!refused) writeResults(flags, [...prior, ...outcome.sessions], config);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
     fs.rmSync(pluginRoot, { recursive: true, force: true });
+  }
+  if (refused) {
+    process.stderr.write(`${refusalText(refused)}\n`);
+    return 1;
   }
   const message = budget.message();
   if (message) process.stderr.write(`${message}\n`);
@@ -456,7 +591,7 @@ async function main() {
   const flags = readFlags(process.argv.slice(2), config);
   const jobs = planJobs({ config, agents: flags.agents, tier: flags.tier, candidates: flags.candidates, table: readKindTable(), runs: flags.runs });
   if (!flags.dryRun) return realRun(flags, jobs, config);
-  process.stdout.write(dryRunText(jobs, recordedSessions(flags.out), config));
+  process.stdout.write(dryRunText(jobs, knownSessions(flags), config, flags.concurrency));
   return 0;
 }
 

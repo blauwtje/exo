@@ -1,0 +1,5 @@
+- Plan: <plan>
+- Branch: <branch>
+- Checkout: <checkout>
+- Tasks: 2, 3
+- Return: one line per task, `LANDED <n>` or `BLOCKED <n> <reason> <report path>`
