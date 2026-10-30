@@ -16,6 +16,7 @@ Investigate part: at most 25 lines, one line per field, this order; field the lo
 - `Expected`.
 - `Actual`.
 - `Log`, a path.
+- `First bad`, the bisect `First bad` and `Diff` lines, or `none`.
 - `Hypotheses`, one line each: claim, deciding observation, kept or dropped.
 - `Cause`, path:line symbol.
 - `Mechanism`, causal line and why it produced the symptom, at most 3 lines.
