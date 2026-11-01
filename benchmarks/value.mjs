@@ -98,6 +98,8 @@ function writeExoSettings(repo) {
 export function prepareValueRepo(task, repo) {
   fs.cpSync(path.join(task.directory, 'seed'), repo, { recursive: true });
   git(repo, ['init', '-q']);
+  git(repo, ['config', 'user.name', 'bench']);
+  git(repo, ['config', 'user.email', 'bench@example.com']);
   git(repo, ['add', '-A']);
   git(repo, ['commit', '-q', '-m', 'seed']);
   writeExoSettings(repo);

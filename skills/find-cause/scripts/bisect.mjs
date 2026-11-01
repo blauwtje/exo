@@ -14,7 +14,7 @@ const PROBE_DEFAULT_MS = 600_000;
 const MAX_LINES = 30;
 const SKIP_EXIT = 125;
 const PROOF_SEPARATOR = /^`?(?: → | -> |: pass)/;
-const FIRST_BAD = /^([0-9a-f]{40}) is the first bad commit/m;
+const FIRST_BAD = /^([0-9a-f]{40}) is the first '?bad'? commit/m;
 
 const USAGE = `Usage: node bisect.mjs --repro <command> [--good <ref>]
 Runs <command> in a temporary worktree at HEAD, picks the newest good commit that command passes at, and bisects history to the commit that first breaks it.

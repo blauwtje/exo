@@ -85,6 +85,7 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The agent and kind `run-unit` are renamed to `task-runner`, with no alias.
 
 ### Fixed
+- `skills/find-cause/scripts/bisect.mjs` reads the quoted `'bad'` that git 2.56 prints, and `benchmarks/value.mjs` gives each cell repo a placeholder git identity, so the 11 `skill script behavior` tests pass on the CI runner.
 - `skills/find-cause/scripts/bisect.mjs` keeps doubling its good-commit search past HEAD~32 until it runs out of history, then tries the root commit, so a regression more than 32 commits back is bracketed instead of printing `Bisect: no passing commit`; `benchmarks/results/bisect.jsonl` records a quick skill-mode remeasure (6 runs, plus an A/A check) in which the script names the culprit in 36 of 36 regression cells and after vs 480be78e is noise: wall +1.7%, cost -0.9%, turns -6.1%.
 - The agent hook denies an `exo:` agent call whose `model` or `effort` differs from the kind table, naming the table pair, the passed pair and the matching `exo-kind:` labels, instead of silently replacing them where only the user's screen showed it; covered by `tests/agent-effort.test.mjs`.
 - `land-task` gives a task's Proof the pending `Evidence:` of that task and of every unlanded task, so a `npm run validate:static` Proof no longer fails `edit evidence` before the commit carries its trailer.
