@@ -9,6 +9,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
 
+### Changed
+- `output-styles/adhd.md` shrinks from 129 lines and 1259 words to 113 and 1001, and gives an advice or analysis answer as a verdict, the one new idea and the advice in plain words, with no paths or code terms the user need not type; `benchmarks/adhd/` scores a video-transcript analysis case, where answer-first stays at 100% and facts kept rises from 45.5% to 54.5%.
+
 ## 0.138.0 - 2026-11-02
 
 ### Highlights

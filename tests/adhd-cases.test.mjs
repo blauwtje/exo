@@ -6,8 +6,8 @@ const file = new URL('../benchmarks/adhd/cases.jsonl', import.meta.url);
 const cases = readFileSync(file, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
 const strings = (list) => Array.isArray(list) && list.length > 0 && list.every((s) => typeof s === 'string' && s.trim());
 
-test('34 cases with unique ids', () => {
-  assert.equal(cases.length, 34);
+test('35 cases with unique ids', () => {
+  assert.equal(cases.length, 35);
   assert.equal(new Set(cases.map((c) => c.id)).size, cases.length);
 });
 
