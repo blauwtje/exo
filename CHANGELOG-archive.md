@@ -1,6 +1,11 @@
 # Changelog archive
 
-Releases before 0.134.10; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+Releases before 0.134.11; newer ones are in [CHANGELOG.md](CHANGELOG.md).
+
+## 0.134.10 - 2026-10-14
+
+### Fixed
+- `exo:build` runs a plan's Success command once per tree when red-green is on: the final verify and a resume on an unchanged tree reuse red-green's recorded pass instead of running it again.
 
 ## 0.134.9 - 2026-10-14
 

@@ -5,9 +5,11 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## Unreleased
+
+## 0.138.0 - 2026-11-02
 
 ### Highlights
 - **`/exo:verify` is now `/exo:gate`.**
@@ -447,8 +449,3 @@ Versions before 0.134.10 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - A retry after a failed land resumes that task's failed session with only the retry note, instead of a fresh session that rereads the plan, brief and files.
-
-## 0.134.10 - 2026-10-14
-
-### Fixed
-- `exo:build` runs a plan's Success command once per tree when red-green is on: the final verify and a resume on an unchanged tree reuse red-green's recorded pass instead of running it again.
