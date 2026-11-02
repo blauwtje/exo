@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { projectedCostLine, recordedRunCosts } from '../benchmarks/lean-gates.mjs';
+import { ISOLATION_ENV, childEnvironment, projectedCostLine, recordedRunCosts } from '../benchmarks/lean-gates.mjs';
 
 function savedRun(out, name, stdout) {
   mkdirSync(join(out, name), { recursive: true });
@@ -30,4 +30,16 @@ test('projectedCostLine prints the median recorded USD, else cost unknown', () =
   assert.equal(projectedCostLine([12, 20, 30]), 'projected cost: $20.00 (median of 3 recorded runs)');
   assert.equal(projectedCostLine([10, 20]), 'projected cost: $15.00 (median of 2 recorded runs)');
   assert.equal(projectedCostLine([]), 'projected cost: cost unknown');
+});
+
+test('the isolation environment starts sessions on the 5-minute prompt cache', () => {
+  assert.equal(ISOLATION_ENV.CLAUDE_CODE_PROMPT_CACHE_TTL, '5m');
+  assert.equal(ISOLATION_ENV.CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, '5m');
+});
+
+test('childEnvironment keeps the 5-minute prompt cache after stripping the parent CLAUDE_CODE keys', () => {
+  const parent = { CLAUDE_CODE_PROMPT_CACHE_TTL: '1h', CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL: '1h' };
+  const env = childEnvironment(parent, tmpdir());
+  assert.equal(env.CLAUDE_CODE_PROMPT_CACHE_TTL, '5m');
+  assert.equal(env.CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, '5m');
 });

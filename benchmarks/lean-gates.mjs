@@ -38,7 +38,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { confinedClaude } from '#confine-claude';
+import { BENCHMARK_CACHE_ENV, confinedClaude } from '#confine-claude';
 import { configDirectory } from '#config-directory';
 import { exoLoaded } from './cell-usage.mjs';
 import { medianCost } from './routing.mjs';
@@ -86,7 +86,7 @@ const PROBE = { model: 'haiku', budget: '0.5', timeoutMin: 5 };
 // this loaded ~/.claude/CLAUDE.md and the exo checkout's CLAUDE.md files as
 // project instructions. The fixture has no CLAUDE.md of its own, so the run
 // loads none, and no auto memory either.
-export const ISOLATION_ENV = { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' };
+export const ISOLATION_ENV = { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1', ...BENCHMARK_CACHE_ENV };
 const CONTEXT_NAMES = ['CLAUDE.md', 'CLAUDE.local.md', '.claude'];
 
 export function parseArguments(argv) {

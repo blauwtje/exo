@@ -11,6 +11,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - `output-styles/adhd.md` shrinks from 129 lines and 1259 words to 113 and 1001, and gives an advice or analysis answer as a verdict, the one new idea and the advice in plain words, with no paths or code terms the user need not type; `benchmarks/adhd/` scores a video-transcript analysis case, where answer-first stays at 100% and facts kept rises from 45.5% to 54.5%.
+- Benchmark-started Claude sessions write their prompt cache at the 5-minute rate (CLAUDE_CODE_PROMPT_CACHE_TTL and CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL set to 5m), which cut about 5.8% of the subscription weight in a 14-day replay with the same model, effort and turns; rerun the base arm before comparing cost with an older result
 
 ## 0.138.0 - 2026-11-02
 

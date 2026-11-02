@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { calibrate, callStats, claudeJudge, factsInput, judgeFacts, judgePrompt, judgeStability, judgeVote, parseVerdicts } from '../benchmarks/adhd/judges.mjs';
+import { QUIET_ENV, calibrate, callStats, claudeJudge, factsInput, judgeFacts, judgePrompt, judgeStability, judgeVote, parseVerdicts } from '../benchmarks/adhd/judges.mjs';
 
 const factNumbers = (input) => [...input.matchAll(/^Fact (\d+):/gm)].map((m) => m[1]);
 const passAll = async ({ input }) => factNumbers(input).map((n) => `${n}: PASS`).join('\n');
@@ -162,4 +162,9 @@ test('judgeVote returns the majority of 3 parallel judge calls per fact', async 
 
 test('factsInput holds the question, numbered facts and the one reply', () => {
   assert.equal(factsInput({ reply: 'R', question: 'Q', facts: ['a'] }), 'Question:\nQ\n\nRequired facts:\nFact 1: a\n\nReply:\nR');
+});
+
+test('the quiet judge environment starts sessions on the 5-minute prompt cache', () => {
+  assert.equal(QUIET_ENV.CLAUDE_CODE_PROMPT_CACHE_TTL, '5m');
+  assert.equal(QUIET_ENV.CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, '5m');
 });

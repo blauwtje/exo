@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawn } from 'node:child_process';
 import { environmentMs } from '../../lib/script-flags.mjs';
+import { BENCHMARK_CACHE_ENV } from '#confine-claude';
 import { makeCellHome } from '../cell-home.mjs';
 
 const PROMPT = path.join(import.meta.dirname, 'judges', 'facts.md');
@@ -14,7 +15,7 @@ export const JUDGE_CONCURRENCY = 24;
 export const JUDGE_VOTES = 3;
 
 // why: no title generation or telemetry calls, so a call's cost is its reply or verdict alone.
-export const QUIET_ENV = { DISABLE_NON_ESSENTIAL_MODEL_CALLS: '1', CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' };
+export const QUIET_ENV = { DISABLE_NON_ESSENTIAL_MODEL_CALLS: '1', CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', ...BENCHMARK_CACHE_ENV };
 
 export const callStats = { timeouts: 0, parseRetries: 0, droppedVotes: 0 };
 
