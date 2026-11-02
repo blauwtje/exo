@@ -9,6 +9,7 @@ import { UsageError, environmentMs, isMain, parseFlags } from '#script-flags';
 import { claudeJudge, compareMarkdown, resultsMarkdown, scoreArm } from './ideas-score.mjs';
 import { makeCellHome } from './cell-home.mjs';
 import { applyVariant } from './variants.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 import { medianCost } from './routing.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
 
@@ -17,8 +18,8 @@ const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'ideas',
 const FIXTURES = '/tmp/exo-pressure/spec';
 const SETUP = path.join(import.meta.dirname, 'pressure', 'spec', 'setup.sh');
 const RUN_FILES = 'benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/{stdout.json,final.md}';
-const USAGE = 'usage: ideas.mjs [--arm base|<variant>] [--full] [--n <int>] [--cases <ids>] [--confirm] [--jobs <int>] [--out <dir>] | --score <dir> [--arm <name>] [--results <file>] [--baseline <dir>] | --compare <dir> <dir>; default one answer per case (quick), --full five; --baseline compares the scored arm to <dir>/base/records.json; each run writes ' + RUN_FILES + '/run.json';
-const SPEC = { arm: 'value', full: 'boolean', baseline: 'value', n: 'value', cases: 'value', confirm: 'boolean', jobs: 'value', out: 'value', score: 'value', results: 'value' };
+const USAGE = 'usage: ideas.mjs [--arm base|<variant>] [--full] [--n <int>] [--cases <ids>] [--confirm] [--dry-run] [--jobs <int>] [--out <dir>] | --score <dir> [--arm <name>] [--results <file>] [--baseline <dir>] | --compare <dir> <dir>; default one answer per case (quick), --full five; --baseline compares the scored arm to <dir>/base/records.json; each run writes ' + RUN_FILES + '/run.json';
+const SPEC = { arm: 'value', full: 'boolean', baseline: 'value', n: 'value', cases: 'value', confirm: 'boolean', 'dry-run': 'boolean', jobs: 'value', out: 'value', score: 'value', results: 'value' };
 export const MAKER_LINE = 'Which designs could do this? Recommend one.';
 export const HEADLESS_LINE = 'No one will answer questions; decide any open point yourself.';
 const QUICK_N = 1;
@@ -208,9 +209,17 @@ export async function scoreDirectory({ dir, arm, judge, results }) {
   return file;
 }
 
+export function assertSameJudge({ left, right }) {
+  const judges = new Set([...left, ...right].map((record) => record.judge));
+  const same = left.length > 0 && right.length > 0 && judges.size === 1 && !judges.has(undefined);
+  if (!same) throw new UsageError('the two sides were not scored by the same judge prompts, or one side records no judge; rescore the baseline with --score');
+}
+
 function compareDirectories([left, right]) {
   const load = (dir) => JSON.parse(fs.readFileSync(path.join(dir, 'records.json'), 'utf8'));
-  return compareMarkdown({ left: load(left), right: load(right) });
+  const sides = { left: load(left), right: load(right) };
+  assertSameJudge(sides);
+  return compareMarkdown(sides);
 }
 
 function meanOf(values) {
@@ -230,6 +239,7 @@ export function caseMeans(records) {
 
 export function compareToBaseline({ baselineDir, records }) {
   const stored = JSON.parse(fs.readFileSync(path.join(baselineDir, 'base', 'records.json'), 'utf8'));
+  assertSameJudge({ left: stored, right: records });
   const storedCases = Object.keys(Object.groupBy(stored, (record) => record.case)).length;
   const counts = `runs: baseline ${stored.length} (per-case mean of ${storedCases} cases), new ${records.length}`;
   return `${counts}\n${compareMarkdown({ left: caseMeans(stored), right: caseMeans(records) })}`;
@@ -243,17 +253,24 @@ function splitCompare(argv) {
   return { rest: [...argv.slice(0, at), ...argv.slice(at + 3)], compare };
 }
 
-export function recordedCosts(out, arm) {
+function recordedRecords(out, arm) {
   const file = path.join(out, arm, 'records.json');
   if (!fs.existsSync(file)) return [];
-  const records = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return records.map((record) => record.costUsd).filter((cost) => typeof cost === 'number');
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-export function projectedCostLine(cellCount, costs) {
+export function recordedCosts(out, arm) {
+  return recordedRecords(out, arm).map((record) => record.costUsd).filter((cost) => typeof cost === 'number');
+}
+
+export function unpricedRuns(out, arm) {
+  return recordedRecords(out, arm).length - recordedCosts(out, arm).length;
+}
+
+export function projectedCostLine(cellCount, costs, excluded = 0) {
   const median = medianCost(costs.map((cost_usd) => ({ cost_usd })));
-  if (median === null) return 'projected cost: cost unknown';
-  return `projected cost: $${(cellCount * median).toFixed(2)} (${cellCount} cells x median $${median.toFixed(4)} of ${costs.length} recorded runs)`;
+  if (median === null) return `projected cost: cost unknown, ${excluded} recorded runs without cost excluded`;
+  return `projected cost: $${(cellCount * median).toFixed(2)} (${cellCount} cells x median $${median.toFixed(4)} of ${costs.length} recorded runs, ${excluded} without cost excluded)`;
 }
 
 function plan(flags) {
@@ -281,8 +298,9 @@ async function main(argv) {
   const cells = plan(flags);
   const out = flags.out ?? path.join(ROOT, 'benchmarks', 'runs', `${today()}-ideas`);
   for (const cell of cells) console.log(`planned ${cell.arm}/${cell.caseId}/${cell.run} (${cell.mode}) -> ${out}`);
-  if (flags.confirm !== true) {
-    console.log(projectedCostLine(cells.length, recordedCosts(out, cells[0].arm)));
+  if (flags.confirm !== true || flags['dry-run'] === true) {
+    console.log(projectedCostLine(cells.length, recordedCosts(out, cells[0].arm), unpricedRuns(out, cells[0].arm)));
+    console.log(plannedPowerLine({ tasks: new Set(cells.map((cell) => cell.caseId)).size, samples: Math.max(...cells.map((cell) => cell.run)), arms: new Set(cells.map((cell) => cell.arm)).size }));
     return console.log(`${cells.length} cells planned, nothing spent; add --confirm to run`);
   }
   const jobs = Number(flags.jobs ?? 1);

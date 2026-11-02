@@ -22,5 +22,10 @@
     "Pre-fix ground truth: 3/5 controls had a fix finding (csv-sum 3, rate-limit 1, safe-path 1).",
     "The lead's session had other context (sweep logs); only the results are given."
   ],
-  "transcript": "none found (searched ~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo for the fix sha, clean-controls, false alarm)"
+  "transcript": "none found (searched ~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo for the fix sha, clean-controls, false alarm)",
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "b61464616338b84c40974396854327e989f1407b",
+    "note": "review benchmark controls before the clean-control fix"
+  }
 }

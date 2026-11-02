@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
+import { powerLine } from '../lib/eval-stats.mjs';
 import { minDetectableEffect, signTest } from './statistics.mjs';
 
-const { values } = parseArgs({ options: { rate: { type: 'string' }, n: { type: 'string' } } });
+const { values } = parseArgs({ options: { rate: { type: 'string' }, n: { type: 'string' }, samples: { type: 'string', default: '1' }, effect: { type: 'string' }, paired: { type: 'boolean', default: false } } });
 const rate = Number(values.rate);
 const n = Number(values.n);
-if (!(rate > 0 && rate < 1) || !Number.isInteger(n) || n < 1) {
-  console.error('usage: mde.mjs --rate <0..1> --n <runs per arm>');
+const samples = Number(values.samples);
+const effect = values.effect === undefined ? undefined : Number(values.effect);
+if (!(rate > 0 && rate < 1) || !Number.isInteger(n) || n < 1 || !Number.isInteger(samples) || samples < 1 || !(effect === undefined || effect > 0)) {
+  console.error('usage: mde.mjs --rate <0..1> --n <tasks per arm> [--samples <runs per task>] [--effect <target>] [--paired]');
   process.exit(2);
 }
 const allWins = signTest(Array.from({ length: n }, () => [0, 1]));
@@ -18,3 +21,4 @@ if (uncapped > largest) {
   console.log(`min detectable effect: ${uncapped.toFixed(3)}`);
 }
 console.log(`sign test p, ${n} of ${n} pairs won: ${allWins.p.toPrecision(3)}`);
+console.log(powerLine({ tasks: n, samples, rate, paired: values.paired, effect }));

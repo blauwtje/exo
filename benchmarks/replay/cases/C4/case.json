@@ -22,5 +22,10 @@
     "The pre-b6146461 plan text lacked the note that main holds no code; post-fix plan text is used implicitly (reviews reference it)."
   ],
   "transcript": "none found",
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "control",
+    "ref": "b61464616338b84c40974396854327e989f1407b",
+    "note": "control review sweep after the fix"
+  }
 }

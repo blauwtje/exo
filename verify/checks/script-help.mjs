@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { commentSpans } from '../../lib/code-comments.mjs';
+import { withoutComments } from '../../lib/code-comments.mjs';
 
 const NAME = 'script help';
 const ENTRY_POINT = /^#!|\bisMain\(/m;
@@ -19,16 +19,6 @@ function entryPoints(repository) {
     .flatMap((folder) => fs.readdirSync(folder).sort().map((name) => path.join(folder, name)))
     .filter((file) => file.endsWith('.mjs') && fs.statSync(file).isFile())
     .filter((file) => ENTRY_POINT.test(repository.text(file)));
-}
-
-function withoutComments(file, source) {
-  let code = '';
-  let pos = 0;
-  for (const span of commentSpans(file, source)) {
-    code += source.slice(pos, span.from);
-    pos = span.to;
-  }
-  return code + source.slice(pos);
 }
 
 function answersHelp(file, source) {

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { reproGreen, startCommit } from '../benchmarks/bisect-repo.mjs';
-import { poolMetric, summarize, verdictOf } from '../benchmarks/bisect-summary.mjs';
+import { cellFailed, poolMetric, summarize, summaryLines, verdictOf } from '../benchmarks/bisect-summary.mjs';
 import { validateCase } from '../benchmarks/bisect-validate.mjs';
 import { causeNamed, cellRecord, claudeArguments, defaultPaths, latestRecords, loadCases, main, parseArguments, pendingCells, planCells, promptFor, readRecords, pluginKey, schedule, scopeRecords, selectCases, spendCap, streamFacts, withStreamFacts } from '../benchmarks/bisect.mjs';
 
@@ -293,6 +293,42 @@ test('summary pools regression cases and controls apart', () => {
   assert.equal(summary.pooled.regression.wallMs.cases, 1);
   assert.equal(summary.pooled.controls.wallMs.sumDiff, 1);
   assert.equal(summary.pooled.controls.wallMs.verdict, 'noise');
+});
+
+test('a timed-out or aborted cell counts as a failed pass and stays out of the wall, cost and turn means', () => {
+  const records = [
+    record('r', 'exo', 1, { wallMs: 1000, resultSubtype: 'success' }),
+    record('r', 'exo', 2, { wallMs: 60000, total_cost_usd: 5, timedOut: true, pass: true, resultSubtype: null }),
+    record('r', 'exo', 3, { wallMs: 90000, total_cost_usd: 6, pass: true, resultSubtype: 'error_max_budget_usd' })
+  ];
+  assert.deepEqual(records.map(cellFailed), [false, true, true]);
+  const stats = summarize(records, SHAS, 'skill').cases.r.arms.exo;
+  assert.equal(stats.failed, 2);
+  assert.equal(stats.pass.mean, 1 / 3);
+  assert.equal(stats.wallMs.n, 1);
+  assert.equal(stats.wallMs.mean, 1000);
+  assert.equal(stats.total_cost_usd.n, 1);
+  assert.equal(stats.passWilson.length, 2);
+  assert.match(summaryLines(summarize(records, SHAS, 'skill')).find((line) => line.startsWith('r ')), /failed 2 of 3, left out of wall, cost and turns$/);
+});
+
+test('one run per arm over several cases takes its SE from the paired case differences, and one case has none', () => {
+  const single = (before, after) => entry('regression', stats(before, null, 1), stats(after, null, 1));
+  const cases = [single(100, 50), single(200, 160), single(300, 210)];
+  const pooled = poolMetric(cases, 'wallMs');
+  assert.equal(pooled.sumDiff, -180);
+  assert.ok(Math.abs(pooled.se - 3 * Math.sqrt(((-50 + 60) ** 2 + (-40 + 60) ** 2 + (-90 + 60) ** 2) / 2 / 3)) < 1e-9);
+  assert.equal(pooled.lo, pooled.sumDiff - 2 * pooled.se);
+  assert.equal(poolMetric(cases.slice(0, 1), 'wallMs').se, null);
+  assert.equal(poolMetric(cases.slice(0, 1), 'wallMs').verdict, 'no SE');
+});
+
+test('the pooled line prints its SE and interval, or no SE', () => {
+  const records = [1, 2, 3].flatMap((run) => ['a', 'b'].flatMap((name) => [record(name, 'exo-before', run, { wallMs: 1000 + run * 10 }), record(name, 'exo', run, { wallMs: 500 + run * 10 })]));
+  const lines = summaryLines(summarize(records, SHAS, 'skill'));
+  assert.match(lines.find((line) => line.startsWith('pooled regression wallMs')), /se [\d.]+ ci -[\d.]+\.\.-[\d.]+ over 2 cases, .* fall$/);
+  const single = summaryLines(summarize([record('a', 'exo-before', 1), record('a', 'exo', 1)], SHAS, 'skill'));
+  assert.match(single.find((line) => line.startsWith('pooled regression wallMs')), /no SE over 1 cases, .* no SE$/);
 });
 
 test('schedule honours concurrency and stops starting cells at the cap', async () => {

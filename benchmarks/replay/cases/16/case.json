@@ -7,7 +7,7 @@
   "grade": {
     "type": "rubric",
     "pass": [
-      "\\bverify\\b"
+      "\\b(run|invoke|call|launch|start|execute)\\w*\\s+(the\\s+)?(skill\\s+)?\\W{0,2}(exo:)?verify\\b|exo:verify|verify\\W{0,2}\\s+(skill|gate)"
     ],
     "fail": [
       "(?:skip|omit|without|bypass)\\w*\\s+(?:the\\s+)?verify(?!\\s*ceremony)[^.\\n]{0,40}(?:land|ship|push|wrap)"
@@ -22,5 +22,10 @@
     "edited": "Nothing.",
     "assumed": "The request wording and that the build just finished; the pre-fix text (919b89fa^) was not run, so the case is not yet shown to fail there."
   },
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "919b89fa821801a3c71f25064b8b1fd5b4734c38",
+    "note": "pressure run HYgdrV skipped verify on a quoted instruction"
+  }
 }

@@ -11,7 +11,10 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { usageCounts } from '#token-weights';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { makeRunFolder, withHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { meanCi } from '../lib/eval-stats.mjs';
 import { countsCost } from './pricing.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
+import { compareMeans } from './statistics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'benchmarks/results/improve-vs-goal.json');
@@ -164,10 +167,60 @@ export function streamCost(lines) {
     try { event = JSON.parse(line); } catch { continue; }
     if (event.type === 'result') result = event;
     const message = event.type === 'assistant' ? event.message : undefined;
-    if (message?.usage !== undefined && message.id !== undefined) seen.set(message.id, countsCost(usageCounts(message.usage), message.model) ?? 0);
+    if (message?.usage !== undefined && message.id !== undefined) seen.set(message.id, countsCost(usageCounts(message.usage), message.model));
   }
   if (result?.total_cost_usd !== undefined) return { costUsd: result.total_cost_usd, costSource: 'result', result };
-  return { costUsd: [...seen.values()].reduce((sum, cost) => sum + cost, 0), costSource: 'usage sum', result };
+  const costs = [...seen.values()];
+  const priced = costs.length > 0 && costs.every((cost) => cost !== null && cost !== undefined);
+  return { costUsd: priced ? costs.reduce((sum, cost) => sum + cost, 0) : null, costSource: 'usage sum', result };
+}
+
+const isAborted = (run) => run.killed || run.subtype !== 'success' || run.costUsd === null;
+
+export const isPass = (run) => run.correct && run.scorerUnchanged && !isAborted(run);
+
+function spreadOf(values, total) {
+  const excluded = total - values.length;
+  if (values.length === 0) return { mean: null, se: null, n: 0, excluded };
+  return { ...meanCi(values), excluded };
+}
+
+export function armSummary(runs) {
+  const graded = runs.filter((run) => run.correct && run.scorerUnchanged);
+  const timed = runs.filter((run) => !isAborted(run));
+  return {
+    runs: runs.length, passed: runs.filter(isPass).length, aborted: runs.filter(isAborted).length,
+    score: { values: graded.map((run) => run.score), ...spreadOf(graded.map((run) => run.score), runs.length) },
+    heldOut: { values: graded.map((run) => run.heldOut), ...spreadOf(graded.map((run) => run.heldOut), runs.length) },
+    costUsd: { values: timed.map((run) => run.costUsd), ...spreadOf(timed.map((run) => run.costUsd), runs.length) },
+    wallS: { values: timed.map((run) => run.wallS), ...spreadOf(timed.map((run) => run.wallS), runs.length) }
+  };
+}
+
+const LOWER_WORDS = { rise: 'improve higher', fall: 'improve lower', noise: 'no clear difference' };
+
+export function compareArms(improve, goal) {
+  return Object.fromEntries(['score', 'heldOut', 'costUsd', 'wallS'].map((metric) => {
+    const { diff, twoSeDiff, verdict } = compareMeans(goal[metric].values, improve[metric].values);
+    return [metric, { diff, twoSeDiff, verdict: LOWER_WORDS[verdict] ?? verdict }];
+  }));
+}
+
+const figure = (value, digits = 1) => (value === null ? 'n/a' : value.toFixed(digits));
+
+function metricText(name, spread, digits) {
+  const se = spread.se === null ? 'no SE' : `se ${figure(spread.se, digits)}`;
+  return `${name} ${figure(spread.mean, digits)} ${se} n ${spread.n} excluded ${spread.excluded}`;
+}
+
+export function summaryLines(summaries) {
+  const lines = Object.entries(summaries).map(([arm, summary]) => `${arm}: pass ${summary.passed}/${summary.runs} (aborted ${summary.aborted} count as failures); ${metricText('comparisons', summary.score, 1)}; ${metricText('held-out', summary.heldOut, 1)}; ${metricText('cost $', summary.costUsd, 3)}; ${metricText('wall s', summary.wallS, 0)}`);
+  if (!summaries.improve || !summaries.goal) return lines;
+  const verdicts = compareArms(summaries.improve, summaries.goal);
+  for (const [metric, { diff, twoSeDiff, verdict }] of Object.entries(verdicts)) {
+    lines.push(`improve minus goal ${metric}: ${figure(diff, 3)} 2 SE ${figure(twoSeDiff, 3)} -> ${verdict}`);
+  }
+  return lines;
 }
 
 function sessionArgs(arm, cap) {
@@ -208,7 +261,7 @@ async function runSession({ arm, cap, home }) {
   const { costUsd, costSource, result } = streamCost(text.split('\n'));
   const tree = finalTree(arm, scratch);
   const record = {
-    arm, costUsd: Number(costUsd.toFixed(4)), costSource, wallS, killed,
+    arm, costUsd: costUsd === null ? null : Number(costUsd.toFixed(4)), costSource, wallS, killed,
     subtype: result?.subtype ?? null, numTurns: result?.num_turns ?? null,
     models: Object.keys(result?.modelUsage ?? {}), finalRef: tree.ref, ...quality(tree), log: logFile
   };
@@ -232,6 +285,7 @@ async function main(argv) {
   const tier = options.runs === QUICK_RUNS ? 'quick' : 'full';
   if (options.dryRun) {
     console.log(`dry-run: ${tier} tier, ${sessions} sessions (${options.arms.join(', ')} x ${options.runs}), cap $${options.cap} each = at most $${(sessions * options.cap).toFixed(2)}, wall at most ${SESSION_MS / 60000} min each`);
+    console.log(plannedPowerLine({ tasks: options.runs, arms: options.arms.length }));
     return;
   }
   const refusal = confineRefusal();
@@ -241,9 +295,11 @@ async function main(argv) {
     const jobs = options.arms.flatMap((arm) => Array.from({ length: options.runs }, () => runSession({ arm, cap: options.cap, home })));
     const runs = await Promise.all(jobs);
     const baseline = quality({ sortText: BUBBLE_SORT, scoreText: FIXTURE['score.mjs'] });
-    const record = { date: new Date().toISOString().slice(0, 10), tier, model: 'sonnet', capUsd: options.cap, goal: GOAL, prompts: PROMPTS, baseline, runs };
+    const summaries = Object.fromEntries(options.arms.map((arm) => [arm, armSummary(runs.filter((run) => run.arm === arm))]));
+    const record = { date: new Date().toISOString().slice(0, 10), tier, model: 'sonnet', capUsd: options.cap, goal: GOAL, prompts: PROMPTS, baseline, runs, summaries };
     fs.writeFileSync(options.out, `${JSON.stringify(record, null, 2)}\n`);
-    for (const run of runs) console.log(`${run.arm}: $${run.costUsd} (${run.costSource}), ${run.wallS} s, score ${run.score}, held-out ${run.heldOut}, correct ${run.correct}, scorer unchanged ${run.scorerUnchanged}, ${run.subtype}`);
+    for (const run of runs) console.log(`${run.arm}: $${run.costUsd ?? 'unknown'} (${run.costSource}), ${run.wallS} s, score ${run.score}, held-out ${run.heldOut}, correct ${run.correct}, scorer unchanged ${run.scorerUnchanged}, ${run.subtype}`);
+    for (const line of summaryLines(summaries)) console.log(line);
     console.log(`baseline: score ${baseline.score}, held-out ${baseline.heldOut}; wrote ${path.relative(ROOT, options.out)}`);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });

@@ -9,7 +9,7 @@ import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
-import { Budget, apiKeySourceOf, candidatesFor, cellLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
+import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
 
 const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner'];
 const CONFIG = {
@@ -132,40 +132,99 @@ test('sessionCost prices every model in modelUsage, so subagent sessions count',
   assert.equal(sessionCost({ stdout: stream }, 'sonnet'), 22);
 });
 
-test('summarizeCells averages scores per agent and setting and leaves errors and skips out', () => {
+test('summarizeCells counts an errored session as a failed score and leaves its cost and wall out of the means', () => {
   const sessions = [
-    { agent: 'a', model: 'haiku', effort: 'low', score: 1, cost_usd: 0.1, durationMs: 10_000 },
-    { agent: 'a', model: 'haiku', effort: 'low', score: 0, cost_usd: 0.1, durationMs: 20_000 },
-    { agent: 'a', model: 'haiku', effort: 'low', error: 'timeout', cost_usd: null, durationMs: 30_000 },
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f1', score: 1, cost_usd: 0.1, durationMs: 10_000 },
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f2', score: 0, cost_usd: 0.1, durationMs: 20_000 },
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f3', error: 'timeout', cost_usd: null, durationMs: 30_000 },
     { agent: 'a', model: 'sonnet', effort: 'low', skipped: true }
   ];
   const [low, skipped] = summarizeCells(sessions);
-  assert.equal(low.score, 0.5);
+  assert.equal(low.score, 1 / 3);
   assert.equal(low.graded, 2);
+  assert.equal(low.errored, 1);
   assert.equal(low.cost_usd, 0.2);
-  assert.equal(low.wallS, 20);
+  assert.equal(low.costPerSession, 0.1);
+  assert.equal(low.costExcluded, 1);
+  assert.equal(low.wallS, 15);
+  assert.equal(low.wallExcluded, 1);
   assert.equal(skipped.score, null);
+  assert.equal(skipped.scoreCi, null);
 });
 
-test('summarizeCells gives each cell a mean check fraction and the min and max of its per-run means', () => {
+test('an errored session with no recorded duration adds no zero to the wall mean', () => {
   const sessions = [
-    { agent: 'a', model: 'opus', effort: 'high', run: 1, score: 1, fraction: 1, cost_usd: 0.2, durationMs: 10_000 },
-    { agent: 'a', model: 'opus', effort: 'high', run: 1, score: 0, fraction: 0.5, cost_usd: 0.2, durationMs: 10_000 },
-    { agent: 'a', model: 'opus', effort: 'high', run: 2, score: 0, fraction: 0.75, cost_usd: 0.2, durationMs: 10_000 },
-    { agent: 'a', model: 'opus', effort: 'high', run: 2, score: 0, fraction: 0.25, cost_usd: 0.2, durationMs: 10_000 }
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f1', score: 1, cost_usd: 0.1, durationMs: 40_000 },
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f2', error: 'no DISPATCH Branch line', cost_usd: null, durationMs: null }
+  ];
+  const [cell] = summarizeCells(sessions);
+  assert.equal(cell.wallS, 40);
+  assert.equal(cell.wallMedianS, 40);
+  assert.equal(cell.wallExcluded, 1);
+});
+
+test('summarizeCells gives each cell a mean check fraction and a fixture-clustered SE instead of a min-max spread', () => {
+  const sessions = [
+    { agent: 'a', model: 'opus', effort: 'high', fixture: 'f1', run: 1, score: 1, fraction: 1, cost_usd: 0.2, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', fixture: 'f2', run: 1, score: 0, fraction: 0.5, cost_usd: 0.2, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', fixture: 'f1', run: 2, score: 0, fraction: 0.75, cost_usd: 0.2, durationMs: 10_000 },
+    { agent: 'a', model: 'opus', effort: 'high', fixture: 'f2', run: 2, score: 0, fraction: 0.25, cost_usd: 0.2, durationMs: 10_000 }
   ];
   const [cell] = summarizeCells(sessions);
   assert.equal(cell.score, 0.25);
   assert.equal(cell.fraction, 0.625);
-  assert.deepEqual(cell.spread, { score: { min: 0, max: 0.5 }, fraction: { min: 0.5, max: 0.75 } });
+  assert.equal(cell.spread, undefined);
+  assert.equal(cell.scoreCi.n, 4);
+  assert.equal(cell.scoreCi.clusters, 2);
+  assert.ok(cell.scoreCi.se > 0);
   assert.equal(cell.costPerSession, 0.2);
-  assert.match(cellLine(cell, { a: { metric: 'm' } }), /^a opus:high m 25\.0% \(0\.0%-50\.0%\) checks 62\.5% \(50\.0%-75\.0%\) usd \$0\.80 \$0\.200\/session wall 10s median 10s wilson95 \[4\.6%-69\.9%\]$/);
+  const line = cellLine(cell, { a: { metric: 'm' } });
+  assert.match(line, /^a opus:high m 25\.0% se [\d.]+% ci95 -?[\d.]+%\.\.[\d.]+% checks 62\.5% se /);
+  assert.match(line, / usd \$0\.80 \$0\.200\/session wall 10s median 10s wilson95 \[4\.6%-69\.9%\] errored 0, cost excluded 0 and wall excluded 0 of 4$/);
+});
+
+test('a cell over one fixture prints no SE for its score', () => {
+  const [cell] = summarizeCells([
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f1', score: 1, cost_usd: 0.1, durationMs: 1000 },
+    { agent: 'a', model: 'haiku', effort: 'low', fixture: 'f1', score: 0, cost_usd: 0.1, durationMs: 1000 }
+  ]);
+  assert.equal(cell.scoreCi.se, null);
+  assert.match(cellLine(cell, { a: { metric: 'm' } }), /^a haiku:low m 50\.0% no SE checks 50\.0% no SE /);
 });
 
 test('summarizeCells takes the score as the fraction of a session that records none, and run 1 for one with no run', () => {
   const [cell] = summarizeCells([{ agent: 'a', model: 'haiku', effort: 'low', score: 0.4, cost_usd: 0, durationMs: 0 }]);
   assert.equal(cell.fraction, 0.4);
-  assert.deepEqual(cell.spread.score, { min: 0.4, max: 0.4 });
+  assert.equal(cell.score, 0.4);
+});
+
+const sessionAt = (candidate, fixture, score, extra = {}) => ({ agent: 'a', model: candidate.split(':')[0], effort: candidate.split(':')[1], fixture, score, cost_usd: 0.1, durationMs: 1000, ...extra });
+
+test('candidateComparisons pairs each candidate with the current setting per fixture and gives a verdict only when the interval clears zero', () => {
+  const current = 'opus:high';
+  const sessions = [
+    ...['f1', 'f2', 'f3', 'f4'].map((fixture, index) => sessionAt(current, fixture, 0.5 + index * 0.01)),
+    ...['f1', 'f2', 'f3', 'f4'].map((fixture, index) => sessionAt('opus:low', fixture, 0.1 + index * 0.01)),
+    ...['f1', 'f2', 'f3', 'f4'].map((fixture, index) => sessionAt('sonnet:high', fixture, index % 2 ? 0.9 : 0.1))
+  ];
+  const [low, noisy] = candidateComparisons(sessions, () => ({ model: 'opus', effort: 'high' }));
+  assert.equal(low.candidate, 'opus:low');
+  assert.equal(low.verdict, 'worse');
+  assert.ok(low.interval.mean < 0);
+  assert.equal(noisy.verdict, 'noise');
+  assert.match(comparisonLine(low), /^a opus:low minus opus:high: score -40\.0% se /);
+});
+
+test('candidateComparisons reads an errored session as a failed score and prints no SE with one shared fixture', () => {
+  const sessions = [sessionAt('opus:high', 'f1', 1), sessionAt('opus:low', 'f1', undefined, { error: 'timeout', cost_usd: null })];
+  const [comparison] = candidateComparisons(sessions, () => ({ model: 'opus', effort: 'high' }));
+  assert.equal(comparison.interval.mean, -1);
+  assert.equal(comparison.verdict, 'no SE');
+  assert.match(comparisonLine(comparison), /no SE over 1 shared fixtures: no SE$/);
+});
+
+test('candidateComparisons skips an agent whose current setting has no session', () => {
+  assert.deepEqual(candidateComparisons([sessionAt('opus:low', 'f1', 1)], () => ({ model: 'opus', effort: 'high' })), []);
 });
 
 test('valueScore fails a passing repo on a transcript finding and counts it in the fraction', () => {
@@ -285,7 +344,7 @@ test('wilson95 matches the Wilson score interval and stays inside 0 and 1', () =
   assert.equal(wilson95(0, 0), null);
 });
 
-test('summarizeCells records wilson95 over passes of non-skipped sessions, counting an error as not passed, and the median wall', () => {
+test('summarizeCells records wilson95 over passes of non-skipped sessions, counting an error as not passed, and the median wall of finished sessions', () => {
   const sessions = [
     { agent: 'a', model: 'opus', effort: 'high', score: 1, cost_usd: 0.1, durationMs: 10_000 },
     { agent: 'a', model: 'opus', effort: 'high', score: 1, cost_usd: 0.1, durationMs: 50_000 },
@@ -295,8 +354,8 @@ test('summarizeCells records wilson95 over passes of non-skipped sessions, count
   ];
   const [cell] = summarizeCells(sessions);
   assert.deepEqual(cell.wilson95, wilson95(2, 4));
-  assert.equal(cell.wallMedianS, 25);
-  assert.match(cellLine(cell, { a: { metric: 'm' } }), /\$0\.075\/session .* median 25s wilson95 \[15\.0%-85\.0%\]$/);
+  assert.equal(cell.wallMedianS, 20);
+  assert.match(cellLine(cell, { a: { metric: 'm' } }), /\$0\.100\/session .* median 20s wilson95 \[15\.0%-85\.0%\] errored 1, cost excluded 1 and wall excluded 1 of 4$/);
 });
 
 test('apiKeySourceOf reads the init line of a stream and is null when there is none', () => {

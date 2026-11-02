@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { meanCi } from '../lib/eval-stats.mjs';
 import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 
@@ -126,14 +127,25 @@ export function cellRow(directory) {
   const measured = transcriptFailures(usage);
   const failures = [...recordFailures(record), ...measured.failures];
   const fixRounds = (usage?.subagents ?? []).filter((type) => type === 'exo:fix-review').length;
-  return { cell: path.basename(directory), failures: [...new Set(failures)], hiddenPass: record.hiddenPass, durationMs: record.wallMs, outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls };
+  return { cell: path.basename(directory), failures: [...new Set(failures)], aborted: record.exitCode !== 0 || record.timedOut === true, hiddenPass: record.hiddenPass, durationMs: record.wallMs, outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls };
+}
+
+function measureSpread(rows, name) {
+  const finished = rows.filter((row) => !row.aborted);
+  const values = finished.map((row) => row[name]).filter(Number.isFinite);
+  const excluded = rows.length - values.length;
+  if (values.length === 0) return { mean: null, se: null, n: 0, excluded };
+  const ci = meanCi(values);
+  const unscored = name === 'cost' && values.length < finished.length;
+  return { mean: unscored ? null : mean(values, DECIMALS[name]), se: ci.se, n: ci.n, excluded };
 }
 
 export function scoreOutDir(outDirectory) {
   const cells = fs.readdirSync(outDirectory).sort().map((name) => path.join(outDirectory, name)).filter((directory) => fs.existsSync(path.join(directory, 'record.json')));
   const rows = cells.map(cellRow);
-  const measures = Object.fromEntries(MEASURES.map((name) => [name, rows.every((row) => row[name] !== undefined) ? mean(rows.map((row) => row[name]), DECIMALS[name]) : null]));
-  return { rows, measures };
+  const spreads = Object.fromEntries(MEASURES.map((name) => [name, measureSpread(rows, name)]));
+  const measures = Object.fromEntries(MEASURES.map((name) => [name, spreads[name].mean]));
+  return { rows, measures, spreads };
 }
 
 function parseArgs(argv) {
@@ -189,6 +201,11 @@ function installedClaudeVersion() {
   return version || UNRECORDED_VERSION;
 }
 
+function spreadOf(costs) {
+  const { se } = meanCi(costs);
+  return se === null ? null : Math.round(se * 1000) / 1000;
+}
+
 function lookupBase(options) {
   const commit = options.base ?? mergeBase(checkoutOf(options));
   if (!commit) return { error: 'no base commit: git merge-base HEAD main failed; pass --base <commit>' };
@@ -200,23 +217,24 @@ function lookupBase(options) {
   const row = JSON.parse(run.stdout);
   const costs = parseRows(fs.readFileSync(path.resolve(ROOT, row.results), 'utf8'), row.arm).map((entry) => entry['cost $']);
   if (costs.length === 0) return { error: `pooled base ${commit} has no cost rows in ${row.results}` };
-  return { base: { commit, n: costs.length, mean: mean(costs, DECIMALS.cost), max: Math.max(...costs) } };
-}
-
-function verdictOf(row, cost, base) {
-  if (row.failures.length > 0 || (cost !== null && cost > base.max)) return 'reject';
-  if (cost !== null && cost < base.mean) return 'promote';
-  return 'no signal';
+  return { base: { commit, n: costs.length, se: spreadOf(costs), mean: mean(costs, DECIMALS.cost), max: Math.max(...costs) } };
 }
 
 export function quickVerdict(row, base) {
   const cost = row.cost ?? null;
-  return { mode: 'quick', verdict: verdictOf(row, cost, base), hiddenPass: row.hiddenPass === true, cost_usd: cost, durationMs: row.durationMs ?? null, base };
+  const verdict = row.failures.length > 0 || (cost !== null && cost > base.max) ? 'reject' : 'no SE';
+  return { mode: 'quick', verdict, hiddenPass: row.hiddenPass === true, cost_usd: cost, durationMs: row.durationMs ?? null, base };
 }
 
-function printMeasures(measures, measure) {
-  for (const name of MEASURES) console.log(`measure ${name} ${measures[name]}`);
+const spreadText = ({ se, n, excluded }) => `${se === null ? 'no SE' : `se ${se.toFixed(3)}`} n ${n} excluded ${excluded}`;
+
+function printMeasures(measures, measure, spreads) {
+  for (const name of MEASURES) console.log(`measure ${name} ${measures[name]} ${spreadText(spreads[name])}`);
   console.log(`score: ${measures[measure]}`);
+}
+
+function printBase(base) {
+  console.log(`base cost ${base.mean} ${base.se === null ? 'no SE' : `se ${base.se}`} n ${base.n}`);
 }
 
 function runQuick(options) {
@@ -226,7 +244,7 @@ function runQuick(options) {
     return 2;
   }
   const out = options.from ?? runSweep(options);
-  const { rows, measures } = fs.existsSync(out) ? scoreOutDir(out) : { rows: [] };
+  const { rows, measures, spreads } = fs.existsSync(out) ? scoreOutDir(out) : { rows: [] };
   if (rows.length === 0) {
     console.log('FAIL no cells');
     return 1;
@@ -235,7 +253,8 @@ function runQuick(options) {
   for (const reason of rows[0].failures) console.log(`FAIL ${rows[0].cell} ${reason}`);
   console.log(`verdict ${screened.verdict}`);
   console.log(JSON.stringify(screened));
-  printMeasures(measures, options.measure);
+  printBase(base);
+  printMeasures(measures, options.measure, spreads);
   return screened.verdict === 'reject' ? 1 : 0;
 }
 
@@ -248,7 +267,7 @@ function main(argv) {
   if (options.dryRun) return projectRun(options);
   if (!options.full) return runQuick(options);
   const out = options.from ?? runSweep(options);
-  const { rows, measures } = fs.existsSync(out) ? scoreOutDir(out) : { rows: [], measures: {} };
+  const { rows, measures, spreads } = fs.existsSync(out) ? scoreOutDir(out) : { rows: [], measures: {} };
   const failures = rows.flatMap((row) => row.failures.map((reason) => `FAIL ${row.cell} ${reason}`));
   if (rows.length === 0) failures.push('FAIL no cells');
   if (!options.from && rows.length < options.repeat) failures.push(`FAIL sweep ${rows.length} of ${options.repeat} cells recorded`);
@@ -257,7 +276,7 @@ function main(argv) {
     return 1;
   }
   console.log(JSON.stringify({ mode: 'full', measures }));
-  printMeasures(measures, options.measure);
+  printMeasures(measures, options.measure, spreads);
   return 0;
 }
 

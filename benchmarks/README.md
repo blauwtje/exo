@@ -167,7 +167,48 @@ Each of these prints its plan and spends nothing under `--dry-run`, runs a small
 | `node benchmarks/pressure/drive.mjs <scenario> <model> <arm> [maxTurns]` | 2 turns | 99 turns; an explicit `maxTurns` overrides the tier |
 | `node benchmarks/replay/grade.mjs <cellDir\|runDir>` | the first 3 cells, 1 judge vote each | every cell, 3 judge votes each; `--dry-run` prints the judge calls and the `calls x JUDGE_BUDGET_USD` upper bound |
 
-`verify/checks/paid-benchmarks.mjs` scans `benchmarks/` and its subfolders (not `fixtures`, `results`, `runs`, `value`) for an entry point that calls `claude -p`, the API or `confinedClaude`, and flags one with neither `--dry-run` nor a quick tier. `benchmarks/confined-child.mjs` is exempt because its callers `run.mjs` and `sweep.mjs` both have both guards; the check prints that reason.
+`verify/checks/paid-benchmarks.mjs` scans `benchmarks/` and its subfolders (not `fixtures`, `results`, `runs`, `value`) for an entry point that calls `claude -p`, the API or `confinedClaude`, and flags one that lacks `--dry-run` or a quick default tier (the quick tier runs without a tier flag; a word in a comment does not count). `benchmarks/confined-child.mjs` is exempt because its callers `run.mjs` and `sweep.mjs` both have both guards; the check prints that reason.
+
+`verify/checks/eval-variance.mjs` flags a paid entry point or a scorer (`score.mjs` or a name ending `-score`, `-stats`, `-report`, `-readout`, `-metrics`, `-summary`) that does not reach `benchmarks/statistics.mjs` or `lib/eval-stats.mjs` through its static relative and `#alias` imports, and prints `NO-VARIANCE <file>`.
+
+`verify/checks/eval-power.mjs` flags a paid entry point whose `--dry-run` cannot reach `powerLine` from `lib/eval-stats.mjs` and prints `NO-POWER <file>`.
+
+## Power line
+
+Every paid entry point prints one line in its `--dry-run`, before it spends anything:
+
+```
+power: 1 tasks x 1 samples x 2 arms = 2 runs; an effect of 0.03 needs 4361 tasks (alpha 0.05, power 0.8); MDE at 1 tasks is 1.981
+```
+
+It plans the tasks needed to see the target effect from recorded variance when the entry point has recorded per-task scores (bisect, locate-recall, routing), else from a default pass rate. `adhd-score` and `review-replay` print it on stderr because their stdout is one JSON object. Read an MDE above the gain you hope for as: this run cannot show it. `benchmarks/power-plan.mjs` builds the line for the entry points.
+
+## Suites
+
+`benchmarks/suites.json` tags every scorer and paid entry point with a purpose, a class (`capability` or `regression`), a tier (`free` or `paid`) and a `basis` for the class. Only a free regression suite carries `run`, a `node` command from the repo root. `node benchmarks/suites.mjs` takes:
+
+| Flag | What it does |
+|---|---|
+| `--list` | Prints each suite with its class, tier and entry files. |
+| `--run` | Runs every free regression suite, 4 at a time, no model call, each capped at `EXO_SUITE_TIMEOUT_MS` (default 60000). Exit 1 when one fails. |
+| `--graduate` | Lists the capability cases that passed every recorded run once there are `--min-runs` of them (default 20), so they move to regression. |
+
+`verify/checks/eval-suites.mjs` fails on a scorer or paid entry point in no suite (`NO-SUITE <file>`) and, in the full `npm run check` only, runs the free regression suites (about 6 s) and fails on `FREE-SUITE <id>`. `--static` skips the run.
+
+## Judge calibration
+
+`benchmarks/judges.json` registers each LLM judge with its dimension and scorer. `node benchmarks/judge-calibration.mjs` compares a judge's recorded verdicts with human labels and prints `CALIBRATED`, `UNCALIBRATED` or `NO-LABELS` per judge with Cohen's kappa and its 95% interval. A judge is calibrated at 30 paired human labels and a kappa lower bound of 0.6; the scorers print the same status line beside their grades.
+
+- Labels: `benchmarks/judge-labels/<judge>.jsonl`, one row `{"id","dimension","label","labeler"}` per item, `labeler` a rater id such as `rater-1`. A row with `built` or `synthetic` never counts as a human label; an item the raters split on is dropped.
+- `--judge <name> --collect <scorer output>` writes the recorded verdicts without a model call; `--export <file>` writes a blind labelling sheet from them.
+- `--rerun [--full] [--dry-run]` judges the labelled items again with the live judge (`replay-rubric`, `adhd-facts`); quick is 3 items with 1 vote.
+- `verify/checks/eval-judges.mjs` fails when a judge grades two dimensions in one call or has 30 or more labels and misses the threshold.
+
+## Real-failure cases
+
+`node benchmarks/replay/scaffold-case.mjs --commit <sha> --id <case id> [--symptom <text>]` turns a fix commit into a replay case under `benchmarks/replay/cases/<id>`: `input/` holds the fix's source files as they stood in the parent, `prompt.md` the symptom, and `case.json` the rubric skeleton with the real diff as the reference fix. `--dry-run` writes nothing. Write the symptom as it was observed, without the cause.
+
+Every case names its provenance in `case.json`: `fix-commit` (with the full 40-hex sha), `run-dir`, `transcript`, or `control` for a case that is not a real failure. `verify/checks/eval-real-failures.mjs` fails on a case without one and on fewer than 20 real-failure tasks across the replay cases and the `failure-chat` cases of `benchmarks/adhd/cases.jsonl`.
 
 ## Review replay
 
@@ -280,6 +321,8 @@ node benchmarks/ideas.mjs --score <dir> --baseline <dir> # also compares the sco
 node benchmarks/ideas.mjs --compare <dirA> <dirB>        # compareMeans per metric between two arms
 ```
 
+Each record stores `judge`, a sha256 of `judge-originality.md` and `judge-fit.md`. `--baseline` and `--compare` exit 2 when the two sides' `judge` differ or one side has none; rescore the older side with `--score` first.
+
 Without `--confirm` a run is the dry run. An answer with no parsable option fails before any judge call. `--n` overrides the tier's count.
 
 Every paid run waits for the user to request it; agents run the dry mode and the tests only.
@@ -328,7 +371,7 @@ node benchmarks/improve-all-score.mjs --from-replay <runs dir> --from-build <out
 
 ## Lean gates
 
-`benchmarks/lean-gates.mjs` runs one fixture in one session, so it has no `--full`; repeats are `--run <n>`. `--dry-run` prepares the run dir, prints the argv, prompt and env diff, and the projected USD from recorded runs. `node benchmarks/lean-gates-metrics.mjs <out> --baseline <metrics.json>` prints the deltas against a stored baseline.
+`benchmarks/lean-gates.mjs` runs one fixture in one session; the default is a quick tier capped at $5 and 20 minutes, `--full` restores the $30 and 110 minute caps of a whole build, and repeats are `--run <n>`. The dry run prints the mean recorded cost with its SE, or no SE under two runs. `--dry-run` prepares the run dir, prints the argv, prompt and env diff, and the projected USD from recorded runs. `node benchmarks/lean-gates-metrics.mjs <out> --baseline <metrics.json>` prints the deltas against a stored baseline.
 
 ## improve-real
 

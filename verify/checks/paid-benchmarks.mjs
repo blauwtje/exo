@@ -1,10 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { withoutComments } from '../../lib/code-comments.mjs';
 
 const PAID_CALL = /['"]-p['"]|api\.anthropic\.com|@anthropic-ai\/sdk|\bconfinedClaude\(|\brunClaude\b/;
 const ENTRY_POINT = /process\.argv/;
 const DRY_RUN = /--dry-run|['"]dry-run['"]/;
-const QUICK_TIER = /\bquick\b/i;
+const ASSIGN = String.raw`(?:\?\?|\|\||(?<![=!<>])=(?!=)|:)\s*`;
+const QUICK_LITERAL = String.raw`['"\x60]quick['"\x60]`;
+const QUICK_DEFAULTS = [
+  new RegExp(String.raw`\b\w*(?:tier|mode)\w*\s*${ASSIGN}${QUICK_LITERAL}`, 'i'),
+  new RegExp(String.raw`(?:\?\?|\|\|)\s*${QUICK_LITERAL}`),
+  new RegExp(String.raw`\?[^?:;]*:\s*${QUICK_LITERAL}`),
+  /\?[^?:;]*\bfull\b[^?:;]*:[^;]*\bquick\b/i,
+  /\bquick\s*[:=]\s*!/,
+  new RegExp(String.raw`(?:${ASSIGN}|\(\s*['"][\w-]+['"]\s*,\s*)QUICK_[A-Z_]+`)
+];
 const SKIPPED_FOLDERS = new Set(['fixtures', 'results', 'runs', 'value', 'node_modules']);
 
 export const EXEMPT_HELPERS = {
@@ -14,16 +24,23 @@ export const EXEMPT_HELPERS = {
   }
 };
 
-function hasBothGuards(source) {
-  return DRY_RUN.test(source) && QUICK_TIER.test(source);
+function hasQuickDefault(code) {
+  return QUICK_DEFAULTS.some((pattern) => pattern.test(code));
 }
 
-function isUnguardedPaidEntry(source) {
-  if (!PAID_CALL.test(source) || !ENTRY_POINT.test(source)) return false;
-  return !DRY_RUN.test(source) && !QUICK_TIER.test(source);
+function hasBothGuards(code) {
+  return DRY_RUN.test(code) && hasQuickDefault(code);
 }
 
-function benchmarkScripts(repository) {
+export function isPaidEntry(code) {
+  return PAID_CALL.test(code) && ENTRY_POINT.test(code);
+}
+
+function isUnguardedPaidEntry(code) {
+  return isPaidEntry(code) && !hasBothGuards(code);
+}
+
+export function benchmarkScripts(repository) {
   const root = repository.join('benchmarks');
   if (!fs.existsSync(root)) return [];
   return fs.readdirSync(root, { recursive: true, withFileTypes: true })
@@ -33,9 +50,9 @@ function benchmarkScripts(repository) {
     .sort();
 }
 
-function readScript(repository, file) {
+export function readScript(repository, file) {
   const absolute = repository.join(file);
-  return fs.existsSync(absolute) ? fs.readFileSync(absolute, 'utf8') : '';
+  return fs.existsSync(absolute) ? withoutComments(file, fs.readFileSync(absolute, 'utf8')) : '';
 }
 
 function isExempt(repository, file, exemptions) {
@@ -59,11 +76,11 @@ function exemptionNotes(repository, exemptions) {
 export function checkPaidBenchmarks(report, repository, exemptions = EXEMPT_HELPERS) {
   const unguarded = unguardedPaidBenchmarks(repository, exemptions);
   const notes = exemptionNotes(repository, exemptions);
-  const passDetail = 'every paid benchmark entry point has a --dry-run flag or a quick default tier';
+  const passDetail = 'every paid benchmark entry point has a --dry-run flag and a quick default tier';
   report.assert(
     unguarded.length === 0,
     'paid benchmarks',
     notes.length === 0 ? passDetail : `${passDetail}; exempt: ${notes.join('; ')}`,
-    `paid benchmark without --dry-run or a quick default tier: ${unguarded.join(', ')}`
+    `paid benchmark without --dry-run and a quick default tier: ${unguarded.join(', ')}`
   );
 }

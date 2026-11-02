@@ -31,5 +31,10 @@
   "fidelity_notes": "The 4b doc (flow-run-4b.md) is not in input/. Commit times: first doc 54d4a2e2 = 2026-10-12T07:01:12+02:00, first 4b doc 6f344c31 = 07:45:01+02:00, 44 min later. The erring session (lead 64e2e332) wrote the first doc alone and could not have seen 4b; its Conditions line (caffeinate, \"no Sleep entry\") names sleep and would cue the answer. The first doc does not name sleep, a rerun or a timeout, and shows tasks landed 12/16 and hidden 3/4 for flow-run, so the rubric asks only that the 31.0 min flow-base wall (cost $0.110 a cell) is flagged as not real work time.",
   "ready": true,
   "not_ready_reason": "Judge gave unknown (evidence not a verbatim substring) on 1 of 9 fixture runs (wrong, run 1); rubric rewrite 1 of 3 pending. See review/R4a.md.",
-  "lead_note": "Ready with rubric. Fixtures over 3 repeats: right pass x3, wrong fail x2 + unknown x1 (non-verbatim evidence), echo fail x3. gradeCell now retries the judge once on unknown. Regex separates all three fixtures and stays as cross-check."
+  "lead_note": "Ready with rubric. Fixtures over 3 repeats: right pass x3, wrong fail x2 + unknown x1 (non-verbatim evidence), echo fail x3. gradeCell now retries the judge once on unknown. Regex separates all three fixtures and stays as cross-check.",
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "269d7c02e66d1446186b1d35c7e87bd601ccf0de",
+    "note": "first results doc written at 54d4a2e2 before the sleep limitation was recorded"
+  }
 }

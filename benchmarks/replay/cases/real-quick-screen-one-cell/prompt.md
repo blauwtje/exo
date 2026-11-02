@@ -1,0 +1,1 @@
+The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: The quick screen is asked for 3 repeats of the flow cell, yet benchmarks/improve-all-score.mjs fails every score with "1 of 3 cells recorded".

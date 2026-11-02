@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { QUICK_CELLS, QUICK_VOTES, parseGradeArguments, planGrade, selectCells } from '../benchmarks/replay/grade.mjs';
+import { QUICK_CELLS, QUICK_VOTES, parseGradeArguments, planGrade, selectCells, summaryLines, voteStability } from '../benchmarks/replay/grade.mjs';
 
 const GRADE = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'benchmarks', 'replay', 'grade.mjs');
 
@@ -82,4 +82,28 @@ test('a usage error exits 2', () => {
   const result = spawnSync(process.execPath, [GRADE], { encoding: 'utf8' });
   assert.equal(result.status, 2);
   assert.match(result.stderr, /usage/);
+});
+
+test('voteStability is the share of valid votes behind the winner, null with none', () => {
+  assert.equal(voteStability(2, 1), 2 / 3);
+  assert.equal(voteStability(3, 0), 1);
+  assert.equal(voteStability(0, 0), null);
+});
+
+test('summaryLines prints the pass rate with SE and the vote stability and cost with excluded counts', () => {
+  const graded = [
+    { grade: 'pass', votes: ['pass', 'pass', 'pass'], stability: 1, judgeCostUsd: 0.02 },
+    { grade: 'fail', votes: ['fail', 'pass', 'fail'], stability: 2 / 3, judgeCostUsd: null },
+    { grade: 'unknown', votes: ['unknown', 'unknown', 'unknown'], stability: null, judgeCostUsd: 0.04 }
+  ];
+  const lines = summaryLines(graded);
+  assert.match(lines[0], /^pass rate 0\.333 se 0\.333 n 3 excluded 0/);
+  assert.match(lines[1], /vote stability 0\.833 se 0\.167 n 2 excluded 1 unanimous 1\/3 votes per cell 3/);
+  assert.match(lines[2], /judge cost usd per judged cell 0\.030 se 0\.010 n 2 excluded 1/);
+});
+
+test('a single graded cell prints no SE', () => {
+  assert.match(summaryLines([{ grade: 'pass' }])[0], /pass rate 1\.000 no SE n 1/);
+  assert.equal(summaryLines([{ grade: 'pass' }]).length, 1);
+  assert.deepEqual(summaryLines([]), []);
 });

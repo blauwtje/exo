@@ -64,6 +64,7 @@ import { sumCounts, usageCounts } from '#token-weights';
 import { findTranscript } from './cell-usage.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { countsCost } from './pricing.mjs';
+import { meanCi } from '../lib/eval-stats.mjs';
 import { meanAndSd } from './statistics.mjs';
 
 const SCRIPT_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']);
@@ -71,6 +72,7 @@ const MANIFESTS = new Set(['package.json', 'package-lock.json', 'npm-shrinkwrap.
 const OLD_FILE_LIMIT = 5;
 const OLD_LINE_LIMIT = 200;
 const RECHECK_TIMEOUT_MS = 10 * 60 * 1000;
+const CI_Z = 1.96;
 const GATE_COMMAND = /(verify|gate)\.mjs|\bnpm\s+(test|t|run\s+(test|typecheck|lint|check))\b|\btsc\b|\beslint\b|node\s+--test|\bvitest\b/;
 
 // ---------- transcripts ----------
@@ -684,10 +686,12 @@ function median(values) {
 export function summarize(values) {
   const numbers = values.filter((value) => typeof value === 'number' && Number.isFinite(value));
   const { mean, sd, n } = meanAndSd(numbers);
-  return { n, median: median(numbers), min: n ? Math.min(...numbers) : null, max: n ? Math.max(...numbers) : null, mean, sd };
+  const se = n === 0 ? null : meanCi(numbers).se;
+  return { n, median: median(numbers), min: n ? Math.min(...numbers) : null, max: n ? Math.max(...numbers) : null, mean, sd, se };
 }
 
-// Incomplete runs (nonzero exit, signal or timeout) leave every metric;
+// Incomplete runs (nonzero exit, signal or timeout) count as 0 in completed
+// and leave every other metric;
 // runs with no main transcript leave the transcript token and cost metrics,
 // whose zeros would read as a cheap run.
 export function aggregate(runs) {
@@ -702,6 +706,7 @@ export function aggregate(runs) {
         incomplete: all.filter((run) => run.incomplete).map((run) => run.id),
         transcriptMissing: all.filter((run) => run.transcriptMissing).map((run) => run.id)
       },
+      completed: summarize(all.map((run) => (run.incomplete ? 0 : 1))),
       wallMs: summarize(group.map((run) => run.wall.ms)),
       totalTokens: summarize(withTranscript.map((run) => run.tokens.total.totalTokens)),
       costTranscriptUsd: summarize(withTranscript.map((run) => run.cost.transcriptUsd)),
@@ -734,13 +739,13 @@ export function markdownTable(metrics) {
     const label = run.incomplete ? `${run.id} [incomplete: ${run.incompleteReason}]*` : run.id;
     rows.push(`| ${label} | ${minutes(run.wall.ms)} | ${minutes(run.phases.build.ms)} | ${minutes(run.phases.gate.ms)} | ${minutes(run.phases.review.ms)} | ${minutes(run.phases.fix?.ms)} | ${orDash(run.fullSuite.log.full)}/${run.fullSuite.bash.full} | ${tokens} | ${transcriptUsd}/${dollars(run.cost.harnessUsd)} | ${[...new Set(run.routes ?? [])].join('+') || '-'} | ${orDash(run.reviewer.line?.replace('REVIEWER: ', '') ?? run.reviewer.dispatched)}/${orDash(run.reviewer.expectedByOwnRule)} | ${orDash(run.quality.findings)} (${orDash(sev.defect)}/${orDash(sev.hazard)}/${orDash(sev.question)}) | ${run.quality.fixRounds} | ${orDash(run.quality.finalVerdict)} | ${run.quality.landedTasks ? `${run.quality.landedTasks.length}/${run.quality.planTasks.length}` : '-'} | ${re ? `${check('test')}/${check('typecheck')}/${check('lint')}` : 'skipped'} |`);
   }
-  rows.push('', '| version | metric | median | min-max | mean ± sd | n |', '|---|---|---|---|---|---|');
+  rows.push('', '| version | metric | median | min-max | mean ± SE | n (excluded) |', '|---|---|---|---|---|---|');
   const format = { wallMs: minutes, totalTokens: millions, costTranscriptUsd: dollars, costHarnessUsd: dollars };
   for (const [version, stats] of Object.entries(metrics.aggregate)) {
     for (const [metric, summary] of Object.entries(stats)) {
       if (metric === 'runs' || metric === 'excluded') continue;
       const show = format[metric] ?? ((value) => (value == null ? '-' : Number(value.toFixed(2)).toString()));
-      rows.push(`| ${version} | ${metric}${metric === 'wallMs' ? ' (min)' : metric === 'totalTokens' ? ' (M)' : ''} | ${show(summary.median)} | ${show(summary.min)}-${show(summary.max)} | ${show(summary.mean)}${summary.n === 1 ? ' (n=1)' : ` ± ${show(summary.sd)}`} | ${summary.n} |`);
+      rows.push(`| ${version} | ${metric}${metric === 'wallMs' ? ' (min)' : metric === 'totalTokens' ? ' (M)' : ''} | ${show(summary.median)} | ${show(summary.min)}-${show(summary.max)} | ${show(summary.mean)}${summary.se == null ? ' no SE' : ` ± ${show(summary.se)}`} | ${summary.n} (excl. ${stats.runs.length - summary.n}) |`);
     }
     const { incomplete = [], transcriptMissing = [] } = stats.excluded ?? {};
     rows.push(`| ${version} | excluded | incomplete ${incomplete.length} (all metrics); transcript missing ${transcriptMissing.length} (tokens, $ transcript) | ${[...new Set([...incomplete, ...transcriptMissing])].join(', ') || '-'} | | |`);
@@ -756,13 +761,39 @@ export function collectRuns(out) {
     .sort();
 }
 
+function standardError(summary) {
+  if (typeof summary?.se === 'number') return summary.se;
+  if (typeof summary?.sd === 'number' && summary.n > 1) return summary.sd / Math.sqrt(summary.n);
+  return null;
+}
+
+export function meanGap(before, after) {
+  if (typeof before?.mean !== 'number' || typeof after?.mean !== 'number') return null;
+  const diff = after.mean - before.mean;
+  const spreads = [standardError(before), standardError(after)];
+  if (spreads.includes(null)) return { diff, se: null, verdict: 'no SE' };
+  const se = Math.hypot(...spreads);
+  if (se === 0) return { diff, se, verdict: diff === 0 ? 'no gap' : 'no SE (sd 0)' };
+  if (Math.abs(diff) <= CI_Z * se) return { diff, se, verdict: 'crosses zero' };
+  return { diff, se, verdict: diff > 0 ? 'above zero' : 'below zero' };
+}
+
+const significant = (value) => Number(value.toPrecision(3));
+
+function gapText(before, after) {
+  const gap = meanGap(before, after);
+  if (gap === null) return '';
+  const spread = gap.se === null ? '' : ` ±${significant(CI_Z * gap.se)} (95% CI)`;
+  return `; mean ${significant(gap.diff)}${spread}, ${gap.verdict}`;
+}
+
 function versionDeltas(version, stats, baselineStats = {}) {
   const lines = [];
   for (const [metric, summary] of Object.entries(stats)) {
     const before = baselineStats[metric]?.median;
     if (metric === 'runs' || metric === 'excluded' || typeof before !== 'number' || typeof summary.median !== 'number') continue;
     const delta = summary.median - before;
-    lines.push(`${version} ${metric}: ${before} -> ${summary.median} (${delta > 0 ? '+' : ''}${Number(delta.toFixed(4))})`);
+    lines.push(`${version} ${metric}: ${before} -> ${summary.median} (${delta > 0 ? '+' : ''}${Number(delta.toFixed(4))})${gapText(baselineStats[metric], summary)}`);
   }
   return lines;
 }

@@ -3,14 +3,16 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { pooledSd } from '../../../lib/eval-stats.mjs';
+import { planHoldout } from '../../../lib/holdout.mjs';
 import { readKindTable } from '../../../lib/model-kinds.mjs';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { excludeScratch } from '../../../lib/scratch-exclude.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { editableBytes, filesUnder, improveDefaults, lastKeep, readRows, readScore, scorerHash, writeBrief } from './round.mjs';
+import { addRun, editableBytes, emptySamples, filesUnder, improveDefaults, lastKeep, readItems, readRows, readRun, readScore, sampleScore, scoreEnv, scorerHash, writeBrief } from './round.mjs';
 import { matchScope, outOfScope, ScopeError } from './scope.mjs';
 
-const USAGE = 'usage: node setup.mjs --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--root <dir>] [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--first <dir> --first-subject <text>]\n       node setup.mjs --resume [--root <dir>] [--tag <tag>]\nOutput: one line, tag= branch= worktree= score= limit= model= effort= noidea= mode=inline|worker brief=<path>; with --first, the files under <dir> (repo-relative paths, in scope) move into the worktree, <dir> is deleted, they are committed as round 1 and round.mjs output follows, its OUT lines on stderr, its exit code passed on. Exit 2 names the flag or step to fix.';
+const USAGE = 'usage: node setup.mjs --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--root <dir>] [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--first <dir> --first-subject <text>]\n       node setup.mjs --resume [--root <dir>] [--tag <tag>]\nScores the baseline defaults.improve.baselineRuns times; the row holds the mean, <tag>.samples.jsonl the runs.\nsd= is the SD of the baseline runs, mde= the smallest gain the keep rule can detect at defaults.improve.maxRuns runs, none with a single baseline run.\nEvery score run gets env EXO_SEED=defaults.improve.seed, stored as seed in <tag>.json.\nWith at least defaults.improve.holdoutMin ITEM ids, a stable hash of each id holds out a defaults.improve.holdoutShare of them: holdout=<held>/<cases>, stored in <tag>.json; score=, sd=, mde= and every round use the mean of the tuning ITEM values only. Fewer or no ITEM ids: holdout=none, score= is the command\'s number.\nOutput: one line, tag= branch= worktree= score= limit= seed= sd= mde= holdout= model= effort= noidea= mode=inline|worker brief=<path>; with --first, the files under <dir> (repo-relative paths, in scope) move into the worktree, <dir> is deleted, they are committed as round 1 and round.mjs output follows, its OUT lines on stderr, its exit code passed on. Exit 2 names the flag or step to fix.';
 const SPEC = {
   root: 'string', goal: 'string', command: 'string', regex: 'string', direction: 'string', scope: 'string', readonly: 'string',
   limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean', first: 'string', 'first-subject': 'string',
@@ -31,12 +33,37 @@ function git(cwd, ...args) {
 const gitOk = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).status === 0;
 const list = (text) => (text ?? '').split(',').map((item) => item.trim()).filter(Boolean);
 
-function baselineRun(cwd, { command, regex }) {
+function baselineRun(cwd, cfg) {
+  const { command, regex } = cfg;
   const started = Date.now();
-  const run = runTreeSync(command, { cwd, timeoutMs: BASELINE_TIMEOUT_MS });
+  const run = runTreeSync(command, { cwd, timeoutMs: BASELINE_TIMEOUT_MS, env: scoreEnv(cfg) });
   const score = readScore(run.output, regex);
   if (run.status !== 0 || score === null) throw new SetupError(`score command failed on the baseline run: ${run.output.slice(-300)}`);
-  return { score, seconds: (Date.now() - started) / 1000 };
+  return { output: run.output, seconds: (Date.now() - started) / 1000 };
+}
+
+function baselineSamples(cwd, cfg) {
+  const runs = Array.from({ length: improveDefaults().baselineRuns }, () => baselineRun(cwd, cfg));
+  const holdout = planHoldout(runs.flatMap((run) => Object.keys(readItems(run.output))), improveDefaults());
+  const samples = emptySamples();
+  for (const run of runs) {
+    const scored = readRun(run.output, { ...cfg, holdout });
+    if (scored.score === null) throw new SetupError('baseline run printed no ITEM line for the tuning cases; print one ITEM <id> <number> line per case on every run');
+    addRun(samples, scored);
+  }
+  return { samples, holdout, seconds: Math.max(...runs.map((run) => run.seconds)) };
+}
+
+const round4 = (value) => (value === null ? null : Number(value.toFixed(4)));
+
+export function baselineNoise(samples, defaults = improveDefaults()) {
+  const sd = pooledSd([samples.runs]);
+  const items = Object.values(samples.items ?? {}).filter((values) => values.length > 0);
+  const paired = items.length >= 2;
+  const spread = paired ? pooledSd(items) : sd;
+  if (spread === null) return { sd: round4(sd), mde: null };
+  const se = spread * Math.sqrt(1 / samples.runs.length + 1 / defaults.maxRuns) / Math.sqrt(paired ? items.length : 1);
+  return { sd: round4(sd), mde: round4(defaults.keepFloor + defaults.keepZ * se) };
 }
 
 const deriveLimit = (seconds) => Math.ceil(Math.max(LIMIT_FACTOR * seconds, seconds + LIMIT_SLACK_S));
@@ -61,9 +88,11 @@ function freeTag(root, wanted) {
   return tag;
 }
 
+const holdoutText = (holdout) => (holdout ? `${holdout.held.length}/${holdout.cases}` : 'none');
+
 function settled({ root, dir, cfg, tag, score }) {
   const brief = path.join(dir, `${tag}.brief.md`);
-  const fields = { tag, branch: `improve/${tag}`, worktree: cfg.worktree, score, limit: cfg.limit, model: cfg.model, effort: cfg.effort, noidea: improveDefaults().noIdeaStop, mode: cfg.mode ?? 'worker', brief: path.resolve(root, brief) };
+  const fields = { tag, branch: `improve/${tag}`, worktree: cfg.worktree, score, limit: cfg.limit, seed: cfg.seed ?? 'none', sd: cfg.noise?.sd ?? 'none', mde: cfg.noise?.mde ?? 'none', holdout: holdoutText(cfg.holdout), model: cfg.model, effort: cfg.effort, noidea: improveDefaults().noIdeaStop, mode: cfg.mode ?? 'worker', brief: path.resolve(root, brief) };
   process.stdout.write(`${Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ')}\n`);
 }
 
@@ -108,12 +137,14 @@ function buildConfig(flags, cwd, worktree) {
   checkReadOnly(cwd, readOnly);
   const cfg = {
     goal: flags.goal, scope: list(flags.scope), readOnly, scorerHash: scorerHash(cwd, readOnly), command: flags.command, regex: flags.regex,
-    direction: flags.direction, limit: 0, fastCheck: flags['fast-check'] ?? null, worktree, ...modelFor(),
+    direction: flags.direction, seed: improveDefaults().seed, limit: 0, fastCheck: flags['fast-check'] ?? null, worktree, ...modelFor(),
   };
-  const baseline = baselineRun(cwd, cfg);
+  const baseline = baselineSamples(cwd, cfg);
   cfg.limit = flags.limit ? Number(flags.limit) : deriveLimit(baseline.seconds);
+  cfg.holdout = baseline.holdout;
+  cfg.noise = baselineNoise(baseline.samples);
   cfg.mode = editableBytes({ cwd, cfg, base: 'HEAD' }) <= improveDefaults().inlineBytes ? 'inline' : 'worker';
-  return { cfg, score: baseline.score };
+  return { cfg, samples: baseline.samples, score: sampleScore(baseline.samples.runs) };
 }
 
 function firstFiles(root, flags) {
@@ -161,9 +192,11 @@ function fresh(flags) {
   const cwd = path.join(root, worktree);
   try {
     commitScorer(root, cwd, list(flags.scorer));
-    const { cfg, score } = buildConfig(flags, cwd, worktree);
+    const { cfg, samples, score } = buildConfig(flags, cwd, worktree);
+    const commit = git(cwd, 'rev-parse', '--short', 'HEAD');
     fs.writeFileSync(path.join(dir, `${tag}.json`), `${JSON.stringify(cfg, null, 2)}\n`);
-    fs.writeFileSync(path.join(dir, `${tag}.tsv`), `commit\tscore\tstatus\tdescription\n${git(cwd, 'rev-parse', '--short', 'HEAD')}\t${score}\tkeep\tbaseline\n`);
+    fs.writeFileSync(path.join(dir, `${tag}.tsv`), `commit\tscore\tstatus\tdescription\n${commit}\t${score}\tkeep\tbaseline\n`);
+    fs.writeFileSync(path.join(dir, `${tag}.samples.jsonl`), `${JSON.stringify({ commit, status: 'keep', ...samples })}\n`);
     writeBrief({ dir, tag, cfg, rows: readRows(path.join(dir, `${tag}.tsv`)) });
     settled({ root, dir, cfg, tag, score });
   } catch (error) {

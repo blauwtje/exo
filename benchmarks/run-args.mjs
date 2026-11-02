@@ -62,6 +62,12 @@ function applyStockBaseline(options) {
   Object.assign(options, { mode: 'stock', tasks: VALUE_QUICK_TASKS, arms: ['baseline'], runs: STOCK_RUNS, model: 'sonnet' });
 }
 
+function applyBareMode(options, bareMode) {
+  if (bareMode !== 'quick') return;
+  if (options.mode !== 'custom' || options.tier !== null || options.tasks !== null) return;
+  options.tier = 'value';
+}
+
 function applyValueQuick(options, argv) {
   if (options.tier !== 'value' || options.mode !== 'custom' || options.tasks !== null) return;
   Object.assign(options, { mode: 'quick', tasks: VALUE_QUICK_TASKS, concurrency: 1 });
@@ -95,9 +101,10 @@ function resolveArms(options) {
   for (const arm of options.arms) if (!(arm in options.armTable)) throw new Error(`unknown arm ${arm}`);
 }
 
-export function parseArguments(argv) {
+export function parseArguments(argv, bareMode = 'custom') {
   const options = readFlags(argv);
   applyStockBaseline(options);
+  applyBareMode(options, bareMode);
   applyValueQuick(options, argv);
   resolveTasks(options, argv);
   checkModel(options);

@@ -44,7 +44,7 @@ test('descriptionHashes covers each model-invocable skill and session-routing', 
   for (const value of Object.values(hashes)) assert.match(value, /^[0-9a-f]{64}$/);
 });
 
-test('a failed session is an error outcome: kept out of recall and false-trigger rates, counted per arm', async () => {
+test('a failed session is an error outcome: a miss in recall and a trigger in the false-trigger rate, counted per arm', async () => {
   const prompts = [
     { prompt: 'a', expect: 'build', split: 'train' },
     { prompt: 'b', expect: null, split: 'train' }
@@ -53,21 +53,21 @@ test('a failed session is an error outcome: kept out of recall and false-trigger
     prompts, cells: ['sonnet:low'], arms: ['hook', 'no-hook'], runs: 2, concurrency: 2, skills: ['build'],
     runSession: async ({ prompt, arm }) => (arm === 'no-hook' ? { error: 'exit 1: login required' } : prompt === 'a' ? 'build' : null)
   });
-  assert.deepEqual(outcome.results['sonnet:low']['no-hook'].train.build, { recall: null, falseTrigger: null });
+  assert.deepEqual(outcome.results['sonnet:low']['no-hook'].train.build, { recall: 0, falseTrigger: 1 });
   assert.deepEqual(outcome.results['sonnet:low'].hook.train.build, { recall: 1, falseTrigger: 0 });
   assert.deepEqual(outcome.errors['sonnet:low'], { hook: 0, 'no-hook': 4 });
   const failed = outcome.sessions.filter((session) => session.arm === 'no-hook');
   assert.ok(failed.every((session) => session.pick === null && session.error === 'exit 1: login required'));
 });
 
-test('a failed session in a partly failing arm leaves the rates to the sessions that ran', async () => {
+test('a failed session in a partly failing arm counts as a miss in recall', async () => {
   const prompts = [{ prompt: 'a', expect: 'build', split: 'train' }];
   let calls = 0;
   const outcome = await evaluate({
     prompts, cells: ['sonnet:low'], arms: ['hook'], runs: 4, concurrency: 1, skills: ['build'],
     runSession: async () => { calls += 1; return calls % 2 ? { error: 'timeout after 1ms' } : 'build'; }
   });
-  assert.deepEqual(outcome.results['sonnet:low'].hook.train.build, { recall: 1, falseTrigger: null });
+  assert.deepEqual(outcome.results['sonnet:low'].hook.train.build, { recall: 0.5, falseTrigger: null });
   assert.equal(outcome.errors['sonnet:low'].hook, 2);
 });
 
@@ -116,11 +116,11 @@ test('costOfLine prices the usage of the picking event, and is null for an unlis
   assert.equal(costOfLine(picking({ model: 'claude-sonnet-4-5' })), null);
 });
 
-test('medianCost ignores sessions without a cost; dryRunLine multiplies sessions by it or says cost unknown', () => {
+test('medianCost ignores sessions without a cost; dryRunLine multiplies sessions by it, prints the excluded count or says cost unknown', () => {
   assert.equal(medianCost([{ cost_usd: 0.3 }, { cost_usd: null }, { cost_usd: 0.1 }, {}, { cost_usd: 0.2 }]), 0.2);
   assert.equal(medianCost([{ cost_usd: 0.1 }, { cost_usd: 0.3 }]), 0.2);
   assert.equal(medianCost([{ cost_usd: null }]), null);
-  assert.equal(dryRunLine(10, [{ cost_usd: 0.05 }]), 'dry-run: 10 sessions x median $0.0500 = $0.50');
+  assert.equal(dryRunLine(10, [{ cost_usd: 0.05 }, { cost_usd: null }]), 'dry-run: 10 sessions x median $0.0500 = $0.50 (1 of 2 recorded sessions without cost excluded)');
   assert.equal(dryRunLine(10, []), 'dry-run: 10 sessions, cost unknown');
 });
 
@@ -130,12 +130,12 @@ test('--dry-run projects from the recorded --out file and starts no session', ()
   const dryRun = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--full', '--cells', 'sonnet:low', '--arms', 'hook', '--runs', '1', '--split', 'held-out', '--out', out, ...args], { encoding: 'utf8' });
   const unknown = dryRun();
   assert.equal(unknown.status, 0);
-  assert.match(unknown.stdout, /^dry-run: \d+ sessions, cost unknown\n$/);
+  assert.match(unknown.stdout, /^dry-run: \d+ sessions, cost unknown\npower: \d+ tasks x 1 samples x 1 arms = \d+ runs; [^\n]*\n$/);
   const count = Number(/dry-run: (\d+) sessions/.exec(unknown.stdout)[1]);
   writeFileSync(out, JSON.stringify({ sessions: [{ cost_usd: 0.01 }, { cost_usd: 0.03 }, { cost_usd: null }] }));
   const known = dryRun();
   assert.equal(known.status, 0);
-  assert.equal(known.stdout, `dry-run: ${count} sessions x median $0.0200 = $${(count * 0.02).toFixed(2)}\n`);
+  assert.match(known.stdout, new RegExp(`^dry-run: ${count} sessions x median \\$0\\.0200 = \\$${(count * 0.02).toFixed(2).replace('.', '\\.')} \\(1 of 3 recorded sessions without cost excluded\\)\\npower: \\d+ tasks x 1 samples x 1 arms = ${count} runs; `));
 });
 
 const GOOD_STREAM = [

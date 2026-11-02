@@ -40,6 +40,21 @@ test('a job word naming an unknown kind is rejected', () => {
   assert.throws(() => readKindTable(file), /unnamed job fix: unknown kind no-such-kind/);
 });
 
+test('an agents entry whose labels is a string is rejected', () => {
+  const file = tableWith((table) => { table.agents['agents/review-branch.md'].labels = 'review-deep'; });
+  assert.throws(() => readKindTable(file), /agents\/review-branch\.md: labels must be an array of kind names/);
+});
+
+test('an agents entry whose labels names an unknown kind is rejected', () => {
+  const file = tableWith((table) => { table.agents['agents/review-branch.md'].labels = ['no-such-kind']; });
+  assert.throws(() => readKindTable(file), /agents\/review-branch\.md: unknown kind no-such-kind/);
+});
+
+test('labels on an entry outside agents is rejected', () => {
+  const file = tableWith((table) => { table.dispatches[0].labels = ['review']; });
+  assert.throws(() => readKindTable(file), /skills\/improve\/references\/worker-round\.md: labels belong on agents entries only/);
+});
+
 test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
   const { kinds } = readKindTable(undefined, { provider: 'deepseek' });
   for (const name of ['build-task', 'doc-task', 'coordinate', 'task-runner']) assert.equal(kinds[name].effort, 'low', name);

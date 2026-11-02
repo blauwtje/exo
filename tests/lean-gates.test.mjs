@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ISOLATION_ENV, childEnvironment, projectedCostLine, recordedRunCosts } from '../benchmarks/lean-gates.mjs';
+import { ISOLATION_ENV, TIERS, childEnvironment, costSpreadLine, parseArguments, projectedCostLine, recordedRunCosts } from '../benchmarks/lean-gates.mjs';
 
 function savedRun(out, name, stdout) {
   mkdirSync(join(out, name), { recursive: true });
@@ -42,4 +42,27 @@ test('childEnvironment keeps the 5-minute prompt cache after stripping the paren
   const env = childEnvironment(parent, tmpdir());
   assert.equal(env.CLAUDE_CODE_PROMPT_CACHE_TTL, '5m');
   assert.equal(env.CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, '5m');
+});
+
+const RUN_ARGS = ['--version', 'old', '--run', '1', '--out', '/tmp/lean-out'];
+
+test('parseArguments defaults to the quick tier with its budget and timeout', () => {
+  const options = parseArguments(RUN_ARGS);
+  assert.equal(options.tier, 'quick');
+  assert.equal(options.budget, TIERS.quick.budget);
+  assert.equal(options.timeoutMin, TIERS.quick.timeoutMin);
+});
+
+test('parseArguments --full restores the whole-build caps and an explicit budget wins over the tier', () => {
+  const full = parseArguments([...RUN_ARGS, '--full']);
+  assert.deepEqual([full.tier, full.budget, full.timeoutMin], ['full', '30', 110]);
+  const capped = parseArguments([...RUN_ARGS, '--full', '--budget', '12']);
+  assert.equal(capped.budget, '12');
+  assert.equal(capped.timeoutMin, 110);
+});
+
+test('costSpreadLine prints the mean with its SE, and no SE for one run', () => {
+  assert.equal(costSpreadLine([]), 'cost spread: no recorded runs');
+  assert.equal(costSpreadLine([12]), 'cost spread: mean $12.00, no SE (n=1)');
+  assert.equal(costSpreadLine([10, 14]), 'cost spread: mean $12.00 ±$2.00 SE (n=2)');
 });

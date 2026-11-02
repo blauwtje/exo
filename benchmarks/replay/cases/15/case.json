@@ -22,5 +22,10 @@
     "edited": "In value-add-field-migration/result.json: subtype error_max_budget_usd, is_error true, terminal_reason max_budget, stop_reason null, total_cost_usd 0.3812 (cap 0.38 plus 0.0012 overshoot; real 0.3857), result text removed; num_turns 15 to 14, duration_ms, duration_api_ms, cache read/creation tokens, output_tokens, thinking_tokens and modelUsage scaled by 0.9883 (0.3812/0.3857) so modelUsage costUSD equals total_cost_usd. In checks.json: exitCode 1, wallMs scaled the same, pass false, defects 2 of 10 with two invented detail lines (the two create-invoice checks), loc 17 added 3 removed 0 test lines and 5 files. In diff.patch: the src/services/invoices.mjs and test/migrate.test.mjs hunks removed (the new invoice never gets its currency, so the two create checks fail).",
     "assumed": "That a cap stop of this cell would write exactly these field values (no real error_max_budget_usd cell exists under benchmarks/runs; the only observed trace is a haiku probe in .exo/debug/resumed-retry-cost-counted-twice.md: subtype error_max_budget_usd after 1 turn); stop_reason null, exitCode 1, is_error true, absence of the result key, the stopping point after 14 turns, the partial diff and the 2 failed check details. The 0.38 cap is faked: the real run used 1.5 for this task, so this cap is a constructed scenario and is not stated anywhere in the input (meta.json holds no cap)."
   },
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "run-dir",
+    "ref": "benchmarks/runs/opus55-main-76153c60-pilot-low",
+    "note": "pilot-low run summarised as a cap stop"
+  }
 }

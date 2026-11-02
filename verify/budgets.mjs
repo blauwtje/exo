@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve'
+  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve', 'watch'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -18,7 +18,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // hooks/session-start.mjs injects only this context: the pointers, the settings line
 // and the text of hooks/session-routing.md and hooks/session-rules.md, which stays far under the cap.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 2566, measured: '2026-10-29' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 2711, measured: '2026-11-02' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 // Lowered 803 -> 510 when the nine dispatched-only agents got short descriptions (round 2 merge).
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20' };
@@ -46,7 +46,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 1171, measured: '2026-10-30' };
+export const SESSION_LOAD_LOCK = { words: 1199, measured: '2026-11-02' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.

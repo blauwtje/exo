@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { agentArguments, dryRunLine, gradedSession, gradeReturn, mentionedFiles, plannedBriefs, resultOfStream, summarize } from '../benchmarks/locate-recall.mjs';
+import { agentArguments, comparisonLines, dryRunLine, gradedSession, gradeReturn, mentionedFiles, modelComparisons, plannedBriefs, resultOfStream, summarize } from '../benchmarks/locate-recall.mjs';
 
 const FILES = ['lib/a.mjs', 'lib/b.mjs', 'hooks/c.mjs', 'tests/a.test.mjs', 'tests/hooks/c.mjs', 'docs/README.md', 'lib/README.md'];
 const BRIEF = { id: 'x', expected: ['lib/a.mjs', 'hooks/c.mjs', 'tests/a.test.mjs'], acceptable: ['lib/b.mjs'] };
@@ -42,18 +42,35 @@ test('gradedSession records an error without grading and a return with both grad
   assert.equal(graded.reportRecall, 2 / 3);
 });
 
-test('summarize averages per model and leaves out errored sessions from the grades', () => {
+test('summarize counts an errored session as recall 0 and leaves it out of the precision, cost and wall means, printing the excluded counts', () => {
   const sessions = [
-    { model: 'haiku', recall: 1, precision: 0.5, reportRecall: 1, cost_usd: 0.01, durationMs: 10_000 },
-    { model: 'haiku', recall: 0, precision: 0.5, reportRecall: 0, cost_usd: 0.01, durationMs: 20_000 },
-    { model: 'haiku', error: 'timeout', cost_usd: null, durationMs: 30_000 },
-    { model: 'sonnet', recall: 1, precision: 1, reportRecall: 1, cost_usd: 0.05, durationMs: 40_000 }
+    { model: 'haiku', brief: 'a', recall: 1, precision: 0.5, reportRecall: 1, cost_usd: 0.01, durationMs: 10_000 },
+    { model: 'haiku', brief: 'b', recall: 0, precision: 0.5, reportRecall: 0, cost_usd: 0.01, durationMs: 20_000 },
+    { model: 'haiku', brief: 'c', error: 'timeout', cost_usd: null, durationMs: 30_000 },
+    { model: 'sonnet', brief: 'a', recall: 1, precision: 1, reportRecall: 1, cost_usd: 0.05, durationMs: 40_000 }
   ];
   const summary = summarize(sessions, ['haiku', 'sonnet']);
-  assert.equal(summary.haiku.recall, 0.5);
-  assert.equal(summary.haiku.errors, 1);
+  assert.equal(summary.haiku.recall, 1 / 3);
+  assert.ok(summary.haiku.recallSe > 0);
+  assert.equal(summary.sonnet.recallSe, null);
+  assert.deepEqual([summary.haiku.errors, summary.haiku.precisionExcluded, summary.haiku.costExcluded, summary.haiku.wallExcluded], [1, 1, 1, 1]);
   assert.equal(summary.haiku.cost_usd, 0.02);
+  assert.equal(summary.haiku.meanWallS, 15);
   assert.equal(summary.sonnet.meanWallS, 40);
+});
+
+test('modelComparisons pairs recall per brief, counts an error as 0 and says no SE under two briefs', () => {
+  const run = (model, brief, recall, extra = {}) => ({ model, brief, recall, ...extra });
+  const sessions = [
+    run('haiku', 'a', 0), run('sonnet', 'a', 1), run('haiku', 'b', 0), run('sonnet', 'b', 1),
+    run('haiku', 'c', 1), run('sonnet', 'c', undefined, { error: 'timeout' })
+  ];
+  const [comparison] = modelComparisons(sessions, ['haiku', 'sonnet']);
+  assert.deepEqual([comparison.diff.n, comparison.diff.mean.toFixed(3)], [3, '0.333']);
+  assert.equal(comparison.verdict, 'noise');
+  const single = modelComparisons([run('haiku', 'a', 0), run('sonnet', 'a', 1)], ['haiku', 'sonnet']);
+  assert.equal(single[0].verdict, 'no SE');
+  assert.match(comparisonLines(single)[0], /^sonnet minus haiku recall, paired per brief: 1\.000 no SE \(n=1\) no SE$/);
 });
 
 test('plannedBriefs picks the quick set, every brief, or one by id', () => {
@@ -64,8 +81,8 @@ test('plannedBriefs picks the quick set, every brief, or one by id', () => {
   assert.throws(() => plannedBriefs(fixture, { brief: 'z' }), /not in the fixture/);
 });
 
-test('dryRunLine multiplies the session count by the recorded median', () => {
-  assert.equal(dryRunLine(6, [{ cost_usd: 0.1 }, { cost_usd: 0.3 }]), 'dry-run: 6 sessions x median $0.2000 = $1.20');
+test('dryRunLine multiplies the session count by the recorded median and prints the excluded count', () => {
+  assert.equal(dryRunLine(6, [{ cost_usd: 0.1 }, { cost_usd: 0.3 }, { cost_usd: null }]), 'dry-run: 6 sessions x median $0.2000 = $1.20 (1 of 3 recorded sessions without cost excluded)');
   assert.equal(dryRunLine(6, []), 'dry-run: 6 sessions, cost unknown');
 });
 

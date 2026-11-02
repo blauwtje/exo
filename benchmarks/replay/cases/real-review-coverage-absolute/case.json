@@ -1,0 +1,30 @@
+{
+  "id": "real-review-coverage-absolute",
+  "kind": "case",
+  "replay": null,
+  "task": "The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: The merged branch review shows review coverage as 0 of N files read, although every branch reviewer listed the files it read in its Read: lines, as absolute paths under the checkout root.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "relative"
+    ],
+    "fail": [],
+    "rubric": "FACTS. In merge-reviews.mjs readPaths turns each Read: line into paths and coverageOf compares them with the changed files, which are repo-relative. An absolute path under the checkout root never equals a changed file, so every file counts as unread and coverage shows 0 of N. The fix converts an absolute path under the checkout root to a repo-relative path before comparing, which needs the root passed down to readPaths.\nFAIL: the answer blames the Read: line pattern, the branch-report name pattern, the changedFiles function or the git diff base, or proposes that reviewers write relative paths.\nPASS: the answer finds that absolute paths in the Read: lines do not match the repo-relative changed files and fixes the comparison by making them relative to the checkout root (or normalising both sides).\nQuoting code or names from input/ is neither pass nor fail by itself; judge whether the answer names the cause and a fix with the same effect.\nReference fix, the real commit c11797d0:\ndiff --git a/skills/verify/scripts/merge-reviews.mjs b/skills/verify/scripts/merge-reviews.mjs\nindex 75c934f8..a9214d59 100644\n--- a/skills/verify/scripts/merge-reviews.mjs\n+++ b/skills/verify/scripts/merge-reviews.mjs\n@@ -82,16 +82,23 @@ export function appendLedger(root, findings, round) {\n   fs.appendFileSync(ledgerPath(root), rows.join(''));\n }\n \n-function readPaths(text) {\n+function repoRelative(entry, root) {\n+  if (!root || !path.isAbsolute(entry)) return entry;\n+  const relative = path.relative(root, entry);\n+  return relative.startsWith('..') || path.isAbsolute(relative) ? entry : relative;\n+}\n+\n+function readPaths(text, root) {\n   return text.split('\\n').flatMap((line) => READ_LINE.exec(line)?.[1].split(/[\\s,]+/) ?? [])\n     .map((entry) => entry.replaceAll('`', '').replace(/^\\.\\//, ''))\n-    .filter(Boolean);\n+    .filter(Boolean)\n+    .map((entry) => repoRelative(entry, root));\n }\n \n-function coverageOf(reports, changed) {\n+function coverageOf(reports, changed, root) {\n   const branch = reports.filter(({ name }) => BRANCH_REPORT.test(name));\n   if (changed === null || branch.length === 0) return null;\n-  const read = new Set(branch.flatMap(({ text }) => readPaths(text)));\n+  const read = new Set(branch.flatMap(({ text }) => readPaths(text, root)));\n   const unread = changed.filter((file) => !read.has(file));\n   return { read: changed.length - unread.length, total: changed.length, unread };\n }\n@@ -123,7 +130,7 @@ function recurringOf(findings, prior) {\n \n const reading = ({ round, path: file, range, weight }) => `round ${round}: ${file}:${range} ${weight}`;\n \n-export function mergeReviews(reports, prior = new Map(), changed = null) {\n+export function mergeReviews(reports, prior = new Map(), changed = null, root = null) {\n   const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0, 'out-of-scope': 0 };\n   let demoted = 0;\n   let unread = 0;\n@@ -166,7 +173,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null) {\n   }\n   const recurring = recurringOf(findings, prior);\n   if (recurring.length > 0) verdict = 'BLOCKED';\n-  const coverage = coverageOf(reports, changed);\n+  const coverage = coverageOf(reports, changed, root);\n   if (verdict === 'CLEAN' && coverage?.unread.length > 0) verdict = 'FINDINGS';\n   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';\n   const head = `${verdict}\\n\\n`;\n@@ -184,7 +191,7 @@ function main(argv) {\n   }));\n   const round = latestRound(flags.root) + 1;\n   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);\n-  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed);\n+  const { verdict, counts, demoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root);\n   const target = path.join(flags.root, '.exo', 'branch-review.md');\n   fs.mkdirSync(path.dirname(target), { recursive: true });\n   fs.writeFileSync(target, text);\n"
+  },
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "c11797d09c04c92d69e3d6baa0c3ba0aee91ab4e",
+    "parent": "e3106a39dc42a194e112434fbe7c2c86023c945f",
+    "subject": "fix(verify): count absolute Read: paths in review coverage",
+    "date": "2026-10-28"
+  },
+  "source": "skills/verify/scripts/merge-reviews.mjs at c11797d0^ (git show). Fix commit c11797d0: fix(verify): count absolute Read: paths in review coverage.",
+  "transcript": "none",
+  "constructed": true,
+  "fidelity_notes": {
+    "real": "The input files are byte copies of skills/verify/scripts/merge-reviews.mjs at the fix's parent e3106a39.",
+    "edited": "Nothing.",
+    "assumed": "The symptom wording and the prompt are written for the replay, not taken from a session."
+  },
+  "ready": true
+}

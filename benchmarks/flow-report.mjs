@@ -16,18 +16,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { meanAndSd } from './statistics.mjs';
+import { meanCi } from '../lib/eval-stats.mjs';
 
 const EXO_ARM = ['flow-c7', 'flow-run'];
 const BASELINE_ARM = 'flow-base';
 
-// The flow records of one out dir; a cell that has not finished has none.
+const REPEAT_SUFFIX = /-\d+$/;
+
+// The flow records of one out dir; a cell that has not finished has none, so it
+// stands in as an unfinished record that counts as a failed run and measures nothing.
 export function readFlowRecords(outDir) {
   const records = [];
   for (const name of fs.readdirSync(outDir).sort()) {
     if (!name.startsWith('flow-')) continue;
     const file = path.join(outDir, name, 'record.json');
-    if (!fs.existsSync(file)) continue;
+    if (!fs.existsSync(file)) {
+      records.push({ kind: 'flow', id: name.replace(REPEAT_SUFFIX, ''), unfinished: true });
+      continue;
+    }
     const record = JSON.parse(fs.readFileSync(file, 'utf8'));
     // A record from before the sweep copied leadPeakTokens takes it from the cell's usage.json.
     const usageFile = path.join(outDir, name, 'usage.json');
@@ -37,9 +43,26 @@ export function readFlowRecords(outDir) {
   return records;
 }
 
+const isNumber = (value) => typeof value === 'number';
+
 function mean(values) {
-  return meanAndSd(values.filter((value) => typeof value === 'number')).mean;
+  const numbers = values.filter(isNumber);
+  return numbers.length === 0 ? null : meanCi(numbers).mean;
 }
+
+const measuredRun = (run) => run.unfinished !== true && run.timedOut !== true;
+
+function stat(runs, read) {
+  const numbers = runs.filter(measuredRun).map(read).filter(isNumber);
+  const excluded = runs.length - numbers.length;
+  if (numbers.length === 0) return { mean: null, se: null, n: 0, excluded };
+  const { mean: centre, se } = meanCi(numbers);
+  return { mean: centre, se, n: numbers.length, excluded };
+}
+
+const failedRun = (run) => run.unfinished === true || run.timedOut === true;
+const hasHiddenResult = (run) => failedRun(run) || typeof run.hiddenPass === 'boolean';
+const passedRun = (run) => !failedRun(run) && run.hiddenPass === true;
 
 function sum(values) {
   const numbers = values.filter((value) => typeof value === 'number');
@@ -57,13 +80,13 @@ export function aggregateFlow(records) {
   const ids = [...byArm.keys()].sort((left, right) => rank(left) - rank(right) || left.localeCompare(right));
   return ids.map((id) => {
     const runs = byArm.get(id);
-    const checked = runs.filter((run) => typeof run.hiddenPass === 'boolean');
-    const scored = runs.filter((run) => typeof run.landed === 'number' && typeof run.total === 'number' && run.total > 0);
-    const defects = runs.filter((run) => Array.isArray(run.defects)).map((run) => run.defects.length);
+    const checked = runs.filter(hasHiddenResult);
+    const scored = runs.filter((run) => measuredRun(run) && typeof run.landed === 'number' && typeof run.total === 'number' && run.total > 0);
+    const defects = runs.filter((run) => measuredRun(run) && Array.isArray(run.defects)).map((run) => run.defects.length);
     // A record from before the gate flags, or with no transcript, has none and drops out of their counts.
-    const gated = runs.filter((run) => typeof run.verifyRan === 'boolean');
+    const gated = runs.filter((run) => measuredRun(run) && typeof run.verifyRan === 'boolean');
     const verified = gated.filter((run) => run.verifyRan);
-    const routed = runs.filter((run) => Array.isArray(run.routes));
+    const routed = runs.filter((run) => measuredRun(run) && Array.isArray(run.routes));
     const routes = {};
     for (const run of routed) {
       const label = [...new Set(run.routes)].join('+') || 'none';
@@ -76,25 +99,25 @@ export function aggregateFlow(records) {
       landedFractionMean: mean(scored.map((run) => run.landed / run.total)),
       landedSum: sum(scored.map((run) => run.landed)),
       totalSum: sum(scored.map((run) => run.total)),
-      passes: checked.filter((run) => run.hiddenPass).length,
+      passes: checked.filter(passedRun).length,
+      failed: runs.filter(failedRun).length,
       defectsTotal: sum(defects),
       defectsMean: mean(defects),
-      tokensMean: mean(runs.map((run) => run.tokens)),
-      costMean: mean(runs.map((run) => run.costUsd)),
+      tokens: stat(runs, (run) => run.tokens),
+      cost: stat(runs, (run) => run.costUsd),
       costTotal: sum(runs.map((run) => run.costUsd)),
-      // Every record's spend over the hidden-check passes; null when none passes.
-      costPerSuccess: checked.some((run) => run.hiddenPass) ? sum(runs.map((run) => run.costUsd)) / checked.filter((run) => run.hiddenPass).length : null,
-      wallMeanMs: mean(runs.map((run) => run.wallMs)),
+      costPerSuccess: checked.some(passedRun) ? sum(runs.map((run) => run.costUsd)) / checked.filter(passedRun).length : null,
+      wall: stat(runs, (run) => run.wallMs),
       gated: gated.length,
       verifyRan: verified.length,
       reviewDispatched: gated.filter((run) => run.reviewDispatched).length,
       routed: routed.length,
       routes,
-      leadPeakMean: mean(runs.map((run) => run.leadPeakTokens)),
-      leadPeakMax: runs.some((run) => typeof run.leadPeakTokens === 'number') ? Math.max(...runs.map((run) => run.leadPeakTokens).filter((value) => typeof value === 'number')) : null,
-      verifiedTokensMean: mean(verified.map((run) => run.tokens)),
-      verifiedCostMean: mean(verified.map((run) => run.costUsd)),
-      verifiedWallMeanMs: mean(verified.map((run) => run.wallMs))
+      leadPeak: stat(runs, (run) => run.leadPeakTokens),
+      leadPeakMax: runs.some((run) => isNumber(run.leadPeakTokens)) ? Math.max(...runs.map((run) => run.leadPeakTokens).filter(isNumber)) : null,
+      verifiedTokens: stat(verified, (run) => run.tokens),
+      verifiedCost: stat(verified, (run) => run.costUsd),
+      verifiedWall: stat(verified, (run) => run.wallMs)
     };
   });
 }
@@ -104,6 +127,9 @@ function rank(id) {
   return id === BASELINE_ARM ? 1 : 2;
 }
 
+const MIN_RUNS_FOR_SE = 2;
+const RISE_Z = 2;
+
 export function passDifference(exo, baseline) {
   if (exo === undefined || baseline === undefined || exo.checked === 0 || baseline.checked === 0) return null;
   const exoRate = (exo.passes + 1) / (exo.checked + 2);
@@ -111,13 +137,24 @@ export function passDifference(exo, baseline) {
   const standardError = Math.sqrt(exoRate * (1 - exoRate) / (exo.checked + 2) + baselineRate * (1 - baselineRate) / (baseline.checked + 2));
   const difference = exo.passes / exo.checked - baseline.passes / baseline.checked;
   const adjustedDifference = exoRate - baselineRate;
-  const twoStandardErrors = 2 * standardError;
-  return { difference, adjustedDifference, twoStandardErrors, better: adjustedDifference > twoStandardErrors };
+  const twoStandardErrors = RISE_Z * standardError;
+  const noSe = Math.min(exo.checked, baseline.checked) < MIN_RUNS_FOR_SE;
+  return { difference, adjustedDifference, standardError, twoStandardErrors, noSe, better: !noSe && adjustedDifference > twoStandardErrors };
 }
 
 function fixed(value, digits) {
   return value === null ? '-' : value.toFixed(digits);
 }
+
+function withError(stat, { digits = 0, scale = 1, prefix = '', unit = '' } = {}) {
+  const counts = `n=${stat.n}, excluded ${stat.excluded}`;
+  if (stat.mean === null) return `- (${counts})`;
+  const error = stat.se === null ? 'no SE' : `±${prefix}${fixed(stat.se / scale, digits)}${unit} SE`;
+  return `${prefix}${fixed(stat.mean / scale, digits)}${unit} ${error} (${counts})`;
+}
+
+const MINUTES = { digits: 1, scale: 60000, unit: ' min' };
+const DOLLARS = { digits: 3, prefix: '$' };
 
 function armLines(arm, baseline) {
   const landed = arm.landedFractionMean === null
@@ -126,18 +163,29 @@ function armLines(arm, baseline) {
   return [
     `${arm.id}: n=${arm.n}`,
     `  ${landed}`,
-    `  hidden pass ${arm.passes}/${arm.checked}`,
+    `  hidden pass ${arm.passes}/${arm.checked} (${arm.failed} timed out or unfinished, counted as failures)`,
     `  defects total ${arm.defectsTotal ?? '-'}, mean ${fixed(arm.defectsMean, 2)}`,
-    `  weighted tokens mean ${fixed(arm.tokensMean, 0)}`,
-    ...(EXO_ARM.includes(arm.id) && baseline?.tokensMean ? [`  weighted tokens ${fixed(arm.tokensMean / baseline.tokensMean, 2)}x ${BASELINE_ARM}, hidden check ${arm.passes}/${arm.checked}`] : []),
-    `  cost mean $${fixed(arm.costMean, 3)}, total $${fixed(arm.costTotal, 3)}`,
+    `  weighted tokens mean ${withError(arm.tokens)}`,
+    ...(EXO_ARM.includes(arm.id) && baseline?.tokens.mean ? [`  weighted tokens ${fixed(arm.tokens.mean / baseline.tokens.mean, 2)}x ${BASELINE_ARM}, hidden check ${arm.passes}/${arm.checked}`] : []),
+    `  cost mean ${withError(arm.cost, DOLLARS)}, total $${fixed(arm.costTotal, 3)}`,
     `  cost per success ${arm.costPerSuccess === null ? 'none' : `$${fixed(arm.costPerSuccess, 3)}`}`,
-    `  wall time mean ${fixed(arm.wallMeanMs === null ? null : arm.wallMeanMs / 60000, 1)} min`,
+    `  wall time mean ${withError(arm.wall, MINUTES)}`,
     `  verify ran ${arm.verifyRan}/${arm.gated}, review dispatched ${arm.reviewDispatched}/${arm.gated}`,
     `  route ${Object.entries(arm.routes).map(([label, count]) => `${label} ${count}`).join(', ') || '-'} (of ${arm.routed})`,
-    `  lead peak tokens mean ${fixed(arm.leadPeakMean, 0)}, max ${arm.leadPeakMax ?? '-'}`,
-    `  verify-ran cells: weighted tokens mean ${fixed(arm.verifiedTokensMean, 0)}, cost mean $${fixed(arm.verifiedCostMean, 3)}, wall time mean ${fixed(arm.verifiedWallMeanMs === null ? null : arm.verifiedWallMeanMs / 60000, 1)} min`
+    `  lead peak tokens mean ${withError(arm.leadPeak)}, max ${arm.leadPeakMax ?? '-'}`,
+    `  verify-ran cells: weighted tokens mean ${withError(arm.verifiedTokens)}, cost mean ${withError(arm.verifiedCost, DOLLARS)}, wall time mean ${withError(arm.verifiedWall, MINUTES)}`
   ];
+}
+
+function differenceLine(id, comparison) {
+  const error = comparison.noSe ? 'no SE (an arm has under 2 checked runs)' : `SE ${fixed(comparison.standardError, 3)}, 2 SE ${fixed(comparison.twoStandardErrors, 3)}`;
+  return `Pass-rate difference (${id} minus ${BASELINE_ARM}): ${fixed(comparison.difference, 3)}; Agresti-Caffo ${fixed(comparison.adjustedDifference, 3)}, ${error}`;
+}
+
+function verdictLine(compared) {
+  if (compared.some(([, comparison]) => comparison.better)) return 'exo better';
+  if (compared.every(([, comparison]) => comparison.noSe)) return 'no verdict (no SE)';
+  return 'not better';
 }
 
 export function flowReport(records) {
@@ -148,10 +196,10 @@ export function flowReport(records) {
   const compared = arms.filter((arm) => EXO_ARM.includes(arm.id)).map((arm) => [arm.id, passDifference(arm, baseline)]).filter(([, comparison]) => comparison !== null);
   if (compared.length === 0) {
     lines.push(`Pass-rate difference (${EXO_ARM[0]} minus ${BASELINE_ARM}): not computable, an arm has no hidden-check result.`, 'not better');
-  } else {
-    for (const [id, comparison] of compared) lines.push(`Pass-rate difference (${id} minus ${BASELINE_ARM}): ${fixed(comparison.difference, 3)}; Agresti-Caffo ${fixed(comparison.adjustedDifference, 3)}, 2 SE ${fixed(comparison.twoStandardErrors, 3)}`);
-    lines.push(compared.some(([, comparison]) => comparison.better) ? 'exo better' : 'not better');
+    return lines.join('\n');
   }
+  for (const [id, comparison] of compared) lines.push(differenceLine(id, comparison));
+  lines.push(verdictLine(compared));
   return lines.join('\n');
 }
 

@@ -60,8 +60,10 @@ test('a dry run over --max-usd prints the projection and an over-budget line wit
   assert.match(written.stderr, /projected_usd=5\.6000 over --max-usd 3/);
 });
 
-test('a dry run under --max-usd prints no over-budget line', () => {
-  assert.equal(dryRunOf(0.1).stderr, '');
+test('a dry run under --max-usd prints the power line and no over-budget line', () => {
+  const { stderr } = dryRunOf(0.1);
+  assert.match(stderr, /^power: 2 tasks x 1 samples x 1 arms = 2 runs; .*\n$/);
+  assert.doesNotMatch(stderr, /over --max-usd/);
 });
 
 test('a paid run still fails once spend passes --max-usd', async () => {
@@ -82,4 +84,16 @@ test('--concise-baseline gets the baseline cap, and --max-usd overrides it', () 
 test('--arm caveman keeps the quick cap and --max-usd overrides it', () => {
   assert.equal(parseArgs(['--arm', 'caveman']).maxUsd, 0.3);
   assert.equal(parseArgs(['--arm', 'caveman', '--max-usd', '0.5']).maxUsd, 0.5);
+});
+
+test('the score carries a case-clustered SE and a baseline verdict that needs the interval to clear 1', async () => {
+  const { baselineVerdict, quickIntervalLine, scoreIntervalLine } = await import('../benchmarks/adhd-score.mjs');
+  assert.equal(baselineVerdict({ lo: 0.7, hi: 0.9 }), 'shorter');
+  assert.equal(baselineVerdict({ lo: 1.1, hi: 1.4 }), 'longer');
+  assert.equal(baselineVerdict({ lo: 0.8, hi: 1.2 }), 'noise');
+  assert.equal(baselineVerdict({ lo: null, hi: null }), 'no SE');
+  assert.match(scoreIntervalLine({ perCase: [{}, {}], scoreSe: 0.05, scoreLo: 0.6, scoreHi: 0.8 }), /^score_se=0\.050 score_ci95=0\.600\.\.0\.800 clusters=2 vs_baseline=shorter\n$/);
+  assert.match(scoreIntervalLine({ perCase: [{}], scoreSe: null, scoreLo: null, scoreHi: null }), /vs_baseline=no SE/);
+  assert.match(quickIntervalLine([{ ratio: 0.5 }]), /no SE \(n=1\) vs_baseline=no SE/);
+  assert.match(quickIntervalLine([{ ratio: 0.5 }, { ratio: 0.6 }, { ratio: 0.55 }]), /vs_baseline=shorter/);
 });

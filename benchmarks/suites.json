@@ -1,0 +1,241 @@
+{
+  "suites": [
+    {
+      "id": "value",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Paired exo and baseline cells on the value, safe and git tasks: does exo pass tasks the stock session fails, at what cost.",
+      "basis": "The value reports start the baseline at 0 of 5 and require exo at 3 of 5 (results/2026-10-06-value-hard.md); a hill, not a guard.",
+      "entries": [
+        "benchmarks/run.mjs",
+        "benchmarks/score.mjs",
+        "benchmarks/delegation-readout.mjs"
+      ]
+    },
+    {
+      "id": "flow-sweep",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Model and effort sweep over review, plan and whole-flow cells: seeded defects found, false alarms, flow cost.",
+      "basis": "Seeded-defect find rates and flow costs are compared across arms and keep moving (results/2026-10-10-sweep.md, 2026-10-26-flow-fold-sweep.md); no near-100% pass rate.",
+      "entries": [
+        "benchmarks/sweep.mjs",
+        "benchmarks/sweep-score.mjs",
+        "benchmarks/flow-report.mjs",
+        "benchmarks/checkpoint-fork.mjs"
+      ]
+    },
+    {
+      "id": "lean-gates",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "One fixed plan built under the old and the new gates: what the gates cost for the same result.",
+      "basis": "A cost comparison between two versions with a fixture that changes per goal (results/2026-09-28-lean.md, 2026-10-20-lean-lead-tool-pool.md); the target is a lower number, not a held pass rate.",
+      "entries": [
+        "benchmarks/lean-gates.mjs",
+        "benchmarks/lean-gates-metrics.mjs"
+      ]
+    },
+    {
+      "id": "review-replay",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Seeded review defects fixed after one repair round.",
+      "basis": "benchmarks/review-replay/baseline.json records fixedAfterOneRepair between 0.33 and 1 per fixture.",
+      "entries": [
+        "benchmarks/review-replay.mjs"
+      ]
+    },
+    {
+      "id": "routing",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Does the right skill load for a prompt, and no skill for a prompt that needs none.",
+      "basis": "Held-out recall in results/routing.json is 0.67 to 1 per skill (build 0.73, edit-skills 0.67); descriptions are tuned against it.",
+      "entries": [
+        "benchmarks/routing.mjs",
+        "benchmarks/routing-stats.mjs"
+      ]
+    },
+    {
+      "id": "locate-recall",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Does exo:locate-code report the files a brief needs.",
+      "basis": "Recorded recall is 0.83 and report recall 0.92 (results/2026-10-29-locate-haiku.md.json); room to climb.",
+      "entries": [
+        "benchmarks/locate-recall.mjs"
+      ]
+    },
+    {
+      "id": "ideas",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Quality of the options and ideas a spec session produces, against cliches and fixed roles.",
+      "basis": "Scored by judges and compared per variant (results/2026-10-18-ideas-baseline.md and the ideas-spec runs); each variant is an attempt to beat the baseline.",
+      "entries": [
+        "benchmarks/ideas.mjs",
+        "benchmarks/ideas-score.mjs"
+      ]
+    },
+    {
+      "id": "decided",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Questions asked per task: how often a session stops on a choice that has a safe default.",
+      "basis": "benchmarks/decided/README.md measures a rate the plugin tries to lower, split train and held-out; not a held line.",
+      "entries": [
+        "benchmarks/decided.mjs"
+      ]
+    },
+    {
+      "id": "improve",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "exo:improve against /goal on real targets and fixtures: score reached per dollar.",
+      "basis": "Held-out scores are low and moving (results/improve-real.json heldOutScores 0.25 on routing); the comparison is the hill.",
+      "entries": [
+        "benchmarks/improve-real.mjs",
+        "benchmarks/improve-vs-goal.mjs",
+        "benchmarks/improve-all-score.mjs"
+      ]
+    },
+    {
+      "id": "adhd",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Output length and fact coverage of exo:adhd replies against an \"Answer concisely.\" arm.",
+      "basis": "adhd/saturated.json lists the cases every arm passes and the screen leaves them out, so the screened cases are the ones still short of 100% (results/2026-10-23-adhd-style.md).",
+      "entries": [
+        "benchmarks/adhd-score.mjs"
+      ]
+    },
+    {
+      "id": "pressure",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Skill pressure cases graded against each skill's criteria.md, with and without the skill.",
+      "basis": "Graded arms land below 100% (with arm 2 of 3, results/2026-10-19-pressure-grade-compression.md); cases are added when a skill fails them.",
+      "entries": [
+        "benchmarks/pressure/drive.mjs"
+      ]
+    },
+    {
+      "id": "replay",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Replay of recorded real failures through the model, graded by judges.",
+      "basis": "replay/cell-stats.mjs keeps a case only while its fail rate is inside BAND 0.1 to 0.9, so every kept case is by construction not near 100%.",
+      "entries": [
+        "benchmarks/replay/runner.mjs",
+        "benchmarks/replay/grade.mjs",
+        "benchmarks/replay/cell-stats.mjs"
+      ]
+    },
+    {
+      "id": "bisect",
+      "class": "regression",
+      "tier": "paid",
+      "purpose": "exo:find-cause names the culprit commit on fixed fixtures; catches a change that breaks it.",
+      "basis": "145 of 145 recorded cells pass in benchmarks/results/bisect.jsonl, every case and both arms; saturated from the first recorded run.",
+      "entries": [
+        "benchmarks/bisect.mjs",
+        "benchmarks/bisect-summary.mjs"
+      ],
+      "recorded": {
+        "file": "benchmarks/results/bisect.jsonl",
+        "caseKey": "case",
+        "passKey": "pass"
+      }
+    },
+    {
+      "id": "bisect-fixtures",
+      "class": "regression",
+      "tier": "free",
+      "purpose": "Every bisect fixture builds and its contract holds, so a paid bisect run never starts on a broken case.",
+      "basis": "Deterministic: node benchmarks/bisect.mjs --validate builds each case and exits 1 on a broken contract.",
+      "entries": [],
+      "run": [
+        "node",
+        "benchmarks/bisect.mjs",
+        "--validate"
+      ]
+    },
+    {
+      "id": "safe-tasks",
+      "class": "regression",
+      "tier": "free",
+      "purpose": "Every safe task check fails its seed and passes its solution.",
+      "basis": "Deterministic: the check files run on the committed seed and solution.",
+      "entries": [],
+      "run": [
+        "node",
+        "--import",
+        "./tests/clean-run-env.mjs",
+        "--test",
+        "tests/benchmark-safe-tasks.test.mjs"
+      ]
+    },
+    {
+      "id": "review-graders",
+      "class": "regression",
+      "tier": "free",
+      "purpose": "The review-replay and sweep review graders score the good reference as fixed and the bad reference as missed.",
+      "basis": "Deterministic: reference diffs graded with no model call.",
+      "entries": [],
+      "run": [
+        "node",
+        "--import",
+        "./tests/clean-run-env.mjs",
+        "--test",
+        "tests/benchmark-review-replay-references.test.mjs",
+        "tests/benchmark-sweep-review-references.test.mjs"
+      ]
+    },
+    {
+      "id": "adhd-references",
+      "class": "regression",
+      "tier": "free",
+      "purpose": "The adhd fact and length graders pass the reference replies in adhd/references.jsonl.",
+      "basis": "Deterministic: stored reference replies graded with no model call.",
+      "entries": [],
+      "run": [
+        "node",
+        "--import",
+        "./tests/clean-run-env.mjs",
+        "--test",
+        "tests/adhd-references.test.mjs"
+      ]
+    },
+    {
+      "id": "flow-reference",
+      "class": "regression",
+      "tier": "free",
+      "purpose": "The flow check passes the reference solution of the flow fixture.",
+      "basis": "Deterministic: the committed reference graded by the fixture check.",
+      "entries": [],
+      "run": [
+        "node",
+        "--import",
+        "./tests/clean-run-env.mjs",
+        "--test",
+        "tests/benchmark-flow-reference.test.mjs"
+      ]
+    },
+    {
+      "id": "value-reference",
+      "class": "regression",
+      "tier": "free",
+      "purpose": "Every value task check fails its seed and passes its reference solution.",
+      "basis": "Deterministic: the committed seeds and references graded by the hidden checks.",
+      "entries": [],
+      "run": [
+        "node",
+        "--import",
+        "./tests/clean-run-env.mjs",
+        "--test",
+        "tests/benchmark-value-reference.test.mjs"
+      ]
+    }
+  ]
+}

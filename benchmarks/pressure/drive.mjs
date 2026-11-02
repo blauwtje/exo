@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { comparisonArm, driveArguments, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags } from '#script-flags';
+import { plannedPowerLine } from '../power-plan.mjs';
+import { runLines, runOutcome, turnRecord } from './run-measures.mjs';
 
 const USAGE = 'usage: drive.mjs <scenario> <model> <arm> [maxTurns] [--dry-run] [--full] [--label <text>] [--plugin-dir <dir>] [--main-dir <dir>]';
 const QUICK_TURNS = 2;
@@ -40,6 +42,7 @@ const id = `${scenario}-${model}-${armSetup.name}${flags.label ? `-${flags.label
 const dir = path.join(S, 'runs', id);
 if (flags['dry-run']) {
   console.log(`${tier} tier, scenario ${scenario}, model ${model}, arm ${armSetup.name}, up to ${maxTurns} turns, run folder ${dir}; dry run, no claude call made`);
+  console.log(plannedPowerLine({ tasks: 1 }));
   process.exit(0);
 }
 // A rerun with the same id starts from a fresh work copy, not over the last run's leftovers.
@@ -58,6 +61,7 @@ function turn(prompt, sessionId, n) {
   // #confine-claude picks the mode and confines each turn to the run folder.
   const args = driveArguments({ prompt, model, armFlags, sessionId });
   return new Promise((resolve) => {
+    const started = Date.now();
     const run = confinedClaude({ args, roots: [dir], cwd, tmp });
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '', err = '', timedOut = false;
@@ -67,17 +71,17 @@ function turn(prompt, sessionId, n) {
       clearTimeout(t); clearInterval(hb);
       fs.writeFileSync(path.join(dir, `turn${n}.jsonl`), out);
       if (err) fs.writeFileSync(path.join(dir, `turn${n}.stderr`), err);
-      let text, sid; const tools = [], skillDirs = [];
+      let text, sid, costUsd, isError; const tools = [], skillDirs = [];
       for (const line of out.split('\n')) { let e; try { e = JSON.parse(line); } catch { continue; }
         if (e.session_id) sid = e.session_id;
         skillDirs.push(...loadedSkillDirs(e));
         if (e.type === 'assistant') for (const b of e.message?.content ?? []) if (b.type === 'tool_use') tools.push(`${b.name} ${b.input?.file_path ?? b.input?.skill ?? (b.input?.command ?? b.input?.pattern ?? '').slice(0, 80)}`);
-        if (e.type === 'result') text = e.result; }
+        if (e.type === 'result') { text = e.result; costUsd = e.total_cost_usd; isError = e.is_error; } }
       for (const wrong of wrongCopies(skillDirs, armSetup.pluginDir)) {
         loadedWrongCopy = true;
         log(`WRONG COPY turn ${n}: ${wrong} is not under ${armSetup.pluginDir}`);
       }
-      resolve({ text, sid, tools, timedOut });
+      resolve({ text, sid, tools, timedOut, ...turnRecord({ timedOut, sid, text, isError, costUsd, wallMs: Date.now() - started }) });
     });
   });
 }
@@ -87,10 +91,12 @@ const replies = { B: ["I don't know", "I don't know", '1', '1'], C: ['2', 'go'],
 let aOnes = 0, aOk = false;
 let prompt = PROMPTS[scenario], sid, n = 1;
 const transcript = [];
+const turns = [];
 while (true) {
   log(`turn ${n} start: ${JSON.stringify(prompt)}`);
   const r = await turn(prompt, sid, n);
   transcript.push({ user: prompt, assistant: r.text, tools: r.tools, timedOut: r.timedOut, session: r.sid });
+  turns.push({ aborted: r.aborted, costUsd: r.costUsd, wallMs: r.wallMs });
   fs.writeFileSync(path.join(dir, 'transcript.json'), JSON.stringify(transcript, null, 2));
   log(`turn ${n} done timedOut=${r.timedOut} tools=${r.tools.length} checkpoint=${isCheckpoint(r.text)}`);
   if (r.timedOut || !r.sid || !r.text || n >= maxTurns) break;
@@ -105,5 +111,8 @@ while (true) {
     prompt = replies.shift();
   }
 }
+const outcome = runOutcome({ turns, loadedWrongCopy });
+fs.writeFileSync(path.join(dir, 'run.json'), `${JSON.stringify({ id, tier, outcome, turns }, null, 2)}\n`);
 log(loadedWrongCopy ? 'DONE, WRONG COPY: not a valid run' : 'DONE');
-if (loadedWrongCopy) process.exitCode = 1;
+for (const line of runLines({ turns, outcome })) log(line);
+if (outcome !== 'completed') process.exitCode = 1;

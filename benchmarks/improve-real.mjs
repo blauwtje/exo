@@ -8,10 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { confineRefusal, confinedClaude } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
+import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
 import { makeRunFolder, withHome } from '../skills/edit-skills/scripts/pressure.mjs';
 import { SPLITS, buildArmCopy, isRouting, gains, spendRefusal } from './improve-real-copy.mjs';
 import { scoreTarget, startScoreBridge, writeScoreClient } from './improve-real-bridge.mjs';
 import { improveTip, spawnSession, streamCost } from './improve-vs-goal.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
+import { compareMeans } from './statistics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'benchmarks/results/improve-real.json');
@@ -118,16 +121,19 @@ export function recordedKeys(runs) {
 }
 
 export function spentSoFar(runs) {
-  return runs.reduce((sum, record) => sum + (record.totalCost ?? 0), 0);
+  return runs.reduce((sum, record) => sum + (typeof record.totalCost === 'number' ? record.totalCost : 0), 0);
 }
+
+export const unpricedRuns = (runs) => runs.filter((record) => typeof record.totalCost !== 'number').length;
 
 export function armRecord({ target, arm, run, cap, session, bridge, train, heldOut, baseline, changedOutside, diffFile, finalRef, error }) {
   const armCost = session.costUsd;
-  const harnessSpend = (train?.spend ?? 0) + (heldOut?.spend ?? 0);
+  const harnessSpend = train === undefined || heldOut === undefined ? null : train.spend + heldOut.spend;
+  const totalCost = [armCost, harnessSpend].some((part) => part === null) ? null : armCost + bridge.spend + harnessSpend;
   const record = {
     target, arm, run, model: ARMS[arm].model, capUsd: cap,
     armCostUsd: armCost, scorerSpendInArm: bridge.spend, harnessScoringSpend: harnessSpend,
-    totalCost: armCost + bridge.spend + harnessSpend,
+    totalCost,
     wallS: session.wallS, killed: session.killed, subtype: session.subtype,
     scoreCallsUsed: bridge.calls, scoreHistory: bridge.history,
     trainScore: train?.mean ?? null, heldOutScores: heldOut?.scores ?? [], heldOutMean: heldOut?.mean ?? null,
@@ -226,7 +232,7 @@ async function runArm({ options, arm, run, home, repo }) {
   const spawned = await spawnSession({ run: confined, env: config.env, logFile, wallMs: SESSION_MS });
   const bridgeResult = await bridge.stop();
   const { costUsd, result } = streamCost(spawned.text.split('\n'));
-  const session = { costUsd: Number(costUsd.toFixed(4)), wallS: spawned.wallS, killed: spawned.killed, subtype: result?.subtype ?? null };
+  const session = { costUsd: costUsd === null ? null : Number(costUsd.toFixed(4)), wallS: spawned.wallS, killed: spawned.killed, subtype: result?.subtype ?? null };
   const final = finalState({ arm, target, scratch: folder.scratch, base });
   const diffFile = `${options.out.replace(/\.json$/, '')}/${target}-${arm}-${run}.diff`;
   fs.mkdirSync(path.dirname(diffFile), { recursive: true });
@@ -245,9 +251,67 @@ async function runArm({ options, arm, run, home, repo }) {
   return armRecord({ target, arm, run, cap: options.cap, session, bridge: bridgeResult, train, heldOut, baseline: options.baseline, changedOutside: final.changedOutside, diffFile, finalRef: final.ref, error });
 }
 
+const scoreText = (value) => (value === null ? 'n/a' : value.toFixed(3));
+const dollars = (value) => (value === null ? 'unknown' : `$${value.toFixed(4)}`);
+
 function describe(record) {
-  const score = (value) => (value === null ? 'n/a' : value.toFixed(3));
-  return `${record.arm} run ${record.run}: arm $${record.armCostUsd}, scorer in arm $${record.scorerSpendInArm.toFixed(4)}, harness scoring $${record.harnessScoringSpend.toFixed(4)}, total $${record.totalCost.toFixed(4)}, ${record.wallS} s, ${record.scoreCallsUsed} score calls, train ${score(record.trainScore)}, held-out ${score(record.heldOutMean)}${record.error === null ? '' : `, error ${record.error}`}`;
+  const harness = dollars(record.harnessScoringSpend);
+  return `${record.arm} run ${record.run}: arm ${record.armCostUsd === null ? 'unknown' : `$${record.armCostUsd}`}, scorer in arm $${record.scorerSpendInArm.toFixed(4)}, harness scoring ${harness}, total ${dollars(record.totalCost)}, ${record.wallS} s, ${record.scoreCallsUsed} score calls, train ${scoreText(record.trainScore)}, held-out ${scoreText(record.heldOutMean)}${record.error === null ? '' : `, error ${record.error}`}`;
+}
+
+export const isAborted = (record) => record.error !== null || record.killed === true || record.subtype !== 'success' || typeof record.totalCost !== 'number';
+
+export const isPass = (record) => !isAborted(record) && record.heldOutScores.length > 0 && record.changedOutside.length === 0;
+
+function spreadOf(values, total, interval = meanCi) {
+  const excluded = total - values.length;
+  if (values.length === 0) return { mean: null, se: null, n: 0, excluded };
+  return { ...interval(values), excluded };
+}
+
+export function armSummary(records) {
+  const measured = records.filter((record) => !isAborted(record));
+  const trained = records.filter((record) => typeof record.trainScore === 'number');
+  const held = records.filter((record) => record.heldOutScores.length > 0);
+  const heldRows = held.flatMap((record) => record.heldOutScores.map((value) => ({ cluster: record.run, value })));
+  return {
+    runs: records.length, passed: records.filter(isPass).length, aborted: records.filter(isAborted).length,
+    train: spreadOf(trained.map((record) => record.trainScore), records.length),
+    heldOut: spreadOf(heldRows, records.length, clusteredMeanCi),
+    heldOutRunMeans: held.map((record) => record.heldOutMean),
+    trainRunScores: trained.map((record) => record.trainScore),
+    cost: spreadOf(measured.map((record) => record.totalCost), records.length),
+    wall: spreadOf(measured.map((record) => record.wallS), records.length)
+  };
+}
+
+const spreadText = (name, spread, digits) => {
+  const se = spread.se === null ? 'no SE' : `se ${spread.se.toFixed(digits)}`;
+  return `${name} ${spread.mean === null ? 'n/a' : spread.mean.toFixed(digits)} ${se} n ${spread.n} excluded ${spread.excluded}`;
+};
+
+const VERDICT_WORDS = { rise: 'improve higher', fall: 'goal higher', noise: 'no clear difference' };
+
+function pairLine(model, summaries, metric) {
+  const improve = summaries[`improve-${model}`];
+  const goal = summaries[`goal-${model}`];
+  if (!improve || !goal) return null;
+  const key = metric === 'train' ? 'trainRunScores' : 'heldOutRunMeans';
+  const { diff, twoSeDiff, verdict } = compareMeans(goal[key], improve[key]);
+  const figures = diff === null ? 'n/a' : `${diff.toFixed(3)} 2 SE ${twoSeDiff === null ? 'n/a' : twoSeDiff.toFixed(3)}`;
+  return `improve-${model} minus goal-${model} ${metric}: ${figures} -> ${VERDICT_WORDS[verdict] ?? verdict}`;
+}
+
+export function summaryLines(records) {
+  const byArm = Object.fromEntries([...Map.groupBy(records, (record) => record.arm)].map(([arm, list]) => [arm, armSummary(list)]));
+  const lines = Object.entries(byArm).map(([arm, summary]) => `${arm}: pass ${summary.passed}/${summary.runs} (aborted ${summary.aborted} count as failures); ${spreadText('train', summary.train, 3)}; ${spreadText('held-out', summary.heldOut, 3)}; ${spreadText('cost $', summary.cost, 4)}; ${spreadText('wall s', summary.wall, 0)}`);
+  for (const model of ['opus', 'sonnet']) {
+    for (const metric of ['train', 'heldOut']) {
+      const line = pairLine(model, byArm, metric);
+      if (line !== null) lines.push(line);
+    }
+  }
+  return lines;
 }
 
 async function main(argv) {
@@ -256,6 +320,7 @@ async function main(argv) {
   const perSession = sessionUsd(ROOT, options.target);
   if (options.dryRun) {
     for (const line of dryRunLines({ options, sessions, sessionUsd: perSession })) console.log(line);
+    console.log(plannedPowerLine({ tasks: options.runs, arms: options.arms.length }));
     return;
   }
   const refusal = confineRefusal();
@@ -275,6 +340,10 @@ async function main(argv) {
         console.log(describe(record));
       }
     }
+    const recorded = readRecord(options.out).runs.filter((record) => record.target === options.target);
+    for (const line of summaryLines(recorded)) console.log(line);
+    const unpriced = unpricedRuns(recorded);
+    if (unpriced > 0) console.log(`spend guard: ${unpriced} recorded runs have no known cost and are left out of the spend total`);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }

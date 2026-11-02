@@ -10,6 +10,7 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { BUDGETS, readKindTable } from '#model-kinds';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { calibrationLines } from '../../../benchmarks/judge-calibration.mjs';
 import { DEFAULT_MARGIN, JUDGE_VOTES, aggregate, defaultJudge, gradeRun, linesForCase, parseCriteria, parseMargins } from './pressure-grade.mjs';
 
 const TIMEOUT_MS = 1_800_000;
@@ -389,6 +390,10 @@ export function writeGrades(outDir, gradesByCell, options = {}) {
   return deltaTable(summary);
 }
 
+export function gradeReport(outDir, gradesByCell, options = {}) {
+  return [...writeGrades(outDir, gradesByCell, options), ...calibrationLines(['pressure-line'])];
+}
+
 export function deltaTable(summary) {
   const percent = (rate) => (rate === undefined ? 'n/a' : `${Math.round(rate * 100)}%`);
   const signed = (value) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
@@ -505,7 +510,7 @@ async function main() {
   if (flags.regrade !== undefined) {
     const gradesByCell = regradeFolder(flags.regrade, { promptFile: flags.promptFile, grade: flags.grade, judge: defaultJudge(flags.grade.judgeCell) });
     const margins = parseMargins(fs.readFileSync(flags.grade.criteriaFile, 'utf8'));
-    console.log(writeGrades(flags.regrade, gradesByCell, { threshold: flags.grade.threshold, margins, mode: flags.mode }).join('\n'));
+    console.log(gradeReport(flags.regrade, gradesByCell, { threshold: flags.grade.threshold, margins, mode: flags.mode }).join('\n'));
     return;
   }
   if (flags.dryRun) {
@@ -556,7 +561,7 @@ async function main() {
   }
   if (flags.grade) {
     const margins = parseMargins(fs.readFileSync(flags.grade.criteriaFile, 'utf8'));
-    console.log(writeGrades(outDir, gradesByCell, { threshold: flags.grade.threshold, margins, mode: flags.mode }).join('\n'));
+    console.log(gradeReport(outDir, gradesByCell, { threshold: flags.grade.threshold, margins, mode: flags.mode }).join('\n'));
   }
 }
 

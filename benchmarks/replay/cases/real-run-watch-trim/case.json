@@ -1,0 +1,30 @@
+{
+  "id": "real-run-watch-trim",
+  "kind": "case",
+  "replay": null,
+  "task": "The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: The lead is woken for a stopped run whose stop it already read in a finished wait command's output file. The wait notification names that file inside an <output-file> element, with the path on its own line between line breaks.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "trim|whitespace"
+    ],
+    "fail": [],
+    "rubric": "FACTS. noteNotification in run-watch.mjs reads the path from the <output-file> element of a wait notification and reads that file. With a path surrounded by line breaks and spaces the captured text includes the whitespace, the file read fails (caught, giving an empty output), the \"run stopped\" line is not found and the pending wake is not dropped. The fix trims the captured path.\nFAIL: the answer blames the regular expression for not matching the element, the run id matching, the timers or the tick function, or proposes dropping the wake unconditionally.\nPASS: the answer finds that the captured file path keeps surrounding whitespace or newlines so the read fails, and fixes it by trimming the path (or allowing whitespace in the pattern).\nQuoting code or names from input/ is neither pass nor fail by itself; judge whether the answer names the cause and a fix with the same effect.\nReference fix, the real commit 45266a27:\ndiff --git a/hooks/run-watch.mjs b/hooks/run-watch.mjs\nindex 1c29d040..321514f7 100644\n--- a/hooks/run-watch.mjs\n+++ b/hooks/run-watch.mjs\n@@ -152,7 +152,7 @@ async function tick($, context) {\n }\n \n async function noteNotification($, context, text) {\n-  const file = /<output-file>([^<]+)<\\/output-file>/.exec(text)?.[1];\n+  const file = /<output-file>([^<]+)<\\/output-file>/.exec(text)?.[1]?.trim();\n   const output = file ? await $.fs.read(file).catch(() => '') : '';\n   for (const id of context.seen.keys()) {\n     if (!text.includes(id) && !new RegExp(`(^|\\\\n)exo: run ${id} `).test(output)) continue;\n"
+  },
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "45266a276539a6d4af4dec328d6ad16aed2196f5",
+    "parent": "0e90033957ccc123d540d8f55785291172ef8bcd",
+    "subject": "fix(run-watch): read a wait notification's output file path with its whitespace trimmed",
+    "date": "2026-10-14"
+  },
+  "source": "hooks/run-watch.mjs at 45266a27^ (git show). Fix commit 45266a27: fix(run-watch): read a wait notification's output file path with its whitespace trimmed.",
+  "transcript": "none",
+  "constructed": true,
+  "fidelity_notes": {
+    "real": "The input files are byte copies of hooks/run-watch.mjs at the fix's parent 0e900339.",
+    "edited": "Nothing.",
+    "assumed": "The symptom wording and the prompt are written for the replay, not taken from a session."
+  },
+  "ready": true
+}

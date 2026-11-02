@@ -11,6 +11,8 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { EFFORTS, readKindTable } from '#model-kinds';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { usageCounts } from '#token-weights';
+import { clusteredMeanCi } from '../lib/eval-stats.mjs';
+import { pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { claudeSession, fixtureFiles, gradedSession, inPool, readFixture, runAgent } from './locate-recall.mjs';
 import { countsCost } from './pricing.mjs';
 import { dispatchLine, gradeRepair, loadFixtures, loadPlants, overlaps, parseFindings, parseRange, prepareCase } from './review-replay.mjs';
@@ -43,18 +45,18 @@ const USAGE = `usage: agent-tier.mjs [--agent <name>]... [--tier quick|full] [--
 Default: the quick fixtures of every agent in benchmarks/agent-tier/agents.json (locate-code, review-branch, fix-review, build-task, solve-hard, orchestrator, task-runner), each run at its current model and effort from lib/model-kinds.json and at cheaper settings, written to benchmarks/results/agent-tier-quick.json.
 Candidates per agent: the current setting; the same model one and two effort steps lower, down to low; one model lower at the current effort. --candidate replaces that list and repeats.
 --tier full runs every fixture of each agent and writes benchmarks/results/agent-tier-full.json.
---runs repeats every fixture of every candidate that many times; each cell records the min and max of its per-run mean score and check fraction as its spread.
+--runs repeats every fixture of every candidate that many times; each cell records its mean score and check fraction with a fixture-clustered SE and 95% interval, and no SE while the sessions cover fewer than two fixtures.
 --dry-run spends nothing and prints the session count, estimated USD and estimated wall time per agent. Each session is estimated from the sessions recorded in --out and every --history file for that agent, model, effort and fixture, else the mean of that setting's per-fixture medians, else the agent profile: its token counts priced at the model's list price times the profile usdScale for model:effort, and its wallS times wallScale. Wall time is the summed session estimates over --concurrency. A history file of the earlier agent key orchestrate counts as orchestrator.
 --merge reads the existing --out, appends the new sessions with run numbers after the setting's last recorded run, and recomputes every cell from all sessions, so a later round with --candidate and --runs grows only those cells.
 --require-api-key runs the first session alone and reads apiKeySource from its stream-json init line; unless it is ANTHROPIC_API_KEY, no further session starts, nothing is written and the exit code is 1. Every session records its apiKeySource. ANTHROPIC_API_KEY must be set in the caller's environment.
-Each cell records wilson95, the Wilson 95% interval of the share of its sessions that passed (score 1; an errored session counts as not passed, a skipped one is left out), and the summary line adds the mean cost and median wall per session.
+Each cell records wilson95, the Wilson 95% interval of the share of its sessions that passed (score 1; an errored session counts as not passed, a skipped one is left out), and the summary line adds the mean cost and median wall per session. An errored session scores 0 and its check fraction is 0; its cost and wall time stay out of the per-session means, and the line prints how many sessions were left out. After the cells, each candidate prints its score minus the agent's current setting, paired per fixture, with SE and 95% interval; the verdict better or worse appears only when the interval clears zero, else noise, and no SE under two shared fixtures.
 --max-usd stops starting sessions once spent plus reserved estimates would pass the cap, writes the results so far and exits 1.
 Exit codes: 0 done, 1 sessions skipped by --max-usd or failed run, 2 usage error. Defaults: --tier quick, --concurrency 2, --runs 1.`;
 
 const sum = (values) => values.reduce((total, value) => total + value, 0);
 const labelOf = ({ model, effort }) => `${model}:${effort}`;
 const percent = (value) => (value === null ? 'n/a' : `${(value * 100).toFixed(1)}%`);
-const failed = (error) => ({ outcome: { error, durationMs: 0 } });
+const failed = (error) => ({ outcome: { error, durationMs: null } });
 
 export function parseCandidate(text) {
   const [model, effort, ...rest] = String(text).split(':');
@@ -226,13 +228,6 @@ export function apiKeySourceOf(stdout) {
 
 const mean = (values) => (values.length === 0 ? null : sum(values) / values.length);
 
-function runSpread(graded, field) {
-  const runs = new Map();
-  for (const session of graded) runs.set(session.run ?? 1, [...(runs.get(session.run ?? 1) ?? []), session[field]]);
-  const means = [...runs.values()].map(mean).filter((value) => typeof value === 'number');
-  return means.length === 0 ? null : { min: Math.min(...means), max: Math.max(...means) };
-}
-
 export function wilson95(passes, total) {
   if (total === 0) return null;
   const share = passes / total;
@@ -243,6 +238,13 @@ export function wilson95(passes, total) {
   return [Math.max(0, centre - half), Math.min(1, centre + half)].map((bound) => Number(bound.toFixed(4)));
 }
 
+const scoreOf = (session) => (session.error ? 0 : session.score);
+const fractionOf = (session) => (session.error ? 0 : session.fraction ?? session.score);
+const isScored = (session) => !session.skipped && (Boolean(session.error) || typeof session.score === 'number');
+const intervalOf = (sessions, valueOf) => (sessions.length === 0 ? null : clusteredMeanCi(sessions.map((session) => ({ cluster: session.fixture ?? '', value: valueOf(session) }))));
+const costOf = (session) => (isNumber(session.cost_usd) ? session.cost_usd : null);
+const knownValues = (sessions, measure) => sessions.map(measure).filter(isNumber);
+
 export function summarizeCells(sessions) {
   const groups = new Map();
   for (const session of sessions) {
@@ -250,36 +252,76 @@ export function summarizeCells(sessions) {
     groups.set(key, [...(groups.get(key) ?? []), session]);
   }
   return [...groups.values()].map((own) => {
-    const graded = own.filter((session) => !session.error && !session.skipped && typeof session.score === 'number');
     const attempted = own.filter((session) => !session.skipped);
+    const finished = attempted.filter((session) => !session.error);
+    const scored = own.filter(isScored);
+    const graded = finished.filter((session) => typeof session.score === 'number');
     const passes = graded.filter((session) => session.score >= 1).length;
+    const costs = knownValues(finished, costOf);
+    const walls = knownValues(finished, wallOf);
+    const scoreCi = intervalOf(scored, scoreOf);
+    const fractionCi = intervalOf(scored, fractionOf);
     return {
       agent: own[0].agent,
       model: own[0].model,
       effort: own[0].effort,
       sessions: own.length,
+      attempted: attempted.length,
       graded: graded.length,
-      score: mean(graded.map((session) => session.score)),
-      fraction: mean(graded.map((session) => session.fraction ?? session.score)),
-      spread: { score: runSpread(graded, 'score'), fraction: runSpread(graded, 'fraction') },
-      cost_usd: sum(own.map((session) => session.cost_usd ?? 0)),
-      costPerSession: attempted.length === 0 ? null : sum(attempted.map((session) => session.cost_usd ?? 0)) / attempted.length,
-      wallS: own.length === 0 ? null : sum(own.map((session) => (session.durationMs ?? 0) / 1000)) / own.length,
-      wallMedianS: attempted.length === 0 ? null : median(attempted.map((session) => (session.durationMs ?? 0) / 1000)),
+      errored: attempted.length - finished.length,
+      score: scoreCi?.mean ?? null,
+      fraction: fractionCi?.mean ?? null,
+      scoreCi,
+      fractionCi,
+      cost_usd: sum(knownValues(own, costOf)),
+      costPerSession: mean(costs),
+      costExcluded: attempted.length - costs.length,
+      wallS: mean(walls),
+      wallMedianS: walls.length === 0 ? null : median(walls),
+      wallExcluded: attempted.length - walls.length,
       wilson95: wilson95(passes, attempted.length)
     };
   });
 }
 
-const spreadText = (spread) => (spread ? ` (${percent(spread.min)}-${percent(spread.max)})` : '');
+const comparedScore = (session) => [session.fixture ?? '', labelOf(session), scoreOf(session)];
 
-const intervalText = (interval) => (interval ? ` wilson95 [${percent(interval[0])}-${percent(interval[1])}]` : '');
+export function candidateComparisons(sessions, currentOf) {
+  const agents = [...new Set(sessions.map((session) => session.agent))];
+  return agents.flatMap((agent) => {
+    const rows = sessions.filter((session) => session.agent === agent && isScored(session));
+    const cases = pairedByCase(rows, comparedScore);
+    const current = labelOf(currentOf(agent));
+    const labels = [...new Set(rows.map(labelOf))].filter((label) => label !== current);
+    if (!rows.some((session) => labelOf(session) === current)) return [];
+    return labels.map((label) => {
+      const interval = pairedArms(cases, current, label);
+      return { agent, current, candidate: label, interval, verdict: verdictWord(interval) };
+    });
+  });
+}
+
+const percentInterval = (interval) => {
+  if (!interval) return 'n/a';
+  if (interval.se === null) return `${percent(interval.mean)} no SE`;
+  return `${percent(interval.mean)} se ${percent(interval.se)} ci95 ${percent(interval.lo)}..${percent(interval.hi)}`;
+};
+
+const wilsonText = (interval) => (interval ? ` wilson95 [${percent(interval[0])}-${percent(interval[1])}]` : '');
+
+const wallSeconds = (seconds) => (isNumber(seconds) ? `${seconds.toFixed(0)}s` : 'n/a');
+
+export function comparisonLine({ agent, current, candidate, interval, verdict }) {
+  if (interval === null) return `${agent} ${candidate} minus ${current}: no shared fixture`;
+  const spread = interval.se === null ? 'no SE' : `se ${percent(interval.se)} ci95 ${percent(interval.lo)}..${percent(interval.hi)}`;
+  return `${agent} ${candidate} minus ${current}: score ${percent(interval.mean)} ${spread} over ${interval.n} shared fixtures: ${verdict}`;
+}
 
 export function cellLine(cell, config) {
-  const spread = cell.spread ?? {};
-  const perSession = cell.costPerSession === null || cell.costPerSession === undefined ? '' : ` $${cell.costPerSession.toFixed(3)}/session`;
+  const perSession = isNumber(cell.costPerSession) ? ` $${cell.costPerSession.toFixed(3)}/session` : '';
   const medianWall = isNumber(cell.wallMedianS) ? ` median ${cell.wallMedianS.toFixed(0)}s` : '';
-  return `${cell.agent} ${labelOf(cell)} ${config[cell.agent].metric} ${percent(cell.score)}${spreadText(spread.score)} checks ${percent(cell.fraction)}${spreadText(spread.fraction)} usd $${cell.cost_usd.toFixed(2)}${perSession} wall ${cell.wallS.toFixed(0)}s${medianWall}${intervalText(cell.wilson95)}`;
+  const excluded = ` errored ${cell.errored}, cost excluded ${cell.costExcluded} and wall excluded ${cell.wallExcluded} of ${cell.attempted}`;
+  return `${cell.agent} ${labelOf(cell)} ${config[cell.agent].metric} ${percentInterval(cell.scoreCi)} checks ${percentInterval(cell.fractionCi)} usd $${cell.cost_usd.toFixed(2)}${perSession} wall ${wallSeconds(cell.wallS)}${medianWall}${wilsonText(cell.wilson95)}${excluded}`;
 }
 
 const git = (repository, args) => execFileSync('git', ['-C', repository, ...args], { encoding: 'utf8' });
@@ -538,10 +580,11 @@ async function buildContext(jobs, home, pluginRoot) {
 
 function writeResults(flags, sessions, config) {
   const cells = summarizeCells(sessions);
-  const result = { tier: flags.tier, runs: lastRunOf(sessions), cells, sessions };
+  const comparisons = candidateComparisons(sessions, (agent) => settingOf(agent, readKindTable()));
+  const result = { tier: flags.tier, runs: lastRunOf(sessions), cells, comparisons, sessions };
   fs.mkdirSync(path.dirname(flags.out), { recursive: true });
   fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
-  process.stdout.write(`${cells.map((cell) => cellLine(cell, config)).join('\n')}\nwrote ${flags.out}\n`);
+  process.stdout.write(`${[...cells.map((cell) => cellLine(cell, config)), ...comparisons.map(comparisonLine)].join('\n')}\nwrote ${flags.out}\n`);
 }
 
 const knownSessions = (flags) => [...flags.history.flatMap(recordedSessions), ...recordedSessions(flags.out)];

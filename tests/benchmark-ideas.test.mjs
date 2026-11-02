@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { HEADLESS_LINE, MAKER_LINE, caseMeans, compareToBaseline, makerArguments, makerPrompt, projectedCostLine, rawRecordsFile, recordedCosts, runFailure, scoreDirectory, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
-import { JUDGE_ARGUMENTS, addRarity, calibration, compareMarkdown, decisions, extractRun, modalShare, resultsMarkdown, runRecord } from '../benchmarks/ideas-score.mjs';
+import { HEADLESS_LINE, MAKER_LINE, assertSameJudge, caseMeans, compareToBaseline, makerArguments, makerPrompt, projectedCostLine, rawRecordsFile, recordedCosts, runFailure, scoreDirectory, unpricedRuns, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
+import { JUDGE_ARGUMENTS, JUDGE_HASH, addRarity, calibration, compareMarkdown, decisions, extractRun, modalShare, resultsMarkdown, runRecord, scoreOption } from '../benchmarks/ideas-score.mjs';
 
 const IDEAS = path.join(import.meta.dirname, '..', 'benchmarks', 'ideas.mjs');
 const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'benchmarks', 'ideas', 'cases.json'), 'utf8'));
@@ -33,12 +33,42 @@ test('caseMeans averages each metric per case, skipping null values', () => {
 
 test('compareToBaseline reads the stored base arm and prints each side\'s run count above the table', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-baseline-'));
-  const stored = ['tide', 'shopping', 'notes'].flatMap((id) => [1, 2, 3, 4, 5].map((run) => ({ case: id, run, fit: 3, originality: 2 })));
+  const stored = ['tide', 'shopping', 'notes'].flatMap((id) => [1, 2, 3, 4, 5].map((run) => ({ case: id, run, judge: JUDGE_HASH, fit: 3, originality: 2 })));
   savedRecords(dir, 'base', JSON.stringify(stored));
-  const text = compareToBaseline({ baselineDir: dir, records: [{ case: 'tide', run: 1, fit: 4, originality: 2 }] });
+  const text = compareToBaseline({ baselineDir: dir, records: [{ case: 'tide', run: 1, judge: JUDGE_HASH, fit: 4, originality: 2 }] });
   assert.match(text, /^runs: baseline 15 \(per-case mean of 3 cases\), new 1\n/);
-  assert.match(text, /\| metric \| diff \| two SE \| verdict \|/);
+  assert.match(text, /\| metric \| diff \| se \| ci95 \| cases paired \| verdict \|/);
   assert.match(text, /\| fit \| /);
+});
+
+test('a compare needs both sides scored by the same judge prompts', () => {
+  const side = (judge) => [{ case: 'tide', run: 1, ...(judge === undefined ? {} : { judge }), fit: 3 }];
+  assert.doesNotThrow(() => assertSameJudge({ left: side('a'), right: side('a') }));
+  assert.throws(() => assertSameJudge({ left: side('a'), right: side('b') }), /rescore the baseline with --score/);
+  assert.throws(() => assertSameJudge({ left: side(undefined), right: side('a') }), /rescore the baseline with --score/);
+  assert.throws(() => assertSameJudge({ left: side('a'), right: side(undefined) }), /rescore the baseline with --score/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-baseline-'));
+  savedRecords(dir, 'base', JSON.stringify(side(undefined)));
+  assert.throws(() => compareToBaseline({ baselineDir: dir, records: side(JUDGE_HASH) }), /rescore the baseline with --score/);
+});
+
+test('--compare of folders with different or missing judges exits 2', () => {
+  const folder = (judge) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-compare-'));
+    savedRecords(dir, 'base', JSON.stringify([{ case: 'tide', run: 1, ...(judge === undefined ? {} : { judge }), fit: 3 }]));
+    return path.join(dir, 'base');
+  };
+  const compare = (a, b) => spawnSync(process.execPath, [IDEAS, '--compare', a, b], { encoding: 'utf8' });
+  const same = compare(folder('a'), folder('a'));
+  assert.equal(same.status, 0);
+  const differs = compare(folder('a'), folder('b'));
+  assert.equal(differs.status, 2);
+  assert.match(differs.stderr, /rescore the baseline with --score/);
+  assert.equal(compare(folder(undefined), folder('a')).status, 2);
+});
+
+test('runRecord stores the judge hash of the originality and fit prompts', () => {
+  assert.match(runRecord({ caseId: 'c', run: 1, options: [], shapes: [], recommended: null }).judge, /^[0-9a-f]{64}$/);
 });
 
 test('--baseline without --score is a usage error', () => {
@@ -70,8 +100,9 @@ test('recordedCosts reads costUsd from the arm records file, skipping null costs
 });
 
 test('projectedCostLine multiplies planned cells by the median recorded USD, else cost unknown', () => {
-  assert.equal(projectedCostLine(10, [1, 3, 8]), 'projected cost: $30.00 (10 cells x median $3.0000 of 3 recorded runs)');
-  assert.equal(projectedCostLine(10, []), 'projected cost: cost unknown');
+  assert.equal(projectedCostLine(10, [1, 3, 8]), 'projected cost: $30.00 (10 cells x median $3.0000 of 3 recorded runs, 0 without cost excluded)');
+  assert.equal(projectedCostLine(10, [1, 3, 8], 2), 'projected cost: $30.00 (10 cells x median $3.0000 of 3 recorded runs, 2 without cost excluded)');
+  assert.equal(projectedCostLine(10, []), 'projected cost: cost unknown, 0 recorded runs without cost excluded');
 });
 
 test('dry mode projects cost from the records file of --out, else prints cost unknown', () => {
@@ -79,9 +110,25 @@ test('dry mode projects cost from the records file of --out, else prints cost un
   const ideas = () => spawnSync(process.execPath, [IDEAS, '--n', '1', '--out', out], { encoding: 'utf8' });
   const cells = Object.keys(CASES).length;
   assert.match(ideas().stdout, /projected cost: cost unknown/);
+  assert.match(ideas().stdout, /0 recorded runs without cost excluded/);
   savedRecords(out, 'base', JSON.stringify([{ costUsd: 2 }]));
   assert.match(ideas().stdout, new RegExp(`projected cost: \\$${(2 * cells).toFixed(2).replace('.', '\\.')} `));
   assert.match(ideas().stdout, /nothing spent/);
+});
+
+test('--dry-run plans only, even with --confirm, and exits 0 without a run', () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-dry-confirm-'));
+  const run = spawnSync(process.execPath, [IDEAS, '--confirm', '--dry-run', '--out', out], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /nothing spent/);
+  assert.deepEqual(fs.readdirSync(out), []);
+});
+
+test('unpricedRuns counts recorded runs without a numeric cost', () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-unpriced-'));
+  savedRecords(out, 'base', JSON.stringify([{ costUsd: 1 }, { costUsd: null }, {}]));
+  assert.equal(unpricedRuns(out, 'base'), 2);
+  assert.equal(unpricedRuns(out, 'absent'), 0);
 });
 
 test('metrics, rarity and modal share compute on fixed options', () => {
@@ -142,8 +189,9 @@ function fakeJudge(options, controlsOk) {
     }
     const title = /Option: ([^:]+):/.exec(prompt.split('The problem and the option follow.')[1])[1];
     const key = keys.get(title);
-    if (key) return JSON.stringify({ originality: controlsOk ? key.originality : 6 - key.originality, fit: key.fit });
-    return JSON.stringify({ originality: 4, fit: 4 });
+    const dimension = /on one scale: (\w+)/.exec(prompt)[1];
+    if (key) return JSON.stringify({ [dimension]: dimension === 'originality' && !controlsOk ? 6 - key.originality : key[dimension] });
+    return JSON.stringify({ [dimension]: 4 });
   };
 }
 
@@ -214,8 +262,8 @@ test('failed runs are listed in the results and left out of metrics and n', asyn
   await scoreDirectory({ dir, arm: 'base', judge: fakeJudge(['alpha', 'beta'], true), results });
   const text = fs.readFileSync(results, 'utf8');
   const scoredRuns = ids.length * 2 - 1;
-  assert.match(text, new RegExp(`Failed runs, left out of every metric and n: ${ids[0]}/2 \\(exit code 1\\)`));
-  assert.match(text, new RegExp(`\\| options \\| 2 \\| 0 \\| ${scoredRuns} \\|`));
+  assert.match(text, new RegExp(`Failed runs, counted as failures 1 of \\d+, left out of every metric and n: ${ids[0]}/2 \\(exit code 1\\)`));
+  assert.match(text, new RegExp(`\\| options \\| 2 \\| 0 \\| 2\\.\\.2 \\| 0 \\| ${scoredRuns} \\|`));
   const records = JSON.parse(fs.readFileSync(path.join(dir, 'base', 'records.json'), 'utf8'));
   assert.equal(records.length, scoredRuns);
   assert.ok(!records.some((record) => record.case === ids[0] && record.run === 2));
@@ -245,17 +293,60 @@ test('the recommended option and the run cost are read from a fixture, absent as
   assert.deepEqual(usageOf('{"type":"result"}'), { tokens: null, costUsd: null });
 });
 
-test('a metric with sd 0 prints no MDE, is named at a floor or ceiling, and a compare against it is not significant', () => {
-  const record = (strong, fit) => ({ case: 'c', run: 1, options: 4, shapes: 4, duplicateShare: 0, originality: 1, fit, strong, rare: 0, recommendedShape: 0 });
-  const base = [record(0, 3), record(0, 4), record(0, 3.5)];
+test('a metric with sd 0 prints no MDE, is named at a floor or ceiling, and a compare against it reads no SE (sd 0), not a rise', () => {
+  const record = (id, strong, fit) => ({ case: id, run: 1, options: 4, shapes: 4, duplicateShare: 0, originality: 1, fit, strong, rare: 0, recommendedShape: 0 });
+  const base = [record('a', 0, 3), record('b', 0, 4), record('c', 0, 3.5)];
   const text = resultsMarkdown({ arm: 'base', records: base, caseShares: { c: 1 }, verdict: { share: 1, passed: true }, unscored: [] });
-  assert.match(text, /\| strong \| 0 \| 0 \| 3 \| n\/a \(sd 0\) \|/);
+  assert.match(text, /\| strong \| 0 \| 0 \| 0\.\.0 \| 0 \| 3 \| 0 \| n\/a \(sd 0\) \|/);
   assert.doesNotMatch(text, /\| fit \|[^\n]*n\/a/);
   assert.match(text, /At a floor or ceiling \(sd 0, no detectable effect\): strong 0, options 4, shapes 4, duplicateShare 0, originality 1, rare 0\n/);
-  const variant = [record(1, 3), record(1, 4), record(1, 3.5)];
+  const variant = [record('a', 1, 3), record('b', 1, 4), record('c', 1, 3.5)];
   const table = compareMarkdown({ left: base, right: variant });
-  assert.match(table, /\| strong \| 1 \| 0 \| no SE \(sd 0\) \|/);
+  assert.match(table, /\| strong \| 1 \| 0 \| 1\.\.1 \| 3 \| no SE \(sd 0\) \|/);
+  assert.match(table, /\| fit \| 0 \| 0 \| 0\.\.0 \| 3 \| noise \|/);
   assert.doesNotMatch(table, /\| strong \|[^\n]*rise/);
+});
+
+test('a compare is paired per case: a steady gain across cases reads rise, one shared case reads no SE', () => {
+  const records = (gains) => gains.map((gain, index) => ({ case: `c${index}`, run: 1, fit: 3 + gain + index * 0.1 }));
+  const left = records([0, 0, 0, 0]);
+  const rise = compareMarkdown({ left, right: records([1, 1.1, 0.9, 1]) });
+  assert.match(rise, /\| fit \| 1 \| [^\n]* \| 4 \| rise \|/);
+  const fall = compareMarkdown({ left, right: records([-1, -1.1, -0.9, -1]) });
+  assert.match(fall, /\| fit \| -1 \| [^\n]* \| 4 \| fall \|/);
+  const noisy = compareMarkdown({ left, right: records([1, -1, 1, -1]) });
+  assert.match(noisy, /\| fit \| 0 \| [^\n]* \| 4 \| noise \|/);
+  const single = compareMarkdown({ left: left.slice(0, 1), right: records([1]) });
+  assert.match(single, /\| fit \| 1 \| no SE \| no SE \| 1 \| no SE \|/);
+});
+
+test('results print a case-clustered SE and CI per metric, an excluded count, and the failure share', () => {
+  const record = (id, fit, costUsd) => ({ case: id, run: 1, options: 2, shapes: 2, duplicateShare: 0, originality: 3, fit, strong: 0, rare: 0, recommendedShape: 0, costUsd });
+  const records = [record('a', 2, 1), record('b', 4, null), record('c', 3, 2)];
+  const text = resultsMarkdown({ arm: 'base', records, caseShares: { a: 1 }, verdict: { share: 1, passed: true }, unscored: [], failed: ['d/1 (exit code 1)'], stability: { agree: 5, total: 6 } });
+  assert.match(text, /\| fit \| 3 \| 0\.577 \| 1\.868\.\.4\.132 \| 1 \| 3 \| 0 \|/);
+  assert.match(text, /\| costUsd \| 1\.5 \| 0\.5 \| [^\n]* \| 0\.707 \| 2 \| 1 \|/);
+  assert.match(text, /counted as failures 1 of 4/);
+  assert.match(text, /Judge vote stability: 5 of 6 scored options had 3 identical votes/);
+});
+
+test('scoreOption asks each dimension in its own prompt, takes the median of three votes and reports whether all six agreed', async () => {
+  const prompts = [];
+  const votes = (originality, fit) => {
+    const queue = [...originality.map((value) => ({ originality: value })), ...fit.map((value) => ({ fit: value }))];
+    return ({ prompt }) => {
+      prompts.push(prompt);
+      return JSON.stringify(queue.shift());
+    };
+  };
+  const option = { title: 't', mechanism: 'm' };
+  const steady = await scoreOption({ judge: votes([4, 4, 4], [3, 3, 3]), problem: 'p', option });
+  assert.deepEqual(steady, { originality: 4, fit: 3, agree: true });
+  assert.equal(prompts.length, 6);
+  assert.ok(prompts.slice(0, 3).every((prompt) => /on one scale: originality/.test(prompt) && !/on one scale: fit/.test(prompt)));
+  assert.ok(prompts.slice(3).every((prompt) => /on one scale: fit/.test(prompt) && !/on one scale: originality/.test(prompt)));
+  const split = await scoreOption({ judge: votes([2, 4, 5], [3, 3, 3]), problem: 'p', option });
+  assert.deepEqual(split, { originality: 4, fit: 3, agree: false });
 });
 
 test('an answer with no parsable option fails before any judge call; a listed answer reaches the judge', async () => {

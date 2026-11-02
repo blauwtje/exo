@@ -14,8 +14,8 @@
 //   exo-settings.txt   `settings.mjs show` in repo/, as the plugin resolves it
 //
 //   node benchmarks/lean-gates.mjs --version old|new --run <n> --out <dir>
-//     [--plan old|new] [--model claude-opus-5-5] [--effort medium] [--budget 30]
-//     [--timeout-min 110] [--dry-run]
+//     [--plan old|new] [--model claude-opus-5-5] [--effort medium] [--full]
+//     [--budget 5|30] [--timeout-min 20|110] [--dry-run]
 //   node benchmarks/lean-gates.mjs --version <label> --plugin-dir <exo checkout> --plan old|new --run <n> --out <dir>
 //   node benchmarks/lean-gates.mjs --version old|new --probe --out <dir>
 //
@@ -23,6 +23,10 @@
 // CLAUDE.local.md or .claude/ in any ancestor (the user config dir aside),
 // since Claude Code loads those from parent directories whatever
 // --setting-sources says. Use /Users/thomash/bench-runs/lean-gates-<date>.
+//
+// The default is the quick tier, a smoke capped at $5 and 20 minutes that
+// shows the argv and the first gates; --full restores the $30 and 110 minute
+// caps of a whole build. Explicit --budget and --timeout-min override both.
 //
 // --dry-run prepares the run dir and prints the argv, prompt and env diff,
 // and starts no session. A run dir that exists is never reused.
@@ -41,7 +45,9 @@ import { fileURLToPath } from 'node:url';
 import { BENCHMARK_CACHE_ENV, confinedClaude } from '#confine-claude';
 import { configDirectory } from '#config-directory';
 import { exoLoaded } from './cell-usage.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 import { medianCost } from './routing.mjs';
+import { meanCi } from '../lib/eval-stats.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BENCH = path.join(ROOT, 'benchmarks', 'lean-gates');
@@ -81,6 +87,7 @@ export const PROMPT = `First run \`npm test\` once in the foreground in this ses
 
 export const PROBE_PROMPT = 'Reply with the single word OK.';
 const PROBE = { model: 'haiku', budget: '0.5', timeoutMin: 5 };
+export const TIERS = { quick: { budget: '5', timeoutMin: 20 }, full: { budget: '30', timeoutMin: 110 } };
 
 // --setting-sources does not reach CLAUDE.md discovery: the run that found
 // this loaded ~/.claude/CLAUDE.md and the exo checkout's CLAUDE.md files as
@@ -90,7 +97,7 @@ export const ISOLATION_ENV = { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_
 const CONTEXT_NAMES = ['CLAUDE.md', 'CLAUDE.local.md', '.claude'];
 
 export function parseArguments(argv) {
-  const options = { version: null, plan: null, pluginDir: null, run: null, out: null, model: 'claude-opus-5-5', effort: 'medium', budget: '30', timeoutMin: 110, dryRun: false, probe: false };
+  const options = { version: null, plan: null, pluginDir: null, run: null, out: null, model: 'claude-opus-5-5', effort: 'medium', budget: null, timeoutMin: null, full: false, dryRun: false, probe: false };
   const value = (index) => {
     if (index >= argv.length) throw new Error(`${argv[index - 1]} needs a value`);
     return argv[index];
@@ -106,6 +113,7 @@ export function parseArguments(argv) {
     else if (flag === '--effort') options.effort = value(++index);
     else if (flag === '--budget') options.budget = value(++index);
     else if (flag === '--timeout-min') options.timeoutMin = Number(value(++index));
+    else if (flag === '--full') options.full = true;
     else if (flag === '--dry-run') options.dryRun = true;
     else if (flag === '--probe') options.probe = true;
     else throw new Error(`unknown flag ${flag}`);
@@ -121,6 +129,9 @@ export function parseArguments(argv) {
     if (options.plan === null) throw new Error('with --plugin-dir, name the plan: --plan old|new');
   }
   if (!(options.plan in PLUGIN_DIRS)) throw new Error('--plan must be old or new');
+  options.tier = options.full ? 'full' : 'quick';
+  options.budget ??= TIERS[options.tier].budget;
+  options.timeoutMin ??= TIERS[options.tier].timeoutMin;
   if (options.probe) Object.assign(options, PROBE);
   else if (!Number.isInteger(options.run) || options.run < 1) throw new Error('--run must be a positive integer');
   if (options.out === null) throw new Error('--out <dir> is required');
@@ -243,6 +254,13 @@ export function projectedCostLine(costs) {
   const median = medianCost(costs.map((cost_usd) => ({ cost_usd })));
   if (median === null) return 'projected cost: cost unknown';
   return `projected cost: $${median.toFixed(2)} (median of ${costs.length} recorded runs)`;
+}
+
+export function costSpreadLine(costs) {
+  if (costs.length === 0) return 'cost spread: no recorded runs';
+  const { mean, se } = meanCi(costs);
+  if (se === null) return `cost spread: mean $${mean.toFixed(2)}, no SE (n=1)`;
+  return `cost spread: mean $${mean.toFixed(2)} ±$${se.toFixed(2)} SE (n=${costs.length})`;
 }
 
 function sha256(file) {
@@ -408,6 +426,7 @@ async function main() {
     pluginDirty: execFileSync('git', ['-C', pluginDir, 'status', '--porcelain'], { encoding: 'utf8' }).trim() !== '',
     model: options.model,
     effort: options.effort,
+    tier: options.tier,
     budget: String(options.budget),
     timeoutMin: Number(options.timeoutMin),
     sessionId,
@@ -437,7 +456,10 @@ async function main() {
     console.log(`env removed: ${meta.env.removed.join(' ') || '(none)'}`);
     console.log(`env added: ${meta.env.added.join(' ')}`);
     console.log(`transcript dir: ${meta.transcriptDir}`);
-    console.log(projectedCostLine(recordedRunCosts(path.resolve(options.out))));
+    const costs = recordedRunCosts(path.resolve(options.out));
+    console.log(projectedCostLine(costs));
+    console.log(costSpreadLine(costs));
+    console.log(plannedPowerLine({ tasks: 1 }));
     console.log('dry run: no session started');
     return;
   }

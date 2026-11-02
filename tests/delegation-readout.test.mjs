@@ -91,10 +91,26 @@ test('--check exits 1 when exo is neither cheaper nor lighter', async () => {
   assert.match(result.stderr, /not lower in cost or mean peak/);
 });
 
-test('--check exits 1 when exo passes fewer cells than exo-before', async () => {
-  const result = await readout(await cells((cell) => (cell.arm === 'exo' && cell.task === LEAN && cell.run === 1 ? { cost: 0.8, pass: false } : { cost: cell.arm === 'exo' ? 0.8 : 1 })));
+test('--check exits 1 when the paired pass diff of exo against exo-before lies below zero', async () => {
+  const failing = (cell) => cell.arm === 'exo' && cell.task !== 'value-web-research';
+  const result = await readout(await cells((cell) => ({ cost: cell.arm === 'exo' ? 0.8 : 1, ...(failing(cell) ? { pass: false } : {}) })));
   assert.equal(result.code, 1);
-  assert.match(result.stderr, /pass 8\/9 against 9\/9/);
+  assert.match(result.stderr, /pass 3\/9 against 9\/9/);
+  assert.match(result.stdout, /paired pass diff exo minus exo-before: -0\.67 ±0\.54 \(95% CI, 9 pairs, 3 tasks\)/);
+});
+
+test('--check prints a single lost pass with its CI and judges no pass drop while the CI crosses zero', async () => {
+  const result = await readout(await cells((cell) => (cell.arm === 'exo' && cell.task === LEAN && cell.run === 1 ? { cost: 0.8, pass: false } : { cost: cell.arm === 'exo' ? 0.8 : 1 })));
+  assert.equal(result.code, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /arm exo pass 8\/9/);
+  assert.match(result.stdout, /paired pass diff exo minus exo-before: -0\.11 ±0\.19 \(95% CI, 9 pairs, 3 tasks\)/);
+});
+
+test('--check judges cost not lower when the paired cost diff varies across tasks and its CI crosses zero', async () => {
+  const result = await readout(await cells((cell) => (cell.arm === 'exo' ? { cost: { 'value-web-research': 0.9, 'value-rename-propagation': 1.05, [LEAN]: 0.8 }[cell.task] } : {})));
+  assert.equal(result.code, 1);
+  assert.match(result.stdout, /cost lower no peak lower no/);
+  assert.match(result.stdout, /paired cost diff exo minus exo-before: -\$0\.08 ±\$0\.12 \(95% CI, 9 pairs, 3 tasks\)/);
 });
 
 test('--check exits 1 when an exo cell of the lean task made an Agent call', async () => {
@@ -123,13 +139,15 @@ test('--check names the first cell with no checks and exits 1', async () => {
   assert.match(result.stderr, /value-web-research exo #2: no checks\.json/);
 });
 
-test('--check drops a run whose exo-before cell timed out from both arms, prints one DROPPED line and judges the remaining pairs', async () => {
+test('--check counts a timed-out exo-before cell as a failed pass, leaves it and its partner out of cost and peak, and prints the count', async () => {
   const set = await cells((cell) => (cell.arm === 'exo-before' && cell.task === 'value-web-research' && cell.run === 2 ? { timedOut: true, pass: false } : cheaperExo(cell)));
   const result = await readout(set);
   assert.equal(result.code, 0, result.stderr + result.stdout);
-  assert.deepEqual(result.stdout.match(/^DROPPED .*$/gm), ['DROPPED value-web-research run 2: timeout in exo-before']);
-  assert.match(result.stdout, /arm exo-before pass 8\/8 cost \$8\.00 mean peak 100000 agent calls 0/);
-  assert.match(result.stdout, /arm exo pass 8\/8 cost \$6\.40 mean peak 100000 agent calls 0/);
+  assert.doesNotMatch(result.stdout, /DROPPED/);
+  assert.match(result.stdout, /arm exo-before pass 8\/9 cost \$8\.00 mean peak 100000 agent calls 0 \(1 cells left out of cost and peak\)/);
+  assert.match(result.stdout, /arm exo pass 9\/9 cost \$6\.40 mean peak 100000 agent calls 0 \(1 cells left out of cost and peak\)/);
+  assert.match(result.stdout, /paired cost diff exo minus exo-before: -\$0\.20 ±\$0\.00 \(95% CI, 8 pairs, 3 tasks\)/);
+  assert.match(result.stdout, /paired pass diff exo minus exo-before: 0\.11 /);
 });
 
 test('--check counts the Agent calls of a lean exo cell whose exo-before partner timed out', async () => {
@@ -141,20 +159,20 @@ test('--check counts the Agent calls of a lean exo cell whose exo-before partner
   assert.match(result.stderr, /1 Agent calls in value-lean-minimal-diff/);
 });
 
-test('--check prints no row for a task whose runs were all dropped', async () => {
+test('--check prints n/a, never NaN, for a task whose exo-before cells all timed out', async () => {
   const result = await readout(await cells((cell) => (cell.arm === 'exo-before' && cell.task === LEAN ? { timedOut: true, pass: false } : cheaperExo(cell))));
   assert.equal(result.code, 0, result.stderr + result.stdout);
   assert.doesNotMatch(result.stdout, /NaN/);
-  assert.doesNotMatch(result.stdout, /^value-lean-minimal-diff /m);
+  assert.match(result.stdout, /^value-lean-minimal-diff exo-before pass 0\/3 cost n\/a mean peak n\/a agent calls 0 \(3 cells left out of cost and peak\)$/m);
 });
 
-test('--check prints the Agent calls of a dropped lean exo cell, so the printed lines agree with the failure', async () => {
+test('--check prints the Agent calls of a lean exo cell whose partner timed out, so the printed lines agree with the failure', async () => {
   const result = await readout(await cells((cell) => {
     if (cell.task !== LEAN || cell.run !== 1) return cheaperExo(cell);
     return cell.arm === 'exo-before' ? { timedOut: true, pass: false } : { cost: 0.8, agents: ['a1'] };
   }));
   assert.equal(result.code, 1);
-  assert.match(result.stdout, /dropped runs: value-lean-minimal-diff exo agent calls 1, counted in the check/);
+  assert.match(result.stdout, /^value-lean-minimal-diff exo pass 3\/3 cost \$1\.60 mean peak 100000 agent calls 1 \(1 cells left out of cost and peak\)$/m);
 });
 
 test('--check names a result.json with no total_cost_usd and exits 1', async () => {

@@ -7,8 +7,11 @@ import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { withoutParentSession } from './lean-gates.mjs';
 import { BEFORE_ARM } from './plugin-copies.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 import { ARMS, MODELS, ROOT } from './tasks.mjs';
-import { compareMeans as compareStatistics, meanAndSd } from './statistics.mjs';
+import { clusteredMeanCi } from '../lib/eval-stats.mjs';
+import { intervalText, knownMean, knownMeanText, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
+import { meanAndSd } from './statistics.mjs';
 import { cellFits, cellSpend, copyPluginWithoutTasks, parseSpendCap, prepareValueRepo, scoreValueRepo } from './value.mjs';
 
 export const FIXTURES_ROOT = fileURLToPath(new URL('./decided/', import.meta.url));
@@ -160,36 +163,65 @@ function share(cells, predicate) {
   return cells.length === 0 ? null : cells.filter(predicate).length / cells.length;
 }
 
+function shareInterval(cells, predicate) {
+  if (cells.length === 0) return null;
+  return clusteredMeanCi(cells.map((cell) => ({ cluster: cell.task, value: Number(predicate(cell)) })));
+}
+
+const isHiddenPass = (cell) => cell.defaultPass === true;
+const isWrongDefault = (cell) => cell.questions === 0 && !cell.defaultPass && cell.alternativePass;
+const isReversal = (cell) => cell.defaultPass && cell.reversed;
+
 export function summarize(cells) {
-  const questions = cells.map((cell) => cell.questions);
+  const settled = cells.filter((cell) => cell.aborted !== true);
+  const questions = settled.map((cell) => cell.questions);
   return {
     cells: cells.length,
+    aborted: cells.length - settled.length,
     questions,
     meanQuestions: meanAndSd(questions).mean,
-    hiddenPassRate: share(cells, (cell) => cell.defaultPass),
-    wrongDefaultRate: share(cells, (cell) => cell.questions === 0 && !cell.defaultPass && cell.alternativePass),
-    reversalRate: share(cells, (cell) => cell.defaultPass && cell.reversed)
+    hiddenPassRate: share(cells, isHiddenPass),
+    wrongDefaultRate: share(cells, isWrongDefault),
+    reversalRate: share(cells, isReversal)
   };
 }
 
-function compareMeans(before, after) {
-  const comparison = compareStatistics(before, after);
-  if (comparison.verdict !== 'no SE (sd 0)') return comparison;
-  return { ...comparison, verdict: comparison.diff < 0 ? 'fall' : 'rise' };
+function summaryIntervals(cells) {
+  return {
+    questions: knownMean(cells.map(settledQuestions)),
+    cost: knownMean(cells.map((cell) => (cell.aborted === true ? null : cell.cost))),
+    hiddenPass: shareInterval(cells, isHiddenPass),
+    wrongDefault: shareInterval(cells, isWrongDefault),
+    reversal: shareInterval(cells, isReversal)
+  };
 }
+
+function taskPairs(beforeCells, afterCells, valueOf) {
+  const tagged = (cells, arm) => cells.map((cell) => [cell.task, arm, valueOf(cell)]).filter(([, , value]) => typeof value === 'number');
+  return pairedArms(pairedByCase([...tagged(beforeCells, 'before'), ...tagged(afterCells, 'after')], (row) => row), 'before', 'after');
+}
+
+const settledQuestions = (cell) => (cell.aborted === true ? null : cell.questions);
+const passValue = (cell) => Number(cell.defaultPass === true);
 
 export function targetVerdict(beforeCells, afterCells) {
   const before = summarize(beforeCells);
   const after = summarize(afterCells);
+  if (before.meanQuestions === null || after.meanQuestions === null) return { met: false, note: 'no settled cells in an arm' };
   if (before.meanQuestions === 0) return { met: false, note: 'exo-before asks no questions' };
-  const comparison = compareMeans(before.questions, after.questions);
-  const guard = compareMeans(beforeCells.map((cell) => Number(cell.defaultPass)), afterCells.map((cell) => Number(cell.defaultPass)));
+  const questionDiff = taskPairs(beforeCells, afterCells, settledQuestions);
+  const guardDiff = taskPairs(beforeCells, afterCells, passValue);
+  const words = { up: 'rise', down: 'fall' };
+  const verdict = verdictWord(questionDiff, words);
+  const guardVerdict = verdictWord(guardDiff, words);
   const halved = after.meanQuestions <= TARGET_RATIO * before.meanQuestions;
   return {
-    met: halved && comparison.verdict === 'fall' && guard.verdict !== 'fall',
+    met: halved && verdict === 'fall' && guardVerdict !== 'fall',
     ratio: after.meanQuestions / before.meanQuestions,
-    verdict: comparison.verdict,
-    guardVerdict: guard.verdict
+    verdict,
+    guardVerdict,
+    questionDiff,
+    guardDiff
   };
 }
 
@@ -299,6 +331,11 @@ function turnCost(streamText) {
   return typeof cost === 'number' ? cost : null;
 }
 
+export function turnAborted(streamText) {
+  const result = finalResult(streamText);
+  return result === null || result.is_error === true;
+}
+
 function saveTurn(rawDirectory, name, streamText) {
   fs.mkdirSync(rawDirectory, { recursive: true });
   fs.writeFileSync(path.join(rawDirectory, `${name}.jsonl`), streamText);
@@ -330,6 +367,7 @@ async function playCell({ cell, setup, options, rawDirectory, repo, cellRoot, tm
   const args = claudeArguments({ prompt: promptFor(fixture, setup), resume: null, options, pluginDirs: setup.pluginDirs });
   const first = await runTurn({ ...context, args });
   saveTurn(rawDirectory, `${fixture.id}-${arm}-${run}-turn1`, first);
+  if (turnAborted(first)) return { task: fixture.id, arm, run, questions: null, defaultPass: false, alternativePass: false, reversed: false, aborted: true, cost: turnCost(first) };
   const scoring = { repo, startTree, scratch };
   const defaultPass = await passesCheck({ ...scoring, fixture, mode: 'default' });
   const alternativePass = await passesCheck({ ...scoring, fixture, mode: 'alternative' });
@@ -363,12 +401,19 @@ function plannedLines(cells, options, problems) {
   return lines;
 }
 
-function reportLines(records, arms) {
+export function reportLines(records, arms) {
   const lines = [];
   for (const arm of arms) {
-    const summary = summarize(records.filter((record) => record.arm === arm));
+    const armRecords = records.filter((record) => record.arm === arm);
+    const summary = summarize(armRecords);
     if (summary.cells === 0) continue;
-    lines.push(`${arm}: questions ${summary.meanQuestions.toFixed(2)} per task over ${summary.cells} cells, hidden pass ${summary.hiddenPassRate}, wrong default ${summary.wrongDefaultRate}, one-reply reversal ${summary.reversalRate}`);
+    const intervals = summaryIntervals(armRecords);
+    lines.push(`${arm}: ${summary.cells} cells, ${summary.aborted} aborted or errored counted as failed`);
+    lines.push(`  questions per task ${knownMeanText(intervals.questions)}`);
+    lines.push(`  cost ${knownMeanText(intervals.cost)}`);
+    lines.push(`  hidden pass ${intervalText(intervals.hiddenPass)}`);
+    lines.push(`  wrong default ${intervalText(intervals.wrongDefault)}`);
+    lines.push(`  one-reply reversal ${intervalText(intervals.reversal)}`);
   }
   return lines;
 }
@@ -401,6 +446,11 @@ async function runPaid({ cells, options, problems }) {
   }
 }
 
+function targetText(target) {
+  if (target.note !== undefined) return target.note;
+  return `questions per task, exo minus exo-before, paired per task: ${intervalText(target.questionDiff)}, ${target.verdict}; hidden pass paired per task: ${intervalText(target.guardDiff)}, ${target.guardVerdict}; ratio ${target.ratio.toFixed(2)}`;
+}
+
 function finish({ records, options }) {
   const target = options.arms.includes(BEFORE_ARM) && options.arms.includes('exo')
     ? targetVerdict(records.filter((record) => record.arm === BEFORE_ARM), records.filter((record) => record.arm === 'exo'))
@@ -410,7 +460,7 @@ function finish({ records, options }) {
   fs.mkdirSync(RESULTS_ROOT, { recursive: true });
   fs.writeFileSync(resultsFile(options.split), `${JSON.stringify(output, null, 2)}\n`);
   for (const line of reportLines(records, options.arms)) console.log(line);
-  if (target !== null) console.log(`target ${target.met ? 'met' : 'unmet'}: ${JSON.stringify(target)}`);
+  if (target !== null) console.log(`target ${target.met ? 'met' : 'unmet'}: ${targetText(target)}`);
   console.log(`wrote ${path.relative(ROOT, resultsFile(options.split))}`);
 }
 
@@ -423,6 +473,7 @@ export async function main(argv) {
   for (const [arm, problem] of Object.entries(problems)) console.log(`${arm}: ${problem}`);
   if (options.dryRun) {
     for (const line of plannedLines(cells, options, problems)) console.log(line);
+    console.log(plannedPowerLine({ tasks: fixtures.length, samples: options.runs, arms: options.arms.length }));
     return;
   }
   const records = await runPaid({ cells, options, problems });

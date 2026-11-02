@@ -23,5 +23,10 @@
     "The stream here still has duplicated events per message.id, so a reader who sums events naively and compares to run.log will find 1.95x; the log line equals the result usage. Same trap shape as case 11, opposite verdict.",
     "The runner copies input/ as an input/ folder in each cell (lead decision, R3b), so the prompt wording stays as written. The judge rubric is the grade; the regex fields are a cross-check only (review/R3b.md)."
   ],
-  "transcript": "none found"
+  "transcript": "none found",
+  "provenance": {
+    "type": "control",
+    "ref": "run 20261015T104230-dfc6",
+    "note": "control from a run log after c517b3e4"
+  }
 }

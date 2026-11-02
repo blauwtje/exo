@@ -108,7 +108,7 @@
     "agents/fix-review.md": { "kind": "fix-review" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/orchestrator.md": { "kind": "orchestrator" },
-    "agents/review-branch.md": { "kind": "review-branch" },
+    "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep"] },
     "agents/task-runner.md": { "kind": "task-runner" },
     "agents/solve-hard.md": { "kind": "hardest" }
   },
@@ -120,6 +120,7 @@
     { "file": "skills/build/references/fresh-eyes.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
     { "file": "skills/build/references/design-tasks.md", "match": "delegate whose prompt opens with `exo-kind: peer`", "kind": "peer" },
     { "file": "skills/edit-skills/references/blind-eval.md", "match": "delegate whose prompt opens with `exo-kind: review` as judge", "kind": "review" },
+    { "file": "skills/watch/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: lookup`", "kind": "lookup" },
     { "file": "skills/design-ui/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: review` as critic", "kind": "review" }
   ]
 }

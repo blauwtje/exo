@@ -1,0 +1,30 @@
+{
+  "id": "real-plan-check-run-command",
+  "kind": "case",
+  "replay": null,
+  "task": "The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: plan-check passes a plan whose Land gate: line is wrapped in backticks, or whose Proof command holds an HTML entity such as &gt;, and the build then fails on a command it cannot run as written.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "validat|refus|reject"
+    ],
+    "fail": [],
+    "rubric": "FACTS. plan-check.mjs has no check on the text of the commands a run executes (Land gate:, Lint:, Proof). A command wrapped in backticks, or one with an HTML entity such as &gt; or &amp;, passes the check and then fails when the run executes it as written. The fix adds a refusal for a Land gate: or Lint: command wrapped in backticks and for an HTML entity in any run command, naming the field and the fix.\nFAIL: the answer blames the run executor, the shell, the build skill or the plan template instead of the missing validation in plan-check, or proposes only to document the rule.\nPASS: the answer says plan-check accepts these commands because it never validates their text, and proposes a validation in plan-check that refuses a backtick-wrapped Land gate/Lint command and an HTML entity in a run command.\nQuoting code or names from input/ is neither pass nor fail by itself; judge whether the answer names the cause and a fix with the same effect.\nReference fix, the real commit 111008de:\ndiff --git a/skills/spec/scripts/plan-check.mjs b/skills/spec/scripts/plan-check.mjs\nindex 08535fe4..05aaea3e 100644\n--- a/skills/spec/scripts/plan-check.mjs\n+++ b/skills/spec/scripts/plan-check.mjs\n@@ -606,6 +606,24 @@ function checkLoop(plan, root, planPath) {\n   return [...problems, ...checkLoopLandGate(basis, root)];\n }\n \n+const HTML_ENTITY = /&(?:gt|lt|amp|quot|apos|#\\d+|#x[0-9a-f]+);/i;\n+\n+// why: land runs the raw 'Land gate:' and 'Lint:' text in a shell, so a wrapping backtick pair becomes a command substitution; rejecting here keeps one reading of the field in every consumer.\n+function checkRunCommands(plan) {\n+  const basis = frameOf(plan.frame);\n+  const problems = [];\n+  for (const [field, value] of [['Land gate', basis.landGate], ['Lint', basis.lint]]) {\n+    if (value !== null && /^`[^`]*`$/.test(value.trim())) {\n+      problems.push(`'${field}: ${value.trim()}' wraps the command in backticks, which the shell runs as a command substitution; write '${field}: ${value.trim().slice(1, -1)}'`);\n+    }\n+  }\n+  for (const { field, task, command } of loopCommands(plan)) {\n+    const entity = command.match(HTML_ENTITY)?.[0];\n+    if (entity !== undefined) problems.push(`${field}${task === null ? '' : ` of Task ${task}`}: '${command}' holds the HTML entity '${entity}', which the shell runs as written; write the plain character`);\n+  }\n+  return problems;\n+}\n+\n const NESTED_CLAUDE = \"exo run's sandbox cannot start a nested claude; move the measurement to the Success line, which verify runs outside the sandbox, with a cost cap in that line\";\n const CLAUDE_COMMAND = /^(?:npx\\s+)?claude(?:\\s|$)/;\n const CLAUDE_IN_SCRIPT = /confinedClaude\\(|\\(\\s*['\"`]claude['\"`]/;\n@@ -702,6 +720,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run =\n     ...checkParallelDisjoint(plan.tasks, plan.frame),\n     ...checkWorktreeSetup(plan.tasks, plan.frame),\n     ...checkNestedClaude(plan, resolvedRoot),\n+    ...checkRunCommands(plan),\n     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])\n   ];\n   const warnings = [...warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed }), ...warnNearCap(plan.tasks, resolvedRoot, landed)];\n"
+  },
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "111008de15fd34b41267b4a312170b312246e8ea",
+    "parent": "51abb7580316def2bac5fd64ba07af09ef72d45c",
+    "subject": "fix(spec): plan-check refuses a backticked or HTML-escaped run command",
+    "date": "2026-10-24"
+  },
+  "source": "skills/spec/scripts/plan-check.mjs at 111008de^ (git show). Fix commit 111008de: fix(spec): plan-check refuses a backticked or HTML-escaped run command.",
+  "transcript": "none",
+  "constructed": true,
+  "fidelity_notes": {
+    "real": "The input files are byte copies of skills/spec/scripts/plan-check.mjs at the fix's parent 51abb758.",
+    "edited": "Nothing.",
+    "assumed": "The symptom wording and the prompt are written for the replay, not taken from a session."
+  },
+  "ready": true
+}

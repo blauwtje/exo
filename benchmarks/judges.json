@@ -1,0 +1,11 @@
+{
+  "judges": [
+    { "name": "replay-rubric", "kind": "grader", "dimension": "case-rubric", "unknown": true, "files": ["benchmarks/replay/grade.mjs"], "scorer": "benchmarks/replay/grade.mjs" },
+    { "name": "pressure-line", "kind": "grader", "dimension": "rubric-line", "unknown": false, "files": ["benchmarks/pressure/judge.md"], "scorer": "skills/edit-skills/scripts/pressure.mjs" },
+    { "name": "adhd-facts", "kind": "grader", "dimension": "facts", "unknown": false, "files": ["benchmarks/adhd/judges/facts.md"], "scorer": "benchmarks/adhd-score.mjs" },
+    { "name": "ideas-originality", "kind": "grader", "dimension": "originality", "unknown": false, "files": ["benchmarks/ideas/judge-originality.md"], "scorer": "benchmarks/ideas-score.mjs" },
+    { "name": "ideas-fit", "kind": "grader", "dimension": "fit", "unknown": false, "files": ["benchmarks/ideas/judge-fit.md"], "scorer": "benchmarks/ideas-score.mjs" },
+    { "name": "ideas-extract", "kind": "transform", "files": ["benchmarks/ideas/judge-extract.md"] },
+    { "name": "ideas-cluster", "kind": "transform", "files": ["benchmarks/ideas/judge-cluster.md"] }
+  ]
+}

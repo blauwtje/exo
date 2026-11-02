@@ -1,10 +1,14 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { makeCellHome } from './cell-home.mjs';
-import { compareMeans, meanAndSd, minDetectableMeanEffect } from './statistics.mjs';
+import { calibrationLines } from './judge-calibration.mjs';
+import { clusteredMeanCi } from '../lib/eval-stats.mjs';
+import { pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
+import { meanAndSd, minDetectableMeanEffect } from './statistics.mjs';
 
 const PROMPTS = path.join(import.meta.dirname, 'ideas');
 const JUDGE_MODEL = 'claude-sonnet-5-5';
@@ -48,6 +52,8 @@ function template(name) {
   return fs.readFileSync(path.join(PROMPTS, `judge-${name}.md`), 'utf8').trimEnd();
 }
 
+export const JUDGE_HASH = crypto.createHash('sha256').update(template('originality')).update(template('fit')).digest('hex');
+
 export function shuffled(items, random = Math.random) {
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index -= 1) {
@@ -85,14 +91,27 @@ export async function clusterOptions({ judge, options, random }) {
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const inScale = (value) => Number.isInteger(value) && value >= 1 && value <= 5;
 
-export async function scoreOption({ judge, problem, option }) {
-  const prompt = `${template('score')}\n\nProblem: ${problem}\nOption: ${option.title}: ${option.mechanism}`;
-  const valid = (reply) => inScale(reply.originality) && inScale(reply.fit);
+const SCORE_DIMENSIONS = ['originality', 'fit'];
+
+async function voteOnDimension({ judge, dimension, problem, option }) {
+  const prompt = `${template(dimension)}\n\nProblem: ${problem}\nOption: ${option.title}: ${option.mechanism}`;
+  const valid = (reply) => inScale(reply[dimension]);
   const replies = [];
   for (let call = 0; call < SCORE_CALLS; call += 1) replies.push(await ask({ judge, prompt, valid }));
   const good = replies.filter((reply) => reply !== null);
   if (good.length < SCORE_CALLS) return null;
-  return { originality: median(good.map((r) => r.originality)), fit: median(good.map((r) => r.fit)) };
+  const votes = good.map((reply) => reply[dimension]);
+  return { score: median(votes), agree: votes.every((vote) => vote === votes[0]) };
+}
+
+export async function scoreOption({ judge, problem, option }) {
+  const found = {};
+  for (const dimension of SCORE_DIMENSIONS) {
+    const voted = await voteOnDimension({ judge, dimension, problem, option });
+    if (voted === null) return null;
+    found[dimension] = voted;
+  }
+  return { originality: found.originality.score, fit: found.fit.score, agree: found.originality.agree && found.fit.agree };
 }
 
 export function calibration(controls) {
@@ -114,6 +133,7 @@ export function runRecord({ caseId, run, options, shapes, recommended, tokens = 
   return {
     case: caseId,
     run,
+    judge: JUDGE_HASH,
     options: options.length,
     shapes: shapeIds.size,
     duplicateShare: options.length === 0 ? 0 : (options.length - shapeIds.size) / options.length,
@@ -121,6 +141,7 @@ export function runRecord({ caseId, run, options, shapes, recommended, tokens = 
     fit: mean(scored.map((o) => o.scores.fit)),
     strong: scored.filter((o) => o.scores.originality >= STRONG_MIN && o.scores.fit >= STRONG_MIN).length,
     shapeSet: [...shapeIds],
+    optionScores: scored.map((option) => ({ title: option.title, mechanism: option.mechanism, originality: option.scores.originality, fit: option.scores.fit })),
     recommendedShape: recommended === null ? null : shapes[recommended],
     recommendedOriginality: picked?.originality ?? null,
     recommendedFit: picked?.fit ?? null,
@@ -177,37 +198,62 @@ export function summarizeMetrics(records) {
   for (const metric of METRICS) {
     const values = records.map((record) => record[metric]).filter((value) => value !== null && value !== undefined);
     const { mean: avg, sd, n } = meanAndSd(values);
-    rows[metric] = { mean: avg, sd, n, mde: sd === null ? null : minDetectableMeanEffect({ sd, n }) };
+    const cited = records.filter((record) => record[metric] !== null && record[metric] !== undefined);
+    const interval = n === 0 ? null : clusteredMeanCi(cited.map((record) => ({ cluster: record.case, value: record[metric] })));
+    rows[metric] = { mean: avg, sd, n, mde: sd === null ? null : minDetectableMeanEffect({ sd, n }), interval, excluded: records.length - n };
   }
   return rows;
 }
 
-export function resultsMarkdown({ arm, records, caseShares, verdict, unscored, failed = [] }) {
+function seCells(interval) {
+  if (interval === null || interval.se === null) return ['no SE', 'no SE'];
+  return [fixed(interval.se), `${fixed(interval.lo)}..${fixed(interval.hi)}`];
+}
+
+function stabilityLine(stability) {
+  if (stability === undefined) return 'Judge vote stability: not recorded';
+  return `Judge vote stability: ${stability.agree} of ${stability.total} scored options had ${SCORE_CALLS} identical votes on originality and fit`;
+}
+
+export function resultsMarkdown({ arm, records, caseShares, verdict, unscored, failed = [], stability }) {
   const rows = summarizeMetrics(records);
   const means = Object.fromEntries(METRICS.map((metric) => [metric, rows[metric].mean]));
   const modal = mean(Object.values(caseShares).filter((share) => share !== null));
   const lines = [`# Ideas results: ${arm}`, '', ...RULE_TEXT, ''];
-  lines.push(`Judge calibration: ${fixed(verdict.share)} of control scores within 1 of the key, ${verdict.passed ? 'calibrated' : 'judge uncalibrated'}`, '');
-  lines.push('| metric | mean | sd | n | minimum detectable effect |', '| --- | --- | --- | --- | --- |');
+  lines.push(`Judge calibration: ${fixed(verdict.share)} of control scores within 1 of the key, ${verdict.passed ? 'calibrated' : 'judge uncalibrated'}`);
+  lines.push(...calibrationLines(['ideas-originality', 'ideas-fit']).map((line) => `Human calibration: ${line}`), '');
+  lines.push('| metric | mean | se | ci95 | sd | n | excluded | minimum detectable effect |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
   const mde = (row) => (row.sd === 0 ? 'n/a (sd 0)' : fixed(row.mde));
-  for (const metric of METRICS) lines.push(`| ${metric} | ${fixed(rows[metric].mean)} | ${fixed(rows[metric].sd)} | ${rows[metric].n} | ${mde(rows[metric])} |`);
+  for (const metric of METRICS) lines.push(`| ${metric} | ${fixed(rows[metric].mean)} | ${seCells(rows[metric].interval).join(' | ')} | ${fixed(rows[metric].sd)} | ${rows[metric].n} | ${rows[metric].excluded} | ${mde(rows[metric])} |`);
   const flat = METRICS.filter((metric) => rows[metric].sd === 0).map((metric) => `${metric} ${fixed(rows[metric].mean)}`);
   lines.push('', `At a floor or ceiling (sd 0, no detectable effect): ${flat.length === 0 ? 'none' : flat.join(', ')}`);
   lines.push('', `modalShare per case: ${Object.entries(caseShares).map(([id, share]) => `${id} ${fixed(share)}`).join(', ')}`, '');
   lines.push('Decision:', ...(verdict.passed ? decisions({ means, modal }).map((line) => `- ${line}`) : ['- none drawn, judge uncalibrated']), '');
-  lines.push(`Failed runs, left out of every metric and n: ${failed.length === 0 ? 'none' : failed.join(', ')}`, '');
+  lines.push(`Failed runs, counted as failures ${failed.length} of ${failed.length + records.length}, left out of every metric and n: ${failed.length === 0 ? 'none' : failed.join(', ')}`, stabilityLine(stability), '');
   lines.push(`Unscored items: ${unscored.length === 0 ? 'none' : unscored.join(', ')}`, '', '## Runs', '');
   lines.push('| case | run | options | shapes | duplicateShare | originality | fit | strong | rare | recommendedShape | recommendedOriginality | recommendedFit | tokens | costUsd |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of records) lines.push(`| ${r.case} | ${r.run} | ${r.options} | ${r.shapes} | ${fixed(r.duplicateShare)} | ${fixed(r.originality)} | ${fixed(r.fit)} | ${r.strong} | ${fixed(r.rare)} | ${r.recommendedShape ?? 'n/a'} | ${fixed(r.recommendedOriginality)} | ${fixed(r.recommendedFit)} | ${fixed(r.tokens)} | ${fixed(r.costUsd)} |`);
   return `${lines.join('\n')}\n`;
 }
 
+function metricVerdict(interval) {
+  if (interval === null) return 'no data';
+  if (interval.se === 0 && interval.mean !== 0) return 'no SE (sd 0)';
+  return verdictWord(interval, { up: 'rise', down: 'fall' });
+}
+
+function metricComparison(left, right, metric) {
+  const arms = (records, arm) => records.filter((record) => record[metric] !== null && record[metric] !== undefined).map((record) => [record.case, arm, record[metric]]);
+  const cases = pairedByCase([...arms(left, 'left'), ...arms(right, 'right')], (row) => row);
+  return pairedArms(cases, 'left', 'right');
+}
+
 export function compareMarkdown({ left, right }) {
-  const lines = ['| metric | diff | two SE | verdict |', '| --- | --- | --- | --- |'];
+  const lines = ['| metric | diff | se | ci95 | cases paired | verdict |', '| --- | --- | --- | --- | --- | --- |'];
   for (const metric of METRICS) {
-    const pick = (records) => records.map((record) => record[metric]).filter((value) => value !== null && value !== undefined);
-    const result = compareMeans(pick(left), pick(right));
-    lines.push(`| ${metric} | ${fixed(result.diff)} | ${fixed(result.twoSeDiff)} | ${result.verdict} |`);
+    const interval = metricComparison(left, right, metric);
+    const cells = interval === null ? ['n/a', 'no SE', 'no SE', 0] : [fixed(interval.mean), ...seCells(interval), interval.n];
+    lines.push(`| ${metric} | ${cells.join(' | ')} | ${metricVerdict(interval)} |`);
   }
   return `${lines.join('\n')}\n`;
 }
@@ -230,13 +276,16 @@ async function scoreQueue({ judge, caseId, spec, pooled }) {
   const queue = shuffled([...pooled.map((option) => ({ option })), ...spec.controls.map((key) => ({ option: key, key }))]);
   const controls = [];
   const unscored = [];
+  const stability = { agree: 0, total: 0 };
   for (const item of queue) {
     const got = await scoreOption({ judge, problem: spec.feature, option: item.option });
+    if (got !== null) stability.total += 1;
+    if (got?.agree === true) stability.agree += 1;
     if (item.key) controls.push({ key: item.key, got });
     else item.option.scores = got ?? undefined;
     if (got === null) unscored.push(`${caseId}/${item.option.title}`);
   }
-  return { controls, unscored };
+  return { controls, unscored, stability };
 }
 
 export async function scoreArm({ judge, cases, runsByCase }) {
@@ -244,6 +293,7 @@ export async function scoreArm({ judge, cases, runsByCase }) {
   const caseShares = {};
   const controls = [];
   const unscored = [];
+  const stability = { agree: 0, total: 0 };
   for (const [caseId, runs] of Object.entries(runsByCase)) {
     const spec = cases[caseId];
     const done = await scoreCase({ judge, caseId, runs });
@@ -251,11 +301,13 @@ export async function scoreArm({ judge, cases, runsByCase }) {
     const queued = await scoreQueue({ judge, caseId, spec, pooled: done.pooled });
     controls.push(...queued.controls);
     unscored.push(...queued.unscored);
+    stability.agree += queued.stability.agree;
+    stability.total += queued.stability.total;
     const caseRecords = recordsOf({ caseId, done });
     records.push(...caseRecords);
     caseShares[caseId] = modalShare({ records: caseRecords });
   }
-  return { records, caseShares, verdict: calibration(controls), unscored };
+  return { records, caseShares, verdict: calibration(controls), unscored, stability };
 }
 
 function recordsOf({ caseId, done }) {

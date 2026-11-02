@@ -1,5 +1,6 @@
 // benchmarks/statistics.mjs
 // The mean and sample standard deviation the scorer and the calibration share.
+import { detectableEffect, erfc, tasksNeeded } from '../lib/eval-stats.mjs';
 
 export function meanAndSd(values) {
   if (values.length === 0) return { mean: null, sd: null, n: 0 };
@@ -36,7 +37,8 @@ export function compareMeans(before, after) {
 // Runs per arm that detect a SMALLEST_RISE change at the given CV.
 export function nextRuns(cv) {
   const usable = Number.isFinite(cv) && cv > 0 ? cv : PLANNING_CV;
-  return Math.min(MAX_RUNS, Math.max(2, Math.ceil(2 * ((RISE_Z + POWER_Z) * usable / SMALLEST_RISE) ** 2)));
+  const runs = tasksNeeded({ variance: 2 * usable ** 2, effect: SMALLEST_RISE, z: RISE_Z + POWER_Z });
+  return Math.min(MAX_RUNS, Math.max(2, runs));
 }
 
 export function signTest(pairs) {
@@ -55,20 +57,11 @@ export function signTest(pairs) {
 
 // Uncapped: a value above 1 - rate means no effect that size exists, so the run size detects nothing.
 export function minDetectableEffect({ rate, n }) {
-  return (RISE_Z + POWER_Z) * Math.sqrt(2 * rate * (1 - rate) / n);
+  return detectableEffect({ variance: 2 * rate * (1 - rate), tasks: n, z: RISE_Z + POWER_Z });
 }
 
 export function minDetectableMeanEffect({ sd, n }) {
-  return (RISE_Z + POWER_Z) * sd * Math.sqrt(2 / n);
-}
-
-function erfc(x) {
-  const z = Math.abs(x);
-  const t = 2 / (2 + z);
-  const poly = -z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806
-    + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))));
-  const value = t * Math.exp(poly);
-  return x >= 0 ? value : 2 - value;
+  return detectableEffect({ variance: 2 * sd ** 2, tasks: n, z: RISE_Z + POWER_Z });
 }
 
 export function mannWhitney(a, b) {

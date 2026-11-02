@@ -82,6 +82,7 @@ Other skills, written as you call them. Those with `/exo:` start only when you t
 - `find-cause`: finds why something broke before any code changes.
 - `refactor`: restructures code without changing what it does.
 - `design-ui`: builds the real page or component directly, asks only when it cannot build without the answer, and finishes motion, reduced motion and every state.
+- `watch`: reads YouTube videos, including 1-2 hour ones, through their captions and answers, summarises or extracts from them.
 - `improve`: changes code in a loop against one fixed score command, keeps a commit only when the score gets better, and logs every round.
 - `/exo:check-docs`: looks up how the installed version of a library behaves.
 - `/exo:write-docs`: writes READMEs, pull requests and commit messages.

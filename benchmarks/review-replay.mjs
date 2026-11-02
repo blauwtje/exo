@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { parseFlags } from '#script-flags';
 import { ISOLATION_ENV, withoutParentSession } from './lean-gates.mjs';
+import { meanCi } from '../lib/eval-stats.mjs';
+import { intervalText } from './interval-text.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { defectRange, prepareReviewBranch, reviewPlanText } from './sweep-fixtures.mjs';
 import { MODELS, ROOT, SAFE_TASKS } from './tasks.mjs';
@@ -26,6 +29,10 @@ const REPORT_LINE = /\breport=(\S+)\s*$/m;
 const RECURRING_LINE = /^BLOCKED recurring (.+)$/m;
 const RUN_PREFIX = 'review-replay-';
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+export class SessionError extends Error {}
+
+const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 
 function git(repository, args) {
   return execFileSync('git', ['-C', repository, ...GIT_SETTINGS, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -207,12 +214,14 @@ async function playRounds(context, model) {
 }
 
 export async function replayCase(context, model) {
-  const spent = { costUsd: 0 };
+  const spent = { costUsd: 0, unpriced: 0 };
   const metered = async (prompt, cwd) => {
-    spent.costUsd += (await model(prompt, cwd)) ?? 0;
+    const cost = await model(prompt, cwd);
+    if (isFiniteNumber(cost)) spent.costUsd += cost;
+    else spent.unpriced += 1;
   };
   const result = await playRounds(context, metered);
-  return { ...result, costUsd: spent.costUsd };
+  return { ...result, costUsd: spent.unpriced === 0 ? spent.costUsd : null };
 }
 
 function runClaude(run, env) {
@@ -233,10 +242,20 @@ export function claudeModel({ pluginDir, model, base }) {
     const args = ['-p', prompt, '--plugin-dir', pluginDir, '--model', model, '--setting-sources', 'project,local', '--strict-mcp-config', '--output-format', 'json'];
     const run = confinedClaude({ args, roots: [base], cwd, tmp });
     const env = { ...withoutParentSession(process.env), ...ISOLATION_ENV, ...run.env };
-    const finished = await runClaude(run, env);
-    if (finished.status !== 0) throw new Error(`claude exited ${finished.status}: ${finished.stderr.slice(-300)}`);
-    return Number(JSON.parse(finished.stdout).total_cost_usd);
+    const finished = await runClaude(run, env).catch((error) => {
+      throw new SessionError(`claude failed to run: ${error.message}`);
+    });
+    if (finished.status !== 0) throw new SessionError(`claude exited ${finished.status}: ${finished.stderr.slice(-300)}`);
+    return sessionCost(finished.stdout);
   };
+}
+
+function sessionCost(stdout) {
+  try {
+    return JSON.parse(stdout).total_cost_usd;
+  } catch {
+    throw new SessionError('claude printed no JSON result');
+  }
 }
 
 function keepRecord({ keepDir, task, index }, paths, result) {
@@ -247,32 +266,54 @@ function keepRecord({ keepDir, task, index }, paths, result) {
   fs.writeFileSync(path.join(target, 'run.json'), `${JSON.stringify({ task: task.id, ...result }, null, 2)}\n`);
 }
 
+async function playOrFail(context, model) {
+  try {
+    return await replayCase(context, model);
+  } catch (error) {
+    if (!(error instanceof SessionError)) throw error;
+    return { roundsToClean: null, failure: error.message, stopReason: null, grade: null, costUsd: null, errored: true };
+  }
+}
+
 async function runOnce(options, { task, index }, modelFor) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), RUN_PREFIX));
   try {
     const paths = prepareCase(base, task, options.safeRoot);
     const context = { pluginDir: options.pluginDir, paths, plants: loadPlants(task, options.safeRoot), rounds: options.rounds };
     const startedAt = Date.now();
-    const result = { ...await replayCase(context, modelFor(base)), durationMs: Date.now() - startedAt };
-    keepRecord({ keepDir: options.keepDir, task, index }, paths, result);
+    const result = { ...await playOrFail(context, modelFor(base)), durationMs: Date.now() - startedAt };
+    if (!result.errored) keepRecord({ keepDir: options.keepDir, task, index }, paths, result);
     return result;
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }
 }
 
+const fixedShare = (run) => (run.grade === null ? 0 : run.grade.fixed / run.grade.planted);
+
+function intervalOf(values) {
+  return values.length === 0 ? null : meanCi(values);
+}
+
 export function summarize(task, runs) {
   const graded = runs.filter((run) => run.grade !== null);
-  const rate = graded.map((run) => run.grade.fixed / run.grade.planted);
+  const repaired = runs.filter((run) => run.grade !== null || run.failure !== null);
+  const rate = repaired.map(fixedShare);
+  const rounds = runs.map((run) => run.roundsToClean).filter((count) => count !== null);
+  const priced = runs.map((run) => run.costUsd).filter(isFiniteNumber);
   return {
     task: task.id,
     runs: runs.length,
     failures: runs.filter((run) => run.failure !== null).length,
     fixedAfterOneRepair: meanAndSd(rate),
+    fixedInterval: intervalOf(rate),
     falseFixLines: meanAndSd(graded.map((run) => run.grade.falseFix)),
-    roundsToClean: meanAndSd(runs.map((run) => run.roundsToClean).filter((rounds) => rounds !== null)),
+    falseFixInterval: intervalOf(graded.map((run) => run.grade.falseFix)),
+    roundsToClean: meanAndSd(rounds),
+    roundsInterval: intervalOf(rounds),
     neverClean: runs.filter((run) => run.roundsToClean === null).length,
-    costUsd: runs.reduce((sum, run) => sum + run.costUsd, 0)
+    costUsd: priced.reduce((sum, cost) => sum + cost, 0),
+    costExcluded: runs.length - priced.length
   };
 }
 
@@ -297,7 +338,7 @@ export async function replayAll(options, modelFor) {
     while (queue.length > 0 && spent <= budget) {
       const item = queue.shift();
       const run = await runOnce(options, item, modelFor);
-      spent += run.costUsd;
+      if (isFiniteNumber(run.costUsd)) spent += run.costUsd;
       finished.get(item.task).push(run);
     }
   };
@@ -305,9 +346,8 @@ export async function replayAll(options, modelFor) {
   return options.tasks.map((task) => ({ ...summarize(task, finished.get(task)), skipped: options.repeat - finished.get(task).length }));
 }
 
-function spread({ mean, sd }) {
-  if (mean === null) return '-';
-  return sd === null ? mean.toFixed(2) : `${mean.toFixed(2)} ± ${sd.toFixed(2)}`;
+function spread(interval) {
+  return interval === null ? '-' : intervalText(interval, 2);
 }
 
 function baselineText(row) {
@@ -320,10 +360,10 @@ export function withBaseline(cells, rows) {
 }
 
 export function saveBaseline(file, cells, { model, source }) {
-  const measured = cells.filter((cell) => cell.runs > 0).map((cell) => ({
+  const measured = cells.filter((cell) => cell.runs > cell.costExcluded).map((cell) => ({
     task: cell.task,
     runs: cell.runs,
-    costUsdPerRun: Number((cell.costUsd / cell.runs).toFixed(4)),
+    costUsdPerRun: Number((cell.costUsd / (cell.runs - cell.costExcluded)).toFixed(4)),
     fixedAfterOneRepair: cell.fixedAfterOneRepair.mean,
     neverClean: cell.neverClean,
     model,
@@ -335,8 +375,8 @@ export function saveBaseline(file, cells, { model, source }) {
 }
 
 export function renderTable(cells) {
-  const header = ['task', 'runs', 'skipped', 'failures', 'fixed after one repair', 'false fix lines', 'rounds to clean', 'never clean', 'cost usd', 'baseline'];
-  const rows = cells.map((cell) => [cell.task, cell.runs, cell.skipped, cell.failures, spread(cell.fixedAfterOneRepair), spread(cell.falseFixLines), spread(cell.roundsToClean), cell.neverClean, cell.costUsd.toFixed(2), baselineText(cell.baseline)]);
+  const header = ['task', 'runs', 'skipped', 'failures', 'fixed after one repair', 'false fix lines', 'rounds to clean', 'never clean', 'cost usd', 'cost excluded', 'baseline'];
+  const rows = cells.map((cell) => [cell.task, cell.runs, cell.skipped, cell.failures, spread(cell.fixedInterval), spread(cell.falseFixInterval), spread(cell.roundsInterval), cell.neverClean, cell.costUsd.toFixed(2), cell.costExcluded, baselineText(cell.baseline)]);
   return `${[header, header.map(() => '---'), ...rows].map((row) => `| ${row.join(' | ')} |`).join('\n')}\n`;
 }
 
@@ -417,6 +457,7 @@ export async function main(argv, { modelFor: injected } = {}) {
   const projection = projectRun(options);
   if (flags['dry-run']) {
     process.stdout.write(`${JSON.stringify(projection, null, 2)}\n`);
+    process.stderr.write(`${plannedPowerLine({ tasks: options.tasks.length, samples: options.repeat })}\n`);
     return;
   }
   if (projection.projectedUsd > (options.budgetUsd ?? Infinity)) throw new Error(`projected ${projection.projectedUsd} usd is over --budget-usd ${options.budgetUsd}; nothing was run`);

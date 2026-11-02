@@ -186,3 +186,14 @@ test('C10 a timed-out or result-less cell counts as a failure', () => {
   assert.match(output.stdout, /\| t \| pass \| 3 \| 3 \| 100% .* \| 67% .* \| worse \|/);
   assert.match(output.stdout, /verdict: worse/);
 });
+
+test('C11 two tasks add a paired-over-tasks line with a 95% CI', () => {
+  const second = arms(BEFORE, AFTER).map((cell) => ({ ...cell, task: 'u' }));
+  const output = compare([...arms(BEFORE, AFTER), ...second]);
+  assert.match(output.stdout, /^paired over 2 tasks, cost: \+\$0\.5000 \(95% CI \+\$0\.5000 to \+\$0\.5000, 2 tasks\), rise$/m);
+});
+
+test('C12 a harness-error cell counts as a failed pass and an unpriced cell is counted as excluded', () => {
+  const output = compare([...arms(BEFORE, AFTER), { arm: 'exo', cost: null, wallMs: 60000 }]);
+  assert.match(output.stdout, /\| t \| pass \| 3 \| 4 \|/);
+});

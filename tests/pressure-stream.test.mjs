@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { contrastArms, deltaTable, gradeSummary, parseContrastEnv, parseContrastStyle, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
+import { contrastArms, deltaTable, gradeReport, gradeSummary, parseContrastEnv, parseContrastStyle, parseStream, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
 
 const usage = ({ input, output, read, created }) => ({
   inputTokens: input,
@@ -82,6 +82,18 @@ test('writeGrades writes grades.json to the answers folder and returns the delta
     const written = JSON.parse(fs.readFileSync(path.join(dir, 'grades.json'), 'utf8'));
     assert.equal(written['haiku:low'].cases[0].pass, true);
     assert.match(table[0], /with 100% without 0% delta \+100% ci \[\+\d+%, \+100%\] margin 20% PASS$/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('gradeReport prints the pressure judge calibration status after the delta table', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-report-'));
+  try {
+    const runs = [1, 2, 3].flatMap((run) => [runGrade('with', run, true), runGrade('without', run, false)]);
+    const report = gradeReport(dir, { 'haiku:low': runs }, { threshold: 1 });
+    assert.match(report[0], /with 100% without 0%/);
+    assert.match(report.at(-1), /^[A-Z-]+ pressure-line\/rubric-line kappa /);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

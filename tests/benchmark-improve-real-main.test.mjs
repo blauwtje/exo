@@ -9,6 +9,7 @@ import {
   armConfig,
   armPrompt,
   armRecord,
+  armSummary,
   dryRunLines,
   dryRunPlan,
   goalText,
@@ -19,6 +20,8 @@ import {
   scorerSessions,
   sessionUsd,
   spentSoFar,
+  summaryLines,
+  unpricedRuns,
   withImproveRoundTier
 } from '../benchmarks/improve-real.mjs';
 
@@ -130,4 +133,52 @@ test('the dry run prints without touching the network or the out file', () => {
   const out = path.join(os.tmpdir(), `improve-real-nowrite-${process.pid}.json`);
   parseOptions(['--dry-run', '--out', out]);
   assert.equal(fs.existsSync(out), false);
+});
+
+const record = (options) => ({ target: 'routing', arm: 'goal-sonnet', run: 1, totalCost: 0.5, wallS: 100, killed: false, subtype: 'success', error: null, trainScore: 0.5, heldOutScores: [0.4, 0.6], heldOutMean: 0.5, changedOutside: [], ...options });
+
+test('arm record leaves a cost it could not measure unknown instead of filling zero', () => {
+  const made = armRecord({
+    target: 'routing', arm: 'goal-sonnet', run: 1, cap: 0.25,
+    session: { costUsd: null, wallS: 30, killed: false, subtype: 'success' },
+    bridge: { calls: 1, spend: 0.2, history: [] },
+    train: { mean: 0.6, spend: 0.2, scores: [0.6] }, heldOut: { mean: 0.3, spend: 0.1, scores: [0.3] },
+    changedOutside: [], diffFile: 'x.diff', finalRef: 'working tree'
+  });
+  assert.equal(made.totalCost, null);
+  const failed = armRecord({ target: 'routing', arm: 'goal-sonnet', run: 1, cap: 0.25, session: { costUsd: 0.1, wallS: 30, killed: false, subtype: 'success' }, bridge: { calls: 0, spend: 0, history: [] }, changedOutside: [], diffFile: 'x.diff', finalRef: 'r', error: 'boom' });
+  assert.equal(failed.totalCost, null);
+  assert.equal(failed.harnessScoringSpend, null);
+});
+
+test('spend so far skips an unpriced run and the count is reported', () => {
+  const runs = [record({}), record({ totalCost: null, run: 2 })];
+  assert.equal(spentSoFar(runs), 0.5);
+  assert.equal(unpricedRuns(runs), 1);
+});
+
+test('aborted, killed and errored runs fail the pass count and stay out of the cost and wall means', () => {
+  const summary = armSummary([record({}), record({ run: 2, totalCost: 0.7, wallS: 200 }), record({ run: 3, killed: true, wallS: 1200 }), record({ run: 4, error: 'scorer failed', totalCost: null, heldOutScores: [], trainScore: null })]);
+  assert.equal(summary.passed, 2);
+  assert.equal(summary.aborted, 2);
+  assert.deepEqual([summary.cost.n, summary.cost.excluded, summary.wall.n, summary.wall.excluded], [2, 2, 2, 2]);
+  assert.ok(Math.abs(summary.cost.mean - 0.6) < 1e-9);
+  assert.equal(summary.train.excluded, 1);
+});
+
+test('held-out repeats inside one run are one cluster, so a single quick run has no SE', () => {
+  const quick = armSummary([record({})]);
+  assert.equal(quick.heldOut.se, null);
+  assert.equal(quick.heldOut.n, 2);
+  const lines = summaryLines([record({}), record({ arm: 'improve-sonnet' })]);
+  assert.ok(lines.some((line) => line.startsWith('improve-sonnet minus goal-sonnet heldOut:') && line.endsWith('-> no SE')));
+});
+
+test('two runs per arm give a verdict only when the difference clears 2 SE', () => {
+  const goal = [0.3, 0.32, 0.28].map((value, index) => record({ run: index + 1, heldOutScores: [value], heldOutMean: value, trainScore: value }));
+  const improve = [0.6, 0.62, 0.58].map((value, index) => record({ arm: 'improve-sonnet', run: index + 1, heldOutScores: [value], heldOutMean: value, trainScore: value }));
+  const lines = summaryLines([...goal, ...improve]);
+  assert.ok(lines.some((line) => line.startsWith('improve-sonnet minus goal-sonnet heldOut:') && line.endsWith('-> improve higher')));
+  const same = summaryLines([...goal, ...goal.map((entry) => ({ ...entry, arm: 'improve-sonnet' }))]);
+  assert.ok(same.some((line) => line.startsWith('improve-sonnet minus goal-sonnet heldOut:') && line.endsWith('-> no clear difference')));
 });

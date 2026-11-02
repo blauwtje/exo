@@ -70,3 +70,16 @@ test('naming --tasks with --tier value is not quick', () => {
   assert.equal(options.mode, 'custom');
   assert.equal(options.maxTotalUsd, null);
 });
+
+test('a bare run takes the quick tier only when the caller names quick as the bare mode', () => {
+  assert.throws(() => parseArguments([]), /name --tasks or --tier/);
+  const options = parseArguments([], 'quick');
+  assert.equal(options.mode, 'quick');
+  assert.deepEqual(options.tasks, VALUE_QUICK_TASKS);
+  assert.equal(options.maxTotalUsd, 1);
+});
+
+test('a named task source beats the bare quick mode', () => {
+  assert.equal(parseArguments(['--smoke'], 'quick').mode, 'smoke');
+  assert.equal(parseArguments(['--tasks', 'a'], 'quick').mode, 'custom');
+});

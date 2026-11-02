@@ -22,5 +22,10 @@
   "fidelity": "Regenerated from old code with empty history; the 33-call list and the two closing lines match the old sweep.mjs format strings (git show 59ba5210^:benchmarks/sweep.mjs lines 415-420) and the text in transcript 27dfebaa record 566. No word the fix added (unknown, at least, lower bound) is in input/ or prompt.md.",
   "constructed": true,
   "fidelity_notes": "Input file is regenerated, not copied from a saved session file; the prompt is written for the replay, not the session's original wording. No leaks found: input and prompt hold no fix sha, changelog line or fix-added word.",
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "59ba52108a53e48be9d30d3a8a5b50a78d994096",
+    "note": "dry-run projection of 0.00 read as a cost"
+  }
 }

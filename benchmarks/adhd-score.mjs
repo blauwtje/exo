@@ -7,9 +7,13 @@ import { execFileSync } from 'node:child_process';
 import { makeCellHome } from './cell-home.mjs';
 import { BREVITY_LINES, withoutSentence } from './tasks.mjs';
 import { gateReply } from './adhd/gates.mjs';
+import { calibrationLines } from './judge-calibration.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
 import { repoMetrics } from './adhd/metrics.mjs';
+import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
+import { intervalText } from './interval-text.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CASES = path.join(import.meta.dirname, 'adhd', 'cases.jsonl');
@@ -237,7 +241,21 @@ function summarize(perCase, runs) {
   const passRatio = passing.length > 0 ? mean(passing.map((r) => r.ratio)) : null;
   const billedTokens = perCase.reduce((sum, p) => sum + p.tokens, 0);
   const baselineBilledTokens = perCase.reduce((sum, p) => sum + p.baselineTokens, 0);
-  return { score: mean(perCase.map((p) => p.ratio)), passRate, passRatio, billedTokens, baselineBilledTokens, perCase, runs };
+  const scoreCi = clusteredMeanCi(perCase.flatMap((p) => p.runs.map((r) => ({ cluster: p.id, value: r.ratio }))));
+  return { score: mean(perCase.map((p) => p.ratio)), scoreSe: scoreCi.se, scoreLo: scoreCi.lo, scoreHi: scoreCi.hi, passRate, passRatio, billedTokens, baselineBilledTokens, perCase, runs };
+}
+
+export function baselineVerdict({ lo, hi }) {
+  if (lo === null || hi === null) return 'no SE';
+  if (hi < 1) return 'shorter';
+  if (lo > 1) return 'longer';
+  return 'noise';
+}
+
+export function scoreIntervalLine(result) {
+  const clusters = result.perCase.length;
+  if (result.scoreSe === null) return `score_se=none score_ci95=none clusters=${clusters} vs_baseline=no SE\n`;
+  return `score_se=${result.scoreSe.toFixed(3)} score_ci95=${result.scoreLo.toFixed(3)}..${result.scoreHi.toFixed(3)} clusters=${clusters} vs_baseline=${baselineVerdict({ lo: result.scoreLo, hi: result.scoreHi })}\n`;
 }
 
 export async function rescoreCases({ cases, baseline, log, judge = claudeJudge, judgeModel, spend }) {
@@ -261,7 +279,7 @@ export function projectDryRun({ cases, baseline, runs, judgePerReply = null }) {
   const replyPerRun = (c) => baseline[c.id].cost / baseline[c.id].replies.length;
   const costPerRun = (c) => replyPerRun(c) + (judgePerReply ?? 0.4 * replyPerRun(c));
   const projectedUsd = cases.reduce((sum, c) => sum + costPerRun(c) * runs, 0);
-  return { cells: cases.length * runs, projectedUsd };
+  return { cells: cases.length * runs, projectedUsd, judgeCost: judgePerReply === null ? 'assumed 0.4 x reply cost' : 'recorded' };
 }
 
 // why: --check proves the committed baseline matches the cases with zero API calls; `tokens` and `mean` stay billed output tokens for cost reference, the ratio reads `replies`.
@@ -411,6 +429,7 @@ export function judgeRate(dir) {
 export function runDryRun(opts, cases, baseline = readBaseline()) {
   const out = projectDryRun({ cases, baseline, runs: opts.runs, judgePerReply: judgeRate(opts.logDir) });
   process.stdout.write(`${JSON.stringify(out)}\n`);
+  process.stderr.write(`${plannedPowerLine({ tasks: cases.length, samples: opts.runs })}\n`);
   if (out.projectedUsd > opts.maxUsd) process.stderr.write(`projected_usd=${out.projectedUsd.toFixed(4)} over --max-usd ${opts.maxUsd}\n`);
 }
 
@@ -465,6 +484,8 @@ export const caseLine = (p) => `${p.id} ratio=${p.ratio.toFixed(3)} visible=${Ma
 function reportScore({ result, record, file }) {
   for (const p of result.perCase) process.stderr.write(caseLine(p));
   writeLog({ ...result, ...record }, file);
+  process.stderr.write(scoreIntervalLine(result));
+  process.stderr.write(`${calibrationLines(['adhd-facts']).join('\n')}\n`);
   process.stderr.write(`pass_rate=${result.passRate.toFixed(3)} pass_ratio=${result.passRatio === null ? 'n/a' : result.passRatio.toFixed(3)}\n`);
   process.stderr.write(`billed_tokens=${Math.round(result.billedTokens)} baseline_billed_tokens=${Math.round(result.baselineBilledTokens)}\n`);
   process.stdout.write(`${result.score.toFixed(3)}\n`);
@@ -543,7 +564,14 @@ export async function runQuick({ opts, cases, reply, judge, spend, concise = rea
   return record;
 }
 
+export function quickIntervalLine(perCase) {
+  const ratios = meanCi(perCase.map((p) => p.ratio));
+  return `mean_ratio ${intervalText(ratios)} vs_baseline=${baselineVerdict({ lo: ratios.lo, hi: ratios.hi })}\n`;
+}
+
 function printQuick({ perCase, medianRatio, answerFirst, cleanDeliverable, questionLast, factsKept }) {
+  process.stderr.write(quickIntervalLine(perCase));
+  process.stderr.write(`${calibrationLines(['adhd-facts']).join('\n')}\n`);
   for (const p of perCase) process.stderr.write(`${p.id} ratio=${p.ratio.toFixed(3)} billed=${p.tokens}/${Math.round(p.baselineTokens)} failed=${p.failed.join(',') || 'none'} missing=${p.missing.map((k) => k + 1).join(',') || 'none'}\n`);
   process.stdout.write(`median_ratio=${medianRatio.toFixed(3)} answer_first=${percentLabel(answerFirst)} clean_deliverable=${percentLabel(cleanDeliverable)} question_last=${percentLabel(questionLast)} facts_kept=${percentLabel(factsKept)}\n`);
 }

@@ -22,5 +22,10 @@
     "Input path: the prompt and task say \"The directory input/ holds ...\"; the runner copies input/ as an input/ folder in each cell (lead decision), so the wording stays as written.",
     "Grade: rubric judge (R3a); the regex fields stay as a cross-check. Fixtures review/fixtures/11 right, wrong, echo and right-silent graded as expected by regex and judge on 3 of 3 repeats."
   ],
-  "transcript": "none found"
+  "transcript": "none found",
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "c517b3e4ba2d0a96dfe8de1be02b1130b70abc99",
+    "note": "run 20261014T132252-f6e3 token figure before the dedupe fix"
+  }
 }

@@ -34,6 +34,7 @@ import { withoutParentSession } from './lean-gates.mjs';
 import { BEFORE_ARM, buildCopies, copyKey, exoRootOf, loadsCopy } from './plugin-copies.mjs';
 import { pluginDirty } from './plugin-state.mjs';
 import { parseArguments, TIERS, tierTasks } from './run-args.mjs';
+import { minDetectableEffect } from './statistics.mjs';
 import { ARMS, FIXTURE, MODELS, NO_RUN, ROOT } from './tasks.mjs';
 import { modeSummary, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from './value-stock.mjs';
 import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, newestRunLedger, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
@@ -48,6 +49,8 @@ const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta
 const EXO_COPY_LABEL = '<copy of this checkout without benchmarks/>';
 let armTable = ARMS;
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
+const DEFAULT_MODE = 'quick';
+const POWER_RATE = 0.5;
 const HEARTBEAT_MS = 60 * 1000;
 // Tiers whose cells run as a real session: Bash allowed, no NO_RUN, and the
 // user's CLAUDE.md files and auto memory dropped.
@@ -309,12 +312,18 @@ function costGate(options, cellCount) {
   if (options.mode !== 'full' || options.confirm) return;
   const smoke = latestSmokeCost();
   if (smoke === null) {
-    console.log(`${cellCount} cells planned; no smoke run under ${RUNS} to project the cost from. Run --smoke first.`);
+    console.log(`${cellCount} cells planned; no smoke run under ${RUNS} to project the cost from. Run --smoke first, or --dry-run to print the cells.`);
     process.exit(2);
   }
   console.log(`${cellCount} cells planned at a smoke mean of $${smoke.mean.toFixed(3)} per cell (${smoke.cells} cells in ${smoke.directory}): about $${(smoke.mean * cellCount).toFixed(2)}.`);
   console.log('Re-run with --confirm after the user approves this projection.');
   process.exit(2);
+}
+
+function powerLine(cells, armNames) {
+  const perArm = cells.filter((cell) => cell.arm === armNames[0]).length;
+  const effect = minDetectableEffect({ rate: POWER_RATE, n: perArm });
+  return `${perArm} cells per arm: the smallest pass-rate gap two arms can show is ${(effect * 100).toFixed(0)} points at 80% power${effect >= 1 ? ' (none: add runs or tasks)' : ''}`;
 }
 
 function plannedCells(cells) {
@@ -339,6 +348,7 @@ function printDryRun(cells, effort, concurrency) {
   console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default); ${projection.fromFallback} cells use a fallback that does not match model and effort`);
   const time = projectTime(planned, RUNS, effort);
   console.log(projectedTimeLine(time, cells.length, concurrency));
+  console.log(powerLine(cells, [...new Set(cells.map((cell) => cell.arm))]));
 }
 
 function requirePluginDirectories(arms) {
@@ -376,7 +386,7 @@ function storedCells(cells) {
 }
 
 async function main() {
-  const options = parseArguments(process.argv.slice(2));
+  const options = parseArguments(process.argv.slice(2), DEFAULT_MODE);
   armTable = options.armTable;
   const date = new Date().toISOString().slice(0, 10);
   const runDirectory = options.out ?? path.join(RUNS, `${date}-${options.mode}`);
@@ -416,6 +426,7 @@ async function main() {
     ...(options.beforePlugin === null ? {} : { beforePlugin: options.beforePlugin })
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
+  console.log(powerLine(cells, options.arms));
   if (options.stockBaseline) console.log(`stock baseline into ${stockStorePath()}: projected $${projectCost(plannedCells(cells), RUNS, options.effort).total.toFixed(2)}, run it once`);
   let done = 0;
   let spent = 0;

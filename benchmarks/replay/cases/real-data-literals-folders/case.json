@@ -1,0 +1,30 @@
+{
+  "id": "real-data-literals-folders",
+  "kind": "case",
+  "replay": null,
+  "task": "The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: The land check refuses a Data literal whose pieces name existing folders or path parts, such as a brace pattern over new files in an existing folder, as not found.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "literalFinder|base ?name|path segment|segments"
+    ],
+    "fail": [],
+    "rubric": "FACTS. literalFinder in data-literals.mjs finds a literal by exact file name, base name or by the text being present in the diff or tree. A literal that names an existing folder or a run of whole path segments (top/sub/, or a brace pattern over new files in an existing folder) matches no file name and no text, so it is reported as not found. The fix also counts a literal (or each fragment) found when it equals a run of whole path segments of any listed file.\nFAIL: the answer blames the regular expression for line suffixes, the git ls-files call, or the fragment splitting alone, or proposes to stop checking Data literals.\nPASS: the answer finds that only file names and present text count as found and a folder or path-segment literal does not, and fixes it by matching literals against the path segments (prefix or middle runs) of the listed paths.\nQuoting code or names from input/ is neither pass nor fail by itself; judge whether the answer names the cause and a fix with the same effect.\nReference fix, the real commit de1d1207:\ndiff --git a/lib/data-literals.mjs b/lib/data-literals.mjs\nindex b5d9617f..fb34def8 100644\n--- a/lib/data-literals.mjs\n+++ b/lib/data-literals.mjs\n@@ -24,13 +24,24 @@ export function textPresence(root, planPath) {\n   return (text) => diff.includes(text) || inTree(text);\n }\n \n+function pathRuns(file) {\n+  const segments = file.split('/');\n+  return segments.flatMap((_, start) => segments.slice(start).map((__, length) => segments.slice(start, start + length + 1).join('/')));\n+}\n+\n+function segmentRuns(paths) {\n+  return new Set(paths.flatMap(pathRuns));\n+}\n+\n export function literalFinder(root, planPath) {\n   const paths = gitLines(root, ['ls-files', '--cached', '--others', '--exclude-standard']);\n   const names = new Set([...paths, ...paths.map((file) => path.basename(file))]);\n+  const runs = segmentRuns(paths);\n   const present = textPresence(root, planPath);\n+  const isPart = (text) => runs.has(text.replace(/^\\//, '').replace(/\\/$/, ''));\n   return (literal) => {\n     const bare = literal.replace(LINE_SUFFIX, '');\n-    if (names.has(bare) || present(literal)) return true;\n-    return literalFragments(literal).every(present);\n+    if (names.has(bare) || isPart(bare) || present(literal)) return true;\n+    return literalFragments(literal).every((fragment) => isPart(fragment) || present(fragment));\n   };\n }\n"
+  },
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "de1d1207b24f87c9b843da7d8b8e81d7f06b22d5",
+    "parent": "9c6ec5bde8e5629f53a7b9d3d16cb59480e5a3f8",
+    "subject": "fix(build): count Data literals that name existing folders as found",
+    "date": "2026-10-18"
+  },
+  "source": "lib/data-literals.mjs at de1d1207^ (git show). Fix commit de1d1207: fix(build): count Data literals that name existing folders as found.",
+  "transcript": "none",
+  "constructed": true,
+  "fidelity_notes": {
+    "real": "The input files are byte copies of lib/data-literals.mjs at the fix's parent 9c6ec5bd.",
+    "edited": "Nothing.",
+    "assumed": "The symptom wording and the prompt are written for the replay, not taken from a session."
+  },
+  "ready": true
+}

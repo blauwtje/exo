@@ -1,20 +1,35 @@
 # Eval engineering
 
-Checked: 2026-10-22
+Checked: 2026-11-02
 
-Read it when: you design, grade or change an eval, a benchmark or a regression check for an agent.
+Read it when: you design, grade or change an eval, benchmark, regression check or keep/discard rule.
 
-- **Start with 20-50 simple tasks drawn from real failures.** A small set from real misses beats a large invented one. [1] exo: gap, `benchmarks/replay/cases/` holds 12 cases from real runs, but no index of real failures and fewer than 20
-- **Write unambiguous tasks with reference solutions.** Two domain experts should reach the same verdict. [1] exo: `benchmarks/README.md` each safe and value task holds a reference `solution/`, `tests/benchmark-value.test.mjs` checks it fails on seed and passes on solution
-- **Run multiple trials, each isolated in a clean environment.** One run hides variance; shared state leaks between runs. [1] exo: `benchmarks/README.md` fresh repository per cell, `benchmarks/run.mjs` `--runs`
-- **Grade outcomes rather than exact step paths.** Agents reach a correct result by routes you did not foresee. [1] exo: `skills/build/references/test-design.md`
-- **Calibrate LLM judges against human experts.** An uncalibrated judge drifts from what people accept. [1] exo: gap, `benchmarks/pressure/README.md` checks vote stability only, no human labels
-- **Keep capability evals separate from regression evals.** Graduate a capability eval to regression once it passes reliably. [1] exo: gap
-- **Grade each dimension with an isolated judge.** Score each rubric dimension separately rather than have one judge grade all of them. [1] exo: gap, `benchmarks/pressure/README.md`
-- **Choose deterministic graders first.** Use code-based checks where possible, LLM graders only where needed. [1] exo: `skills/build/scripts/land-task.mjs` reruns the proof itself
-- **The task verifier must be nearly perfect.** Otherwise the agent solves the wrong problem. [2] exo: `tests/benchmark-value.test.mjs` checks each reference solution fails on seed and passes on solution
+- **Start with 20-50 tasks from real failures.** [1] exo: `verify/checks/eval-real-failures.mjs`
+- **Write unambiguous tasks with reference solutions.** [1] exo: `tests/benchmark-value.test.mjs`
+- **Run several trials per task in a clean environment; use pass^k when consistency matters.** [1][3] exo: `benchmarks/run.mjs` `--runs`
+- **Report the SEM and a 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`, `clusteredMeanCi`
+- **Compare to the baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
+- **Compute the task count before a paid run.** [3] exo: `lib/eval-stats.mjs` `powerLine`; `verify/checks/eval-power.mjs`
+- **Treat gaps under 3 points as noise until configs match.** [4] exo: `verify/checks/eval-variance.mjs`
+- **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default.** [4][7] exo: `skills/improve/scripts/round.mjs` `timedOut`
+- **Fix the random seed.** [6] exo: `skills/improve/scripts/round.mjs` `scoreEnv`
+- **Change one thing per round; at equal score keep the simpler code.** [6][7] exo: `skills/improve/scripts/round.mjs` `not-one-commit`, `judgeKeep`
+- **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: `tests/benchmark-value.test.mjs`
+- **Read transcripts and outputs before trusting a score change.** [1][5][6][7] exo: `benchmarks/README.md` `--transcripts`
+- **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/test-design.md`
+- **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: `benchmarks/pressure/judge.md`
+- **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: `verify/checks/eval-judges.mjs`; `lib/judge-agreement.mjs`
+- **Keep capability evals apart from regression evals.** [1] exo: `benchmarks/suites.mjs`
+- **Hold out tasks the change was not tuned on.** [5] exo: `lib/holdout.mjs`; `benchmarks/routing.mjs`
+- **Beat dumb baselines, one input-independent, and a human baseline.** [6] exo: `benchmarks/README.md` `baseline` arm
+- **Run free regression evals on every change.** [5] exo: `verify/checks/eval-suites.mjs` `checkEvalSuites`
 
 ## Sources
 
-1. [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents), 2026-01-09
-2. [Building a C compiler with a team of parallel Claudes](https://www.anthropic.com/engineering/building-c-compiler), 2026-02-05
+1. [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
+2. [Building a C compiler with Claudes](https://www.anthropic.com/engineering/building-c-compiler)
+3. [Statistical approach to model evals](https://www.anthropic.com/research/statistical-approach-to-model-evals)
+4. [Infrastructure noise in evals](https://www.anthropic.com/engineering/infrastructure-noise)
+5. [Evaluation best practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices)
+6. [A Recipe for Training Neural Networks](https://karpathy.github.io/2019/04/25/recipe/)
+7. [autoresearch program.md](https://github.com/karpathy/autoresearch)

@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { improveDefaults } from '../skills/improve/scripts/round.mjs';
+import { baselineNoise } from '../skills/improve/scripts/setup.mjs';
 
 const SETUP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'improve', 'scripts', 'setup.mjs');
 
@@ -32,7 +34,7 @@ test('setup creates branch, worktree, config, baseline row, brief and the settle
   const result = run(root, ...base);
   assert.equal(result.status, 0, result.stderr);
   const brief = path.join(fs.realpathSync(root), '.exo/improve/t1.brief.md');
-  assert.match(result.stdout, /^tag=t1 branch=improve\/t1 worktree=\.worktrees\/improve-t1 score=12 limit=\d+ model=\S+ effort=\S+ noidea=\d+ mode=inline brief=\S+\n$/);
+  assert.match(result.stdout, /^tag=t1 branch=improve\/t1 worktree=\.worktrees\/improve-t1 score=12 limit=\d+ seed=1 sd=0 mde=0 holdout=none model=\S+ effort=\S+ noidea=\d+ mode=inline brief=\S+\n$/);
   assert.equal(fs.realpathSync(result.stdout.trim().split('brief=')[1]), brief);
   const cfg = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8'));
   assert.deepEqual([cfg.scope, cfg.readOnly, cfg.direction, cfg.worktree], [['code.txt'], ['check.mjs'], 'higher', '.worktrees/improve-t1']);
@@ -42,6 +44,21 @@ test('setup creates branch, worktree, config, baseline row, brief and the settle
   assert.match(rows[1], /^[0-9a-f]+\t12\tkeep\tbaseline$/);
   assert.match(fs.readFileSync(brief, 'utf8'), /best so far 12/);
   assert.ok(fs.existsSync(path.join(root, '.worktrees/improve-t1')));
+});
+
+test('setup scores the baseline baselineRuns times and stores the runs and ITEM scores as samples', () => {
+  const root = repo();
+  fs.writeFileSync(path.join(root, 'check.mjs'), "import fs from 'node:fs';fs.appendFileSync('runs.log', 'run\\n');const n = fs.readFileSync('code.txt','utf8').length;console.log('ITEM a ' + n + '\\nITEM b 1\\nscore ' + n);\n");
+  fs.writeFileSync(path.join(root, '.gitignore'), 'runs.log\n');
+  git(root, 'add', '.');
+  git(root, 'commit', '-qm', 'items');
+  const result = run(root, ...base);
+  assert.equal(result.status, 0, result.stderr);
+  const runs = improveDefaults().baselineRuns;
+  const [commit] = fs.readFileSync(path.join(root, '.exo/improve/t1.tsv'), 'utf8').trim().split('\n')[1].split('\t');
+  const stored = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.samples.jsonl'), 'utf8'));
+  assert.deepEqual(stored, { commit, status: 'keep', runs: Array(runs).fill(12), items: { a: Array(runs).fill(12), b: Array(runs).fill(1) }, aborted: 0 });
+  assert.equal(fs.readFileSync(path.join(root, '.worktrees/improve-t1/runs.log'), 'utf8').trim().split('\n').length, runs);
 });
 
 test('the limit is derived from the baseline run unless --limit is given', () => {
@@ -164,7 +181,7 @@ test('--first commits the files under its dir as round 1 and prints the round ro
   assert.equal(git(tree, 'log', '-1', '--format=%s'), 'Widen the greeting');
   assert.equal(fs.readFileSync(path.join(tree, 'code.txt'), 'utf8'), 'hello wide world\n');
   assert.equal(fs.existsSync(path.join(root, '.exo/improve/first')), false);
-  assert.match(fs.readFileSync(path.join(root, '.exo/improve/t1.tsv'), 'utf8').trim().split('\n')[2], /\t17\tkeep\tWiden the greeting$/);
+  assert.match(fs.readFileSync(path.join(root, '.exo/improve/t1.tsv'), 'utf8').trim().split('\n')[2], /\t17\tkeep\tlines=\+1\/-1; Widen the greeting$/);
 });
 
 test('--first that scores worse is discarded and the worktree is reset to the baseline', () => {
@@ -189,4 +206,74 @@ test('--first with a read-only or out-of-scope file, no files or no subject fail
     assert.match(result.stderr, message);
   }
   assert.equal(git(root, 'branch', '--list', 'improve/*'), '');
+});
+
+test('every baseline run gets the run seed as EXO_SEED and the seed is stored in the run state', () => {
+  const root = repo();
+  fs.writeFileSync(path.join(root, 'check.mjs'), "import fs from 'node:fs';fs.appendFileSync('seeds.log', process.env.EXO_SEED + '\\n');console.log('score 12');\n");
+  fs.writeFileSync(path.join(root, '.gitignore'), 'seeds.log\n');
+  git(root, 'add', '.');
+  git(root, 'commit', '-qm', 'seeded');
+  const result = run(root, ...base);
+  assert.equal(result.status, 0, result.stderr);
+  const seed = String(improveDefaults().seed);
+  assert.deepEqual(fs.readFileSync(path.join(root, '.worktrees/improve-t1/seeds.log'), 'utf8').trim().split('\n'), Array(improveDefaults().baselineRuns).fill(seed));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8')).seed, Number(seed));
+  assert.match(result.stdout, new RegExp(` seed=${seed} `));
+});
+
+test('baseline noise is the SD of the baseline runs and mde the smallest gain the keep rule detects at maxRuns', () => {
+  const defaults = { maxRuns: 3, keepZ: 1.96, keepFloor: 0 };
+  assert.deepEqual(baselineNoise({ runs: [10, 12], items: {} }, defaults), { sd: 1.4142, mde: 2.5303 });
+  assert.deepEqual(baselineNoise({ runs: [50, 60], items: { a: [20, 30], b: [80, 90] } }, defaults), { sd: 7.0711, mde: 8.9461 });
+  assert.deepEqual(baselineNoise({ runs: [10, 10], items: {} }, { ...defaults, keepFloor: 0.5 }), { sd: 0, mde: 0.5 });
+  assert.deepEqual(baselineNoise({ runs: [10], items: {} }, defaults), { sd: null, mde: null });
+});
+
+test('the brief names the smallest detectable gain and the simplicity rule', () => {
+  const root = repo();
+  assert.equal(run(root, ...base).status, 0);
+  const text = fs.readFileSync(path.join(root, '.exo/improve/t1.brief.md'), 'utf8');
+  assert.match(text, /smallest gain the keep rule detects 0\./);
+  assert.match(text, /Simpler wins at an equal score: a removal that keeps the score is a win; a gain near the smallest detectable gain that adds much code is not worth it/);
+});
+
+function itemRepo(count) {
+  const root = repo();
+  const lines = Array.from({ length: count }, (_, at) => `ITEM c${at} ${at * 10}`).join('\\n');
+  fs.writeFileSync(path.join(root, 'check.mjs'), `console.log('${lines}\\nscore 999');\n`);
+  git(root, 'add', '.');
+  git(root, 'commit', '-qm', 'items');
+  return root;
+}
+
+test('a score with no ITEM lines settles with holdout=none and stores no held-out cases', () => {
+  const root = repo();
+  const result = run(root, ...base);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, / holdout=none /);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8')).holdout, null);
+});
+
+test('fewer than holdoutMin ITEM ids hold none out and keep the command\'s score', () => {
+  const root = itemRepo(improveDefaults().holdoutMin - 1);
+  const result = run(root, ...base);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, / score=999 .* holdout=none /);
+});
+
+test('holdoutMin ITEM ids hold out a stable share, and the baseline score and samples use the tuning cases only', () => {
+  const root = itemRepo(8);
+  const result = run(root, ...base);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, / holdout=2\/8 /);
+  const { held } = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8')).holdout;
+  assert.equal(held.length, 2);
+  const stored = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.samples.jsonl'), 'utf8'));
+  assert.deepEqual(Object.keys(stored.held).sort(), held);
+  assert.equal(Object.keys(stored.items).filter((id) => held.includes(id)).length, 0);
+  const tune = Object.keys(stored.items).map((id) => Number(id.slice(1)) * 10);
+  const mean = tune.reduce((sum, value) => sum + value, 0) / tune.length;
+  assert.match(result.stdout, new RegExp(` score=${Number(mean.toFixed(4))} `));
+  assert.match(run(root, '--resume', '--tag', 't1').stdout, / holdout=2\/8 /);
 });

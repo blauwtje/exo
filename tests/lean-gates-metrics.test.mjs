@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aggregate, gateFacts, incompleteReason, metricDeltas, phasesOf, runMetrics } from '../benchmarks/lean-gates-metrics.mjs';
+import { aggregate, gateFacts, incompleteReason, markdownTable, meanGap, metricDeltas, phasesOf, runMetrics } from '../benchmarks/lean-gates-metrics.mjs';
 
 function referenceRun(out, name, meta) {
   const directory = join(out, name);
@@ -97,3 +97,44 @@ for (const script of ['verify.mjs', 'gate.mjs']) {
     assert.equal(phases._verifyRuns.length, 1);
   });
 }
+
+test('an incomplete run counts as a failed completion and leaves wall time, with its excluded count in the table', () => {
+  const out = mkdtempSync(join(tmpdir(), 'lean-metrics-'));
+  const runs = [
+    measure(referenceRun(out, '01-new', { exitCode: 0, wallMs: 60000, version: 'new' })),
+    measure(referenceRun(out, '02-new', { exitCode: 0, wallMs: 80000, version: 'new' })),
+    measure(referenceRun(out, '03-new', { exitCode: null, timedOut: true, wallMs: 900000, version: 'new' }))
+  ];
+  const { new: stats } = aggregate(runs);
+  assert.equal(stats.completed.mean, 2 / 3);
+  assert.equal(stats.wallMs.n, 2);
+  assert.equal(stats.wallMs.mean, 70000);
+  assert.equal(stats.wallMs.se, 10000);
+  const table = markdownTable({ runs, aggregate: { new: stats } });
+  assert.match(table, /\| new \| wallMs \(min\) \| 1\.2 \| 1\.0-1\.3 \| 1\.2 ± 0\.2 \| 2 \(excl\. 1\) \|/);
+});
+
+test('a single complete run prints no SE and never a default', () => {
+  const out = mkdtempSync(join(tmpdir(), 'lean-metrics-'));
+  const run = measure(referenceRun(out, '01-new', { exitCode: 0, wallMs: 60000, version: 'new' }));
+  const stats = aggregate([run]).new;
+  assert.equal(stats.wallMs.se, null);
+  assert.equal(stats.costHarnessUsd.n, 0);
+  assert.equal(stats.costHarnessUsd.mean, null);
+  assert.match(markdownTable({ runs: [run], aggregate: { new: stats } }), /\| new \| wallMs \(min\) \| 1\.0 \| 1\.0-1\.0 \| 1\.0 no SE \| 1 \(excl\. 0\) \|/);
+});
+
+test('meanGap names a verdict only when the interval clears zero and says no SE under two runs', () => {
+  const summary = (mean, se, n) => ({ mean, se, n });
+  assert.equal(meanGap(summary(10, null, 1), summary(5, 1, 3)).verdict, 'no SE');
+  assert.equal(meanGap(summary(10, 1, 3), summary(9, 1, 3)).verdict, 'crosses zero');
+  assert.equal(meanGap(summary(10, 1, 3), summary(5, 1, 3)).verdict, 'below zero');
+  assert.equal(meanGap(summary(5, 1, 3), summary(10, 1, 3)).verdict, 'above zero');
+  assert.equal(meanGap({ mean: 10, sd: 2, n: 4 }, { mean: 4, sd: 2, n: 4 }).verdict, 'below zero');
+});
+
+test('metricDeltas appends the mean gap with its 95% CI to the median change', () => {
+  const stats = (median, mean, se) => ({ runs: ['a', 'b', 'c'], excluded: {}, wallMs: { median, mean, se, n: 3 } });
+  const [line] = metricDeltas({ aggregate: { new: stats(45000, 45000, 1000) } }, { aggregate: { new: stats(60000, 60000, 1000) } });
+  assert.equal(line, 'new wallMs: 60000 -> 45000 (-15000); mean -15000 ±2770 (95% CI), below zero');
+});

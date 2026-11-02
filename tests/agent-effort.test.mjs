@@ -209,10 +209,24 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
 });
 
 test('an inherit kind sets no model on an exo call, and a passed model is denied', () => {
-  assert.equal(call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover' }), undefined);
+  assert.equal(call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', effort: 'medium' }), undefined);
   const output = hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', model: 'opus' });
   assert.equal(output.permissionDecision, 'deny');
   assert.match(output.permissionDecisionReason, /runs on the session model/);
+});
+
+test('a label on an exo call with no model or effort moves it only to a label its table entry lists', () => {
+  const { kinds } = readKindTable(undefined, { budget: 'on' });
+  const pair = (input) => {
+    const { model, effort } = call(input);
+    return { model, effort };
+  };
+  assert.deepEqual(pair({ subagent_type: 'exo:fetch-docs', prompt: 'exo-kind: review\nx' }), kinds.research);
+  assert.deepEqual(pair({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: review\nx' }), kinds.lookup);
+  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: review-deep\nx' }), kinds['review-deep']);
+  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: hardest\nx' }), kinds['review-branch']);
+  assert.equal(hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: review\nx' }).permissionDecision, 'allow');
+  assert.equal(hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: hardest\nx', model: 'opus', effort: 'high' }), undefined);
 });
 
 test('the raised find-open-points effort still wins over the table', () => {

@@ -1,11 +1,11 @@
 # Improve round
 
-Make one commit that raises the score; a script scores it afterwards and keeps it only when the score got better. Your work ends at the commit.
+Make one commit that raises the score; a script scores it afterwards and keeps it only when its gain clears the score's noise. Your work ends at the commit.
 
 ## Run
 
 - Goal: <goal>
-- Score: `<command>`, <direction>; best so far <best>.
+- Score: `<command>`, <direction>; best so far <best>; smallest gain the keep rule detects <mde>.
 - Edit only: <scope>
 - Read-only, never edit: <readonly>
 - Worktree: `<worktree>`, checked out at base commit `<base>`.
@@ -17,15 +17,21 @@ commit score status description
 
 <rows>
 
+## Last round
+
+<last>
+
 ## Steps
 
 1. File under `## Files at base` → its content is below; read it again only to use Edit on it.
-2. File not below → read only the ones the goal depends on; `<root>/.exo/improve/run.log` holds the last score run.
-3. Pick one idea no earlier round tried, with the largest expected gain; a gain smaller than the score's noise cannot be told apart.
-4. Edit, fast check and commit in one Bash command in `<worktree>`: write the edit, run the fast check with output to a file, then commit the edited files only on `FAST-CHECK pass`.
-5. `FAST-CHECK fail <command>` → fix that error, commit with no fast check rerun.
-6. Commit subject → the change in plain words under 72 characters, since it becomes the row's description. One commit; no amend, no push.
-7. Return `IDEA <short hash>`.
+2. File not below → read only the ones the goal depends on; `<root>/.exo/improve/run.log` holds the last score run, `<root>/.exo/improve/<tag>.logs/` every run.
+3. Read `## Last round` before the idea: its `CASES` line names the cases that moved most, its `OUT` lines what the score printed.
+4. Pick one idea no earlier round tried, with the largest expected gain; a gain under the smallest detectable gain cannot be told apart from noise.
+5. Simpler wins at an equal score: a removal that keeps the score is a win; a gain near the smallest detectable gain that adds much code is not worth it. Each row's `lines=+<added>/-<removed>` shows its size.
+6. Edit, fast check and commit in one Bash command in `<worktree>`: write the edit, run the fast check with output to a file, then commit the edited files only on `FAST-CHECK pass`.
+7. `FAST-CHECK fail <command>` → fix that error, commit with no fast check rerun.
+8. Commit subject → the change in plain words under 72 characters, since it becomes the row's description. One commit; no amend, no push.
+9. Return `IDEA <short hash>`.
 
 ## Bounds
 

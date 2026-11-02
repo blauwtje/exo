@@ -20,6 +20,10 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { withoutParentSession, ISOLATION_ENV } from '../lean-gates.mjs';
 import { parseFlags, UsageError } from '../../lib/script-flags.mjs';
+import { meanCi } from '../../lib/eval-stats.mjs';
+import { formatMeasure, measure } from './cell-stats.mjs';
+import { calibrationLines } from '../judge-calibration.mjs';
+import { plannedPowerLine } from '../power-plan.mjs';
 
 export const JUDGE_MODEL = 'claude-haiku-5-5';
 export const JUDGE_EFFORT = 'low';
@@ -43,11 +47,30 @@ export function gradeRegex(rule, output) {
 function judgePrompt(rubric, output) {
   return [
     'You grade one answer against a rubric. The rubric says what a failing answer does and what a passing one does.',
-    'Reply with one JSON object and nothing else: {"grade":"pass"|"fail","evidence":"<one line copied character for character from the ANSWER>"}.',
+    'Reply with one JSON object and nothing else: {"grade":"pass"|"fail"|"unknown","evidence":"<one line copied character for character from the ANSWER>"}.',
     'The evidence line must be a verbatim substring of the ANSWER that supports your grade; do not paraphrase it.',
+    'Reply {"grade":"unknown","evidence":""} when the ANSWER does not give enough information to grade the rubric.',
     '',
     '<rubric>', rubric, '</rubric>', '', '<answer>', output, '</answer>'
   ].join('\n');
+}
+
+const costOf = (result) => (typeof result.total_cost_usd === 'number' ? result.total_cost_usd : null);
+
+function sumCosts(costs) {
+  return costs.some((cost) => cost === null || cost === undefined) ? null : costs.reduce((sum, cost) => sum + cost, 0);
+}
+
+export function readVerdict(text, output) {
+  const match = /\{[\s\S]*\}/.exec(text);
+  let verdict;
+  try { verdict = JSON.parse(match?.[0] ?? ''); } catch { return { grade: 'unknown', evidence: 'judge reply not JSON' }; }
+  const evidence = typeof verdict.evidence === 'string' ? verdict.evidence.trim() : '';
+  if (verdict.grade === 'unknown') return { grade: 'unknown', evidence: 'judge reported not enough information' };
+  if (!['pass', 'fail'].includes(verdict.grade) || evidence === '' || !output.includes(evidence)) {
+    return { grade: 'unknown', evidence: 'judge evidence not a verbatim substring', judged: verdict.grade };
+  }
+  return { grade: verdict.grade, evidence };
 }
 
 export function judge(rubric, output) {
@@ -59,16 +82,8 @@ export function judge(rubric, output) {
       '--max-budget-usd', String(JUDGE_BUDGET_USD)
     ], { cwd, encoding: 'utf8', env: { ...withoutParentSession(process.env), ...ISOLATION_ENV }, timeout: 180000, maxBuffer: 1 << 26 });
     let result;
-    try { result = JSON.parse(run.stdout); } catch { return { grade: 'unknown', evidence: 'judge output unreadable', judgeCostUsd: 0 }; }
-    const costUsd = result.total_cost_usd ?? 0;
-    const match = /\{[\s\S]*\}/.exec(String(result.result ?? ''));
-    let verdict;
-    try { verdict = JSON.parse(match?.[0] ?? ''); } catch { return { grade: 'unknown', evidence: 'judge reply not JSON', judgeCostUsd: costUsd }; }
-    const evidence = typeof verdict.evidence === 'string' ? verdict.evidence.trim() : '';
-    if (!['pass', 'fail'].includes(verdict.grade) || evidence === '' || !output.includes(evidence)) {
-      return { grade: 'unknown', evidence: 'judge evidence not a verbatim substring', judged: verdict.grade, judgeCostUsd: costUsd };
-    }
-    return { grade: verdict.grade, evidence, judgeCostUsd: costUsd };
+    try { result = JSON.parse(run.stdout); } catch { return { grade: 'unknown', evidence: 'judge output unreadable', judgeCostUsd: null }; }
+    return { ...readVerdict(String(result.result ?? ''), output), judgeCostUsd: costOf(result) };
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
@@ -79,7 +94,7 @@ function judgeWithRetry(rubric, output) {
   const first = judge(rubric, output);
   if (first.grade !== 'unknown') return first;
   const second = judge(rubric, output);
-  return { ...second, retried: true, judgeCostUsd: (first.judgeCostUsd ?? 0) + (second.judgeCostUsd ?? 0) };
+  return { ...second, retried: true, judgeCostUsd: sumCosts([first.judgeCostUsd, second.judgeCostUsd]) };
 }
 
 // Grade = majority of valid votes over JUDGE_CALLS calls; a tie or no valid vote is unknown.
@@ -92,7 +107,12 @@ export function judgeMajority(rubric, output, votes = JUDGE_CALLS) {
   const fails = count('fail');
   const grade = passes > fails ? 'pass' : fails > passes ? 'fail' : 'unknown';
   const winner = calls.find((call) => call.grade === grade) ?? calls[0];
-  return { grade, evidence: winner.evidence, votes: cast, retried: calls.some((call) => call.retried) || undefined, judgeCostUsd: calls.reduce((sum, call) => sum + (call.judgeCostUsd ?? 0), 0) };
+  return { grade, evidence: winner.evidence, votes: cast, stability: voteStability(passes, fails), retried: calls.some((call) => call.retried) || undefined, judgeCostUsd: sumCosts(calls.map((call) => call.judgeCostUsd)) };
+}
+
+export function voteStability(passes, fails) {
+  const valid = passes + fails;
+  return valid === 0 ? null : Math.max(passes, fails) / valid;
 }
 
 export function gradeCell(cellDirectory, { judgeCalls = JUDGE_CALLS } = {}) {
@@ -150,6 +170,20 @@ export function planGrade(cells, { votes }) {
   return { cells: cells.length, judgedCells, calls, maxCostUsd: calls * 2 * JUDGE_BUDGET_USD };
 }
 
+export function summaryLines(gradedCells) {
+  if (gradedCells.length === 0) return [];
+  const passRate = meanCi(gradedCells.map((graded) => (graded.grade === 'pass' ? 1 : 0)));
+  const judged = gradedCells.filter((graded) => graded.votes !== undefined);
+  const stable = measure(judged.map((graded) => graded.stability ?? null));
+  const unanimous = judged.filter((graded) => graded.stability === 1).length;
+  const lines = [`pass rate ${formatMeasure({ ...passRate, excluded: 0 })} (fail, unknown and leak count as not pass)`];
+  if (judged.length === 0) return lines;
+  lines.push(`vote stability ${formatMeasure(stable)} unanimous ${unanimous}/${judged.length} votes per cell ${Math.max(...judged.map((graded) => graded.votes.length))}`);
+  lines.push(`judge cost usd per judged cell ${formatMeasure(measure(judged.map((graded) => graded.judgeCostUsd ?? null)))}`);
+  lines.push(...calibrationLines(['replay-rubric']));
+  return lines;
+}
+
 function main(argv) {
   let options;
   try { options = parseGradeArguments(argv); } catch (error) {
@@ -163,12 +197,15 @@ function main(argv) {
   if (options.dryRun) {
     const plan = planGrade(cells, { votes });
     console.log(`${tier} tier, ${plan.cells} cells, ${plan.calls} judge calls (${plan.judgedCells} cells x ${votes} votes), cost cap $${plan.maxCostUsd.toFixed(2)} (calls x 2 retries x $${JUDGE_BUDGET_USD} budget)`);
+    console.log(plannedPowerLine({ tasks: plan.judgedCells, samples: votes }));
     return 0;
   }
-  for (const cell of cells) {
+  const gradedCells = cells.map((cell) => {
     const graded = gradeCell(cell, { judgeCalls: votes });
     console.log(`${path.relative(process.cwd(), cell)}\t${graded.grade}\t${graded.evidence}`);
-  }
+    return graded;
+  });
+  for (const line of summaryLines(gradedCells)) console.log(line);
   return 0;
 }
 

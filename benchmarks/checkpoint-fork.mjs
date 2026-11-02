@@ -25,13 +25,15 @@ import { pathToFileURL } from 'node:url';
 import { sumCounts, usageCounts } from '#token-weights';
 import { writeCellUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 import { readJsonl } from './lean-gates-metrics.mjs';
 import { countsCost } from './pricing.mjs';
 import { NO_ANSWER, sweepCells } from './sweep-cells.mjs';
 import { FLOW_BRANCH, FLOW_PLAN } from './sweep-fixtures.mjs';
 import { reviewStages } from './sweep-score.mjs';
 import { runClaude } from './sweep.mjs';
-import { mannWhitney, meanAndSd } from './statistics.mjs';
+import { knownMean, knownMeanText, intervalText, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
+import { wilson } from './routing-stats.mjs';
 
 const VERIFY_SKILL = /(^|:)(verify|gate)$/;
 const MINUTE_MS = 60 * 1000;
@@ -270,31 +272,59 @@ function forkRecords(out) {
     .map((entry) => readJson(path.join(out, entry.name, 'record.json'))).filter((record) => record !== null);
 }
 
-const rate = (values) => values.length === 0 ? '-' : `${values.filter(Boolean).length}/${values.length}`;
 const fixed = (value, digits = 3) => value === null || value === undefined ? '-' : value.toFixed(digits);
+const seconds = (ms) => (typeof ms === 'number' ? ms / 1000 : null);
+const percent = (value) => `${(value * 100).toFixed(0)}%`;
 
-function compare(label, full, fork, digits) {
-  const a = meanAndSd(full);
-  const b = meanAndSd(fork);
-  const p = full.length > 0 && fork.length > 0 ? mannWhitney(full, fork) : null;
-  return `${label}: full ${fixed(a.mean, digits)} (sd ${fixed(a.sd, digits)}, n=${a.n}), fork ${fixed(b.mean, digits)} (sd ${fixed(b.sd, digits)}, n=${b.n}), Mann-Whitney p=${fixed(p, 3)}`;
+const isFailed = (record) => record.timedOut === true || (typeof record.exitCode === 'number' && record.exitCode !== 0);
+
+function valueOf(pick, countFailure) {
+  return (record, entry) => {
+    if (isFailed(record)) return countFailure ? 0 : null;
+    const value = pick(entry);
+    if (typeof value === 'boolean') return Number(value);
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  };
 }
 
-// The lines the analysis prints. `fulls` hold each full cell's verify block and
-// record, `forks` the fork records.
+function sideValues(entries, recordOf, idOf, read) {
+  return entries.map((entry) => ({ id: idOf(entry), value: read(recordOf(entry), entry) }));
+}
+
+function differenceText(fullValues, forkValues, digits) {
+  const rows = [
+    ...fullValues.filter((row) => row.value !== null).map((row) => [row.id, 'full', row.value]),
+    ...forkValues.filter((row) => row.value !== null).map((row) => [row.id, 'fork', row.value])
+  ];
+  const diff = pairedArms(pairedByCase(rows, (row) => row), 'full', 'fork');
+  if (diff === null) return 'fork minus full: no shared cell, no SE';
+  const verdict = diff.se === null ? '' : ` ${verdictWord(diff, { up: 'higher', down: 'lower' })}`;
+  return `fork minus full: ${intervalText(diff, digits)}${verdict}`;
+}
+
+function shareText(values) {
+  const known = values.filter((value) => value !== null);
+  const interval = wilson(known.filter((value) => value === 1).length, known.length);
+  return interval === null ? '' : ` wilson95 [${percent(interval[0])}-${percent(interval[1])}]`;
+}
+
+function metricLine({ label, fulls, forks, full, fork, digits = 3, share = false, countFailure = false }) {
+  const fullValues = sideValues(fulls, (entry) => entry.record, (entry) => entry.name, valueOf(full, countFailure));
+  const forkValues = sideValues(forks, (entry) => entry, (entry) => entry.from, valueOf(fork, countFailure));
+  const numbers = (rows) => rows.map((row) => row.value);
+  const extra = (rows) => (share ? shareText(numbers(rows)) : '');
+  return `${label}: full ${knownMeanText(knownMean(numbers(fullValues)), digits)}${extra(fullValues)}; fork ${knownMeanText(knownMean(numbers(forkValues)), digits)}${extra(forkValues)}; ${differenceText(fullValues, forkValues, digits)}`;
+}
+
 export function analysis(fulls, forks) {
-  const numbers = (list, pick) => list.map(pick).filter((value) => typeof value === 'number');
-  const fullCost = numbers(fulls, (full) => full.block.costUsd);
-  const forkCost = numbers(forks, (fork) => fork.verifyCostUsd);
-  const wholeFull = meanAndSd(numbers(fulls, (full) => full.record.costUsd)).mean;
-  const wholeFork = meanAndSd(numbers(forks, (fork) => fork.costUsd)).mean;
+  const inputs = { fulls, forks };
   return [
-    compare('verify cost USD', fullCost, forkCost, 3),
-    compare('verify tokens', numbers(fulls, (full) => full.block.tokens), numbers(forks, (fork) => fork.verifyTokens), 0),
-    compare('verify wall s', numbers(fulls, (full) => full.block.wallMs).map((ms) => ms / 1000), numbers(forks, (fork) => fork.verifyWallMs).map((ms) => ms / 1000), 0),
-    `fix loop: full ${rate(fulls.map((full) => full.block.fixLoop))}, fork ${rate(forks.map((fork) => fork.fixLoop).filter((value) => value !== null))}`,
-    `hidden test pass: full ${rate(fulls.map((full) => full.record.hiddenPass))}, fork ${rate(forks.map((fork) => fork.hiddenPass))}`,
-    `fork total cost ${fixed(wholeFork)} / full cell cost ${fixed(wholeFull)} = ${wholeFull ? fixed(wholeFork / wholeFull, 2) : '-'}`
+    metricLine({ ...inputs, label: 'verify cost USD', full: (full) => full.block.costUsd, fork: (fork) => fork.verifyCostUsd }),
+    metricLine({ ...inputs, label: 'verify tokens', digits: 0, full: (full) => full.block.tokens, fork: (fork) => fork.verifyTokens }),
+    metricLine({ ...inputs, label: 'verify wall s', digits: 0, full: (full) => seconds(full.block.wallMs), fork: (fork) => seconds(fork.verifyWallMs) }),
+    metricLine({ ...inputs, label: 'fix loop', share: true, full: (full) => full.block.fixLoop, fork: (fork) => fork.fixLoop }),
+    metricLine({ ...inputs, label: 'hidden test pass', share: true, countFailure: true, full: (full) => full.record.hiddenPass, fork: (fork) => fork.hiddenPass }),
+    metricLine({ ...inputs, label: 'total cost USD', full: (full) => full.record.costUsd, fork: (fork) => fork.costUsd })
   ];
 }
 
@@ -338,6 +368,7 @@ async function main() {
   console.log(`${plan.length} verify-only forks planned (${options.tier} tier) from ${usable.length} kept cells, ${options.forks} each (${fulls.length - usable.length} cells skipped: no verify call or no kept repository):`);
   for (const { directory } of plan) console.log(`  ${path.basename(directory)}: --model ${forkCell().model} --effort ${forkCell().effort} --max-budget-usd ${FORK_BUDGET_USD}`);
   if (options.dryRun) {
+    console.log(plannedPowerLine({ tasks: usable.length, samples: options.forks }));
     console.log(`dry run: nothing started; the plan costs ${Math.min(plan.length * FORK_BUDGET_USD, options.maxUsd)} USD at most.`);
     return;
   }

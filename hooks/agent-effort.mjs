@@ -35,9 +35,13 @@ function sessionProvider() {
   return Object.hasOwn(providers, name) ? name : 'claude';
 }
 
-function labelOf(table, input) {
+function movesAgent(entry, input, label) {
+  return !entry || entry.labels?.includes(label) || input.model !== undefined || input.effort !== undefined;
+}
+
+function labelOf(table, input, entry) {
   const label = /^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1];
-  return table.kinds[label] ? label : undefined;
+  return table.kinds[label] && movesAgent(entry, input, label) ? label : undefined;
 }
 
 function unlabelled(input, budget) {
@@ -59,7 +63,8 @@ function resolvedKind(input, budget) {
   const table = readKindTable(undefined, { budget, provider: sessionProvider(), retry });
   const agent = /^exo:(.+)$/.exec(input.subagent_type ?? '')?.[1];
   const unnamed = isUnnamed(table, input);
-  const name = labelOf(table, input) ?? table.agents[`agents/${agent}.md`]?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined);
+  const entry = table.agents[`agents/${agent}.md`];
+  const name = labelOf(table, input, entry) ?? entry?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined);
   return table.kinds[name] ? { table, agent, kind: table.kinds[name] } : null;
 }
 

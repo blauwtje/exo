@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { changedRanges, gradeRepair, isClean, loadFixtures, loadPlants, main, parseFindings, renderTable, replayAll, saveBaseline, summarize, withBaseline, writeReport } from '../benchmarks/review-replay.mjs';
+import { SessionError, changedRanges, gradeRepair, isClean, loadFixtures, loadPlants, main, parseFindings, renderTable, replayAll, saveBaseline, summarize, withBaseline, writeReport } from '../benchmarks/review-replay.mjs';
 import { SAFE_TASKS } from '../benchmarks/tasks.mjs';
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -173,6 +173,44 @@ test('summarize reports the spread across repeated runs and the runs that never 
   assert.equal(cell.roundsToClean.n, 2);
 });
 
+test('a session that errors or times out is a failed run: fix rate 0, cost left out and counted, the replay goes on', async () => {
+  let sessions = 0;
+  const modelFor = () => {
+    const scripted = scriptedModel([], { costUsd: 1 });
+    return async (prompt, repository) => {
+      sessions += 1;
+      if (sessions === 1) throw new SessionError('claude exited null: timed out');
+      return scripted(prompt, repository);
+    };
+  };
+  const [cell] = await replayAll({ ...OPTIONS, repeat: 2, jobs: 1 }, modelFor);
+  assert.equal(cell.runs, 2);
+  assert.equal(cell.failures, 1);
+  assert.equal(cell.fixedAfterOneRepair.n, 2);
+  assert.equal(cell.fixedAfterOneRepair.mean, 0.5);
+  assert.equal(cell.costExcluded, 1);
+  assert.equal(cell.costUsd, 3);
+  assert.equal(cell.roundsToClean.n, 1);
+});
+
+test('an error that is no session failure still stops the replay', async () => {
+  const modelFor = () => async () => {
+    throw new TypeError('bug');
+  };
+  await assert.rejects(replayAll({ ...OPTIONS, repeat: 1 }, modelFor), TypeError);
+});
+
+test('summarize prints SE and CI per metric, no SE at one run, and leaves unpriced runs out of the cost', () => {
+  const run = (fixed, costUsd) => ({ failure: null, roundsToClean: 2, costUsd, grade: { planted: 4, fixed, falseFix: 1 } });
+  const cell = summarize(TASK, [run(4, 1), run(2, 2), run(3, null)]);
+  assert.equal(cell.fixedInterval.n, 3);
+  assert.ok(cell.fixedInterval.se > 0);
+  assert.equal(cell.costUsd, 3);
+  assert.equal(cell.costExcluded, 1);
+  assert.match(renderTable([{ ...cell, skipped: 0 }]), /0\.75 se 0\.14 ci95 0\.47\.\.1\.03 \(n=3\)/);
+  assert.equal(summarize(TASK, [run(4, 1)]).fixedInterval.se, null);
+});
+
 test('jobs run fixture-repeat runs concurrently', async () => {
   let active = 0;
   let peak = 0;
@@ -202,7 +240,7 @@ test('renderTable writes a header, a divider and one row per cell', () => {
   const lines = renderTable([{ ...summarize(TASK, [run]), skipped: 0 }]).trimEnd().split('\n');
   assert.equal(lines.length, 3);
   assert.match(lines[0], /^\| task \| runs \| skipped /);
-  assert.equal(lines[2], `| ${TASK.id} | 1 | 0 | 0 | 1.00 | 1.00 | 2.00 | 0 | 1.50 | - |`);
+  assert.equal(lines[2], `| ${TASK.id} | 1 | 0 | 0 | 1.00 no SE (n=1) | 1.00 no SE (n=1) | 2.00 no SE (n=1) | 0 | 1.50 | 0 | - |`);
 });
 
 test('log: each kept run.json records durationMs', async () => {

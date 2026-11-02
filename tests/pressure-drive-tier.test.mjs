@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { driveArguments } from '../lib/plugin-copy.mjs';
+import { runLines, runOutcome, turnRecord } from '../benchmarks/pressure/run-measures.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'pressure', 'drive.mjs');
 const RUNS = '/tmp/exo-pressure/runs';
@@ -53,4 +54,33 @@ test('every drive turn reads project and local settings only, whichever arm', ()
     assert.deepEqual(args.slice(-2), ['--resume', 'abc']);
     assert.equal(args.includes('--strict-mcp-config'), true);
   }
+});
+
+const done = { sid: 's', text: 'ok', costUsd: 0.2, wallMs: 3000 };
+
+test('a timed out, errored or empty turn is aborted and an unpriced turn keeps a null cost', () => {
+  assert.equal(turnRecord({ ...done, timedOut: true }).aborted, true);
+  assert.equal(turnRecord({ ...done, isError: true }).aborted, true);
+  assert.equal(turnRecord({ ...done, text: undefined }).aborted, true);
+  assert.equal(turnRecord({ ...done, sid: undefined }).aborted, true);
+  const unpriced = turnRecord({ ...done, costUsd: undefined });
+  assert.equal(unpriced.aborted, false);
+  assert.equal(unpriced.costUsd, null);
+});
+
+test('an aborted turn or a wrong copy makes the run outcome a failure', () => {
+  const finished = turnRecord(done);
+  assert.equal(runOutcome({ turns: [finished], loadedWrongCopy: false }), 'completed');
+  assert.equal(runOutcome({ turns: [finished, turnRecord({ ...done, timedOut: true })], loadedWrongCopy: false }), 'aborted');
+  assert.equal(runOutcome({ turns: [finished], loadedWrongCopy: true }), 'wrong-copy');
+});
+
+test('one turn prints no SE and aborted turns stay out of the cost and wall means with the count', () => {
+  const lines = runLines({ turns: [turnRecord(done)], outcome: 'completed' });
+  assert.match(lines[0], /^outcome completed$/);
+  assert.match(lines[2], /cost usd per finished turn 0\.200 no SE n 1 excluded 0/);
+  const mixed = runLines({ turns: [turnRecord(done), turnRecord({ ...done, costUsd: 0.4, wallMs: 5000 }), turnRecord({ ...done, timedOut: true, costUsd: 9, wallMs: 360000 })], outcome: 'aborted' });
+  assert.match(mixed[0], /counted as a failure/);
+  assert.match(mixed[2], /0\.300 se 0\.100 n 2 excluded 1/);
+  assert.match(mixed[3], /4\.0 se 1\.0 n 2 excluded 1/);
 });

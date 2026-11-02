@@ -7,7 +7,7 @@
     "type": "rubric",
     "pass": [
       "hook events|hook event",
-      "16"
+      "\\b16\\b"
     ],
     "fail": [
       "57 (hook|tool) calls"
@@ -32,5 +32,10 @@
   "fidelity": "Checked 2026-10-17 with BSD stat and cmp. Every input file is a byte copy of its source, except next-wins.md, which is the first 5356 bytes (77 lines) of the 108-line original, an exact prefix cut at section #4. Source mtimes (+0200): run 6862 data 2026-10-16 23:46:04-05, steps-4-7-progress.md 2026-10-17 08:07:02, scripts 09:17:05 to 09:18:25, next-wins.md born and last written 09:19:41 (07:19:41Z) in one Write. Nothing in input was added or changed after the mistake. Sections #1-#3 were written in the same Write as the error and hold no hook, hook-event or tool-call note.",
   "constructed": false,
   "fidelity_notes": "The narrowing (cell gets sections #1-#3 and writes #4 read-only) is the lead's decision; the original session wrote the whole doc with tools. The removed section #4 held two errors, '57 hook calls' (this case) and the $0.10-0.15 packet saving (replay 7); input holds neither. No fix sha exists for replay 8 (the fix is .exo/next-wins-verify/idea4.md:39-42, untracked, not in input). Greps of input/ for next-wins-verify, idea4, hook event, hook calls, hooks:57, 16 tool, verified found no cue; tail-1-review.log itself holds 16 tool_use blocks, num_turns 17 and 57 hook_started plus 57 hook_response records.",
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "transcript",
+    "ref": "~/.claude/projects/-Users-<user>-Documents-Code-personal-plugins-exo/1c170209-2de1-45e1-b595-f17955f9a077/subagents/agent-a57f2157e021a4afe.jsonl",
+    "note": "subagent that wrote next-wins.md with the 57 hook calls error"
+  }
 }

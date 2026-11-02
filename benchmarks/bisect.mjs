@@ -15,6 +15,7 @@ import { validateCase } from './bisect-validate.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { countsCost } from './pricing.mjs';
 import { BEFORE_ARM, beforePluginProblem } from './plugin-copies.mjs';
+import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { MODELS, ROOT } from './tasks.mjs';
 import { EXO_SETTINGS, cellFits, cellSpend, copyPluginWithoutTasks, parseSpendCap } from './value.mjs';
 
@@ -465,6 +466,10 @@ async function runPaid({ pending, options, paths, shas, cap }) {
   }
 }
 
+function passScores(records) {
+  return scoresByTask(records, { task: (record) => record.case, score: (record) => (typeof record.pass === 'boolean' ? Number(record.pass) : undefined) });
+}
+
 function plannedLines({ pending, recorded, options, cap }) {
   const lines = pending.map(({ spec, arm, run }) => `planned ${arm} ${spec.slug} run ${run}`);
   const projected = pending.length * CELL_ESTIMATE_USD;
@@ -520,6 +525,7 @@ export async function main(argv, paths = defaultPaths()) {
   const cap = spendCap(options, pending);
   if (options.dryRun) {
     for (const line of plannedLines({ pending, recorded: cells.length - pending.length, options, cap })) console.log(line);
+    console.log(plannedPowerLine({ tasks: cases.length, samples: options.runs, arms: options.arms.length, recorded: passScores(readRecords(paths.records)) }));
     if (cases.length === 0) console.log(`no cases under ${path.relative(ROOT, paths.cases)}`);
     return 0;
   }

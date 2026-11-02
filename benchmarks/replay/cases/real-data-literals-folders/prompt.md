@@ -1,0 +1,1 @@
+The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: The land check refuses a Data literal whose pieces name existing folders or path parts, such as a brace pattern over new files in an existing folder, as not found.

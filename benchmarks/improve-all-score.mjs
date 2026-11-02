@@ -6,6 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags } from '#script-flags';
+import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { scoreOutDir } from './improve-speed.mjs';
 
 const USAGE = 'Usage: node benchmarks/improve-all-score.mjs [--full] [--dry-run] [--serial] [--from-replay <runs dir>] [--from-build <out dir>]';
@@ -22,6 +23,8 @@ const TIERS = {
 const MAIN_REPLAY_REPEAT = TIERS.full.replayRepeat;
 const BUILD_CONCURRENCY = 10;
 const FAILED_CELL_PENALTY = 2;
+const ABORTED_REASONS = new Set(['timed out', 'exit code not 0']);
+const SAMPLE_KEYS = { rounds: 'rounds', 'verify-cost': 'verifyCost', 'build-wall': 'buildWall', 'build-cost': 'buildCost' };
 const OUT_LINE = /^out (.+)$/m;
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -61,18 +64,39 @@ function fixRate(cells) {
 const raisedFalseFix = (run) => (run.grade?.falseFix ?? 0) > 0;
 const roundsScored = (run) => (raisedFalseFix(run) ? NEVER_CLEAN : (run.roundsToClean ?? NEVER_CLEAN));
 
+function pricedRuns(runs) {
+  const priced = runs.filter((run) => Number.isFinite(run.costUsd));
+  if (priced.length === 0) throw new GateFailure('no replay run has a cost');
+  return priced;
+}
+
+const meanCost = (runs) => mean(runs.map((run) => run.costUsd));
+
+function taskMeasures(cells, runCount) {
+  return cells.map((cell) => ({ task: cell.task, list: cell.list.filter((run) => Number.isFinite(run.costUsd)), rounds: mean(cell.list.map(roundsScored)) }))
+    .filter((cell) => cell.list.length > 0)
+    .map((cell) => ({ task: cell.task, rounds: cell.rounds, verifyCost: meanCost(cell.list) * runCount }));
+}
+
 export function replayMeasures(directory) {
   const runs = readRuns(directory);
   const cells = [...Map.groupBy(runs, (run) => run.task)].map(([task, list]) => ({ task, list }));
   const rate = fixRate(cells);
   if (rate < FIX_RATE_FLOOR) throw new GateFailure(`replay fix rate ${rate.toFixed(3)} is below the floor ${FIX_RATE_FLOOR}: main ${MAIN_FIX_RATE.mean} minus ${FIX_RATE_SIGMAS} sd ${MAIN_FIX_RATE.sd}`);
   const rounds = mean(cells.map((cell) => mean(cell.list.map(roundsScored))));
-  return { rounds, verifyCost: sum(runs.map((run) => run.costUsd)), falseFixRuns: runs.filter(raisedFalseFix).length, runCount: runs.length, replayRepeat: Math.max(...cells.map((cell) => cell.list.length)) };
+  const priced = pricedRuns(runs);
+  const verifyCost = meanCost(priced) * runs.length;
+  const samples = {
+    rounds: runs.map((run) => ({ cluster: run.task, value: roundsScored(run) })),
+    verifyCost: priced.map((run) => ({ cluster: run.task, value: run.costUsd * runs.length }))
+  };
+  const excluded = { rounds: 0, verifyCost: runs.length - priced.length };
+  return { rounds, verifyCost, falseFixRuns: runs.filter(raisedFalseFix).length, runCount: runs.length, replayRepeat: Math.max(...cells.map((cell) => cell.list.length)), tasks: taskMeasures(cells, runs.length), samples, excluded };
 }
 
 function buildCell(directory, row) {
-  const wall = readJson(path.join(directory, row.cell, 'record.json')).wallMs / 1000;
-  return { cell: row.cell, reasons: row.failures, wall, cost: row.cost };
+  const { wallMs } = readJson(path.join(directory, row.cell, 'record.json'));
+  return { cell: row.cell, reasons: row.failures, wall: Number.isFinite(wallMs) ? wallMs / 1000 : null, cost: row.cost };
 }
 
 function requireBuildCells(cells, expected) {
@@ -82,21 +106,33 @@ function requireBuildCells(cells, expected) {
   if (unpriced.length > 0) throw new GateFailure(`build sweep failed: no cost for ${unpriced.map((cell) => cell.cell).join(', ')}`);
 }
 
-function penalizedCosts(cells) {
-  const known = cells.filter((cell) => cell.cost !== undefined).map((cell) => cell.cost);
-  if (known.length === 0) throw new GateFailure('build sweep failed: no cell has a cost');
-  return cells.map((cell) => {
-    const base = cell.cost ?? Math.max(...known);
-    return cell.reasons.length > 0 ? base * FAILED_CELL_PENALTY : base;
-  });
+function requireNoAbortedCells(cells) {
+  const aborted = cells.filter((cell) => cell.reasons.some((reason) => ABORTED_REASONS.has(reason)));
+  if (aborted.length > 0) throw new GateFailure(`build sweep failed: ${aborted.length} of ${cells.length} cells aborted: ${aborted.map((cell) => `${cell.cell} ${cell.reasons.join(', ')}`).join('; ')}`);
+}
+
+function penalised(cell, value) {
+  return cell.reasons.length > 0 ? value * FAILED_CELL_PENALTY : value;
+}
+
+function measuredValues(cells, field, name) {
+  const measured = cells.filter((cell) => cell[field] !== null && cell[field] !== undefined);
+  if (measured.length === 0) throw new GateFailure(`build sweep failed: no cell has a ${name}`);
+  return { rows: measured.map((cell) => ({ cluster: cell.cell, value: penalised(cell, cell[field]) })), excluded: cells.length - measured.length };
 }
 
 export function buildMeasures(directory, expected) {
   const cells = scoreOutDir(directory).rows.map((row) => buildCell(directory, row));
   requireBuildCells(cells, expected);
-  const walls = cells.map((cell) => (cell.reasons.length > 0 ? cell.wall * FAILED_CELL_PENALTY : cell.wall));
+  requireNoAbortedCells(cells);
+  const wall = measuredValues(cells, 'wall', 'wall time');
+  const cost = measuredValues(cells, 'cost', 'cost');
   const failedCells = cells.filter((cell) => cell.reasons.length > 0).map(({ cell, reasons }) => ({ cell, reasons }));
-  return { buildWall: mean(walls), buildCost: mean(penalizedCosts(cells)), failedCells, cellCount: cells.length };
+  const meanOf = (rows) => mean(rows.map((row) => row.value));
+  return {
+    buildWall: meanOf(wall.rows), buildCost: meanOf(cost.rows), failedCells, cellCount: cells.length,
+    buildSamples: { buildWall: wall.rows, buildCost: cost.rows }, buildExcluded: { buildWall: wall.excluded, buildCost: cost.excluded }
+  };
 }
 
 export const tierFor = (flags) => (flags.full ? TIERS.full : TIERS.quick);
@@ -151,6 +187,29 @@ export function ratios(measured, tier) {
   ];
 }
 
+export function ratioStats(measured, tier) {
+  return ratios(measured, tier).map(([id, ratio]) => {
+    const key = SAMPLE_KEYS[id];
+    const rows = { ...measured.samples, ...measured.buildSamples }[key] ?? [];
+    const excluded = { ...measured.excluded, ...measured.buildExcluded }[key] ?? 0;
+    if (rows.length === 0) return { id, ratio, se: null, n: 0, excluded };
+    const ci = clusteredMeanCi(rows);
+    return { id, ratio, se: ci.se === null || ci.mean === 0 ? null : (ratio * ci.se) / ci.mean, n: ci.n, excluded };
+  });
+}
+
+export function scoreSe(stats) {
+  if (stats.some((stat) => stat.se === null)) return null;
+  const score = geometricMean(stats.map((stat) => stat.ratio));
+  return (score * Math.sqrt(sum(stats.map((stat) => (stat.se / stat.ratio) ** 2)))) / stats.length;
+}
+
+export function taskItems(measured, tier) {
+  const buildRatios = ratios(measured, tier).filter(([id]) => id.startsWith('build')).map(([, ratio]) => ratio);
+  const verifyMain = mainVerifyCost(measured.replayRepeat ?? tier.replayRepeat);
+  return (measured.tasks ?? []).map((task) => [task.task.replace(/\s+/g, '-'), geometricMean([task.rounds / MAIN.rounds, task.verifyCost / verifyMain, ...buildRatios])]);
+}
+
 export function geometricMean(values) {
   return Math.exp(mean(values.map(Math.log)));
 }
@@ -166,6 +225,15 @@ function reportFalseFix(falseFixRuns, total) {
   console.error(`replay false fix ${falseFixRuns} of ${total}`);
 }
 
+const spread = (stat) => (stat.se === null ? 'no SE' : `se=${stat.se.toFixed(3)} n=${stat.n}`);
+
+export const statLine = (stat, tier) => `${stat.id} ratio=${stat.ratio.toFixed(3)} ${spread(stat)} excluded=${stat.excluded}${tier.name === 'quick' ? ' quick' : ''}`;
+
+export function scoreLine(stats) {
+  const se = scoreSe(stats);
+  return se === null ? 'score no SE' : `score se=${se.toFixed(3)}`;
+}
+
 async function main(argv) {
   const flags = parseFlags(argv, { full: 'boolean', 'dry-run': 'boolean', serial: 'boolean', 'from-replay': 'value', 'from-build': 'value' }, { usage: USAGE });
   const checkout = path.resolve('.');
@@ -177,11 +245,13 @@ async function main(argv) {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-improve-all-'));
   try {
     const measured = await measure(flags, checkout, work);
-    const parts = ratios(measured, tier);
+    const stats = ratioStats(measured, tier);
     reportFalseFix(measured.falseFixRuns, measured.runCount);
     reportFailedCells(measured.failedCells, measured.cellCount);
-    for (const [id, ratio] of parts) console.log(`${id} ratio=${ratio.toFixed(3)}${tier.name === 'quick' ? ' quick' : ''}`);
-    console.log(geometricMean(parts.map(([, ratio]) => ratio)).toFixed(3));
+    for (const stat of stats) console.log(statLine(stat, tier));
+    console.log(scoreLine(stats));
+    for (const [task, value] of taskItems(measured, tier)) console.log(`ITEM ${task} ${value.toFixed(4)}`);
+    console.log(geometricMean(stats.map((stat) => stat.ratio)).toFixed(3));
     fs.rmSync(work, { recursive: true, force: true });
     return 0;
   } catch (error) {

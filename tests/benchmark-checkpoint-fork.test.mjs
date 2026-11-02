@@ -160,9 +160,9 @@ test('runFork records a fork the way a sweep cell is recorded, from a fake sessi
     assert.ok(record.verifyCostUsd > 0 && record.verifyTokens > 0);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(forkDirectory, 'record.json'), 'utf8')), record);
     assert.ok(!fs.existsSync(seen[0].root), 'the fork root is removed');
-    const lines = analysis([{ block: verifyBlock(fullTranscript), record: { costUsd: 1, hiddenPass: true } }], [record]);
-    assert.match(lines[0], /^verify cost USD: full .* fork .* Mann-Whitney p=/);
-    assert.match(lines[5], /^fork total cost 0\.250 \/ full cell cost 1\.000 = 0\.25$/);
+    const lines = analysis([{ name: 'flow-unit-1', block: verifyBlock(fullTranscript), record: { costUsd: 1, hiddenPass: true } }], [record]);
+    assert.match(lines[0], /^verify cost USD: full .* no SE \(n=1\), 0 of 1 excluded; fork .* no SE \(n=1\), 0 of 1 excluded; fork minus full: .* no SE \(n=1\)$/);
+    assert.match(lines[5], /^total cost USD: full 1\.000 no SE \(n=1\), 0 of 1 excluded; fork 0\.250 no SE \(n=1\), 0 of 1 excluded; fork minus full: -0\.750 no SE \(n=1\)$/);
   } finally {
     if (saved === undefined) delete process.env.CLAUDE_CONFIG_DIR;
     else process.env.CLAUDE_CONFIG_DIR = saved;
@@ -183,4 +183,35 @@ test('without --confirm the script lists the forks and starts none', () => {
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }
+});
+
+function forkRecord(from, extra = {}) {
+  return { from, exitCode: 0, timedOut: false, costUsd: 0.5, verifyCostUsd: 0.2, verifyTokens: 100, verifyWallMs: 20000, fixLoop: false, hiddenPass: true, ...extra };
+}
+
+function fullEntry(name, extra = {}) {
+  return { name, block: { costUsd: 0.4, tokens: 200, wallMs: 40000, fixLoop: false }, record: { costUsd: 1, hiddenPass: true, ...extra } };
+}
+
+test('analysis pairs each fork with the full cell it came from and prints a difference with its SE and verdict', () => {
+  const fulls = ['a', 'b', 'c'].map((name, index) => ({ ...fullEntry(name), block: { costUsd: 0.4 + index * 0.1, tokens: 200, wallMs: 40000, fixLoop: false } }));
+  const forks = ['a', 'b', 'c'].map((name, index) => forkRecord(name, { verifyCostUsd: 0.1 + index * 0.1 }));
+  const [cost] = analysis(fulls, forks);
+  assert.match(cost, /fork minus full: -0\.300 se 0\.000 ci95 -0\.300\.\.-0\.300 \(n=3\) lower$/);
+});
+
+test('analysis counts a timed-out fork as a failed hidden pass and leaves its cost and wall out of the means', () => {
+  const fulls = ['a', 'b'].map((name) => fullEntry(name));
+  const forks = [forkRecord('a'), forkRecord('b', { timedOut: true, exitCode: null, hiddenPass: true, verifyCostUsd: 9, verifyWallMs: 9e6, costUsd: 9 })];
+  const lines = analysis(fulls, forks);
+  assert.match(lines[0], /fork 0\.200 no SE \(n=1\), 1 of 2 excluded;/);
+  assert.match(lines[2], /fork 20 no SE \(n=1\), 1 of 2 excluded;/);
+  assert.match(lines[4], /fork 0\.500 se 0\.500 ci95 .* \(n=2\), 0 of 2 excluded wilson95 \[/);
+  assert.match(lines[4], /full 1\.000 .*, 0 of 2 excluded wilson95 \[/);
+  assert.match(lines[5], /fork 0\.500 no SE \(n=1\), 1 of 2 excluded;/);
+});
+
+test('analysis with no shared cell prints no SE for the difference', () => {
+  const [cost] = analysis([fullEntry('a')], [forkRecord('z')]);
+  assert.match(cost, /fork minus full: no shared cell, no SE$/);
 });

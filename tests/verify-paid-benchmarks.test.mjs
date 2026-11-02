@@ -37,13 +37,57 @@ test('a paid entry point with neither guard is flagged', () => {
   assert.match(result.detail, /benchmarks\/bare\.mjs/);
 });
 
-test('a paid entry point with --dry-run or a quick tier passes', () => {
-  const repository = repositoryWith({
-    'dry.mjs': `${PAID_ENTRY}if (options.includes('--dry-run')) process.exit(0);\n`,
-    'tiered.mjs': `${PAID_ENTRY}const mode = 'quick';\n`
-  });
+const DRY_RUN_FLAG = "if (options.includes('--dry-run')) process.exit(0);\n";
+
+test('a paid entry point with both guards passes', () => {
+  const repository = repositoryWith({ 'both.mjs': `${PAID_ENTRY}${DRY_RUN_FLAG}const mode = 'quick';\n` });
   assert.deepEqual(unguardedPaidBenchmarks(repository), []);
   assert.equal(runCheck(repository)[0].ok, true);
+});
+
+test('a paid entry point with only --dry-run or only a quick tier is flagged', () => {
+  const repository = repositoryWith({
+    'dry-only.mjs': `${PAID_ENTRY}${DRY_RUN_FLAG}`,
+    'quick-only.mjs': `${PAID_ENTRY}const mode = 'quick';\n`
+  });
+  assert.deepEqual(unguardedPaidBenchmarks(repository), ['benchmarks/dry-only.mjs', 'benchmarks/quick-only.mjs']);
+});
+
+test('a guard that appears only in a comment does not count', () => {
+  const repository = repositoryWith({
+    'line.mjs': `${PAID_ENTRY}// --dry-run and a quick tier are planned\n`,
+    'block.mjs': `${PAID_ENTRY}/* const mode = 'quick'; options.includes('--dry-run') */\n`
+  });
+  assert.deepEqual(unguardedPaidBenchmarks(repository), ['benchmarks/block.mjs', 'benchmarks/line.mjs']);
+});
+
+const WITH_DRY_RUN = `${PAID_ENTRY}${DRY_RUN_FLAG}`;
+
+test('a quick default is a quick value assigned, defaulted or falling through a ternary', () => {
+  const repository = repositoryWith({
+    'nullish.mjs': `${WITH_DRY_RUN}const tier = flags.tier ?? 'quick';\n`,
+    'assigned.mjs': `${WITH_DRY_RUN}const mode = 'quick';\n`,
+    'ternary.mjs': `${WITH_DRY_RUN}const mode = flags.full ? 'full' : 'quick';\n`,
+    'tiers.mjs': `${WITH_DRY_RUN}const tier = flags.full ? TIERS.full : TIERS.quick;\n`,
+    'fallback.mjs': `${WITH_DRY_RUN}const label = flags.writeBaseline ? 'baseline' : 'quick';\n`,
+    'negated.mjs': `${WITH_DRY_RUN}const options = { quick: !flags.has('--full') };\n`,
+    'constant.mjs': `${WITH_DRY_RUN}const runs = Number(flags.runs ?? QUICK_RUNS);\n`,
+    'reader.mjs': `${WITH_DRY_RUN}const runs = whole('runs', QUICK_RUNS, 1);\n`
+  });
+  assert.deepEqual(unguardedPaidBenchmarks(repository), []);
+});
+
+test('the word quick without a default value is not a quick default tier', () => {
+  const repository = repositoryWith({
+    'usage.mjs': `${WITH_DRY_RUN}const USAGE = 'quick runs are cheap';\n`,
+    'compared.mjs': `${WITH_DRY_RUN}if (flags.tier === 'quick') run();\n`,
+    'file.mjs': `${WITH_DRY_RUN}const QUICK_FILE = 'routing-quick.json';\n`,
+    'full-default.mjs': `${WITH_DRY_RUN}const mode = flags.mode ?? 'full';\n`
+  });
+  assert.deepEqual(
+    unguardedPaidBenchmarks(repository),
+    ['benchmarks/compared.mjs', 'benchmarks/file.mjs', 'benchmarks/full-default.mjs', 'benchmarks/usage.mjs']
+  );
 });
 
 test('a paid helper without an argv entry point and a free script are not examined', () => {

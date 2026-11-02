@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { prepareValueRepo } from '../benchmarks/value.mjs';
-import { countQuestions, loadFixtures, passesCheck, parseArguments, planCells, selectFixtures, spendCap, summarize, targetVerdict } from '../benchmarks/decided.mjs';
+import { countQuestions, loadFixtures, passesCheck, parseArguments, planCells, reportLines, selectFixtures, spendCap, summarize, targetVerdict, turnAborted } from '../benchmarks/decided.mjs';
 
 const FIXTURES = loadFixtures();
 
@@ -19,6 +19,10 @@ function ask() {
 
 function cell(questions, defaultPass, extra = {}) {
   return { questions, defaultPass, alternativePass: false, reversed: false, ...extra };
+}
+
+function onTasks(cells) {
+  return cells.map((entry, index) => ({ ...entry, task: `task-${index}` }));
 }
 
 test('quick is the default: one train task, two arms, one run', () => {
@@ -82,10 +86,10 @@ test('the four rates', () => {
 });
 
 test('the target needs half the exo-before mean and a fall, with the hidden pass rate kept', () => {
-  const before = [3, 3, 4, 3, 4, 3].map((questions) => cell(questions, true));
-  const fewer = [0, 1, 0, 1, 0, 1].map((questions) => cell(questions, true));
-  const slightlyFewer = [2, 2, 2, 3, 2, 3].map((questions) => cell(questions, true));
-  const failing = [0, 1, 0, 1, 0, 1].map((questions, index) => cell(questions, index < 1));
+  const before = onTasks([3, 3, 4, 3, 4, 3].map((questions) => cell(questions, true)));
+  const fewer = onTasks([0, 1, 0, 1, 0, 1].map((questions) => cell(questions, true)));
+  const slightlyFewer = onTasks([2, 2, 2, 3, 2, 3].map((questions) => cell(questions, true)));
+  const failing = onTasks([0, 1, 0, 1, 0, 1].map((questions, index) => cell(questions, index < 1)));
   assert.equal(targetVerdict(before, fewer).met, true);
   assert.equal(targetVerdict(before, slightlyFewer).met, false);
   assert.equal(targetVerdict(before, failing).met, false);
@@ -137,12 +141,59 @@ test('the default full cap is the runnable cell count times the cell estimate, a
 });
 
 test('a nonzero gap between two arms with sd 0 counts by its sign, a zero gap stays noise', () => {
-  const steady = (questions) => [questions, questions, questions].map((count) => cell(count, true));
+  const steady = (questions) => onTasks([questions, questions, questions].map((count) => cell(count, true)));
   assert.equal(targetVerdict(steady(3), steady(0)).verdict, 'fall');
   assert.equal(targetVerdict(steady(3), steady(0)).met, true);
   assert.equal(targetVerdict(steady(2), steady(4)).verdict, 'rise');
   assert.equal(targetVerdict(steady(3), steady(3)).verdict, 'noise');
-  const failing = [0, 0, 0].map((count) => cell(count, false));
+  const failing = onTasks([0, 0, 0].map((count) => cell(count, false)));
   assert.equal(targetVerdict(steady(3), failing).guardVerdict, 'fall');
   assert.equal(targetVerdict(steady(3), failing).met, false);
+});
+
+test('the question comparison is paired per task and reads no SE below two shared tasks', () => {
+  const run = (task, questions, extra = {}) => cell(questions, true, { task, ...extra });
+  const one = targetVerdict([run('a', 4), run('a', 4)], [run('a', 0), run('a', 0)]);
+  assert.equal(one.verdict, 'no SE');
+  assert.equal(one.met, false);
+  const two = targetVerdict([run('a', 4), run('b', 6)], [run('a', 0), run('b', 1)]);
+  assert.equal(two.questionDiff.n, 2);
+  assert.equal(two.questionDiff.mean, -4.5);
+  assert.equal(two.verdict, 'fall');
+  const mixed = targetVerdict([run('a', 4), run('b', 0)], [run('a', 0), run('b', 4)]);
+  assert.equal(mixed.verdict, 'noise');
+  const unshared = targetVerdict([run('a', 4), run('b', 4)], [run('c', 0), run('d', 0)]);
+  assert.equal(unshared.verdict, 'no SE');
+});
+
+test('an aborted cell is a failed pass, left out of the question and cost means, and counted', () => {
+  const aborted = cell(null, false, { aborted: true, cost: 0.4, task: 'a' });
+  const summary = summarize([cell(2, true, { task: 'a' }), cell(4, true, { task: 'b' }), aborted]);
+  assert.equal(summary.cells, 3);
+  assert.equal(summary.aborted, 1);
+  assert.equal(summary.meanQuestions, 3);
+  assert.equal(summary.hiddenPassRate, 2 / 3);
+  assert.equal(summary.wrongDefaultRate, 0);
+  const healthy = [cell(2, true, { task: 'a' }), cell(2, true, { task: 'b' })];
+  assert.equal(targetVerdict(healthy, [aborted, cell(0, true, { task: 'b' })]).questionDiff.n, 1);
+  assert.equal(targetVerdict([aborted], [aborted]).note, 'no settled cells in an arm');
+});
+
+test('a turn with no result event or an error result is aborted', () => {
+  assert.equal(turnAborted(''), true);
+  assert.equal(turnAborted(streamOf({ type: 'assistant' })), true);
+  assert.equal(turnAborted(streamOf({ type: 'result', is_error: true, result: 'x' })), true);
+  assert.equal(turnAborted(streamOf({ type: 'result', result: 'x' })), false);
+});
+
+test('the report prints each score with its interval, no SE at one cell, and the excluded count', () => {
+  const single = reportLines([{ ...cell(2, true, { task: 'a', arm: 'exo', cost: 0.5 }) }], ['exo']);
+  assert.match(single.join('\n'), /questions per task 2\.000 no SE \(n=1\), 0 of 1 excluded/);
+  assert.match(single.join('\n'), /hidden pass 1\.000 no SE \(n=1\)/);
+  const many = ['a', 'b', 'c'].map((task, index) => cell(index, index > 0, { task, arm: 'exo', cost: 1, aborted: index === 0 ? true : undefined }));
+  const text = reportLines(many, ['exo']).join('\n');
+  assert.match(text, /3 cells, 1 aborted or errored counted as failed/);
+  assert.match(text, /questions per task 1\.500 se 0\.500 ci95 0\.520\.\.2\.480 \(n=2\), 1 of 3 excluded/);
+  assert.match(text, /cost 1\.000 se 0\.000[^\n]*, 1 of 3 excluded/);
+  assert.match(text, /hidden pass 0\.667 se /);
 });

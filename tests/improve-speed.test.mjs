@@ -111,7 +111,7 @@ test('measures are means rounded to two decimals', () => {
   assert.equal(scoreOutDir(out).measures.outputTokens, 1.67);
 });
 
-test('cost is the mean of the record costUsd per cell and stays unscored when a record lacks it', () => {
+test('cost is the mean of the record costUsd per cell and stays unscored when a finished record lacks it', () => {
   const out = fixture();
   makeCell(out, 'one', { record: { costUsd: 0.5 } });
   makeCell(out, 'two', { record: { costUsd: 0.75 } });
@@ -121,7 +121,24 @@ test('cost is the mean of the record costUsd per cell and stays unscored when a 
   const cell = spawnSync(process.execPath, [SCRIPT, '--from', out, '--full', '--measure', 'cost'], { encoding: 'utf8' });
   assert.match(cell.stdout, /^score: 0.625$/m);
   makeCell(out, 'three');
-  assert.equal(scoreOutDir(out).measures.cost, null);
+  const partial = scoreOutDir(out);
+  assert.equal(partial.measures.cost, null);
+  assert.equal(partial.spreads.cost.excluded, 1);
+  assert.equal(partial.spreads.cost.n, 2);
+});
+
+test('an aborted cell is left out of every measure and the count is printed', () => {
+  const out = fixture();
+  makeCell(out, 'ok', { record: { costUsd: 0.5 } });
+  makeCell(out, 'late', { record: { costUsd: 9, timedOut: true } });
+  const { spreads, measures } = scoreOutDir(out);
+  assert.equal(measures.cost, 0.5);
+  assert.deepEqual([spreads.cost.n, spreads.cost.excluded, spreads.cost.se], [1, 1, null]);
+  const lone = fixture();
+  makeCell(lone, 'a', { record: { costUsd: 0.4 } });
+  makeCell(lone, 'b', { record: { costUsd: 0.6 } });
+  const run = spawnSync(process.execPath, [SCRIPT, '--from', lone, '--full', '--measure', 'cost'], { encoding: 'utf8' });
+  assert.match(run.stdout, /^measure cost 0.5 se 0.100 n 2 excluded 0$/m);
 });
 
 test('the command prints score on a good out dir and exits 1 with FAIL lines otherwise', () => {
@@ -181,17 +198,14 @@ test('--dry-run without --repeat projects the one quick cell', () => {
 const BASE = { commit: 'abc', n: 3, mean: 0.6, max: 0.8 };
 const row = (options = {}) => ({ cell: 'c', failures: [], hiddenPass: true, cost: 0.5, durationMs: 1000, ...options });
 
-test('quickVerdict rejects a failure or a cost above the base maximum, promotes below the mean and is silent otherwise', () => {
+test('quickVerdict rejects a failure or a cost above the base maximum and otherwise prints no SE for the single quick cell', () => {
   assert.equal(quickVerdict(row({ failures: ['hidden tests failed'], hiddenPass: false }), BASE).verdict, 'reject');
   assert.equal(quickVerdict(row({ cost: 0.81 }), BASE).verdict, 'reject');
-  assert.equal(quickVerdict(row({ cost: 0.59 }), BASE).verdict, 'promote');
-  assert.equal(quickVerdict(row({ cost: 0.7 }), BASE).verdict, 'no signal');
-  assert.equal(quickVerdict(row({ cost: 0.8 }), BASE).verdict, 'no signal');
-  assert.equal(quickVerdict(row({ cost: undefined }), BASE).verdict, 'no signal');
+  for (const cost of [0.59, 0.7, 0.8, undefined]) assert.equal(quickVerdict(row({ cost }), BASE).verdict, 'no SE');
 });
 
 test('quickVerdict carries the cell hidden result, cost, duration and the base', () => {
-  assert.deepEqual(quickVerdict(row(), BASE), { mode: 'quick', verdict: 'promote', hiddenPass: true, cost_usd: 0.5, durationMs: 1000, base: BASE });
+  assert.deepEqual(quickVerdict(row(), BASE), { mode: 'quick', verdict: 'no SE', hiddenPass: true, cost_usd: 0.5, durationMs: 1000, base: BASE });
 });
 
 function pooledBase(costs) {
@@ -225,34 +239,38 @@ test('the pooled base is looked up under the installed Claude Code version unles
   assert.match(overridden.stderr, /no pooled base/);
 });
 
-test('flagless runs screen the cell against the pooled base and print the verdict beside the score', () => {
+test('flagless runs print the cell against the pooled base with its SE and no verdict from one cell', () => {
   const pool = pooledBase([0.5, 0.7, 0.9]);
   const cheap = fixture();
   makeCell(cheap, 'ok', { record: { costUsd: 0.4, wallMs: 5000 } });
-  const promoted = quickRun(cheap, pool);
-  assert.equal(promoted.status, 0);
-  assert.match(promoted.stdout, /^verdict promote$/m);
-  assert.match(promoted.stdout, /"cost_usd":0.4,"durationMs":5000,"base":\{[^}]*"mean":0.7,"max":0.9\}/);
-  assert.match(promoted.stdout, /^score: 2$/m);
-  assert.equal(JSON.parse(promoted.stdout.split('\n').find((line) => line.startsWith('{'))).mode, 'quick');
+  const screened = quickRun(cheap, pool);
+  assert.equal(screened.status, 0);
+  assert.match(screened.stdout, /^verdict no SE$/m);
+  assert.match(screened.stdout, /"cost_usd":0.4,"durationMs":5000,"base":\{[^}]*"se":0.115,"mean":0.7,"max":0.9\}/);
+  assert.match(screened.stdout, /^base cost 0.7 se 0.115 n 3$/m);
+  assert.match(screened.stdout, /^measure cost 0.4 no SE n 1 excluded 0$/m);
+  assert.match(screened.stdout, /^score: 2$/m);
+  assert.equal(JSON.parse(screened.stdout.split('\n').find((line) => line.startsWith('{'))).mode, 'quick');
 });
 
-test('flagless runs reject a failing cell or a cost above the base and stay silent in between', () => {
+test('flagless runs reject a failing cell or a cost above the base and give no verdict in between', () => {
   const pool = pooledBase([0.5, 0.7, 0.9]);
   const costly = fixture();
   makeCell(costly, 'ok', { record: { costUsd: 1.2 } });
   const rejected = quickRun(costly, pool);
   assert.equal(rejected.status, 1);
   assert.match(rejected.stdout, /^verdict reject$/m);
+  const middle = fixture();
+  makeCell(middle, 'ok', { record: { costUsd: 0.8 } });
+  const unjudged = quickRun(middle, pool);
+  assert.equal(unjudged.status, 0);
+  assert.match(unjudged.stdout, /^verdict no SE$/m);
   const failing = fixture();
   makeCell(failing, 'bad', { record: { costUsd: 0.4, hiddenPass: false } });
   const failed = quickRun(failing, pool);
   assert.equal(failed.status, 1);
   assert.match(failed.stdout, /^FAIL bad hidden tests failed$/m);
   assert.match(failed.stdout, /^verdict reject$/m);
-  const middle = fixture();
-  makeCell(middle, 'ok', { record: { costUsd: 0.8 } });
-  assert.match(quickRun(middle, pool).stdout, /^verdict no signal$/m);
 });
 
 test('a flagless run starts as many cells as --repeat asks and one without it', () => {

@@ -1,0 +1,30 @@
+{
+  "id": "real-bisect-git256",
+  "kind": "case",
+  "replay": null,
+  "task": "The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: On a CI runner with git 2.56, six tests of tests/find-cause-bisect.test.mjs fail. The inner git bisect run finds the culprit, yet the script ends with \"Bisect: error: git bisect named no commit\". The same tests pass on older git.",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "FIRST_BAD|first bad commit"
+    ],
+    "fail": [],
+    "rubric": "FACTS. bisect.mjs reads the culprit from the git bisect output with FIRST_BAD = /^([0-9a-f]{40}) is the first bad commit/m. Git 2.56 prints \"is the first 'bad' commit\" with quotes around bad, so the regex does not match, FIRST_BAD.exec returns null and the script reports \"git bisect named no commit\". The fix is to allow optional quotes around bad in the pattern (or match the sha with a looser pattern).\nFAIL: the answer blames the probe, the good-commit choice, the exit codes or the worktree, or proposes a fix that does not make the pattern accept the quoted word.\nPASS: the answer finds that the FIRST_BAD regex expects the exact text \"is the first bad commit\" and fails on the output of the newer git, and fixes it by accepting quotes around bad or matching more loosely.\nQuoting code or names from input/ is neither pass nor fail by itself; judge whether the answer names the cause and a fix with the same effect.\nReference fix, the real commit 3757251f:\ndiff --git a/skills/find-cause/scripts/bisect.mjs b/skills/find-cause/scripts/bisect.mjs\nindex 862c8f47..1953072e 100644\n--- a/skills/find-cause/scripts/bisect.mjs\n+++ b/skills/find-cause/scripts/bisect.mjs\n@@ -14,7 +14,7 @@ const PROBE_DEFAULT_MS = 600_000;\n const MAX_LINES = 30;\n const SKIP_EXIT = 125;\n const PROOF_SEPARATOR = /^`?(?: → | -> |: pass)/;\n-const FIRST_BAD = /^([0-9a-f]{40}) is the first bad commit/m;\n+const FIRST_BAD = /^([0-9a-f]{40}) is the first '?bad'? commit/m;\n \n const USAGE = `Usage: node bisect.mjs --repro <command> [--good <ref>]\n Runs <command> in a temporary worktree at HEAD, picks the newest good commit that command passes at, and bisects history to the commit that first breaks it.\n"
+  },
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "3757251ff39c205976d62939aa5ea76d4cff1b2a",
+    "parent": "4726515647ba54c0ebf6aa99b06e93ebf08b1800",
+    "subject": "fix(find-cause): read git 2.56 bisect output and give value cell repos a git identity",
+    "date": "2026-11-01"
+  },
+  "source": "skills/find-cause/scripts/bisect.mjs at 3757251f^ (git show). Fix commit 3757251f: fix(find-cause): read git 2.56 bisect output and give value cell repos a git identity.",
+  "transcript": "none",
+  "constructed": true,
+  "fidelity_notes": {
+    "real": "The input files are byte copies of skills/find-cause/scripts/bisect.mjs at the fix's parent 47265156.",
+    "edited": "Nothing.",
+    "assumed": "The symptom wording and the prompt are written for the replay, not taken from a session."
+  },
+  "ready": true
+}

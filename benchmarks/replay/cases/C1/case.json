@@ -22,5 +22,10 @@
     "edited": "Only meta.json: pluginCommits removed.",
     "assumed": "Nothing."
   },
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "control",
+    "ref": "benchmarks/runs/opus55-main-76153c60-pilot-low",
+    "note": "control from a real run dir"
+  }
 }

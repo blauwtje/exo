@@ -38,6 +38,7 @@ import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, providerC
 import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/build/scripts/run-config.mjs';
 import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
+import { plannedPowerLine } from './power-plan.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
@@ -507,7 +508,11 @@ async function main() {
   if (options.dryRun || !options.confirm) {
     const projection = projectSweep(cells.map((cell) => cell.id), RUNS);
     console.log(sweepProjectionLine(projection, cells.length));
-    if (options.dryRun) return;
+    if (options.dryRun) {
+      const tasks = new Set(cells.map((cell) => cell.id)).size;
+      console.log(plannedPowerLine({ tasks, samples: Math.round(cells.length / Math.max(1, tasks)) }));
+      return;
+    }
     console.log('Every call is billed. Re-run with --confirm to start them.');
     process.exitCode = 2;
     return;

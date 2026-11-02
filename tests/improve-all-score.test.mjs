@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { geometricMean, projectedUsd, ratios, replayMeasures, tierFor } from '../benchmarks/improve-all-score.mjs';
+import { buildMeasures, geometricMean, projectedUsd, ratioStats, ratios, replayMeasures, scoreLine, statLine, taskItems, tierFor } from '../benchmarks/improve-all-score.mjs';
 
 test('importing the scorer runs no measurement', () => {
   assert.equal(process.exitCode, undefined);
@@ -82,4 +82,63 @@ test('dry-run prints child commands and projected usd without measuring', () => 
   assert.match(quick, /improve-speed\.mjs.*--repeat 3/);
   assert.match(quick, /projected usd \d+\.\d\d/);
   assert.match(run('--full'), /improve-speed\.mjs.*--repeat 10/);
+});
+
+const writeBuild = (cells) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-all-build-'));
+  cells.forEach((record, index) => {
+    const folder = path.join(directory, `cell-${index}`);
+    fs.mkdirSync(folder);
+    fs.writeFileSync(path.join(folder, 'record.json'), JSON.stringify({ exitCode: 0, timedOut: false, hiddenPass: true, defects: [], verifyRan: true, ...record }));
+  });
+  return directory;
+};
+
+const writeTasks = (runsByTask) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-all-tasks-'));
+  Object.entries(runsByTask).forEach(([task, runs]) => runs.forEach((run, index) => {
+    const folder = path.join(directory, `${task}-${index}`);
+    fs.mkdirSync(folder);
+    fs.writeFileSync(path.join(folder, 'run.json'), JSON.stringify(run));
+  }));
+  return directory;
+};
+
+test('an aborted build cell fails the score instead of entering a mean', () => {
+  const out = writeBuild([{ wallMs: 1000, costUsd: 1 }, { wallMs: 2000, costUsd: 1, timedOut: true }]);
+  assert.throws(() => buildMeasures(out), /1 of 2 cells aborted/);
+});
+
+test('a build cell without a wall time or cost is left out of that mean and counted', () => {
+  const out = writeBuild([{ wallMs: 1000, costUsd: 1, failures: [] }, { wallMs: 3000 }, { costUsd: 3 }]);
+  const failing = buildMeasures(out);
+  assert.deepEqual(failing.buildExcluded, { buildWall: 1, buildCost: 1 });
+  assert.equal(failing.buildSamples.buildWall.length, 2);
+});
+
+test('a replay run without a cost is left out of the verify cost mean and counted', () => {
+  const measured = replayMeasures(writeReplay([goodRun, { ...goodRun, costUsd: undefined }, goodRun]));
+  assert.equal(measured.excluded.verifyCost, 1);
+  assert.equal(measured.verifyCost, 6);
+});
+
+test('ratio statistics carry an SE over clustered tasks and say no SE for one run', () => {
+  const tier = tierFor({});
+  const many = replayMeasures(writeTasks({ a: [goodRun], b: [{ ...goodRun, roundsToClean: 3 }] }));
+  const built = { ...many, buildWall: 294.9487, buildCost: 0.95046258, buildSamples: { buildWall: [{ cluster: 'x', value: 290 }, { cluster: 'y', value: 300 }], buildCost: [{ cluster: 'x', value: 1 }, { cluster: 'y', value: 0.9 }] }, buildExcluded: { buildWall: 0, buildCost: 0 } };
+  const stats = ratioStats(built, tier);
+  assert.ok(stats.every((stat) => stat.se !== null && stat.n === 2));
+  assert.match(statLine(stats[0], tier), /^rounds ratio=\d\.\d{3} se=\d\.\d{3} n=2 excluded=0 quick$/);
+  assert.match(scoreLine(stats), /^score se=\d\.\d{3}$/);
+  const single = ratioStats({ ...replayMeasures(writeReplay([goodRun])), buildWall: 1, buildCost: 1 }, tier);
+  assert.match(statLine(single[0], tier), /no SE/);
+  assert.equal(scoreLine(single), 'score no SE');
+});
+
+test('each replay task becomes an ITEM score on the ratio scale', () => {
+  const tier = tierFor({});
+  const measured = { ...replayMeasures(writeTasks({ a: [goodRun], b: [{ ...goodRun, roundsToClean: 3 }] })), buildWall: 294.9487, buildCost: 0.95046258 };
+  const items = taskItems(measured, tier);
+  assert.deepEqual(items.map(([task]) => task), ['a', 'b']);
+  assert.ok(items[1][1] > items[0][1]);
 });

@@ -4,6 +4,7 @@
 // the whole-flow cell's drift reports, the false-alarm rate and the winning
 // plan cell. sweep.mjs runs the cells; nothing here starts a process.
 
+import { meanCi, pairedDiff } from '../lib/eval-stats.mjs';
 import { REVIEW_EFFORTS, SWEEP_MODELS } from './sweep-cells.mjs';
 
 const PLAN_SECTIONS = ['## Goal', '## Plan basis', '## Non-goals', '## Context', '## Tasks', '## Final verification'];
@@ -109,9 +110,17 @@ function tableRow(record) {
   return `| ${cells.join(' | ')} |`;
 }
 
+const points = (fraction) => `${Math.round(100 * fraction)}%`;
+
+function rateText(values) {
+  const { mean, se, lo, hi } = meanCi(values);
+  if (se === null) return `${points(mean)}, no SE (n=${values.length})`;
+  return `${points(mean)} (95% CI ${points(Math.max(0, lo))} to ${points(Math.min(1, hi))}, n=${values.length})`;
+}
+
 function falseAlarmLines(records) {
   const controls = records.filter((record) => record.kind === 'review' && record.variant === 'control');
-  const measured = controls.filter((record) => record.falseAlarms !== null);
+  const measured = controls.filter((record) => record.falseAlarms !== null && !record.timedOut);
   if (measured.length === 0) return ['No control review cell left a report, so the false-alarm rate is unmeasured and plan 5 (C2) has no gate yet.'];
   const alarmed = measured.filter((record) => record.falseAlarms > 0).length;
   const perEffort = REVIEW_EFFORTS.map((effort) => {
@@ -119,27 +128,32 @@ function falseAlarmLines(records) {
     const hits = cells.filter((record) => record.falseAlarms > 0).length;
     return `${effort} ${hits}/${cells.length}`;
   });
-  const percent = Math.round((100 * alarmed) / measured.length);
+  const rate = rateText(measured.map((record) => Number(record.falseAlarms > 0)));
   return [
-    `Reviewer false-alarm rate: ${alarmed}/${measured.length} control branches (${percent}%) drew at least one defect or concern finding (${perEffort.join(', ')}). Plan 5 (C2) is gated on this rate.`,
+    `Reviewer false-alarm rate: ${alarmed}/${measured.length} control branches, ${rate}, drew at least one defect or concern finding (${perEffort.join(', ')}). Plan 5 (C2) is gated on this rate.`,
     '',
-    `Unmeasured: ${controls.length - measured.length} control cells left no report.`
+    `Unmeasured: ${controls.length - measured.length} control cells left no report or timed out, left out of the rate.`
   ];
+}
+
+const replayFailed = (record) => record.timedOut || record.hits === null;
+
+function replayRow(model, replays) {
+  const cells = replays.filter((record) => record.model === model && record.truth > 0);
+  const failed = cells.filter(replayFailed).length;
+  const hits = cells.reduce((sum, record) => sum + (replayFailed(record) ? 0 : record.hits), 0);
+  const truth = cells.reduce((sum, record) => sum + record.truth, 0);
+  const reported = cells.filter((record) => !replayFailed(record));
+  const extra = reported.reduce((sum, record) => sum + record.extra, 0);
+  const rate = cells.length === 0 ? '-' : rateText(cells.map((record) => (replayFailed(record) ? 0 : record.hits / record.truth)));
+  return `| ${model} | ${cells.length} | ${hits}/${truth} | ${rate} | ${failed} | ${extra} (excl. ${failed} cells) |`;
 }
 
 function replayLines(records) {
   const replays = records.filter((record) => record.kind === 'replay');
   if (replays.length === 0) return ['No replay cell ran.'];
   const models = [...new Set(replays.map((record) => record.model))];
-  const rows = models.map((model) => {
-    const cells = replays.filter((record) => record.model === model && record.hits !== null);
-    const hits = cells.reduce((sum, record) => sum + record.hits, 0);
-    const truth = cells.reduce((sum, record) => sum + record.truth, 0);
-    const extra = cells.reduce((sum, record) => sum + record.extra, 0);
-    const rate = truth === 0 ? '-' : `${Math.round((100 * hits) / truth)}%`;
-    return `| ${model} | ${cells.length} | ${hits}/${truth} | ${rate} | ${extra} |`;
-  });
-  return ['| Model | Cells | Known defects hit | Hit rate | Other fix findings |', '|---|---|---|---|---|', ...rows];
+  return ['| Model | Cells | Known defects hit | Hit rate per cell | Failed cells | Other fix findings |', '|---|---|---|---|---|---|', ...models.map((model) => replayRow(model, replays))];
 }
 
 function comparePlans(left, right) {
@@ -147,20 +161,37 @@ function comparePlans(left, right) {
   return (left.tokens ?? Number.MAX_SAFE_INTEGER) - (right.tokens ?? Number.MAX_SAFE_INTEGER);
 }
 
-// A plan cell that wrote no plan carries null breaches and takes no part in
-// the ranking, so an empty cell never outranks a written plan.
+function planTasks(plans) {
+  return [...new Set(plans.map((record) => record.task ?? 'flow-request'))];
+}
+
+function meanBreaches(plans, task, match) {
+  const found = plans.filter((record) => (record.task ?? 'flow-request') === task && match(record));
+  return found.length === 0 ? null : found.reduce((sum, record) => sum + record.defectsFound, 0) / found.length;
+}
+
+function fableVersusOpus(plans, effort) {
+  const tasks = planTasks(plans);
+  const pairs = tasks
+    .map((task) => [meanBreaches(plans, task, (record) => record.model === SWEEP_MODELS.opus && record.effort === 'high'), meanBreaches(plans, task, (record) => record.model === SWEEP_MODELS.fable && record.effort === effort)])
+    .filter((pair) => !pair.includes(null));
+  if (pairs.length < 2) return `Fable 5.1 at ${effort} against Opus 5.5 at high: no SE (${pairs.length} plan task, one run per cell; the cells are not enough for a verdict).`;
+  const { mean, lo, hi } = pairedDiff(pairs);
+  const verdict = hi < 0 ? 'fewer breaches' : lo > 0 ? 'more breaches' : 'crosses zero';
+  return `Fable 5.1 at ${effort} against Opus 5.5 at high: ${mean.toFixed(2)} breaches (95% CI ${lo.toFixed(2)} to ${hi.toFixed(2)}, paired over ${pairs.length} tasks), ${verdict}.`;
+}
+
 function planLine(records) {
-  const plans = records.filter((record) => record.kind === 'plan' && record.defectsFound !== null);
+  const all = records.filter((record) => record.kind === 'plan');
+  const plans = all.filter((record) => record.defectsFound !== null);
   if (plans.length === 0) return 'No plan cell wrote a plan, so Fable 5.1 routing stays unsettled.';
   const winner = [...plans].sort(comparePlans)[0];
-  const winnerText = `Winning plan cell: ${winner.id} (${winner.defectsFound} rule breaches, ${shown(winner.tokens)} tokens).`;
+  const winnerText = `Winning plan cell: ${winner.id} (${winner.defectsFound} rule breaches, ${shown(winner.tokens)} tokens; ${all.length - plans.length} cells wrote no plan and are left out).`;
   const opus = plans.find((record) => record.model === SWEEP_MODELS.opus && record.effort === 'high');
   if (opus === undefined) return `${winnerText} The Opus 5.5 high cell wrote no plan, so Fable 5.1 routing stays unsettled.`;
-  const fableEfforts = plans
-    .filter((record) => record.model === SWEEP_MODELS.fable && comparePlans(record, opus) < 0)
-    .map((record) => record.effort);
-  const fable = fableEfforts.length === 0 ? 'no effort' : fableEfforts.join(' and ');
-  return `${winnerText} Fable 5.1 beats Opus 5.5 at high at ${fable}.`;
+  const efforts = [...new Set(plans.filter((record) => record.model === SWEEP_MODELS.fable).map((record) => record.effort))];
+  if (efforts.length === 0) return `${winnerText} No Fable 5.1 cell wrote a plan, so the routing stays unsettled.`;
+  return [winnerText, ...efforts.map((effort) => fableVersusOpus(plans, effort))].join(' ');
 }
 
 function flowLine(records) {

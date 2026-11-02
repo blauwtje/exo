@@ -12,6 +12,8 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { usageCounts } from '#token-weights';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { makeRunFolder, withHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { armComparison, comparisonLine, routingStats, statsLines } from './routing-stats.mjs';
+import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { countsCost } from './pricing.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -114,7 +116,8 @@ export function medianCost(sessions) {
 export function dryRunLine(sessionCount, recorded) {
   const median = medianCost(recorded);
   if (median === null) return `dry-run: ${sessionCount} sessions, cost unknown`;
-  return `dry-run: ${sessionCount} sessions x median $${median.toFixed(4)} = $${(sessionCount * median).toFixed(2)}`;
+  const excluded = recorded.filter((session) => typeof session.cost_usd !== 'number').length;
+  return `dry-run: ${sessionCount} sessions x median $${median.toFixed(4)} = $${(sessionCount * median).toFixed(2)} (${excluded} of ${recorded.length} recorded sessions without cost excluded)`;
 }
 
 export function gradeStream(text) {
@@ -186,14 +189,14 @@ async function inPool(jobs, concurrency) {
 export function summarize(sessions, skills) {
   const table = {};
   for (const split of [...new Set(sessions.map((session) => session.split))]) {
-    const inSplit = sessions.filter((session) => session.split === split && session.error === undefined);
+    const inSplit = sessions.filter((session) => session.split === split);
     table[split] = {};
     for (const skill of skills) {
       const positives = inSplit.filter((session) => session.expect === skill);
       const others = inSplit.filter((session) => session.expect !== skill);
       table[split][skill] = {
         recall: positives.length ? positives.filter((session) => session.pick === skill).length / positives.length : null,
-        falseTrigger: others.length ? others.filter((session) => session.pick === skill).length / others.length : null
+        falseTrigger: others.length ? others.filter((session) => session.error !== undefined || session.pick === skill).length / others.length : null
       };
     }
   }
@@ -311,7 +314,17 @@ function planRun(flags, all) {
 function dryRun(flags) {
   const plan = planRun(flags, readPrompts());
   const sessionCount = plan.prompts.length * flags.cells.length * plan.arms.length * flags.runs;
-  process.stdout.write(`${dryRunLine(sessionCount, recordedSessions(flags.out))}\n`);
+  const recorded = recordedSessions(flags.out);
+  process.stdout.write(`${dryRunLine(sessionCount, recorded)}\n`);
+  const scores = scoresByTask(recorded, { task: (session) => session.prompt, score: (session) => (typeof session.expect === 'string' ? Number(session.pick === session.expect) : undefined) });
+  process.stdout.write(`${plannedPowerLine({ tasks: plan.prompts.length, samples: flags.runs, arms: flags.cells.length * plan.arms.length, recorded: scores })}\n`);
+}
+
+function printStats(result, cells) {
+  for (const cell of cells) {
+    process.stdout.write(`${cell} hook\n${statsLines(routingStats(result.sessions, { cell })).join('\n')}\n`);
+    process.stdout.write(`${comparisonLine(armComparison(result.sessions, { cell })) ?? 'no hook against no-hook pairs'}\n`);
+  }
 }
 
 async function main() {
@@ -333,6 +346,7 @@ async function main() {
     fs.mkdirSync(path.dirname(flags.out), { recursive: true });
     fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`wrote ${flags.out}\n`);
+    printStats(result, flags.cells);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }

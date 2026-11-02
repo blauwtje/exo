@@ -87,7 +87,7 @@ test('T2 an infra cell in the control arm drops its task from every arm', () => 
   assert.equal(fs.existsSync(path.join(out, 'one')), false);
 });
 
-test('T3 score.mjs --compare reads the imported run and leaves an infra cell out of the means', () => {
+test('T3 score.mjs --compare counts an infra cell as a failed pass and leaves it out of the cost mean', () => {
   const before = tmp();
   const after = tmp();
   [1, 2, 3].forEach((n) => trial(before, `b${n}`, { cost: 1 + n / 10, stream: { modelUsage: MODEL_USAGE } }));
@@ -98,7 +98,7 @@ test('T3 score.mjs --compare reads the imported run and leaves an infra cell out
   const run = spawnSync(process.execPath, [SCORE, out, '--compare', 'exo-before,exo'], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stdout, /\| fix-git \| cost \| 3 \| 3 \|/);
-  assert.match(run.stdout, /\| fix-git \| pass \| 3 \| 3 \|/);
+  assert.match(run.stdout, /\| fix-git \| pass \| 3 \| 4 \|/);
 });
 
 test('W1 projected spend charges a running trial the job highest finished cost, trialUsd when none finished', () => {

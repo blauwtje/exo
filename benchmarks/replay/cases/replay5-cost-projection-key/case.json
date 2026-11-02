@@ -16,5 +16,10 @@
   "fidelity": "The original session (transcript record 326, output at 330) ran this command shape for Opus only, effort low and max, arms exo and baseline, with tail -1, and read four identical 48-cell $39.60 lines. Constructed: the Haiku lines and the exo-only set were regenerated from the code at 76153c60^ and print the same line; the commands are the real ones, not abbreviated. The replay prompt asks for the plan without the brief's checking cue.",
   "constructed": true,
   "fidelity_notes": "Regenerated 2026-10-17 from git archive 76153c60^ in a fresh git repo with empty benchmarks/runs; all four outputs identical to what the session saw. Regex: the pass pattern requires wording that ties ignoring/not varying to model or effort, so echoing the flags is not enough; a short answer that says the same without those words would fail the regex but be caught by the judge.",
-  "ready": true
+  "ready": true,
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "76153c606529aecadcbdd1f025139bdaa6c94012",
+    "note": "identical dry-run cost for four model and effort pairs"
+  }
 }

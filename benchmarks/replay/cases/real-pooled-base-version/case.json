@@ -1,0 +1,30 @@
+{
+  "id": "real-pooled-base-version",
+  "kind": "case",
+  "replay": null,
+  "task": "The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: benchmarks/improve-all-score.mjs starts this script without --claude-version. The pooled-base lookup then finds no row, although the pool holds a row for the base commit recorded under the installed Claude Code version, and the score fails with \"no pooled base\".",
+  "grade": {
+    "type": "rubric",
+    "pass": [
+      "unrecorded"
+    ],
+    "fail": [],
+    "rubric": "FACTS. A script for the improve-speed benchmark looks up a pooled base row. Its --claude-version option defaults to the literal string \"unrecorded\"; improve-all-score.mjs passes no version, so every lookup asks for version \"unrecorded\" and misses the pooled row that is keyed by the real installed Claude Code version. The defect is the \"unrecorded\" default of claudeVersion in parseArgs (options.claudeVersion), used unchanged in lookupBase.\nFAIL: the answer blames the pool script, the base commit, the model or effort constants, the pool file or the score script, or names no cause in improve-speed.mjs.\nPASS: the answer says the version passed to the pool lookup defaults to a placeholder (\"unrecorded\") instead of the installed Claude Code version, and the fix is to default to the installed version (for example the output of claude --version), falling back to the placeholder only when it cannot be read.\nQuoting code or names from input/ is neither pass nor fail by itself; judge whether the answer names the cause and a fix with the same effect.\nReference fix, the real commit 04eb27ae:\ndiff --git a/benchmarks/improve-speed.mjs b/benchmarks/improve-speed.mjs\nindex db50ffca..f70ad7db 100644\n--- a/benchmarks/improve-speed.mjs\n+++ b/benchmarks/improve-speed.mjs\n@@ -13,6 +13,7 @@ const CELL_ID = 'flow-unit';\n const FULL_REPEAT = 15;\n const LOOKUP_MODEL = 'claude-sonnet-5-5';\n const LOOKUP_EFFORT = 'high';\n+const UNRECORDED_VERSION = 'unrecorded';\n const POOL_SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'baseline-pool.mjs');\n const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');\n \n@@ -136,7 +137,7 @@ export function scoreOutDir(outDirectory) {\n }\n \n function parseArgs(argv) {\n-  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: 'unrecorded', pool: null };\n+  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: null, pool: null };\n   for (let index = 0; index < argv.length; index++) {\n     const flag = argv[index];\n     if (flag === '--from') options.from = argv[++index];\n@@ -182,10 +183,16 @@ function mergeBase(checkout) {\n   return run.status === 0 ? run.stdout.trim() : null;\n }\n \n+function installedClaudeVersion() {\n+  const run = spawnSync('claude', ['--version'], { encoding: 'utf8' });\n+  const version = run.status === 0 ? run.stdout.trim().split(/\\s+/)[0] : '';\n+  return version || UNRECORDED_VERSION;\n+}\n+\n function lookupBase(options) {\n   const commit = options.base ?? mergeBase(checkoutOf(options));\n   if (!commit) return { error: 'no base commit: git merge-base HEAD main failed; pass --base <commit>' };\n-  const args = [POOL_SCRIPT, 'lookup', '--metric', 'cost', '--commit', commit, '--cell', CELL_ID, '--model', LOOKUP_MODEL, '--effort', LOOKUP_EFFORT, '--claude-version', options.claudeVersion];\n+  const args = [POOL_SCRIPT, 'lookup', '--metric', 'cost', '--commit', commit, '--cell', CELL_ID, '--model', LOOKUP_MODEL, '--effort', LOOKUP_EFFORT, '--claude-version', options.claudeVersion ?? installedClaudeVersion()];\n   if (options.pool) args.push('--pool', options.pool);\n   const run = spawnSync(process.execPath, args, { encoding: 'utf8' });\n   if (run.status === 1) return { error: `no pooled base for commit ${commit}; add its results with node benchmarks/baseline-pool.mjs add` };\n"
+  },
+  "provenance": {
+    "type": "fix-commit",
+    "ref": "04eb27ae4777c513f91b8cc9a404c9f79cc79acb",
+    "parent": "6322ae631f4bf29f8d33f64b969dd668111f41b6",
+    "subject": "fix(benchmarks): look up the pooled base under the installed Claude Code version",
+    "date": "2026-10-29"
+  },
+  "source": "benchmarks/improve-speed.mjs at 04eb27ae^ (git show). Fix commit 04eb27ae: fix(benchmarks): look up the pooled base under the installed Claude Code version.",
+  "transcript": "none",
+  "constructed": true,
+  "fidelity_notes": {
+    "real": "The input files are byte copies of benchmarks/improve-speed.mjs at the fix's parent 6322ae63.",
+    "edited": "Nothing.",
+    "assumed": "The symptom wording and the prompt are written for the replay, not taken from a session."
+  },
+  "ready": true
+}

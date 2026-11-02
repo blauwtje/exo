@@ -200,7 +200,7 @@ export function startScoreBridge({ stateDir, repo, target, calls, score = scoreT
       state.history.push({ n, score: scored.mean, spend: scored.spend });
       writeAtomic(resultFile, { score: scored.mean });
     } catch (error) {
-      state.history.push({ n, error: error.message, spend: 0 });
+      state.history.push({ n, error: error.message, spend: null });
       writeAtomic(resultFile, { error: error.message });
     }
   }

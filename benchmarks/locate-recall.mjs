@@ -10,6 +10,9 @@ import { confineRefusal, confinedClaude } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { clusteredMeanCi } from '../lib/eval-stats.mjs';
+import { intervalText, knownMean, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
+import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_FILE = path.join(ROOT, 'benchmarks/locate-recall/briefs.json');
@@ -26,6 +29,8 @@ const USAGE = `usage: locate-recall.mjs [--full] [--models <a,b>] [--runs <n>] [
 Default: the quick briefs of benchmarks/locate-recall/briefs.json, one run per model, against the repository files at the pinned fixture commit, written to benchmarks/results/locate-recall-quick.json.
 --full runs every brief, 3 runs per model, and writes benchmarks/results/locate-recall.json. --brief runs one brief by id.
 Each session runs the agent in a scratch copy of the fixture commit; recall is the share of the expected files named in the return text, precision the share of named files that are expected or acceptable.
+An errored or timed-out session counts as recall 0 and is left out of the precision, cost and wall means, each printed with its excluded count; recall carries a brief-clustered SE.
+With two or more models it prints the paired per-brief recall difference of each later model against the first, as 'no SE' when fewer than 2 briefs are paired.
 --dry-run spends nothing and prints the session count times the median cost_usd recorded in --out. Defaults: --models haiku,sonnet, --agent exo:locate-code, --effort medium, --concurrency 4.`;
 
 const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -75,28 +80,58 @@ export function medianCost(sessions) {
 export function dryRunLine(sessionCount, recorded) {
   const median = medianCost(recorded);
   if (median === null) return `dry-run: ${sessionCount} sessions, cost unknown`;
-  return `dry-run: ${sessionCount} sessions x median $${median.toFixed(4)} = $${(sessionCount * median).toFixed(2)}`;
+  const excluded = recorded.filter((session) => typeof session.cost_usd !== 'number').length;
+  return `dry-run: ${sessionCount} sessions x median $${median.toFixed(4)} = $${(sessionCount * median).toFixed(2)} (${excluded} of ${recorded.length} recorded sessions without cost excluded)`;
 }
 
-const mean = (values) => {
-  const numbers = values.filter((value) => typeof value === 'number');
-  return numbers.length === 0 ? null : numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
-};
+const recallOf = (session, field) => (session.error ? 0 : session[field]);
+
+function clusteredGrade(sessions, field) {
+  const rows = sessions.map((session) => ({ cluster: session.brief, value: recallOf(session, field) })).filter((row) => typeof row.value === 'number');
+  return rows.length === 0 ? null : clusteredMeanCi(rows);
+}
+
+function precisionOf(sessions) {
+  return knownMean(sessions.map((session) => (session.error ? null : session.precision)));
+}
+
+function sumKnown(values) {
+  return values.filter((value) => typeof value === 'number').reduce((sum, value) => sum + value, 0);
+}
 
 export function summarize(sessions, models) {
   return Object.fromEntries(models.map((model) => {
     const own = sessions.filter((session) => session.model === model);
     const graded = own.filter((session) => !session.error);
+    const recall = clusteredGrade(own, 'recall');
+    const reportRecall = clusteredGrade(own, 'reportRecall');
+    const precision = precisionOf(own);
+    const cost = knownMean(graded.map((session) => session.cost_usd));
+    const wall = knownMean(graded.map((session) => session.durationMs / 1000));
     return [model, {
       sessions: own.length,
       errors: own.length - graded.length,
-      recall: mean(graded.map((session) => session.recall)),
-      precision: mean(graded.map((session) => session.precision)),
-      reportRecall: mean(graded.map((session) => session.reportRecall)),
-      cost_usd: own.reduce((sum, session) => sum + (session.cost_usd ?? 0), 0),
-      meanWallS: mean(own.map((session) => session.durationMs / 1000))
+      recall: recall?.mean ?? null,
+      recallSe: recall?.se ?? null,
+      precision: precision.interval?.mean ?? null,
+      precisionSe: precision.interval?.se ?? null,
+      precisionExcluded: precision.excluded,
+      reportRecall: reportRecall?.mean ?? null,
+      cost_usd: sumKnown(own.map((session) => session.cost_usd)),
+      meanCostUsd: cost.interval?.mean ?? null,
+      costExcluded: own.length - cost.total + cost.excluded,
+      meanWallS: wall.interval?.mean ?? null,
+      wallExcluded: own.length - wall.total + wall.excluded
     }];
   }));
+}
+
+export function modelComparisons(sessions, models) {
+  const cases = pairedByCase(sessions, (session) => [session.brief, session.model, recallOf(session, 'recall') ?? 0]);
+  return models.slice(1).map((model) => {
+    const diff = pairedArms(cases, models[0], model);
+    return { base: models[0], model, diff, verdict: verdictWord(diff) };
+  });
 }
 
 export function plannedBriefs(fixture, { full, brief }) {
@@ -239,14 +274,25 @@ export async function evaluate({ briefs, models, runs, concurrency, files, runSe
 function dryRun(flags) {
   const briefs = plannedBriefs(readFixture(), flags);
   const sessionCount = briefs.length * flags.models.length * flags.runs;
-  process.stdout.write(`${dryRunLine(sessionCount, recordedSessions(flags.out))}\n`);
+  const recorded = recordedSessions(flags.out);
+  process.stdout.write(`${dryRunLine(sessionCount, recorded)}\n`);
+  const scores = scoresByTask(recorded, { task: (session) => session.brief, score: (session) => (session.error ? 0 : session.recall) });
+  process.stdout.write(`${plannedPowerLine({ tasks: briefs.length, samples: flags.runs, arms: flags.models.length, recorded: scores })}\n`);
 }
+
+const percent = (value) => (value === null ? 'n/a' : `${(value * 100).toFixed(1)}%`);
+
+const withSe = (value, se) => `${percent(value)} ${se === null ? 'no SE' : `se ${percent(se)}`}`;
 
 function summaryLines(summary) {
   return Object.entries(summary).map(([model, row]) => {
-    const percent = (value) => (value === null ? 'n/a' : `${(value * 100).toFixed(1)}%`);
-    return `${model}: recall ${percent(row.recall)} precision ${percent(row.precision)} report-recall ${percent(row.reportRecall)} cost $${row.cost_usd.toFixed(4)} mean wall ${row.meanWallS === null ? 'n/a' : row.meanWallS.toFixed(1)} s errors ${row.errors}/${row.sessions}`;
+    const wall = row.meanWallS === null ? 'n/a' : `${row.meanWallS.toFixed(1)} s`;
+    return `${model}: recall ${withSe(row.recall, row.recallSe)} precision ${withSe(row.precision, row.precisionSe)} (${row.precisionExcluded} excluded) report-recall ${percent(row.reportRecall)} cost $${row.cost_usd.toFixed(4)} mean wall ${wall} (${row.wallExcluded} excluded) errors ${row.errors}/${row.sessions}`;
   });
+}
+
+export function comparisonLines(comparisons) {
+  return comparisons.map(({ base, model, diff, verdict }) => `${model} minus ${base} recall, paired per brief: ${intervalText(diff)} ${verdict}`);
 }
 
 async function main() {
@@ -267,10 +313,11 @@ async function main() {
     };
     const sessions = await evaluate({ briefs, models: flags.models, runs: flags.runs, concurrency: flags.concurrency, files, runSession });
     const summary = summarize(sessions, flags.models);
-    const result = { commit: fixture.commit, agent: flags.agent, effort: flags.effort, tier: flags.full ? 'full' : 'quick', runs: flags.runs, transcripts, summary, sessions };
+    const comparisons = modelComparisons(sessions, flags.models);
+    const result = { commit: fixture.commit, agent: flags.agent, effort: flags.effort, tier: flags.full ? 'full' : 'quick', runs: flags.runs, transcripts, summary, comparisons, sessions };
     fs.mkdirSync(path.dirname(flags.out), { recursive: true });
     fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
-    process.stdout.write(`${summaryLines(summary).join('\n')}\nwrote ${flags.out}\n`);
+    process.stdout.write(`${[...summaryLines(summary), ...comparisonLines(comparisons)].join('\n')}\nwrote ${flags.out}\n`);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }

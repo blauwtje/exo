@@ -37,6 +37,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { flowReport, readFlowRecords } from './flow-report.mjs';
+import { pairedDiff } from '../lib/eval-stats.mjs';
 import { compareMeans, meanAndSd, nextRuns, PLANNING_CV } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -52,7 +53,7 @@ const LIMITATIONS = [
   'The line per arm counts the template cells whose session context carried the exo rules (exoLoaded in checks.json, counted over the cells that recorded it), and the cost per correct cell per model.'
 ];
 const VALUE_LIMITATIONS = [
-  'Correctness on a value task is its hidden check.mjs against the diff; a cell whose check broke (harnessError) counts under errors and in no mean.',
+  'Correctness on a value task is its hidden check.mjs against the diff; a cell whose check broke (harnessError) counts as a failed pass and drops out of every other mean.',
   'Cells are the mean ± standard error over the scored cells; a cell without result.json or usage.json drops out of the cost or tokens mean only.',
   'Cost per success is the spend of every scored cell, failed ones included, over the cells that pass; none when no cell passes.',
   'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell from its usage.json; cost is Claude Code\'s client-side list-price estimate; wall time is the cell\'s wallMs.',
@@ -124,13 +125,39 @@ function cellMetrics(cell) {
 // Cost per success: every cell's spend, failed and timed-out ones included,
 // over the passing cells; `none` when nothing passes.
 function costPerSuccess(cells, passed) {
-  const spend = cells.reduce((total, cell) => total + (cell.result?.total_cost_usd ?? 0), 0);
-  const successes = cells.filter(passed).length;
-  return successes === 0 ? null : spend / successes;
+  const priced = cells.filter((cell) => typeof cell.result?.total_cost_usd === 'number');
+  const excluded = cells.length - priced.length;
+  const successes = priced.filter(passed).length;
+  if (successes === 0) return { value: null, excluded };
+  return { value: priced.reduce((total, cell) => total + cell.result.total_cost_usd, 0) / successes, excluded };
 }
 
-function dollars(value) {
-  return value === null ? 'none' : `$${value.toFixed(2)}`;
+function excludedNote(excluded) {
+  return excluded > 0 ? ` (excl. ${excluded})` : '';
+}
+
+function dollars({ value, excluded }) {
+  return `${value === null ? 'none' : `$${value.toFixed(2)}`}${excludedNote(excluded)}`;
+}
+
+function signed(format, value) {
+  return `${value < 0 ? '-' : '+'}${format(Math.abs(value))}`;
+}
+
+function intervalText(format, ci) {
+  if (ci.se === null) return `${signed(format, ci.mean)}, no SE over ${ci.n} task`;
+  return `${signed(format, ci.mean)} (95% CI ${signed(format, ci.lo)} to ${signed(format, ci.hi)}, ${ci.n} tasks)`;
+}
+
+function clearedDirection(ci) {
+  if (ci.se === null) return 'no SE';
+  if (ci.lo > 0) return 'above zero';
+  if (ci.hi < 0) return 'below zero';
+  return 'crosses zero';
+}
+
+function pairedTasks(beforeTasks, afterTasks) {
+  return [...beforeTasks].filter(([task]) => afterTasks.has(task)).map(([task, before]) => [before, afterTasks.get(task)]);
 }
 
 function included(cell) {
@@ -166,11 +193,11 @@ function summarizeArm(cells) {
   const unmeasured = measuredCells.find((cell) => cell.usage === null);
   if (unmeasured) throw new Error(`${unmeasured.task}/${unmeasured.arm}/${unmeasured.run} has no usage.json; run node benchmarks/backfill-usage.mjs on the runs directory`);
   const measured = measuredCells.map(cellMetrics);
+  const template = cells.filter((cell) => cell.checks.tier === 'template');
   const summary = {};
-  for (const metric of METRICS) summary[metric] = meanAndSd(measured.map((row) => row[metric]));
+  for (const metric of METRICS) summary[metric] = { ...meanAndSd(measured.map((row) => row[metric])), excluded: template.length - measuredCells.length };
   summary.taskMeans = {};
   for (const metric of METRICS) summary.taskMeans[metric] = taskMeans(measuredCells, metric);
-  const template = cells.filter((cell) => cell.checks.tier === 'template');
   const safe = cells.filter((cell) => cell.checks.tier === 'safe');
   // A safe-tier arm has no template cells; its passes are the cells that held `checks.safe`.
   summary.costPerSuccess = template.length === 0 && safe.length > 0
@@ -216,10 +243,27 @@ function costWithSpread(mean, spread) {
 }
 
 function absolute(metric, stat) {
-  if (stat.mean === null) return '-';
-  if (stat.sd === null) return `${FORMAT[metric](stat.mean)} (n=1)`;
-  if (metric === 'cost') return costWithSpread(stat.mean, stat.sd);
-  return `${FORMAT[metric](stat.mean)} ±${FORMAT[metric](stat.sd)}`;
+  const note = excludedNote(stat.excluded);
+  if (stat.mean === null) return `-${note}`;
+  if (stat.sd === null) return `${FORMAT[metric](stat.mean)} (n=1)${note}`;
+  if (metric === 'cost') return `${costWithSpread(stat.mean, stat.sd)}${note}`;
+  return `${FORMAT[metric](stat.mean)} ±${FORMAT[metric](stat.sd)}${note}`;
+}
+
+function pairedLines(summaries, baselineArm) {
+  const baseline = summaries[baselineArm];
+  if (!baseline) return [];
+  const lines = [];
+  for (const [arm, summary] of Object.entries(summaries)) {
+    if (arm === baselineArm) continue;
+    for (const metric of METRICS) {
+      const pairs = pairedTasks(baseline.taskMeans[metric], summary.taskMeans[metric]);
+      if (pairs.length < 2) continue;
+      const ci = pairedDiff(pairs);
+      lines.push(`- ${arm} minus ${baselineArm}, ${metric}: ${intervalText(FORMAT[metric], ci)}, ${clearedDirection(ci)}`);
+    }
+  }
+  return lines.length === 0 ? [] : ['', 'Paired per task (task means, 95% CI of the difference):', ...lines];
 }
 
 function relative(stat, baseline) {
@@ -257,7 +301,7 @@ function detailLine(arm, summary) {
 // of the cost or tokens mean only.
 const VALUE_METRICS = {
   // A timed-out cell, or one without result.json, is a failure whatever its tree checks as.
-  pass: (cell) => (cell.checks.pass && !cell.checks.timedOut && cell.result != null ? 1 : 0),
+  pass: (cell) => (cell.checks.harnessError === undefined && cell.checks.pass && !cell.checks.timedOut && cell.result != null ? 1 : 0),
   defects: (cell) => cell.checks.defects,
   loc: (cell) => cell.checks.loc.added,
   tokens: (cell) => (cell.usage?.counts == null ? null : cell.usage.counts.weightedInput + cell.usage.counts.output),
@@ -274,11 +318,9 @@ const VALUE_FORMAT = {
 function meanWithError(values) {
   const stat = meanAndSd(values.filter((value) => value !== null));
   if (stat.n === 0) return null;
-  return { mean: stat.mean, error: stat.sd === null ? null : stat.sd / Math.sqrt(stat.n) };
+  return { mean: stat.mean, n: stat.n, error: stat.sd === null ? null : stat.sd / Math.sqrt(stat.n) };
 }
 
-// One row per task and arm. A cell whose check.mjs broke (harnessError) is a
-// harness fault, not the arm's: it counts under errors and in no mean.
 function valueLines(meta, cells) {
   const groups = new Map();
   for (const cell of cells) {
@@ -295,10 +337,12 @@ function valueLines(meta, cells) {
     const [task, arm] = key.split('\t');
     const scored = group.filter((cell) => cell.checks.harnessError === undefined);
     const columns = Object.entries(VALUE_METRICS).map(([metric, read]) => {
-      const stat = meanWithError(scored.map(read));
-      if (stat === null) return '-';
-      if (metric === 'cost' && stat.error !== null) return costWithSpread(stat.mean, stat.error).replace(' ±', ' ±$');
-      return stat.error === null ? `${VALUE_FORMAT[metric](stat.mean)} (n=1)` : `${VALUE_FORMAT[metric](stat.mean)} ±${VALUE_FORMAT[metric](stat.error)}`;
+      const counted = metric === 'pass' ? group : scored;
+      const stat = meanWithError(counted.map(read));
+      if (stat === null) return `-${excludedNote(counted.length)}`;
+      const note = excludedNote(counted.length - stat.n);
+      if (metric === 'cost' && stat.error !== null) return `${costWithSpread(stat.mean, stat.error).replace(' ±', ' ±$')}${note}`;
+      return `${stat.error === null ? `${VALUE_FORMAT[metric](stat.mean)} (n=1)` : `${VALUE_FORMAT[metric](stat.mean)} ±${VALUE_FORMAT[metric](stat.error)}`}${note}`;
     });
     lines.push(`| ${task} | ${arm} | ${scored.length} | ${group.length - scored.length} | ${columns.join(' | ')} | ${dollars(costPerSuccess(scored, (cell) => cell.checks.pass))} |`);
   }
@@ -308,13 +352,13 @@ function valueLines(meta, cells) {
 // Per task, an arm's scored cells: pass count, cell count and mean cost.
 function armTasks(cells, arm) {
   const tasks = new Map();
-  for (const cell of cells.filter((candidate) => candidate.arm === arm && candidate.checks.harnessError === undefined)) {
+  for (const cell of cells.filter((candidate) => candidate.arm === arm)) {
     tasks.set(cell.task, [...(tasks.get(cell.task) ?? []), cell]);
   }
   return new Map([...tasks].map(([task, group]) => [task, {
     pass: group.reduce((total, cell) => total + VALUE_METRICS.pass(cell), 0),
     total: group.length,
-    cost: meanWithError(group.map(VALUE_METRICS.cost))?.mean ?? null
+    cost: meanWithError(group.filter((cell) => cell.checks.harnessError === undefined).map(VALUE_METRICS.cost))?.mean ?? null
   }]));
 }
 
@@ -331,13 +375,17 @@ function overheadLines(cells, baselineArm) {
   const baselinePasses = shared.reduce((total, task) => total + baseline.get(task).pass, 0);
   const qualityText = `Q ${quality < 0 ? '-' : '+'}${Math.abs(quality)} (${exoPasses} vs ${baselinePasses} hidden passes over ${shared.length} tasks) ${quality >= QUALITY_LIMIT ? 'pass' : 'fail'} (limit +${QUALITY_LIMIT})`;
   let overhead = `R none (no task where both arms pass at least ${BOTH_PASS_RATE * 100}% of cells)`;
+  let spreadText = 'R no SE (no both-pass task)';
   if (bothPass.length > 0) {
-    const { cut } = taskCut(new Map(bothPass.map((task) => [task, exo.get(task).cost])), new Map(bothPass.map((task) => [task, baseline.get(task).cost])), 'cost');
+    const { cut, spread } = taskCut(new Map(bothPass.map((task) => [task, exo.get(task).cost])), new Map(bothPass.map((task) => [task, baseline.get(task).cost])), 'cost');
     const ratio = 1 - cut;
     const perTask = bothPass.map((task) => `${task} ${(exo.get(task).cost / baseline.get(task).cost).toFixed(2)}`).join(', ');
     overhead = `R ${ratio.toFixed(2)} (${perTask}) ${ratio <= OVERHEAD_LIMIT ? 'pass' : 'fail'} (limit ${OVERHEAD_LIMIT.toFixed(2)})`;
+    spreadText = spread === null ? `R no SE (${bothPass.length} task)` : `R ±${spread.toFixed(2)} SE over ${bothPass.length} tasks`;
   }
-  return [`overhead exo vs ${baselineArm} · ${overhead} · ${qualityText}`];
+  const qualityCi = pairedDiff(shared.map((task) => [baseline.get(task).pass, exo.get(task).pass]));
+  const qualitySpread = qualityCi.se === null ? `Q no SE (${shared.length} task)` : `Q per task ${intervalText((value) => value.toFixed(1), qualityCi)}, ${clearedDirection(qualityCi)}`;
+  return [`overhead exo vs ${baselineArm} · ${overhead} · ${qualityText}`, `overhead spread · ${spreadText} · ${qualitySpread}`];
 }
 
 // pass is judged by its mean alone, ahead of the other rows, and stays out of the CV.
@@ -399,16 +447,20 @@ function compareLines(meta, allCells, arms, directory) {
   ];
   const verdicts = [];
   const footer = [];
+  const taskPairs = Object.fromEntries(Object.keys(COMPARE_METRICS).map((metric) => [metric, []]));
   for (const task of [...new Set(cells.map((cell) => cell.task))].sort((left, right) => left.localeCompare(right))) {
-    const scored = cells.filter((cell) => cell.task === task && cell.checks.harnessError === undefined);
+    const taskCells = cells.filter((cell) => cell.task === task);
+    const scored = taskCells.filter((cell) => cell.checks.harnessError === undefined);
     const cvs = [];
     for (const [metric, show] of Object.entries(COMPARE_METRICS)) {
-      const values = (arm) => scored.filter((cell) => cell.arm === arm).map(show.read).filter((value) => value !== null);
+      const pool = show.judge ? taskCells : scored;
+      const values = (arm) => pool.filter((cell) => cell.arm === arm).map(show.read).filter((value) => value !== null);
       const left = values(arms.before);
       const right = values(arms.after);
       const result = compareMeans(left, right);
       if (show.judge) result.verdict = show.judge(result.diff);
       const stats = [meanAndSd(left), meanAndSd(right)];
+      if (stats[0].n > 0 && stats[1].n > 0) taskPairs[metric].push([stats[0].mean, stats[1].mean]);
       if (!show.judge) for (const stat of stats) if (stat.sd !== null && stat.mean > 0) cvs.push(stat.sd / stat.mean);
       verdicts.push(result.verdict);
       const diff = result.diff === null ? '-' : show.signed(result.diff);
@@ -425,7 +477,23 @@ function compareLines(meta, allCells, arms, directory) {
   else if (verdicts.includes('rise')) overall = 'rise';
   else if (verdicts.includes('fall')) overall = 'fall';
   else if (verdicts.some((verdict) => verdict.startsWith('no SE'))) overall = 'no verdict';
-  return [...lines, '', ...footer, `verdict: ${overall}`];
+  return [...lines, '', ...comparePairedLines(taskPairs), ...footer, `verdict: ${overall}`];
+}
+
+function pairedDirection(show, ci) {
+  if (ci.se === null || (ci.lo <= 0 && ci.hi >= 0)) return 'noise';
+  if (show.judge) return ci.lo > 0 ? 'better' : 'worse';
+  return ci.lo > 0 ? 'rise' : 'fall';
+}
+
+function comparePairedLines(taskPairs) {
+  const lines = [];
+  for (const [metric, show] of Object.entries(COMPARE_METRICS)) {
+    if (taskPairs[metric].length < 2) continue;
+    const ci = pairedDiff(taskPairs[metric]);
+    lines.push(`paired over ${ci.n} tasks, ${metric}: ${intervalText((value) => show.money(value), ci)}, ${pairedDirection(show, ci)}`);
+  }
+  return lines.length === 0 ? [] : [...lines, ''];
 }
 
 function roundedCent(value) {
@@ -541,7 +609,7 @@ function main() {
   const details = Object.entries(summaries).map(([arm, summary]) => detailLine(arm, summary));
   const overhead = overheadLines(valueCells, options.baselineArm);
   const valueSection = valueCells.length === 0 ? [] : ['', ...valueLines(meta, valueCells), ...(overhead.length > 0 ? ['', ...overhead] : [])];
-  const lines = [...tableLines(meta, summaries), '', ...details, ...valueSection];
+  const lines = [...tableLines(meta, summaries), '', ...details, ...pairedLines(summaries, options.baselineArm), ...valueSection];
   process.stdout.write(`${lines.join('\n')}\n`);
   if (!options.publish) return;
   const resultsFile = resultsPath(options, meta);

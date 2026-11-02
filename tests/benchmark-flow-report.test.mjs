@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { passDifference } from '../benchmarks/flow-report.mjs';
+import { aggregateFlow, flowReport, passDifference } from '../benchmarks/flow-report.mjs';
 
 const arm = (passes, checked) => ({ passes, checked });
 
@@ -24,4 +24,39 @@ test('the observed and adjusted differences are both returned', () => {
 
 test('an undefined baseline gives null', () => {
   assert.equal(passDifference(arm(1, 1), undefined), null);
+});
+
+test('an arm with one checked run has no SE and no better verdict', () => {
+  const result = passDifference(arm(1, 1), arm(0, 1));
+  assert.equal(result.noSe, true);
+  assert.equal(result.better, false);
+});
+
+const record = (id, extra) => ({ kind: 'flow', id, hiddenPass: true, tokens: 1000, costUsd: 1, wallMs: 60000, ...extra });
+
+test('timed-out and unfinished runs count as failures and stay out of the cost, tokens and wall means', () => {
+  const [exo] = aggregateFlow([
+    record('flow-c7', { costUsd: 1 }),
+    record('flow-c7', { costUsd: 3, hiddenPass: true }),
+    record('flow-c7', { costUsd: 50, timedOut: true, wallMs: 1e6 }),
+    { kind: 'flow', id: 'flow-c7', unfinished: true }
+  ]);
+  assert.equal(exo.checked, 4);
+  assert.equal(exo.passes, 2);
+  assert.equal(exo.cost.mean, 2);
+  assert.equal(exo.cost.n, 2);
+  assert.equal(exo.cost.excluded, 2);
+  assert.equal(exo.wall.mean, 60000);
+});
+
+test('the report prints a standard error and the excluded count beside each mean', () => {
+  const text = flowReport([record('flow-c7', { costUsd: 1 }), record('flow-c7', { costUsd: 3 }), record('flow-base', { hiddenPass: false })]);
+  assert.match(text, /cost mean \$2\.000 ±\$1\.000 SE \(n=2, excluded 0\)/);
+  assert.match(text, /weighted tokens mean 1000 no SE \(n=1, excluded 0\)/);
+});
+
+test('an n=1 comparison prints no verdict instead of not better', () => {
+  const text = flowReport([record('flow-c7', {}), record('flow-base', { hiddenPass: false })]);
+  assert.match(text, /no SE \(an arm has under 2 checked runs\)/);
+  assert.match(text, /no verdict \(no SE\)$/);
 });

@@ -1,6 +1,6 @@
 # Principles
 
-Anthropic's first-party engineering principles, one page per area. Open a page only at the step that needs it.
+First-party principles (eval adds OpenAI, Karpathy), page per area. Open one only when needed.
 
 | Page | Read it when |
 | --- | --- |
@@ -9,7 +9,7 @@ Anthropic's first-party engineering principles, one page per area. Open a page o
 | [agent](./agent.md) | you design or change an agent loop, a multi-agent workflow, a subagent split or a long-running task |
 | [tool](./tool.md) | you write or change a tool, an MCP server or a tool description |
 | [harness](./harness.md) | you design a run loop, a hook, a subagent hand-off or a check that gates an agent's work |
-| [eval](./eval.md) | you design, grade or change an eval, a benchmark or a regression check |
+| [eval](./eval.md) | you design, grade or change an eval, benchmark, regression check or keep/discard rule |
 
 Add or keep a hook, check, agent, review, model tier or retry only if its value is at least its cost in tokens, time and false blocks; unsure → speed-ledger line.
 
