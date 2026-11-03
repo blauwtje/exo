@@ -46,6 +46,28 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
   assert.match(result.stdout, new RegExp(`^Prompt:\\nTask 1 of ${planPath}, branch feat/fixture, checkout ${root}\\.\\nRead your brief at ${brief}\\.\\nReport to: ${root}/\\.exo/implementer-1\\.md\\nReturn: one line$`, 'm'));
 });
 
+const mdFiles = ['- Create: `docs/a.md`'];
+const mixedFiles = ['- Create: `docs/b.md`', '- Create: `src/b.js`'];
+
+async function promptPlan(tasks, args = []) {
+  const { root, planPath } = await landingCheckout();
+  const plan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: tasks.map((files, index) => taskSection({ number: index + 1, title: `T${index + 1}`, files, subject: `feat(app): t${index + 1}` })) });
+  await commitFiles(root, { 'docs/plans/fixture.md': plan }, 'chore: plan');
+  return (await run(NEXT_TASK, ['--plan', planPath, '--root', root, ...args], { cwd: root })).stdout;
+}
+
+test('Code rules: none is in the prompt of a task whose Files are all markdown, not of a mixed or empty one', async () => {
+  assert.match(await promptPlan([mdFiles]), /^Code rules: none$/m);
+  assert.doesNotMatch(await promptPlan([mixedFiles]), /^Code rules:/m);
+  assert.doesNotMatch(await promptPlan([[]]), /^Code rules:/m);
+});
+
+test('a slot prompt carries Code rules: none only for the all-markdown task', async () => {
+  const out = await promptPlan([mdFiles, mixedFiles], ['--open-slots']);
+  assert.match(out, /^Task 1 of .*\nRead your brief at .*\nCode rules: none\nReport to:/m);
+  assert.match(out, /^Task 2 of .*\nRead your brief at .*\nReport to:/m);
+});
+
 // The plan names its only content input by absolute path, outside the checkout,
 // under Assumptions, which names none of the task's Files.
 async function planWithInput(input, region = 'greet') {

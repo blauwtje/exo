@@ -18,7 +18,7 @@
 - **Scope.** Write only the artifacts a skill names, at the length needed.
 - Default inline → work leaves the main session only when one of T1 to T6 below holds.
 - T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read) → inline.
-- T2 web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
+- T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
 - T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
 - T5 at the soft limit, remaining work of 2+ tool turns → subagents.

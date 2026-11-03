@@ -16,14 +16,17 @@ experimental: { cacheTtl: 1h }
   - `BLOCKED input unreadable: <path>` → `BLOCKED <n> <path>`, no repair.
 2. **Take tasks from script output**, never the plan.
   - `Design:` task → `BLOCKED <n> Design: task`.
-3. **Dispatch the printed block.** Each `Prompt:` verbatim to `exo:build-task` with its `Dispatch:` flag, in one message; no `implementer-prompt.md` read.
-  - A `Wave:` or `Start:` build runs in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
-  - Dispatch each build and repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: task-runner gets no completion notification, so its turn end is its return.
-  - Every `Prompt:` of a block goes as a foreground call in one message; it returns after each build's report.
-  - Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill block likewise.
-  - A returned build with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command.
+3. **Dispatch the printed block.** Each `Prompt:` verbatim to `exo:build-task` with its `Dispatch:` flag, in one message.
+  - A `Wave:`/`Start:` build runs in the script's `Slot:` worktree; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
+  - Dispatch each build/repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: task-runner gets no completion notification, so its turn end is its return.
+  - Every `Prompt:` is a foreground call returning after each build's report.
+  - Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill likewise.
+  - A build returned with no report gets one SendMessage to write it; still none leaves its slot in place, no cap; never `sleep`.
   - Landed task → next, no review.
-  - Read `REFUSED`, repair, context limit, no dispatch tool → `<skill>/references/agent-cases.md` `## task-runner`, + `rolling-window.md` if `Slot:`; `CONFLICT`, `NEWPATH` → `rolling-window.md`, `wave-worktrees.md`; no `Prompt:` → `<skill>/implementer-prompt.md`.
+  - `REFUSED`, repair, context limit, no dispatch tool → first read `<skill>/references/agent-cases.md` `## task-runner`, + `rolling-window.md` if `Slot:`.
+  - Missing report with `Slot:` → first read `rolling-window.md`.
+  - `CONFLICT`, `NEWPATH` → first read `rolling-window.md`, `wave-worktrees.md`.
+  - No `Prompt:` → first read `<skill>/implementer-prompt.md`.
 4. **Commit a green foreground task.** Done = `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000; last block = next dispatch, not a rerun.
   - Off-brief return or `no build report at` → SendMessage once (`hooks/session-rules.md`); no SendMessage or second off-brief → fresh agent.
@@ -40,7 +43,7 @@ experimental: { cacheTtl: 1h }
 
 No text between tool calls. At most 8 lines, one per task:
 
-- `LANDED <n>`, plus ` pending <command>` per `Pending:` line.
+- `LANDED <n>` plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> NEEDS ANSWER: <question> <report path>` for `NEEDS ANSWER`.
 - `BLOCKED <n> <reason> <report path>` otherwise; `none` without report.
 

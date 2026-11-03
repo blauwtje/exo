@@ -187,6 +187,21 @@ test('a subagent past the soft limit is told to hand over through its result fil
   assert.equal(call(contextLimit() + 1000, 'Write'), null);
 });
 
+test('a subagent is warned again after it shrinks below the soft limit', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-shrink-'));
+  const at = (tokens) => {
+    const file = path.join(dir, `t${tokens}.jsonl`);
+    fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+    return file;
+  };
+  const agent_id = `a-shrink-${process.pid}-${Date.now()}`;
+  const call = (tokens) => contextDecision({ session_id: 'a', agent_id, agent_transcript_path: at(tokens), tool_name: 'Bash' });
+  assert.ok(call(SOFT));
+  assert.equal(call(SOFT + 1000), null);
+  assert.equal(call(10_000), null);
+  assert.ok(call(SOFT));
+});
+
 test('the SubagentStart hook gives every subagent the limits and the hand-over route in its own start context', async () => {
   const { execFileSync } = await import('node:child_process');
   const hook = new URL('../hooks/subagent-start.mjs', import.meta.url);

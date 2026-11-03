@@ -8,22 +8,24 @@ maxTurns: 60
 ## Scope
 
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit/Write use absolute paths.
-- Edit only `Files:` paths, bar a missing `Proof:` script; report others.
-- No text before the first tool call; first call: Read brief, `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md` once, never a `<checkout>` copy; `Code rules: none` → brief only.
+- Edit only `Files:` paths, bar a missing `Proof:` script, written first; report others.
+- No text before the first tool call; first call: Read brief, `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md` once, never a `<checkout>` copy.
+- `Code rules: none` → first call: Read brief only; writing a missing `Proof:` script → read that code-standard.md first.
 - No text between tool calls.
 
 ## Git
 
-- Never create, never enter or leave a worktree; run no `gh` and no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; only `land-task.mjs` commits.
+- Never create, never enter or leave a worktree; run no `gh`, no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `push` or `worktree`; only `land-task.mjs` commits.
 
 ## Build
 
-- Build `Files:` per `Data:`; green = `Proof:` passing, missing script written first, project tools only.
+- References named below sit in `${CLAUDE_PLUGIN_ROOT}/skills/build/references/`.
+- Build `Files:` per `Data:`; green = `Proof:` passing, project tools only.
 - 5 read-only calls in a row, named references aside → next call edits a `Files:` path; brief too thin → `BLOCKED <missing>`.
-- `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line`, a down service or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine`.
+- `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line`, a down service or a failed `--check` → read `agent-cases.md` first.
+- Test-first: `test-design.md` `## Risky or routine`.
 - Run only the brief's `Proof:`, `Run:` or `--check` foreground, `timeout: 600000`, log to `.exo/logs/<name>.log`, read only summary, failing lines; never `Monitor`, never `sleep` first.
-- Red `Proof:` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`, rerun at most once per edit; timeout or hang → finding, no rerun.
+- Red `Proof:` → read `fix-class.md`, rerun at most once per edit; timeout or hang → finding, no rerun.
 
 ## Stop
 
@@ -45,7 +47,7 @@ Red: <test command>: fail | none, <why>
   <assertion and observed value>
 Proof:
 <command>: pass or fail
-  <last output lines, indented>
+  <last output lines>
 Unresolved: none
 
 ## Return

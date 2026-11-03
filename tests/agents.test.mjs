@@ -309,7 +309,8 @@ test('spec dispatches locate-code and fetch-docs in one message, and find-open-p
 
 test('build-task reads its brief, lean.md and code-standard.md in its first message', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  assert.match(implementer.body, /^- No text before the first tool call; first call: Read brief, `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/code-standard\.md` once, never a `<checkout>` copy; `Code rules: none` → brief only\.$/m);
+  assert.match(implementer.body, /^- No text before the first tool call; first call: Read brief, `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/lean\.md` and `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/route-skills\/references\/code-standard\.md` once, never a `<checkout>` copy\.$/m);
+  assert.match(implementer.body, /^- `Code rules: none` → first call: Read brief only; writing a missing `Proof:` script → read that code-standard\.md first\.$/m);
 });
 
 test('review-branch reads its opening inputs together in its first message', () => {
@@ -319,11 +320,11 @@ test('review-branch reads its opening inputs together in its first message', () 
 
 test('task-runner dispatches every build and repair in the foreground and never ends its turn on a dispatch', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'task-runner');
-  assert.match(unit.body, /^ {2}- A `Wave:` or `Start:` build runs in a `Slot:` worktree the script opened; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- Dispatch each build and repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: task-runner gets no completion notification, so its turn end is its return\.$/m);
-  assert.match(unit.body, /^ {2}- Every `Prompt:` of a block goes as a foreground call in one message; it returns after each build's report\.$/m);
-  assert.match(unit.body, /^ {2}- Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill block likewise\.$/m);
-  assert.match(unit.body, /^ {2}- A returned build with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command\.$/m);
+  assert.match(unit.body, /^ {2}- A `Wave:`\/`Start:` build runs in the script's `Slot:` worktree; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone\.$/m);
+  assert.match(unit.body, /^ {2}- Dispatch each build\/repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: task-runner gets no completion notification, so its turn end is its return\.$/m);
+  assert.match(unit.body, /^ {2}- Every `Prompt:` is a foreground call returning after each build's report\.$/m);
+  assert.match(unit.body, /^ {2}- Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill likewise\.$/m);
+  assert.match(unit.body, /^ {2}- A build returned with no report gets one SendMessage to write it; still none leaves its slot in place, no cap; never `sleep`\.$/m);
   assert.match(unit.body, /^ {2}- Loop until every block task has a `LANDED` or `BLOCKED` line\.$/m);
   assert.match(unit.body, /land-task\.mjs[^\n]* --next` with timeout 600000/);
   assert.doesNotMatch(unit.body, /(?<!never )end the turn/i);
