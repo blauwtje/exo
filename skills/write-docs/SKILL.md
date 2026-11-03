@@ -11,23 +11,24 @@ Prose for a reader who was not in the session says who does what, by which mecha
 ## The loop
 
 1. **Pick one mode per document.**
-   - Tutorial teaches by doing; how-to gets a known task done; reference lists what exists; explanation says why.
-   - Usage section opens on the command, never on a welcome.
+   - A tutorial teaches by doing and a how-to gets a known task done.
+   - A reference lists what exists and an explanation says why.
+   - A usage section opens on the command, not on a welcome.
 2. **State the fact, not the benefit.**
    - Give the number, behavior or error that changed; "ensuring stability" or "more robust" asks for trust the text could have earned.
-   - Request to show off, sell or impress → still only the facts the input states; an unmeasured effect is invented.
+   - When the request is to show off, sell or impress, still write only the facts the input states, since an unmeasured effect is invented.
 3. **Name the actor and the mechanism.**
-   - Say who does what; a passive verb or abstract noun hides the part the reader must find.
+   - Say who does what, because a passive verb or abstract noun hides the part the reader must find.
 4. **Use the codebase's names.**
    - Real file, option, flag and command names.
-   - One name per thing; a synonym reads as a second thing.
+   - Use one name per thing, since a synonym reads as a second thing.
 5. **Write whole sentences in plain words.**
    - Keep articles and verbs.
    - Prefer the period to the dash or semicolon.
    - One thought per sentence; split past 25 words.
-   - One-sentence slot (Highlights line, summary) → only the change that matters most; two joined with "and" bury both.
+   - In a one-sentence slot (Highlights line, summary), write only the change that matters most. Two joined with "and" bury both.
 6. **Scan the draft against `references/ai-tics.md` and rewrite every hit before handing it over.**
-   - Reviewing someone else's text → cite each hit by its id.
+   - When reviewing someone else's text, cite each hit by its id.
 
 ## References
 
@@ -37,7 +38,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 
 ## Judgment
 
-- Codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
-- Fields ship, file-issues or spec set outrank this skill's layout; only the wording inside them follows it.
-- Reader's ease outranks a rule: following one hurts a sentence → mend it differently or keep it as written.
+- The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
+- Fields that ship, file-issues or spec set outrank this skill's layout, and only the wording inside them follows it.
+- The reader's ease outranks a rule. When following one hurts a sentence, mend it differently or keep it as written.
 - Product interface strings follow the product's copy rules, not this skill.

@@ -11,12 +11,12 @@ Build the plan the user invokes run-plan on through `exo:build`, each task lande
 
 ## Run
 
-1. Argument `setup` → run `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" setup`, report its output, stop.
-   - Else argument → one plan path; none → ask for it, run nothing.
-2. Plan path → invoke `exo:build <plan>` with the flags the user typed that build takes.
+1. When the argument is `setup`, run `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" setup`, report its output and stop.
+   - Otherwise the argument is one plan path; with none, ask for it and run nothing.
+2. With a plan path, invoke `exo:build <plan>` with the flags the user typed that build takes.
 3. Report one line: the headless loop, each task in its own process, runs only from a terminal, as the user's `exo run <plan> --detach`.
 
 ## Judgment
 
-- Run already live → touch no task, branch or file it owns.
-- In-session loop wanted → official `/ralph-loop` plugin runs beside exo; exo registers no Stop hook.
+- When a run is already live, touch no task, branch or file it owns.
+- When an in-session loop is wanted, the official `/ralph-loop` plugin runs beside exo, because exo registers no Stop hook.

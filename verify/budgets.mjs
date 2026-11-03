@@ -9,10 +9,6 @@ export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name
 export const ALLOWED_EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'];
 export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 
-// The always-on budgets, locked to what each measured on the date it names.
-// Growth fails, shrinking passes, and no check re-locks itself: a raise is a hand
-// edit in the same commit as the text it pays for, which is the whole mechanism.
-// The date records when the number was measured; nothing enforces its age.
 // First-party documentation caps one hook output string at HOOK_OUTPUT_CAP
 // characters and hands the model a 2,000-character preview of a longer one.
 // hooks/session-start.mjs injects only this context: the pointers, the settings line
@@ -30,7 +26,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 3443, measured: '2026-10-30' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 4231, measured: '2026-11-03' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
@@ -46,7 +42,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 1199, measured: '2026-11-02' };
+export const SESSION_LOAD_LOCK = { words: 1370, measured: '2026-11-03' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/session-load.mjs fails above it.
@@ -56,7 +52,7 @@ export const SESSION_LOAD_LOCK = { words: 1199, measured: '2026-11-02' };
 // Raised 1745 -> 1926 with the TaskStop rule line.
 // Raised 1926 -> 1950 with the context limit on the settings line.
 // Raised 1950 -> 2141 with the green-command-as-typed rule.
-export const SESSION_START_BYTES_LOCK = { bytes: 3518, measured: '2026-10-30' };
+export const SESSION_START_BYTES_LOCK = { bytes: 4337, measured: '2026-11-03' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };
@@ -76,7 +72,7 @@ export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 // cap because its pinned gate sentences hold it at its measured 790.
 // Raised 783 -> 790: the principles row names AI agent work (0/3 -> 3/3 runs opened the index, benchmarks/results/2026-10-22-spec-principles-read-reworded.md).
 export const STAGE_BODY_TOKENS = {
-  'start': 750, 'spec': 840, 'build': 750, 'gate': 750, 'find-cause': 750, 'ship': 750,
+  'start': 474, 'spec': 935, 'build': 739, 'gate': 750, 'find-cause': 746, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. An agent is exempt only by exact name, never by pattern.
@@ -88,23 +84,23 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 // lock only ever moves down; a locked file that drops to 750 tokens or under
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
-  'skills/build/references/critique.md': 797,
+  'skills/build/references/critique.md': 799,
   'skills/build/references/data-migration.md': 874,
-  'skills/build/references/security.md': 999,
+  'skills/build/references/security.md': 1028,
   // test-design.md and task-list.md grew for the red-green rules of plan
   // autonomous-exo-5 Task 10; their older rules stay whole.
   'skills/build/references/test-design.md': 921,
-  'skills/build/references/wave-worktrees.md': 920,
+  'skills/build/references/wave-worktrees.md': 963,
   'skills/build/run-task-prompt.md': 756,
-  'skills/ship/references/pr-prep.md': 772,
-  'skills/spec/references/brief.md': 905,
-  'skills/spec/references/task-list.md': 903,
+  'skills/ship/references/pr-prep.md': 849,
+  'skills/spec/references/brief.md': 989,
+  'skills/spec/references/task-list.md': 1076,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
 // bytes, the same two ways: growth fails and so does a shrink the lock does
 // not follow.
-export const LEAN_REFERENCE_LOCK = { bytes: 1008, measured: '2026-10-08' };
+export const LEAN_REFERENCE_LOCK = { bytes: 1018, measured: '2026-11-03' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;

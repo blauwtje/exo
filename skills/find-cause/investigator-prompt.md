@@ -2,8 +2,8 @@
 
 Text `find-cause` hands `exo:solve-hard` for phase (b), cause not yet proven.
 
-- Regression the report says worked before and one command reproduces it → run `node "${CLAUDE_SKILL_DIR}/scripts/bisect.mjs" --repro "<command>"` before `exo:locate-code`.
-- Exit 0 → its `First bad` and `Diff` lines fill `First bad` here and in the handoff; exit 1 → `none`.
+- When the report says the code worked before and one command reproduces the regression, run `node "${CLAUDE_SKILL_DIR}/scripts/bisect.mjs" --repro "<command>"` before `exo:locate-code`.
+- On exit 0 its `First bad` and `Diff` lines fill `First bad` here and in the handoff. On exit 1 write `none`.
 
 ```text
 Investigate the symptom below for repository <root>. Load the `exo:find-cause` skill first and run only Steps 1 to 3 of its loop: reproduce, instrument, isolate. Search for the boundary yourself; dispatch nothing, including `exo:locate-code`.

@@ -77,6 +77,27 @@ test('a Drops line in the commit body allows the removal', () => {
   assert.equal(run(root).FAIL, 0);
 });
 
+test('a Drops entry names several words in one file', () => {
+  const root = fixture();
+  write(root, 'skills/x.md', 'Run this.\n');
+  git(root, 'commit', '-qam', 'drop', '-m', 'Drops: only never in skills/x.md');
+  assert.equal(run(root).FAIL, 0);
+});
+
+test('a Drops entry ending in a slash covers each file under it', () => {
+  const root = fixture();
+  write(root, 'skills/x.md', 'Run this.\n');
+  git(root, 'commit', '-qam', 'drop', '-m', 'Drops: only in skills/');
+  assert.equal(run(root).FAIL, 0);
+});
+
+test('a Drops entry for another folder does not allow the removal', () => {
+  const root = fixture();
+  write(root, 'skills/x.md', 'Run this.\n');
+  git(root, 'commit', '-qam', 'drop', '-m', 'Drops: only in agents/');
+  assert.equal(run(root).FAIL, 1);
+});
+
 test('no origin remote is UNRUN', () => {
   const root = fixture({ origin: false });
   assert.equal(run(root).UNRUN, 1);

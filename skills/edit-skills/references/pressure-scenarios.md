@@ -1,38 +1,40 @@
 # Pressure scenarios
 
+A pressure scenario tempts the model into the mistake the skill guards against, so a run shows whether the skill stops it.
+
 ## Building the prompt
 
-- Ask what the model does next, not what it ought to do; advice costs nothing, only an action tests the skill.
-- Never cut the model off from people, fix its tool budget, or insist the situation is real; the live API rejects that framing before the first tool call.
+- Ask what the model does next, because advice costs nothing and only an action tests the skill.
+- Keep the model connected to people, leave its tool budget alone and do not insist the situation is real. The live API rejects that framing before the first tool call.
 - Offer concrete choices that each look reasonable, with real paths, figures and names.
-- Case needs pressure → make the right choice costly inside the task's own story: a cut-off time, an approver waiting, a green pipeline, hours already spent.
+- When a case needs pressure, make the right choice costly inside the task's own story: a cut-off time, an approver waiting, a green pipeline, hours already spent.
 
 ## When a case needs pressure
 
-- Start every case as the ordinary task; a mistake a real run already showed unprompted reappears without a push.
-- Add pressure only when the run without the skill passes the ordinary task; pressure supplies the temptation the task lacks.
-- Default tendency (seen in a real run, not induced by its prompt) → no pressure: adds no proof, risks a live refusal.
+- Start every case as the ordinary task, because a mistake seen in a real run reappears without a push.
+- Add pressure only when the run without the skill passes the ordinary task, because pressure supplies the temptation the task lacks.
+- Add no pressure for a default tendency seen in a real run, since it proves nothing and risks a refusal.
 
 ## Sources of pressure
 
-- situation: deadline, cost or budget, a plain "it works, ship it";
-- investment: work sunk into the wrong path, fatigue of a long session;
-- people: someone senior wanting the shortcut, social cost of saying no.
+- Situation: a deadline, cost or budget, or a plain "it works, ship it".
+- Investment: work sunk into the wrong path, or the fatigue of a long session.
+- People: someone senior wanting the shortcut, or the social cost of saying no.
 
-One pressure gives a usable case. Skill guards a habit → stack three; one that holds against one pressure still folds under the next.
+One pressure gives a usable case. For a skill that guards a habit, stack three, because a skill that holds against one pressure still folds under the next.
 
 ## What each kind of file needs
 
-- Skill guarding a costly habit (test first, prove a cause before fixing, ask before building) → three or more pressure scenarios.
-- Skill teaching a technique or pattern → a case that applies it, one that varies it, one missing a detail, one where the pattern must not be used.
-- Reference → one case that looks something up, one that applies it, one whose answer the reference does not hold; no pressure.
+- A skill guarding a costly habit (test first, prove a cause before fixing, ask before building) needs three or more pressure scenarios.
+- A skill teaching a technique or pattern needs a case that applies it, one that varies it, one missing a detail and one where the pattern must not be used.
+- A reference needs one case that looks something up, one that applies it and one whose answer the reference does not hold, all without pressure.
 
 ## Running it
 
 1. Save the case to a prompt file.
-2. The user asks for a run, or no stored answers cover the case → run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`. It runs both arms of every cell `--runs` times (default 3) in parallel, each confined to a scratch directory outside the repository (writes nowhere else, `~/.claude` included), and writes each full answer to its own file in `--out`.
-3. Comparing against `main` → add `--main-dir <main clone>`; it swaps the without arm for a `main` arm. Any run: a `WRONG COPY` line, exit 1, voids a run that loaded another copy.
-4. Copy the chosen action and justification word for word from the `without` answer files; that wording is what the skill must answer.
-5. Keep the prompt and both justifications in the edit's report.
-6. Save the case in `benchmarks/pressure/<skill>/` per its README: prompt files, `<skill>/criteria.md` with the `with` arm's pass criterion, any fixture's `setup.sh`; the next edit of the skill reruns it.
-7. API refuses a run before any tool call → neither pass nor fail: remove the framing that added the most pressure and rerun, never the same prompt unchanged.
+2. When the user asks for a run, or no stored answers cover the case, run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`. It runs both arms of every cell `--runs` times (default 3) in parallel, each in a scratch directory outside the repository (it writes nowhere else, `~/.claude` included), and writes each full answer to a file in `--out`.
+3. To compare against `main`, add `--main-dir <main clone>`, which swaps the without arm for a `main` arm. A `WRONG COPY` line with exit 1 voids a run that loaded another copy.
+4. Copy the chosen action and justification word for word from the `without` answers, because the skill must answer that wording.
+5. Keep the prompt and both justifications in the report.
+6. Save the case in `benchmarks/pressure/<skill>/` per its README: prompt files, `<skill>/criteria.md` with the `with` arm's pass criterion, and any fixture's `setup.sh`. The next edit of the skill reruns it.
+7. When the API refuses a run before any tool call, count it as neither pass nor fail, drop the framing that added the most pressure and rerun with a changed prompt.

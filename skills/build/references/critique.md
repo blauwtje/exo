@@ -9,10 +9,10 @@ Judge the delivered diff against the request before judging its internal eleganc
 3. **Claimed proof.** Match each Acceptance claim to a command or action executed this session.
 4. **Missing verification.** Logic changed, repo has a test runner, no test ran → name the gap.
 5. **Boundary inputs.** Check only these:
-   - changed interface accepts a collection or optional value → empty input;
-   - documented maximum size exists → that size;
-   - shared mutable state changed → concurrent access;
-   - authentication, validation, network, file, or process boundary changed → malformed or hostile input.
+   - A changed interface that accepts a collection or optional value gets empty input.
+   - A documented maximum size gets that size.
+   - Changed shared mutable state gets concurrent access.
+   - A changed authentication, validation, network, file, or process boundary gets malformed or hostile input.
 6. **Simplification.**
    - Name duplicated logic, an abstraction with one caller, or a form with fewer statements and same observable behavior.
    - Name as a cut any fallback chain, second source of truth, cache or replica, queue, polling loop, scheduler, watchdog, or distributed coordination the request did not ask for: each guards against an enemy the request never named.

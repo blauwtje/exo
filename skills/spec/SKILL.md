@@ -6,34 +6,36 @@ argument-hint: <outcome to shape>
 
 # Shaping
 
+Shaping turns a request into a written brief that settles what done means, so the build starts with no open decision.
+
 ## Steps
 
 1. **Gate.**
    - First invoke every installed non-`exo:` skill matching the request.
    - Spec always ends on a brief; with no open decision the brief still gets written.
    - An open decision is one the user would notice that neither request nor code settles.
-   - Diff fits one sentence or code settles every point → no question, exo closes each choice.
-   - Ask only per `../route-skills/references/question.md` `## When to ask`; default is zero questions.
-   - Asked for options → per `references/architecture-sketch.md`, no file.
+   - When the diff fits one sentence or code settles every point, ask no question and let exo close each choice.
+   - Ask only per `../route-skills/references/question.md` `## When to ask`; the default is zero questions.
+   - When the user asked for options, follow `references/architecture-sketch.md` and write no file.
 2. **Sort each point.**
-   - Answerable by running or reading → record, never ask.
-   - Each open decision passes `## When to ask`: a plain product choice only the user can make → question, root first; any other → exo decides it.
-   - A decision the user left open stays open despite code.
-   - Name the owning layer, a smaller alternative.
+   - When running or reading the code answers a point, record the answer and ask nothing.
+   - Each open decision passes `## When to ask`. A plain product choice that only the user can make becomes a question, root first; exo decides any other.
+   - A decision the user left open stays open despite what the code does.
+   - Name the owning layer and a smaller alternative.
 3. **Ask one at a time.**
-   - Ask per `../route-skills/references/question.md`; record each choice exo decides in Decisions.
-   - Recommend a loaded skill's pattern over an option it rules out.
-   - `Land:` → plan approval approves only its mode; ask only if `ship` is `ask`.
-   - No git repo or `origin` → `Land: local`, no question.
-   - Last answer → brief now, no recap, no yes question.
+   - Ask per `../route-skills/references/question.md`, and record each choice exo decides in Decisions.
+   - Recommend a loaded skill's pattern over an option that skill rules out.
+   - Plan approval approves only the `Land:` mode, so ask about it only when `ship` is `ask`.
+   - With no git repo or no `origin`, write `Land: local` and ask nothing.
+   - After the last answer, write the brief at once, with no recap and no yes question.
 4. **Map, then locate.**
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode too.
-   - Unmapped range → `exo:locate-code` agent, at most eight, read none located; outside facts → one `exo:fetch-docs` round, no gap-fill; both foreground, one message.
-   - `grep -n` the map; never `cat`, `head`, `sed`.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, in plan mode too.
+   - Dispatch at most eight `exo:locate-code` agents for a range the map leaves out and read none of the files they locate, and run one `exo:fetch-docs` round for outside facts and fill no gap. Send both in the foreground, in one message.
+   - Search the map with `grep -n`, so its text stays out of this context.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`.
-7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines, any missing heading, `Data:`, Success criterion or `## Manual checks`; read its output, never its source.
-8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7, leaving flagged `## Open points` unfixed.
+7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`. Fix the flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`, working from its output alone.
+8. **Find open points** per `references/brief.md` `## Open points step`. Rerun step 7, and leave the flagged `## Open points` unfixed.
 9. **Hand off** per `references/hand-off.md`.
 
 ## References

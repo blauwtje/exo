@@ -15,26 +15,26 @@ Typing `/exo:file-issues` starts this and authorizes creating the issues, with l
 ## Steps
 
 1. **Intake.** One goal sentence per issue, each tied to the part of the request it came from.
-   - Never invent an issue the request does not ask for.
-   - Goal sentence needing "and" for two unrelated outcomes → too big: file a parent plus sub-issues, no question; the closing line names the split.
+   - Invent no issue the request does not ask for.
+   - A goal sentence needing "and" for two unrelated outcomes is too big. File a parent plus sub-issues without a question, and name the split in the closing line.
 
 2. **Read the repository, invent nothing.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs"`; pick the vocabulary from its JSON per `references/fields.md`.
 
 3. **Ground the references.** Check each path or symbol the goal sentences name with Glob or Grep, so `References` carries real paths.
-   - Behavior named without a path → dispatch `exo:locate-code`.
-   - Issue naming no code → skip.
+   - For behavior named without a path, dispatch `exo:locate-code`.
+   - For an issue naming no code, skip this step.
 
 4. **Create in dependency order**, same turn, no approval question first: parent before children, blocker before what it blocks, with the commands and field settings in `references/fields.md`.
    - Run no `gh` command that closes, deletes or edits an existing issue, even at the user's request; the pre-approved `gh issue *` would run it unconfirmed. Give the user the command instead.
-   - Exception: adding a relation to a parent or blocker the user named.
+   - The one exception is adding a relation to a parent or blocker the user named.
 
 5. **Read back.** `gh issue view <n> --json number,title,labels,milestone,url` per created issue; report its URL, title and one metadata line.
 
 ## The body
 
-- Language → that of the existing issues (the script's `titles`); none → that of recent pull requests and commits (`gh pr list --limit 5 --json title --jq '[.[].title]'`, `git log -5 --format=%s`).
-- Brief or feature work → Spec shape in `references/fields.md`.
-- Bug, regression, chore or documentation fix → Report shape:
+- Write in the language of the existing issues (the script's `titles`). With none, use that of recent pull requests and commits (`gh pr list --limit 5 --json title --jq '[.[].title]'`, `git log -5 --format=%s`).
+- For brief or feature work, use the Spec shape in `references/fields.md`.
+- For a bug, regression, chore or documentation fix, use the Report shape:
   - `### What happens`: one sentence naming the current behavior, present tense.
   - `### Expected`: what should happen instead.
   - `### Steps`: the prompts or commands producing it, in order.
@@ -50,4 +50,4 @@ Typing `/exo:file-issues` starts this and authorizes creating the issues, with l
 ## Judgment
 
 - Explicit user instructions on the body outrank this skill, including a section it forbids: say once that the metadata already shows it, then write it.
-- User asks for one issue after a split → file one.
+- When the user asks for one issue after a split, file one.

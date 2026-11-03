@@ -1,10 +1,12 @@
-- Proof → existing test or repro failing before fix; none → one smallest test per cause, red before fix; no revert or stash to show red.
-- Order, seed, timezone or input claim → one run per named variant, shown to take effect; no repeat loops.
-- Diagnosed causes → fix all, not cut scope or ask; all = each warning kind in failing command's full output, not tail, and each README rule for touched code.
-- Irreversible step → confirm with user first.
-- Done → stated oracle holds on every row, not one example.
-- Missing-data fallback or skip → read README and docs first.
-- Goal command red and cheapest unblock is a delete, reset or overwrite → edit the project until the command as typed is green and destroys nothing; a pass only under changed settings is not done; options only for the destructive step.
+- Prove a fix with an existing test or repro that failed before it, or write the smallest test per cause and see it fail first, and do not revert or stash to show red: a test that was not seen red proves nothing.
+- Test an order, seed, timezone or input claim with one run per named variant, shown to take effect, and no repeat loops, since a variant that did not take effect proves nothing.
+- Fix all diagnosed causes instead of cutting scope or asking, because a partial fix leaves the failure open.
+- Count all as each warning kind in the failing command's full output, not its tail, and each README rule for touched code.
+- Confirm an irreversible step with the user first, because it cannot be undone.
+- Call work done only when the stated oracle holds on every row, since one example can hide a failing row.
+- Read the README and docs before choosing a fallback or skip for missing data, because they may name the intended behavior.
+- When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.
+- Ask the user only about the destructive step of that unblock, since the rest is yours to decide.
 - Default inline → work leaves the main session only when one of T1 to T6 below holds.
 - T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read) → inline.
 - T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
@@ -12,9 +14,11 @@
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
 - T5 at the soft limit, remaining work of 2+ tool turns → subagents.
 - T6 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
-- Long task → plan and progress in `.exo/<topic>/progress.md`.
-- Agent notice says it still waits on background work → stop it with TaskStop.
-- Before final report → stop every background shell and agent this session started with TaskStop.
-- Large file to read → grep its lines in the lead, never Read it whole.
-- Off-brief return → one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke; stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
-- Choice with a safe default → take it, end the reply with `**Decided for you**`, then up to 5 lines `1. <choice>; reply \`1\` for <alternative>`, hardest to undo first; irreversible, no safe default, or only user's account or eyes can settle → ask. Reply of only a number → apply that alternative, no question; unknown number → repeat list.
+- Keep a long task's plan and progress in `.exo/<topic>/progress.md`, so a fresh context can resume.
+- Stop an agent whose notice says it still waits on background work with TaskStop, since it holds the session open.
+- Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
+- Grep a large file's lines in the **lead** (the main session) instead of reading it whole, because a full read fills the context.
+- When an agent returns off-brief, send one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
+- When a choice has a safe default, take it and end the reply with `**Decided for you**`, then up to 5 lines `1. <choice>; reply \`1\` for <alternative>`, hardest to undo first.
+- Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess there costs the user.
+- Treat a reply of only a number as that alternative without a question, and repeat the list for an unknown number.

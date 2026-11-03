@@ -6,10 +6,12 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 
 # Build
 
+Build lands a plan through a **unit** (`exo:task-runner`) and the **tail** (step 7).
+
 ## The loop
 
 1. **Find the plan, settle the workspace.**
-2. **Leave the plan to the unit.** On `Route: unit`: After dispatch, read only script output and unit returns, no plan or diff.
+2. **Leave the plan to the unit.** On `Route: unit`, read only script output and unit returns after dispatch.
 3. **Ask the branch what landed.**
 4. **Take the block.**
 5. **Dispatch the unit.**
@@ -20,7 +22,7 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 
 Decided change with no plan file → `references/no-spec.md`. After a compaction, rebuild what landed from the working-tree diff, not memory.
 
-- Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.
+- Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed, or orientation missed a required file.
 - When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
 
 ## References
@@ -28,22 +30,22 @@ Decided change with no plan file → `references/no-spec.md`. After a compaction
 | File | Read it when |
 |---|---|
 | `references/run-loop.md` | Steps 1-6, without `--task`. |
-| `references/run-loop-inline.md` | Never here: next-task prints it. |
+| `references/run-loop-inline.md` | Left to next-task. |
 | `references/run-loop-direct.md` | Step 6, on `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7; `Route: inline` only if its `Steps:` fall back. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
-| `references/rolling-window.md` | Never here: unit reads it. |
-| `references/agent-cases.md` | Never here: agents read it. |
-| `references/fix-class.md` | Never here: repairs read it. |
-| `implementer-prompt.md` | Never here: unit reads it. |
-| `drift-repairer-prompt.md` | Never here: unit reads it. |
+| `references/rolling-window.md` | Left to the unit. |
+| `implementer-prompt.md` | Left to the unit. |
+| `drift-repairer-prompt.md` | Left to the unit. |
+| `references/agent-cases.md` | Left to agents. |
+| `references/fix-class.md` | Left to repairs. |
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |
-| `review-fixer-prompt.md` | Never here: `gate` reads it. |
+| `review-fixer-prompt.md` | Left to `gate`. |
 | `references/design-tasks.md` | Step 4, `Design:` line. |
-| `run-task-prompt.md` | Never here: `run-plan.mjs` fills it. |
+| `run-task-prompt.md` | Left to `run-plan.mjs`. |
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
 | `references/critique.md` | No spec step 7, last fallback. |

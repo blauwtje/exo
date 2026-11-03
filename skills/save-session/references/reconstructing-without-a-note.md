@@ -1,6 +1,6 @@
 # Reconstructing without a note
 
-Rebuild working context from what git and the forge hold; never ask the user to retell what the repository records.
+Rebuild working context from what git and the forge hold; do not ask the user to retell what the repository records.
 
 ## Read the trail
 
@@ -11,4 +11,4 @@ Rebuild working context from what git and the forge hold; never ask the user to 
 ## Judgment
 
 - Fact read from git or the forge outranks one inferred from branch name or commit subjects alone.
-- Result feeds a new note → gap the trail does not cover is an open question, not a fact under `## Current state`.
+- When the result feeds a new note, a gap the trail does not cover is an open question, not a fact under `## Current state`.

@@ -1,18 +1,18 @@
 # The direct route: the fallback when nested dispatch is unavailable
 
 - Step 3 runs `next-task.mjs` without `--block`, for its `Next:` or `Wave:` line.
-- `GREEN` names a diff path this session reads as `git apply --stat <diff path>` only, never the report and never the full diff; it runs `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, a wave's per the wave worktrees reference's step 3.
-- land-task ends in `Next: none` or a `Then:` line; the `Then:` line dispatches nothing, so step 3 reruns `next-task.mjs` for the next `Next:` or `Wave:` line.
-- A `Next:` line sends its task, a `Wave:` line each task per the wave worktrees reference in one message, to `exo:build-task` from `../implementer-prompt.md`, which carries `Return: one line`.
-- `Task <n>: BLOCKED NEEDS ANSWER: <question>` parks that task: land the green siblings first, then ask each question after the wave, one per message, and redispatch `exo:build-task` with the answer in its dispatch prompt only, never in the plan file.
-- In a wave, a failed sibling never discards a green task.
+- `GREEN` names a diff path, which this session reads only as `git apply --stat <diff path>` before it runs `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, a wave's per the wave worktrees reference's step 3. The report and the full diff stay unread.
+- land-task ends in `Next: none` or a `Then:` line. The `Then:` line dispatches nothing, so step 3 reruns `next-task.mjs` for the next `Next:` or `Wave:` line.
+- A `Next:` line sends its task, and a `Wave:` line sends each task per the wave worktrees reference in one message, to `exo:build-task` from `../implementer-prompt.md`, which carries `Return: one line`.
+- `Task <n>: BLOCKED NEEDS ANSWER: <question>` parks that task. Land the green siblings first, ask each question after the wave in its own message, and redispatch `exo:build-task` with the answer in its dispatch prompt only, not in the plan file.
+- In a wave, a failed sibling leaves a green task landed.
 - That reference's step 4 saves each worktree's diff, then removes it.
-- Land-task refusal `no build report at` → SendMessage to the agent that wrote the build, once, with land-task's full refusal verbatim, to write the report; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
-- Land-task refusal about the report's content (no Proof command, a command listed as failing) → a fresh `exo:build-task` from `../implementer-prompt.md`, with land-task's full refusal added verbatim; this session reruns no proof to repair a report.
-- Off-brief build-task return → SendMessage it once, per `${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.md`; a second one → a fresh `exo:build-task` as above.
-- Build-task stopped at its turn limit before green → redispatch `exo:build-task` from `../implementer-prompt.md`, not an improvised prompt to another agent.
-- `PLAN DRIFT` → follow its printed `Then:` line from next-task or land-task: the `plan drift` line hands the report path, unread, to `../drift-repairer-prompt.md`; the `input unreachable` line stops the run `BLOCKED` with that path, no repair delegate.
-- Build return `BLOCKED input unreadable: <path>` → stop the run `BLOCKED` with that path, no repair delegate; no repair session can supply the input.
-- Any other land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
-- Second failure of one task → stop the run `BLOCKED` with both reports and 2-3 options.
-- Land-task refusal other than `PLAN DRIFT` or a report refusal → repair delegate the same way, rerun once; a second refusal stops likewise.
+- Land-task refusal `no build report at`: SendMessage the agent that wrote the build once, with land-task's full refusal verbatim, so it writes the report. Without SendMessage, dispatch a fresh agent with the prior result path.
+- Land-task refusal about the report's content (no Proof command, a command listed as failing): dispatch a fresh `exo:build-task` from `../implementer-prompt.md` with land-task's full refusal added verbatim. This session reruns no proof to repair a report.
+- Off-brief build-task return: SendMessage it once, per `${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.md`. A second one gets a fresh `exo:build-task` as above.
+- Build-task stopped at its turn limit before green: redispatch `exo:build-task` from `../implementer-prompt.md`, not an improvised prompt to another agent.
+- `PLAN DRIFT` follows its printed `Then:` line from next-task or land-task. The `plan drift` line hands the report path, unread, to `../drift-repairer-prompt.md`, and the `input unreachable` line stops the run `BLOCKED` with that path and no repair delegate.
+- Build return `BLOCKED input unreadable: <path>` stops the run `BLOCKED` with that path and no repair delegate, because no repair session can supply the input.
+- Any other land-task refusal reads the full diff. Any other line hands its report path, unread, to a repair delegate: `BLOCKED` or a failed `Run:` with no cause goes to `../bug-fixer-prompt.md`.
+- A second failure of one task stops the run `BLOCKED` with both reports and 2-3 options.
+- A land-task refusal other than `PLAN DRIFT` or a report refusal goes to a repair delegate the same way and reruns once. A second refusal stops likewise.

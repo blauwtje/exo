@@ -36,9 +36,9 @@ const UNIT_AGENT = 'agents/task-runner.md';
 const FOLD_UNIT_EDIT = {
   file: RUN_LOOP,
   from: [
-    '5. **Dispatch the unit.** Send the `Block:` tasks to the `exo:task-runner` agent, silently, then end the turn; its completion notification resumes it.',
+    '5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently, then end the turn; its notification resumes it.',
     '   - Name plan path, branch, checkout, task numbers.',
-    '   - Never build a task here; never call ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.'
+    '   - Build no task here and call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.'
   ].join('\n'),
   to: [
     '5. **Run the unit here.** Dispatch no task-runner agent: read `${CLAUDE_PLUGIN_ROOT}/' + UNIT_AGENT + '`, take `<skill>` = `${CLAUDE_SKILL_DIR}`, and follow its `## Loop` and `## Stop` yourself for the `Block:` tasks.',

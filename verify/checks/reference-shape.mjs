@@ -64,15 +64,11 @@ function tokensOf(repository, file) {
   return Math.round(Buffer.byteLength(repository.text(file), 'utf8') / BYTES_PER_TOKEN);
 }
 
-// A locked file must land on its lock exactly: over fails as growth, under
-// fails as an unrecorded shrink, and one that would now pass at or under the
-// general ceiling has outgrown the lock entirely. An unlocked file fails only
-// past the general ceiling.
 function sizeProblem(relative, tokens) {
   const lock = REFERENCE_TOKEN_LOCKS[relative];
   if (lock !== undefined) {
     if (tokens > lock) return `${relative} is ${tokens} tokens, over its ${lock}-token lock`;
-    if (tokens < lock) return `${relative} is ${tokens} tokens, under its ${lock}-token lock: update REFERENCE_TOKEN_LOCKS in verify/budgets.mjs`;
+    if (tokens < lock && tokens > REFERENCE_TOKEN_CEILING) return `${relative} is ${tokens} tokens, under its ${lock}-token lock: lower REFERENCE_TOKEN_LOCKS in verify/budgets.mjs to ${tokens}`;
     if (tokens <= REFERENCE_TOKEN_CEILING) return `${relative} is ${tokens} tokens, at or under ${REFERENCE_TOKEN_CEILING}: remove it from REFERENCE_TOKEN_LOCKS in verify/budgets.mjs`;
     return null;
   }
@@ -81,11 +77,10 @@ function sizeProblem(relative, tokens) {
     : null;
 }
 
-// lean.md must land on its byte lock exactly, the same two ways as sizeProblem.
 function leanSizeProblem(bytes) {
   const lock = LEAN_REFERENCE_LOCK.bytes;
   if (bytes > lock) return `${LEAN_REFERENCE} is ${bytes} bytes, over its ${lock}-byte lock`;
-  if (bytes < lock) return `${LEAN_REFERENCE} is ${bytes} bytes, under its ${lock}-byte lock: update LEAN_REFERENCE_LOCK in verify/budgets.mjs`;
+  if (bytes < lock) return `${LEAN_REFERENCE} is ${bytes} bytes, under its ${lock}-byte lock: lower LEAN_REFERENCE_LOCK in verify/budgets.mjs to ${bytes}`;
   return null;
 }
 

@@ -211,8 +211,8 @@ test('the session hook with no exo settings injects no reply rules, only the fix
   assert.ok(!context.includes('compression'));
   assert.ok(!context.includes('Say the answer first.'));
   assert.ok(!context.includes('one question per message'));
-  assert.ok(context.includes('Diagnosed causes → fix all, not cut scope or ask;'));
-  assert.ok(context.includes('Irreversible step → confirm with user first.'));
+  assert.ok(context.includes('Fix all diagnosed causes instead of cutting scope or asking,'));
+  assert.ok(context.includes('Confirm an irreversible step with the user first,'));
 });
 
 test('the exo:adhd output style carries its frontmatter and each outranking rule', () => {
@@ -286,8 +286,8 @@ test('the Stop hook lets a repair session end without a task status line', async
 
 test('the dispatch rules leave agent models to the kind table and send long command output to a log', () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
-  assert.match(rules, /pass no `model` or `effort`, the kind table decides/);
-  assert.match(rules, /long command output goes to a log under `\.exo\/`/);
+  assert.match(rules, /pass no `model` or `effort` because the kind table decides/);
+  assert.match(rules, /Send long command output to a log under `\.exo\/`/);
   assert.doesNotMatch(rules, /cheapest and low for lookups/);
 });
 
@@ -300,8 +300,8 @@ test('the dispatch file rule names exo:fetch-docs as returning inline', () => {
 
 test('the dispatch rules send a brief with an open choice or unknown cause to the hardest kind and a decided fix to build', async () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
-  assert.match(rules, /design, architecture or solution choice open, or asks for an unknown cause → first brief line `exo-kind: hardest`/);
-  assert.match(rules, /fully decided fix → `exo-kind: build`/);
+  assert.match(rules, /first brief line `exo-kind: hardest` when its brief leaves a design, architecture or solution choice open or asks for an unknown cause/);
+  assert.match(rules, /`exo-kind: build` when the brief is a fully decided fix/);
   const { agentEffort } = await import('../hooks/agent-effort.mjs');
   const { readKindTable } = await import('../lib/model-kinds.mjs');
   const { kinds } = readKindTable(undefined, { budget: 'on' });

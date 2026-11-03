@@ -5,9 +5,9 @@ argument-hint: <symptom, failing command or error>
 ---
 # Find cause
 
-a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: run the bisect in `investigator-prompt.md` first; then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`; no symbol: `exo:locate-code`.
-b. **Investigate.** Proven needs a causal line and a mechanism predicting it or holding in the source: write `Status: proven`; else dispatch `exo:solve-hard` from `investigator-prompt.md`.
-c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build`; resume `failed` via SendMessage; if SendMessage is unavailable, dispatch a fresh agent with the prior result path.
+a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: run the bisect in `investigator-prompt.md` first, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (with no symbol, `exo:locate-code`).
+b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in the source: write `Status: proven`. Otherwise dispatch `exo:solve-hard` from `investigator-prompt.md`.
+c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build`, resume `failed` via SendMessage, else dispatch a fresh agent with the prior result path.
 d. **Report.** Read only status lines and Report fields. After compaction, re-run `Repro`.
 
 1. **Reproduce.** Read an existing log, profile or `.exo/` report on the path first. One command reproduces it, else evidence, no fix.
@@ -18,7 +18,7 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 4. **Predict, then fix.**
 5. **Prove.**
 6. **Retain project knowledge.** Per the table.
-7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../gate/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`); fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain; else end on `ship`.
+7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../gate/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`) and fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain, else on `ship`.
    - Invoked by a stage or workflow: ask nothing, return to caller.
 
 ## References

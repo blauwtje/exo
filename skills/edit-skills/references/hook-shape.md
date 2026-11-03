@@ -1,28 +1,28 @@
 # Shape of a hook
 
-Hook text and code run on every matching event, so each earns its cost in tokens, time and false blocks.
+Hook text and code run on every matching event, so each hook pays for itself in tokens, time and false blocks.
 
 ## Registration
 
-- Plugin hooks live in `hooks/hooks.json` under a top-level `"hooks"`: event, then matcher group, then handler. Handler types: `command`, `http`, `mcp_tool`, `prompt`, `agent`.
-- One hook process per event and matcher, not one per feature; matching hooks run in parallel and see no other hook's output, so a second feature on the same event joins the existing process.
-- Each entry pins `"shell": "bash"`, else a Windows host without Git Bash falls back to PowerShell. Keep the command in shell form, not `args`, so the harness resolves the shell.
-- Command path → starts with `${CLAUDE_PLUGIN_ROOT}`.
-- Hook code stays Node with no `jq`; `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
-- Hook code size is locked by `verify/checks/hook-size.mjs` (`HOOK_LINES_LOCK` in `verify/budgets.mjs`): growth fails, and a raise is a hand edit in the commit that pays for it.
-- Hook spawn time is locked by `verify/checks/hook-latency.mjs` (`HOOK_SPAWN_MS_LOCK`): the median of seven `dispatch-bash.mjs` spawns above it fails → keep imports lazy and avoid reads on the hook path.
+- Plugin hooks live in `hooks/hooks.json` under a top-level `"hooks"`: event, then matcher group, then handler. Handler types are `command`, `http`, `mcp_tool`, `prompt` and `agent`.
+- Run one hook process per event and matcher. Matching hooks run in parallel and see no other hook's output, so a second feature on the same event joins the existing process.
+- Pin `"shell": "bash"` in each entry, because a Windows host without Git Bash falls back to PowerShell. Keep the command in shell form, not `args`, so the harness resolves the shell.
+- Start each command path with `${CLAUDE_PLUGIN_ROOT}`.
+- Write hook code in Node without `jq`. `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
+- `verify/checks/hook-size.mjs` locks hook code size (`HOOK_LINES_LOCK` in `verify/budgets.mjs`). Growth fails, and a raise is a hand edit in the commit that pays for it.
+- `verify/checks/hook-latency.mjs` locks spawn time (`HOOK_SPAWN_MS_LOCK`). It fails when the median of seven `dispatch-bash.mjs` spawns runs above it, so keep imports lazy and avoid reads on the hook path.
 
 ## Output
 
-- Exit 0 → stdout is parsed as JSON; exit 2 → blocking, stderr is the reason; any other code is non-blocking.
-- `hookSpecificOutput` needs `hookEventName`. Fields: `permissionDecision` (`allow`, `deny`, `ask` or `defer`), `updatedInput`, `additionalContext`.
+- Exit 0 parses stdout as JSON, exit 2 blocks with stderr as the reason, and any other code does not block.
+- `hookSpecificOutput` needs `hookEventName`. Its fields are `permissionDecision` (`allow`, `deny`, `ask` or `defer`), `updatedInput` and `additionalContext`.
 - `PostToolUse` cannot block.
-- `Stop` hook exiting 2 keeps the session going → check `stop_hook_active` first, else it loops.
-- `SessionStart` text loads every session → inject pointers, not file contents.
+- A `Stop` hook that exits 2 keeps the session going, so check `stop_hook_active` first or it loops.
+- `SessionStart` text loads every session, so inject pointers instead of file contents.
 
 ## Timing and matching
 
-- Default `timeout` is 600 s for a command, 30 s on `UserPromptSubmit`; `SessionEnd` shares 1.5 s. A `timeout` under 1 s counts as 1 s.
+- The default `timeout` is 600 s for a command and 30 s on `UserPromptSubmit`, and `SessionEnd` shares 1.5 s. A `timeout` under 1 s counts as 1 s.
 - `claude --debug` logs each hook's duration.
-- `Read` matcher misses `cat` or `sed` through Bash → match the Bash call too when the rule must hold.
-- Rewriting a command inside a pipeline → never; add a prefix and leave the command text as written.
+- A `Read` matcher misses `cat` or `sed` through Bash, so match the Bash call too when the rule must hold.
+- Add a prefix to a command inside a pipeline and leave its text as written, because a rewritten pipeline breaks the command.

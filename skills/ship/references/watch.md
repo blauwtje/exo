@@ -1,35 +1,37 @@
 # Watching a pull request
 
+Goal: carry one pull request to merge-ready in rounds, then hand it back.
+
 ## The round
 
-- One watcher per pull request at a time; two rounds on one branch push over each other.
-- Delegate that opened the pull request → does not watch it; hand back to the dispatching session.
-- Before triaging → fetch full state: `gh pr view <number> --json number,title,state,mergeable,reviewDecision,statusCheckRollup,mergeStateStatus,comments,reviews`.
-- Push a round's known fixes together as one wave; conflict blocks → do not work a check to look busy.
-- Check running → pace the recheck with `gh pr checks --watch`; nothing left to wait on → hand back, no polling.
+- Run one watcher per pull request at a time, because two rounds on one branch push over each other.
+- A delegate that opened the pull request does not watch it and hands back to the dispatching session.
+- Before triaging, fetch full state: `gh pr view <number> --json number,title,state,mergeable,reviewDecision,statusCheckRollup,mergeStateStatus,comments,reviews`.
+- Push a round's known fixes together as one wave. When a conflict blocks, do not work a check to look busy.
+- While a check runs, pace the recheck with `gh pr checks --watch`. With nothing left to wait on, hand back and do not poll.
 
 ## The triage order
 
 Work in this order:
 
-- Merge conflicts first: resolve, push a merge commit.
-- Reviewer asks to rebase and force-push → still the merge commit, pushed without asking, plus a reply that a squash merge lands it as one linear commit.
+- Merge conflicts first: resolve and push a merge commit.
+- When a reviewer asks to rebase and force-push, still push the merge commit without asking, and reply that a squash merge lands it as one linear commit.
 - Failing checks second.
 - Review comments third.
 - Bot and automation comments fourth.
 
 ## The stop conditions
 
-- Round limit reached short of green → stop, summarize what remains, hand back.
-- Build green, every comment resolved, branch merges cleanly → call it ready.
-- Draft stays a draft until then; marking it ready earlier misrepresents its state.
-- Next fix needs a design choice → stop, ask the user to make it.
-- User question mid-round → answer, carry on; only the user's explicit stop ends it early.
+- At the round limit short of green, stop, summarize what remains and hand back.
+- Call it ready when the build is green, every comment is resolved and the branch merges cleanly.
+- The draft stays a draft until then, because marking it ready earlier misrepresents its state.
+- When the next fix needs a design choice, stop and ask the user to make it.
+- Answer a user question mid-round and carry on. Only the user's explicit stop ends the watch early.
 
 ## Merge-ready is the end
 
-- A watch stops at merge-ready; only an explicit merge moves to the skill's step 7.
-- Never rewrite history or retarget a base on a branch others may have pulled unless the user names it first.
+- A watch stops at merge-ready, and only an explicit merge moves to the skill's step 7.
+- Rewrite history or retarget a base on a branch others may have pulled only when the user names it first.
 
 ## Report
 

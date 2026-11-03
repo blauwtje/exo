@@ -19,7 +19,7 @@ The overcorrection is researching a call the repository already makes in deploye
 ## The loop
 
 1. **Find the installed version** in lockfile or manifest first; question is how this pinned version behaves, not how the library works.
-2. **Fetch that version's first-party docs**, changelog or migration guide, never a blog post; no exact match → highest documented version not newer than the install, else lowest newer one; state both versions.
+2. **Fetch that version's first-party docs**, changelog or migration guide, not a blog post. With no exact match, take the highest documented version not newer than the install, else the lowest newer one, and state both versions.
 3. **Fetch only the section that answers the question**, quote at most ten lines; a page read once is re-read every later turn.
 4. **Cite every claim that shaped a decision** with its URL; uncited claim = recollection, flagged as one.
 5. **State what could not be confirmed**, never fill the gap: "could not confirm X; proceeding on Y" is a valid outcome.

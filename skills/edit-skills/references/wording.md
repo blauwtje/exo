@@ -1,34 +1,36 @@
 # Wording
 
+Wording sets how firmly the model follows a rule, so match the register to the kind of skill.
+
 ## Register by skill kind
 
 | Skill kind | Register | Why |
 |---|---|---|
-| Discipline (a step the model is tempted to skip) | Imperative, "no exceptions", forced choice, one line the model states before acting | Bright line cuts rationalization; a stated commitment is kept |
-| Technique or stage | Moderate imperative plus reason; colleague voice | Reason lets the model draw the boundary itself |
+| Discipline (a step the model is tempted to skip) | Imperative, "no exceptions", forced choice, one line the model states before acting | A bright line cuts rationalization, and a stated commitment is kept |
+| Technique or stage | Moderate imperative plus reason, in a colleague voice | The reason lets the model draw the boundary itself |
 | Reference | Plain statements | Nothing to enforce |
 
-- Flattery or thanks to the model → never; warmth trains sycophancy toward the skill's own text.
-- Urgency → only where failure is immediate; a false "before proceeding" on a low-stakes step teaches the model to ignore the true one.
+- Leave flattery and thanks out of the text, because warmth trains sycophancy toward the skill's own words.
+- Use urgency only where failure is immediate. A false "before proceeding" on a low-stakes step teaches the model to ignore the true one.
 
 ## Sentences that bind
 
-- Rule → bright line the model can check, never a hedge; a hedge reads as permission.
-- "When X, do Y" with X observable beats general advice; the model executes the trigger without deciding.
-- One default with one named escape hatch beats a menu; the model picks the default and moves.
+- Write a rule as a bright line the model can check. A hedge reads as permission.
+- Prefer "When X, do Y" with an observable X to general advice, because the model executes the trigger without deciding.
+- Give one default with one named escape hatch instead of a menu, so the model picks the default and moves.
 
 ## Micro-test wording
 
-Two phrasings compete → test the sentence in isolation before a full scenario:
+When two phrasings compete, test the sentence in isolation before a full scenario.
 
-1. Same realistic prompt, fresh context per call; one arm per phrasing plus a control arm with no guidance.
-2. Control arm does not fail → cut the sentence; nothing to fix.
-3. Each arm at least five runs.
-4. Read every flagged output by eye; a grep match is not a judgment.
-5. Variance across runs is the signal: a binding phrasing converges, a weak one scatters.
+1. Use the same realistic prompt with a fresh context per call: one arm per phrasing and a control arm with no guidance.
+2. Cut the sentence when the control arm does not fail, since there is nothing to fix.
+3. Run each arm at least five times.
+4. Read every flagged output by eye, because a grep match is not a judgment.
+5. Treat variance across runs as the signal: a binding phrasing converges and a weak one scatters.
 
-Micro-test settles wording only, never whether the skill holds under pressure; that is the scenario's job.
+A micro-test settles wording only. Whether the skill holds under pressure is the scenario's job.
 
 ## Judgment
 
-- Technique → reason clause outranks the imperative; discipline → imperative outranks the reason.
+- For a technique, the reason clause outranks the imperative. For a discipline, the imperative outranks the reason.

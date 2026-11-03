@@ -11,7 +11,7 @@ Brief:
 
 Rules:
 - Work in [[root]], with that path literally.
-- Run one command per Bash call, exactly as the plan writes it; add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
+- Run one command per Bash call, exactly as the plan writes it. Add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
 - Create and change files only with the Write and Edit tools; read with Read.
 - Run at most one test inside this session.
 - Send build and test output to `.exo/logs/<name>.log`; read only the summary and failing lines.

@@ -1,18 +1,20 @@
 # Blind eval
 
+A blind eval lets a judge pick the stronger of two answers without knowing which clone wrote which, so the verdict cannot favor the edit.
+
 ## When to run it
 
-- Step 4's `with`/`without` read is a close call: both answers could pass for the same reason, or the `with` answers only read more thorough.
-- Not for a brand-new case's first pass: step 4 already proves it; `without` failing and `with` passing need no judge.
+- Run it when step 4's `with` and `without` read is a close call: both answers could pass for the same reason, or the `with` answers only read more thorough.
+- Skip it for a brand-new case's first pass. Step 4 already proves it when `without` fails and `with` passes.
 
 ## Steps
 
-1. Get two clones: pre-edit worktree (or the commit before the change) as baseline, edited worktree as changed.
-2. Stored `with` answers for both clones → judge those. The user asks for a run, or a clone has none → run `pressure.mjs --prompt <the same case file> --cells <cell> --plugin-dir <clone>` once per clone.
-3. Read only the `with` answer files (full, untruncated); each clone's `without` answers are the same skill-less answers twice.
-4. Label the two clones' `with` answers A and B, alternating which letter holds the changed answers so no pattern forms across evals; keep the mapping yourself.
-5. Copy only the labels and full answer texts into a scratch file for the judge; never write "baseline", "changed", "old" or "new" into it.
+1. Get two clones: the pre-edit worktree (or the commit before the change) as baseline, and the edited worktree as changed.
+2. Judge the stored `with` answers of both clones. When the user asks for a run, or a clone has none, run `pressure.mjs --prompt <the same case file> --cells <cell> --plugin-dir <clone>` once per clone.
+3. Read the full `with` answer files only, because each clone's `without` answers are the same skill-less answers twice.
+4. Label the two clones' `with` answers A and B. Alternate which letter holds the changed answers so no pattern forms across evals, and keep the mapping yourself.
+5. Copy the labels and full answer texts into a scratch file for the judge. Leave "baseline", "changed", "old" and "new" out of it, since they unmask the labels.
 6. Write a rubric of 3-6 concrete criteria for what the edit was meant to fix.
-7. Spawn a fresh `general-purpose` delegate whose prompt opens with `exo-kind: review` as judge with the case prompt, rubric and labeled file; it scores each label against the rubric and picks the stronger, blind to which is which.
-8. Unmask labels against the pick; edit done only when the judge picked the changed answer for the reason the rubric names.
-9. Tie or baseline wins → return to loop step 3 (Choose the home); the wording did not move the behavior.
+7. Spawn a fresh `general-purpose` delegate whose prompt opens with `exo-kind: review` as judge, holding the case prompt, the rubric and the labeled file. It scores each label against the rubric and picks the stronger.
+8. Unmask the labels against the pick. The edit is done only when the judge picked the changed answer for the reason the rubric names.
+9. On a tie or a baseline win, return to loop step 3 (Choose the home), because the wording did not move the behavior.

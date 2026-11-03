@@ -11,24 +11,24 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 ## Before writing
 
 - Take no irreversible action to pause: no push, no pull request.
-- Pause between atomic steps, never inside one: complete or undo the step in progress; begin no new work.
-- Run branch of a plan (`exo:build` loop) → commit nothing; write partial work of the task in progress to a hint file such as `.exo/carry/task<n>-partial.patch`, and list it under `## Current state`.
-- Other branch than the repository's default → commit every uncommitted edit first as one `chore: wip <topic>` commit.
-- Tree broken → say so in that commit's body.
-- Default branch → leave edits uncommitted, list them under `## Current state`.
-- Artefact the user explicitly asked to survive the clear (question list, checklist) → preserve verbatim.
+- Pause between atomic steps, not inside one: complete or undo the step in progress and begin no new work.
+- On the run branch of a plan (`exo:build` loop), commit nothing. Write partial work of the task in progress to a hint file such as `.exo/carry/task<n>-partial.patch`, and list it under `## Current state`.
+- On any other branch than the repository's default, commit every uncommitted edit first as one `chore: wip <topic>` commit.
+- If the tree is broken, say so in that commit's body.
+- On the default branch, leave edits uncommitted and list them under `## Current state`.
+- Preserve verbatim any artefact the user explicitly asked to survive the clear, such as a question list or checklist.
 
 ## Pointers, not content
 
 - Each section names a path, command, issue number or line range, and stops there.
 - Paste no diff, file body or log; the reader can open them, and pasting spends the context the clear freed.
-- Error → paste only its failing lines.
+- For an error, paste only its failing lines.
 - Quote a value only when it exists nowhere on disk, such as a number from an unlogged run.
 
 ## Where it goes
 
-1. Read the location, never guess it: `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` prints it, the same file `hooks/session-start.mjs` points a resuming session at.
-2. Branch name holding `/` → nested path: create parent directories first.
+1. Read the location instead of guessing it: `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` prints it, the same file `hooks/session-start.mjs` points a resuming session at.
+2. A branch name holding `/` gives a nested path, so create parent directories first.
 3. Write the file whole, replacing any handoff already at that path: the state it held is what this clear discards.
 
 ## What it holds
@@ -43,20 +43,20 @@ Then these sections, in this order; each left out when the session has nothing t
 - `## Files touched`: path, then one clause of what changed there.
 - `## Proven`: one line per claim, `<claim>: <the command that proved it>, <its result>`.
 - `## Next step`: exactly one action, the first thing the fresh session does.
-- `## Then`: every later step through the report to the user, numbered, each with its full command; work driving a run or loop → also how to wait for it, what to do when it fails, and where to stop and report.
+- `## Then`: every later step through the report to the user, numbered, each with its full command. For work driving a run or loop, also say how to wait for it, what to do when it fails, and where to stop and report.
 - `## Open questions`: what is unresolved, and who can answer it.
-- `## Resume`: never left out, unlike the sections above.
+- `## Resume`: always present, unlike the sections above.
 
 Last line of the file, after `## Resume`: `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue, such as `Resume: lees .git/exo/handoff/<branch>.md en ga verder`. The sections carry every step, so this one line suffices.
 
 In those sections:
 
-- User's decision → record as theirs, in their wording, never as shared.
-- Plan running and `<plan stem>-decisions.md` beside it → carry its lines into `## Decisions` unchanged.
-- Claim no command proved → `## Open questions`, not `## Proven`.
+- Record the user's decision as theirs, in their wording, not as shared.
+- When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Decisions` unchanged.
+- Put a claim no command proved under `## Open questions`, not `## Proven`.
 - Read `## Current state` from `git status --short`, not memory.
 - List which changes are committed, then every uncommitted path in full, because a next session that cannot see the difference treats working-tree edits as saved and discards them.
-- Session running a plan → open `## Current state` with plan path and number of the task in progress.
+- For a session running a plan, open `## Current state` with the plan path and the number of the task in progress.
 
 ## Resume
 
@@ -75,5 +75,5 @@ Diff what `## Proven` and `## Files touched` already cover against what `## Next
 ## Judgment
 
 - File read this session outranks memory of it: confirm path, branch and commit with a command before writing them down.
-- Short true handoff outranks a full one that guesses; what the session does not know → `## Open questions`.
+- A short true handoff outranks a full one that guesses. Put what the session does not know under `## Open questions`.
 - Turn ends naming the written path, saying to run `/clear`, and quoting the `Resume:` prompt to paste after it. Nothing else written; no work continues after.

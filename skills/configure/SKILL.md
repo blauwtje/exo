@@ -11,8 +11,8 @@ Change exo's settings only through its own scripts, one named setting or every s
 
 ## When to use
 
-- `/exo:configure` with nothing after it, or request to set up or configure exo as a whole → `## The walk`.
-- Question about one setting, or request to change one → `## One setting`.
+- Use `## The walk` for `/exo:configure` with nothing after it, or a request to set up or configure exo as a whole.
+- Use `## One setting` for a question about one setting, or a request to change one.
 
 ## Where things stand
 
@@ -24,20 +24,20 @@ Values when this skill loaded, each with its layer:
 
 Take the first step the request and answers so far leave open.
 
-- Answer a menu's `Or type` line names → counts as that pick, like its letter, at every step: topic, setting or value.
+- An answer a menu's `Or type` line names counts as that pick, like its letter, at every step: topic, setting or value.
 
-1. **Relay.** Request only asks to see the settings → relay the `show` block above as the whole reply, run nothing. Keep its ```` ```text ```` fence unchanged; rows line up only in a monospace block.
-2. **Pick the setting.** Request names none → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply.
-   - Topic picked → run `menu work`, `menu places` or `menu safety`, relayed the same way.
-3. **Ask the value.** Setting known, no value → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
-4. **Pick the layer.** Request names no layer → project scope: it reaches every collaborator, not only you, and only a named local or global layer changes that. The closing line names the layer used, so the choice is never hidden.
+1. **Relay.** When the request only asks to see the settings, relay the `show` block above as the whole reply and run nothing. Keep its ```` ```text ```` fence unchanged; rows line up only in a monospace block.
+2. **Pick the setting.** When the request names none, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply.
+   - When a topic is picked, run `menu work`, `menu places` or `menu safety` and relay it the same way.
+3. **Ask the value.** When the setting is known and the value is not, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
+4. **Pick the layer.** When the request names no layer, use project scope: it reaches every collaborator, not only you, and only a named local or global layer changes that. The closing line names the layer used, so the choice stays visible.
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change.
-   - Rejection → relay it as the script printed it, change nothing by hand.
-   - Project value → add one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
+   - When the script rejects the value, relay the rejection as printed and change nothing by hand.
+   - For a project value, add one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
 
 ## The walk
 
-Follow `references/setup-map.md` from its first step. Never pick an answer for the user.
+Follow `references/setup-map.md` from its first step. Leave every answer to the user.
 
 ## The write commands
 
@@ -57,6 +57,6 @@ Follow `references/setup-map.md` from its first step. Never pick an answer for t
 ## Judgment
 
 - A project or local value outranks a global one.
-- User picks every project for a key a project or local layer holds → report names that layer; the new value stays hidden there.
-- Scripts' output outranks any value in context, including the session's `exo settings:` line, read at session start.
-- Every delegate that writes code reads `../route-skills/references/lean.md` itself; the session text carries no pointer to it and no switch exists: request to switch it off → give that answer, run nothing.
+- When the user picks every project for a key that a project or local layer holds, the report names that layer, because the new value stays hidden there.
+- Scripts' output outranks any value in context, including the session's `exo settings:` line read at session start.
+- Every delegate that writes code reads `../route-skills/references/lean.md` itself. The session text carries no pointer to it and no switch exists, so a request to switch it off gets that answer and runs nothing.

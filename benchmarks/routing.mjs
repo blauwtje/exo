@@ -58,12 +58,18 @@ export function modelInvocableSkills(root) {
   });
 }
 
+const WHOLE_FILE_HASHES = { 'session-routing': path.join('hooks', 'session-routing.md') };
+
+export function hashedWholeFiles(root) {
+  return Object.values(WHOLE_FILE_HASHES).map((file) => path.join(root, file));
+}
+
 export function descriptionHashes(root) {
   const hashes = {};
   for (const name of modelInvocableSkills(root)) {
     hashes[name] = sha256(descriptionOf(fs.readFileSync(path.join(root, 'skills', name, 'SKILL.md'), 'utf8')).text);
   }
-  hashes['session-routing'] = sha256(fs.readFileSync(path.join(root, 'hooks', 'session-routing.md'), 'utf8'));
+  for (const [key, file] of Object.entries(WHOLE_FILE_HASHES)) hashes[key] = sha256(fs.readFileSync(path.join(root, file), 'utf8'));
   return hashes;
 }
 

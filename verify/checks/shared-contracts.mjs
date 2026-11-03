@@ -36,7 +36,7 @@ const PINNED_SENTENCES = {
     'Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1.',
   ],
   'skills/build/SKILL.md': [
-    'Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.',
+    'Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed, or orientation missed a required file.',
     'After a compaction, rebuild what landed from the working-tree diff, not memory.',
     'When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.',
   ],

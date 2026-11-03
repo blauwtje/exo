@@ -1,12 +1,12 @@
 # Shape of an agent
 
-An agent takes the same shape as a skill with two changes: frontmatter carries the agent keys below, and the body closes with the exact report format its caller parses. An agent that writes code to a brief runs on the standard tier; only judges and hard repairs may run on the strong tier.
+An agent takes the same shape as a skill with two changes. Its frontmatter carries the agent keys below, and its body closes with the exact report format its caller parses. An agent that writes code to a brief runs on the standard tier, and only judges and hard repairs run on the strong tier.
 
 ## Frontmatter
 
-- `name` and `description` → required; `description` says when the caller dispatches it.
-- `model` and `effort` → leave out; `lib/model-kinds.json` maps each agent file to a kind, and the `agent-effort` hook sets model and effort at dispatch.
-- `tools` → an allowlist: the agent gets only the tools listed, so list what the job needs; discovery and bulk reading take few tools. `disallowedTools` removes from the inherited set instead.
-- Other keys the harness reads: `maxTurns`, `autoCompactWindow` (100000 to 1000000), `skills` (first 32), `memory` (`user`, `project` or `local`), `background`, `omitClaudeMd`, `isolation`, `color`, `experimental`.
-- Plugin agents ignore `permissionMode`, `mcpServers`, `hooks` and `initialPrompt` → leave them out of a plugin agent file.
-- Unknown key → the harness ignores it without an error; `claude --debug` logs each key it does not recognize or apply, so run it once on a new agent.
+- Require `name` and `description`. The `description` says when the caller dispatches the agent.
+- Leave out `model` and `effort`. `lib/model-kinds.json` maps each agent file to a kind, and the `agent-effort` hook sets model and effort at dispatch.
+- Give `tools` as an allowlist, so the agent gets only the tools the job needs; discovery and bulk reading take few. `disallowedTools` removes from the inherited set instead.
+- The harness also reads `maxTurns`, `autoCompactWindow` (100000 to 1000000), `skills` (first 32), `memory` (`user`, `project` or `local`), `background`, `omitClaudeMd`, `isolation`, `color` and `experimental`.
+- Plugin agents ignore `permissionMode`, `mcpServers`, `hooks` and `initialPrompt`, so leave them out of a plugin agent file.
+- The harness ignores an unknown key without an error. Run `claude --debug` once on a new agent, because it logs each key the harness does not recognize or apply.

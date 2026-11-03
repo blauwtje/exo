@@ -1,6 +1,6 @@
 # Skill shape
 
-New skill → start from this template; remove every section with nothing real to put in.
+Start a new skill from this template and remove every section that has nothing real to put in it, because an empty section costs tokens on every load.
 
 ```markdown
 ---
@@ -43,10 +43,10 @@ Add "The overcorrection is <the mistake this must not create>." only when a reco
 
 ## What to leave out
 
-- War story about one fix ("last sprint the build broke because…") → write the rule it taught; a reader cannot generalize an anecdote.
-- One example in several languages, or a blank template posing as an example → one complete example in the language that matters most.
-- Placeholder names (`step3`, `helper`, `data`) where a domain word exists.
-- A second final-message shape; the report step names what `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/closing.md` carries.
+- Leave out a war story about one fix ("last sprint the build broke because..."). Write the rule it taught, because a reader cannot generalize an anecdote.
+- Give one complete example in the language that matters most, not one example in several languages or a blank template posing as an example.
+- Use a domain word where one exists instead of a placeholder name (`step3`, `helper`, `data`).
+- Keep a single final-message shape. The report step names what `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/closing.md` carries.
 
 ## Judgment
 

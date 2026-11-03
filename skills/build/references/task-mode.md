@@ -11,7 +11,7 @@
 - Work in `<checkout>`, the session's current checkout, with that path literally.
 - Ask nothing: a choice you cannot rule is `BLOCKED NEEDS ANSWER: <one short question>`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.
 - Dispatch no agent; run no `start-run.mjs`, worktree, tail or `ship`.
-- Push nothing; never run `land-task.mjs --fix`.
+- Push nothing, and leave `land-task.mjs --fix` unrun.
 - `PLAN DRIFT:` line for task `<n>` in the prompt or `next-task.mjs` output → end on `Task <n>: BLOCKED PLAN DRIFT: <item>`; its `Then:` line is for the task-runner, not this session.
 
 ## Design tasks

@@ -31,6 +31,18 @@ export function parseDrops(value) {
   return value.split(',').map((entry) => entry.trim().replace(/\s+/g, ' ')).filter((entry) => / in /.test(entry));
 }
 
+function permits(entry, word, file) {
+  const match = /^(.+) in (\S+)$/.exec(entry);
+  if (!match) return false;
+  const [, words, target] = match;
+  const covers = target.endsWith('/') ? file.startsWith(target) : file === target;
+  return covers && words.split(' ').includes(word);
+}
+
+function isAllowed(allowed, word, file) {
+  return [...allowed].some((entry) => permits(entry, word, file));
+}
+
 function allowances(root, env) {
   const allowed = new Set(parseDrops(env.EXO_DROPS ?? ''));
   const log = git(root, ['log', `${BASE_REF}..HEAD`, '--format=%B']);
@@ -63,9 +75,8 @@ export function checkBoundaryWords(report, repository, { env = process.env } = {
     if (!fs.existsSync(headFile)) continue;
     const base = countWords(baseText(file));
     const head = countWords(fs.readFileSync(headFile, 'utf8'));
-    for (const word of WORDS) {
-      if (head[word] < base[word] && !allowed.has(`${word} in ${file}`)) drops.push(`${file}: ${word} ${base[word]} -> ${head[word]}`);
-    }
+    const lost = WORDS.filter((word) => head[word] < base[word] && !isAllowed(allowed, word, file));
+    drops.push(...lost.map((word) => `${file}: ${word} ${base[word]} -> ${head[word]}`));
   }
   report.assert(
     drops.length === 0,

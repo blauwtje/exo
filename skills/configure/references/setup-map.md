@@ -4,10 +4,10 @@
 
 1. **Check the issue route.** Run `git remote get-url origin` and `gh auth status`. Offer `issues` and `both` only when origin is on GitHub and both pass; otherwise either answer fails at the first spec.
 2. **Ask each setting in its own message**, in `## The order`, in the question shape.
-3. **Review before writing.** List the changes, one line each; wait for a yes. Answer names a setting → ask it again, then review once more.
+3. **Review before writing.** List the changes, one line each, and wait for a yes. When an answer names a setting, ask it again, then review once more.
 4. **Write only the changes, then report.** Use the commands under `## The write commands` in the skill.
-   - Never write a kept value, even when it equals the default.
-   - Rejection → relay it as printed, write nothing after it; the user confirmed the set as a whole.
+   - Leave a kept value unwritten, even when it equals the default.
+   - When the script rejects a value, relay it as printed and write nothing after it, because the user confirmed the set as a whole.
    - Report one line per changed value and where it now lives.
 
 ## The order
@@ -22,18 +22,18 @@
 
 ## Each setting
 
-Ask each setting with the plain texts its entry in `../schema.json` holds, never its key; the user picks from what each answer gives. Each question holds at most three lettered options, like `settings.mjs menu`.
+Ask each setting with the plain texts its entry in `../schema.json` holds, not its key. The user picks from what each answer gives. Each question holds at most three lettered options, like `settings.mjs menu`.
 
 - The title is its `question`.
-- Context → one sentence of at most 15 words: the `Or type` line; no `Or type` line → its `typed` line, when present.
-- (A) = current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a recommended answer that changed a value would turn `a` into a change the user never read. Value with no entry → shown as written.
-- (B) and (C) → the first two other `choices` entries, in schema order, as `- **(<letter>) <label>**: <gives>`.
-- Every remaining `choices` entry, then `Keep the rest` → typed answers in the `Or type` line: ``Or type `<value>` for <label>, or `rest` to keep the rest.``
-- `Keep the rest` → keeps every setting not yet asked.
+- Context is one sentence of at most 15 words: the `Or type` line, or its `typed` line when there is no `Or type` line.
+- (A) is the current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a recommended answer that changed a value would turn `a` into a change the user never read. A value with no entry is shown as written.
+- (B) and (C) are the first two other `choices` entries, in schema order, as `- **(<letter>) <label>**: <gives>`.
+- Every remaining `choices` entry, then `Keep the rest`, become typed answers in the `Or type` line: ``Or type `<value>` for <label>, or `rest` to keep the rest.``
+- `Keep the rest` keeps every setting not yet asked.
 - `scope` has no `Keep the rest`.
-- Answer the `Or type` line names → counts as that pick, like a letter.
+- An answer the `Or type` line names counts as that pick, like a letter.
 
 ## Judgment
 
-- Never offer an answer the scripts reject, even when the user typed it: ask that setting again with the accepted values.
+- Offer no answer the scripts reject, even when the user typed it: ask that setting again with the accepted values.
 - The user's typed words outrank the letter they came with.

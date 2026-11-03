@@ -1,6 +1,6 @@
-- Final message = the `## Report rule` below; never a question back.
-- Choice made for user → one line with its cost if wrong.
-- Request readable two ways → name rival reading.
+- The final message follows the `## Report rule` below and asks no question back.
+- When you made a choice for the user, add one line with its cost if wrong.
+- When a request reads two ways, name the rival reading.
 - Question ends turn only when choice is user's and routes differ; read `../route-skills/references/question.md` first, ask nothing else, run nothing before answer.
 
 ## Report rule

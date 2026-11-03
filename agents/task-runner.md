@@ -6,32 +6,33 @@ maxTurns: 90
 omitClaudeMd: true
 experimental: { cacheTtl: 1h }
 ---
+# Plan runner
+
+Land a plan's next block and return one line per task, with no review.
+
 `<skill>` = `${CLAUDE_PLUGIN_ROOT}/skills/build`.
 
 ## Loop
 
 1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots`; read `Landed:`, `Next:`, `Wave:`.
-  - `Next:`/`Wave:` task outside this block → waits on `BLOCKED` one; return each `BLOCKED <n> waits on <m>`.
-  - `PLAN DRIFT` → printed `Then:`; repair → step 3, then step 1; stop → `BLOCKED <n> <path>`.
-  - `BLOCKED input unreadable: <path>` → `BLOCKED <n> <path>`, no repair.
-2. **Take tasks from script output**, never the plan.
-  - `Design:` task → `BLOCKED <n> Design: task`.
-3. **Dispatch the printed block.** Each `Prompt:` verbatim to `exo:build-task` with its `Dispatch:` flag, in one message.
-  - A `Wave:`/`Start:` build runs in the script's `Slot:` worktree; run no `git worktree`; `Wave discarded:` → its `Next:` block builds alone.
-  - Dispatch each build/repair in the foreground, never `run_in_background`; never end the turn while one runs or lands: task-runner gets no completion notification, so its turn end is its return.
-  - Every `Prompt:` is a foreground call returning after each build's report.
-  - Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill likewise.
-  - A build returned with no report gets one SendMessage to write it; still none leaves its slot in place, no cap; never `sleep`.
-  - Landed task → next, no review.
-  - `REFUSED`, repair, context limit, no dispatch tool → first read `<skill>/references/agent-cases.md` `## task-runner`, + `rolling-window.md` if `Slot:`.
-  - Missing report with `Slot:` → first read `rolling-window.md`.
-  - `CONFLICT`, `NEWPATH` → first read `rolling-window.md`, `wave-worktrees.md`.
-  - No `Prompt:` → first read `<skill>/implementer-prompt.md`.
-4. **Commit a green foreground task.** Done = `GREEN`, never your report; else step 3.
-  - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000; last block = next dispatch, not a rerun.
-  - Off-brief return or `no build report at` → SendMessage once (`hooks/session-rules.md`); no SendMessage or second off-brief → fresh agent.
-  - Other refusal → printed `Then:`; fresh `exo:build-task` gets `Prompt:` plus refusal; never rerun a proof.
-  - Writer's `FAIL` → step 3; push nothing.
+  - A task outside this block waits on a `BLOCKED` one; return `BLOCKED <n> waits on <m>`.
+  - On `PLAN DRIFT`, read `Then:`, run step 3 then 1 to repair, or return `BLOCKED <n> <path>` to stop.
+  - On `BLOCKED input unreadable: <path>`, return `BLOCKED <n> <path>`.
+2. **Take tasks from script output**, not the plan.
+  - A `Design:` task returns `BLOCKED <n> Design: task`.
+3. **Dispatch the printed block.** Send each `Prompt:` verbatim to `exo:build-task` with its `Dispatch:` flag, in one message.
+  - A `Wave:`/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone.
+  - Dispatch each `Prompt:`, build or repair as a foreground call returning after each build's report, never `run_in_background`, and keep the turn open while one runs or lands.
+  - Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise.
+  - When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot with no cap and do not `sleep`.
+  - On `REFUSED`, a repair, the context limit or no dispatch tool, read first `<skill>/references/agent-cases.md` `## task-runner`, plus `rolling-window.md` with `Slot:`.
+  - On a missing report with `Slot:`, `CONFLICT` or `NEWPATH`, read `rolling-window.md` first, and `wave-worktrees.md` for the last two.
+  - With no `Prompt:`, read `<skill>/implementer-prompt.md` first.
+4. **Commit a green foreground task.** Done means `GREEN`, not your report; else step 3.
+  - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000: its last block is the next dispatch, not a rerun.
+  - Off-brief return or `no build report at`: send one SendMessage (`hooks/session-rules.md`); lacking it or on a second off-brief return, use a fresh agent.
+  - Other refusal: read printed `Then:`, give a fresh `exo:build-task` the `Prompt:` and the refusal, rerun no proof.
+  - Writer's `FAIL`: go to step 3, push nothing.
   - Loop until every block task has a `LANDED` or `BLOCKED` line.
 
 ## Stop
@@ -41,10 +42,10 @@ experimental: { cacheTtl: 1h }
 
 ## Return
 
-No text between tool calls. At most 8 lines, one per task:
+Write no text between tool calls; return at most 8 lines, one per task:
 
 - `LANDED <n>` plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> NEEDS ANSWER: <question> <report path>` for `NEEDS ANSWER`.
-- `BLOCKED <n> <reason> <report path>` otherwise; `none` without report.
+- `BLOCKED <n> <reason> <report path>` otherwise, `none` without a report.
 
-Before return → TaskStop background shells and agents.
+Before returning, TaskStop background shells and agents.

@@ -76,16 +76,15 @@ function slimContractErrors(relative, body, afterHeading) {
   if (DROPPED_SECTION.test(body)) {
     errors.push(`${relative}: slim skill keeps a Judgment or Red flags section`);
   }
-  const blocks = afterHeading.split(BLANK_LINE);
-  const firstBlock = (blocks[0] ?? '').trim();
   const STEP_START = /^(?:\d+\. |[a-z]\. |- )/;
-  if (!/^## /.test(firstBlock) && !STEP_START.test(firstBlock)) {
+  const startsStructure = (block) => /^## /.test(block) || STEP_START.test(block);
+  const blocks = afterHeading.split(BLANK_LINE).map((block) => block.trim());
+  const goalParagraph = !startsStructure(blocks[0] ?? '');
+  const [firstBlock, nextBlock] = goalParagraph ? blocks.slice(1) : blocks;
+  if (!startsStructure(firstBlock ?? '')) {
     errors.push(`${relative}: slim skill opens on a paragraph instead of a heading or step 1`);
-  } else if (/^## /.test(firstBlock)) {
-    const nextBlock = (blocks[1] ?? '').trim();
-    if (!/^## /.test(nextBlock) && !STEP_START.test(nextBlock)) {
-      errors.push(`${relative}: slim skill's heading opens on a paragraph instead of step 1`);
-    }
+  } else if (/^## /.test(firstBlock) && !startsStructure(nextBlock ?? '')) {
+    errors.push(`${relative}: slim skill's heading opens on a paragraph instead of step 1`);
   }
   if (!REFERENCES_TABLE.test(body)) {
     errors.push(`${relative}: slim skill has no References table`);

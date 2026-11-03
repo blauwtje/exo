@@ -6,10 +6,10 @@ Turn a lesson learned this session into something the next session reads unpromp
 
 ## Append the line, or build the check
 
-- Recurring correction → lint, type, or check before a text line, when the repository can build one.
-- Proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from root `AGENTS.md` (root `CLAUDE.md` when `AGENTS.md` is absent) → append one line there.
-- Neither file present → create nothing.
+- Build a lint, type or check for a recurring correction before writing a text line, when the repository can hold one.
+- When proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from root `AGENTS.md` (root `CLAUDE.md` when `AGENTS.md` is absent), append one line there.
+- When neither file exists, create nothing.
 
 ## Judgment
 
-- Record no session history: progress lives in the working tree and commits, reaching a file only through the context breaker.
+- Record no session history: progress lives in the working tree and commits, and reaches a file only through the context breaker.

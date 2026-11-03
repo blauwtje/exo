@@ -6,12 +6,14 @@ disable-model-invocation: true
 
 # Using exo
 
+This page lists which reference to read before which kind of work, so the rules for code, files and delegates are in context before the first edit.
+
 ## Before acting
 
 The session hook injects the routing rules from `hooks/session-routing.md`.
 
 1. Before a code edit, read `references/lean.md` and `references/code-standard.md`; before creating or moving a file, `references/project-structure.md`.
-2. Running a skill or dispatching a delegate → read `references/context.md` first.
+2. Before running a skill or dispatching a delegate, read `references/context.md`.
 
 # Closing
-Read `references/closing.md` before the final message; never skip it, and ask only as it says.
+Read `references/closing.md` before the final message, and ask only as it says.

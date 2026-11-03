@@ -1,29 +1,29 @@
 # Unit cases
 
-Read on a rare case. Each unit has its own section.
+Read on a rare case. Each unit has its own section, and a **unit** is one delegate that `build` dispatches.
 
 ## task-runner
 
-- Ask the user nothing: a choice or build `BLOCKED` returns `BLOCKED`, question, options.
-- A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`; the lead asks it after the wave and re-dispatches with the answer.
-- Edit, write or commit no file yourself: builds edit, land-task commits.
-- No tool dispatches → return `BLOCKED all nested dispatch unavailable`, alone.
-- A repair → `exo:solve-hard` with the dispatch's `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`; run it in the foreground, never `run_in_background`, and read that report when it returns.
-- A build report that ends on a context limit → fresh `exo:build-task` from the same `Prompt:` plus the report path, same kind and model; no `exo-retry`, no `exo:solve-hard`.
-- Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`.
-- `input unreachable` `Then:` line, or `BLOCKED input unreadable` → return `BLOCKED <n> <path>` with no repair.
+- Ask the user nothing. A choice or a build `BLOCKED` returns `BLOCKED`, the question and the options.
+- A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`. The lead asks it after the wave and re-dispatches with the answer.
+- Leave edits, writes and commits to others: builds edit, land-task commits.
+- When no tool dispatches, return `BLOCKED all nested dispatch unavailable`, alone.
+- Send a repair to `exo:solve-hard` with the dispatch's `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`. Run it in the foreground, because a background run ends the turn early, and read that report when it returns.
+- When a build report ends on a context limit, start a fresh `exo:build-task` from the same `Prompt:` plus the report path, same kind and model, without `exo-retry` or `exo:solve-hard`.
+- Done means `GREEN` from land-task, which runs each `Run:` or `Proof:`, and your own report does not count.
+- On an `input unreachable` `Then:` line, or `BLOCKED input unreadable`, return `BLOCKED <n> <path>` with no repair.
 - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 
 ## build-task
 
-- `Deferred:` brief line names a Proof only the session can run → skip it, write `<command>: deferred`.
-- No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
-- Long task: code each step; green is each `Run:` printing `Expected:`.
+- A `Deferred:` brief line names a Proof only the session can run. Skip it and write `<command>: deferred`.
+- With no `Proof:`, pick or write one test for `Success criterion:`, run only it, and list it first under Proof.
+- In a long task, code each step. Green is each `Run:` printing `Expected:`.
 - Without `Return: one line`, return the report on failure or unfinished work, else:
 
 Task <n>: GREEN
 <each command under Proof>: pass
 Report: <report path>
 
-- Down service → `node ${CLAUDE_PLUGIN_ROOT}/lib/services.mjs --root <checkout>` once, rerun; still down → `BLOCKED <n> ENV`, never edit code.
-- `--check` fails → fix the failure inside `Files:`, rerun at most twice, then `FAIL` with last lines.
+- When a service is down, run `node ${CLAUDE_PLUGIN_ROOT}/lib/services.mjs --root <checkout>` once and rerun. If it is still down, return `BLOCKED <n> ENV` and edit no code.
+- When `--check` fails, fix the failure inside `Files:` and rerun at most twice, then return `FAIL` with the last lines.

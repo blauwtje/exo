@@ -16,7 +16,7 @@ Read a video through its captions on disk, not through the context window. Produ
 
 ## The loop
 
-1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]`, one `--url` per video; add `--lang <code>` only when the user names a language; it picks a listed track, never a machine translation. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
+1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]`, one `--url` per video, and `--lang <code>` only when the user names a language, since it picks a listed track and not a machine translation. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
 2. Exit 1 with `no transcript` → tell the user that video has no transcript and why, as the line says; offer no other route for it.
    - Exit 1 with `available:` → ask which language, rerun with `--lang`.
 3. Line shows `tokens` under 10000 and one video → read `transcript` yourself and answer.

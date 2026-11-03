@@ -36,8 +36,8 @@ test('avoid without a produce sentence fails', () => {
   assert.equal(run('Do the thing well. Avoid stock type.').ok, false);
 });
 
-function runBody(steps) {
-  const body = `---\nname: x\n---\n\n# X\n\n${steps}\n\n## References\n\n| File | Read it when |\n|---|---|\n| \`a.md\` | b |\n\nReport: done.\n`;
+function runBody(steps, goal = '') {
+  const body = `---\nname: x\n---\n\n# X\n\n${goal}${steps}\n\n## References\n\n| File | Read it when |\n|---|---|\n| \`a.md\` | b |\n\nReport: done.\n`;
   const repository = {
     processFiles: () => ['/r/skills/build/SKILL.md'],
     relative: () => 'skills/build/SKILL.md',
@@ -67,4 +67,14 @@ test('single numbered item fails', () => {
   const result = runBody('1. Only.');
   assert.equal(result.ok, false);
   assert.match(String(result.fail), /fewer than 2 items/);
+});
+
+test('goal paragraph before the steps passes', () => {
+  assert.equal(runBody('1. First.\n2. Second.', 'Ship the change safely.\n\n').ok, true);
+});
+
+test('goal paragraph with no steps after it fails', () => {
+  const result = runBody('Only prose.', 'Ship the change safely.\n\n');
+  assert.equal(result.ok, false);
+  assert.match(String(result.fail), /opens on a paragraph/);
 });

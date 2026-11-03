@@ -30,7 +30,7 @@ const sourceLines = readFileSync(new URL('../agents/review-branch.md', import.me
 const judgeLines = (name) => readFileSync(new URL(`../benchmarks/review-judges/${name}.md`, import.meta.url), 'utf8')
   .split('\n').filter((line) => line.trim() !== '');
 const frontmatterEnd = sourceLines.indexOf('---', 1) + 1;
-const focus = { 'plan-fit': [12], standard: [17], tests: [18, 19, 20, 21] };
+const focus = { 'plan-fit': [15], standard: [17], tests: [21, 22, 23] };
 const allFocus = Object.values(focus).flat();
 
 test('every judge body line is a verbatim line of review-branch', () => {

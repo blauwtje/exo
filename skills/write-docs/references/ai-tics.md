@@ -122,6 +122,6 @@ Text serving a second reader need. Fix: move it to its own page or section.
 
 ## Judgment
 
-- Fact, number or term the reader needs outranks every tic fix; a fix that drops it is wrong, whatever tic it clears.
+- A fact, number or term the reader needs outranks every tic fix. A fix that drops it is wrong, whatever tic it clears.
 - Documentation mode decides first: move a sentence to its mode's page before rewording it; a moved sentence may need no fix.
 - Tic inside a quotation, command or code sample stays as written; changed, it no longer matches its source.

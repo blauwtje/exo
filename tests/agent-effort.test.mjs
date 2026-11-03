@@ -90,8 +90,8 @@ test('the session text leaves the dispatch-only rules out', () => {
 
 test('the session text has one TaskStop bullet for the agent notice and one for the final report', () => {
   const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
-  assert.ok(lines.includes('- Agent notice says it still waits on background work → stop it with TaskStop.'));
-  assert.ok(lines.includes('- Before final report → stop every background shell and agent this session started with TaskStop.'));
+  assert.ok(lines.includes('- Stop an agent whose notice says it still waits on background work with TaskStop, since it holds the session open.'));
+  assert.ok(lines.includes('- Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.'));
 });
 
 const TRIGGER_LINES = [
@@ -126,9 +126,9 @@ test('the blanket delegation lines are gone from the session text and the contex
 });
 
 test('the session text has one off-brief return line: a SendMessage correction before any redispatch, fix rounds kept for review findings', () => {
-  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n').filter((l) => l.startsWith('- Off-brief return →'));
+  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n').filter((l) => l.startsWith('- When an agent returns off-brief'));
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /one SendMessage naming the drift .*and the rule it broke; stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `\*\*Fix rounds\.\*\*`\.$/);
+  assert.match(lines[0], /one SendMessage naming the drift .*and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `\*\*Fix rounds\.\*\*`\.$/);
   assert.doesNotMatch(lines[0], /fresh session/);
 });
 
@@ -138,8 +138,9 @@ test('the session text has one Decided for you line within 380 bytes: list shape
   assert.ok(Buffer.byteLength(lines[0] + '\n') <= 380);
   assert.match(lines[0], /up to 5 lines/);
   assert.match(lines[0], /hardest to undo first/);
-  assert.match(lines[0], /irreversible, no safe default/);
-  assert.match(lines[0], /only a number → apply that alternative, no question; unknown number → repeat list/);
+  const text = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
+  assert.match(text, /^- Ask instead when the step is irreversible, has no safe default/m);
+  assert.match(text, /^- Treat a reply of only a number as that alternative without a question, and repeat the list for an unknown number/m);
 });
 
 test('the Codex host note maps TaskStop to killing the process', () => {
