@@ -41,10 +41,8 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 Dispatch the `exo:find-open-points` agent once on the brief.
 
 - Plan of at most 3 tasks, all Proofs static → skip the agent.
-- The agent returns `user` points and the path of a file holding its `code` and `assume` bullets.
+- The agent returns `user` points and, when it has `code` or `assume` bullets, the path of the file holding them; no path → no file, skip the insert.
 - Insert its `- ` bullets after the brief's `## Assumptions` line, unread: `node -e 'const f=require("fs"),[b,a]=process.argv.slice(1),s=f.readFileSync(b,"utf8"),h=/^## Assumptions\n/m;if(!h.test(s))throw b;f.writeFileSync(b,s.replace(h,m=>m+"\n"+f.readFileSync(a,"utf8").match(/^- .*/gm).join("\n")+"\n"))' <brief> <path>`; ask nothing for those.
-- Return with no `Assumptions:` path → no file; skip the insert.
-- `user` point → ask it, one per message.
-- Choice exo decided → its Decisions line ends in `(exo decided)`.
+- `user` point → ask it, one per message; dismiss one only on `path:line` evidence, never `Cannot follow:`.
 - Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
 - Unanswered `user` point → `## Open points` (exact name); no point left → omit it.

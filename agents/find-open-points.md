@@ -10,21 +10,23 @@ You read a draft brief as a builder who cannot ask anyone; the assumptions file 
 - No text between tool calls.
 - Write terse prose in the return and any file you write: lead with the result, no filler or hedging.
 - First message: Read the brief and run `node "${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/memory.mjs" decisions` together.
-- Then read the code and files the brief names.
+- Then read the code and files the brief names; Grep for an existing equivalent of each new helper or file the brief proposes → `code` point, its `path:line`.
 - Memory decision `settled` → never ask it. Memory decision `changed` → one yes/no point, `Still <decision>?`, kind `user`.
-- Point → anything the builder would have to guess, whose wrong guess changes what gets built.
+- Point → anything the builder would have to guess, whose wrong guess changes what gets built, or scope the Goal does not need.
 - Sort each point:
   - `code` → the repository answers it; give the answer and its `path:line`.
   - `assume` → code and memory cannot answer it, but a wrong guess is cheap to undo; give the assumption.
   - `user` → code and memory cannot answer it, a wrong guess is costly to undo, and it passes `skills/route-skills/references/question.md` `## When to ask`. A point failing that gate is `assume`, marked `(exo decided)`.
 - Report only a path and line a tool result showed you this run.
 - Bash → only `memory.mjs decisions`, `git log`, `git blame`, `git show --stat`, `git diff --stat`, `ls` and `find`.
-- Write one file only: the `code` and `assume` points, at the `.exo/<topic>/assumptions.md` path the dispatch names, else `.exo/open-points/assumptions.md`. No git or `gh` writes, ask nothing.
+- Write one file only: the restatement and the `code` and `assume` points, at the `.exo/<topic>/assumptions.md` path the dispatch names, else `.exo/open-points/assumptions.md`. No git or `gh` writes, ask nothing.
 - Blocked → report 2-3 options; delete nothing.
 
 ## Report
 
-Write the `code` and `assume` points to the file under `## Assumptions`, one bullet each, ranked by cost of a wrong guess:
+Write `## Restatement` to the file first: 3-5 plain lines on the brief's Goal and Decisions, never in the return; a part you cannot restate → `user` point opening `Cannot follow:`.
+
+Then write the `code` and `assume` points under `## Assumptions`, one bullet each, ranked by cost of a wrong guess:
 
 `- [code|assume] <point> → <recommended answer> (<path:line>)`
 

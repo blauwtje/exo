@@ -148,6 +148,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   let unread = 0;
   let unreadFix = 0;
   let verdict = 'CLEAN';
+  const settled = new Set(root === null ? [] : ledgerRows(root).filter((row) => row.state === 'reported').map(findingKey));
   const sections = [];
   const shown = [];
   const findings = [];
@@ -172,7 +173,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
       const outOfScope = match[1] === 'out-of-scope';
       const parsed = parseFinding(line);
       let reported = match[2] !== 'fix';
-      const detailed = !reported && !outOfScope && hasFixDetails(lines, index, name);
+      const detailed = !reported && !outOfScope && !settled.has(findingKey(parsed)) && hasFixDetails(lines, index, name);
       const unquoted = detailed && name !== MECHANICAL_REPORT && root !== null && quoteAbsent(lines[index + 4], parsed.path, root);
       if (detailed && !unquoted) {
         counts.fix += 1;
@@ -220,7 +221,7 @@ function main(argv) {
   for (const { now, before } of recurring) {
     process.stdout.write(`BLOCKED recurring ${now.rule} ${now.path}\n  ${reading(before)}\n  ${reading({ ...now, round })}\n`);
   }
-  if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe:, Class: and Sweep: lines under them\n`);
+  if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe:, Class: and Sweep: lines under them, or already reported\n`);
   for (const location of quoteDemoted) process.stdout.write(`DEMOTED-QUOTE ${location}\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
   for (const line of shown) process.stdout.write(`FINDING ${line}\n`);

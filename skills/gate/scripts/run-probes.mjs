@@ -43,14 +43,15 @@ function runProbe(command, root, { sweep = false } = {}) {
   return { passed, output: result.error ? `${result.error.message}\n${output}` : output };
 }
 
-function ledgerFixed(finding, root) {
+function ledgerState(finding, state, root) {
   const parsed = parseFinding(finding);
-  if (parsed !== null) appendLedger(root, [{ ...parsed, state: 'fixed' }], latestRound(root));
+  if (parsed !== null) appendLedger(root, [{ ...parsed, state }], latestRound(root));
 }
 
 export function runProbes(report, root) {
   const lines = [];
   let allPassed = true;
+  for (const { finding, mark } of findingBlocks(report)) if (mark?.state === 'reported') ledgerState(finding, 'reported', root);
   for (const { finding, command, sweep, unmarked } of fixedProbes(report)) {
     if (command === null) {
       lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding: add its Probe: line, or mark reported: <reason> when no commit repaired it'}): ${finding}`);
@@ -62,7 +63,7 @@ export function runProbes(report, root) {
     const swept = probe.passed && sweep !== null ? runProbe(sweep, root, { sweep: true }) : null;
     if (swept !== null) lines.push(`${swept.passed ? 'PASS' : 'FAIL'} probe (sweep ${sweep}): ${finding}`);
     const failed = [probe, swept].filter((result) => result !== null && !result.passed);
-    if (failed.length === 0) ledgerFixed(finding, root);
+    if (failed.length === 0) ledgerState(finding, 'fixed', root);
     for (const { output } of failed) if (output) lines.push(output);
     if (failed.length > 0) allPassed = false;
   }

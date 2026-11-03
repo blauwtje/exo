@@ -97,7 +97,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/wave-worktrees.md': 920,
   'skills/build/run-task-prompt.md': 788,
   'skills/ship/references/pr-prep.md': 772,
-  'skills/spec/references/brief.md': 909,
+  'skills/spec/references/brief.md': 905,
   'skills/spec/references/task-list.md': 903,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits

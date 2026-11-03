@@ -37,6 +37,18 @@ test('an out-of-scope finding beside a defect leaves the defect to set the verdi
   assert.equal(merged.counts.defect, 1);
 });
 
+test('a fix finding whose rule@path has a reported ledger row is demoted to report', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-'));
+  fs.mkdirSync(path.join(root, '.exo'));
+  const row = { round: 1, rule: 'swallowed failure', path: 'lib/b.mjs', range: '1-2', weight: 'defect', state: 'reported', head: null };
+  fs.writeFileSync(path.join(root, '.exo', 'review-ledger.jsonl'), `${JSON.stringify(row)}\n`);
+  const fix = (file) => ['FINDINGS', `${file}:3-4; defect; swallowed failure; catch drops error; fix`, '  Probe: true', '  Class: swallowed failure', '  Sweep: true', ''].join('\n');
+  const merged = mergeReviews([{ name: 'review-branch', text: fix('lib/b.mjs') }], new Map(), null, root);
+  assert.equal(merged.counts.fix, 0);
+  assert.equal(merged.findings[0].state, 'reported');
+  assert.equal(mergeReviews([{ name: 'review-branch', text: fix('lib/c.mjs') }], new Map(), null, root).counts.fix, 1);
+});
+
 test('parseFinding reads the out-of-scope weight', () => {
   assert.equal(parseFinding(SCOPE_LINE).weight, 'out-of-scope');
 });
