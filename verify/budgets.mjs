@@ -95,7 +95,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   // autonomous-exo-5 Task 10; their older rules stay whole.
   'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 920,
-  'skills/build/run-task-prompt.md': 788,
+  'skills/build/run-task-prompt.md': 756,
   'skills/ship/references/pr-prep.md': 772,
   'skills/spec/references/brief.md': 905,
   'skills/spec/references/task-list.md': 903,

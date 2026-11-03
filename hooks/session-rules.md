@@ -15,6 +15,6 @@
 - Long task → plan and progress in `.exo/<topic>/progress.md`.
 - Agent notice says it still waits on background work → stop it with TaskStop.
 - Before final report → stop every background shell and agent this session started with TaskStop.
-- Web page or large file to read → `fetch-docs` agent for the page, grep for the lines in the lead, never the whole file.
+- Large file → grep its lines in the lead, never Read it whole.
 - Off-brief return → one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke; stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
 - Choice with a safe default → take it, end the reply with `**Decided for you**`, then up to 5 lines `1. <choice>; reply \`1\` for <alternative>`, hardest to undo first; irreversible, no safe default, or only user's account or eyes can settle → ask. Reply of only a number → apply that alternative, no question; unknown number → repeat list.

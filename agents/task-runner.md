@@ -23,7 +23,7 @@ experimental: { cacheTtl: 1h }
   - Land each returned slot via `Land <n>:`, all via `Land all:`; a `LANDED` refill block likewise.
   - A returned build with no report is resumed once with SendMessage to write it; still none leaves its slot in place, no cap; never a `sleep` command.
   - Landed task → next, no review.
-  - `REFUSED`, `CONFLICT`, `NEWPATH`, missing report, repair, context limit, no dispatch tool or no `Prompt:` → read `<skill>/references/` `rolling-window.md`, `wave-worktrees.md`, `agent-cases.md` `## task-runner`, `<skill>/implementer-prompt.md` first.
+  - Read `REFUSED`, repair, context limit, no dispatch tool → `<skill>/references/agent-cases.md` `## task-runner`, + `rolling-window.md` if `Slot:`; `CONFLICT`, `NEWPATH` → `rolling-window.md`, `wave-worktrees.md`; no `Prompt:` → `<skill>/implementer-prompt.md`.
 4. **Commit a green foreground task.** Done = `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000; last block = next dispatch, not a rerun.
   - Off-brief return or `no build report at` → SendMessage once (`hooks/session-rules.md`); no SendMessage or second off-brief → fresh agent.

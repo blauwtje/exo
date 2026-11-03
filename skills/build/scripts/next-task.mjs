@@ -240,6 +240,7 @@ function promptLines(task, frame, planPath, checkout, briefPath) {
     'Prompt:',
     `Task ${task.number} of ${planPath}, branch ${frame.branch ?? 'none'}, checkout ${checkout}.`,
     `Read your brief at ${briefPath}.`,
+    ...(task.files.length > 0 && task.files.every((file) => file.path.endsWith('.md')) ? ['Code rules: none'] : []),
     `Report to: ${path.join(checkout, '.exo', `implementer-${task.number}.md`)}`,
     'Return: one line'
   ];

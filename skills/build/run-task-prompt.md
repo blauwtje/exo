@@ -12,11 +12,11 @@ Brief:
 Rules:
 - Work in [[root]], with that path literally.
 - Run one command per Bash call, exactly as the plan writes it; add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
-- Create and change files only with the Write and Edit tools, not a heredoc or a redirect; read with Read.
+- Create and change files only with the Write and Edit tools; read with Read.
 - Run at most one test inside this session.
 - Send build and test output to `.exo/logs/<name>.log`; read only the summary and failing lines.
 - After the first red Proof, rerun it at most once per edit.
-- A test or command your sandbox or permission rules refuse is not a block: never end `[[task]]: BLOCKED` on one; report it as `not run`, not `failed`. A test writing outside the run folder fails EPERM; never rerun it, land-task's Proof runs it outside.
+- A test or command your sandbox or permission rules refuse is not a block: never end `[[task]]: BLOCKED` on one; report it as `not run`, not `failed`.
 - Write no report file. The report, at most 25 lines, is the reply text above the last line: what landed, the proof output, `Unresolved:`.
 - Change only the files the task lists. A registry, index or test list that must name a new file and is not listed → end on `[[task]]: BLOCKED <file> is missing from the file list`.
 - Test-first when the task is risky or a fix: see the failing test first, then make it pass. Never delete, skip or loosen a test.

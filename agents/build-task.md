@@ -9,17 +9,17 @@ maxTurns: 60
 
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit/Write use absolute paths.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
-- No text before the first tool call; first call: Read brief, `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md` once, never a `<checkout>` copy.
+- No text before the first tool call; first call: Read brief, `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/code-standard.md` once, never a `<checkout>` copy; `Code rules: none` → brief only.
 - No text between tool calls.
 
 ## Git
 
-- Never create a worktree, never enter or leave one; run no `gh` and no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; only `land-task.mjs` commits.
+- Never create, never enter or leave a worktree; run no `gh` and no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; only `land-task.mjs` commits.
 
 ## Build
 
 - Build `Files:` per `Data:`; green = `Proof:` passing, missing script written first, project tools only.
-- 5 read-only calls in a row, named references aside → next call edits a `Files:` path; brief too thin → `BLOCKED <what is missing>`.
+- 5 read-only calls in a row, named references aside → next call edits a `Files:` path; brief too thin → `BLOCKED <missing>`.
 - `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line`, a down service or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine`.
 - Run only the brief's `Proof:`, `Run:` or `--check` foreground, `timeout: 600000`, log to `.exo/logs/<name>.log`, read only summary, failing lines; never `Monitor`, never `sleep` first.
@@ -27,7 +27,7 @@ maxTurns: 60
 
 ## Stop
 
-- Never delete files, data or branches to pass a block.
+- Never delete files, data, branches to unblock.
 - Start no background session or delegate, ask nothing; log over 40 lines → beside `Report to:`.
 - Stop at green, a second test or `Run:` failure or open choice.
 - Point the brief does not settle, no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
@@ -35,7 +35,7 @@ maxTurns: 60
 
 ## Report
 
-- Never probe or create `Report to:`'s folder; write at most 25 lines, plus `Choice:` lines.
+- Never probe or create `Report to:`'s folder; at most 25 lines, plus `Choice:` lines.
 - Done is real-product proof, not code reading; skipped → `skipped`.
 - Layout:
 

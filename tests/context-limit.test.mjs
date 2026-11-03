@@ -175,10 +175,12 @@ test('a subagent past the soft limit is told to hand over through its result fil
     fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
     return file;
   };
-  const call = (tokens, tool_name) => contextDecision({ session_id: 'a', agent_id: 'a1', agent_transcript_path: at(tokens), tool_name });
+  const agent_id = `a${process.pid}${Date.now()}`;
+  const call = (tokens, tool_name) => contextDecision({ session_id: 'a', agent_id, agent_transcript_path: at(tokens), tool_name });
   const soft = call(softLimit(contextLimit()) + 1000, 'Bash');
   assert.match(soft.additionalContext, /exo context limit/);
   assert.match(soft.additionalContext, /result file/);
+  assert.equal(call(softLimit(contextLimit()) + 1000, 'Bash'), null);
   const hard = call(contextLimit() + 1000, 'Bash');
   assert.match(hard.deny, /Write is still allowed/);
   assert.match(hard.deny, /result file/);
