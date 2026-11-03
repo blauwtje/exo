@@ -14,7 +14,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // hooks/session-start.mjs injects only this context: the pointers, the settings line
 // and the text of hooks/session-routing.md and hooks/session-rules.md, which stays far under the cap.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 2711, measured: '2026-11-02' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 2764, measured: '2026-11-03' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 // Lowered 803 -> 510 when the nine dispatched-only agents got short descriptions (round 2 merge).
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20' };

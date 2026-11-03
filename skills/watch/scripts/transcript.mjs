@@ -1,22 +1,25 @@
 #!/usr/bin/env node
 
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
+import { transcribe } from './speech.mjs';
 
-const SPEC = { url: 'list', lang: 'string', out: 'string', 'chunk-minutes': 'string', 'stamp-seconds': 'string', help: 'boolean' };
+const SPEC = { url: 'list', lang: 'string', model: 'string', out: 'string', 'chunk-minutes': 'string', 'stamp-seconds': 'string', help: 'boolean' };
 const USAGE = [
-  'usage: node transcript.mjs --url <url-or-id> [--url <url-or-id> ...] [--lang <code>] [--out <dir>] [--chunk-minutes <n>] [--stamp-seconds <n>]',
-  'Fetches the captions of each YouTube video with Node alone and writes <out>/<id>/raw.xml and transcript.txt; a video longer than twice the chunk window also gets chunks/NN.txt.',
+  'usage: node transcript.mjs --url <url-or-id> [--url <url-or-id> ...] [--lang <code>] [--model <name-or-path>] [--out <dir>] [--chunk-minutes <n>] [--stamp-seconds <n>]',
+  'Fetches the captions of each YouTube video, or of a TikTok, Instagram, Facebook, X or other video url through yt-dlp, with Node alone for YouTube and writes <out>/<id>/raw.xml and transcript.txt; a video longer than twice the chunk window also gets chunks/NN.txt.',
   'When YouTube refuses the request and yt-dlp is already on PATH, yt-dlp reads the captions instead (raw.vtt); nothing is ever installed.',
+  'A video with no captions is transcribed locally from its audio: yt-dlp downloads it, ffmpeg converts it, and whisper-cli (when --model names an existing ggml file) or whisper writes raw.vtt; --lang then names the spoken language. EXO_WATCH_TRANSCRIBE_MS sets the wait for ffmpeg and the engine (default 1800000).',
   'Prints one line per video: id, title, duration, caption source, words, token estimate, paths. The transcript itself is never printed.',
   'Defaults: --out .exo/watch, --chunk-minutes 30, --stamp-seconds 45, --lang the language of the video\'s default audio (manual captions first, else automatic). EXO_WATCH_FETCH_MS sets the wait per request (default 30000); EXO_WATCH_YTDLP_MS sets the wait per yt-dlp call (default 120000).',
   'Exit codes: 0 every video done; 1 a video has no transcript (the message says why) or its language is missing; 2 bad usage.',
 ].join('\n');
 
-const DEFAULTS = { out: '.exo/watch', chunkMinutes: 30, stampSeconds: 45, fetchMs: 30000, ytDlpMs: 120000 };
+const DEFAULTS = { out: '.exo/watch', chunkMinutes: 30, stampSeconds: 45, fetchMs: 30000, ytDlpMs: 120000, transcribeMs: 1800000 };
 const TOKENS_PER_WORD = 1.3;
 const HOUR = 3600;
 const LAST_CODE_POINT = 0x10ffff;
@@ -242,9 +245,15 @@ class Unreadable extends Error {
   }
 }
 
+const SCHEME = /^[a-z][a-z\d+.-]*:/i;
+
+function hasScheme(text) {
+  return SCHEME.test(text) && text.slice(text.indexOf(':')).startsWith('://');
+}
+
 function urlOf(text) {
   try {
-    return new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(text) ? text : `https://${text}`);
+    return new URL(hasScheme(text) ? text : `https://${text}`);
   } catch {
     return null;
   }
@@ -455,16 +464,31 @@ async function readCaptions(track, fetchFn, options) {
   return { xml, cues };
 }
 
+async function watchBySpeech({ label, url, dir, head, details, why }, options) {
+  const speech = await transcribe(url, dir, { ...options, runYtDlp: runYtDlpWithRuntime, ytDlpReason });
+  const lead = why ? `${why}; ` : '';
+  if (speech.missing) return noTranscript(label, `${lead}the video has no captions, and transcribing its audio needs ${speech.missing}, then rerun`);
+  if (speech.failure) return noTranscript(label, `${lead}the video has no captions, and ${speech.failure}`);
+  const cues = parseVtt(fs.readFileSync(speech.vtt, 'utf8'));
+  if (cues.length === 0) return noTranscript(label, 'no speech found in the audio');
+  const duration = details.duration > 0 ? details.duration : Math.ceil(cues.at(-1).start);
+  const chapters = details.chapters(duration);
+  return writeOutputs({ dir, cues, duration, chapters, head, captions: `speech:${speech.engine}` }, options);
+}
+
 async function watchDirect(id, options, fetchFn) {
   const [player, page] = await Promise.all([fetchPlayer(id, fetchFn, options), fetchWatchPage(id, fetchFn, options)]);
   checkPlayable(player);
   const tracks = tracksOf(player);
   const head = headOf(id, player.videoDetails?.title);
-  if (tracks.length === 0) return noTranscript(id, 'the video has no captions, manual or automatic');
+  const lengthSeconds = Number(player.videoDetails?.lengthSeconds);
+  if (tracks.length === 0) {
+    const details = { duration: lengthSeconds, chapters: (duration) => chaptersFromHtml(page, duration) };
+    return watchBySpeech({ label: id, url: `${WATCH_URL}${id}`, dir: path.join(options.out, id), head, details }, options);
+  }
   const track = pickTrack(tracks, options.lang, defaultLanguage(player));
   if (!track) return languageFailure(id, options.lang, languagesOf(tracks));
   const { xml, cues } = await readCaptions(track, fetchFn, options);
-  const lengthSeconds = Number(player.videoDetails?.lengthSeconds);
   const duration = lengthSeconds > 0 ? lengthSeconds : Math.ceil(cues.at(-1).start);
   const dir = path.join(options.out, id);
   fs.mkdirSync(dir, { recursive: true });
@@ -473,36 +497,77 @@ async function watchDirect(id, options, fetchFn) {
   return writeOutputs({ dir, cues, duration, chapters: chaptersFromHtml(page, duration), head, captions }, options);
 }
 
-async function watchWithYtDlp(id, options, why) {
-  const url = `${WATCH_URL}${id}`;
+function idSuffix(id) {
+  if (!/[A-Z]/.test(id)) return '';
+  return `-${createHash('sha1').update(id).digest('hex').slice(0, 8)}`;
+}
+
+function folderOf(info) {
+  const name = `${info.extractor_key.toLowerCase()}-${info.id}`.replace(/[^\w-]/g, '-');
+  return `${name}${idSuffix(info.id)}`;
+}
+
+function ytDlpFailure(why, reason) {
+  return why ? `${why}; yt-dlp failed too: ${reason}` : `yt-dlp failed: ${reason}`;
+}
+
+async function watchWithYtDlp({ id, url }, options, why) {
+  const label = id ?? url;
   const meta = await runYtDlpWithRuntime(['-J', '--no-playlist', '--no-warnings', '--', url], options.ytDlpMs);
-  if (meta.error) return noTranscript(id, `${why}; yt-dlp failed too: ${ytDlpReason(meta, options)}`);
-  const info = JSON.parse(meta.stdout);
+  if (meta.error) return noTranscript(label, ytDlpFailure(why, ytDlpReason(meta, options)));
+  const answer = JSON.parse(meta.stdout);
+  const info = answer._type === 'playlist' ? answer.entries[0] : answer;
+  if (!info) return noTranscript(label, ytDlpFailure(why, 'it found no video'));
+  const folder = id ?? folderOf(info);
   const picked = pickCaptions(info, options.lang);
-  if (!picked && options.lang) return languageFailure(id, options.lang, availableLanguages(info));
-  if (!picked) return noTranscript(id, `${why}; yt-dlp found no captions either`);
-  const dir = path.join(options.out, id);
+  const available = availableLanguages(info);
+  if (!picked && options.lang && available.length > 0) return languageFailure(folder, options.lang, available);
+  const dir = path.join(options.out, folder);
+  if (!picked) {
+    const details = { duration: info.duration, chapters: () => chaptersOf(info) };
+    return watchBySpeech({ label: folder, url, dir, head: headOf(folder, info.title), details, why }, options);
+  }
   fs.mkdirSync(dir, { recursive: true });
   const flag = picked.source === 'manual' ? '--write-subs' : '--write-auto-subs';
-  const download = await runYtDlpWithRuntime(['--skip-download', flag, '--sub-langs', picked.key, '--sub-format', 'vtt', '--no-warnings', '-P', dir, '-o', '%(id)s.%(ext)s', '--', url], options.ytDlpMs);
-  const vttName = fs.readdirSync(dir).find((name) => name.startsWith(`${id}.`) && name.endsWith('.vtt'));
-  if (!vttName) return noTranscript(id, `${why}; yt-dlp wrote no ${picked.key} captions: ${ytDlpReason(download, options)}`);
+  const download = await runYtDlpWithRuntime(['--skip-download', flag, '--sub-langs', picked.key, '--sub-format', 'vtt', '--no-warnings', '--no-playlist', '--playlist-items', '1', '-P', dir, '-o', '%(id)s.%(ext)s', '--', url], options.ytDlpMs);
+  const vttName = fs.readdirSync(dir).find((name) => name.startsWith(`${info.id}.`) && name.endsWith('.vtt'));
+  if (!vttName) return noTranscript(folder, `${why ? `${why}; ` : ''}yt-dlp wrote no ${picked.key} captions: ${ytDlpReason(download, options)}`);
   const raw = path.join(dir, 'raw.vtt');
   fs.renameSync(path.join(dir, vttName), raw);
   const cues = parseVtt(fs.readFileSync(raw, 'utf8'), { auto: picked.source === 'auto' });
   const duration = info.duration ?? Math.ceil(cues.at(-1)?.start ?? 0);
-  return writeOutputs({ dir, cues, duration, chapters: chaptersOf(info), head: headOf(id, info.title), captions: `${picked.source}:${picked.key}` }, options);
+  return writeOutputs({ dir, cues, duration, chapters: chaptersOf(info), head: headOf(folder, info.title), captions: `${picked.source}:${picked.key}` }, options);
+}
+
+export function sourceOf(input) {
+  const text = String(input).trim();
+  const id = videoIdOf(text);
+  if (id) return { id };
+  const url = urlOf(text);
+  if (!url || !/^https?:$/.test(url.protocol)) return null;
+  if (!hasScheme(text) && (!url.hostname.includes('.') || url.username || url.password)) return null;
+  if (YOUTUBE_HOST.test(url.hostname) || url.hostname === 'youtu.be') return null;
+  return { url: url.href, host: url.hostname };
+}
+
+async function watchSite({ url, host }, options) {
+  if (!(await ytDlpAvailable(options.ytDlpMs))) {
+    return noTranscript(url, `reading ${host} videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun`);
+  }
+  return watchWithYtDlp({ url }, options);
 }
 
 export async function watchOne(input, options, fetchFn = globalThis.fetch) {
-  const id = videoIdOf(input);
-  if (!id) return { failure: `${input}: not a YouTube url or an 11-character video id` };
+  const source = sourceOf(input);
+  if (!source) return { failure: `${input}: not a video url or an 11-character YouTube id` };
+  if (!source.id) return watchSite(source, options);
+  const { id } = source;
   try {
     return await watchDirect(id, options, fetchFn);
   } catch (error) {
     if (!(error instanceof Unreadable)) throw error;
     if (!error.retryable || !(await ytDlpAvailable(options.ytDlpMs))) return noTranscript(id, error.message);
-    return watchWithYtDlp(id, options, error.message);
+    return watchWithYtDlp({ id, url: `${WATCH_URL}${id}` }, options, error.message);
   }
 }
 
@@ -515,11 +580,13 @@ function readOptions(flags) {
   return {
     urls,
     lang: flags.lang,
+    model: flags.model,
     out: path.resolve(flags.out ?? DEFAULTS.out),
     chunkMinutes: Number(flags['chunk-minutes'] ?? DEFAULTS.chunkMinutes),
     stampSeconds: Number(flags['stamp-seconds'] ?? DEFAULTS.stampSeconds),
     fetchMs: environmentMs('EXO_WATCH_FETCH_MS', DEFAULTS.fetchMs),
     ytDlpMs: environmentMs('EXO_WATCH_YTDLP_MS', DEFAULTS.ytDlpMs),
+    transcribeMs: environmentMs('EXO_WATCH_TRANSCRIBE_MS', DEFAULTS.transcribeMs),
   };
 }
 

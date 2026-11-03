@@ -423,13 +423,14 @@ async function withoutYtDlp(work) {
   }
 }
 
-test('a video with no caption tracks reports no transcript', async () => {
-  const { options } = scratch();
-  const result = await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn);
-  assert.match(result.failure, NO_TRANSCRIPT);
-  assert.match(result.failure, /no captions, manual or automatic/);
-  assert.equal(result.line, undefined);
-  assert.ok(!fs.existsSync(path.join(options.out, ID)));
+test('a video with no caption tracks and no tools reports no transcript', async () => {
+  await withoutYtDlp(async ({ options }) => {
+    const result = await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn);
+    assert.match(result.failure, NO_TRANSCRIPT);
+    assert.match(result.failure, /no captions, and transcribing its audio needs yt-dlp on PATH/);
+    assert.equal(result.line, undefined);
+    assert.ok(!fs.existsSync(path.join(options.out, ID)));
+  });
 });
 
 test('LOGIN_REQUIRED, an unavailable video, a 429 and an unreachable network report no transcript', async () => {
@@ -580,6 +581,7 @@ test('yt-dlp reads the captions when the fetch is refused and yt-dlp is on PATH'
     assert.equal(readText(path.join(options.out, OTHER_ID, 'transcript.txt')), MANUAL_TEXT);
     const fetchCall = callLog(dir).find((args) => args.includes('--skip-download'));
     assert.ok(fetchCall.includes('--write-subs'));
+    assert.equal(fetchCall[fetchCall.indexOf('--playlist-items') + 1], '1');
     assert.deepEqual(fetchCall.slice(-2), ['--', `https://www.youtube.com/watch?v=${OTHER_ID}`]);
   });
 });
@@ -634,7 +636,7 @@ test('yt-dlp failing too reports no transcript with both reasons', async () => {
   await withFakeYtDlp({ ...YT_INFO, subtitles: {}, automatic_captions: {} }, async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
     const result = await watchOne(OTHER_ID, options, fakeFetch({ player: bot }).fn);
-    assert.match(result.failure, /^xyz98765432: no transcript: YouTube asks this network to sign in.*; yt-dlp found no captions either$/s);
+    assert.match(result.failure, /^xyz98765432: no transcript: YouTube asks this network to sign in.*; the video has no captions, and transcribing its audio needs ffmpeg on PATH; install it with 'brew install ffmpeg', then rerun$/s);
   });
 });
 
@@ -654,7 +656,7 @@ test('a bad url exits 1 with a line on stderr and prints nothing on stdout', () 
   const result = run(['--url', `${ID}";touch pwned;"`]);
   assert.equal(result.status, 1);
   assert.equal(result.stdout, '');
-  assert.match(result.stderr, /not a YouTube url or an 11-character video id/);
+  assert.match(result.stderr, /not a video url or an 11-character YouTube id/);
 });
 
 test('usage errors exit 2 and --help exits 0 without naming an install line', () => {
@@ -665,4 +667,34 @@ test('usage errors exit 2 and --help exits 0 without naming an install line', ()
   assert.equal(help.status, 0);
   assert.match(help.stdout, /usage: node transcript\.mjs/);
   assert.doesNotMatch(help.stdout, /brew|pip install|parakeet/);
+});
+
+test('a non-YouTube url goes to yt-dlp and lands in an extractor-id folder', async () => {
+  const info = { ...YT_INFO, id: 'a.b', extractor_key: 'TikTok' };
+  await withFakeYtDlp(info, async ({ options }) => {
+    const result = await watchOne('https://www.tiktok.com/@u/video/1', options, async () => { throw new Error('network'); });
+    assert.equal(result.failure, undefined);
+    assert.match(result.line, /^id=tiktok-a-b /);
+    assert.equal(readText(path.join(options.out, 'tiktok-a-b', 'transcript.txt')), MANUAL_TEXT);
+  });
+});
+
+test('ids that differ only in case land in separate folders on disk', async () => {
+  await withFakeYtDlp({ ...YT_INFO, id: 'AbC', extractor_key: 'Instagram' }, async ({ dir, options }) => {
+    const url = 'https://www.instagram.com/reel/AbC/';
+    await watchOne(url, options, async () => { throw new Error('network'); });
+    fs.writeFileSync(path.join(dir, 'info.json'), JSON.stringify({ ...YT_INFO, id: 'abc', extractor_key: 'Instagram' }));
+    await watchOne(url, options, async () => { throw new Error('network'); });
+    const folders = fs.readdirSync(options.out);
+    assert.equal(folders.length, 2);
+    assert.ok(folders.includes('instagram-abc'));
+  });
+});
+
+test('a non-YouTube url without yt-dlp on PATH names the install line', async () => {
+  const { options } = scratch();
+  const saved = process.env.PATH;
+  process.env.PATH = '';
+  const result = await watchOne('https://www.tiktok.com/@u/video/1', options).finally(() => { process.env.PATH = saved; });
+  assert.match(result.failure, /: no transcript: reading www\.tiktok\.com videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
 });
