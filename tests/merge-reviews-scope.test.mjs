@@ -37,16 +37,29 @@ test('an out-of-scope finding beside a defect leaves the defect to set the verdi
   assert.equal(merged.counts.defect, 1);
 });
 
-test('a fix finding whose rule@path has a reported ledger row is demoted to report', () => {
+const settledFix = (file) => ['FINDINGS', `${file}:3-4; defect; swallowed failure; catch drops error; fix`, '  Probe: true', '  Class: swallowed failure', '  Sweep: true', ''].join('\n');
+
+function rootWithRow(state) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-'));
   fs.mkdirSync(path.join(root, '.exo'));
-  const row = { round: 1, rule: 'swallowed failure', path: 'lib/b.mjs', range: '1-2', weight: 'defect', state: 'reported', head: null };
+  const row = { round: 1, rule: 'swallowed failure', path: 'lib/b.mjs', range: '1-2', weight: 'defect', state, head: null };
   fs.writeFileSync(path.join(root, '.exo', 'review-ledger.jsonl'), `${JSON.stringify(row)}\n`);
-  const fix = (file) => ['FINDINGS', `${file}:3-4; defect; swallowed failure; catch drops error; fix`, '  Probe: true', '  Class: swallowed failure', '  Sweep: true', ''].join('\n');
-  const merged = mergeReviews([{ name: 'review-branch', text: fix('lib/b.mjs') }], new Map(), null, root);
+  return root;
+}
+
+test('a fix finding whose rule@path has a declined ledger row is demoted to report and named', () => {
+  const root = rootWithRow('declined');
+  const merged = mergeReviews([{ name: 'review-branch', text: settledFix('lib/b.mjs') }], new Map(), null, root);
   assert.equal(merged.counts.fix, 0);
+  assert.equal(merged.demoted, 0);
+  assert.deepEqual(merged.settledDemoted, ['lib/b.mjs:3-4']);
   assert.equal(merged.findings[0].state, 'reported');
-  assert.equal(mergeReviews([{ name: 'review-branch', text: fix('lib/c.mjs') }], new Map(), null, root).counts.fix, 1);
+  assert.equal(mergeReviews([{ name: 'review-branch', text: settledFix('lib/c.mjs') }], new Map(), null, root).counts.fix, 1);
+});
+
+test('a reported ledger row written by merge leaves a later detailed fix finding at fix', () => {
+  const merged = mergeReviews([{ name: 'review-branch', text: settledFix('lib/b.mjs') }], new Map(), null, rootWithRow('reported'));
+  assert.equal(merged.counts.fix, 1);
 });
 
 test('parseFinding reads the out-of-scope weight', () => {

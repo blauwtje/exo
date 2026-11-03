@@ -9,7 +9,7 @@ In this order:
 - **Goal:** the observable result, in one sentence.
 - **Decisions:** every bin-1 decision with its answer, closed by you, the code with its settling path, or exo for a second "I don't know" or small work; a choice exo made ends in `(exo decided)`.
 - **Non-goals:** what a reader would assume is included, one bullet each naming its paths; none → omit.
-- **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
+- **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it, build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
 - **Acceptance:** the observable checks and the highest seam running them, the one closest to what the user does; each item cites a task number, a `Data:` segment or the Success criterion, else it is a Manual check.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; the run report holds them, not the final message.
@@ -20,7 +20,7 @@ In this order:
 
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
 
-- `docs` → `docs/specs/<topic>.md`, which is gitignored and stays local and uncommitted, never `git add`ed; plan mode → the harness plan file.
+- `docs` → `docs/specs/<topic>.md`, gitignored, never `git add`ed; plan mode → the harness plan file.
 
 ## The task list
 
@@ -41,8 +41,10 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 Dispatch the `exo:find-open-points` agent once on the brief.
 
 - Plan of at most 3 tasks, all Proofs static → skip the agent.
-- The agent returns `user` points and, when it has `code` or `assume` bullets, the path of the file holding them; no path → no file, skip the insert.
-- Insert its `- ` bullets after the brief's `## Assumptions` line, unread: `node -e 'const f=require("fs"),[b,a]=process.argv.slice(1),s=f.readFileSync(b,"utf8"),h=/^## Assumptions\n/m;if(!h.test(s))throw b;f.writeFileSync(b,s.replace(h,m=>m+"\n"+f.readFileSync(a,"utf8").match(/^- .*/gm).join("\n")+"\n"))' <brief> <path>`; ask nothing for those.
-- `user` point → ask it, one per message; dismiss one only on `path:line` evidence, never `Cannot follow:`.
-- Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
+- `Assumptions: <path>` line → insert its `- ` bullets after the brief's `## Assumptions` line, unread: `node -e 'const f=require("fs"),[b,a]=process.argv.slice(1),s=f.readFileSync(b,"utf8"),h=/^## Assumptions\n/m;if(!h.test(s))throw b;f.writeFileSync(b,s.replace(h,m=>m+"\n"+f.readFileSync(a,"utf8").match(/^- .*/gm).join("\n")+"\n"))' <brief> <path>`; no line → no insert.
+- `Cannot follow:` line → rewrite that part.
+- `Reuse:` or `Scope:` line → edit Tasks or Non-goals to drop it.
+- `path:line` evidence answers a `user` point → add `- [code] <point> → <answer> (<path:line>)` under `## Assumptions`.
+- Other `user` point → ask it, one per message.
+- Each answer → next numbered line under `## Decisions`; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
 - Unanswered `user` point → `## Open points` (exact name); no point left → omit it.

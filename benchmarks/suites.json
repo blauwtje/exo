@@ -152,8 +152,8 @@
       "id": "isolation-probe",
       "class": "regression",
       "tier": "paid",
-      "purpose": "A subagent never sees the parent's marker: review-branch and find-open-points answer UNKNOWN to a random marker only the parent holds.",
-      "basis": "Must hold in every session, so a single miss is a defect; no recorded run yet, the property is binary.",
+      "purpose": "exo:review-branch and exo:find-open-points, each dispatched with the Agent tool, return no random marker that only the dispatching session holds.",
+      "basis": "Must hold in every session, so a single miss is a defect; no recorded run yet, the property is binary. A session fails unless both agents are dispatched; one that times out, hits the budget cap or pastes the marker into a brief is not run.",
       "entries": [
         "benchmarks/isolation-probe.mjs"
       ]

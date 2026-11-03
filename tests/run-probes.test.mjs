@@ -54,16 +54,25 @@ test('a passing probe appends a fixed row at the ledger round and a failing prob
   assert.deepEqual(rows[1], { round: 2, rule: 'swallowed failure', path: 'a.mjs', range: '1-2', weight: 'defect', state: 'fixed', head: null });
 });
 
-test('a reported finding appends a reported row at the ledger round', async () => {
+async function ledgerRowsAfter(report) {
   const root = await fixture();
   const ledger = path.join(root, '.exo', 'review-ledger.jsonl');
   await fs.mkdir(path.dirname(ledger));
   await fs.writeFile(ledger, `${JSON.stringify({ round: 2, rule: 'swallowed failure', path: 'a.mjs', range: '1-2', weight: 'defect', state: 'open', head: null })}\n`);
   const file = path.join(root, 'report.md');
-  await fs.writeFile(file, 'a.mjs:1-2; defect; swallowed failure; catch drops error; fix; reported: unproven\n');
+  await fs.writeFile(file, report);
   await run(RUN_PROBES, ['--report', file, '--root', root], { cwd: root });
-  const rows = (await fs.readFile(ledger, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
-  assert.deepEqual(rows[1], { round: 2, rule: 'swallowed failure', path: 'a.mjs', range: '1-2', weight: 'defect', state: 'reported', head: null });
+  return (await fs.readFile(ledger, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
+}
+
+test('a reported finding appends a declined row with its reason at the ledger round', async () => {
+  const rows = await ledgerRowsAfter('a.mjs:1-2; defect; swallowed failure; catch drops error; fix; reported: unproven\n');
+  assert.deepEqual(rows[1], { round: 2, rule: 'swallowed failure', path: 'a.mjs', range: '1-2', weight: 'defect', state: 'declined', reason: 'unproven', head: null });
+});
+
+test('a finding marked reported: turn cap appends no row', async () => {
+  const rows = await ledgerRowsAfter('a.mjs:1-2; defect; swallowed failure; catch drops error; fix; reported: turn cap\n');
+  assert.equal(rows.length, 1);
 });
 
 test('a fixed finding whose sweep prints output fails with the output', async () => {

@@ -8,8 +8,9 @@ import { appendLedger, latestRound, parseFinding } from './merge-reviews.mjs';
 const FIELD_LINE = /^\s*(Probe|Class|Sweep|Guard):\s*(.*)$/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
+const TURN_CAP = 'turn cap';
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
-Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding.
+Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding. Appends a fixed row to <root>/.exo/review-ledger.jsonl for each passing finding and a declined row, with the reason, for each finding marked reported: <reason> other than turn cap.
 A finding line starts with <file>:<line>; the Probe:, Class:, Sweep: and Guard: lines under it belong to it, in any order. Any other line ends the finding, so a field line under prose belongs to no finding.
 A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding); a fixed finding with no Probe: line under it prints FAIL probe (no Probe line). Exits 1 on any FAIL.`;
 
@@ -48,10 +49,16 @@ function ledgerState(finding, state, root) {
   if (parsed !== null) appendLedger(root, [{ ...parsed, state }], latestRound(root));
 }
 
+function declinedRows(report) {
+  return findingBlocks(report).filter(({ mark }) => mark?.state === 'reported' && mark.reason !== TURN_CAP)
+    .map(({ finding, mark }) => ({ ...parseFinding(finding), state: 'declined', reason: mark.reason }));
+}
+
 export function runProbes(report, root) {
   const lines = [];
   let allPassed = true;
-  for (const { finding, mark } of findingBlocks(report)) if (mark?.state === 'reported') ledgerState(finding, 'reported', root);
+  const declined = declinedRows(report);
+  if (declined.length > 0) appendLedger(root, declined, latestRound(root));
   for (const { finding, command, sweep, unmarked } of fixedProbes(report)) {
     if (command === null) {
       lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding: add its Probe: line, or mark reported: <reason> when no commit repaired it'}): ${finding}`);
