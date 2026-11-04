@@ -23,11 +23,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:improve` keeps a commit only when its gain clears the score's noise: it scores a candidate up to 3 times and keeps it when the 95% CI of the gain sits above 0, or when it shrinks the code with a mean gain of at least 0 after 3 runs (`defaults.improve` in `lib/run-providers.json`); every benchmark scorer prints each mean with its standard error and CI from the new `lib/eval-stats.mjs`, counts an aborted or errored run as a failure, and each paid benchmark has `--dry-run` and a quick default tier, so a bare `node benchmarks/run.mjs` runs the $1 quick tier; `npm run check` fails a scorer or paid entry point that reaches no variance gate, and `docs/principles/eval.md` holds the statistical eval checklist.
 
 ### Fixed
+- The status line's `ctx <used>/<window>` part now shows the window Claude Code compacts at: `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, else `autoCompactWindow` from the settings files, capped at the model's `context_window_size`, instead of the model's full window (1M for Opus 5.5).
 - An `exo-kind:` label in a brief moves an `exo:` agent off its own kind only when the call also passes `model` or `effort`, or when the agent's `lib/model-kinds.json` entry lists that label under `labels`. Before this, the `exo-kind: review` line that `agents/orchestrator.md` puts on every brief ran `exo:fetch-docs` and `exo:locate-code` on opus, high, where the table gives them sonnet, medium.
 - `exo:improve` ends a round as `timeout` with no score when a score run passes the time limit. Before, the killed run counted as an aborted run and was rerun, so a later run could still keep the commit.
-
-### Removed
-- The status line drops its `ctx <used>/<window>` part, because Claude Code shows the context token count itself in verbose mode. The window it showed was the model's full window from `context_window.context_window_size` (1M for Opus 5.5), not a lower `autoCompactWindow`, which the status line input does not carry. Line 2 now starts with `5h`.
 
 ## 0.138.0 - 2026-11-02
 
