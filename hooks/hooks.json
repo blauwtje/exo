@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs\"",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; [ -n \"$EXO_RUN\" ] && [ -n \"$EXO_RUN_DIR\" ] || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs\"",
             "shell": "bash",
             "timeout": 10
           }
@@ -100,7 +100,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs\"",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; [ -n \"$EXO_RUN\" ] && [ -n \"$EXO_RUN_DIR\" ] || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs\"",
             "shell": "bash",
             "timeout": 10
           }

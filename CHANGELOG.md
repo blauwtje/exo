@@ -16,6 +16,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:watch` also reads TikTok, Instagram Reels, Facebook, X and other yt-dlp sites, and transcribes a video with no captions locally: yt-dlp fetches its audio, ffmpeg converts it, and whisper.cpp (`whisper-cli` with `--model`) or openai-whisper writes the transcript; a missing tool stops that video with an install hint, and nothing is installed
 
 ### Changed
+- The Stop and AskUserQuestion hooks skip Node outside a run, which cuts them from about 31 ms to about 5 ms per call; in a run they still deny and block as before.
+- `benchmarks/results/2026-11-04-block-context-budget.md` records why blocks are not cut by predicted runner context: plan features explain 23% of runner peak variance, and the cut would split 0 of 258 recorded blocks.
 - `configure`, `improve`, `prompt`, `remember` and `start` are user-only with `disable-model-invocation: true`, so Claude no longer starts them and their descriptions leave the fixed context; type `/exo:<name>` to run one, and the session-start memory note and the docs now point at that typed command. The routing eval drops their 150 prompts, and `benchmarks/improve-real.mjs` drops its `routing-start` target.
 - Every skill, agent, prompt, reference, hook text and project doc is rewritten as plain sentences with a goal line, reasons and defined terms, with rules unchanged, and a new `npm run check` step keeps them readable.
 - Subagents load less context, from a study of 33 GitHub repositories and 10 recent Anthropic posts: `task-runner` reads only the reference each failure case needs; `build-task` skips the code rules for tasks that touch only `.md` files; the subagent start note is shorter and the soft-limit note arrives once per subagent; the session rules and the run task prompt drop duplicated lines.
@@ -25,6 +27,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - The status line's `ctx <used>/<window>` part now shows the window Claude Code compacts at: `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, else `autoCompactWindow` from the settings files, capped at the model's `context_window_size`, instead of the model's full window (1M for Opus 5.5).
+- The user's own session gets no exo context-limit note at any size, and its hook no longer reads the transcript for it; subagents and headless run sessions keep their limits. The `T5 at the soft limit` dispatch rule is gone, so the later triggers are now T5 and T6.
+- A `task-runner` dispatch lands only the lead's block: `next-task.mjs` and `land-slot.mjs` take `--only <n,m,...>`, and slot refills stay inside that set, so one runner no longer refills from the whole plan and grows past 120k tokens. The lead sends exactly the `Block:` tasks and keeps the gate for itself.
+- An unnamed delegate whose brief has no `exo-kind:` line now runs as `build` instead of being denied, so the first Agent call of a session no longer fails and gets retried; a line naming an unknown kind is still denied.
 - An `exo-kind:` label in a brief moves an `exo:` agent off its own kind only when the call also passes `model` or `effort`, or when the agent's `lib/model-kinds.json` entry lists that label under `labels`. Before this, the `exo-kind: review` line that `agents/orchestrator.md` puts on every brief ran `exo:fetch-docs` and `exo:locate-code` on opus, high, where the table gives them sonnet, medium.
 - `exo:improve` ends a round as `timeout` with no score when a score run passes the time limit. Before, the killed run counted as an aborted run and was rerun, so a later run could still keep the commit.
 

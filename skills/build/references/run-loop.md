@@ -6,10 +6,10 @@
    - Every session takes the unit route below. Headless `exo run [plan]` starts only from the user's terminal and refuses inside a session.
    - Settle where the run commits: take `Repository:` and `Branch:` from that output, not the plan.
    - Rerun `start-run.mjs --plan <path> --checkout <checkout>` once; `run started` ends step 1.
-   - Invoking build authorizes commits there and a wave's worktrees; a push or pull request waits for the user's `ship` answer, except `--land`, which `ship` takes.
-2. **Leave the plan to the unit,** which reads the frame sections; the whole plan stays unread here.
+   - Invoking build authorizes commits there and a wave's worktrees; a push or pull request waits for the user's `ship` answer, except `--land`.
+2. **Leave the plan to the unit;** the whole plan stays unread here.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <plan> --root <checkout>`. `Next: none` goes to step 7.
-   - A `Plan:` line in the `run started` output is this step's first output; skip this call once.
+   - Skip this call once when the `run started` output has a `Plan:` line.
    - `Route: inline` prints `Steps:` and each task's section. Follow them, not steps 4-6.
    - Only a `Plan-task:` commit shows what landed.
    - On a restart, write one line in the reply language naming landed tasks and the next. Later loops stay silent.
@@ -17,7 +17,8 @@
    - A `Design:` line routes its task per the design tasks reference, then repeat step 3.
    - An open choice the user would miss stops the run with a question. Rule on any other and record it in the commit.
 5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently, then end the turn; its notification resumes it.
-   - Name plan path, branch, checkout, task numbers.
+   - Name plan path, branch, checkout and exactly the `Block:` tasks.
+   - The tail (`gate`) stays here, in no runner brief.
    - Build no task here and call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.
 6. **Route the return.** Each line is `LANDED <n>` or `BLOCKED <n> <reason> <report path>`.
    - `LANDED` needs nothing bar a ` pending mcp:<tool>` suffix: call `mcp__*__<tool>`.

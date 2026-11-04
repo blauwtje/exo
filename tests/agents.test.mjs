@@ -251,7 +251,7 @@ test('review-branch reads its opening inputs together in its first message', () 
 test('task-runner dispatches every build and repair in the foreground and never ends its turn on a dispatch', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'task-runner');
   assert.match(unit.body, /^ {2}- A `Wave:`\/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- Dispatch each `Prompt:`, build or repair as a foreground call returning after each build's report, never `run_in_background`, and keep the turn open while one runs or lands\.$/m);
+  assert.match(unit.body, /^ {2}- Dispatch each `Prompt:` as a foreground call, never `run_in_background`, and keep the turn open while each build, repair or land runs\.$/m);
   assert.match(unit.body, /^ {2}- Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise\.$/m);
   assert.match(unit.body, /^ {2}- When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot with no cap and do not `sleep`\.$/m);
   assert.match(unit.body, /^ {2}- Loop until every block task has a `LANDED` or `BLOCKED` line\.$/m);

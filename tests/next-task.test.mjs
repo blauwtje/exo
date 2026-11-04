@@ -294,6 +294,36 @@ test('a refill with nothing to start still prints the land commands for the runn
   assert.match(result.stdout, /^Land 3: /m);
 });
 
+test('--only limits a Wave to the named tasks', async () => {
+  const { next } = await afterTaskOne('none');
+  assert.match((await next('--only', '3,4')).stdout, /^Next: Task 3$/m);
+  assert.match((await next('--only', '2,3')).stdout, /^Wave: Task 2, Task 3$/m);
+  assert.match((await next('--only', '4')).stdout, /^Next: none, block landed$/m);
+});
+
+test('a refill with --only starts only named tasks and none once they are all running', async () => {
+  const { root, next } = await afterTaskOne('none');
+  await next('--open-slots', '--only', '2,3');
+  git(root, 'worktree', 'remove', '--force', `${root}-task-2`);
+  await fs.writeFile(path.join(root, 'src', 'left.js'), 'export const left = 1;\n');
+  git(root, 'add', '.');
+  git(root, 'commit', '-q', '-m', 'feat(app): left', '-m', 'Plan-task: fixture/2');
+  const outside = await next('--open-slots', '--in-flight', '3', '--only', '3');
+  assert.equal(outside.code, 0, outside.stderr);
+  assert.match(outside.stdout, /^Start: none$/m);
+  assert.match(outside.stdout, /^Land 3: .+--only 3$/m);
+  const inside = await next('--open-slots', '--in-flight', '3', '--only', '3,4');
+  assert.match(inside.stdout, /^Start: Task 4$/m);
+  assert.match(inside.stdout, /^Land 4: .+--in-flight 3 --only 3,4$/m);
+});
+
+test('a non-numeric --only is a usage error', async () => {
+  const { next } = await afterTaskOne('none');
+  const result = await next('--only', 'x');
+  assert.equal(result.code, 2);
+  assert.match(result.stderr, /--only/);
+});
+
 test('land-task --next replaces the Then: line with next-task\'s report', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

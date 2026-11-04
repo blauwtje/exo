@@ -37,7 +37,8 @@ const FOLD_UNIT_EDIT = {
   file: RUN_LOOP,
   from: [
     '5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently, then end the turn; its notification resumes it.',
-    '   - Name plan path, branch, checkout, task numbers.',
+    '   - Name plan path, branch, checkout and exactly the `Block:` tasks.',
+    '   - The tail (`gate`) stays here, in no runner brief.',
     '   - Build no task here and call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.'
   ].join('\n'),
   to: [

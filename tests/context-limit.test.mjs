@@ -57,7 +57,7 @@ test('the hook limit follows an overriding run.json', () => {
   }
 });
 
-test('main session gets one note per level and is never denied', () => {
+test('the interactive main session gets no note and no refusal at any context size', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-main-'));
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
@@ -69,51 +69,13 @@ test('main session gets one note per level and is never denied', () => {
   try {
     const session_id = `s-${process.pid}-${Date.now()}`;
     const call = (tokens) => contextDecision({ session_id, transcript_path: at(tokens), tool_name: 'Read' });
-    assert.equal(call(10_000), null);
-    const soft = call(SOFT);
-    assert.match(soft.additionalContext, /subagents/);
-    assert.match(soft.additionalContext, /manager subagent/);
-    assert.doesNotMatch(soft.additionalContext, /save-session|fresh session/);
-    assert.ok(soft.additionalContext.indexOf('progress.md') >= 0);
-    assert.ok(soft.additionalContext.indexOf('progress.md') < soft.additionalContext.indexOf('subagents'));
-    assert.match(soft.additionalContext, /decisions, open points and next step in this turn/);
-    assert.equal(call(SOFT + 1000), null);
-    const hard = call(HARD);
-    assert.ok(hard.additionalContext.indexOf('progress.md') >= 0);
-    assert.ok(hard.additionalContext.indexOf('progress.md') < hard.additionalContext.indexOf('subagents'));
-    assert.match(hard.additionalContext, /decisions, open points and next step in this turn/);
-    assert.match(hard.additionalContext, /remaining work to subagents/);
-    assert.match(hard.additionalContext, /only decisions and user dialogue/);
-    assert.doesNotMatch(hard.additionalContext, /save-session|fresh session/);
-    assert.equal(hard.deny, undefined);
-    assert.equal(call(HARD + 1000), null);
+    for (const tokens of [10_000, SOFT, SOFT + 1000, HARD, HARD + 1000]) assert.equal(call(tokens), null);
   } finally {
     if (savedRun !== undefined) process.env.EXO_RUN_HANDOFF = savedRun;
   }
 });
 
-test('main session is warned again after it shrinks below the soft limit', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-shrink-'));
-  const at = (tokens) => {
-    const file = path.join(dir, `t${tokens}.jsonl`);
-    fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
-    return file;
-  };
-  const savedRun = process.env.EXO_RUN_HANDOFF;
-  delete process.env.EXO_RUN_HANDOFF;
-  try {
-    const session_id = `s-shrink-${process.pid}-${Date.now()}`;
-    const call = (tokens) => contextDecision({ session_id, transcript_path: at(tokens), tool_name: 'Read' });
-    assert.ok(call(SOFT));
-    assert.equal(call(SOFT + 1000), null);
-    assert.equal(call(10_000), null);
-    assert.ok(call(SOFT));
-  } finally {
-    if (savedRun !== undefined) process.env.EXO_RUN_HANDOFF = savedRun;
-  }
-});
-
-test('Bash and Edit dispatchers give the main session one soft note above the soft limit, none below it, and a deny still wins', async () => {
+test('Bash and Edit dispatchers give the interactive main session no context note, and a deny still wins', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-dispatch-'));
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
@@ -129,20 +91,15 @@ test('Bash and Edit dispatchers give the main session one soft note above the so
     const input = (tool_name, session_id, tokens) => ({ session_id, tool_name, transcript_path: at(tokens) });
     const id = `d-${process.pid}-${Date.now()}`;
 
-    assert.equal(await dispatchBash(input('Bash', `${id}-b0`, below)), null);
-    const bash = await dispatchBash(input('Bash', `${id}-b1`, soft));
-    assert.doesNotMatch(bash.hookSpecificOutput.additionalContext, /save-session|fresh session/);
-    assert.equal(await dispatchBash(input('Bash', `${id}-b1`, soft)), null);
-
-    assert.equal(dispatchEdit(input('Edit', `${id}-e0`, below)), null);
-    const edit = dispatchEdit(input('Edit', `${id}-e1`, soft));
-    assert.doesNotMatch(edit.hookSpecificOutput.additionalContext, /save-session|fresh session/);
-    assert.equal(dispatchEdit(input('Edit', `${id}-e1`, soft)), null);
+    for (const tokens of [below, soft, limit + 1000]) {
+      assert.equal(await dispatchBash(input('Bash', `${id}-b${tokens}`, tokens)), null);
+      assert.equal(dispatchEdit(input('Edit', `${id}-e${tokens}`, tokens)), null);
+    }
 
     const deny = { name: 'deny', run: () => ({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'no' } }) };
     const denied = await dispatchBash(input('Bash', `${id}-b2`, soft), [CONTEXT_STEP, deny]);
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
-    assert.doesNotMatch(denied.hookSpecificOutput.additionalContext, /save-session|fresh session/);
+    assert.equal(denied.hookSpecificOutput.additionalContext, undefined);
 
     process.env.EXO_RUN_HANDOFF = path.join(dir, 'handoff.md');
     assert.equal(dispatchEdit(input('Edit', `${id}-e2`, limit + 1000)).hookSpecificOutput.permissionDecision, 'deny');

@@ -8,13 +8,13 @@ experimental: { cacheTtl: 1h }
 ---
 # Plan runner
 
-Land a plan's next block and return one line per task, with no review.
+Land the lead's block of task numbers and return one line per task, with no review.
 
 `<skill>` = `${CLAUDE_PLUGIN_ROOT}/skills/build`.
 
 ## Loop
 
-1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots`; read `Landed:`, `Next:`, `Wave:`.
+1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots --only <block>` (comma separated); read `Landed:`, `Next:`, `Wave:`.
   - A task outside this block waits on a `BLOCKED` one; return `BLOCKED <n> waits on <m>`.
   - On `PLAN DRIFT`, read `Then:`, run step 3 then 1 to repair, or return `BLOCKED <n> <path>` to stop.
   - On `BLOCKED input unreadable: <path>`, return `BLOCKED <n> <path>`.
@@ -22,7 +22,7 @@ Land a plan's next block and return one line per task, with no review.
   - A `Design:` task returns `BLOCKED <n> Design: task`.
 3. **Dispatch the printed block.** Send each `Prompt:` verbatim to `exo:build-task` with its `Dispatch:` flag, in one message.
   - A `Wave:`/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone.
-  - Dispatch each `Prompt:`, build or repair as a foreground call returning after each build's report, never `run_in_background`, and keep the turn open while one runs or lands.
+  - Dispatch each `Prompt:` as a foreground call, never `run_in_background`, and keep the turn open while each build, repair or land runs.
   - Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise.
   - When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot with no cap and do not `sleep`.
   - On `REFUSED`, a repair, the context limit or no dispatch tool, read first `<skill>/references/agent-cases.md` `## task-runner`, plus `rolling-window.md` with `Slot:`.

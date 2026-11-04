@@ -90,7 +90,7 @@
   },
   "unnamed": {
     "types": ["general-purpose", "claude"],
-    "kind": "investigate",
+    "kind": "build",
     "jobs": {
       "review": "review", "verify": "review", "audit": "review", "judge": "review",
       "decide": "hardest", "design": "hardest", "choose": "hardest", "pick": "hardest",

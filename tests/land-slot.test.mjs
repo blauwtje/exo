@@ -70,6 +70,29 @@ test('a refused landing prints Land: for the rebuild into the same slot and reco
   assert.ok(JSON.parse(await fs.readFile(window, 'utf8'))[1].since >= before);
 });
 
+test('--only reaches the rebuild Land: lines of a refused landing and a landing with the block done starts nothing', async () => {
+  const { root, slot, land, base } = await slotFixture();
+  const other = `${root}-task-3`;
+  await fs.writeFile(path.join(root, '.exo', 'window.json'), JSON.stringify({ 1: { slot, base, since: 1000000000 }, 3: { slot: other, base, since: 1000000003 } }));
+  await editApp(slot);
+  await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
+  const refused = await land(['--in-flight', '3', '--only', '1,3']);
+  assert.equal(refused.code, 0, refused.stderr);
+  assert.match(refused.stdout, /^Land 1: .*--in-flight 3 --only 1,3$/m);
+  assert.match(refused.stdout, /^Land 3: .* --only 1,3$/m);
+  await fs.rm(path.join(slot, 'src/extra.js'));
+  const landed = await land(['--in-flight', '3', '--only', '1,3']);
+  assert.match(landed.stdout, /^LANDED 1\b/);
+  assert.match(landed.stdout, /^Start: none$/m);
+});
+
+test('a non-numeric --only is a usage error', async () => {
+  const { land } = await slotFixture();
+  const result = await land(['--only', 'a,b']);
+  assert.equal(result.code, 2);
+  assert.match(result.stderr, /--only/);
+});
+
 test('a new path in the run checkout lands nothing and keeps the slot', async () => {
   const { root, slot, land } = await slotFixture();
   const head = git(root, 'rev-parse', 'HEAD');

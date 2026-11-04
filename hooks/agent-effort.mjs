@@ -39,22 +39,34 @@ function movesAgent(entry, input, label) {
   return !entry || entry.labels?.includes(label) || input.model !== undefined || input.effort !== undefined;
 }
 
+const LABEL_LINE = /^exo-kind:\s*\S+/;
+
 function labelOf(table, input, entry) {
   const label = /^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1];
   return table.kinds[label] && movesAgent(entry, input, label) ? label : undefined;
 }
 
-function unlabelled(input, budget) {
-  if (!BUDGETS.includes(budget)) return false;
+function unnamedTable(input, budget) {
+  if (!BUDGETS.includes(budget)) return null;
   const table = readKindTable(undefined, { budget, provider: sessionProvider() });
-  return isUnnamed(table, input) && !labelOf(table, input) && !jobKind(table.unnamed.jobs, input.description);
+  return isUnnamed(table, input) && !jobKind(table.unnamed.jobs, input.description) ? table : null;
 }
 
-const UNLABELLED_REASON = 'This delegate names no job. Start its brief with `exo-kind: <kind>`: `hardest` for an open choice or unknown cause, `build` for a fully decided fix, `review` for a review.';
+function unknownKind(input, budget) {
+  const table = unnamedTable(input, budget);
+  return Boolean(table) && LABEL_LINE.test(input.prompt ?? '') && !labelOf(table, input);
+}
 
-function unlabelledFields({ tool_name: tool, tool_input: input } = {}, budget = settingValue('budget')) {
-  if (tool !== 'Agent' || !input || !unlabelled(input, budget)) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: UNLABELLED_REASON };
+function defaulted(input, budget) {
+  if (!unnamedTable(input, budget) || LABEL_LINE.test(input.prompt ?? '')) return input;
+  return { ...input, prompt: `exo-kind: build\n${input.prompt ?? ''}` };
+}
+
+const UNKNOWN_KIND_REASON = 'This delegate names an unknown kind. Start its brief with `exo-kind: <kind>`: `hardest` for an open choice or unknown cause, `build` for a fully decided fix, `review` for a review.';
+
+function unknownKindFields({ tool_name: tool, tool_input: input } = {}, budget = settingValue('budget')) {
+  if (tool !== 'Agent' || !input || !unknownKind(input, budget)) return null;
+  return { permissionDecision: 'deny', permissionDecisionReason: UNKNOWN_KIND_REASON };
 }
 
 function resolvedKind(input, budget) {
@@ -79,7 +91,7 @@ function filled(input, budget) {
 
 export function agentEffort({ tool_name: tool, tool_input: input, effort } = {}, budget = settingValue('budget')) {
   if (tool !== 'Agent' || !input) return null;
-  const updated = raised(filled(input, budget), effort?.level);
+  const updated = raised(filled(defaulted(input, budget), budget), effort?.level);
   if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
@@ -115,7 +127,7 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = se
 
 export function agentHook(hookInput, budget, enabled) {
   const output = agentEffort(hookInput, budget);
-  const fields = mismatchFields(hookInput, budget) ?? unlabelledFields(hookInput, budget) ?? contextFields(contextDecision(hookInput));
+  const fields = mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
   const receipt = (message, receiptFields) => withReceipt(message, hookInput, receiptFields, ran, enabled);
   if (fields?.permissionDecision) return receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);

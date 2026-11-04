@@ -19,9 +19,9 @@ test('the budget setting defaults to on', () => {
 });
 
 test('a general-purpose, claude or untyped call with no model or effort gets the unnamed kind', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds[readKindTable().unnamed.kind];
+  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.build;
   for (const type of ['general-purpose', 'claude', undefined]) {
-    assert.deepEqual(call({ subagent_type: type, prompt: 'x' }), { subagent_type: type, prompt: 'x', model, effort });
+    assert.deepEqual(call({ subagent_type: type, prompt: 'x' }), { subagent_type: type, prompt: 'exo-kind: build\nx', model, effort });
   }
 });
 
@@ -50,20 +50,27 @@ test('an explicit model or effort, an exo-kind line, off and other types leave t
   for (const type of ['fork', 'Explore', 'claude-code-guide', 'statusline-setup']) assert.equal(call({ subagent_type: type }), undefined);
 });
 
-test('an unnamed call that names no job is denied with the exo-kind route, a labelled or job-worded one is not', () => {
+test('an unnamed call with no exo-kind line runs as build with the line prepended, an unknown label is denied', () => {
   const decision = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', ...input } }, budget, () => false)?.hookSpecificOutput.permissionDecision;
-  const denied = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'x' } }, 'on', () => false).hookSpecificOutput;
-  assert.equal(denied.permissionDecision, 'deny');
-  assert.match(denied.permissionDecisionReason, /exo-kind:/);
-  assert.match(denied.permissionDecisionReason, /hardest/);
-  assert.notEqual(decision({ description: 'Edit-evidence false block', prompt: 'exo-kind: build\nx' }), 'deny');
+  const { kinds } = readKindTable(undefined, { budget: 'on' });
+  const unlabelled = call({ description: 'Edit-evidence false block', prompt: 'x' });
+  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'x' }), 'allow');
+  assert.equal(unlabelled.prompt, 'exo-kind: build\nx');
+  assert.equal(unlabelled.model, kinds.build.model);
+  assert.equal(unlabelled.effort, kinds.build.effort);
+  assert.equal(call({ description: 'Edit-evidence false block' }).prompt, 'exo-kind: build\n');
+  assert.equal(call({ description: 'Review the branch', prompt: 'x' }).prompt, 'x');
+  assert.equal(call({ description: 'Edit-evidence false block', prompt: 'exo-kind: hardest\nx' }).prompt, 'exo-kind: hardest\nx');
+  const unknown = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'exo-kind: Hardest\nx' } }, 'on', () => false).hookSpecificOutput;
+  assert.equal(unknown.permissionDecision, 'deny');
+  assert.match(unknown.permissionDecisionReason, /exo-kind:/);
+  assert.match(unknown.permissionDecisionReason, /hardest/);
   assert.notEqual(decision({ description: 'review the branch', prompt: 'x' }), 'deny');
-  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'exo-kind: Hardest\nx' }), 'deny');
   for (const word of ['Investigate', 'Research', 'Summarise', 'Summarize', 'Explore']) assert.notEqual(decision({ description: `${word} the stall`, prompt: 'x' }), 'deny');
-  assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, readKindTable(undefined, { budget: 'on' }).kinds.hardest.model);
-  assert.equal(call({ description: 'Fix the typo', prompt: 'exo-kind: hard\nx' }).model, readKindTable(undefined, { budget: 'on' }).kinds.build.model);
-  for (const description of ['Pickup log lines', 'Picker colours', 'Designated owner', 'Collect findings', 'Add test fixtures']) assert.equal(decision({ description, prompt: 'x' }), 'deny', description);
-  assert.notEqual(decision({ description: 'Edit-evidence false block', prompt: 'x' }, 'off'), 'deny');
+  assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, kinds.hardest.model);
+  assert.equal(call({ description: 'Fix the typo', prompt: 'exo-kind: hard\nx' }).model, kinds.build.model);
+  for (const description of ['Pickup log lines', 'Picker colours', 'Designated owner', 'Collect findings', 'Add test fixtures']) assert.equal(call({ description, prompt: 'x' }).prompt, 'exo-kind: build\nx', description);
+  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'x' }, 'off'), undefined);
   assert.notEqual(decision({ subagent_type: 'exo:locate-code', description: 'Edit-evidence false block', prompt: 'x' }), 'deny');
 });
 
@@ -95,16 +102,15 @@ test('the session text has one TaskStop bullet for the agent notice and one for 
 });
 
 const TRIGGER_LINES = [
-  [/^- Default inline →/, /only when one of T1 to T6/],
+  [/^- Default inline →/, /only when one of T1 to T5/],
   [/^- T1 /, /at most 5 tool turns.*one file to edit with at most 2 to read\) → inline\.$/],
   [/^- T2 /, /6\+ tool turns.*→ `fetch-docs` or `locate-code`/],
   [/^- T3 /, /2\+ independent parts, each 6\+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent\.$/],
   [/^- T4 /, /each need the previous result → one worker.*never split\.$/],
-  [/^- T5 /, /soft limit, remaining work of 2\+ tool turns → subagents\.$/],
-  [/^- T6 /, /over 5 minutes → `run_in_background`/],
+  [/^- T5 /, /over 5 minutes → `run_in_background`/],
 ];
 
-test('the session text and the context reference carry the same trigger lines T1 to T6', () => {
+test('the session text and the context reference carry the same trigger lines T1 to T5', () => {
   const root = path.join(import.meta.dirname, '..');
   const session = fs.readFileSync(path.join(root, 'hooks', 'session-rules.md'), 'utf8').split('\n');
   const context = fs.readFileSync(path.join(root, 'skills', 'route-skills', 'references', 'context.md'), 'utf8').split('\n');
