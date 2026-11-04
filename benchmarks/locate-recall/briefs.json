@@ -7,7 +7,6 @@
       "prompt": "A subagent should be told its context budget when it starts, and handed a note once it nears the limit. Where does that live, and which files would a change to the soft limit ratio touch, tests included?",
       "expected": [
         "lib/context-limits.mjs",
-        "hooks/subagent-start.mjs",
         "hooks/hooks.json",
         "tests/context-limit.test.mjs"
       ],

@@ -60,8 +60,8 @@ test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script'
   for (const { hook } of entries) assert.ok(hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"'), hook.command);
 });
 
-test('only SessionStart, SessionEnd, PreToolUse, SubagentStart and Stop have hooks, and the prompt dispatcher is gone', () => {
-  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop', 'SubagentStart']);
+test('only SessionStart, SessionEnd, PreToolUse and Stop have hooks, and the prompt dispatcher is gone', () => {
+  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop']);
   for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs']) {
     assert.equal(fs.existsSync(path.join(REPOSITORY, file)), false, file);
   }
@@ -109,9 +109,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.ok(entry.hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"'), entry.hook.command);
 });
 
-test('the plugin registers nine hook commands, each under bash', () => {
+test('the plugin registers eight hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 9, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 8, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
@@ -211,7 +211,7 @@ test('the session hook with no exo settings injects no reply rules, only the fix
   assert.ok(!context.includes('Say the answer first.'));
   assert.ok(!context.includes('one question per message'));
   assert.ok(context.includes('Fix all diagnosed causes instead of cutting scope or asking,'));
-  assert.ok(context.includes('Confirm an irreversible step with the user first,'));
+  assert.ok(context.includes('Ask instead when the step is irreversible, has no safe default'));
 });
 
 test('the exo:adhd output style carries its frontmatter and each outranking rule', () => {
@@ -442,4 +442,11 @@ test('the session hook skips a progress file older than EXO_PROGRESS_POINTER_MS 
 
 test('the session hook names no progress file when none exists', () => {
   assert.doesNotMatch(progressPointer('clear', { files: [] }), /A progress file sits at/);
+});
+
+test('hooks/session-rules.md states the irreversible-step rule and the safe-default rule once each', () => {
+  const text = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-rules.md'), 'utf8');
+  assert.equal(text.split('irreversible').length - 1, 1, 'irreversible');
+  assert.equal(text.split('has a safe default').length - 1, 1, 'has a safe default');
+  assert.equal(text.split('no safe default').length - 1, 1, 'no safe default');
 });

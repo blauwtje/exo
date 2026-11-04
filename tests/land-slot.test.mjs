@@ -41,6 +41,18 @@ test('a green slot lands on the run branch and its worktree leaves', async () =>
   assert.match(await fs.readFile(path.join(root, 'src/app.js'), 'utf8'), /hello/);
 });
 
+test('a green slot prints the caller view and names the full text in a land-slot log', async () => {
+  const { slot, land } = await slotFixture();
+  await editApp(slot);
+  const result = await land();
+  const detail = result.stdout.match(/^Detail: (.+)$/m);
+  assert.ok(detail, result.stdout);
+  assert.match(detail[1], /land-slot-1\.log$/);
+  const full = await fs.readFile(detail[1], 'utf8');
+  assert.match(full, /^LANDED 1\b/);
+  assert.ok(result.stdout.length < full.length + detail[1].length + 10);
+});
+
 test('a refused landing keeps the slot and puts nothing on the run branch', async () => {
   const { root, slot, land } = await slotFixture();
   const head = git(root, 'rev-parse', 'HEAD');
@@ -64,7 +76,7 @@ test('a refused landing prints Land: for the rebuild into the same slot and reco
   const before = Math.floor(Date.now() / 1000);
   const result = await land();
   assert.match(result.stdout, /^REFUSED 1\b/);
-  assert.doesNotMatch(result.stdout, /^Wait:/m);
+  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --any .*--report ".+implementer-1\.md".*--report ".+implementer-3\.md"/m);
   assert.match(result.stdout, new RegExp(`^Land 1: node ".+land-slot\\.mjs" .*--task 1 .*--slot "${slot}" --base ${base} .*--in-flight 3$`, 'm'));
   assert.match(result.stdout, new RegExp(`^Land 3: node ".+land-slot\\.mjs" .*--task 3 .*--slot "${other}" `, 'm'));
   assert.ok(JSON.parse(await fs.readFile(window, 'utf8'))[1].since >= before);

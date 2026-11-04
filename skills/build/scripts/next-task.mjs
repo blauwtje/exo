@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { forCaller, keepLines } from '#script-output';
 import { scratchPath } from '#scratch-path';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { reportCap } from '#return-caps';
@@ -202,6 +203,13 @@ export function frameOnlyReport(planText) {
   return frameReport(frameOf(parsePlan(planText).frame));
 }
 
+const KNOWN_TO_RUNNER = /^(?:Plan|Repository|Branch|Base|Baseline|Proof|Run): |^Drift: none$/;
+
+export function chainedForCaller(text) {
+  if (/^Inline: /m.test(text)) return text;
+  return keepLines(text, (line) => !KNOWN_TO_RUNNER.test(line) && !(line.startsWith('Brief: ') && text.includes(`Read your brief at ${line.slice(7)}.`)));
+}
+
 function parseTasks(planPath, planText) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
@@ -252,7 +260,9 @@ function dispatchable(task, frame, root) {
 
 function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
-  return [`Dispatch: exo:build-task`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
+  const report = path.join(checkout, '.exo', `implementer-${task.number}.md`);
+  const stamp = path.join(checkout, '.exo', `checked-${task.number}`);
+  return [`Dispatch: exo:build-task`, `Since: ${since}`, `Wait: node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}" --stamp "${stamp}"   (tool timeout 600000; exit 2 reruns at most three times, then BLOCKED <n> no report)`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
 // why: with every unlanded task running no landing can start a refill, so one chained land replaces the per-slot lands.
@@ -260,10 +270,12 @@ export function windowLines({ planPath, root, records, running, unlanded = null,
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];
   const waitAll = open.length > 1 && unlanded !== null && unlanded.every((number) => open.includes(number));
+  const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}" --stamp "${path.join(records[number].slot, '.exo', `checked-${number}`)}"`);
   const onlyFlag = only === null ? '' : ` --only ${only.join(',')}`;
   const land = (number) => `node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}"${open.length > 1 ? ` --in-flight ${open.filter((other) => other !== number).join(',')}` : ''}${onlyFlag}`;
   const order = [...open].sort((left, right) => left - right);
   return [
+    `Wait: node "${scriptPath('wait-report.mjs')}"${waitAll ? '' : ' --any'} ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns at most three times, then BLOCKED <n> no report)`,
     ...open.map((number) => `Land ${number}: ${land(number)}`),
     ...(waitAll ? [`Land all: ${order.map((number, index) => `${land(number)}${index < order.length - 1 ? ' --chained' : ''}`).join(' ; ')}`] : [])
   ];
@@ -375,7 +387,9 @@ function main(argv) {
   const inFlight = taskNumbers(flags['in-flight'], 'in-flight') ?? [];
   const only = taskNumbers(flags.only, 'only');
   const root = flags.root ?? process.cwd();
-  process.stdout.write(report({ planPath: flags.plan, planText, root, inFlight, only, open: flags['open-slots'] === true }));
+  const open = flags['open-slots'] === true;
+  const output = report({ planPath: flags.plan, planText, root, inFlight, only, open });
+  process.stdout.write(open && report === nextTaskReport ? forCaller({ root, name: `next-task-${Date.now()}`, full: output, shown: chainedForCaller(output) }) : output);
   refreshProgress({ planPath: flags.plan, planText, root });
 }
 

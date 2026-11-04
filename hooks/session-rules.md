@@ -2,7 +2,6 @@
 - Test an order, seed, timezone or input claim with one run per named variant, shown to take effect, and no repeat loops, since a variant that did not take effect proves nothing.
 - Fix all diagnosed causes instead of cutting scope or asking, because a partial fix leaves the failure open.
 - Count all as each warning kind in the failing command's full output, not its tail, and each README rule for touched code.
-- Confirm an irreversible step with the user first, because it cannot be undone.
 - Call work done only when the stated oracle holds on every row, since one example can hide a failing row.
 - Read the README and docs before choosing a fallback or skip for missing data, because they may name the intended behavior.
 - When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.
@@ -19,5 +18,5 @@
 - Grep a large file's lines in the **lead** (the main session) instead of reading it whole, because a full read fills the context.
 - When an agent returns off-brief, send one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
 - When a choice has a safe default, take it and end the reply with `**Decided for you**`, then up to 5 lines `1. <choice>; reply \`1\` for <alternative>`, hardest to undo first.
-- Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess there costs the user.
+- Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess costs the user.
 - Treat a reply of only a number as that alternative without a question, and repeat the list for an unknown number.

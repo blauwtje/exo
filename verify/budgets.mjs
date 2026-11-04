@@ -26,7 +26,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 4231, measured: '2026-11-03' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 3946, measured: '2026-11-04' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
 export const HOOK_LINES_LOCK = { lines: 1333, measured: '2026-10-14' };
@@ -106,3 +106,6 @@ export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;
 export const PRINCIPLE_PAGE_TOKENS = 800;
 export const PRINCIPLE_INDEX_TOKENS = 300;
+
+export const SCRIPT_OUTPUT_EXEMPT = ['skills/build/scripts/remove-worktree.mjs', 'skills/build/scripts/wait-report.mjs'];
+export const SUBAGENT_START_BYTES_LOCK = { bytes: 0, measured: '2026-11-04' };

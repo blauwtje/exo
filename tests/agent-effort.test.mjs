@@ -145,7 +145,7 @@ test('the session text has one Decided for you line within 380 bytes: list shape
   assert.match(lines[0], /up to 5 lines/);
   assert.match(lines[0], /hardest to undo first/);
   const text = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
-  assert.match(text, /^- Ask instead when the step is irreversible, has no safe default/m);
+  assert.match(text, /^- Ask instead when the step is irreversible, has no safe default, or only/m);
   assert.match(text, /^- Treat a reply of only a number as that alternative without a question, and repeat the list for an unknown number/m);
 });
 

@@ -22,10 +22,10 @@
    - If there is still no report, the child is dead. Leave its slot folder in place, since `remove-worktree.mjs --report` refuses without the report, and name the folder and that refusal in the return.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
-   - Send each window build, including a `Next:` build, to `exo:build-task` in the foreground, because a background dispatch ends the turn before the report lands.
+   - Send each window build, including a `Next:` build, to `exo:build-task`. When it returns `Async agent launched`, run the printed `Wait:` command; never end the turn, since an outliving nested child reports to the main conversation.
    - A landing's refill is in `land-slot.mjs`'s output, with slots opened. Otherwise run `next-task.mjs --in-flight <running task numbers, comma separated> --only <block>` and read its `Start: Task <n>[, Task <m>]` line.
    - On `Start: none` start no refill, land the returned slots, then return to step 1.
 8. **Wait.**
-   - Send every `Prompt:` in one message as foreground calls; each returns after its report.
+   - Send every `Prompt:` in one message; each foreground call returns after its report.
    - Land each returned slot per step 3 at once, unless `Land all:` follows. Then land only once every build of the block returned.
-   - Keep the turn open while a build, repair or land runs, use no shell loop or `sleep`, and land every returned report before the next dispatch.
+   - Use no `sleep` loop, and land every returned report before the next dispatch.

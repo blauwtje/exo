@@ -174,7 +174,7 @@ test('a task that names Drops: gives its Proof the same EXO_DROPS as its Land ga
   const report = PASS_REPORT.replace('`node tests/app.test.mjs`: pass', `\`${proof}\`: pass`);
   const output = landTask({ planPath, planText: plan, number: 1, root, reportText: report });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(output, /^Proof: test "\$EXO_DROPS" = "only in skills\/x\.md": pass \(exit 0\)$/m);
+  assert.match(output, /^Proof: test "\$EXO_DROPS" = "only in skills\/x\.md": pass \(exit 0, no output\)$/m);
 });
 
 const EVIDENCE_PLAN = PLAN.replace('-m "Plan-task: 4"', '-m "Plan-task: 4" -m "Evidence: none (fixture)"');
@@ -256,14 +256,14 @@ test('a Proof gets the Evidence value of a task not yet landed, as its Land gate
   const proof = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
   const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`), 'true').replace('### Task 1', LATER_TASK);
   const output = await landProofOfTaskOne(proof, plan);
-  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0\)$/m);
+  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0, no output\)$/m);
 });
 
 test('a Proof gets the Evidence of the task that carries it, before its commit has the trailer', async () => {
   const proof = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
   const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`).replace('| Red: none (fixture)', '| Red: none (fixture) | Evidence: none (fixture)'), 'true');
   const output = await landProofOfTaskOne(proof, plan);
-  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0\)$/m);
+  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0, no output\)$/m);
 });
 
 async function afterTaskOne() {

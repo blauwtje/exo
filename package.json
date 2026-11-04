@@ -45,6 +45,7 @@
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-extensions": "./lib/script-extensions.mjs",
     "#script-flags": "./lib/script-flags.mjs",
+    "#script-output": "./lib/script-output.mjs",
     "#session-record-path": "./lib/session-record-path.mjs",
     "#settings-store": "./lib/settings-store.mjs",
     "#size-facts": "./lib/size-facts.mjs",

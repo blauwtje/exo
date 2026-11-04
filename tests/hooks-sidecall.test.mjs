@@ -11,7 +11,6 @@ const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.j
 
 const PAYLOADS = {
   SessionStart: { hook_event_name: 'SessionStart', source: 'startup', session_id: 'sidecall' },
-  SubagentStart: { hook_event_name: 'SubagentStart', session_id: 'sidecall' },
   SessionEnd: { hook_event_name: 'SessionEnd', session_id: 'sidecall' },
   Stop: { hook_event_name: 'Stop', session_id: 'sidecall' },
   Bash: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Bash', tool_input: { command: 'find / -name x' } },
@@ -45,14 +44,12 @@ for (const { name, command, payload } of entries()) {
   });
 }
 
-test('the SessionStart and SubagentStart hooks print text without TE_SIDECALL', () => {
+test('the SessionStart hook prints text without TE_SIDECALL', () => {
   const configDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sidecall-'));
   const environment = { ...process.env, CLAUDE_PLUGIN_ROOT: REPOSITORY, CLAUDE_CONFIG_DIR: configDirectory };
   delete environment.TE_SIDECALL;
-  for (const name of ['SessionStart', 'SubagentStart']) {
-    const { command } = entries().find((entry) => entry.name.startsWith(name));
-    const result = runHook(command, { ...PAYLOADS[name], cwd: configDirectory }, environment);
-    assert.notEqual(result.stdout, '', name);
-  }
+  const { command } = entries().find((entry) => entry.name.startsWith('SessionStart'));
+  const result = runHook(command, { ...PAYLOADS.SessionStart, cwd: configDirectory }, environment);
+  assert.notEqual(result.stdout, '', 'SessionStart');
   fs.rmSync(configDirectory, { recursive: true, force: true });
 });

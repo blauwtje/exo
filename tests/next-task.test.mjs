@@ -7,7 +7,7 @@ import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { refreshProgress, taskBrief } from '../skills/build/scripts/next-task.mjs';
+import { chainedForCaller, refreshProgress, taskBrief } from '../skills/build/scripts/next-task.mjs';
 import { commitFiles, git, planFixture, run } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 
@@ -41,7 +41,7 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
   assert.match(result.stdout, /^Next: Task 1$/m);
   assert.match(result.stdout, /^Dispatch: exo:build-task$/m);
   assert.match(result.stdout, /^Since: \d{10}$/m);
-  assert.doesNotMatch(result.stdout, /^Wait:/m);
+  assert.match(result.stdout, /^Wait: node .+wait-report\.mjs"/m);
   const brief = result.stdout.match(/^Brief: (.+)$/m)[1];
   assert.match(result.stdout, new RegExp(`^Prompt:\\nTask 1 of ${planPath}, branch feat/fixture, checkout ${root}\\.\\nRead your brief at ${brief}\\.\\nReport to: ${root}/\\.exo/implementer-1\\.md\\nReturn: one line$`, 'm'));
 });
@@ -180,7 +180,8 @@ test('--open-slots on a Wave writes the baseline, opens each slot and prints the
   assert.equal(result.code, 0, result.stderr);
   const head = git(root, 'rev-parse', 'HEAD');
   assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
-  assert.match(result.stdout, new RegExp(`^Base: ${head}$`, 'm'));
+  assert.doesNotMatch(result.stdout, /^(?:Base|Baseline|Plan|Repository|Branch|Proof|Run|Brief): /m);
+  assert.doesNotMatch(result.stdout, /^Drift: none$/m);
   assert.equal(await fs.readFile(path.join(root, '.exo', 'baseline.txt'), 'utf8'), '?? preexisting.txt\n');
   for (const number of [2, 3]) {
     const slot = `${root}-task-${number}`;
@@ -194,7 +195,7 @@ test('--open-slots on a Wave writes the baseline, opens each slot and prints the
   }
   assert.match(result.stdout, /^Dispatch all in one message as foreground Agent calls, no run_in_background; Since: \d{10}$/m);
   assert.doesNotMatch(result.stdout, /run_in_background: true/);
-  assert.doesNotMatch(result.stdout, /^Wait:/m);
+  assert.match(result.stdout, /^Wait: node .+wait-report\.mjs"/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '?? preexisting.txt');
 });
 
@@ -278,7 +279,7 @@ test('a refill opens its slot with its own base, keeps the baseline and prints a
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Start: Task 4$/m);
   assert.match(result.stdout, new RegExp(`^Land 4: .+--task 4 --root "${root}" --slot "${root}-task-4" --base ${head} .+--in-flight 3$`, 'm'));
-  assert.doesNotMatch(result.stdout, /^Wait:/m);
+  assert.match(result.stdout, /^Wait: node .+wait-report\.mjs"/m);
   assert.match(result.stdout, /^Land 3: /m);
   assert.equal(await fs.readFile(path.join(root, '.exo', 'baseline.txt'), 'utf8'), baseline);
   assert.match(worktrees(root), new RegExp(`${root}-task-4 `));
@@ -289,7 +290,7 @@ test('a refill with nothing to start still prints the land commands for the runn
   await next('--open-slots');
   const result = await next('--open-slots', '--in-flight', '2,3');
   assert.match(result.stdout, /^Start: none$/m);
-  assert.doesNotMatch(result.stdout, /^Wait:/m);
+  assert.match(result.stdout, /^Wait: node .+wait-report\.mjs"/m);
   assert.match(result.stdout, /^Land 2: /m);
   assert.match(result.stdout, /^Land 3: /m);
 });
@@ -450,4 +451,9 @@ test('next-task prints usage and exits 0 on --help', async () => {
   const result = await run(NEXT_TASK, ['--help']);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^usage: next-task\.mjs --plan <file>/);
+});
+
+test('chainedForCaller drops the lines the runner has and keeps Since: and Wait:', () => {
+  const text = ['Plan: p.md', 'Branch: b', 'Drift: none', 'Base: abc', 'Proof: x', 'Brief: /b/1.md', 'Read your brief at /b/1.md.', 'Since: 1', 'Wait: node w'].join('\n');
+  assert.equal(chainedForCaller(text), ['Read your brief at /b/1.md.', 'Since: 1', 'Wait: node w'].join('\n'));
 });

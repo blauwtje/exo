@@ -8,7 +8,7 @@ A script in `scripts/` does a step the same way every time, so the model runs it
 - Make `--help` the interface: pass `usage` to `parseFlags` in `lib/script-flags.mjs`, which prints it and exits.
 - Take input from flags, stdin or the environment, because a prompt would hang an unattended run.
 - Send data to stdout and diagnostics to stderr, and document the exit codes in the usage text.
-- Bound the output. A long result goes to a file and the script prints its path.
+- Print only what the caller's next step reads. The full text goes to a `.exo/logs/<name>.log` file that one `Detail:` line names, through `lib/script-output.mjs`.
 - For destructive or batch work, add a `--dry-run` that prints the plan first, and make a rerun with the same input change nothing more.
 
 ## Body

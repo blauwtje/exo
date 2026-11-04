@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
-import { contextDecision, contextLimit, softLimit, subagentStartNote } from '../lib/context-limits.mjs';
+import { contextDecision, contextLimit, softLimit } from '../lib/context-limits.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
@@ -51,7 +51,6 @@ test('the hook limit follows an overriding run.json', () => {
   process.env.HOME = home;
   try {
     assert.equal(contextLimit(), 40_000);
-    assert.match(subagentStartNote(), /30k.*40k/s);
   } finally {
     process.env.HOME = saved;
   }
@@ -159,18 +158,6 @@ test('a subagent is warned again after it shrinks below the soft limit', () => {
   assert.ok(call(SOFT));
 });
 
-test('the SubagentStart hook gives every subagent the limits and the hand-over route in its own start context', async () => {
-  const { execFileSync } = await import('node:child_process');
-  const hook = new URL('../hooks/subagent-start.mjs', import.meta.url);
-  const out = JSON.parse(execFileSync(process.execPath, [hook.pathname], { input: '{}', encoding: 'utf8' }));
-  assert.equal(out.hookSpecificOutput.hookEventName, 'SubagentStart');
-  assert.equal(out.hookSpecificOutput.additionalContext, subagentStartNote());
-  const soft = `${softLimit(contextLimit()) / 1000}k`;
-  const hard = `${contextLimit() / 1000}k`;
-  assert.ok(subagentStartNote().includes(`From ${soft}`) && subagentStartNote().includes(`Past ${hard}`));
-  assert.match(subagentStartNote(), /except Write.*result file/s);
-});
-
 test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {
   const { hookAgentType } = await import('../lib/context-limits.mjs');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-type-'));
@@ -190,4 +177,12 @@ test('hookAgentType reads agent_type first, else the meta file beside the subage
   assert.equal(hookAgentType({ transcript_path }), null);
   assert.equal(hookAgentType({}), null);
   assert.equal(hookAgentType(undefined), null);
+});
+
+test('the SubagentStart hook, its file and subagentStartNote are gone', async () => {
+  const hooks = JSON.parse(fs.readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8')).hooks;
+  assert.equal('SubagentStart' in hooks, false);
+  assert.equal(fs.existsSync(new URL('../hooks/subagent-start.mjs', import.meta.url)), false);
+  const limits = await import('../lib/context-limits.mjs');
+  assert.equal('subagentStartNote' in limits, false);
 });

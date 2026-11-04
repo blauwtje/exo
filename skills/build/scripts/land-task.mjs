@@ -11,9 +11,10 @@ import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, coversCompanion, decisionsPathOf, defaultBase, frameOf, isCovered, isolatedCheckout, isPlanDoc, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { forCaller, keepLines } from '#script-output';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
-import { nextTaskReport, refreshProgress } from './next-task.mjs';
+import { chainedForCaller, nextTaskReport, refreshProgress } from './next-task.mjs';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { CODE_RULE_LIMITS, codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
@@ -849,7 +850,7 @@ function committedSha(task, { root, planId, planPath, base }) {
 }
 
 function landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine }) {
-  const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (exit 0)`, ...tail].join('\n')}\n`).join('');
+  const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (${proofOutcomeOf(tail)})`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const route = planRoute(plan.tasks);
   const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
@@ -889,10 +890,18 @@ function landTaskLocked({ planText, number, root, reportText, reportPath, planPa
   return landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine });
 }
 
+const PROOF_TAIL = /^ {2}/;
+const NEXT_REPEATS = /^(?:Landed|Route|Then): /;
+
+export function landingForCaller(text, { followed = false } = {}) {
+  return keepLines(text, (line) => !PROOF_TAIL.test(line) && !(followed && NEXT_REPEATS.test(line)));
+}
+
 // `--next` swaps the `Then:` line for next-task's own report, slots opened, so the caller dispatches in the same turn.
 export function withNext(output, { planPath, planText, root }) {
   const kept = output.split('\n').filter((line) => !line.startsWith('Then: ')).join('\n');
-  return `${kept}${nextTaskReport({ planPath, planText, root, open: true })}`;
+  const next = nextTaskReport({ planPath, planText, root, open: true });
+  return { full: `${kept}${next}`, shown: `${landingForCaller(output, { followed: true })}${chainedForCaller(next)}` };
 }
 
 const USAGE = [
@@ -900,6 +909,12 @@ const USAGE = [
   '       land-task.mjs --fix <subject> [--body <text>] [--plan <plan>] [--root <dir>]',
   "Lands a plan task from its implementer report, or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer, --body adds the commit body after a blank line. Exits 2 on a usage error."
 ].join('\n');
+
+function callerParts(output, { run, next, planPath, planText, root }) {
+  if (run !== landTask) return { full: output, shown: output };
+  if (next) return withNext(output, { planPath, planText, root });
+  return { full: output, shown: landingForCaller(output) };
+}
 
 function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', body: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' }, { usage: USAGE });
@@ -924,9 +939,9 @@ function main(argv) {
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
   const run = flags.check === true ? checkTask : landTask;
-  let output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
-  if (flags.next === true && run === landTask) output = withNext(output, { planPath: flags.plan, planText, root });
-  process.stdout.write(quiet.file === null ? output : quietText(output, true));
+  const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
+  const { full, shown } = callerParts(output, { run, next: flags.next === true, planPath: flags.plan, planText, root });
+  process.stdout.write(quiet.file === null ? forCaller({ root, name: `land-task-${flags.task}`, full, shown }) : quietText(full, true));
   if (run === landTask) refreshProgress({ planPath: flags.plan, planText, root });
 }
 

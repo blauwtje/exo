@@ -57,6 +57,8 @@ import { checkProseStyle } from './verify/checks/prose-style.mjs';
 import { checkCodeComments } from './verify/checks/code-comments.mjs';
 import { checkFixClassLoad } from './verify/checks/fix-class-load.mjs';
 import { checkScriptHelp } from './verify/checks/script-help.mjs';
+import { checkScriptOutput } from './verify/checks/script-output.mjs';
+import { checkSubagentStart } from './verify/checks/subagent-start.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -91,6 +93,8 @@ checkAgentDescriptionBudgets(report, repository);
 checkRouting(report, repository, { staticOnly: values.static });
 checkInjectedContext(report, repository);
 checkHookSize(report, repository);
+checkScriptOutput(report, repository);
+checkSubagentStart(report, repository);
 checkHookLatency(report, repository);
 checkNameClash(report, repository);
 checkPluginValidate(report, repository);
