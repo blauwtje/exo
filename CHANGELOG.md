@@ -26,6 +26,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - An `exo-kind:` label in a brief moves an `exo:` agent off its own kind only when the call also passes `model` or `effort`, or when the agent's `lib/model-kinds.json` entry lists that label under `labels`. Before this, the `exo-kind: review` line that `agents/orchestrator.md` puts on every brief ran `exo:fetch-docs` and `exo:locate-code` on opus, high, where the table gives them sonnet, medium.
 - `exo:improve` ends a round as `timeout` with no score when a score run passes the time limit. Before, the killed run counted as an aborted run and was rerun, so a later run could still keep the commit.
 
+### Removed
+- The status line drops its `ctx <used>/<window>` part, because Claude Code shows the context token count itself in verbose mode. The window it showed was the model's full window from `context_window.context_window_size` (1M for Opus 5.5), not a lower `autoCompactWindow`, which the status line input does not carry. Line 2 now starts with `5h`.
+
 ## 0.138.0 - 2026-11-02
 
 ### Highlights
