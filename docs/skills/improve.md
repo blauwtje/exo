@@ -4,9 +4,9 @@ Runs a keep-or-reset loop that raises one score in your repo, round after round,
 
 ## When it runs
 
-On request: ask to raise a score in a loop, in plain words. The model starts it in your current session.
+Only when you type `/exo:improve <goal>`. It starts in your current session.
 
-Not for a one-off change. Ask for it directly.
+Not for a one-off change. Ask for it directly in plain words.
 
 ## What you get
 

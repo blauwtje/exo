@@ -10,6 +10,7 @@ import {
   buildArmCopy,
   gains,
   heldOutItems,
+  isRouting,
   leakScan,
   locateScore,
   pristineView,
@@ -18,6 +19,7 @@ import {
   scorerView,
   spendRefusal
 } from '../benchmarks/improve-real-copy.mjs';
+import { modelInvocableSkills } from '../benchmarks/routing.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-real-test-'));
@@ -32,7 +34,7 @@ function git(dir, ...args) {
 }
 
 before(() => {
-  for (const target of ['routing', 'routing-start', 'locate']) {
+  for (const target of ['routing', 'locate']) {
     copies[target] = buildArmCopy({ repo: REPO, target, dest: path.join(scratch, `${target}-copy`) });
   }
 });
@@ -47,28 +49,19 @@ test('the routing arm copy holds only train prompts and no results folder', () =
   assert.equal(git(dest, 'rev-list', '--count', '--all'), '1');
 });
 
-test('the routing-start arm copy holds only train prompts and none of the start held-out prompts', () => {
-  const { dest } = copies['routing-start'];
-  const prompts = readJson(path.join(dest, SPLITS['routing-start'].data));
-  assert.ok(prompts.every((entry) => entry.split === 'train'));
-  const heldOut = readJson(path.join(REPO, SPLITS['routing-start'].data)).filter((entry) => entry.expect === 'start' && entry.split === 'held-out');
-  assert.equal(heldOut.length, 15);
-  const kept = new Set(prompts.map((entry) => entry.prompt));
-  assert.equal(heldOut.some((entry) => kept.has(entry.prompt)), false);
-  const scanned = new Set(heldOutItems(REPO, 'routing-start').prompts);
-  assert.ok(heldOut.every((entry) => scanned.has(entry.prompt)));
-});
-
-test('both routing targets split the current prompts file by its split labels', () => {
+test('every routing target names a skill Claude can start and splits the current prompts file by its split labels', () => {
   const all = readJson(path.join(REPO, SPLITS.routing.data));
-  for (const target of ['routing', 'routing-start']) {
+  const invocable = modelInvocableSkills(REPO);
+  const targets = Object.keys(SPLITS).filter(isRouting);
+  assert.ok(targets.length > 0);
+  for (const target of targets) {
     const { skill } = SPLITS[target];
+    assert.ok(invocable.includes(skill), `${target} routes to ${skill}, which Claude cannot start`);
     const own = all.filter((entry) => entry.expect === skill);
     assert.ok(own.filter((entry) => entry.split === 'train').length > 0);
     assert.ok(own.filter((entry) => entry.split === 'held-out').length > 0);
     assert.equal(own.length, own.filter((entry) => ['train', 'held-out'].includes(entry.split)).length);
   }
-  assert.equal(SPLITS['routing-start'].file, 'skills/start/SKILL.md');
 });
 
 test('the locate arm copy holds only train briefs on a leak-free fixture root commit', () => {
@@ -84,7 +77,7 @@ test('the locate arm copy holds only train briefs on a leak-free fixture root co
 });
 
 test('a built copy of the real repository passes the leak scan for both targets', () => {
-  for (const target of ['routing', 'routing-start', 'locate']) {
+  for (const target of ['routing', 'locate']) {
     const items = heldOutItems(REPO, target);
     assert.ok(items.prompts.length > 0);
     assert.deepEqual(leakScan(copies[target].dest, target, { items }), []);
@@ -92,7 +85,7 @@ test('a built copy of the real repository passes the leak scan for both targets'
 });
 
 test('the real repository carries held-out text only in the data files and the results folder', () => {
-  for (const target of ['routing', 'routing-start', 'locate']) {
+  for (const target of ['routing', 'locate']) {
     const files = new Set(leakScan(REPO, target, { history: false }).map((hit) => hit.file));
     const unexpected = [...files].filter((file) => file !== SPLITS[target].data && !file.startsWith('benchmarks/results/'));
     assert.deepEqual(unexpected, []);

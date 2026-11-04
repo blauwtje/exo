@@ -97,15 +97,15 @@ function routingOut(recall, cost) {
   return { results: { 'sonnet:low': { hook: { train: { 'find-cause': { recall } } } } }, sessions: [{ cost_usd: cost }, { cost_usd: cost }] };
 }
 
-test('the routing-start scorer runs routing.mjs for the start skill and scores its recall', async () => {
+test('the routing scorer scores the recall of the find-cause skill and no other skill', async () => {
   const seen = [];
   const scorer = async ({ view, outFile, target }) => {
-    seen.push({ target, text: fs.readFileSync(path.join(view, SPLITS['routing-start'].file), 'utf8') });
-    fs.writeFileSync(outFile, JSON.stringify({ results: { 'sonnet:low': { hook: { train: { start: { recall: 0.4 }, 'find-cause': { recall: 1 } } } } }, sessions: [{ cost_usd: 0.1 }] }));
+    seen.push({ target, text: fs.readFileSync(path.join(view, SPLITS.routing.file), 'utf8') });
+    fs.writeFileSync(outFile, JSON.stringify({ results: { 'sonnet:low': { hook: { train: { spec: { recall: 1 }, 'find-cause': { recall: 0.4 } } } } }, sessions: [{ cost_usd: 0.1 }] }));
   };
-  const result = await scoreTarget({ repo: REPO, target: 'routing-start', split: 'train', targetText: 'start text', runs: 1, scorer });
+  const result = await scoreTarget({ repo: REPO, target: 'routing', split: 'train', targetText: 'find-cause text', runs: 1, scorer });
   assert.deepEqual(result.scores, [0.4]);
-  assert.deepEqual(seen, [{ target: 'routing-start', text: 'start text' }]);
+  assert.deepEqual(seen, [{ target: 'routing', text: 'find-cause text' }]);
 });
 
 test('scoreTarget averages runs, sums spend and scores the pristine view with the given text', async () => {

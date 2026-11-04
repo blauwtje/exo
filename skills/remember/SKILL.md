@@ -1,6 +1,7 @@
 ---
 name: remember
 description: Use when the user asks to keep a repository correction, or what exo remembers here. Not for build or test commands (find-cause) or plans (spec).
+disable-model-invocation: true
 argument-hint: "[the correction this session must not lose]"
 allowed-tools: Bash(node *memory.mjs*)
 ---

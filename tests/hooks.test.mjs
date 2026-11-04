@@ -79,8 +79,7 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /--git-common-dir/, 'the memory pointer does not resolve the common git directory');
   assert.match(hook, /fs\.existsSync\(memoryFile\)/, 'the memory pointer is added without testing for the file');
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
-  assert.match(hook, /and use \\`exo:remember\\` to change it/, 'the memory pointer does not name exo:remember');
-  assert.doesNotMatch(hook, /\/exo:remember/, 'the memory pointer names the slash command');
+  assert.match(hook, /ask the user to type \\`\/exo:remember\\` to change it/, 'the memory pointer does not name the typed command');
 });
 
 test('the session hook prints no book command', () => {

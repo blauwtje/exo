@@ -28,13 +28,13 @@ import {
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('every arm prompt carries the same goal text', () => {
-  for (const target of ['routing', 'routing-start', 'locate']) {
+  for (const target of ['routing', 'locate']) {
     const goal = goalText(target);
     assert.ok(goal.includes('`node score.mjs`'));
     for (const arm of Object.keys(ARMS)) assert.ok(armPrompt(arm, target).includes(goal));
   }
   assert.equal(armPrompt('improve-opus', 'routing'), `/exo:improve ${goalText('routing')}`);
-  assert.ok(goalText('routing-start').includes('skills/start/SKILL.md'));
+  assert.ok(goalText('routing').includes('skills/find-cause/SKILL.md'));
   assert.equal(armPrompt('goal-sonnet', 'locate'), `/goal ${goalText('locate')}; or stop when node score.mjs refuses`);
 });
 
@@ -76,8 +76,6 @@ test('projection adds the arm cap, the train calls and the held-out runs', () =>
 
 test('scorer session counts come from the data files', () => {
   assert.deepEqual(scorerSessions(REPO, 'routing'), { train: 15, heldOut: 15 });
-  assert.deepEqual(scorerSessions(REPO, 'routing-start'), { train: 15, heldOut: 15 });
-  assert.ok(sessionUsd(REPO, 'routing-start') > 0);
   assert.deepEqual(scorerSessions(REPO, 'locate'), { train: 6, heldOut: 4 });
   assert.ok(sessionUsd(REPO, 'routing') > 0);
 });
@@ -98,7 +96,7 @@ test('options default to the quick tier and smoke narrows to one goal-sonnet arm
   assert.deepEqual([quick.target, quick.runs, quick.cap, quick.scoreCalls, quick.heldOutRuns], ['routing', 1, 1, 3, 2]);
   assert.deepEqual(quick.arms, Object.keys(ARMS));
   assert.equal(parseOptions(['--target', 'locate']).scoreCalls, 2);
-  assert.deepEqual([parseOptions(['--target', 'routing-start']).target, parseOptions(['--target', 'routing-start']).scoreCalls], ['routing-start', 3]);
+  assert.throws(() => parseOptions(['--target', 'routing-start']), /--target takes routing, locate/);
   const smoke = parseOptions(['--smoke', '--cap', '0.25']);
   assert.deepEqual([smoke.arms, smoke.scoreCalls, smoke.heldOutRuns, smoke.cap], [['goal-sonnet'], 1, 1, 0.25]);
   assert.deepEqual(parseOptions(['--arm', 'goal-opus,improve-opus']).arms, ['goal-opus', 'improve-opus']);

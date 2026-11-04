@@ -1,6 +1,7 @@
 ---
 name: start
 description: Use when the user asks anything about exo skills or commands, like which to run for a task or if one exists. Answer through this skill. Not for routing rules.
+disable-model-invocation: true
 argument-hint: "[goal or spec-path]"
 ---
 

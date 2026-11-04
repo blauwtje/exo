@@ -144,7 +144,8 @@ test('ignores files outside skills, agents, hooks and lib', () => {
   assert.equal(outcome.passed, true, outcome.detail);
 });
 
-const ON_REQUEST_SKILLS = ['save-session', 'prompt', 'remember', 'configure', 'start', 'write-docs', 'edit-skills'];
+const ON_REQUEST_SKILLS = ['save-session', 'write-docs', 'edit-skills'];
+const USER_ONLY_SKILLS = ['configure', 'improve', 'prompt', 'remember', 'start'];
 const ON_REQUEST_DESCRIPTION_CAP = 160;
 
 function realFrontmatter(name) {
@@ -160,5 +161,11 @@ for (const name of ON_REQUEST_SKILLS) {
     assert.ok(description.startsWith('Use when the user asks'), description);
     assert.match(description, /\bNot for\b/);
     assert.ok(description.length <= ON_REQUEST_DESCRIPTION_CAP, `${description.length} chars`);
+  });
+}
+
+for (const name of USER_ONLY_SKILLS) {
+  test(`${name} is user-only`, () => {
+    assert.equal(realFrontmatter(name).get('disable-model-invocation'), 'true');
   });
 }

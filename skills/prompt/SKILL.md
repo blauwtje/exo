@@ -1,6 +1,7 @@
 ---
 name: prompt
 description: Use when the user asks to rewrite a rough prompt into a grounded one and run it. Not for a prompt the user wants run unseen.
+disable-model-invocation: true
 argument-hint: "<rough prompt>"
 ---
 

@@ -11,7 +11,6 @@ const ROUTING_DATA = { data: 'benchmarks/routing/prompts.json', train: 'train', 
 
 export const SPLITS = {
   routing: { ...ROUTING_DATA, skill: 'find-cause', file: 'skills/find-cause/SKILL.md' },
-  'routing-start': { ...ROUTING_DATA, skill: 'start', file: 'skills/start/SKILL.md' },
   locate: {
     file: 'agents/locate-code.md',
     data: 'benchmarks/locate-recall/briefs.json',

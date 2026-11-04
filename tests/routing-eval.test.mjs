@@ -37,7 +37,7 @@ test('evaluate writes cells, arms and per-arm per-split per-skill recall and fal
 test('descriptionHashes covers each model-invocable skill and session-routing', () => {
   const hashes = descriptionHashes(root);
   const skills = modelInvocableSkills(root);
-  assert.ok(skills.includes('build') && skills.includes('prompt') && skills.includes('improve'));
+  assert.ok(skills.includes('build') && skills.includes('spec') && skills.includes('watch'));
   assert.deepEqual(Object.keys(hashes).sort(), [...skills, 'session-routing'].sort());
   const routing = readFileSync(`${root}hooks/session-routing.md`, 'utf8');
   assert.equal(hashes['session-routing'], createHash('sha256').update(routing).digest('hex'));
@@ -226,13 +226,13 @@ test('withSkillRun for no skill swaps in the null sessions and keeps every hash'
 test('--skill runs only the prompts of that skill, or of no skill for none, and needs --full and a model-invocable skill', () => {
   const prompts = JSON.parse(readFileSync(`${root}benchmarks/routing/prompts.json`, 'utf8'));
   const run = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(mkdtempSync(join(tmpdir(), 'routing-skill-')), 'none.json'), ...args], { encoding: 'utf8' });
-  const full = run('--full', '--skill', 'improve');
+  const full = run('--full', '--skill', 'watch');
   assert.equal(full.status, 0, full.stderr);
-  assert.equal(Number(/dry-run: (\d+) sessions/.exec(full.stdout)[1]), prompts.filter((entry) => entry.expect === 'improve').length * 2 * 3);
+  assert.equal(Number(/dry-run: (\d+) sessions/.exec(full.stdout)[1]), prompts.filter((entry) => entry.expect === 'watch').length * 2 * 3);
   const none = run('--full', '--skill', 'none', '--split', 'held-out', '--arms', 'hook');
   assert.equal(none.status, 0, none.stderr);
   assert.equal(Number(/dry-run: (\d+) sessions/.exec(none.stdout)[1]), prompts.filter((entry) => entry.expect === null && entry.split === 'held-out').length * 3);
-  assert.match(run('--skill', 'improve').stderr, /--skill needs --full/);
+  assert.match(run('--skill', 'watch').stderr, /--skill needs --full/);
   assert.match(run('--full', '--skill', 'nope').stderr, /no model-invocable skill/);
 });
 

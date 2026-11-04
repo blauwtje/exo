@@ -1,6 +1,7 @@
 ---
 name: improve
 description: Use when the user asks to raise one score in a loop. Not for a one-off change.
+disable-model-invocation: true
 argument-hint: "<goal>"
 ---
 
