@@ -29,6 +29,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - Shared helpers replace local copies: `lib/basics.mjs` holds shellQuote, sleep, sleepSync and writeAtomic, benchmarks take mean, median and JSON reads from `benchmarks/basics.mjs`, and tests use one git helper and one tracked tempDir helper, 296 fewer lines.
+- The largest scripts are split into one-concern modules: `land-task.mjs` (962 to 112 lines), `run-plan.mjs` (935 to 391), `exo-cli.mjs`, `gate.mjs`, `plan-check.mjs` and `lib/plan-tasks.mjs` now each stay under 400 lines, and the hooks no longer load `contextSeries`.
 - An agent Grep or ToolSearch gets the head_limit or max_results that fit the context it has left, and a Glob or WebSearch whose largest output would not fit is denied, with the Glob steered to Grep; outside bypassPermissions and auto modes the Grep and ToolSearch are denied with that number.
 - An agent Read over the context it has left is cut to the offset and limit that fit, with a note on where to continue, instead of being denied.
 - An agent Read, Grep or ToolSearch over the context it has left is cut in every permission mode, not only bypassPermissions and auto, because the cut now returns `updatedInput` with no `permissionDecision` and the user's prompt still decides the call.
