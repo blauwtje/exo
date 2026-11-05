@@ -32,6 +32,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - The speed ledger records four measured rejects from the 61-repo research: parallel check steps, cheapest-first `--fail-fast` order, a per-step input-hash check cache and an early-prompt volatility audit.
+- The speed ledger records ideas 7 and 8 as measured rejects: build-task and review-branch read no whole source or dependency files on the flow fixture, and their 23.0% and 13.4% read shares are rule docs and the review input.
 - Shared helpers replace local copies: `lib/basics.mjs` holds shellQuote, sleep, sleepSync and writeAtomic, benchmarks take mean, median and JSON reads from `benchmarks/basics.mjs`, and tests use one git helper and one tracked tempDir helper, 296 fewer lines.
 - The largest scripts are split into one-concern modules: `land-task.mjs` (962 to 112 lines), `run-plan.mjs` (935 to 391), `exo-cli.mjs`, `gate.mjs`, `plan-check.mjs` and `lib/plan-tasks.mjs` now each stay under 400 lines, and the hooks no longer load `contextSeries`.
 - `transcript.mjs`, `pressure.mjs`, `skill-graph.mjs`, `run-session.mjs` and `next-task.mjs` are split into one-concern modules under 400 lines, two benchmark Claude runs share `benchmarks/capture-child.mjs`, and `CONTRIBUTING.md` states the job-word rule once.
