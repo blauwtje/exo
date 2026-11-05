@@ -63,6 +63,6 @@ test('the catalog sets agentContextTarget to 60000, bytesPerToken to 2 and fetch
   assert.equal(catalog.defaults.fetchTokens, 1600)
   assert.equal(catalog.defaults.orchestratorWorkers, 4)
   assert.equal(catalog.defaults.resultCapBytes, 4096)
-  assert.equal(catalog.defaults.orchestratorResultCapBytes, 2048)
+  assert.equal(catalog.defaults.orchestratorResultCapBytes, undefined)
   assert.equal(catalog.defaults.scriptBytes, 4096)
 })

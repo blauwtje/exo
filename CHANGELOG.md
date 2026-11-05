@@ -10,8 +10,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- Files the user opens (run report, handoff, manual checks, orchestrator result file) follow one plain-words format in `skills/route-skills/references/user-read-format.md`, which says they hold no machine text, and `npm run check` fails a listed source that breaks it, that has an all-caps word of 3 letters or more besides PR, CI, URL and API, or that has a line where a quarter of the tokens are code.
 - The hook timing benchmark has a `worker count read` case that times the orchestrator Bash step reading the slice file.
-- A `SubagentStop` hook, `hooks/agent-stop.mjs`, deletes the per-call Bash temp logs of the agent that finished.
+- Session start deletes the per-call Bash temp logs in `exo-bash/` under the OS temp folder once they are older than `EXO_SAVED_OUTPUT_MS` (one day).
 - Agent context is budgeted before dispatch: a worker brief carries `Reads:`, optional `Fetches: <n>` (1600 tokens per page, measured at WebFetch p90 1549, n=4999) and `Result:`, and `hooks/agent-effort.mjs` refuses an orchestrator worker whose estimated reads pass half of `defaults.agentContextTarget` (60000), naming its three largest reads.
 - An orchestrator runs one slice of at most `defaults.orchestratorWorkers` (4) dispatches, declared by a `Workers: <n>` line; the Agent hook refuses a missing line, n over the limit and call n+1.
 - `skills/gate/scripts/context-peaks.mjs` reports peak context per agent type and the U1-U8 verdicts that prove or retire each unmeasured default.
@@ -21,6 +22,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:watch` also reads TikTok, Instagram Reels, Facebook, X and other yt-dlp sites, and transcribes a video with no captions locally: yt-dlp fetches its audio, ffmpeg converts it, and whisper.cpp (`whisper-cli` with `--model`) or openai-whisper writes the transcript; a missing tool stops that video with an install hint, and nothing is installed
 
 ### Changed
+- An orchestrator's recursive `grep` or `rg` is rewritten to list matching files only (`-l`), because it has no Grep tool and a wide search floods its context.
+- The handoff stub that `hooks/session-end.mjs` writes follows `handoff-template.md`: an answer line first, then Current state, Next step and Resume, in plain words, from `hooks/handoff-stub.md`.
+- Hooks cost less per session: the `SubagentStop` hook is gone, the Read, web, Skill and MCP hook starts Node only for Read, Skill, a run session or an agent past its soft context limit, two Bash deny reasons are shorter, and `npm run check` fails when hook entries or hook text grow (`verify/checks/hook-cost.mjs`).
 - The `exo:orchestrator` description tells the lead that its brief needs a `Workers: <n>` line with n from 1 to 4, so the first dispatch is no longer blocked and resent; the hook still refuses a missing line and n over the limit.
 - An orchestrator does no work before its first dispatch: its Bash is refused until then, so discovery goes to a `lookup` worker. `sleep` in command position is refused for the orchestrator and task-runner, which end their turn and wait for the notification.
 - Read and Bash results of capped subagent types are cut at `defaults.resultCapBytes` (4096 B) and `orchestratorResultCapBytes` (2048 B), with full Bash output kept in a per-call temp log; the lead, build-task and task-runner stay uncapped.
@@ -37,6 +41,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:improve` keeps a commit only when its gain clears the score's noise: it scores a candidate up to 3 times and keeps it when the 95% CI of the gain sits above 0, or when it shrinks the code with a mean gain of at least 0 after 3 runs (`defaults.improve` in `lib/run-providers.json`); every benchmark scorer prints each mean with its standard error and CI from the new `lib/eval-stats.mjs`, counts an aborted or errored run as a failure, and each paid benchmark has `--dry-run` and a quick default tier, so a bare `node benchmarks/run.mjs` runs the $1 quick tier; `npm run check` fails a scorer or paid entry point that reaches no variance gate, and `docs/principles/eval.md` holds the statistical eval checklist.
 
 ### Fixed
+- An over-cap Read now runs with the offset and limit that fit instead of being refused, the orchestrator cap is derived from `agentContextTarget` (2048 -> 7500 bytes), and an orchestrator's Bash before its first dispatch counts against its pre-dispatch read cap instead of being refused.
+- An unmatched glob such as `--include=*.md` no longer fails a Bash call under zsh: the session hook adds `setopt nonomatch` to `CLAUDE_ENV_FILE`, which Claude Code runs ahead of each Bash command.
+- A worker brief's `Reads:` line counts only path items: `none` in any case, trailing punctuation and prose words no longer block, globs expand, a pure path line is normalized in place, and paths resolve in the brief's `Worktree:`.
 - The worker-size test asserts again that an orchestrator brief with no `Result:` line, or one outside `.exo/`, is refused and that the refusal names `Result:`.
 - An orchestrator no longer spends its context before its first worker runs: until its first dispatch the Read hook refuses a Read outside its brief's `Reads:` paths and any Read past `defaults.orchestratorPredispatchReads` (4), as Bash already was, and its prompt gives the verification of many rows to workers split across them.
 - The status line's `ctx <used>/<window>` part now shows the window Claude Code compacts at: `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, else `autoCompactWindow` from the settings files, capped at the model's `context_window_size`, instead of the model's full window (1M for Opus 5.5).

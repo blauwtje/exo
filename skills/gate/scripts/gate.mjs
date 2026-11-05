@@ -13,6 +13,7 @@ import { changedPaths } from '#size-facts';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
 import { codeRuleFindings } from '#code-rules';
 import { proofsReport } from '#proofs-report';
+import { answerOf, renderRunReport } from './gate-report.mjs';
 import { transcriptFolder } from '#confine-claude';
 import { agentContextTarget, contextPeaks } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -694,12 +695,13 @@ function writeRunReport(lines, { planPath, planText, root }) {
   const manual = lines.filter((line) => line.startsWith('MANUAL '));
   const checks = lines.filter((line) => !line.startsWith('MANUAL '));
   const reportPath = path.join(root, '.exo', 'run-report.md');
-  const text = [
-    '## Proofs', proofsReport({ planPath, planText, root }).trimEnd(), '',
-    '## Checks', ...checks, '',
-    '## Context', ...contextSection(planPath, root), '',
-    '## Manual checks', ...manual.map((line) => `- ${line.slice('MANUAL '.length)}`), ''
-  ].join('\n');
+  const text = renderRunReport({
+    answer: answerOf(checks, manual.length),
+    proofs: proofsReport({ planPath, planText, root }).trimEnd(),
+    checks,
+    context: contextSection(planPath, root),
+    manual: manual.map((line) => line.slice('MANUAL '.length))
+  });
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, text);
   return reportPath;

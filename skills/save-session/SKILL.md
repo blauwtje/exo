@@ -33,21 +33,9 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 
 ## What it holds
 
-First line under the H1: `Written: <YYYY-MM-DD>, HEAD <short commit>, branch <name>`, commit from `git rev-parse --short HEAD`.
+Fill `assets/handoff-template.md`. Its first line answers in one sentence where the work stands, and `## Resume` is always present while the other sections are left out when the session has nothing true for them. The file is read by the user, so write plain words in the user's language per `../route-skills/references/user-read-format.md`.
 
-Then these sections, in this order; each left out when the session has nothing true for it:
-
-- `## Goal`: what the work is for, one or two sentences, and what it will not do.
-- `## Current state`: what exists and works now, and what is half-built, each named by file.
-- `## Decisions`: one line each, `<decision>, decided by <the user | this session>`.
-- `## Files touched`: path, then one clause of what changed there.
-- `## Proven`: one line per claim, `<claim>: <the command that proved it>, <its result>`.
-- `## Next step`: exactly one action, the first thing the fresh session does.
-- `## Then`: every later step through the report to the user, numbered, each with its full command. For work driving a run or loop, also say how to wait for it, what to do when it fails, and where to stop and report.
-- `## Open questions`: what is unresolved, and who can answer it.
-- `## Resume`: always present, unlike the sections above.
-
-Last line of the file, after `## Resume`: `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue, such as `Resume: lees .git/exo/handoff/<branch>.md en ga verder`. The sections carry every step, so this one line suffices.
+The last line of the file is `Resume: <prompt>`, one sentence telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue, such as `Resume: lees .git/exo/handoff/<branch>.md en ga verder`. The sections carry every step, so this one line suffices.
 
 In those sections:
 

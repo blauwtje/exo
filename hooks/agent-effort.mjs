@@ -8,7 +8,7 @@ import { BUDGETS, EFFORTS, INHERIT, readKindTable, TABLE_PATH } from '../lib/mod
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
-import { workerSize } from '#worker-size';
+import { withNormalReads, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
 
@@ -91,9 +91,9 @@ function filled(input, budget) {
   return { ...rest, ...(model && { model }), ...(effort && { effort }) };
 }
 
-export function agentEffort({ tool_name: tool, tool_input: input, effort } = {}, budget = settingValue('budget')) {
+export function agentEffort({ tool_name: tool, tool_input: input, effort, cwd } = {}, budget = settingValue('budget')) {
   if (tool !== 'Agent' || !input) return null;
-  const updated = raised(filled(defaulted(input, budget), budget), effort?.level);
+  const updated = raised(filled(defaulted(withNormalReads(input, cwd), budget), budget), effort?.level);
   if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
@@ -127,18 +127,14 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = se
   return { permissionDecision: 'deny', permissionDecisionReason: reason };
 }
 
-function largestText(largest) {
-  return largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ');
-}
-
 function sizeReason(size, { missing, fetchDocs }) {
   if (size.invalid.length) return `This worker brief has an invalid ${size.invalid.join(' and ')} line. Give a whole number.`;
-  if (size.unresolved.length) return `This worker brief reads paths that do not exist: ${size.unresolved.join(', ')}. Name existing paths or \`none\`.`;
+  if (size.unresolved.length) return `This worker brief reads paths that do not exist: ${size.unresolved.join(', ')}. Expected: \`Reads: a.md, lib/b.mjs\` or \`Reads: none\`.`;
   if (missing.join() === 'Reads') return 'This worker brief lacks a `Reads:` line. Add one of paths or `none`.';
   if (missing.length) return `This worker brief lacks ${missing.join(' and ')}. Add a \`Reads:\` line of paths or \`none\` and a \`Result:\` line naming one \`.exo/<...>.md\` file.`;
   const estimate = `This worker brief reads about ${size.tokens} tokens against a budget of ${size.budget}.`;
   if (fetchDocs) return `${estimate} Lower the \`Fetches:\` count or split the fetches across more agents.`;
-  return `${estimate} Largest reads: ${largestText(size.largest)}. Split the work into more agents by path or line range, each with its own \`Reads:\` and \`Result:\`.`;
+  return `${estimate} Largest reads: ${size.largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ')}. Split the work into more agents by path or line range, each with its own \`Reads:\` and \`Result:\`.`;
 }
 
 function workersFields(prompt) {

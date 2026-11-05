@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/context-limit.mjs\"",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; input=$(cat); [[ -n $EXO_RUN_HANDOFF || $input =~ \\\"tool_name\\\"[[:space:]]*:[[:space:]]*\\\"(Read|Skill)\\\" ]] || { [[ $input =~ \\\"agent_id\\\"[[:space:]]*:[[:space:]]*\\\"([^\\\"]+)\\\" ]] && [ -e \"${TMPDIR:-/tmp}/exo-context-${BASH_REMATCH[1]//[^A-Za-z0-9_-]/_}\" ]; } || exit 0; exec <<<\"$input\"; node \"${CLAUDE_PLUGIN_ROOT}/hooks/context-limit.mjs\"",
             "shell": "bash",
             "timeout": 10
           }
@@ -65,18 +65,6 @@
           {
             "type": "command",
             "command": "command -v node >/dev/null 2>&1 || exit 0; [ -n \"$EXO_RUN\" ] && [ -n \"$EXO_RUN_DIR\" ] || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs\"",
-            "shell": "bash",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/hooks/agent-stop.mjs\"",
             "shell": "bash",
             "timeout": 10
           }

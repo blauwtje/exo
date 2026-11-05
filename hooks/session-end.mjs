@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { inSidecall, readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
 import { handoffFile } from '../skills/save-session/scripts/handoff.mjs';
@@ -49,29 +50,28 @@ function newestProgressFile(cwd) {
   return candidates[0]?.file;
 }
 
-function currentStateLines(dirty, progress) {
-  const files = dirty.length === 0 ? ['No uncommitted files.'] : ['Uncommitted files:', ...dirty.map((line) => `- ${line}`)];
-  return progress === undefined ? files : [...files, '', `Progress file: ${progress}`];
+const SKILL_FILE = fileURLToPath(new URL('../skills/save-session/SKILL.md', import.meta.url));
+const STUB_FILE = fileURLToPath(new URL('./handoff-stub.md', import.meta.url));
+const RESUME_BLOCK = /^## Resume\n[\s\S]*?```text\n([\s\S]*?)\n```/m;
+
+function stateText(dirty, progress) {
+  const changes = dirty.length === 0
+    ? ['Every change is saved in a commit.']
+    : ['Nothing below is saved in a commit, so do not treat these edits as saved:', ...dirty.map((line) => `- ${line.slice(3)}`)];
+  return (progress === undefined ? changes : [...changes, '', `Progress file: ${progress}`]).join('\n');
 }
 
 function stubText(cwd, file, dirty, progress) {
-  const head = git(cwd, 'rev-parse', '--short', 'HEAD') ?? 'none';
-  const branch = git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD') ?? path.basename(path.resolve(cwd));
-  return [
-    '# Handoff',
-    '',
-    `Written: ${new Date().toISOString().slice(0, 10)}, HEAD ${head}, branch ${branch}`,
-    AUTO_MARK,
-    '',
-    'The session ended without a handoff; this stub holds only what the files show.',
-    '',
-    '## Current state',
-    '',
-    ...currentStateLines(dirty, progress),
-    '',
-    `Resume: read ${file} and continue the work`,
-    ''
-  ].join('\n');
+  const values = {
+    date: new Date().toISOString().slice(0, 10),
+    head: git(cwd, 'rev-parse', '--short', 'HEAD') ?? 'none',
+    branch: git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD') ?? path.basename(path.resolve(cwd)),
+    state: stateText(dirty, progress),
+    next: progress === undefined ? 'Look at the changed files, then continue the work.' : 'Read the progress file, then continue the work.',
+    paragraph: RESUME_BLOCK.exec(fs.readFileSync(SKILL_FILE, 'utf8'))?.[1] ?? '',
+    file
+  };
+  return fs.readFileSync(STUB_FILE, 'utf8').replace(/\{\{(\w+)\}\}/g, (_, key) => values[key]);
 }
 
 export function writeHandoffStub({ cwd, transcript_path: transcriptPath }) {

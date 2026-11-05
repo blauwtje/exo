@@ -60,9 +60,9 @@ test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script'
   for (const { hook } of entries) assert.ok(hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"'), hook.command);
 });
 
-test('only SessionStart, SessionEnd, SubagentStop, PreToolUse and Stop have hooks, and the prompt dispatcher is gone', () => {
-  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop', 'SubagentStop']);
-  for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs']) {
+test('only SessionStart, SessionEnd, PreToolUse and Stop have hooks, and the prompt dispatcher and SubagentStop hook are gone', () => {
+  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop']);
+  for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs', 'hooks/agent-stop.mjs']) {
     assert.equal(fs.existsSync(path.join(REPOSITORY, file)), false, file);
   }
 });
@@ -109,9 +109,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.ok(entry.hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"'), entry.hook.command);
 });
 
-test('the plugin registers nine hook commands, each under bash', () => {
+test('the plugin registers eight hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 9, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 8, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
@@ -485,18 +485,20 @@ test('the script-size step reads its cap from defaults.scriptBytes', async () =>
   assert.match(denied.hookSpecificOutput.permissionDecisionReason, new RegExp(`over ${limit} bytes`));
 });
 
-test('an orchestrator Bash command is denied until its first dispatch is recorded', async () => {
+test('an orchestrator Bash command runs within the pre-dispatch read cap and is denied past it until its first dispatch', async () => {
   const { PREDISPATCH_STEP } = await import('../hooks/dispatch-bash.mjs');
   const { recordSlice } = await import('../lib/slice-state.mjs');
+  const { orchestratorPredispatchReads } = await import('../lib/context-limits.mjs');
   const agentId = `predispatch-${process.pid}`;
   const input = (agentType) => ({ agent_id: agentId, agent_type: agentType, tool_input: { command: 'ls' } });
+  for (let call = 0; call < orchestratorPredispatchReads(); call += 1) assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
   const denied = PREDISPATCH_STEP.run(input('exo:orchestrator'));
   assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(denied.hookSpecificOutput.permissionDecisionReason, /lookup/);
+  assert.match(denied.hookSpecificOutput.permissionDecisionReason, /Bash calls before its first dispatch/);
   assert.equal(PREDISPATCH_STEP.run(input('exo:task-runner')), null);
   recordSlice(agentId);
   assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
-  fs.rmSync(path.join(os.tmpdir(), `exo-slice-${agentId}`), { force: true });
+  for (const kind of ['slice', 'predispatch']) fs.rmSync(path.join(os.tmpdir(), `exo-${kind}-${agentId}`), { force: true });
 });
 
 test('the sleep step denies sleep in command position for an orchestrator or task-runner', async () => {
@@ -548,23 +550,41 @@ test('a capped agent Bash output is cut at the result cap and keeps the exit cod
   assert.match((await cappedRun('echo hi')).stdout, /hi\n$/);
 });
 
-test('the SubagentStop hook removes the saved Bash outputs of the finished agent only', async () => {
-  const finished = `stop-agent-${process.pid}`;
-  const other = `stop-other-${process.pid}`;
-  const logOf = async (agent) => {
-    const { stdout } = await cappedRun(BIG_OUTPUT, { agent_id: agent });
-    return /full log: (.+)\]/.exec(stdout)[1];
+test('the SessionStart hook sweeps saved Bash outputs older than EXO_SAVED_OUTPUT_MS and keeps newer ones', () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sweep-'));
+  fs.mkdirSync(path.join(folder, 'exo-bash'));
+  const [old, fresh, other] = ['exo-bash-agent-old.log', 'exo-bash-agent-new.log', 'other.log'].map((name) => path.join(folder, 'exo-bash', name));
+  for (const file of [old, fresh, other]) fs.writeFileSync(file, 'x');
+  const twoDaysAgo = (Date.now() - 2 * 86400000) / 1000;
+  for (const file of [old, other]) fs.utimesSync(file, twoDaysAgo, twoDaysAgo);
+  const env = { ...process.env, TMPDIR: folder, CLAUDE_CONFIG_DIR: path.join(folder, 'config'), EXO_RUN_DIR: folder };
+  const run = spawnSync('node', [path.join(REPOSITORY, 'hooks', 'session-start.mjs')], { input: JSON.stringify({ hook_event_name: 'SessionStart', source: 'startup', cwd: folder }), encoding: 'utf8', env });
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(fs.existsSync(old), false);
+  assert.equal(fs.existsSync(fresh), true);
+  assert.equal(fs.existsSync(other), true);
+  fs.rmSync(folder, { recursive: true, force: true });
+});
+
+test('the context-limit entry starts node only for Read, Skill, a run session or an agent past its soft limit', () => {
+  const { command } = hookEntries().find((entry) => entry.matcher?.startsWith('Read|')).hook;
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-gate-'));
+  const traced = (input, extra = {}) => {
+    const env = { ...process.env, TMPDIR: folder, CLAUDE_PLUGIN_ROOT: REPOSITORY };
+    delete env.EXO_RUN_HANDOFF;
+    Object.assign(env, extra);
+    const run = spawnSync('bash', ['-xc', command], { input: JSON.stringify(input), encoding: 'utf8', env });
+    assert.equal(run.status, 0, run.stderr);
+    return run.stderr.includes('hooks/context-limit.mjs');
   };
-  const [first, second, kept] = [await logOf(finished), await logOf(finished), await logOf(other)];
-  assert.ok([first, second, kept].every((file) => fs.existsSync(file)));
-  const hook = HOOKS.SubagentStop[0].hooks[0];
-  assert.match(hook.command, /hooks\/agent-stop\.mjs"$/);
-  const run = spawnSync('node', [path.join(REPOSITORY, 'hooks', 'agent-stop.mjs')], { input: JSON.stringify({ hook_event_name: 'SubagentStop', agent_id: finished }), encoding: 'utf8' });
-  assert.equal(run.status, 0);
-  assert.equal(fs.existsSync(first), false);
-  assert.equal(fs.existsSync(second), false);
-  assert.equal(fs.existsSync(kept), true);
-  fs.rmSync(kept, { force: true });
+  assert.equal(traced({ tool_name: 'Grep', tool_input: {} }), false);
+  assert.equal(traced({ tool_name: 'mcp__x__y', agent_id: 'gate-a', tool_input: {} }), false);
+  assert.equal(traced({ tool_name: 'Read', tool_input: { file_path: '/nonexistent' } }), true);
+  assert.equal(traced({ tool_name: 'Skill', tool_input: { skill: 'exo:build' } }), true);
+  assert.equal(traced({ tool_name: 'Grep', tool_input: {} }, { EXO_RUN_HANDOFF: path.join(folder, 'handoff.md') }), true);
+  fs.writeFileSync(path.join(folder, 'exo-context-gate-a'), '1');
+  assert.equal(traced({ tool_name: 'mcp__x__y', agent_id: 'gate-a', tool_input: {} }), true);
+  fs.rmSync(folder, { recursive: true, force: true });
 });
 
 test('a capped agent Bash keeps a timeout and skips background, trailing backslash, other modes and other types', async () => {
@@ -582,5 +602,25 @@ test('a capped agent Bash keeps a timeout and skips background, trailing backsla
     const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', tool_input: { command: 'echo hi' }, ...extra };
     const output = await dispatchBash(hookInput, undefined, () => false);
     assert.doesNotMatch(output?.hookSpecificOutput?.updatedInput?.command ?? '', /output log/, JSON.stringify(extra));
+  }
+});
+
+test('the session hook makes an unmatched zsh glob pass through by one line in CLAUDE_ENV_FILE', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-env-file-'));
+  const envFile = path.join(home, 'sessionstart-hook-0.sh');
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: home, CLAUDE_ENV_FILE: envFile, EXO_RUN_DIR: home };
+  try {
+    for (let run = 0; run < 2; run += 1) execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+    const lines = fs.readFileSync(envFile, 'utf8').split('\n').filter((line) => line.includes('nonomatch'));
+    assert.equal(lines.length, 1);
+    for (const shell of ['zsh', 'bash'].filter((name) => spawnSync(name, ['-c', 'exit 0']).status === 0)) {
+      const result = spawnSync(shell, ['-c', `. '${envFile}'; eval 'echo --include=*.exo-no-match'`], { encoding: 'utf8' });
+      assert.equal(result.status, 0, `${shell}: ${result.stderr}`);
+      assert.equal(result.stdout, '--include=*.exo-no-match\n', shell);
+      assert.equal(result.stderr, '', shell);
+    }
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
   }
 });

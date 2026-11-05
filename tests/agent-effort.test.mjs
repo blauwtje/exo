@@ -302,3 +302,22 @@ test('the orchestrator description tells the lead the Workers line and its limit
   assert.match(description, /`Workers: <n>`/);
   assert.match(description, new RegExp(`n from 1 to ${orchestratorWorkers()}\\b`));
 });
+
+test('worker size: a none. or punctuated Reads line runs normalized and a missing path names the expected shape', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  fs.writeFileSync(path.join(dir, 'a.md'), 'x');
+  const run = (prompt) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput;
+  for (const reads of ['none.', 'None', '`a.md`.']) {
+    const output = run(`Reads: ${reads}\nResult: .exo/r.md`);
+    assert.notEqual(output?.permissionDecision, 'deny', reads);
+    assert.match(output.updatedInput.prompt, /^Reads: (none|a\.md)$/m, reads);
+  }
+  const reason = run('Reads: gone.md.\nResult: .exo/r.md').permissionDecisionReason;
+  assert.match(reason, /do not exist: gone\.md\. Expected: `Reads: a\.md, lib\/b\.mjs` or `Reads: none`\.$/);
+  assert.doesNotMatch(reason, /\.\./);
+});
+
+test('the orchestrator description states the Reads line shape', () => {
+  const agent = fs.readFileSync(new URL('../agents/orchestrator.md', import.meta.url), 'utf8');
+  assert.match(/^description: (.+)$/m.exec(agent)[1], /`Reads: a\.md, lib\/b\.mjs` or `none`/);
+});

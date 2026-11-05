@@ -10,6 +10,8 @@ import { memoryOn } from '#memory-store';
 import { inSidecall, readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { pruneExo } from '#exo-prune';
+import { removeSavedOutputs } from '../lib/context-limits.mjs';
+import { passUnmatchedGlobs } from '../lib/shell-fixes.mjs';
 import { environmentMs } from '../lib/script-flags.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
 
@@ -100,6 +102,13 @@ try {
   if (!onCodex) refreshStatusLauncher(configDirectory);
 } catch (error) {
   console.error(`exo: plugin-root pointer not written, ${error.message}`);
+}
+
+try {
+  removeSavedOutputs();
+  passUnmatchedGlobs(process.env.CLAUDE_ENV_FILE);
+} catch (error) {
+  console.error(`exo: saved Bash logs or the session shell setup not written, ${error.message}`);
 }
 
 // why: a detached run session (EXO_RUN_DIR, set by exo-cli.mjs for every spawned kind) reads no human-facing context; its final report is machine-read.

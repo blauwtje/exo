@@ -29,7 +29,9 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 export const INJECTED_CONTEXT_LOCK = { bytes: 3946, measured: '2026-11-04' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
-export const HOOK_LINES_LOCK = { lines:     1071, measured: '2026-11-05' };
+export const HOOK_LINES_LOCK = { lines: 1066, measured: '2026-11-05' };
+export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
+export const HOOK_TEXT_BYTES_LOCK = { bytes: 6131, measured: '2026-11-05' };
 export const HOOK_SPAWN_MS_LOCK = { ms: 75, measured: '2026-10-29' };
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
 // large test file is split before it lands.
@@ -93,7 +95,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/wave-worktrees.md': 963,
   'skills/build/run-task-prompt.md': 756,
   'skills/ship/references/pr-prep.md': 849,
-  'skills/spec/references/brief.md': 989,
+  'skills/spec/references/brief.md': 1032,
   'skills/spec/references/task-list.md': 1076,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits

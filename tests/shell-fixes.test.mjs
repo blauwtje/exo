@@ -213,3 +213,22 @@ test('the sed function leaves the caller variables n and a as they were', () => 
 test('the sed function passes a correct -i empty suffix through beside a bare -i', () => {
   assert.equal(runSedFunction("sed -i -i '' -e x f").stdout, '[-i][][-i][][-e][x][f]');
 });
+
+test('an orchestrator recursive grep or rg lists files only, through updatedInput', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  let calls = 0;
+  const rewritten = async (command, agentType = 'exo:orchestrator') => {
+    calls += 1;
+    const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: `wide-${process.pid}-${calls}`, agent_type: agentType, tool_input: { command } };
+    const output = await dispatchBash(hookInput, undefined, () => false);
+    return output?.hookSpecificOutput?.updatedInput?.command;
+  };
+  assert.match(await rewritten('grep -rn needle src'), /grep -l -rn needle src/);
+  assert.match(await rewritten('cd x && grep -R --include=*.mjs needle .'), /grep -l -R --include=\*\.mjs needle \./);
+  assert.match(await rewritten('rg -n needle src'), /rg -l -n needle src/);
+  assert.match(await rewritten('grep --recursive needle . | head'), /grep -l --recursive needle \. \| head/);
+  for (const command of ['grep needle one.txt', 'grep -rl needle src', 'rg --files src', 'rg -c needle src', 'git log --oneline']) {
+    assert.equal(await rewritten(command), undefined, command);
+  }
+  assert.equal(await rewritten('grep -rn needle src', 'exo:build-task'), undefined);
+});

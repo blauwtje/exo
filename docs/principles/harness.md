@@ -13,7 +13,7 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 - **Use hooks for what must happen every time.** CLAUDE.md is advisory, hooks are deterministic. [3] exo: `hooks/hooks.json`
 - **Use prompt or agent hooks only where judgment is needed.** Use an agent hook to check codebase state. [3] exo: gap, only command hooks
 - **Guard Stop hooks against loops.** Check `stop_hook_active`. [3] exo: `hooks/run-no-wait.mjs` caps blocks at `BLOCK_LIMIT = 2` per session, stricter than it
-- **`SubagentStop` and `TaskCompleted` hooks can block.** Exit code 2 keeps the subagent or task from finishing. [6] exo: `hooks/hooks.json`
+- **`SubagentStop` and `TaskCompleted` hooks can block.** Exit code 2 keeps the subagent or task from finishing. [6] exo: gap, unused
 - **Do not rely on one hook's deny to stop another, or let two hooks rewrite one tool input.** Hooks run independently. [3] exo: `hooks/dispatch-bash.mjs` merges deny in-process
 - **`/goal` is a prompt-based Stop hook judged by a fresh model.** It cannot run commands. [7] exo: gap, unused
 - **Plugin agents ignore `hooks`, `permissionMode` and `mcpServers`.** Declare them at plugin level. [8] exo: `hooks/hooks.json`

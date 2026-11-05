@@ -17,6 +17,7 @@ import { checkAgentDescriptionBudgets, checkDescriptionBudgets } from './verify/
 import { checkRouting } from './verify/checks/routing.mjs';
 import { checkInjectedContext } from './verify/checks/injected-context.mjs';
 import { checkHookSize } from './verify/checks/hook-size.mjs';
+import { checkHookCost } from './verify/checks/hook-cost.mjs';
 import { checkHookLatency } from './verify/checks/hook-latency.mjs';
 import { checkNameClash } from './verify/checks/name-clash.mjs';
 import { checkPluginValidate } from './verify/checks/plugin-validate.mjs';
@@ -59,6 +60,7 @@ import { checkFixClassLoad } from './verify/checks/fix-class-load.mjs';
 import { checkScriptHelp } from './verify/checks/script-help.mjs';
 import { checkScriptOutput } from './verify/checks/script-output.mjs';
 import { checkSubagentStart } from './verify/checks/subagent-start.mjs';
+import { checkUserReadFormat } from './verify/checks/user-read-format.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -93,6 +95,7 @@ checkAgentDescriptionBudgets(report, repository);
 checkRouting(report, repository, { staticOnly: values.static });
 checkInjectedContext(report, repository);
 checkHookSize(report, repository);
+checkHookCost(report, repository);
 checkScriptOutput(report, repository);
 checkSubagentStart(report, repository);
 checkHookLatency(report, repository);
@@ -138,6 +141,7 @@ checkBoundaryWords(report, repository);
 checkEditEvidence(report, repository);
 checkFixClassLoad(report, repository);
 checkScriptHelp(report, repository);
+checkUserReadFormat(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);

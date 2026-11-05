@@ -12,7 +12,7 @@ In this order:
 - **Open points:** only an unanswered question for the user, one list item each. Plan-check flags a listed entry, and build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does. Each item cites a task number, a `Data:` segment or the Success criterion, or else it is a Manual check.
-- **Manual checks:** only checks that need the user's own eyes, hands or account, one line each. The run report holds them, not the final message.
+- **Manual checks:** only checks that need the user's own eyes, hands or account, one line each, written per `## Manual checks` below. The run report holds them, not the final message.
 - **Visual direction:** for a new visual surface only. It says whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions.
   - When the frontend-design skill returns, add the path of its `contract-selected.json` with the contract's `title` and `description`.
 - **Plan basis**, **Success criterion**, **Checkpoint**, **Tasks**, each as the task-list specification defines it.
@@ -21,6 +21,10 @@ In this order:
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
 
 - With `docs`, the brief goes to `docs/specs/<topic>.md`, which stays gitignored and is not added with `git add`. In plan mode it goes to the harness plan file.
+
+## Manual checks
+
+Each line is what to do, then what the user should see, in plain words a child follows and in the user's language.
 
 ## The task list
 

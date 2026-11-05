@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
+import { problems, readReference, REFERENCE_PATH } from '../verify/user-read.mjs';
 
 const hook = path.resolve('hooks/session-end.mjs');
 const DAY_SECONDS = 24 * 60 * 60;
@@ -44,11 +45,33 @@ test('a session that wrote no handoff leaves a stub with dirty files, the progre
   const result = endSession(cwd);
   assert.equal(result.status, 0, result.stderr);
   const lines = fs.readFileSync(handoff, 'utf8').trimEnd().split('\n');
-  assert.match(lines.find((line) => line.startsWith('Written: ')), /^Written: \d{4}-\d{2}-\d{2}, HEAD [0-9a-f]{7,}, branch topic$/);
+  assert.match(lines.find((line) => line.startsWith('Written: ')), /^Written: \d{4}-\d{2}-\d{2}, last commit [0-9a-f]{7,}, branch topic$/);
   assert.ok(lines.includes('Source: auto'));
   assert.ok(lines.some((line) => line.includes('draft.txt')));
   assert.ok(lines.includes(`Progress file: ${progress}`));
-  assert.equal(lines.at(-1), `Resume: read ${handoff} and continue the work`);
+  assert.ok(lines.includes(`Resume: read ${handoff} and continue the work`));
+});
+
+function stubFor(extra = {}) {
+  const { cwd, handoff } = repository();
+  fs.writeFileSync(path.join(cwd, 'draft.txt'), 'x');
+  endSession(cwd, extra);
+  return fs.readFileSync(handoff, 'utf8');
+}
+
+test('the stub follows the handoff template and the plain-words check', () => {
+  const text = stubFor();
+  const reference = readReference(fs.readFileSync(path.resolve(REFERENCE_PATH), 'utf8'));
+  assert.deepEqual(problems(text, reference), []);
+  assert.match(text, /^Written: \d{4}-\d{2}-\d{2}, last commit [0-9a-f]{7,}, branch topic$/m);
+  assert.ok(!text.includes('# Handoff'));
+});
+
+test('the stub carries the template sections and the fixed resume paragraph', () => {
+  const text = stubFor();
+  const headings = text.split('\n').filter((line) => line.startsWith('## '));
+  assert.deepEqual(headings, ['## Current state', '## Next step', '## Resume']);
+  assert.match(text, /repeat no step `## Proven` already covers/);
 });
 
 test('a handoff without a Source: auto line stays untouched', () => {

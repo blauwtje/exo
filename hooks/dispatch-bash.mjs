@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import os from 'node:os';
+import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { contextDecision, contextFields, hookAgentType, resultCapFor, savedOutputPrefix, scriptBytes } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields, hookAgentType, resultCapFor, savedOutputDirectory, savedOutputPrefix, scriptBytes } from '../lib/context-limits.mjs';
 import { sharesGitState } from '../lib/git-deny.mjs';
-import { fixShell } from '../lib/shell-fixes.mjs';
-import { predispatchDecision } from '../lib/slice-state.mjs';
+import { fixShellFor } from '../lib/shell-fixes.mjs';
+import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';
 
@@ -37,7 +37,7 @@ export const SHARED_STATE_STEP = {
   run(hookInput) {
     const command = hookInput.tool_input?.command;
     if (!hookInput.agent_id || typeof command !== 'string' || !sharesGitState(command)) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'A subagent shares its stash list, worktrees and branches with every other worktree, so git stash, worktree remove, prune, move and branch delete or rename are denied here. Report the need to the lead.' } };
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'Subagents share stash, worktrees and branches with every worktree, so git stash, worktree remove/prune/move and branch delete/rename are denied. Tell the lead.' } };
   }
 };
 
@@ -52,7 +52,7 @@ export const SCRIPT_SIZE_STEP = {
   }
 };
 
-export const PREDISPATCH_STEP = contextStep('predispatch', (hookInput) => predispatchDecision({ ...hookInput, tool_name: 'Bash' }));
+export const PREDISPATCH_STEP = contextStep('predispatch', predispatchBashDecision);
 
 const SLEEP_COMMAND = /(?:^|[;&|({\n]|\b(?:do|then|else)\b)\s*sleep(?=\s|$)/;
 const SLEEP_AGENTS = new Set(['orchestrator', 'task-runner']);
@@ -62,7 +62,7 @@ export const SLEEP_STEP = {
   run(hookInput) {
     const command = hookInput.tool_input?.command;
     if (typeof command !== 'string' || !SLEEP_AGENTS.has(hookAgentType(hookInput)) || !SLEEP_COMMAND.test(command)) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'Sleep polling is refused. In an interactive session end your turn after the dispatch and wait for the notification; in a run session run wait-report.mjs with Bash timeout 600000.' } };
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'No sleep polling. Interactive: end your turn and wait for the notification; run session: wait-report.mjs with Bash timeout 600000.' } };
   }
 };
 
@@ -88,8 +88,9 @@ export const RESULT_CAP_STEP = {
     const cap = resultCapFor(hookInput);
     if (!cap || !CAPPED_MODES.has(hookInput.permission_mode) || typeof toolInput?.command !== 'string') return null;
     if (toolInput.run_in_background || toolInput.command.endsWith('\\')) return null;
-    const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShell(toolInput);
-    const log = path.join(os.tmpdir(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
+    const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShellFor(hookInput, hookAgentType);
+    fs.mkdirSync(savedOutputDirectory(), { recursive: true });
+    const log = path.join(savedOutputDirectory(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
     const command = cappedCommand((fixed ?? toolInput).command, cap, log);
     return { hookSpecificOutput: { updatedInput: { ...toolInput, command } } };
   }
@@ -100,7 +101,7 @@ export const SHELL_STEP = {
   run(hookInput) {
     // why: a run session gates Bash on prefix allow rules, which a rewritten command no longer matches.
     if (process.env.EXO_RUN_SESSION === '1') return null;
-    const updatedInput = fixShell(hookInput.tool_input);
+    const updatedInput = fixShellFor(hookInput, hookAgentType);
     return updatedInput && { hookSpecificOutput: { updatedInput } };
   }
 };

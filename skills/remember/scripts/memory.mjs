@@ -32,7 +32,7 @@ function readState(cwd) {
   return { candidates: parsed.candidates ?? {}, lines: parsed.lines ?? [], rejected: parsed.rejected ?? {} };
 }
 
-const HEADER = '# Project memory\n\nexo writes this file. Do not edit it by hand: run `/exo:remember` instead.';
+const HEADER = '# Project memory';
 
 function isMemory(line) {
   return isLive(line) && line.decision !== true;
@@ -45,10 +45,10 @@ function isLive(line) {
 function render(state) {
   const live = state.lines.filter(isMemory);
   const understanding = live.length === 0
-    ? `Nothing is attested in ${ATTESTATIONS_REQUIRED} sessions yet.`
+    ? 'none'
     : live.map((line) => `- ${line.claim} (refs: ${line.refs.join(', ')})`).join('\n');
   const decisions = live.length === 0
-    ? 'Nothing has been written yet.'
+    ? 'none'
     : live.map((line) => `- ${line.written} ${line.claim}`).join('\n');
   return `${[HEADER, '## Current understanding', understanding, '## Decisions', decisions].join('\n\n')}\n`;
 }

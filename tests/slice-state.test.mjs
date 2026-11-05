@@ -52,7 +52,7 @@ const cleanup = (agent) => {
 
 const readFile = (agent, file) => contextHook({ ...agent, tool_name: 'Read', tool_input: { file_path: file, limit: 5 } }, () => false)?.hookSpecificOutput ?? null;
 
-test('before its first dispatch an orchestrator reads only its brief Reads paths, a capped number of times, and no Bash', () => {
+test('before its first dispatch an orchestrator reads only its brief Reads paths, a capped number of times, Bash counted against that cap', () => {
   const agent = orchestrator(2, 'brief.md');
   fs.writeFileSync(path.join(agent.cwd, 'brief.md'), 'rows\n');
   fs.writeFileSync(path.join(agent.cwd, 'requirements.md'), 'rows\n');
@@ -60,11 +60,12 @@ test('before its first dispatch an orchestrator reads only its brief Reads paths
   assert.equal(offBrief.permissionDecision, 'deny');
   assert.match(offBrief.permissionDecisionReason, /reads only its brief's Reads: paths \(brief\.md\)/);
   const limit = orchestratorPredispatchReads();
-  for (let read = 0; read < limit; read += 1) assert.equal(readFile(agent, path.join(agent.cwd, 'brief.md')), null);
+  assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }), null);
+  for (let read = 1; read < limit; read += 1) assert.equal(readFile(agent, path.join(agent.cwd, 'brief.md')), null);
   assert.equal(predispatchReadCount(agent.agent_id), limit);
   const overCap = readFile(agent, 'brief.md');
   assert.equal(overCap.permissionDecision, 'deny');
-  assert.match(overCap.permissionDecisionReason, new RegExp(`made ${limit} Reads before its first dispatch`));
+  assert.match(overCap.permissionDecisionReason, new RegExp(`made ${limit} Reads or Bash calls before its first dispatch`));
   assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }).hookSpecificOutput.permissionDecision, 'deny');
   recordSlice(agent.agent_id);
   assert.equal(readFile(agent, 'requirements.md'), null);

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { workerSize } from '../lib/worker-size.mjs';
+import { briefReads, normalizedReads, workerSize } from '../lib/worker-size.mjs';
 
 function folder() {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-size-'));
@@ -74,4 +74,37 @@ test('workers parses a positive integer Workers line and is undefined otherwise'
   assert.equal(workerSize({ prompt: 'Workers: 0', cwd }).workers, undefined);
   assert.equal(workerSize({ prompt: 'Workers: many', cwd }).workers, undefined);
   assert.equal(workerSize({ prompt: 'x', cwd }).workers, undefined);
+});
+
+test('a Reads line keeps only path items: prose, none., trailing punctuation and globs', () => {
+  const cwd = folder();
+  fs.mkdirSync(path.join(cwd, 'hooks'));
+  fs.writeFileSync(path.join(cwd, 'hooks', 'x.mjs'), 'x'.repeat(400));
+  fs.writeFileSync(path.join(cwd, 'hooks', 'y.mjs'), 'x'.repeat(600));
+  const size = (reads) => workerSize({ prompt: `Reads: ${reads}\nResult: .exo/r.md`, cwd });
+  assert.deepEqual(size('none.').unresolved, []);
+  assert.equal(size('None').tokens, 0);
+  assert.deepEqual(size('hooks/*.mjs, the hook tests (find them with grep)').unresolved, []);
+  assert.equal(size('hooks/*.mjs, the hook tests (find them with grep)').tokens, 500);
+  assert.equal(size('`b.txt`, dir.').tokens, 1500);
+  assert.deepEqual(size('hooks/*.txt').unresolved, ['hooks/*.txt']);
+});
+
+test('Reads paths resolve against the brief Worktree line when it names a folder', () => {
+  const cwd = folder();
+  const worktree = folder();
+  fs.writeFileSync(path.join(worktree, 'only-here.md'), 'x'.repeat(200));
+  const prompt = `Worktree: ${worktree}, branch \`x\`, at main\nReads: only-here.md\nResult: \`${worktree}/.exo/r.md\` (detail here)`;
+  assert.deepEqual(workerSize({ prompt, cwd }).unresolved, []);
+  assert.equal(workerSize({ prompt, cwd }).tokens, 100);
+  assert.deepEqual(workerSize({ prompt, cwd }).missing, []);
+});
+
+test('normalizedReads rewrites a pure path or none line and leaves prose alone', () => {
+  const cwd = folder();
+  assert.equal(normalizedReads('Reads: none.\nResult: .exo/r.md', cwd), 'Reads: none\nResult: .exo/r.md');
+  assert.equal(normalizedReads('Reads: `b.txt`, dir/a.txt.', cwd), 'Reads: b.txt, dir/a.txt');
+  assert.equal(normalizedReads('Reads: b.txt and the tests', cwd), 'Reads: b.txt and the tests');
+  assert.equal(normalizedReads('Reads: b.txt, dir', cwd), 'Reads: b.txt, dir');
+  assert.deepEqual(briefReads('Reads: hooks/*.none, b.txt.', cwd), ['hooks/*.none', 'b.txt']);
 });
