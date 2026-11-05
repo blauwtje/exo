@@ -9,6 +9,7 @@ import path from 'node:path';
 import { configDirectory } from '#config-directory';
 import { sumCounts, usageCounts } from '#token-weights';
 import { readJson } from './basics.mjs';
+import { countsCost } from './pricing.mjs';
 
 const SESSION_ID = /^[\w-]+$/;
 // The session hook's context holds its settings line while exo is loaded, after
@@ -33,13 +34,28 @@ export function findTranscript(sessionId) {
 }
 
 function transcriptFiles(transcriptPath) {
-  const files = [transcriptPath];
+  const files = [{ file: transcriptPath, role: 'main' }];
   const delegatesDirectory = path.join(transcriptPath.replace(/\.jsonl$/, ''), 'subagents');
   if (!fs.existsSync(delegatesDirectory)) return files;
   for (const name of fs.readdirSync(delegatesDirectory).sort()) {
-    if (name.endsWith('.jsonl')) files.push(path.join(delegatesDirectory, name));
+    if (!name.endsWith('.jsonl')) continue;
+    const metaFile = path.join(delegatesDirectory, name.replace(/\.jsonl$/, '.meta.json'));
+    const meta = fs.existsSync(metaFile) ? readJson(metaFile) : {};
+    files.push({ file: path.join(delegatesDirectory, name), role: meta.agentType ?? 'unknown' });
   }
   return files;
+}
+
+function parsedLines(file) {
+  const entries = [];
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    try {
+      entries.push(JSON.parse(line));
+    } catch {
+      continue;
+    }
+  }
+  return entries;
 }
 
 // The usage per API call of a transcript and its subagents, keyed by message
@@ -50,7 +66,7 @@ function transcriptFiles(transcriptPath) {
 export function transcriptCalls(transcriptPath) {
   if (!fs.existsSync(transcriptPath)) return null;
   const calls = {};
-  for (const file of transcriptFiles(transcriptPath)) {
+  for (const { file, role } of transcriptFiles(transcriptPath)) {
     for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
       if (!line.includes('"assistant"')) continue;
       let entry;
@@ -61,7 +77,7 @@ export function transcriptCalls(transcriptPath) {
       }
       const message = entry?.message;
       if (entry?.type !== 'assistant' || !message?.id || !message.usage) continue;
-      calls[message.id] = { ...usageCounts(message.usage), model: message.model };
+      calls[message.id] = { ...usageCounts(message.usage), model: message.model, role };
     }
   }
   return calls;
@@ -77,6 +93,61 @@ function subagentTypes(transcriptPath) {
     types.push(meta.agentType ?? 'unknown');
   }
   return types;
+}
+
+const CHARACTERS_PER_TOKEN = 4;
+
+function resultCharacters(content) {
+  if (typeof content === 'string') return content.length;
+  if (!Array.isArray(content)) return 0;
+  return content.reduce((total, part) => total + (typeof part?.text === 'string' ? part.text.length : 0), 0);
+}
+
+function readResultCharacters(file) {
+  const readIds = new Set();
+  let characters = 0;
+  const blocks = parsedLines(file).flatMap((entry) => (Array.isArray(entry?.message?.content) ? entry.message.content : []));
+  for (const block of blocks) {
+    if (block?.type === 'tool_use' && block.name === 'Read') readIds.add(block.id);
+    if (block?.type === 'tool_result' && readIds.has(block.tool_use_id)) characters += resultCharacters(block.content);
+  }
+  return characters;
+}
+
+function readResultTokens(transcriptPath) {
+  const tokens = {};
+  for (const { file, role } of transcriptFiles(transcriptPath)) {
+    tokens[role] = (tokens[role] ?? 0) + Math.ceil(readResultCharacters(file) / CHARACTERS_PER_TOKEN);
+  }
+  return tokens;
+}
+
+function roleCost(calls) {
+  let total = 0;
+  for (const [model, counts] of Object.entries(countsByModel(calls))) {
+    const cost = countsCost(counts, model);
+    if (cost === null) return null;
+    total += cost;
+  }
+  return total;
+}
+
+function byRoleUsage(calls, readTokens) {
+  const grouped = {};
+  for (const call of Object.values(calls)) {
+    grouped[call.role] = grouped[call.role] ?? [];
+    grouped[call.role].push(call);
+  }
+  const byRole = {};
+  for (const role of new Set([...Object.keys(grouped), ...Object.keys(readTokens)])) {
+    const roleCalls = grouped[role] ?? [];
+    byRole[role] = {
+      counts: sumCounts(roleCalls),
+      costUsd: roleCost(roleCalls),
+      estimatedReadTokens: readTokens[role] ?? 0
+    };
+  }
+  return byRole;
 }
 
 // Whether the session hook handed the model exo's rules in this session.
@@ -138,6 +209,7 @@ export function writeCellUsage(cellDirectory, sessionId) {
     transcript,
     counts: sumCounts(Object.values(calls)),
     byModel: countsByModel(calls),
+    byRole: byRoleUsage(calls, readResultTokens(transcript)),
     subagents: subagentTypes(transcript),
     leadPeakTokens: leadPeakTokens(transcript)
   };
@@ -169,6 +241,7 @@ export function writeRunUsage(cellDirectory, ledgerFile) {
   const sessions = readLedger(ledgerFile);
   const calls = {};
   const subagents = [];
+  const readTokens = {};
   let missingTranscripts = 0;
   for (const { sessionId } of sessions) {
     const transcript = typeof sessionId === 'string' ? findTranscript(sessionId) : null;
@@ -178,11 +251,13 @@ export function writeRunUsage(cellDirectory, ledgerFile) {
     }
     Object.assign(calls, transcriptCalls(transcript));
     subagents.push(...subagentTypes(transcript));
+    for (const [role, tokens] of Object.entries(readResultTokens(transcript))) readTokens[role] = (readTokens[role] ?? 0) + tokens;
   }
   const usage = {
     transcript: null,
     counts: missingTranscripts > 0 ? null : sumCounts(Object.values(calls)),
     byModel: countsByModel(calls),
+    byRole: missingTranscripts > 0 ? null : byRoleUsage(calls, readTokens),
     subagents,
     leadPeakTokens: null,
     costUsd: sessions.reduce((total, session) => total + (session.costUsd ?? 0), 0),

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clusteredMeanCi, decideKeep, meanCi, pairedDiff, pooledSd } from '../lib/eval-stats.mjs';
+import { clusteredMeanCi, decideKeep, mad, meanCi, median, pairedDiff, pooledSd } from '../lib/eval-stats.mjs';
 
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 
@@ -119,4 +119,18 @@ test('decideKeep throws naming each keep setting the call leaves out', () => {
   const call = { best: { runs: [10] }, candidate: { runs: [12] } };
   assert.throws(() => decideKeep(call), { message: 'decideKeep needs z, floor, maxRuns' });
   assert.throws(() => decideKeep({ ...call, z: 1.96, maxRuns: 3 }), { message: 'decideKeep needs floor' });
+});
+
+test('median takes the middle value or the mean of the two middle values', () => {
+  assert.equal(median([3, 1, 2]), 2);
+  assert.equal(median([4, 1, 3, 2]), 2.5);
+});
+
+test('mad is the median absolute deviation from the median', () => {
+  assert.equal(mad([1, 2, 3, 4, 100]), 1);
+});
+
+test('median and mad reject an empty list', () => {
+  assert.throws(() => median([]), RangeError);
+  assert.throws(() => mad([]), RangeError);
 });

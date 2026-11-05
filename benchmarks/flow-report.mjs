@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { meanCi } from '../lib/eval-stats.mjs';
+import { mad, meanCi, median } from '../lib/eval-stats.mjs';
 import { readJson } from './basics.mjs';
 
 const EXO_ARM = ['flow-c7', 'flow-run'];
@@ -32,7 +32,7 @@ export function readFlowRecords(outDir) {
     if (!name.startsWith('flow-')) continue;
     const file = path.join(outDir, name, 'record.json');
     if (!fs.existsSync(file)) {
-      records.push({ kind: 'flow', id: name.replace(REPEAT_SUFFIX, ''), unfinished: true });
+      records.push({ kind: 'flow', id: name.replace(REPEAT_SUFFIX, ''), repeat: REPEAT_SUFFIX.test(name) ? Number(name.match(REPEAT_SUFFIX)[0].slice(1)) : 1, unfinished: true });
       continue;
     }
     const record = readJson(file);
@@ -53,12 +53,25 @@ function mean(values) {
 
 const measuredRun = (run) => run.unfinished !== true && run.timedOut !== true;
 
+const OUTLIER_MADS = 3;
+const MAD_SCALE = 1.4826;
+
+function outliersOf(cells, centre, spread) {
+  if (spread === 0) return [];
+  return cells.filter(({ value }) => Math.abs(value - centre) > OUTLIER_MADS * MAD_SCALE * spread);
+}
+
 function stat(runs, read) {
-  const numbers = runs.filter(measuredRun).map(read).filter(isNumber);
+  const cells = runs
+    .map((run, index) => ({ run: run.repeat ?? index + 1, value: measuredRun(run) ? read(run) : undefined }))
+    .filter(({ value }) => isNumber(value));
+  const numbers = cells.map(({ value }) => value);
   const excluded = runs.length - numbers.length;
-  if (numbers.length === 0) return { mean: null, se: null, n: 0, excluded };
+  if (numbers.length === 0) return { mean: null, se: null, median: null, mad: null, outliers: [], n: 0, excluded };
   const { mean: centre, se } = meanCi(numbers);
-  return { mean: centre, se, n: numbers.length, excluded };
+  const middle = median(numbers);
+  const spread = mad(numbers);
+  return { mean: centre, se, median: middle, mad: spread, outliers: outliersOf(cells, middle, spread), n: numbers.length, excluded };
 }
 
 const failedRun = (run) => run.unfinished === true || run.timedOut === true;
@@ -157,6 +170,14 @@ function withError(stat, { digits = 0, scale = 1, prefix = '', unit = '' } = {})
 const MINUTES = { digits: 1, scale: 60000, unit: ' min' };
 const DOLLARS = { digits: 3, prefix: '$' };
 
+function spreadLine(label, stat, options) {
+  if (stat.median === null) return `  ${label} median -`;
+  const { digits = 0, scale = 1, prefix = '', unit = '' } = options ?? {};
+  const shown = (value) => `${prefix}${fixed(value / scale, digits)}${unit}`;
+  const outliers = stat.outliers.map(({ run, value }) => `run ${run} ${shown(value)}`).join(', ') || 'none';
+  return `  ${label} median ${shown(stat.median)}, MAD ${shown(stat.mad)}, outliers beyond ${OUTLIER_MADS} MAD: ${outliers}`;
+}
+
 function armLines(arm, baseline) {
   const landed = arm.landedFractionMean === null
     ? 'tasks landed -'
@@ -171,6 +192,9 @@ function armLines(arm, baseline) {
     `  cost mean ${withError(arm.cost, DOLLARS)}, total $${fixed(arm.costTotal, 3)}`,
     `  cost per success ${arm.costPerSuccess === null ? 'none' : `$${fixed(arm.costPerSuccess, 3)}`}`,
     `  wall time mean ${withError(arm.wall, MINUTES)}`,
+    spreadLine('tokens', arm.tokens),
+    spreadLine('cost', arm.cost, DOLLARS),
+    spreadLine('wall time', arm.wall, MINUTES),
     `  verify ran ${arm.verifyRan}/${arm.gated}, review dispatched ${arm.reviewDispatched}/${arm.gated}`,
     `  route ${Object.entries(arm.routes).map(([label, count]) => `${label} ${count}`).join(', ') || '-'} (of ${arm.routed})`,
     `  lead peak tokens mean ${withError(arm.leadPeak)}, max ${arm.leadPeakMax ?? '-'}`,

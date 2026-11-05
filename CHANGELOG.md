@@ -10,6 +10,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+
+- The flow report adds median, MAD and outliers (beyond 3 scaled MADs) per arm metric.
+- `usage.json` adds `byRole`, the tokens, cost and estimated Read-result tokens per agent type.
 - `npm run check` parses every brief example in skill, agent and hook text with the real brief parser, and fails a delegate template without a `Reads:` line.
 - `npm run check` fails when a skill, agent, hook or the Codex copy tells an Agent call to run in the foreground, except 3 listed lines that run in a subagent thread.
 - `npm run check` fails when a file in `hooks/` or `lib/` other than `lib/read-estimate.mjs` turns a file size into read tokens or looks up the session images directory.
@@ -28,6 +31,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A background shell an agent started now blocks its first result-file Write: `lib/live-shells.mjs` reads the agent transcript for `run_in_background` Bash calls with no `TaskStop` or finished notice, and the Write is refused once with the shell ids. It runs on the existing Edit and Write hook entry, so no hook entry or Node start is added.
 
 ### Changed
+- The speed ledger records four measured rejects from the 61-repo research: parallel check steps, cheapest-first `--fail-fast` order, a per-step input-hash check cache and an early-prompt volatility audit.
 - Shared helpers replace local copies: `lib/basics.mjs` holds shellQuote, sleep, sleepSync and writeAtomic, benchmarks take mean, median and JSON reads from `benchmarks/basics.mjs`, and tests use one git helper and one tracked tempDir helper, 296 fewer lines.
 - The largest scripts are split into one-concern modules: `land-task.mjs` (962 to 112 lines), `run-plan.mjs` (935 to 391), `exo-cli.mjs`, `gate.mjs`, `plan-check.mjs` and `lib/plan-tasks.mjs` now each stay under 400 lines, and the hooks no longer load `contextSeries`.
 - `transcript.mjs`, `pressure.mjs`, `skill-graph.mjs`, `run-session.mjs` and `next-task.mjs` are split into one-concern modules under 400 lines, two benchmark Claude runs share `benchmarks/capture-child.mjs`, and `CONTRIBUTING.md` states the job-word rule once.

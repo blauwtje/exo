@@ -1,6 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { aggregateFlow, flowReport, passDifference } from '../benchmarks/flow-report.mjs';
+import { aggregateFlow, flowReport, passDifference, readFlowRecords } from '../benchmarks/flow-report.mjs';
 
 const arm = (passes, checked) => ({ passes, checked });
 
@@ -59,4 +62,29 @@ test('an n=1 comparison prints no verdict instead of not better', () => {
   const text = flowReport([record('flow-c7', {}), record('flow-base', { hiddenPass: false })]);
   assert.match(text, /no SE \(an arm has under 2 checked runs\)/);
   assert.match(text, /no verdict \(no SE\)$/);
+});
+
+test('the report shows median, MAD and the runs beyond 3 MAD', () => {
+  const runs = [10, 11, 12, 13, 500].map((tokens, index) => ({ kind: 'flow', id: 'flow-base', repeat: index + 1, tokens, costUsd: 1, wallMs: 60000 }));
+  const [armSummary] = aggregateFlow(runs);
+  assert.equal(armSummary.tokens.median, 12);
+  assert.equal(armSummary.tokens.mad, 1);
+  assert.deepEqual(armSummary.tokens.outliers, [{ run: 5, value: 500 }]);
+  assert.deepEqual(armSummary.cost.outliers, []);
+  assert.match(flowReport(runs), /tokens median 12, MAD 1, outliers beyond 3 MAD: run 5 500/);
+});
+
+test('an outlier names its real repeat when records sort as text', () => {
+  const runs = [1, 10, 2, 3, 4, 5, 6, 7, 8, 9].map((repeat) => ({ kind: 'flow', id: 'flow-base', repeat, tokens: repeat === 10 ? 500 : 10 + (repeat % 3), costUsd: 1, wallMs: 60000 }));
+  const [armSummary] = aggregateFlow(runs);
+  assert.deepEqual(armSummary.tokens.outliers, [{ run: 10, value: 500 }]);
+});
+
+test('a record without repeat names its position and a stand-in without suffix repeats 1', () => {
+  const runs = [10, 11, 12, 13, 500].map((tokens) => ({ kind: 'flow', id: 'flow-base', tokens, costUsd: 1, wallMs: 60000 }));
+  assert.deepEqual(aggregateFlow(runs)[0].tokens.outliers, [{ run: 5, value: 500 }]);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flow-report-'));
+  fs.mkdirSync(path.join(dir, 'flow-base'));
+  fs.mkdirSync(path.join(dir, 'flow-c7-2'));
+  assert.deepEqual(readFlowRecords(dir).map((r) => r.repeat), [1, 2]);
 });
