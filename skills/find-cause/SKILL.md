@@ -5,12 +5,12 @@ argument-hint: <symptom, failing command or error>
 ---
 # Find cause
 
-a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: run the bisect in `investigator-prompt.md` first, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (with no symbol, `exo:locate-code`).
-b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in the source: write `Status: proven`. Otherwise dispatch `exo:solve-hard` from `investigator-prompt.md`.
-c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build`, resume `failed` via SendMessage, else dispatch a fresh agent with the prior result path.
+a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: run the bisect in `investigator-prompt.md`, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (with no symbol, `exo:locate-code`).
+b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in source: write `Status: proven`. Otherwise dispatch `exo:solve-hard` from `investigator-prompt.md`.
+c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build` and a `Reads:` line, resume `failed` via SendMessage, else dispatch a fresh agent with the prior result path.
 d. **Report.** Read only status lines and Report fields. After compaction, re-run `Repro`.
 
-1. **Reproduce.** Read an existing log, profile or `.exo/` report on the path first. One command reproduces it, else evidence, no fix.
+1. **Reproduce.** Read an existing log, profile or `.exo/` report first. One command reproduces it, else evidence, no fix.
    - Send long output to `<scratch>/debug-repro.log`, `<scratch>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`; read with `tail -n 40`.
    - Steps 1-5 → read `references/loop.md` first.
 2. **Instrument.**

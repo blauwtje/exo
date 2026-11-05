@@ -25,7 +25,7 @@ Read a video through its captions, or a local transcript of its audio, on disk, 
 4. When the line shows `tokens` under 10000 and one video, read `transcript` yourself and answer.
 5. Else give each video, or each file under its `chunks=` folder, to one `general-purpose` delegate whose prompt opens with `exo-kind: lookup`.
    - Start them all in one message, at most 8 per message; more files → the next message after the first returns.
-   - Brief after the label: the user's question, the file path, and "return at most 15 lines of notes, each opening with its `[mm:ss]` stamp, plus a one-line gist".
+   - Brief after the label: the user's question, `Reads: <file path>` and `Worktree: <abs path>` on lines of their own, and "return at most 15 lines of notes, each opening with its `[mm:ss]` stamp, plus a one-line gist".
    - Merge the notes yourself; read no raw transcript.
 6. Cite the stamps in the answer, as `[mm:ss]` or `[h:mm:ss]` with the video id.
 

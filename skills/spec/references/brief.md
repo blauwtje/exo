@@ -8,7 +8,7 @@ In this order:
 
 - **Goal:** the observable result, in one sentence.
 - **Decisions:** every bin-1 decision with its answer. The user, the code (with its settling path) or exo closes it, exo for a second "I don't know" or small work, and a choice exo made ends in `(exo decided)`.
-- **Non-goals:** what a reader would assume is included, one bullet each naming its paths. Omit the section when there are none.
+- **Non-goals:** what a reader would assume is included, one bullet each naming its paths. Omit it when there are none.
 - **Open points:** only an unanswered question for the user, one list item each. Plan-check flags a listed entry, and build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does. Each item cites a task number, a `Data:` segment or the Success criterion, or else it is a Manual check.
@@ -41,10 +41,10 @@ Each line is what to do, then what the user should see, in plain words a child f
 
 ## Open points step
 
-Dispatch the `exo:find-open-points` agent once on the brief.
+Dispatch the `exo:find-open-points` agent once on the brief, in the background like step 4.
 
-- Skip the agent for a plan of at most 3 tasks whose Proofs are all static.
-- When the agent returns an `Assumptions: <path>` line, insert its `- ` bullets after the brief's `## Assumptions` line, unread, with the command below. With no such line, insert nothing.
+- Skip it for a plan of at most 3 tasks whose Proofs are all static.
+- When it returns `Assumptions: <path>`, insert its `- ` bullets unread after the brief's `## Assumptions` line with the command below; with no such line, insert nothing.
 
 ```
 node -e 'const f=require("fs"),[b,a]=process.argv.slice(1),s=f.readFileSync(b,"utf8"),h=/^## Assumptions\n/m;if(!h.test(s))throw b;f.writeFileSync(b,s.replace(h,m=>m+"\n"+f.readFileSync(a,"utf8").match(/^- .*/gm).join("\n")+"\n"))' <brief> <path>

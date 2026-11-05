@@ -15,6 +15,6 @@ A blind eval lets a judge pick the stronger of two answers without knowing which
 4. Label the two clones' `with` answers A and B. Alternate which letter holds the changed answers so no pattern forms across evals, and keep the mapping yourself.
 5. Copy the labels and full answer texts into a scratch file for the judge. Leave "baseline", "changed", "old" and "new" out of it, since they unmask the labels.
 6. Write a rubric of 3-6 concrete criteria for what the edit was meant to fix.
-7. Spawn a fresh `general-purpose` delegate whose prompt opens with `exo-kind: review` as judge, holding the case prompt, the rubric and the labeled file. It scores each label against the rubric and picks the stronger.
+7. Spawn a fresh `general-purpose` delegate whose prompt opens with `exo-kind: review` as judge, holding the case prompt, the rubric and the labeled file, with `Reads: <the labeled file>` and `Worktree: <abs path>` on lines of their own. It scores each label against the rubric and picks the stronger.
 8. Unmask the labels against the pick. The edit is done only when the judge picked the changed answer for the reason the rubric names.
 9. On a tie or a baseline win, return to loop step 3 (Choose the home), because the wording did not move the behavior.

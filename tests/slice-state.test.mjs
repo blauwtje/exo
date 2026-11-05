@@ -9,10 +9,10 @@ import { PREDISPATCH_STEP } from '../hooks/dispatch-bash.mjs';
 import { orchestratorPredispatchReads } from '../lib/context-limits.mjs';
 import { predispatchReadCount, recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 
-function orchestrator(workers, reads = 'none') {
+function orchestrator(workers, reads = 'none', extra = '') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-'));
   const transcript = path.join(dir, 'agent.jsonl');
-  const brief = { message: { content: [{ type: 'text', text: `Workers: ${workers}\nReads: ${reads}` }] } };
+  const brief = { message: { content: [{ type: 'text', text: `Workers: ${workers}\n${extra}Reads: ${reads}` }] } };
   fs.writeFileSync(transcript, `${JSON.stringify(brief)}\n{}\n`);
   return { agent_id: `slice-test-${path.basename(dir)}`, agent_type: 'exo:orchestrator', agent_transcript_path: transcript, cwd: dir };
 }
@@ -105,6 +105,15 @@ test('before its first dispatch an orchestrator reads only its brief Reads paths
   recordSlice(agent.agent_id);
   assert.equal(readFile(agent, 'requirements.md'), null);
   assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }), null);
+  cleanup(agent);
+});
+
+test('an orchestrator reads its brief Reads paths from the brief Worktree', () => {
+  const tree = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-tree-'));
+  fs.writeFileSync(path.join(tree, 'brief.md'), 'rows\n');
+  const agent = orchestrator(2, 'brief.md', `Worktree: ${tree}\n`);
+  assert.equal(readFile(agent, path.join(tree, 'brief.md')), null);
+  assert.equal(readFile(agent, path.join(agent.cwd, 'brief.md')).permissionDecision, 'deny');
   cleanup(agent);
 });
 

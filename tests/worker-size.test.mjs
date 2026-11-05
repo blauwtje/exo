@@ -180,3 +180,46 @@ test('a single file over budget with no range is denied, alone or beside small r
   assert.equal(dispatch(cwd, 'huge.txt').permissionDecision, 'deny');
   assert.equal(dispatch(cwd, 'huge.txt, small.txt').permissionDecision, 'deny');
 });
+
+test('fields sharing one line are each read, split at the next label', () => {
+  const cwd = folder();
+  const size = workerSize({ prompt: 'Reads: dir. Fetches: 2. Result: .exo/r.md', cwd });
+  assert.equal(size.tokens, 1000 + 3200);
+  assert.deepEqual(size.missing, []);
+  assert.equal(workerSize({ prompt: 'Workers: 3; Reads: b.txt\nResult: .exo/r.md', cwd }).workers, 3);
+});
+
+test('a list marker, bold or indentation around a label is accepted and another label stays unread', () => {
+  const cwd = folder();
+  for (const line of ['- Reads: b.txt', '* Reads: b.txt', '1. Reads: b.txt', '**Reads:** b.txt', '  Reads: b.txt']) {
+    const size = workerSize({ prompt: `${line}\nResult: .exo/r.md`, cwd });
+    assert.equal(size.tokens, 500, line);
+    assert.deepEqual(size.missing, [], line);
+  }
+  assert.deepEqual(workerSize({ prompt: 'Read first: b.txt\nResult: .exo/r.md', cwd }).missing, ['Reads']);
+});
+
+test('Fetches and Workers take their leading whole number and reject a value with none', () => {
+  const cwd = folder();
+  const size = workerSize({ prompt: 'Reads: none\nFetches: 2 (hard cap 3)\nWorkers: 4 (one per part)\nResult: .exo/r.md', cwd });
+  assert.equal(size.tokens, 3200);
+  assert.deepEqual(size.invalid, []);
+  assert.equal(size.workers, 4);
+  assert.deepEqual(workerSize({ prompt: 'Reads: none\nFetches: many (2)\nResult: .exo/r.md', cwd }).invalid, ['Fetches']);
+  assert.equal(workerSize({ prompt: 'Workers: 1.5', cwd }).workers, undefined);
+});
+
+test('a Worktree line whose first path is a file leaves the base at the working directory', () => {
+  const cwd = folder();
+  const size = workerSize({ prompt: `Worktree: ${path.join(cwd, 'dir', 'a.txt')}\nReads: b.txt\nResult: .exo/r.md`, cwd });
+  assert.deepEqual(size.unresolved, []);
+  assert.equal(size.tokens, 500);
+});
+
+test('a label named inside parentheses or backticks in a Reads item does not split the line', () => {
+  const cwd = folder();
+  const prompt = 'Reads: b.txt, the code (find it with grep for Workers:, Reads:, Result: under lib/), `Result: x`\nResult: .exo/r.md';
+  const size = workerSize({ prompt, cwd });
+  assert.deepEqual(size.missing, []);
+  assert.deepEqual(size.unresolved, []);
+});

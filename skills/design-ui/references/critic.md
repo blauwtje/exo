@@ -22,6 +22,8 @@ Request: <request>
 Direction contract: <contract>
 Explicit asks: <asks>
 Screenshots: <paths>
+Reads: <paths>
+Worktree: <abs path>
 
 Read every screenshot. Judge what a user would see, against the request and the contract:
 - Does it look like the contract's world, or like a generic template with the world painted on?

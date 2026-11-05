@@ -10,6 +10,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `npm run check` parses every brief example in skill, agent and hook text with the real brief parser, and fails a delegate template without a `Reads:` line.
+- `npm run check` fails when a skill, agent, hook or the Codex copy tells an Agent call to run in the foreground, except 3 listed lines that run in a subagent thread.
 - `npm run check` fails when a file in `hooks/` or `lib/` other than `lib/read-estimate.mjs` turns a file size into read tokens or looks up the session images directory.
 - `npm run check` fails when an agent can start a background shell or Monitor but has no TaskStop and no "start no background" rule.
 - The speed ledger records the installed hook overhead per tool call across projects: about 80 ms per Bash call idle and 110 ms in transcripts, 70.6 of 7532 thread minutes in exo (under 1%), so hooks are not a cause of slow sessions.
@@ -52,6 +54,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A subagent is bound by `defaults.agentContextTarget` (60k) while it runs, not by the lead's `contextLimit`: a note at 75% of the target, new reads, searches, fetches, skills and agents refused at the target, and every tool except Write and Edit refused at 125% of it, with a `Status: handover` result file in the refusal. The lead's `contextLimit` is unchanged.
 
 ### Fixed
+- The Agent brief check reads fields that share a line, list or bold labels, a number with a note, `~/` paths and the `Worktree:` base, its denials quote the label found and name the `Worktree:` line, the qualifier forms and the label that set the model, and the worker templates show `Reads:` and `Worktree:` lines (replay denials: 7 days 49 to 48, 30 days 60 to 58; every other denied row checked and found true).
+- `spec` starts its `locate-code`, `fetch-docs` and `find-open-points` agents in the background and waits for their completion notifications, instead of passing `run_in_background: false` (311 of 2491 such launches in 30 days came from this text).
 - The Agent brief check reads each `Reads:` item as a path with an optional `lines N-M` or `by grep` qualifier, so prose and line ranges no longer cause false "path does not exist" or over-budget denials, and the denial states that grammar.
 - `context-peaks --resumed` counts an Agent launch as background unless it sets `run_in_background: false`, as the platform does, so the wait verdict no longer misses orchestrator runs (wrong labels in a 7-day replay: 8651 of 12955 launches before, 0 after).
 - A worker brief that names a pasted image by its bare file name now finds it in the session directory, images are sized by their pixels (at most 1600 tokens) instead of their bytes, and a denial names the directories searched or the tokens to cut.

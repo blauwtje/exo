@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
+import { sizeReason } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, hookAgentType, orchestratorWorkers } from '../lib/context-limits.mjs';
 import { BUDGETS, EFFORTS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -79,7 +80,7 @@ function resolvedKind(input, budget) {
   const unnamed = isUnnamed(table, input);
   const entry = table.agents[`agents/${agent}.md`];
   const name = labelOf(table, input, entry) ?? entry?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined);
-  return table.kinds[name] ? { table, agent, kind: table.kinds[name] } : null;
+  return table.kinds[name] ? { table, agent, kind: table.kinds[name], label: labelOf(table, input, entry) } : null;
 }
 
 function filled(input, budget) {
@@ -121,10 +122,14 @@ function pairText(model, effort) {
   return `${model ?? 'the session model'}, ${effort ?? 'the session effort'}`;
 }
 
+function runsPassed(kind, passed) {
+  return Object.entries(passed).every(([key, value]) => kind[key] === value);
+}
+
 function kindLabels(kinds, passed) {
   const entries = Object.entries(kinds);
   const names = (list) => list.map(([name]) => name).join(', ');
-  const exact = entries.filter(([, kind]) => Object.entries(passed).every(([key, value]) => kind[key] === value));
+  const exact = entries.filter(([, kind]) => runsPassed(kind, passed));
   if (exact.length) return `\`exo-kind:\` labels for ${pairText(passed.model, passed.effort)}: ${names(exact)}.`;
   const gap = ([, kind]) => Math.abs(EFFORTS.indexOf(kind.effort) - EFFORTS.indexOf(passed.effort));
   const sameModel = entries.filter(([, kind]) => kind.model === passed.model);
@@ -137,36 +142,15 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = se
   if (tool !== 'Agent' || !input) return null;
   const resolved = resolvedKind(input, budget);
   if (!resolved?.agent) return null;
-  const { kind, table, agent } = resolved;
+  const { kind, table, agent, label } = resolved;
   const expected = { model: kind.model === INHERIT ? undefined : kind.model, effort: kind.effort ?? undefined };
   const differs = (key) => input[key] !== undefined && input[key] !== expected[key] && (key === 'model' || expected.effort !== undefined);
   if (!['model', 'effort'].some(differs)) return null;
   const passed = Object.fromEntries(['model', 'effort'].filter((key) => input[key] !== undefined).map((key) => [key, input[key]]));
-  const reason = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} by the kind table; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)} Start the brief with the label to run that pair. No user request for that model → drop \`model\` and \`effort\`.`;
+  const source = label ? `because \`exo-kind: ${label}\` in the brief moved it` : 'by the kind table';
+  const ending = Object.values(table.kinds).some((entry) => runsPassed(entry, passed)) ? 'Start the brief with the label to run that pair, or drop `model` and `effort`.' : 'Drop `model` and `effort`.';
+  const reason = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} ${source}; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)} ${ending}`;
   return { permissionDecision: 'deny', permissionDecisionReason: reason };
-}
-
-const SHOWN_CANDIDATES = 5;
-const READS_GRAMMAR = 'Write `Reads:` as items split by `,` or `;`, each a path, optionally followed by `lines N-M` or `by grep`, or `Reads: none`; an item that does not start with a path is prose and is not read.';
-
-function unresolvedReason(unresolved, ambiguous, searched = []) {
-  const several = ambiguous.map(({ name, matches }) => `${name} matches ${matches.slice(0, SHOWN_CANDIDATES).join(', ')}`);
-  const missing = unresolved.filter((name) => !ambiguous.some((entry) => entry.name === name));
-  const parts = [
-    several.length && `names that match several tracked files, so give the full path: ${several.join('; ')}`,
-    missing.length && `paths that do not exist: ${missing.join(', ')} (searched ${searched.join(', ') || 'the working directory'}; name a pasted image by its full path)`,
-  ].filter(Boolean);
-  return `This worker brief reads ${parts.join('. It also reads ')}. ${READS_GRAMMAR}`;
-}
-
-function sizeReason(size, { missing, fetchDocs, ambiguous }) {
-  if (size.invalid.length) return `This worker brief has an invalid ${size.invalid.join(' and ')} line. Give a whole number.`;
-  if (size.unresolved.length) return unresolvedReason(size.unresolved, ambiguous, size.searched);
-  if (missing.join() === 'Reads') return 'This worker brief lacks a `Reads:` line. Add one of paths or `none`.';
-  if (missing.length) return `This worker brief lacks ${missing.join(' and ')}. Add a \`Reads:\` line of paths or \`none\` and a \`Result:\` line naming one \`.exo/<...>.md\` file.`;
-  const estimate = `This worker brief reads about ${size.tokens} tokens against a budget of ${size.budget}.`;
-  if (fetchDocs) return `${estimate} Lower the \`Fetches:\` count or split the fetches across more agents.`;
-  return `${estimate} Largest reads: ${size.largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ')}. Cut at least ${size.tokens - size.budget} tokens: give the largest read its own agent, \`lines N-M\` or \`by grep\` after its path, and split the rest by path so each agent's \`Reads:\` stays under ${size.budget} with its own \`Result:\`.`;
 }
 
 function workersFields(prompt) {
@@ -187,7 +171,7 @@ function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const missing = fromOrchestrator ? (fetchDocs ? [] : size.missing) : (size.sized ? [] : ['Reads']);
   const refused = size.invalid.length > 0 || size.unresolved.length > 0 || missing.length > 0 || ((fromOrchestrator || size.sized) && size.tokens > size.budget);
   if (!refused) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: sizeReason(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous }) };
+  return { permissionDecision: 'deny', permissionDecisionReason: sizeReason(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt }) };
 }
 
 function isSliceCall(hookInput) {

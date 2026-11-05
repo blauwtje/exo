@@ -32,7 +32,7 @@ const specSkill = fs.readFileSync(path.join(skillsRoot, 'spec/SKILL.md'), 'utf8'
 test('spec dispatches locate-code and fetch-docs in one message, and find-open-points opens with its reads together', () => {
   const locate = specSkill.split('\n').find((line) => line.includes('`exo:locate-code`'));
   assert.match(locate, /`exo:fetch-docs`/, 'locate-code and fetch-docs share one step line');
-  assert.match(locate, /one message/, 'spec sends both lookups in one message');
+  assert.match(locate, /one (?:background )?message/, 'spec sends both lookups in one message');
   const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
   assert.match(finder.body, /^- First message: Read the brief and run `node [^\n]*memory\.mjs" decisions` together\.$/m);
   assert.doesNotMatch(finder.body, /before anything else/, 'no second opening call is ordered first');

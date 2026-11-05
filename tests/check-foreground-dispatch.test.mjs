@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { scanForegroundDispatches } from '../verify/checks/foreground-dispatch.mjs';
+import { createRepository } from '../verify/repository.mjs';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+function scan(files) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'foreground-dispatch-'));
+  for (const [name, text] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
+    fs.writeFileSync(path.join(root, name), text);
+  }
+  return scanForegroundDispatches(createRepository(root));
+}
+
+test('the shipped lead-run text tells no Agent call to run in the foreground', () => {
+  assert.deepEqual(scanForegroundDispatches(createRepository(ROOT)), { flagged: [], stale: [] });
+});
+
+test('a skill line that sends agents in the foreground is flagged with its line', () => {
+  const result = scan({ 'skills/spec/SKILL.md': 'Steps\n- Send both in the foreground, in one message.\n' });
+  assert.deepEqual(result.flagged, ['skills/spec/SKILL.md:2']);
+});
+
+test('run_in_background false is flagged in a hook string and a script string', () => {
+  const result = scan({
+    'hooks/rules.md': '- Dispatch each agent with `run_in_background: false`.\n',
+    'skills/build/scripts/next.mjs': "const line = 'Dispatch agents with run_in_background=false';\n",
+  });
+  assert.deepEqual(result.flagged, ['skills/build/scripts/next.mjs:1', 'hooks/rules.md:1']);
+});
+
+test('a Bash foreground line is not an Agent call', () => {
+  const result = scan({ 'agents/worker.md': '- Run the proof in the foreground with Bash `timeout: 600000`.\n' });
+  assert.deepEqual(result.flagged, []);
+});
+
+test('an allowed subagent-thread line passes and its absence is reported as stale', () => {
+  const allowed = scan({ 'skills/build/references/rolling-window.md': '- Send every `Prompt:` in one message; each foreground call returns after its report.\n' });
+  assert.deepEqual(allowed.flagged, []);
+  assert.equal(allowed.stale.length, 2);
+});

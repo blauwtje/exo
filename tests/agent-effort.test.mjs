@@ -177,7 +177,8 @@ test('an exo call whose passed model or effort differs from the table is denied 
   assert.match(reason, new RegExp(`runs on ${model}, ${effort} by the kind table`));
   assert.match(reason, /passed opus, xhigh/);
   assert.match(reason, /No kind runs opus, xhigh; closest on opus: hardest, review, review-deep, orchestrator\./);
-  assert.match(reason, /No user request for that model → drop `model` and `effort`\./);
+  assert.match(reason, /Drop `model` and `effort`\.$/);
+  assert.doesNotMatch(reason, /No user request/);
   const buildTask = readKindTable(undefined, { budget: 'on' }).kinds['build-task'];
   const runnable = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: buildTask.model, effort: buildTask.effort });
   assert.match(runnable.permissionDecisionReason, new RegExp(`labels for ${buildTask.model}, ${buildTask.effort}: .*build-task`));
@@ -315,6 +316,48 @@ test('worker size: a none. or punctuated Reads line runs normalized and a missin
   const reason = run('Reads: gone.md.\nResult: .exo/r.md').permissionDecisionReason;
   assert.match(reason, /do not exist: gone\.md \(searched [^)]*\)\. Write `Reads:` as items split by `,` or `;`, each a path, optionally followed by `lines N-M` or `by grep`, or `Reads: none`; an item that does not start with a path is prose and is not read\.$/);
   assert.doesNotMatch(reason, /\.\./);
+});
+
+const workerReason = (prompt, cwd) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
+
+test('a missing path that exists under an absolute directory in the prompt asks for a Worktree line', () => {
+  const tree = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-tree-'));
+  fs.writeFileSync(path.join(tree, 'notes.md'), 'x');
+  const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-cwd-'));
+  assert.match(workerReason(`Work in ${tree}.\nReads: notes.md\nResult: .exo/r.md`, elsewhere), new RegExp(`add a \`Worktree: ${tree}\` line`));
+  assert.doesNotMatch(workerReason('Reads: notes.md\nResult: .exo/r.md', elsewhere), /Worktree/);
+});
+
+test('a brief with another label for its reads is told to rename it and keep one field per line', () => {
+  const reason = workerReason('Read first: a.md\nResult: .exo/r.md', os.tmpdir());
+  assert.match(reason, /has `Read first: a\.md`; rename it to `Reads:`/);
+  assert.match(reason, /one field per line, each label at the start of its line/);
+  assert.match(workerReason('Result: .exo/r.md', os.tmpdir()), /one field per line, each label at the start of its line/);
+});
+
+test('the lacks-Reads denial quotes a read label with a parenthetical, and a label whose value starts with read', () => {
+  const forms = [
+    ['- Inputs (each a candidate folder; read every file):\n  - /tmp/x/', '- Inputs (each a candidate folder; read every file):'],
+    ['Files (checkout /tmp/repo):\n- web/src/a.jsx (the page)', 'Files (checkout /tmp/repo):'],
+    ['- Before editing: read `skills/a/references/b.md`, `c.md`', '- Before editing: read `skills/a/references/b.md`, `c.md`'],
+  ];
+  for (const [lines, quoted] of forms) {
+    const reason = workerReason(`${lines}\nResult: .exo/r.md`, os.tmpdir());
+    assert.ok(reason.includes(`It has \`${quoted}\`; rename it to \`Reads:\`.`), reason);
+  }
+});
+
+test('an over-budget refusal says a qualifier is only lines N-M or by grep after the path', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
+  assert.match(workerReason('Reads: big.txt\nResult: .exo/r.md', dir), /a qualifier is only `lines N-M` or `by grep` right after the path/);
+});
+
+test('a mismatch caused by an exo-kind label names the label as the source and never a model to switch to', () => {
+  const reason = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: build\nWorkers: 1', model: 'opus', effort: 'xhigh' }).permissionDecisionReason;
+  assert.match(reason, /runs on [^;]+ because `exo-kind: build` in the brief moved it; the call passed opus, xhigh\./);
+  assert.match(reason, /Drop `model` and `effort`\.$/);
+  assert.doesNotMatch(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'xhigh' }).permissionDecisionReason, /because/);
 });
 
 test('the orchestrator description states the Reads line shape', () => {

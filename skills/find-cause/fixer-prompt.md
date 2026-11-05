@@ -5,12 +5,13 @@ Text `find-cause` hands a `general-purpose` delegate whose prompt opens with `ex
 ## find-cause opening
 
 ```text
-Fix the proven cause in the handoff below, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only the handoff file and its `Ranges`.
+Fix the proven cause in the handoff, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only that file and its `Ranges`.
 
-Handoff file: <path>
+Reads: <handoff path>
+Worktree: <abs path>
 Paths in scope: the `Ranges` paths and the new test files under `Tests`.
 
-First write the failing test the test-design row calls for, in files the fix does not touch where the repository allows, because the session commits those files alone before the fix. Quote its failure.
+First write the failing test the test-design row calls for, in files the fix does not touch where the repository allows, because the session commits them alone before the fix. Quote its failure.
 Then make the predicted fix and prove it: re-run the reproduction and isolated case, then the required suite.
 A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
 

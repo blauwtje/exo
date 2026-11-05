@@ -4,6 +4,8 @@ Text build's No-spec step 7 hands a `general-purpose` delegate whose prompt open
 
 ```text
 Review the pending change in <root>. Request: <request>
+Reads: none
+Worktree: <abs path>
 
 - Write no file but the report: no edit, no git write, no `gh`, no further dispatch, no question to the user.
 - Never delete a file, branch or credential to get past a blocked state: that state is evidence; report it with two or three options instead.

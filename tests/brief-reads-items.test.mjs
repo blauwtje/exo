@@ -57,3 +57,17 @@ test('a brief with prose items keeps its Reads line as written', () => {
   const prompt = 'Reads: b-fixes.md lines 80-100 only; the hook/lib code (grep it)\nResult: .exo/r.md';
   assert.equal(locatedReads(prompt, cwd).prompt, 'Reads: .exo/notes/b-fixes.md lines 80-100 only; the hook/lib code (grep it)\nResult: .exo/r.md');
 });
+
+test('a leading ~/ in a Reads item resolves under the home directory', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'brief-home-'));
+  fs.writeFileSync(path.join(home, 'notes.md'), 'n'.repeat(1000));
+  const saved = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    const size = sized('~/notes.md', folder());
+    assert.deepEqual(size.unresolved, []);
+    assert.equal(size.tokens, 500);
+  } finally {
+    process.env.HOME = saved;
+  }
+});
