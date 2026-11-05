@@ -1,6 +1,6 @@
 import { planRoute } from '#plan-waves';
 import { BRANCH_REVIEW_KEY, cachedPass } from '#check-cache';
-import { REVIEWER_AGENTS, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
+import { REVIEWER_AGENTS, redProvedOf, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 import { DEFAULT_BASE } from './gate-constants.mjs';
 import { gitOutput } from './gate-command.mjs';
@@ -13,7 +13,7 @@ export function reviewLines(plan, landed, { root, planId, base }) {
   const lines = [];
   const route = planRoute(plan.tasks).route;
   const reviewers = plan.tasks.filter((entry) => landed.has(entry.number))
-    .map((task) => taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId)));
+    .map((task) => taskReviewer(task, taskPaths(task, root, planId), { route, taskDiff: taskDiffOf(task, root, planId), redProved: redProvedOf(task, root, planId) }));
   if (reviewers.length > 0) {
     const reviewer = reviewers.find((entry) => entry === REVIEWER_AGENTS.deep) ?? reviewers.find((entry) => !entry.startsWith('none')) ?? reviewers[0];
     const range = `${base ?? DEFAULT_BASE}..HEAD`;

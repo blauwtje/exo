@@ -32,6 +32,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - The speed ledger records four measured rejects from the 61-repo research: parallel check steps, cheapest-first `--fail-fast` order, a per-step input-hash check cache and an early-prompt volatility audit.
+- The gate skips the branch review when every task only adds new files with a test and land-time `Red: proved`, which cuts the flow-unit median wall from 133.3 s to 80.0 s and mean cost by 39% at n=15.
 - The speed ledger records ideas 7 and 8 as measured rejects: build-task and review-branch read no whole source or dependency files on the flow fixture, and their 23.0% and 13.4% read shares are rule docs and the review input.
 - The speed ledger records two more flow-unit ideas: build-task rule docs as a stable prefix is rejected at under 3% of build-task cost, and a two-line build-task dispatch prompt missed the pilot bar at a 145 s median wall.
 - Shared helpers replace local copies: `lib/basics.mjs` holds shellQuote, sleep, sleepSync and writeAtomic, benchmarks take mean, median and JSON reads from `benchmarks/basics.mjs`, and tests use one git helper and one tracked tempDir helper, 296 fewer lines.

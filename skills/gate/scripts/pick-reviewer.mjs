@@ -9,7 +9,7 @@ import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { inRun, recordDecision } from '#run-decision';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { parsePlan } from '#plan-tasks';
-import { planIdOf, taskCommits } from '#plan-landed';
+import { planIdOf, proofRecordPath, taskCommits } from '#plan-landed';
 import { planRoute } from '#plan-waves';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
@@ -47,12 +47,26 @@ function isInstructionPath(name) {
   return segments.some((segment) => INSTRUCTION_FOLDERS.includes(segment)) || INSTRUCTION_FILES.includes(segments.at(-1));
 }
 
-export function taskReviewer(task, changedPaths, route, taskDiff = '') {
+function addsOnlyNewFiles(taskDiff) {
+  const lines = taskDiff.split('\n');
+  const blocks = lines.filter((line) => line.startsWith('diff --git ')).length;
+  const created = lines.filter((line) => line.startsWith('new file mode ')).length;
+  return blocks > 0 && blocks === created;
+}
+
+export function redProvedOf(task, root, planId) {
+  const record = proofRecordPath(root, planId, task.number);
+  if (!fs.existsSync(record)) return false;
+  return fs.readFileSync(record, 'utf8').split('\n').includes('Red: proved');
+}
+
+export function taskReviewer(task, changedPaths, { route, taskDiff = '', redProved = false }) {
   if (task.risk !== null && /security boundary/i.test(task.risk)) return REVIEWER_AGENTS.deep;
   if (task.risk !== null) return REVIEWER_AGENTS.light;
   if (route === 'inline') return 'none (inline route)';
   if (changedPaths.some(isInstructionPath)) return REVIEWER_AGENTS.light;
   if (!changedPaths.some((name) => SCRIPT_EXTENSIONS.has(extname(name)))) return 'none (text only)';
+  if (redProved && changedPaths.some(isTestPath) && addsOnlyNewFiles(taskDiff)) return 'none (new test-first modules)';
   if (changedPaths.some(isTestPath) && outputOnly(taskDiff)) return 'none (output only, test covered)';
   return REVIEWER_AGENTS.light;
 }
@@ -127,7 +141,10 @@ function main(argv) {
     const { tasks } = parsePlan(fs.readFileSync(path.resolve(flags.plan), 'utf8'));
     const task = tasks.find((candidate) => String(candidate.number) === flags.task);
     if (task === undefined) throw new UsageError(`no task ${flags.task} in the plan`);
-    process.stdout.write(`${taskReviewer(task, taskPaths(task, flags.root, planIdOf(flags.plan)), planRoute(tasks).route, taskDiffOf(task, flags.root, planIdOf(flags.plan)))}\n`);
+    const planId = planIdOf(flags.plan);
+    const paths = taskPaths(task, flags.root, planId);
+    const diff = taskDiffOf(task, flags.root, planId);
+    process.stdout.write(`${taskReviewer(task, paths, { route: planRoute(tasks).route, taskDiff: diff, redProved: redProvedOf(task, flags.root, planId) })}\n`);
     return;
   }
   if (flags.codex) {
