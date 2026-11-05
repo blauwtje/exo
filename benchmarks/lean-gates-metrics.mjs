@@ -66,7 +66,7 @@ import { withoutParentSession } from './lean-gates.mjs';
 import { countsCost } from './pricing.mjs';
 import { meanCi } from '../lib/eval-stats.mjs';
 import { meanAndSd } from './statistics.mjs';
-import { median, readJsonOrNull } from './basics.mjs';
+import { median, readJson, readJsonOrNull } from './basics.mjs';
 
 const SCRIPT_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']);
 const MANIFESTS = new Set(['package.json', 'package-lock.json', 'npm-shrinkwrap.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
@@ -100,12 +100,7 @@ export function loadSession(transcriptPath) {
     for (const name of fs.readdirSync(directory).sort()) {
       if (!name.endsWith('.jsonl')) continue;
       const file = path.join(directory, name);
-      let meta = {};
-      try {
-        meta = JSON.parse(fs.readFileSync(file.replace(/\.jsonl$/, '.meta.json'), 'utf8'));
-      } catch {
-        // no meta: agentType stays unknown
-      }
+      const meta = readJsonOrNull(file.replace(/\.jsonl$/, '.meta.json')) ?? {};
       subagents.push({ path: file, meta, entries: readJsonl(file) });
     }
   }
@@ -483,15 +478,10 @@ export function phasesOf({ calls, subagents, meta, facts, mainBounds }) {
 function recheck(repo, runDirectory, head, force) {
   const cache = path.join(runDirectory, 'recheck.json');
   if (!force && fs.existsSync(cache)) {
-    const cached = JSON.parse(fs.readFileSync(cache, 'utf8'));
+    const cached = readJson(cache);
     if (cached.commit === head) return cached;
   }
-  let scripts = {};
-  try {
-    scripts = JSON.parse(fs.readFileSync(path.join(repo, 'package.json'), 'utf8')).scripts ?? {};
-  } catch {
-    // no package.json: every check is absent
-  }
+  const scripts = readJsonOrNull(path.join(repo, 'package.json'))?.scripts ?? {};
   // The fixture's test script may log to suite-runs.jsonl; the recheck must not count.
   const suiteLog = path.join(runDirectory, 'suite-runs.jsonl');
   const saved = fs.existsSync(suiteLog) ? fs.readFileSync(suiteLog) : null;

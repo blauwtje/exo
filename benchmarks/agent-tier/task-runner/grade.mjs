@@ -1,9 +1,9 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { npmTest } from '../shared.mjs';
 
-const TEST_MS = 30_000;
 const TRAILER = /^Plan-task: (.+)\/(\d+)$/m;
 const SEP = '\u001f';
 const END = '\u001e';
@@ -41,13 +41,13 @@ export function outcomeFindings(landed, allowed) {
   return match ? [] : [`landed tasks [${landed.join(', ')}], expected one of ${allowed.map((outcome) => `[${outcome.join(', ')}]`).join(' or ')}`];
 }
 
-function testEnvironment() {
-  return Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('NODE_TEST')));
-}
-
 function testFindings(repo) {
-  const run = spawnSync('npm', ['test', '--silent'], { cwd: repo, env: testEnvironment(), encoding: 'utf8', timeout: TEST_MS });
-  return run.status === 0 ? [] : [`npm test exited ${run.status}`];
+  try {
+    npmTest(repo);
+    return [];
+  } catch (error) {
+    return [error.message];
+  }
 }
 
 export async function gradeRun({ planId, allowed }) {

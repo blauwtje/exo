@@ -1,15 +1,13 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { npmTest, withDeadline } from '../shared.mjs';
 
 export const RESULT_FILE = path.join('.exo', 'orchestrate', 'result.md');
 const HEADER = /^\s*(?:#+|\*\*)?\s*phase\s*(\d+)/i;
 const PHASE = /\bphase\s*(\d+)/i;
 const VERDICT = /\b(DONE|BLOCKED)\b/g;
-const CASE_MS = 10_000;
-const TEST_MS = 30_000;
 
 export const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export const idPattern = (id) => new RegExp(`(?<![\\w-])${escaped(id)}(?![\\w-])`, 'i');
@@ -71,21 +69,6 @@ export function resultFindings(text, { parts, together = [], after = [] }) {
 function readResult(repo) {
   const file = path.join(repo, RESULT_FILE);
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
-}
-
-function testEnvironment() {
-  return Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('NODE_TEST')));
-}
-
-function npmTest(repo) {
-  const run = spawnSync('npm', ['test', '--silent'], { cwd: repo, env: testEnvironment(), encoding: 'utf8', timeout: TEST_MS });
-  if (run.status !== 0) throw new Error(`npm test exited ${run.status}`);
-}
-
-function withDeadline(work) {
-  let timer;
-  const expired = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`no result in ${CASE_MS} ms`)), CASE_MS); });
-  return Promise.race([Promise.resolve().then(work), expired]).finally(() => clearTimeout(timer));
 }
 
 export async function grade({ cases, result }) {

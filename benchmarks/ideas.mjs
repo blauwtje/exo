@@ -12,9 +12,10 @@ import { applyVariant } from './variants.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { medianCost } from './routing.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
+import { meanOrNull, readJson } from './basics.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'ideas', 'cases.json'), 'utf8'));
+const CASES = readJson(path.join(import.meta.dirname, 'ideas', 'cases.json'));
 const FIXTURES = '/tmp/exo-pressure/spec';
 const SETUP = path.join(import.meta.dirname, 'pressure', 'spec', 'setup.sh');
 const RUN_FILES = 'benchmarks/runs/<date>-ideas/<arm>/<case>/<i>/{stdout.json,final.md}';
@@ -165,7 +166,7 @@ async function runCell({ cell, out, plugin, scratch }) {
 
 function failureOf(runDir) {
   const file = path.join(runDir, 'failed.json');
-  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8')).reason ?? 'failed';
+  if (fs.existsSync(file)) return readJson(file).reason ?? 'failed';
   return fs.existsSync(path.join(runDir, 'final.md')) ? null : 'no final.md';
 }
 
@@ -216,29 +217,23 @@ export function assertSameJudge({ left, right }) {
 }
 
 function compareDirectories([left, right]) {
-  const load = (dir) => JSON.parse(fs.readFileSync(path.join(dir, 'records.json'), 'utf8'));
+  const load = (dir) => readJson(path.join(dir, 'records.json'));
   const sides = { left: load(left), right: load(right) };
   assertSameJudge(sides);
   return compareMarkdown(sides);
-}
-
-function meanOf(values) {
-  const numbers = values.filter(Number.isFinite);
-  if (numbers.length === 0) return null;
-  return numbers.reduce((total, value) => total + value, 0) / numbers.length;
 }
 
 export function caseMeans(records) {
   const byCase = Object.groupBy(records, (record) => record.case);
   const metrics = Object.keys(records[0] ?? {}).filter((key) => key !== 'case' && key !== 'run');
   return Object.entries(byCase).map(([caseId, rows]) => {
-    const means = metrics.map((metric) => [metric, meanOf(rows.map((row) => row[metric]))]);
+    const means = metrics.map((metric) => [metric, meanOrNull(rows.map((row) => row[metric]).filter(Number.isFinite))]);
     return { case: caseId, ...Object.fromEntries(means) };
   });
 }
 
 export function compareToBaseline({ baselineDir, records }) {
-  const stored = JSON.parse(fs.readFileSync(path.join(baselineDir, 'base', 'records.json'), 'utf8'));
+  const stored = readJson(path.join(baselineDir, 'base', 'records.json'));
   assertSameJudge({ left: stored, right: records });
   const storedCases = Object.keys(Object.groupBy(stored, (record) => record.case)).length;
   const counts = `runs: baseline ${stored.length} (per-case mean of ${storedCases} cases), new ${records.length}`;
@@ -256,7 +251,7 @@ function splitCompare(argv) {
 function recordedRecords(out, arm) {
   const file = path.join(out, arm, 'records.json');
   if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  return readJson(file);
 }
 
 export function recordedCosts(out, arm) {
@@ -292,7 +287,7 @@ async function main(argv) {
     const arm = flags.arm ?? 'base';
     console.log(`wrote ${await scoreDirectory({ dir: flags.score, arm, judge: claudeJudge, results: flags.results })}`);
     if (flags.baseline === undefined) return;
-    const records = JSON.parse(fs.readFileSync(path.join(flags.score, arm, 'records.json'), 'utf8'));
+    const records = readJson(path.join(flags.score, arm, 'records.json'));
     return console.log(compareToBaseline({ baselineDir: flags.baseline, records }));
   }
   const cells = plan(flags);

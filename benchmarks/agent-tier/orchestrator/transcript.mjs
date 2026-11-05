@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { escaped, idPattern, ownedLines } from './grade.mjs';
+import { parsedEvents } from '../shared.mjs';
 
 const DISPATCH_TOOLS = new Set(['Agent', 'Task']);
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit']);
@@ -8,17 +9,6 @@ const READ_VERB = /\b(?:cat|grep|rg|sed|head|tail|awk|nl|less|bat)\b/;
 const RESULT_PATH = /\.exo\/orchestrate\/result\.md$/;
 const RESULT_REDIRECT = /(?:>>?|\btee\b(?:\s+-a)?)\s*['"]?\S*\.exo\/orchestrate\/result\.md/;
 const REOPENED = /\bBLOCKED\b|\breopen/i;
-
-function parsedEvents(stdout) {
-  return String(stdout ?? '').split('\n').flatMap((line) => {
-    try {
-      const event = JSON.parse(line);
-      return event && typeof event === 'object' ? [event] : [];
-    } catch {
-      return [];
-    }
-  });
-}
 
 export function mainMessages(stdout) {
   const messages = new Map();

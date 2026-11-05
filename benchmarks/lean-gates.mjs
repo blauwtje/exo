@@ -48,6 +48,7 @@ import { exoLoaded } from './cell-usage.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { medianCost } from './routing.mjs';
 import { meanCi } from '../lib/eval-stats.mjs';
+import { readJsonOrNull } from './basics.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BENCH = path.join(ROOT, 'benchmarks', 'lean-gates');
@@ -235,13 +236,8 @@ export function claudeArguments(options, pluginDir, sessionId, prompt = PROMPT) 
 }
 
 function recordedCost(file) {
-  if (!fs.existsSync(file)) return null;
-  try {
-    const cost = JSON.parse(fs.readFileSync(file, 'utf8')).total_cost_usd;
-    return typeof cost === 'number' ? cost : null;
-  } catch {
-    return null;
-  }
+  const cost = readJsonOrNull(file)?.total_cost_usd;
+  return typeof cost === 'number' ? cost : null;
 }
 
 export function recordedRunCosts(out) {

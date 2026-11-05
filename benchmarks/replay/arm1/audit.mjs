@@ -3,6 +3,7 @@
 // Usage: node audit.mjs <dir>. Markdown on stdout, facts only, exit 0.
 import fs from 'node:fs';
 import path from 'node:path';
+import { median } from '../../basics.mjs';
 
 const PEER_RATIO = 3;
 const PEER_MIN = 3;
@@ -208,7 +209,6 @@ const label = (rec) => {
   const f = field(rec.obj, ['id', 'task', 'cell', 'arm', 'name'], rec.kind === 'table' ? () => true : null);
   return f ? String(f.value) : `record at line ${rec.line}`;
 };
-const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
 // ---- 1. wall-time ----
 {

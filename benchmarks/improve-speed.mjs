@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { meanCi } from '../lib/eval-stats.mjs';
 import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
-import { readJson } from './basics.mjs';
+import { mean, readJson } from './basics.mjs';
 
 const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost'];
 const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>]';
@@ -20,9 +20,9 @@ const POOL_SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'bas
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const DECIMALS = { cost: 3 };
-const mean = (values, decimals = 2) => {
+const roundedMean = (values, decimals = 2) => {
   const scale = 10 ** decimals;
-  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * scale) / scale;
+  return Math.round(mean(values) * scale) / scale;
 };
 
 function readLines(file) {
@@ -137,7 +137,7 @@ function measureSpread(rows, name) {
   if (values.length === 0) return { mean: null, se: null, n: 0, excluded };
   const ci = meanCi(values);
   const unscored = name === 'cost' && values.length < finished.length;
-  return { mean: unscored ? null : mean(values, DECIMALS[name]), se: ci.se, n: ci.n, excluded };
+  return { mean: unscored ? null : roundedMean(values, DECIMALS[name]), se: ci.se, n: ci.n, excluded };
 }
 
 export function scoreOutDir(outDirectory) {
@@ -217,7 +217,7 @@ function lookupBase(options) {
   const row = JSON.parse(run.stdout);
   const costs = parseRows(fs.readFileSync(path.resolve(ROOT, row.results), 'utf8'), row.arm).map((entry) => entry['cost $']);
   if (costs.length === 0) return { error: `pooled base ${commit} has no cost rows in ${row.results}` };
-  return { base: { commit, n: costs.length, se: spreadOf(costs), mean: mean(costs, DECIMALS.cost), max: Math.max(...costs) } };
+  return { base: { commit, n: costs.length, se: spreadOf(costs), mean: roundedMean(costs, DECIMALS.cost), max: Math.max(...costs) } };
 }
 
 export function quickVerdict(row, base) {

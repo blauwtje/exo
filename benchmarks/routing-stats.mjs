@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { intervalText, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
+import { readJson } from './basics.mjs';
 
 const Z95 = 1.96;
 const NULL_KEY = 'null';
@@ -88,7 +88,7 @@ function main() {
   const flags = parseFlags(process.argv.slice(2), { in: 'value', cell: 'value', arm: 'value', split: 'value', json: 'boolean' }, { usage: USAGE });
   if (!flags.in) throw new UsageError('--in is required');
   if (flags.split !== undefined && !['train', 'held-out'].includes(flags.split)) throw new UsageError('--split must be train or held-out');
-  const { sessions = [] } = JSON.parse(fs.readFileSync(flags.in, 'utf8'));
+  const { sessions = [] } = readJson(flags.in);
   const table = routingStats(sessions, { cell: flags.cell, arm: flags.arm, split: flags.split });
   const comparison = armComparison(sessions, { cell: flags.cell, split: flags.split });
   if (flags.json) return process.stdout.write(`${JSON.stringify({ table, comparison }, null, 2)}\n`);

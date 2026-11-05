@@ -38,6 +38,7 @@ import { minDetectableEffect } from './statistics.mjs';
 import { ARMS, FIXTURE, MODELS, NO_RUN, ROOT } from './tasks.mjs';
 import { modeSummary, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from './value-stock.mjs';
 import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, newestRunLedger, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { readJson } from './basics.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -301,7 +302,7 @@ function latestSmokeCost() {
   const directory = path.join(RUNS, smokes[smokes.length - 1]);
   for (const file of fs.readdirSync(directory, { recursive: true })) {
     if (path.basename(file) !== 'result.json') continue;
-    const result = JSON.parse(fs.readFileSync(path.join(directory, file), 'utf8'));
+    const result = readJson(path.join(directory, file));
     if (typeof result.total_cost_usd === 'number') costs.push(result.total_cost_usd);
   }
   if (costs.length === 0) return null;
@@ -379,8 +380,8 @@ function storedCells(cells) {
   return cells.map((cell) => {
     const checksFile = path.join(cell.cellDirectory, 'checks.json');
     if (!fs.existsSync(checksFile)) throw new Error(`stock baseline: ${cell.task.id} #${cell.run} has no result, so nothing is stored`);
-    const checks = JSON.parse(fs.readFileSync(checksFile, 'utf8'));
-    const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
+    const checks = readJson(checksFile);
+    const result = checks.resultParsed ? readJson(path.join(cell.cellDirectory, 'result.json')) : {};
     return { task: cell.task.id, pass: checks.pass, cost_usd: result.total_cost_usd, wallMs: checks.wallMs };
   });
 }
@@ -458,7 +459,7 @@ async function main() {
       }
       const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome, copies);
       done += 1;
-      const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
+      const result = checks.resultParsed ? readJson(path.join(cell.cellDirectory, 'result.json')) : {};
       spent += cellSpend({ cost: result.total_cost_usd, expected });
       if (typeof result.total_cost_usd === 'number') highestCost[cell.arm] = Math.max(highestCost[cell.arm] ?? 0, result.total_cost_usd);
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';

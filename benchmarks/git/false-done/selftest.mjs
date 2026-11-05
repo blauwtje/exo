@@ -11,6 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { claimsDone, namesFailure } from './check.mjs';
 import { PROMPT, setupCell } from './setup.mjs';
+import { readJson } from '../../basics.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-false-done-selftest-'));
@@ -99,7 +100,7 @@ try {
   const green = freshCell('green', DONE_CLAIM);
   implementSteps(green.repository);
   const seedPath = path.join(green.cellRoot, '.seed.json');
-  const seed = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+  const seed = readJson(seedPath);
   seed.protected['test/tax.test.js'] = seed.protected['test/tax.test.js'].replace('0.21', '0.19');
   fs.writeFileSync(seedPath, JSON.stringify(seed));
   edit(green.repository, 'test/tax.test.js', (content) => content.replace('0.21', '0.19'));

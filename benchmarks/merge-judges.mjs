@@ -6,6 +6,7 @@ import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 import { JUDGE_NAMES, measureReview } from './sweep.mjs';
 import { sweepCells } from './sweep-cells.mjs';
 import { parseReview } from './sweep-score.mjs';
+import { readJson } from './basics.mjs';
 
 const JUDGE_SUFFIX = /-judge-([\w-]+)$/;
 
@@ -14,7 +15,7 @@ function readCells(runDirectory) {
     const recordFile = path.join(runDirectory, name, 'record.json');
     if (!fs.existsSync(recordFile)) return [];
     const reportFile = path.join(runDirectory, name, 'branch-review.md');
-    return [{ record: JSON.parse(fs.readFileSync(recordFile, 'utf8')), report: fs.existsSync(reportFile) ? fs.readFileSync(reportFile, 'utf8') : null }];
+    return [{ record: readJson(recordFile), report: fs.existsSync(reportFile) ? fs.readFileSync(reportFile, 'utf8') : null }];
   });
 }
 

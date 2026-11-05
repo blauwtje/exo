@@ -40,6 +40,7 @@ import { flowReport, readFlowRecords } from './flow-report.mjs';
 import { pairedDiff } from '../lib/eval-stats.mjs';
 import { compareMeans, meanAndSd, nextRuns, PLANNING_CV } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
+import { readJson } from './basics.mjs';
 
 const METRICS = ['loc', 'tokens', 'cost', 'time'];
 const LIMITATIONS = [
@@ -101,11 +102,11 @@ function readCells(directory) {
   for (const file of fs.readdirSync(directory, { recursive: true })) {
     if (path.basename(file) !== 'checks.json') continue;
     const cellDirectory = path.join(directory, path.dirname(file));
-    const checks = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'checks.json'), 'utf8'));
+    const checks = readJson(path.join(cellDirectory, 'checks.json'));
     const resultFile = path.join(cellDirectory, 'result.json');
-    const result = fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')) : null;
+    const result = fs.existsSync(resultFile) ? readJson(resultFile) : null;
     const usageFile = path.join(cellDirectory, 'usage.json');
-    const usage = fs.existsSync(usageFile) ? JSON.parse(fs.readFileSync(usageFile, 'utf8')) : null;
+    const usage = fs.existsSync(usageFile) ? readJson(usageFile) : null;
     const [task, arm, run] = path.dirname(file).split(path.sep);
     cells.push({ task, arm, run, checks, result, usage });
   }
@@ -578,7 +579,7 @@ function flowMain(options, meta) {
 
 function main() {
   const options = parseArguments(process.argv.slice(2));
-  const meta = JSON.parse(fs.readFileSync(path.join(options.directory, 'meta.json'), 'utf8'));
+  const meta = readJson(path.join(options.directory, 'meta.json'));
   if (Array.isArray(meta.sets) && meta.sets.includes('flow') && !meta.arms) {
     if (options.compare) throw new Error(COMPARE_ALONE);
     flowMain(options, meta);

@@ -15,6 +15,7 @@ import { makeRunFolder, withHome } from '../skills/edit-skills/scripts/pressure.
 import { armComparison, comparisonLine, routingStats, statsLines } from './routing-stats.mjs';
 import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { countsCost } from './pricing.mjs';
+import { readJson } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_MS = environmentMs('EXO_ROUTING_SESSION_MS', 120_000);
@@ -294,15 +295,15 @@ async function smoke(all, flags, runSession) {
 
 function recordedSessions(file) {
   if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
+  return readJson(file).sessions ?? [];
 }
 
 function readBaseline() {
-  return fs.existsSync(BASELINE_FILE) ? JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8')) : null;
+  return fs.existsSync(BASELINE_FILE) ? readJson(BASELINE_FILE) : null;
 }
 
 function readPrompts() {
-  return JSON.parse(fs.readFileSync(path.join(ROOT, 'benchmarks/routing/prompts.json'), 'utf8'));
+  return readJson(path.join(ROOT, 'benchmarks/routing/prompts.json'));
 }
 
 function planRun(flags, all) {
@@ -348,7 +349,7 @@ async function main() {
     const combined = plan.baseline ? withBaseline(outcome, plan.baseline) : outcome;
     const split = flags.full ? flags.split ?? 'all' : 'held-out';
     const fresh = { ...combined, split, prompts: plan.prompts.map((entry) => entry.prompt), hashes: descriptionHashes(ROOT) };
-    const result = flags.skill !== undefined ? withSkillRun(JSON.parse(fs.readFileSync(flags.out, 'utf8')), outcome, { skill: flags.skill, hash: fresh.hashes[flags.skill], skills: modelInvocableSkills(ROOT) }) : fresh;
+    const result = flags.skill !== undefined ? withSkillRun(readJson(flags.out), outcome, { skill: flags.skill, hash: fresh.hashes[flags.skill], skills: modelInvocableSkills(ROOT) }) : fresh;
     fs.mkdirSync(path.dirname(flags.out), { recursive: true });
     fs.writeFileSync(flags.out, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`wrote ${flags.out}\n`);

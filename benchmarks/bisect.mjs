@@ -18,6 +18,7 @@ import { BEFORE_ARM, beforePluginProblem } from './plugin-copies.mjs';
 import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { MODELS, ROOT } from './tasks.mjs';
 import { EXO_SETTINGS, cellFits, cellSpend, copyPluginWithoutTasks, parseSpendCap } from './value.mjs';
+import { readJson } from './basics.mjs';
 
 const CASES_ROOT = fileURLToPath(new URL('./bisect/', import.meta.url));
 const RESULTS_ROOT = fileURLToPath(new URL('./results/', import.meta.url));
@@ -122,7 +123,7 @@ function requireText(value, label) {
 
 function readCase(directory) {
   const slug = path.basename(directory);
-  const spec = JSON.parse(fs.readFileSync(path.join(directory, 'case.json'), 'utf8'));
+  const spec = readJson(path.join(directory, 'case.json'));
   if (!KINDS.includes(spec.kind)) throw new Error(`${slug}/case.json: kind must be ${KINDS.join(', ')}`);
   if (!TIERS.includes(spec.tier)) throw new Error(`${slug}/case.json: tier must be ${TIERS.join(' or ')}`);
   requireText(spec.repro, `${slug}/case.json: repro`);

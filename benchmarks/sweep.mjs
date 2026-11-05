@@ -43,6 +43,7 @@ import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
 import { applyVariant } from './variants.mjs';
+import { readJson } from './basics.mjs';
 
 const RUNS = path.join(ROOT, 'benchmarks', 'runs');
 const RESULTS = path.join(ROOT, 'benchmarks', 'results');
@@ -192,7 +193,7 @@ export function runClaude(cell, workdir, cellRoot, cellDirectory, copies, provid
 
 function readResult(cellDirectory) {
   try {
-    return JSON.parse(fs.readFileSync(path.join(cellDirectory, 'stdout.json'), 'utf8'));
+    return readJson(path.join(cellDirectory, 'stdout.json'));
   } catch {
     return null;
   }
@@ -445,7 +446,7 @@ function pluginCommits() {
 // so its results file keeps one name.
 function readOrWriteMeta(runDirectory, options, cellCount) {
   const file = path.join(runDirectory, 'meta.json');
-  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (fs.existsSync(file)) return readJson(file);
   const meta = {
     date: new Date().toISOString().slice(0, 10),
     claudeVersion: execFileSync('claude', ['--version'], { encoding: 'utf8' }).trim(),
@@ -497,7 +498,7 @@ function sweepProvider(options) {
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   const provider = sweepProvider(options);
-  const replay = options.cases === null ? [] : replayCells(JSON.parse(fs.readFileSync(options.cases, 'utf8')), options);
+  const replay = options.cases === null ? [] : replayCells(readJson(options.cases), options);
   const judged = options.reviewerBodies === null ? sweepCells()
     : judgeCells(sweepCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
   const chosen = keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells);
@@ -536,7 +537,7 @@ async function main() {
     await runPool(cells, options.concurrency, async (cell, index) => {
       const recordFile = path.join(runDirectory, cell.directory ?? cell.id, 'record.json');
       if (fs.existsSync(recordFile)) {
-        records[index] = JSON.parse(fs.readFileSync(recordFile, 'utf8'));
+        records[index] = readJson(recordFile);
       } else {
         running.add(cell.directory ?? cell.id);
         records[index] = await runCell(cell, runDirectory, copies, options.keepRepo, provider?.env ?? null);

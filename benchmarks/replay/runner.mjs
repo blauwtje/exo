@@ -22,11 +22,12 @@ import crypto from 'node:crypto';
 import { plannedPowerLine } from '../power-plan.mjs';
 import { gradeCell } from './grade.mjs';
 import { cellRecord, readCellRecord, stoppedRecord, summaryLines } from './cell-stats.mjs';
+import { readJson } from '../basics.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MODEL = 'claude-opus-5-5';
 const TOOLS = 'Read,Grep,Glob';
-const ARMS = JSON.parse(fs.readFileSync(path.join(HERE, 'arm1', 'arms.json'), 'utf8'));
+const ARMS = readJson(path.join(HERE, 'arm1', 'arms.json'));
 const ARM_NAMES = ['baseline', 'cue', 'audit'];
 const sha256 = (data) => crypto.createHash('sha256').update(data).digest('hex');
 export const QUICK_RUNS = 1;
@@ -72,7 +73,7 @@ function runClaude(args, cwd, timeoutMs) {
 
 async function runCell(flags, caseId, run, claudeVersion) {
   const caseDirectory = path.join(flags.casesDir, caseId);
-  const caseDef = JSON.parse(fs.readFileSync(path.join(caseDirectory, 'case.json'), 'utf8'));
+  const caseDef = readJson(path.join(caseDirectory, 'case.json'));
   const basePrompt = fs.readFileSync(path.join(caseDirectory, 'prompt.md'), 'utf8').trim();
   const prompt = flags.arm === 'baseline' ? basePrompt : `${basePrompt}\n\n${ARMS[flags.arm]}`;
   const cell = path.join(flags.out, caseId, flags.arm, String(run));
@@ -138,7 +139,7 @@ function spentUsd(out) {
       if (entry.isDirectory()) walk(full);
       else if (entry.name === 'grade.json' && fs.existsSync(path.join(directory, 'result.json'))) {
         try {
-          const cost = JSON.parse(fs.readFileSync(path.join(directory, 'result.json'), 'utf8')).total_cost_usd;
+          const cost = readJson(path.join(directory, 'result.json')).total_cost_usd;
           if (typeof cost === 'number') sum += cost; else unpriced += 1;
         } catch { unpriced += 1; }
       }
@@ -165,7 +166,7 @@ function armCellDirectories(flags, caseId, arm) {
 }
 
 function caseKind(flags, caseId) {
-  return JSON.parse(fs.readFileSync(path.join(flags.casesDir, caseId, 'case.json'), 'utf8')).kind;
+  return readJson(path.join(flags.casesDir, caseId, 'case.json')).kind;
 }
 
 async function main() {

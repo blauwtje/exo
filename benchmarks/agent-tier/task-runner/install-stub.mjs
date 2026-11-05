@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { readJson } from '../../basics.mjs';
 
 const STUB_DIR = 'stub-build-task';
 const CHEAP_KIND = { tier: 'fast', effort: null };
@@ -17,6 +18,6 @@ export function installStub({ pluginDir, fixture, destination }) {
   fs.copyFileSync(path.join(import.meta.dirname, 'stub.mjs'), path.join(stub, 'stub.mjs'));
   fs.cpSync(path.join(fixture, 'prepared'), path.join(stub, 'prepared'), { recursive: true });
   const kinds = path.join(destination, 'lib', 'model-kinds.json');
-  fs.writeFileSync(kinds, `${JSON.stringify(cheapBuildTask(JSON.parse(fs.readFileSync(kinds, 'utf8'))), null, 2)}\n`);
+  fs.writeFileSync(kinds, `${JSON.stringify(cheapBuildTask(readJson(kinds)), null, 2)}\n`);
   return destination;
 }

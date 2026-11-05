@@ -24,6 +24,7 @@ import { meanCi } from '../../lib/eval-stats.mjs';
 import { formatMeasure, measure } from './cell-stats.mjs';
 import { calibrationLines } from '../judge-calibration.mjs';
 import { plannedPowerLine } from '../power-plan.mjs';
+import { readJson } from '../basics.mjs';
 
 export const JUDGE_MODEL = 'claude-haiku-5-5';
 export const JUDGE_EFFORT = 'low';
@@ -117,10 +118,10 @@ export function voteStability(passes, fails) {
 
 export function gradeCell(cellDirectory, { judgeCalls = JUDGE_CALLS } = {}) {
   const gradeFile = path.join(cellDirectory, 'grade.json');
-  const prior = fs.existsSync(gradeFile) ? JSON.parse(fs.readFileSync(gradeFile, 'utf8')) : null;
+  const prior = fs.existsSync(gradeFile) ? readJson(gradeFile) : null;
   if (prior?.grade === 'leak') return prior;
-  const caseDef = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'case.json'), 'utf8'));
-  const result = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'result.json'), 'utf8'));
+  const caseDef = readJson(path.join(cellDirectory, 'case.json'));
+  const result = readJson(path.join(cellDirectory, 'result.json'));
   const output = typeof result.result === 'string' ? result.result : '';
   let graded;
   if (output === '') graded = { grade: 'unknown', evidence: 'cell produced no output' };
@@ -158,9 +159,9 @@ export function selectCells(cells, { full }) {
 
 function needsJudge(cellDirectory) {
   const gradeFile = path.join(cellDirectory, 'grade.json');
-  if (fs.existsSync(gradeFile) && JSON.parse(fs.readFileSync(gradeFile, 'utf8')).grade === 'leak') return false;
-  const caseDef = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'case.json'), 'utf8'));
-  const result = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'result.json'), 'utf8'));
+  if (fs.existsSync(gradeFile) && readJson(gradeFile).grade === 'leak') return false;
+  const caseDef = readJson(path.join(cellDirectory, 'case.json'));
+  const result = readJson(path.join(cellDirectory, 'result.json'));
   return caseDef.grade.type === 'rubric' && typeof result.result === 'string' && result.result !== '';
 }
 

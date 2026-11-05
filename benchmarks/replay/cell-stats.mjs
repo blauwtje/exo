@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { meanCi, pairedDiff } from '../../lib/eval-stats.mjs';
+import { readJson } from '../basics.mjs';
 
 export const BAND = { low: 0.1, high: 0.9 };
 const SERIOUS_GRADES = new Set(['fail', 'unknown', 'leak']);
@@ -29,7 +30,7 @@ export function stoppedRecord({ caseId, kind }) {
 }
 
 export function readCellRecord(cellDirectory, caseId, kind) {
-  const read = (name) => JSON.parse(fs.readFileSync(path.join(cellDirectory, name), 'utf8'));
+  const read = (name) => readJson(path.join(cellDirectory, name));
   const gradeFile = path.join(cellDirectory, 'grade.json');
   if (!fs.existsSync(gradeFile)) return null;
   const resultFile = path.join(cellDirectory, 'result.json');

@@ -37,7 +37,7 @@ Recorded verdicts: <verdicts dir>/<judge>.jsonl (default benchmarks/judge-verdic
 Exit codes: 0 ok, 1 a judge has enough human labels and misses the threshold, 2 usage error.`;
 
 export function readRegistry(file = REGISTRY) {
-  return JSON.parse(fs.readFileSync(file, 'utf8')).judges;
+  return readJson(file).judges;
 }
 
 function readRows(file) {

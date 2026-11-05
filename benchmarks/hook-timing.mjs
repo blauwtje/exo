@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { HOOK_SPAWN_MS_LOCK } from '../verify/budgets.mjs';
+import { readJson } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = 100;
@@ -82,7 +83,7 @@ const TOOL_INPUTS = {
   AskUserQuestion: {}
 };
 
-export function hookEntries(hooks = JSON.parse(fs.readFileSync(path.join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks) {
+export function hookEntries(hooks = readJson(path.join(ROOT, 'hooks', 'hooks.json')).hooks) {
   return Object.entries(hooks).flatMap(([event, groups]) => groups.flatMap((group) => group.hooks.map((hook) => ({ event, matcher: group.matcher, command: hook.command }))));
 }
 

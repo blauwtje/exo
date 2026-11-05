@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { configDirectory } from '#config-directory';
 import { sumCounts, usageCounts } from '#token-weights';
+import { readJson } from './basics.mjs';
 
 const SESSION_ID = /^[\w-]+$/;
 // The session hook's context holds its settings line while exo is loaded, after
@@ -72,7 +73,7 @@ function subagentTypes(transcriptPath) {
   const types = [];
   for (const name of fs.readdirSync(subagents).sort()) {
     if (!name.endsWith('.meta.json')) continue;
-    const meta = JSON.parse(fs.readFileSync(path.join(subagents, name), 'utf8'));
+    const meta = readJson(path.join(subagents, name));
     types.push(meta.agentType ?? 'unknown');
   }
   return types;

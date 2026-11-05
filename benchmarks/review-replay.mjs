@@ -13,6 +13,7 @@ import { plannedPowerLine } from './power-plan.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { defectRange, prepareReviewBranch, reviewPlanText } from './sweep-fixtures.mjs';
 import { MODELS, ROOT, SAFE_TASKS } from './tasks.mjs';
+import { readJson } from './basics.mjs';
 
 const USAGE = 'Usage: node benchmarks/review-replay.mjs [--checkout <exo checkout>] [--full] [--dry-run] [--rescore <runs dir>] [--resume] [--task <fixture or safe task id>]... [--rounds <n>] [--repeat <n>] [--jobs <n>] [--budget-usd <n>] [--save-baseline] [--out <path>] [--model <id>]';
 const SAFE = path.join(ROOT, 'benchmarks', 'safe');
@@ -52,7 +53,7 @@ export function loadFixtures(root = REPLAY) {
     const dir = path.join(root, entry.name);
     const sources = seedSources(dir);
     if (sources.length !== 1) throw new Error(`fixture '${entry.name}' needs exactly one ${SEED_SUFFIX} source, found ${sources.length}`);
-    const plants = JSON.parse(fs.readFileSync(path.join(dir, 'plants.json'), 'utf8'));
+    const plants = readJson(path.join(dir, 'plants.json'));
     return { id: entry.name, dir, file: sources[0], plants, prompt: `Add \`${sources[0]}\` to this repository.` };
   });
 }
@@ -60,7 +61,7 @@ export function loadFixtures(root = REPLAY) {
 export function loadPlants(task, safeRoot = SAFE) {
   if (task.plants) return task.plants;
   const file = path.join(safeRoot, task.id, 'plants.json');
-  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (fs.existsSync(file)) return readJson(file);
   const { start, end } = defectRange(task);
   return [{ path: task.file, range: `${start}-${end}`, class: 'defect' }];
 }
@@ -320,7 +321,7 @@ export function summarize(task, runs) {
 function keptResult(options, { task, index }) {
   if (!options.resume || !options.keepDir) return null;
   const file = path.join(options.keepDir, `${task.id}-r${index}`, 'run.json');
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
+  return fs.existsSync(file) ? readJson(file) : null;
 }
 
 export async function replayAll(options, modelFor) {
@@ -369,7 +370,7 @@ export function saveBaseline(file, cells, { model, source }) {
     model,
     source
   }));
-  const kept = JSON.parse(fs.readFileSync(file, 'utf8')).filter((row) => !measured.some((fresh) => fresh.task === row.task));
+  const kept = readJson(file).filter((row) => !measured.some((fresh) => fresh.task === row.task));
   const rows = [...kept, ...measured].sort((left, right) => left.task.localeCompare(right.task));
   fs.writeFileSync(file, `[\n${rows.map((row) => `  ${JSON.stringify(row)}`).join(',\n')}\n]\n`);
 }
@@ -388,7 +389,7 @@ export function writeReport({ out, keepDir, mode, cells, durationMs }) {
 }
 
 function readReplayJson(name) {
-  return JSON.parse(fs.readFileSync(path.join(REPLAY, name), 'utf8'));
+  return readJson(path.join(REPLAY, name));
 }
 
 function resolveTask(known, id) {
@@ -437,7 +438,7 @@ export function rescoreRuns(runsDir) {
     if (!fs.existsSync(file)) continue;
     if (!/-r\d+$/.test(name)) continue;
     const task = name.replace(/-r\d+$/, '');
-    byTask.set(task, [...byTask.get(task) ?? [], JSON.parse(fs.readFileSync(file, 'utf8'))]);
+    byTask.set(task, [...byTask.get(task) ?? [], readJson(file)]);
   }
   return [...byTask].map(([task, runs]) => ({ ...summarize({ id: task }, runs), skipped: 0 }));
 }

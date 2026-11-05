@@ -8,6 +8,7 @@ import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { findTranscript } from './cell-usage.mjs';
 import { contextSeries } from '#context-decisions';
 import { UsageError, isMain, parseFlags } from '#script-flags';
+import { readJson, sum } from './basics.mjs';
 
 const USAGE = `usage: node benchmarks/delegation-readout.mjs --check <out dir> [--run] [--dry-run]
 
@@ -52,10 +53,10 @@ export function runArguments({ out, beforePlugin, dryRun }) {
   ];
 }
 
-function readJson(directory, name, label) {
+function readCellJson(directory, name, label) {
   const file = path.join(directory, name);
   if (!fs.existsSync(file)) throw new Error(`${label}: no ${name}`);
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  return readJson(file);
 }
 
 function leadStats(transcript) {
@@ -73,7 +74,7 @@ const cellDirectory = (out, { task, arm, run }) => path.join(out, task, arm, Str
 const cellLabel = ({ task, arm, run }) => `${task} ${arm} #${run}`;
 
 function readCell(out, cell, checks) {
-  const result = readJson(cellDirectory(out, cell), 'result.json', cellLabel(cell));
+  const result = readCellJson(cellDirectory(out, cell), 'result.json', cellLabel(cell));
   const transcript = findTranscript(String(result.session_id));
   if (transcript === null) throw new Error(`${cellLabel(cell)}: no transcript for session ${result.session_id}`);
   if (typeof result.total_cost_usd !== 'number') throw new Error(`${cellLabel(cell)}: no total_cost_usd in result.json`);
@@ -84,7 +85,7 @@ const timedOutCell = (cell) => ({ ...cell, pass: false, paired: false, cost: nul
 
 function readPair(out, { task, run }) {
   const cells = ARMS.map((arm) => ({ task, arm, run }));
-  const checks = cells.map((cell) => readJson(cellDirectory(out, cell), 'checks.json', cellLabel(cell)));
+  const checks = cells.map((cell) => readCellJson(cellDirectory(out, cell), 'checks.json', cellLabel(cell)));
   const slow = cells.filter((cell, index) => checks[index].timedOut === true);
   const lost = slow.find((cell) => cell.arm === 'exo');
   if (lost) throw new Error(`${cellLabel(lost)}: timed out, so its pass and Agent calls cannot be judged; rerun the cell`);
@@ -99,12 +100,10 @@ export function readCells(out) {
   return { rows };
 }
 
-const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0);
-
 function summary(rows) {
   const measured = rows.filter((row) => row.paired);
   const empty = measured.length === 0;
-  return { cells: rows.length, pass: rows.filter((row) => row.pass).length, excluded: rows.length - measured.length, cost: empty ? null : sum(measured, 'cost'), meanPeak: empty ? null : Math.round(sum(measured, 'peak') / measured.length), agentCalls: sum(rows, 'agentCalls') };
+  return { cells: rows.length, pass: rows.filter((row) => row.pass).length, excluded: rows.length - measured.length, cost: empty ? null : sum(measured.map((row) => row.cost)), meanPeak: empty ? null : Math.round(sum(measured.map((row) => row.peak)) / measured.length), agentCalls: sum(rows.map((row) => row.agentCalls)) };
 }
 
 function summaryLine(name, { cells, pass, excluded, cost, meanPeak, agentCalls }) {
@@ -161,7 +160,7 @@ function readoutLines(rows, { exo, before, cost, peak, pass, costLower, peakLowe
 }
 
 function readoutProblems(rows, { exo, before, pass, costLower, peakLower }) {
-  const leanCalls = sum(inArm(rows, 'exo', LEAN_TASK), 'agentCalls');
+  const leanCalls = sum(inArm(rows, 'exo', LEAN_TASK).map((row) => row.agentCalls));
   const problems = [];
   if (!costLower && !peakLower) problems.push(`exo is not lower in cost or mean peak than ${BEFORE}`);
   if (clearsBelowZero(pass)) problems.push(`exo pass ${exo.pass}/${exo.cells} against ${before.pass}/${before.cells} for ${BEFORE}`);

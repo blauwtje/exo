@@ -22,7 +22,7 @@ import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrator/
 import { installStub } from './agent-tier/task-runner/install-stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from './agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
-import { meanOrNull, median, sum } from './basics.mjs';
+import { meanOrNull, median, readJson, sum } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
@@ -476,12 +476,12 @@ export function resolveFixtures(jobs) {
 }
 
 function readConfig() {
-  return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  return readJson(CONFIG_FILE);
 }
 
 export function recordedSessions(file) {
   if (!fs.existsSync(file)) return [];
-  const sessions = JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
+  const sessions = readJson(file).sessions ?? [];
   return sessions.map((session) => ({ ...session, agent: AGENT_ALIASES[session.agent] ?? session.agent }));
 }
 

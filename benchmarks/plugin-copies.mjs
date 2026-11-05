@@ -6,6 +6,7 @@ import { ARMS, ROOT } from './tasks.mjs';
 import { pluginDirty } from './plugin-state.mjs';
 import { applyVariant } from './variants.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
+import { readJsonOrNull } from './basics.mjs';
 
 export const BEFORE_ARM = 'exo-before';
 
@@ -51,11 +52,7 @@ export function buildCopies(cells, arms = ARMS, makeDirectory = makeCopyDirector
 }
 
 function pluginName(root) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8')).name;
-  } catch {
-    return null;
-  }
+  return readJsonOrNull(path.join(root, '.claude-plugin', 'plugin.json'))?.name ?? null;
 }
 
 function isGitCheckout(dir) {

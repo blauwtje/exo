@@ -6,6 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { evalDefaults } from '../lib/eval-stats.mjs';
 import { UsageError, environmentMs, isMain, parseFlags } from '#script-flags';
+import { readJson } from './basics.mjs';
 
 export const MANIFEST_FILE = 'benchmarks/suites.json';
 export const CLASSES = ['capability', 'regression'];
@@ -30,7 +31,7 @@ export function readManifest(root = ROOT) {
   const file = path.join(root, MANIFEST_FILE);
   if (!fs.existsSync(file)) throw new UsageError(`${MANIFEST_FILE} is missing under ${root}; add the suite manifest`);
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return readJson(file);
   } catch (error) {
     throw new UsageError(`${MANIFEST_FILE} is not valid JSON: ${error.message}`);
   }

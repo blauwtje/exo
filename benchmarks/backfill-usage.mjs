@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
+import { readJson } from './basics.mjs';
 
 function main() {
   if (!process.argv[2]) throw new Error('usage: backfill-usage.mjs <runs directory>');
@@ -20,7 +21,7 @@ function main() {
     if (path.basename(file) !== 'result.json') continue;
     const cellDirectory = path.join(runsDirectory, path.dirname(file));
     if (fs.existsSync(path.join(cellDirectory, 'usage.json'))) continue;
-    const result = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'result.json'), 'utf8'));
+    const result = readJson(path.join(cellDirectory, 'result.json'));
     const usage = typeof result.session_id === 'string' ? writeCellUsage(cellDirectory, result.session_id) : null;
     if (usage === null) missing.push(path.dirname(file));
     else written += 1;

@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readJson } from './basics.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const RIVALS_ROOT = path.join(HERE, 'fixtures', 'rivals');
@@ -57,7 +58,7 @@ const LOCAL = {
 function readLocalFile() {
   if (!fs.existsSync(LOCAL_FILE)) return {};
   try {
-    return JSON.parse(fs.readFileSync(LOCAL_FILE, 'utf8'));
+    return readJson(LOCAL_FILE);
   } catch (error) {
     throw new Error(`${LOCAL_FILE_SHOWN} is not valid JSON: ${error.message}`);
   }

@@ -13,6 +13,7 @@ import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { intervalText, knownMean, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
+import { readJson } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_FILE = path.join(ROOT, 'benchmarks/locate-recall/briefs.json');
@@ -165,12 +166,12 @@ function readFlags(argv) {
 }
 
 export function readFixture() {
-  return JSON.parse(fs.readFileSync(FIXTURE_FILE, 'utf8'));
+  return readJson(FIXTURE_FILE);
 }
 
 function recordedSessions(file) {
   if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
+  return readJson(file).sessions ?? [];
 }
 
 export function fixtureFiles(commit) {

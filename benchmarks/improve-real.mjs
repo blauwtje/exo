@@ -15,6 +15,7 @@ import { scoreTarget, startScoreBridge, writeScoreClient } from './improve-real-
 import { improveTip, spawnSession, streamCost } from './improve-vs-goal.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { compareMeans } from './statistics.mjs';
+import { readJson } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'benchmarks/results/improve-real.json');
@@ -75,7 +76,7 @@ export function projectedSpend({ cap, calls, heldOutRuns, sessions, sessionUsd }
 export function scorerSessions(tree, target) {
   if (!isRouting(target)) return { train: SPLITS.locate.train.length, heldOut: SPLITS.locate.heldOut.length };
   const { data, skill, train, heldOut } = SPLITS[target];
-  const own = JSON.parse(fs.readFileSync(path.join(tree, data), 'utf8')).filter((entry) => entry.expect === skill);
+  const own = readJson(path.join(tree, data)).filter((entry) => entry.expect === skill);
   return { train: own.filter((entry) => entry.split === train).length, heldOut: own.filter((entry) => entry.split === heldOut).length };
 }
 
@@ -89,7 +90,7 @@ export function sessionUsd(tree, target) {
   if (!isRouting(target)) return LOCATE_SESSION_USD;
   const file = path.join(tree, 'benchmarks/results/routing.json');
   if (!fs.existsSync(file)) return FALLBACK_SESSION_USD;
-  const sessions = JSON.parse(fs.readFileSync(file, 'utf8')).sessions ?? [];
+  const sessions = readJson(file).sessions ?? [];
   const costs = sessions.filter((session) => session.cell === ROUTING_CELL && session.arm === 'hook' && typeof session.cost_usd === 'number').map((session) => session.cost_usd);
   return median(costs) ?? FALLBACK_SESSION_USD;
 }
@@ -167,7 +168,7 @@ export function parseOptions(argv) {
     scoreCalls: whole('score-calls', smoke ? 1 : DEFAULT_SCORE_CALLS[target], 1),
     heldOutRuns: whole('held-out-runs', smoke ? 1 : DEFAULT_HELD_OUT_RUNS, 1),
     spendCap: dollars('spend-cap', DEFAULT_SPEND_CAP_USD),
-    baseline: flags.baseline === undefined ? undefined : JSON.parse(fs.readFileSync(flags.baseline, 'utf8')),
+    baseline: flags.baseline === undefined ? undefined : readJson(flags.baseline),
     out: path.resolve(flags.out ?? OUT)
   };
 }
@@ -211,7 +212,7 @@ function finalState({ arm, target, scratch, base }) {
 
 function readRecord(out) {
   if (!fs.existsSync(out)) return { runs: [] };
-  return JSON.parse(fs.readFileSync(out, 'utf8'));
+  return readJson(out);
 }
 
 function appendRecord(out, record, header) {

@@ -2,14 +2,14 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { testEnvironment } from '../shared.mjs';
 import { applyPrepared } from './stub.mjs';
 
 const SKILL_SCRIPTS = path.join(import.meta.dirname, '..', '..', '..', 'skills', 'build', 'scripts');
 const IDENTITY = ['-c', 'user.name=exo-bench', '-c', 'user.email=bench@exo.invalid'];
 
 const git = (repo, args) => execFileSync('git', ['-C', repo, ...IDENTITY, ...args], { encoding: 'utf8' }).trim();
-const plainEnvironment = () => Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('NODE_TEST')));
-const script = (name, args) => execFileSync(process.execPath, [path.join(SKILL_SCRIPTS, name), ...args], { stdio: ['ignore', 'pipe', 'pipe'], env: plainEnvironment() });
+const script = (name, args) => execFileSync(process.execPath, [path.join(SKILL_SCRIPTS, name), ...args], { stdio: ['ignore', 'pipe', 'pipe'], env: testEnvironment() });
 
 export const planPathOf = (repo, planId) => path.join(fs.realpathSync(repo), 'docs', 'specs', `${planId}.md`);
 

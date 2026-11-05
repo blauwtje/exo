@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readJson } from '../basics.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const KINDS = ['regression', 'never-worked', 'flaky', 'plain'];
@@ -130,7 +131,7 @@ function kindProblems(dir, config, commits) {
 
 function validateCase(slug) {
   const caseDir = path.join(ROOT, slug);
-  const config = JSON.parse(readFileSync(path.join(caseDir, 'case.json'), 'utf8'));
+  const config = readJson(path.join(caseDir, 'case.json'));
   const prompt = readFileSync(path.join(caseDir, 'prompt.md'), 'utf8');
   const problems = configProblems(config, prompt);
   const tmp = mkdtempSync(path.join(tmpdir(), `bisect-${slug}-`));

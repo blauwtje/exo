@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { parsedEvents } from '../shared.mjs';
 
 const DISPATCH_TOOLS = new Set(['Agent', 'Task']);
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit']);
@@ -10,17 +11,6 @@ const FIX_FLAG = /land-task\.mjs[^|;&]*\s--fix\b/;
 const SHELL_WRITE = /(?:>>?|\btee\b(?:\s+-a)?|\bsed\s+-i\S*(?:\s+'[^']*')?)\s*['"]?([^\s'"|&;]+)/g;
 const LANDED_LINE = /^[\s\-*`]*LANDED (\d+)/gm;
 const BLOCKED_LINE = /^[\s\-*`]*BLOCKED (\d+)/gm;
-
-function parsedEvents(stdout) {
-  return String(stdout ?? '').split('\n').flatMap((line) => {
-    try {
-      const event = JSON.parse(line);
-      return event && typeof event === 'object' ? [event] : [];
-    } catch {
-      return [];
-    }
-  });
-}
 
 const textOf = (content) => (typeof content === 'string' ? content : (content ?? []).map((part) => part?.text ?? '').join('\n'));
 

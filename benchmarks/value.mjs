@@ -13,6 +13,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { LOCAL_FILE } from '../lib/settings-store.mjs';
 import { countLines } from './cell-checks.mjs';
+import { readJson } from './basics.mjs';
 
 export const VALUE_ROOT = fileURLToPath(new URL('./value/', import.meta.url));
 export const GIT_IDENTITY = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com'];
@@ -44,7 +45,7 @@ function rejectTaskInternals(folder, label) {
 
 function readValueTask(directory) {
   const slug = path.basename(directory);
-  const spec = JSON.parse(fs.readFileSync(path.join(directory, 'task.json'), 'utf8'));
+  const spec = readJson(path.join(directory, 'task.json'));
   if (spec.id !== `value-${slug}`) throw new Error(`${directory}/task.json: id must be value-${slug}`);
   if (!(spec.timeoutMinutes > 0)) throw new Error(`${directory}/task.json: timeoutMinutes must be a positive number`);
   if (spec.maxBudgetUsd !== undefined && !(spec.maxBudgetUsd > 0)) throw new Error(`${directory}/task.json: maxBudgetUsd must be a positive number`);
@@ -225,7 +226,7 @@ export function linkedWorktrees(repo) {
 function pastCellCosts(runsDirectory) {
   return pastCellMeans(runsDirectory, (checks, cellDirectory) => {
     const resultFile = path.join(cellDirectory, 'result.json');
-    return fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')).total_cost_usd : undefined;
+    return fs.existsSync(resultFile) ? readJson(resultFile).total_cost_usd : undefined;
   });
 }
 
@@ -238,12 +239,12 @@ function pastCellMeans(runsDirectory, valueOf) {
   if (!fs.existsSync(runsDirectory)) return values;
   for (const file of fs.readdirSync(runsDirectory, { recursive: true })) {
     if (path.basename(file) !== 'checks.json') continue;
-    const checks = JSON.parse(fs.readFileSync(path.join(runsDirectory, file), 'utf8'));
+    const checks = readJson(path.join(runsDirectory, file));
     const value = valueOf(checks, path.join(runsDirectory, path.dirname(file)));
     if (typeof value !== 'number') continue;
     const metaFile = path.join(runsDirectory, file.split(path.sep)[0], 'meta.json');
     if (!fs.existsSync(metaFile)) continue;
-    const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+    const meta = readJson(metaFile);
     if (!('effort' in meta)) continue;
     const key = `${checks.task}\t${checks.arm}\t${checks.model}\t${meta.effort}`;
     values.set(key, [...(values.get(key) ?? []), value]);

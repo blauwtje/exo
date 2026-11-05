@@ -94,11 +94,7 @@ function subagentFiles(mainFile) {
 }
 
 function agentType(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file.replace(/\.jsonl$/, '.meta.json'), 'utf8')).agentType ?? 'unknown';
-  } catch {
-    return 'unknown';
-  }
+  return readJsonOrNull(file.replace(/\.jsonl$/, '.meta.json'))?.agentType ?? 'unknown';
 }
 
 // What a session spent from its verify call on, priced at list price: the lead's

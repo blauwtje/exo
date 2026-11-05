@@ -13,6 +13,7 @@ import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { intervalText, knownMean, knownMeanText, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { cellFits, cellSpend, copyPluginWithoutTasks, parseSpendCap, prepareValueRepo, scoreValueRepo } from './value.mjs';
+import { readJson } from './basics.mjs';
 
 export const FIXTURES_ROOT = fileURLToPath(new URL('./decided/', import.meta.url));
 const RESULTS_ROOT = fileURLToPath(new URL('./results/', import.meta.url));
@@ -95,7 +96,7 @@ export function spendCap(options, runnableCells) {
 
 function readFixture(directory) {
   const slug = path.basename(directory);
-  const spec = JSON.parse(fs.readFileSync(path.join(directory, 'task.json'), 'utf8'));
+  const spec = readJson(path.join(directory, 'task.json'));
   if (!SPLITS.includes(spec.split)) throw new Error(`${slug}/task.json: split must be ${SPLITS.join(' or ')}`);
   for (const key of ['choice', 'alternative']) {
     if (typeof spec[key] !== 'string' || spec[key] === '') throw new Error(`${slug}/task.json: ${key} must be a non-empty string`);

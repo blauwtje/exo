@@ -14,7 +14,7 @@ import { repoMetrics } from './adhd/metrics.mjs';
 import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
 import { intervalText } from './interval-text.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
-import { mean } from './basics.mjs';
+import { mean, readJson } from './basics.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CASES = path.join(import.meta.dirname, 'adhd', 'cases.jsonl');
@@ -42,9 +42,9 @@ const BASELINE_MAX_USD = 4;
 export const readCases = (file = CASES) =>
   fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 
-export const readSaturated = (file = SATURATED) => JSON.parse(fs.readFileSync(file, 'utf8'));
+export const readSaturated = (file = SATURATED) => readJson(file);
 
-export const readQuick = (file = QUICK) => JSON.parse(fs.readFileSync(file, 'utf8'));
+export const readQuick = (file = QUICK) => readJson(file);
 
 export function selectCases(cases, { screen, caseIds }, saturated = readSaturated()) {
   const unknown = (caseIds ?? []).find((id) => !cases.some((c) => c.id === id));
@@ -325,7 +325,7 @@ export async function calibrateLines({ labels, judge, model, onCost, votes }) {
 // why: a partial log and a quick-run log hold no full-run replies, so the readers that expect full-run data skip both.
 function isSkippedLog(file) {
   try {
-    const log = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const log = readJson(file);
     return log.partial === true || log.mode === 'quick';
   } catch (error) {
     throw new Error(`${file}: ${error.message}`);
@@ -338,7 +338,7 @@ const logFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) =
 export function runAddFailLabels(cases, { file = LABELS, logDir = LOG_DIR, baseline = readBaseline() } = {}) {
   if (!fs.existsSync(file)) throw new Error(`${file} is missing; run with --to-label and label it first`);
   const existing = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
-  const logs = logFiles(logDir).slice(-FAIL_SOURCE_LOGS).map((name) => ({ name, log: JSON.parse(fs.readFileSync(path.join(logDir, name), 'utf8')) }));
+  const logs = logFiles(logDir).slice(-FAIL_SOURCE_LOGS).map((name) => ({ name, log: readJson(path.join(logDir, name)) }));
   const ids = new Set(existing.map((row) => `${row.dimension}:${row.id}`));
   const rows = buildFailRows({ passRows: existing, logs, cases, baseline }).filter((row) => !ids.has(`${row.dimension}:${row.id}`));
   if (rows.length > 0) fs.appendFileSync(file, `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`);
@@ -359,7 +359,7 @@ export function stabilityItems(cases, log) {
 function latestAdhdReplies() {
   const logs = logFiles(LOG_DIR);
   if (logs.length === 0) return {};
-  const { perCase = [] } = JSON.parse(fs.readFileSync(path.join(LOG_DIR, logs.at(-1)), 'utf8'));
+  const { perCase = [] } = readJson(path.join(LOG_DIR, logs.at(-1)));
   return Object.fromEntries(perCase.filter((p) => p.replies).map((p) => [p.id, p.replies]));
 }
 
@@ -409,7 +409,7 @@ function writeLog(record, file) {
 
 const readBaseline = () => {
   if (!fs.existsSync(BASELINE)) throw new Error(`${BASELINE} is missing; run with --baseline`);
-  return JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
+  return readJson(BASELINE);
 };
 
 function runCheck(cases) {
@@ -421,7 +421,7 @@ function runCheck(cases) {
 export function judgeRate(dir) {
   const [newest] = logFiles(dir).reverse();
   if (!newest) return null;
-  const log = JSON.parse(fs.readFileSync(path.join(dir, newest), 'utf8'));
+  const log = readJson(path.join(dir, newest));
   const replies = (log.perCase ?? []).reduce((sum, p) => sum + (p.replies?.length ?? 0), 0);
   return replies > 0 && Number.isFinite(log.judge_cost_usd) ? log.judge_cost_usd / replies : null;
 }
@@ -465,7 +465,7 @@ async function runCalibrate(opts) {
 async function runStability(opts, cases) {
   const file = opts.log ?? (logFiles(opts.logDir).length > 0 ? path.join(opts.logDir, logFiles(opts.logDir).at(-1)) : null);
   if (!file) throw new Error(`no score log in ${opts.logDir}; pass --log <file>`);
-  const items = stabilityItems(cases, JSON.parse(fs.readFileSync(file, 'utf8')));
+  const items = stabilityItems(cases, readJson(file));
   process.stderr.write(`stability log=${file} replies=${items.length} repeats=${opts.repeats} votes=${opts.votes}\n`);
   await withJudge(opts, async ({ judge, onCost }) => {
     const r = await judgeStability({ items, repeats: opts.repeats, judge, model: opts.judgeModel, onCost, votes: opts.votes });
@@ -494,7 +494,7 @@ function reportScore({ result, record, file }) {
 const costRecord = (spend, before = {}) => ({ cost_usd: spend.total + (before.cost_usd ?? 0), reply_cost_usd: spend.reply + (before.reply_cost_usd ?? 0), judge_cost_usd: spend.judge + (before.judge_cost_usd ?? 0) });
 
 function readPartialLog(opts, cases) {
-  const log = JSON.parse(fs.readFileSync(opts.resume, 'utf8'));
+  const log = readJson(opts.resume);
   if (log.partial !== true) throw new Error(`${opts.resume} is not a partial log`);
   if (log.runs !== opts.runs || (log.ablate ?? null) !== opts.ablate || (log.screen ?? false) !== opts.screen || log.model !== opts.model || JSON.stringify(log.cases) !== JSON.stringify(cases.map((c) => c.id))) throw new Error(`${opts.resume} was made with other --runs, --ablate, --screen, --model or --cases`);
   return log;
@@ -512,7 +512,7 @@ export async function runScore({ opts, cases, reply, judge, spend, baseline = re
 
 export async function runRescore({ opts, cases, judge, spend, baseline = readBaseline() }) {
   const started = Date.now();
-  const log = JSON.parse(fs.readFileSync(opts.log, 'utf8'));
+  const log = readJson(opts.log);
   if (log.partial === true) throw new Error(`${opts.log} is a partial log; finish it with --resume first`);
   const result = await rescoreCases({ cases, baseline, log, judge, judgeModel: opts.judgeModel, spend });
   reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - started, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
@@ -520,7 +520,7 @@ export async function runRescore({ opts, cases, judge, spend, baseline = readBas
 
 const readConcise = () => {
   if (!fs.existsSync(CONCISE)) throw new Error(`${CONCISE} is missing; run with --concise-baseline`);
-  return JSON.parse(fs.readFileSync(CONCISE, 'utf8'));
+  return readJson(CONCISE);
 };
 
 function assertConciseCovers(cases, concise, model) {
@@ -590,7 +590,7 @@ async function runApi({ opts, cases }) {
       fs.mkdirSync(STORE, { recursive: true });
       const concise = opts.conciseBaseline;
       const file = concise ? CONCISE : BASELINE;
-      const existing = !opts.all && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+      const existing = !opts.all && fs.existsSync(file) ? readJson(file) : {};
       await buildBaseline({ cases, reply, spend, existing, all: opts.all, arm: concise ? 'concise' : 'default', model: concise ? opts.model : undefined, save: (rows) => fs.writeFileSync(file, JSON.stringify(rows, null, 2)) });
     }
     else if (opts.mode === 'quick') printQuick(await runQuick({ opts, cases, reply, judge, spend }));

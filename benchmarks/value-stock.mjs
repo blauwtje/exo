@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './tasks.mjs';
-import { mean } from './basics.mjs';
+import { mean, readJson } from './basics.mjs';
 
 export function stockStorePath(root = ROOT) {
   const common = execFileSync('git', ['-C', root, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim();
@@ -11,7 +11,7 @@ export function stockStorePath(root = ROOT) {
 
 export function readStock(file) {
   if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  return readJson(file);
 }
 
 export function stockRows({ cells, model, claudeVersion }) {

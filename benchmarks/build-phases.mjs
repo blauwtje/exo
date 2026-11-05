@@ -25,6 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sumCounts, usageCounts } from '#token-weights';
+import { readJsonOrNull, sum } from './basics.mjs';
 
 export const PHASES = ['setup', 'wave', 'subagents', 'landing', 'verify', 'retries', 'review', 'fix', 'other'];
 
@@ -116,12 +117,8 @@ function leadPhases(mainFile) {
 }
 
 function agentPhase(file) {
-  try {
-    const meta = JSON.parse(fs.readFileSync(file.replace(/\.jsonl$/, '.meta.json'), 'utf8'));
-    return AGENT_PHASES[String(meta.agentType ?? '').replace(/^.*:/, '')] ?? 'other';
-  } catch {
-    return 'other';
-  }
+  const meta = readJsonOrNull(file.replace(/\.jsonl$/, '.meta.json'));
+  return AGENT_PHASES[String(meta?.agentType ?? '').replace(/^.*:/, '')] ?? 'other';
 }
 
 // Weighted tokens (weighted input plus output) per phase for one transcript.
@@ -146,8 +143,8 @@ export function buildPhases(mainFile) {
   }
   const totals = Object.fromEntries(PHASES.map((name) => [name, 0]));
   for (const { counts, phase } of calls.values()) {
-    const sum = sumCounts([counts]);
-    totals[phase] += sum.weightedInput + sum.output;
+    const tokens = sumCounts([counts]);
+    totals[phase] += tokens.weightedInput + tokens.output;
   }
   return totals;
 }
@@ -163,14 +160,12 @@ function transcriptOf(target) {
   return path.join(target, names[0]);
 }
 
-const sum = (phases) => Object.values(phases).reduce((total, value) => total + value, 0);
-
 function row(label, value, total) {
   return `  ${label.padEnd(10)} ${String(Math.round(value)).padStart(9)}  ${((100 * value) / total).toFixed(1).padStart(5)}%`;
 }
 
 export function phaseReport(label, phases) {
-  const total = sum(phases);
+  const total = sum(Object.values(phases));
   const groups = {
     main: phases.setup + phases.wave + phases.landing + phases.retries + phases.other,
     subagents: phases.subagents,

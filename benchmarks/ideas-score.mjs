@@ -9,6 +9,7 @@ import { calibrationLines } from './judge-calibration.mjs';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { meanAndSd, minDetectableMeanEffect } from './statistics.mjs';
+import { meanOrNull } from './basics.mjs';
 
 const PROMPTS = path.join(import.meta.dirname, 'ideas');
 const JUDGE_MODEL = 'claude-sonnet-5-5';
@@ -123,8 +124,6 @@ export function calibration(controls) {
   return { share, passed: share >= CALIBRATION_SHARE };
 }
 
-const mean = (values) => (values.length === 0 ? null : meanAndSd(values).mean);
-
 export function runRecord({ caseId, run, options, shapes, recommended, tokens = null, costUsd = null }) {
   const shapeIds = new Set(options.map((_, index) => shapes[index]));
   const scored = options.filter((option) => option.scores);
@@ -137,8 +136,8 @@ export function runRecord({ caseId, run, options, shapes, recommended, tokens = 
     options: options.length,
     shapes: shapeIds.size,
     duplicateShare: options.length === 0 ? 0 : (options.length - shapeIds.size) / options.length,
-    originality: mean(scored.map((o) => o.scores.originality)),
-    fit: mean(scored.map((o) => o.scores.fit)),
+    originality: meanOrNull(scored.map((o) => o.scores.originality)),
+    fit: meanOrNull(scored.map((o) => o.scores.fit)),
     strong: scored.filter((o) => o.scores.originality >= STRONG_MIN && o.scores.fit >= STRONG_MIN).length,
     shapeSet: [...shapeIds],
     optionScores: scored.map((option) => ({ title: option.title, mechanism: option.mechanism, originality: option.scores.originality, fit: option.scores.fit })),
@@ -218,7 +217,7 @@ function stabilityLine(stability) {
 export function resultsMarkdown({ arm, records, caseShares, verdict, unscored, failed = [], stability }) {
   const rows = summarizeMetrics(records);
   const means = Object.fromEntries(METRICS.map((metric) => [metric, rows[metric].mean]));
-  const modal = mean(Object.values(caseShares).filter((share) => share !== null));
+  const modal = meanOrNull(Object.values(caseShares).filter((share) => share !== null));
   const lines = [`# Ideas results: ${arm}`, '', ...RULE_TEXT, ''];
   lines.push(`Judge calibration: ${fixed(verdict.share)} of control scores within 1 of the key, ${verdict.passed ? 'calibrated' : 'judge uncalibrated'}`);
   lines.push(...calibrationLines(['ideas-originality', 'ideas-fit']).map((line) => `Human calibration: ${line}`), '');

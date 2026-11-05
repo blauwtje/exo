@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { meanOrNull } from './basics.mjs';
+import { meanOrNull, readJson } from './basics.mjs';
 
 function pastRecords(runsRoot) {
   const byId = new Map();
@@ -10,7 +10,7 @@ function pastRecords(runsRoot) {
     if (path.basename(file) !== 'record.json') continue;
     let record;
     try {
-      record = JSON.parse(fs.readFileSync(path.join(runsRoot, file), 'utf8'));
+      record = readJson(path.join(runsRoot, file));
     } catch (error) {
       unreadable += 1;
       continue;

@@ -1,20 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { sumCounts } from '#token-weights';
+import { readJsonOrNull } from '../basics.mjs';
 
 const RATE_LIMIT_TYPE = /RateLimit|UsageLimit|Overloaded/i;
 const RATE_LIMIT_TEXT = /rate.?limit|usage limit|\b429\b|overloaded/i;
 const AUTH_OR_NETWORK_TYPE = /Authentication|NetworkConnection|InternalServer|ConnectionClosed|Stalled/i;
 const TIMEOUT_TYPE = /Timeout/i;
 export const CANCELLED_TYPE = 'CancelledError';
-
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
 
 function parseEvent(line) {
   if (!line.startsWith('{')) return null;
@@ -46,7 +39,7 @@ export function readTrials(jobDirectory) {
     if (!entry.isDirectory()) continue;
     const directory = path.join(jobDirectory, entry.name);
     if (!fs.existsSync(path.join(directory, 'config.json'))) continue;
-    const result = readJson(path.join(directory, 'result.json'));
+    const result = readJsonOrNull(path.join(directory, 'result.json'));
     trials.push({ name: entry.name, directory, result: result?.finished_at ? result : null });
   }
   return trials.sort((left, right) => left.name.localeCompare(right.name));

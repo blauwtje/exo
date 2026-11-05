@@ -17,6 +17,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { meanCi } from '../lib/eval-stats.mjs';
+import { readJson } from './basics.mjs';
 
 const EXO_ARM = ['flow-c7', 'flow-run'];
 const BASELINE_ARM = 'flow-base';
@@ -34,10 +35,10 @@ export function readFlowRecords(outDir) {
       records.push({ kind: 'flow', id: name.replace(REPEAT_SUFFIX, ''), unfinished: true });
       continue;
     }
-    const record = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const record = readJson(file);
     // A record from before the sweep copied leadPeakTokens takes it from the cell's usage.json.
     const usageFile = path.join(outDir, name, 'usage.json');
-    if (record.leadPeakTokens === undefined && fs.existsSync(usageFile)) record.leadPeakTokens = JSON.parse(fs.readFileSync(usageFile, 'utf8')).leadPeakTokens ?? null;
+    if (record.leadPeakTokens === undefined && fs.existsSync(usageFile)) record.leadPeakTokens = readJson(usageFile).leadPeakTokens ?? null;
     if (record.kind === 'flow') records.push(record);
   }
   return records;

@@ -12,18 +12,18 @@ import { applyPrepared } from '../benchmarks/agent-tier/task-runner/stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from '../benchmarks/agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 import { tempDir } from './harness.mjs';
+import { testEnvironment } from '../benchmarks/agent-tier/shared.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const TASK_RUNNER_ROOT = path.join(ROOT, 'benchmarks', 'agent-tier', 'task-runner');
 const LAND_TASK = path.join(ROOT, 'skills', 'build', 'scripts', 'land-task.mjs');
 const tasks = loadValueTasks(TASK_RUNNER_ROOT);
 
-const plainEnvironment = () => Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('NODE_TEST')));
 const planIdOf = (task) => path.basename(task.directory);
 const planOf = (repo, task) => path.join(fs.realpathSync(repo), 'docs', 'specs', `${planIdOf(task)}.md`);
 
 function land(repo, task, number) {
-  return spawnSync(process.execPath, [LAND_TASK, '--plan', planOf(repo, task), '--task', String(number), '--root', repo], { encoding: 'utf8', env: plainEnvironment() });
+  return spawnSync(process.execPath, [LAND_TASK, '--plan', planOf(repo, task), '--task', String(number), '--root', repo], { encoding: 'utf8', env: testEnvironment() });
 }
 
 function build(repo, task, number, attempt) {
@@ -58,7 +58,7 @@ for (const task of tasks) {
 
   test(`${task.id} plan passes plan-check --loop --run after setup`, async () => {
     await inRepo(task, async (repo) => {
-      const run = spawnSync(process.execPath, [path.join(ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'), '--loop', '--run', '--plan', planOf(repo, task), '--root', repo], { encoding: 'utf8', env: plainEnvironment() });
+      const run = spawnSync(process.execPath, [path.join(ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'), '--loop', '--run', '--plan', planOf(repo, task), '--root', repo], { encoding: 'utf8', env: testEnvironment() });
       assert.equal(run.status, 0, run.stderr + run.stdout);
     });
   });
@@ -116,7 +116,7 @@ test('the installed stub applies the prepared change when reached through a syml
   const linked = path.join(scratch, 'linked');
   fs.symlinkSync(copy, linked);
   await inRepo(task, async (repo) => {
-    const run = spawnSync(process.execPath, [path.join(linked, 'stub-build-task', 'stub.mjs'), repo, '1'], { encoding: 'utf8', env: plainEnvironment() });
+    const run = spawnSync(process.execPath, [path.join(linked, 'stub-build-task', 'stub.mjs'), repo, '1'], { encoding: 'utf8', env: testEnvironment() });
     assert.equal(run.status, 0, run.stderr);
     assert.match(run.stdout, /^Task 1: GREEN \| diff: /);
     const applied = fs.readFileSync(path.join(repo, 'src', 'units.mjs'), 'utf8');
