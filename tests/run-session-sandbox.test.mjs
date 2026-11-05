@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SCRIPT, sandboxSettings } from '../skills/build/scripts/run-session.mjs';
+import { SCRIPT } from '../skills/build/scripts/run-session-paths.mjs';
+import { sandboxSettings } from '../skills/build/scripts/run-session-sandbox.mjs';
 
 // why: decisions.md sits in the main checkout's .exo, outside the sandbox's write roots; run-decision.mjs must run unsandboxed or it fails with EPERM.
 test('a sandboxed run session runs run-decision.mjs outside the sandbox', () => {

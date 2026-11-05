@@ -54,7 +54,7 @@
       "expected": [
         "lib/git-deny.mjs",
         "hooks/dispatch-bash.mjs",
-        "skills/build/scripts/run-session.mjs",
+        "skills/build/scripts/run-session-rules.mjs",
         "tests/hooks.test.mjs",
         "tests/run-session-no-commit.test.mjs"
       ],
@@ -84,7 +84,7 @@
       "expected": [
         "lib/stall-guard.mjs",
         "hooks/run-stall-guard.mjs",
-        "skills/build/scripts/run-session.mjs",
+        "skills/build/scripts/run-session-args.mjs",
         "skills/build/scripts/run-prompts.mjs",
         "tests/run-stall-guard.test.mjs"
       ],

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { stallGuardInput } from '../hooks/run-stall-guard.mjs';
-import { SCRIPT, sandboxSettings } from '../skills/build/scripts/run-session.mjs';
+import { SCRIPT } from '../skills/build/scripts/run-session-paths.mjs';
+import { sandboxSettings } from '../skills/build/scripts/run-session-sandbox.mjs';
 
 const bash = (command) => ({ tool_name: 'Bash', tool_input: { command } });
 const root = '/private/tmp/work';

@@ -8,7 +8,10 @@ import { forCaller } from '#script-output';
 import { landTask } from './land-task.mjs';
 import { landingForCaller } from './land-output.mjs';
 import { LandingError } from './land-errors.mjs';
-import { chainedForCaller, nextTaskReport, refreshProgress, taskNumbers, windowLines } from './next-task.mjs';
+import { chainedForCaller } from './next-task-caller.mjs';
+import { nextTaskReport } from './next-task-report.mjs';
+import { refreshProgress, taskNumbers } from './next-task.mjs';
+import { windowLines } from './next-task-window.mjs';
 import { restartRecord } from './open-slots.mjs';
 import { removeWorktree, RemoveWorktreeError } from './remove-worktree.mjs';
 

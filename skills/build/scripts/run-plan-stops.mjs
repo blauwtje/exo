@@ -5,7 +5,9 @@ import { driftOf, isInputDrift, isUnreachableInput } from '#plan-inputs';
 import { frameOf } from '#plan-frame';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { clip } from './run-report.mjs';
-import { agentMaxTurns, exoError, PLUGIN_ROOT } from './run-session.mjs';
+import { agentMaxTurns } from './run-session-args.mjs';
+import { exoError } from './run-session-stream.mjs';
+import { PLUGIN_ROOT } from './run-session-paths.mjs';
 import { breachOf, shelveLeftover } from './run-worktree.mjs';
 import { planBreach } from './run-plan-session.mjs';
 

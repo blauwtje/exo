@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
-import { childEnv } from '../skills/build/scripts/run-session.mjs';
+import { childEnv } from '../skills/build/scripts/run-session-env.mjs';
 
 const PROVIDER = { name: 'claude', env: {}, effort: null, promptCacheTtl: null };
 

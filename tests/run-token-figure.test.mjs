@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseStream } from '../skills/build/scripts/run-session.mjs';
+import { parseStream } from '../skills/build/scripts/run-session-stream.mjs';
 import { landedLine } from '../skills/build/scripts/run-report.mjs';
 
 const call = (id, read) => JSON.stringify({

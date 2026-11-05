@@ -8,7 +8,7 @@ const DISPATCH = /\b(?:Agent|agents?|calls?|dispatch\w*|send|sends|sent)\b|exo:[
 const SHELL = /\bBash\b|\btimeout\b|`node /i;
 
 const SUBAGENT_THREAD_LINES = [
-  { file: 'skills/build/scripts/next-task.mjs', fragment: 'foreground Agent calls, no run_in_background', reason: 'the printed lines are read by a task-runner thread, whose Agent tool has no run_in_background parameter' },
+  { file: 'skills/build/scripts/next-task-window.mjs', fragment: 'foreground Agent calls, no run_in_background', reason: 'the printed lines are read by a task-runner thread, whose Agent tool has no run_in_background parameter' },
   { file: 'skills/build/references/rolling-window.md', fragment: 'each foreground call returns after its report', reason: 'the window loop runs in a task-runner thread, where every Agent call blocks' },
   { file: 'skills/build/references/agent-cases.md', fragment: 'Run it in the foreground, because a background run ends the turn early', reason: 'the repair is sent from a task-runner thread, where every Agent call blocks' },
 ];

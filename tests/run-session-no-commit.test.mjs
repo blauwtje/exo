@@ -7,7 +7,9 @@ import { shellQuote } from '#basics';
 import { parsePlan } from '#plan-tasks';
 import { planPrompt } from '../skills/build/scripts/run-prompts.mjs';
 import { SHARED_STATE_GIT } from '../lib/git-deny.mjs';
-import { childEnv, DENY_RULES, PLUGIN_ROOT } from '../skills/build/scripts/run-session.mjs';
+import { childEnv } from '../skills/build/scripts/run-session-env.mjs';
+import { DENY_RULES } from '../skills/build/scripts/run-session-rules.mjs';
+import { PLUGIN_ROOT } from '../skills/build/scripts/run-session-paths.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const PROVIDER = { name: 'claude', env: {}, effort: null, promptCacheTtl: null };

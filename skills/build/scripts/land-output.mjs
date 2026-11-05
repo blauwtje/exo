@@ -2,7 +2,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isolatedCheckout, nextWave, planRoute, routeLine, waveLine } from '#plan-waves';
 import { keepLines } from '#script-output';
-import { chainedForCaller, nextTaskReport } from './next-task.mjs';
+import { chainedForCaller } from './next-task-caller.mjs';
+import { nextTaskReport } from './next-task-report.mjs';
 import { proofOutcomeOf } from './land-record.mjs';
 
 function nextLine(wave, planPath, root) {

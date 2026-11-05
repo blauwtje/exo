@@ -8,8 +8,8 @@ import { frameOf } from '#plan-frame';
 import { INLINE_TASK_LIMIT } from '#plan-waves';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { stallSeconds } from '#stall-guard';
-import { taskBrief } from './next-task.mjs';
-import { SCRIPT } from './run-session.mjs';
+import { taskBrief } from './next-task-brief.mjs';
+import { SCRIPT } from './run-session-paths.mjs';
 
 const SKILL_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const readText = (...parts) => fs.readFileSync(path.join(...parts), 'utf8');

@@ -6,7 +6,9 @@ import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { chainedForCaller, refreshProgress, taskBrief } from '../skills/build/scripts/next-task.mjs';
+import { chainedForCaller } from '../skills/build/scripts/next-task-caller.mjs';
+import { refreshProgress } from '../skills/build/scripts/next-task.mjs';
+import { taskBrief } from '../skills/build/scripts/next-task-brief.mjs';
 import { commitFiles, git, planFixture, run, tempDir } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 

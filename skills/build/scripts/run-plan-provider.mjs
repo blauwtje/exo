@@ -4,7 +4,7 @@ import { INHERIT, readKindTable, TABLE_PATH } from '#model-kinds';
 import { contextLimit, softLimit } from '#context-limits';
 import { settingValue } from '#settings-store';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { sandboxMode } from './run-session.mjs';
+import { sandboxMode } from './run-session-sandbox.mjs';
 import { Refusal } from './run-plan-errors.mjs';
 
 function listedProvider(name) {

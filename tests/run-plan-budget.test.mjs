@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { budgetPin, chooseProvider } from '../skills/build/scripts/run-plan-provider.mjs';
-import { childEnv } from '../skills/build/scripts/run-session.mjs';
+import { childEnv } from '../skills/build/scripts/run-session-env.mjs';
 import { contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { tempDir } from './harness.mjs';

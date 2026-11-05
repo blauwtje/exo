@@ -1,5 +1,6 @@
 import process from 'node:process';
-import { claudeArgs, denyRules } from './run-session.mjs';
+import { claudeArgs } from './run-session-args.mjs';
+import { denyRules } from './run-session-rules.mjs';
 import { planPrompt } from './run-prompts.mjs';
 
 export function printDryRun(settings) {

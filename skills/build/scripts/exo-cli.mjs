@@ -4,7 +4,7 @@ import process from 'node:process';
 import { isMain } from '#script-flags';
 import { Refusal } from './cli-refusal.mjs';
 import { configCommand } from './config-command.mjs';
-import { SESSION_REFUSAL, insideClaudeCode } from './run-session.mjs';
+import { SESSION_REFUSAL, insideClaudeCode } from './run-session-env.mjs';
 import { approveCommand, runCommand } from './run-command.mjs';
 import { claudeCommand, keyCommand, setupCommand } from './setup-commands.mjs';
 import { statusCommand, waitCommand } from './watch-commands.mjs';

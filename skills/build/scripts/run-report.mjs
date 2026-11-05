@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { readDecisions } from '#run-decision';
-import { isFileOnDisk } from './run-session.mjs';
+import { isFileOnDisk } from './run-session-claude.mjs';
 
 function reportLines(root, number) {
   const file = path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);

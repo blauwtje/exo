@@ -3,7 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { money } from './run-report.mjs';
-import { appendLog, childEnv, claudeArgs, denyRules, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, spawnClaude } from './run-session.mjs';
+import { appendLog, spawnClaude } from './run-session.mjs';
+import { childEnv } from './run-session-env.mjs';
+import { claudeArgs } from './run-session-args.mjs';
+import { denyRules } from './run-session-rules.mjs';
+import { exoError, parseStream } from './run-session-stream.mjs';
+import { isFileOnDisk } from './run-session-claude.mjs';
+import { PLUGIN_ROOT } from './run-session-paths.mjs';
 import { snapshot } from './run-worktree.mjs';
 import { appTail, ensureApp } from './run-plan-app.mjs';
 

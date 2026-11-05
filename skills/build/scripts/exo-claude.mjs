@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { insideClaudeCode, resolveClaude } from './run-session.mjs';
+import { insideClaudeCode } from './run-session-env.mjs';
+import { resolveClaude } from './run-session-claude.mjs';
 
 const USAGE = 'usage: exo claude [--provider <name>] [--effort <level>] [-- <claude args>]';
 

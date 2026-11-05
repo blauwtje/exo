@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { attemptFingerprint } from '#attempt-fingerprint';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { isFileOnDisk } from './run-session.mjs';
+import { isFileOnDisk } from './run-session-claude.mjs';
 import { gitOut } from './run-worktree.mjs';
 
 export function recordAttempt(ctx, n, check, line) {

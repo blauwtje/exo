@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { clip } from './run-report.mjs';
-import { isFileOnDisk } from './run-session.mjs';
+import { isFileOnDisk } from './run-session-claude.mjs';
 import { lastLine } from './run-plan-preflight.mjs';
 
 let appPid = null;

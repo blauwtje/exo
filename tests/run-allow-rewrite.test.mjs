@@ -3,7 +3,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
-import { allowRules, childEnv } from '../skills/build/scripts/run-session.mjs';
+import { allowRules } from '../skills/build/scripts/run-session-rules.mjs';
+import { childEnv } from '../skills/build/scripts/run-session-env.mjs';
 
 const matches = (rules, command) => rules.some((rule) => {
   const body = /^Bash\((.*)\)$/.exec(rule)?.[1];

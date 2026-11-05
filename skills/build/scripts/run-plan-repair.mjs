@@ -5,7 +5,7 @@ import process from 'node:process';
 import { isUnreachableInput } from '#plan-inputs';
 import { parsePlan } from '#plan-tasks';
 import { clip } from './run-report.mjs';
-import { PLUGIN_ROOT, SCRIPT } from './run-session.mjs';
+import { PLUGIN_ROOT, SCRIPT } from './run-session-paths.mjs';
 import { breachOf, worktreeTree } from './run-worktree.mjs';
 import { planHash, spawnOne } from './run-plan-session.mjs';
 import { blockedStop } from './run-plan-stops.mjs';
