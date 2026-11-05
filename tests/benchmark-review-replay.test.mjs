@@ -7,7 +7,7 @@ import test from 'node:test';
 
 import { SessionError, changedRanges, gradeRepair, isClean, loadFixtures, loadPlants, main, parseFindings, renderTable, replayAll, saveBaseline, summarize, withBaseline, writeReport } from '../benchmarks/review-replay.mjs';
 import { SAFE_TASKS } from '../benchmarks/tasks.mjs';
-import { tempDir } from './harness.mjs';
+import { commitFiles, tempDir } from './harness.mjs';
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
 const TASK = SAFE_TASKS[0];
@@ -25,12 +25,6 @@ const REVIEW_FINDINGS = [
   ''
 ].join('\n');
 
-function commitAll(repository) {
-  const identity = ['-c', 'user.name=fixer', '-c', 'user.email=fixer@example.com', '-c', 'commit.gpgsign=false'];
-  spawnSync('git', ['-C', repository, 'add', '-A'], { encoding: 'utf8' });
-  spawnSync('git', ['-C', repository, ...identity, 'commit', '-q', '-m', 'fix(safe): repair'], { encoding: 'utf8' });
-}
-
 function scriptedModel(calls, { costUsd, onCall, commits = false } = {}) {
   const own = [];
   return async (prompt, repository) => {
@@ -45,7 +39,7 @@ function scriptedModel(calls, { costUsd, onCall, commits = false } = {}) {
       const lines = fs.readFileSync(file, 'utf8').split('\n');
       lines[4] = `${lines[4]} `;
       fs.writeFileSync(file, lines.join('\n'));
-      if (commits) commitAll(repository);
+      if (commits) await commitFiles(repository, {}, 'fix(safe): repair');
       return costUsd;
     }
     fs.writeFileSync(findings, reviews === 1 ? REVIEW_FINDINGS : 'CLEAN\n\nCount: defect 0, concern 0, question 0, note 0\n');

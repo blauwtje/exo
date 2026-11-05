@@ -73,7 +73,6 @@ test('a scoring copy is gone once its verdict is read', async () => {
   await passesCheck({ fixture, mode: 'default', repo, startTree, scratch });
   await passesCheck({ fixture, mode: 'alternative', repo, startTree, scratch });
   const left = fs.readdirSync(scratch);
-  fs.rmSync(root, { recursive: true, force: true });
   assert.deepEqual(left, []);
 });
 
@@ -102,7 +101,6 @@ function checkVerdict(fixture, solution, checked) {
   fs.cpSync(path.join(fixture.directory, `solution-${solution}`), repo, { recursive: true });
   fs.cpSync(path.join(fixture.directory, `hidden-${checked}`), repo, { recursive: true });
   const run = spawnSync(process.execPath, [path.join(fixture.directory, 'check.mjs'), repo, checked], { encoding: 'utf8' });
-  fs.rmSync(repo, { recursive: true, force: true });
   return JSON.parse(run.stdout).pass;
 }
 

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { aggregate, gateFacts, incompleteReason, markdownTable, meanGap, metricDeltas, phasesOf, runMetrics } from '../benchmarks/lean-gates-metrics.mjs';
+import { tempDir } from './harness.mjs';
 
 function referenceRun(out, name, meta) {
   const directory = join(out, name);
@@ -17,7 +17,7 @@ function measure(directory) {
 }
 
 test('a good reference run is complete and carries its harness wall time', () => {
-  const out = mkdtempSync(join(tmpdir(), 'lean-metrics-'));
+  const out = tempDir('lean-metrics-');
   const run = measure(referenceRun(out, '01-new', { exitCode: 0, wallMs: 60000, version: 'new' }));
   assert.equal(run.incomplete, false);
   assert.equal(run.incompleteReason, null);
@@ -25,7 +25,7 @@ test('a good reference run is complete and carries its harness wall time', () =>
 });
 
 test('a bad reference run is incomplete and leaves the aggregate', () => {
-  const out = mkdtempSync(join(tmpdir(), 'lean-metrics-'));
+  const out = tempDir('lean-metrics-');
   const good = measure(referenceRun(out, '01-new', { exitCode: 0, wallMs: 60000, version: 'new' }));
   const bad = measure(referenceRun(out, '02-new', { exitCode: null, timedOut: true, wallMs: 900000, version: 'new' }));
   assert.equal(bad.incomplete, true);
@@ -99,7 +99,7 @@ for (const script of ['verify.mjs', 'gate.mjs']) {
 }
 
 test('an incomplete run counts as a failed completion and leaves wall time, with its excluded count in the table', () => {
-  const out = mkdtempSync(join(tmpdir(), 'lean-metrics-'));
+  const out = tempDir('lean-metrics-');
   const runs = [
     measure(referenceRun(out, '01-new', { exitCode: 0, wallMs: 60000, version: 'new' })),
     measure(referenceRun(out, '02-new', { exitCode: 0, wallMs: 80000, version: 'new' })),
@@ -115,7 +115,7 @@ test('an incomplete run counts as a failed completion and leaves wall time, with
 });
 
 test('a single complete run prints no SE and never a default', () => {
-  const out = mkdtempSync(join(tmpdir(), 'lean-metrics-'));
+  const out = tempDir('lean-metrics-');
   const run = measure(referenceRun(out, '01-new', { exitCode: 0, wallMs: 60000, version: 'new' }));
   const stats = aggregate([run]).new;
   assert.equal(stats.wallMs.se, null);

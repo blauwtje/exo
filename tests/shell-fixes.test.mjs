@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { onPath } from '#on-path';
 import { fixShell, SED_FUNCTION, TIMEOUT_FUNCTION } from '../lib/shell-fixes.mjs';
+import { tempDir } from './harness.mjs';
 
 const fix = (command, hasTimeout = false, bsd = () => false) => fixShell({ command, description: 'd' }, hasTimeout, bsd)?.command ?? null;
 
@@ -69,7 +69,7 @@ test('the fixed timeout stops a long sleep under bash', () => {
 });
 
 test('a PATH holding only gtimeout still gets the timeout function', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'gtimeout-'));
+  const dir = tempDir('gtimeout-');
   const savedPath = process.env.PATH;
   try {
     writeFileSync(join(dir, 'gtimeout'), '#!/bin/sh\n', { mode: 0o755 });
@@ -79,7 +79,6 @@ test('a PATH holding only gtimeout still gets the timeout function', () => {
     assert.equal(fixShell({ command: 'timeout 5 sleep 1' }), null);
   } finally {
     process.env.PATH = savedPath;
-    rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -124,7 +123,7 @@ const gone = (pid) => {
 };
 
 test('the fixed timeout ends a child holding stdout open and exits 124', { timeout: 20000 }, () => {
-  const dir = mkdtempSync(join(tmpdir(), 'perl-bound-'));
+  const dir = tempDir('perl-bound-');
   const pidFile = join(dir, 'pid');
   let pid;
   try {
@@ -135,7 +134,6 @@ test('the fixed timeout ends a child holding stdout open and exits 124', { timeo
     assert.ok(gone(pid), 'child sleep still running');
   } finally {
     if (pid) try { process.kill(pid, 'SIGKILL'); } catch {}
-    rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -184,26 +182,18 @@ test('a bare sed -i gets the sed function only on BSD sed', () => {
 });
 
 test('the sed function turns a bare -i into -i with an empty suffix and keeps other arguments', { skip: process.platform !== 'darwin' }, () => {
-  const dir = mkdtempSync(join(tmpdir(), 'sedfix-'));
-  try {
-    const file = join(dir, 'f.txt');
-    writeFileSync(file, 'a a\n');
-    const result = spawnSync('bash', ['-c', fix(`sed -i 's/a/b/g' ${file}`, false, () => true)], { encoding: 'utf8' });
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(readFileSync(file, 'utf8'), 'b b\n');
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('sedfix-');
+  const file = join(dir, 'f.txt');
+  writeFileSync(file, 'a a\n');
+  const result = spawnSync('bash', ['-c', fix(`sed -i 's/a/b/g' ${file}`, false, () => true)], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(file, 'utf8'), 'b b\n');
 });
 
 const runSedFunction = (script) => {
-  const dir = mkdtempSync(join(tmpdir(), 'sedargs-'));
-  try {
-    writeFileSync(join(dir, 'sed'), `#!/bin/sh\nprintf '[%s]' "$@"\n`, { mode: 0o755 });
-    return spawnSync('bash', ['-c', SED_FUNCTION + script], { encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}` } });
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('sedargs-');
+  writeFileSync(join(dir, 'sed'), `#!/bin/sh\nprintf '[%s]' "$@"\n`, { mode: 0o755 });
+  return spawnSync('bash', ['-c', SED_FUNCTION + script], { encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}` } });
 };
 
 test('the sed function leaves the caller variables n and a as they were', () => {

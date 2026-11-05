@@ -1,19 +1,15 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { reproGreen, startCommit } from '../benchmarks/bisect-repo.mjs';
 import { cellFailed, poolMetric, summarize, summaryLines, verdictOf } from '../benchmarks/bisect-summary.mjs';
 import { validateCase } from '../benchmarks/bisect-validate.mjs';
 import { causeNamed, cellRecord, claudeArguments, defaultPaths, latestRecords, loadCases, main, parseArguments, pendingCells, planCells, promptFor, readRecords, pluginKey, schedule, scopeRecords, selectCases, spendCap, streamFacts, withStreamFacts } from '../benchmarks/bisect.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SHAS = { before: 'bbb', after: 'aaa' };
-
-function temporaryFolder() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bisect-test-'));
-}
 
 function buildScript({ commits, breakAt }) {
   return [
@@ -132,7 +128,7 @@ test('flags parse and bad values throw', () => {
 });
 
 test('cases load and validate their case.json', () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   assert.deepEqual(loadCases(path.join(root, 'absent')), []);
   writeCase(root, 'one');
   writeCase(root, 'two', { kind: 'plain', tier: 'full' });
@@ -147,7 +143,7 @@ test('cases load and validate their case.json', () => {
 });
 
 test('a folder without case.json is a helper, not a case', () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   writeCase(root, 'one');
   fs.mkdirSync(path.join(root, 'lib'));
   fs.writeFileSync(path.join(root, 'lib', 'helper.mjs'), 'export {};\n');
@@ -225,7 +221,7 @@ test('a run that reads the skill files through Bash counts as skillFired and bis
 });
 
 test('report recomputes skillFired and bisectRan from the saved streams and keeps records without one', () => {
-  const directory = temporaryFolder();
+  const directory = tempDir('exo-bisect-test-');
   fs.writeFileSync(path.join(directory, 'a-exo-1-skill.jsonl'), streamOf(...BASH_SKILL_STREAM));
   fs.writeFileSync(path.join(directory, 'a-exo-2.jsonl'), streamOf(...BASH_SKILL_STREAM));
   fs.writeFileSync(path.join(directory, 'a-exo-3.jsonl'), streamOf(...BASH_SKILL_STREAM));
@@ -358,7 +354,7 @@ test('schedule reports a failing cell after the running ones finish', async () =
 });
 
 test('validate accepts a well-formed regression, plain and never-worked fixture', () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   writeCase(root, 'regress');
   writeCase(root, 'plain', { kind: 'plain', breakAt: 1 });
   writeCase(root, 'never', { kind: 'never-worked', breakAt: 1 });
@@ -366,7 +362,7 @@ test('validate accepts a well-formed regression, plain and never-worked fixture'
 });
 
 test('validate names each broken contract', () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   writeCase(root, 'few', { commits: 10, breakAt: 5 });
   writeCase(root, 'green-head', { repro: 'true' });
   writeCase(root, 'wrong-subject', { culprit: 'no such subject' });
@@ -380,13 +376,13 @@ test('validate names each broken contract', () => {
 });
 
 test('validate accepts a flaky repro that fails some runs and passes others', () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   writeCase(root, 'coin', { kind: 'flaky', breakAt: 1, repro: '[ $(( $(od -An -N1 -tu1 /dev/urandom) % 2 )) -eq 0 ]' });
   assert.deepEqual(validateCase(specOf(root, 'coin')), []);
 });
 
 test('validate reports a build that fails', () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   const directory = writeCase(root, 'broken');
   fs.writeFileSync(path.join(directory, 'build.mjs'), 'process.exit(3);\n');
   assert.match(validateCase(specOf(root, 'broken')).join(), /build.mjs failed/);
@@ -394,7 +390,7 @@ test('validate reports a build that fails', () => {
 
 function commitFix(repo) {
   fs.writeFileSync(path.join(repo, 'state.txt'), 'good\n');
-  execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-am', 'fix the state']);
+  git(repo, 'commit', '-q', '-am', 'fix the state');
 }
 
 function builtRepo(root) {
@@ -406,40 +402,40 @@ function builtRepo(root) {
 }
 
 test('reproGreen counts a fix that builds on the start commit in the tree, a worktree or a branch', () => {
-  const { spec, repo, start } = builtRepo(temporaryFolder());
+  const { spec, repo, start } = builtRepo(tempDir('exo-bisect-test-'));
   assert.equal(reproGreen(repo, spec, start), false);
   commitFix(repo);
   assert.equal(reproGreen(repo, spec, start), true);
-  execFileSync('git', ['-C', repo, 'branch', 'fixed']);
-  execFileSync('git', ['-C', repo, 'reset', '--hard', '--quiet', 'HEAD~16']);
+  git(repo, 'branch', 'fixed');
+  git(repo, 'reset', '--hard', '--quiet', 'HEAD~16');
   assert.equal(reproGreen(repo, spec, start), true);
-  execFileSync('git', ['-C', repo, 'branch', '-D', 'fixed']);
+  git(repo, 'branch', '-D', 'fixed');
   assert.equal(reproGreen(repo, spec, start), false);
 });
 
 test('reproGreen counts a linked worktree only when it descends from the start commit', () => {
-  const { spec, repo, start } = builtRepo(temporaryFolder());
+  const { spec, repo, start } = builtRepo(tempDir('exo-bisect-test-'));
   const linked = path.join(path.dirname(repo), 'linked');
-  execFileSync('git', ['-C', repo, 'worktree', 'add', '--detach', '--quiet', linked, 'HEAD~15']);
+  git(repo, 'worktree', 'add', '--detach', '--quiet', linked, 'HEAD~15');
   assert.equal(reproGreen(repo, spec, start), false);
-  execFileSync('git', ['-C', repo, 'worktree', 'remove', '--force', linked]);
-  execFileSync('git', ['-C', repo, 'worktree', 'add', '--detach', '--quiet', linked, 'HEAD']);
+  git(repo, 'worktree', 'remove', '--force', linked);
+  git(repo, 'worktree', 'add', '--detach', '--quiet', linked, 'HEAD');
   commitFix(linked);
   assert.equal(reproGreen(repo, spec, start), true);
 });
 
 test('reproGreen scores red when the session sits at a good commit, on a branch there or after main is reset back', () => {
-  const { spec, repo, start } = builtRepo(temporaryFolder());
-  execFileSync('git', ['-C', repo, 'branch', 'old', 'HEAD~15']);
-  execFileSync('git', ['-C', repo, 'checkout', '--quiet', 'HEAD~15']);
+  const { spec, repo, start } = builtRepo(tempDir('exo-bisect-test-'));
+  git(repo, 'branch', 'old', 'HEAD~15');
+  git(repo, 'checkout', '--quiet', 'HEAD~15');
   assert.equal(reproGreen(repo, spec, start), false);
-  execFileSync('git', ['-C', repo, 'checkout', '--quiet', 'main']);
-  execFileSync('git', ['-C', repo, 'reset', '--hard', '--quiet', 'HEAD~15']);
+  git(repo, 'checkout', '--quiet', 'main');
+  git(repo, 'reset', '--hard', '--quiet', 'HEAD~15');
   assert.equal(reproGreen(repo, spec, start), false);
 });
 
 test('a cell with no reported cost gets one estimated from its assistant usage', () => {
-  const { spec, repo, start } = builtRepo(temporaryFolder());
+  const { spec, repo, start } = builtRepo(tempDir('exo-bisect-test-'));
   const usage = { input_tokens: 1000000, output_tokens: 100000, cache_read_input_tokens: 0 };
   const turn = (id) => ({ type: 'assistant', message: { id, model: 'claude-sonnet-5-5', usage, content: [] } });
   const cell = { spec, arm: 'exo', run: 1 };
@@ -462,7 +458,7 @@ test('the pooled cost mean includes an estimated cell', () => {
 });
 
 test('main --dry-run lists the pending cells and skips recorded ones', async () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   writeCase(root, 'regress');
   const paths = defaultPaths(path.join(root), path.join(root, 'results'));
   const { result, lines } = await capture(() => main(['--dry-run', '--arms', 'exo', '--runs', '2'], paths));
@@ -473,14 +469,14 @@ test('main --dry-run lists the pending cells and skips recorded ones', async () 
 });
 
 test('main --dry-run with no cases prints zero cells', async () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   const { result, lines } = await capture(() => main(['--dry-run', '--arms', 'exo'], defaultPaths(path.join(root, 'none'), root)));
   assert.equal(result, 0);
   assert.match(lines[0], /0 cells/);
 });
 
 test('main --validate checks every case, any tier, and exits 1 on a failure', async () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   writeCase(root, 'regress', { tier: 'full' });
   const paths = defaultPaths(root, path.join(root, 'results'));
   const good = await capture(() => main(['--validate'], paths));
@@ -493,17 +489,16 @@ test('main --validate checks every case, any tier, and exits 1 on a failure', as
 });
 
 test('the arm key is the newest plugin commit, so benchmark-only commits and untracked results keep it', async () => {
-  const root = temporaryFolder();
-  const git = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { encoding: 'utf8' });
-  git('init', '-q', '-b', 'main');
+  const root = tempDir('exo-bisect-test-');
+  git(root, 'init', '-q', '-b', 'main');
   for (const folder of ['skills', 'benchmarks', 'tests', 'benchmarks/results']) fs.mkdirSync(path.join(root, folder), { recursive: true });
   fs.writeFileSync(path.join(root, 'skills', 'a.md'), 'one\n');
-  git('add', '-A');
-  git('commit', '-q', '-m', 'plugin');
-  const plugin = git('rev-parse', 'HEAD').trim();
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'plugin');
+  const plugin = git(root, 'rev-parse', 'HEAD');
   fs.writeFileSync(path.join(root, 'benchmarks', 'b.mjs'), 'x\n');
-  git('add', '-A');
-  git('commit', '-q', '-m', 'bench only');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'bench only');
   fs.writeFileSync(path.join(root, 'benchmarks', 'results', 'new.jsonl'), 'x\n');
   assert.equal(pluginKey(root), plugin);
   fs.writeFileSync(path.join(root, 'skills', 'a.md'), 'two\n');
@@ -511,7 +506,7 @@ test('the arm key is the newest plugin commit, so benchmark-only commits and unt
 });
 
 test('main --report prints the summary of the latest commit pair and writes it', async () => {
-  const root = temporaryFolder();
+  const root = tempDir('exo-bisect-test-');
   const paths = defaultPaths(root, root);
   const records = [];
   for (const run of [1, 2]) {

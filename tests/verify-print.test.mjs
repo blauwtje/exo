@@ -5,14 +5,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 import { codeStandardPath } from '../skills/gate/scripts/review-input.mjs';
 import { TASK_SPLIT_TOKENS } from '../lib/context-limits.mjs';
-import { git } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 import { landingCheckout, editApp } from './land-task-fixture.mjs';
 
 const SCRIPTS = fileURLToPath(new URL('../skills/gate/scripts/', import.meta.url));
@@ -268,7 +267,7 @@ test('one reader parses .exo/review-ledger.jsonl', async () => {
 });
 
 test('skill script behavior tally survives a stderr write landing inside a TAP footer line', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'behavior-'));
+  const dir = tempDir('behavior-');
   await fs.mkdir(path.join(dir, 'tests'));
   await fs.writeFile(path.join(dir, 'tests', 'a.test.mjs'), '');
   const fakeNode = path.join(dir, 'fake-node.sh');

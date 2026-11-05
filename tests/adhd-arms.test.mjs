@@ -34,7 +34,6 @@ test('the concise arm appends "Answer concisely." to the default claude call', a
     assert.throws(() => claudeReply({ arm: 'nope', prompt: 'q' }), /unknown arm nope/);
   } finally {
     process.env.PATH = saved;
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -52,7 +51,6 @@ test('the caveman arm appends the concise prompt and the caveman rules, without 
     assert.ok(!args.includes('--plugin-dir'));
   } finally {
     process.env.PATH = saved;
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 

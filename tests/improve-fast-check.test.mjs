@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fastCheck } from '../skills/improve/scripts/fast-check.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const script = fileURLToPath(new URL('../skills/improve/scripts/fast-check.mjs', import.meta.url));
 
@@ -16,11 +16,6 @@ const SLOW_TEST = "import test from 'node:test';\ntest('reads src', async () => 
 function write(worktree, name, text) {
   fs.mkdirSync(path.dirname(path.join(worktree, name)), { recursive: true });
   fs.writeFileSync(path.join(worktree, name), text);
-}
-
-function git(worktree, ...args) {
-  const run = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: worktree, encoding: 'utf8' });
-  assert.equal(run.status, 0, run.stderr);
 }
 
 function setup({ testText, fastCheckCommand = null } = {}) {

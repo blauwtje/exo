@@ -5,12 +5,11 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { workingTreeKey } from '#check-cache';
-import { git, run } from './harness.mjs';
+import { git, run, tempDir } from './harness.mjs';
 import {
   SCRIPT, cacheFile, PLAN, landingCheckout, editApp, COMPACT_PLAN, PASS_REPORT, compactCheckout, writeReport
 } from './land-task-fixture.mjs';
@@ -113,7 +112,7 @@ const survivorCommand = (marker) => `(sleep 1; touch ${marker}) & sleep 10`;
 test('a timed-out Land gate stops the processes it started too', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const marker = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-tree-')), 'survivor');
+  const marker = path.join(tempDir('exo-tree-'), 'survivor');
   process.env.EXO_LAND_GATE_TIMEOUT_MS = '300';
   try {
     assert.throws(() => landTask({ planPath, planText: withLandGate(survivorCommand(marker)), number: 1, root }), /timed out after 0\.3s/);
@@ -125,7 +124,7 @@ test('a timed-out Land gate stops the processes it started too', async () => {
 });
 
 test('a timed-out Proof is refused with timed out after <n>s, its process tree stopped, and nothing commits', async () => {
-  const marker = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-tree-')), 'survivor');
+  const marker = path.join(tempDir('exo-tree-'), 'survivor');
   const command = survivorCommand(marker);
   const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', command));
   await writeReport(root, `Landed: src/app.js\nProof:\n- \`${command}\`: pass\nUnresolved: none\n`);

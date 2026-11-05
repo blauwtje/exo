@@ -40,7 +40,6 @@ for (const { name, command, payload } of entries()) {
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, '');
     assert.deepEqual(fs.readdirSync(configDirectory), []);
-    fs.rmSync(configDirectory, { recursive: true, force: true });
   });
 }
 
@@ -51,5 +50,4 @@ test('the SessionStart hook prints text without TE_SIDECALL', () => {
   const { command } = entries().find((entry) => entry.name.startsWith('SessionStart'));
   const result = runHook(command, { ...PAYLOADS.SessionStart, cwd: configDirectory }, environment);
   assert.notEqual(result.stdout, '', 'SessionStart');
-  fs.rmSync(configDirectory, { recursive: true, force: true });
 });

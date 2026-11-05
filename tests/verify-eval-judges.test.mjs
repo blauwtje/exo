@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { checkEvalJudges, judgeFailures, skippedJudges } from '../verify/checks/eval-judges.mjs';
@@ -32,7 +31,7 @@ test('a judge that declares one dimension and prints its status passes without l
 });
 
 test('no registry, several dimensions or none are named failures', () => {
-  assert.match(judgeFailures(createRepository(fs.mkdtempSync(path.join(os.tmpdir(), 'eval-judges-'))))[0], /^NO-REGISTRY/);
+  assert.match(judgeFailures(createRepository(tempDir('eval-judges-')))[0], /^NO-REGISTRY/);
   assert.match(judgeFailures(repositoryWith([{ ...GOOD, dimension: ['facts', 'tone'] }]))[0], /^DIMENSIONS j: 2 dimensions/);
   assert.match(judgeFailures(repositoryWith([{ ...GOOD, dimension: undefined }]))[0], /^NO-DIMENSION j/);
 });

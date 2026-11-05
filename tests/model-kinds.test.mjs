@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INHERIT, TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
@@ -21,7 +20,7 @@ const JOBS = [
 function tableWith(edit) {
   const table = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
   edit(table);
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'model-kinds.json');
+  const file = path.join(tempDir('kinds-'), 'model-kinds.json');
   fs.writeFileSync(file, JSON.stringify(table));
   return file;
 }

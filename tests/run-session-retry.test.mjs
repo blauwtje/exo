@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { isTransientProviderError, spawnClaude } from '../skills/build/scripts/run-session.mjs';
@@ -73,7 +72,7 @@ test('spawnClaude does not retry a non-transient failure', { timeout: 30000 }, a
 test('spawnClaude does not retry a timed-out session', { timeout: 30000 }, async () => {
   process.env.EXO_PROVIDER_RETRY_MS = '10';
   const script = `const fs = require('node:fs'); fs.appendFileSync(process.argv[1], 'x'); process.stdout.write(${JSON.stringify(TRANSIENT_TEXT)} + '\\n'); setTimeout(() => {}, 60000);`;
-  const counter = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-retry-')), 'count');
+  const counter = path.join(tempDir('exo-retry-'), 'count');
   const session = { claude: { command: process.execPath, prefix: ['-e', script, counter] }, log: path.join(path.dirname(counter), 'session.log') };
   const result = await run(session, { timeoutMs: 500 });
   assert.equal(result.timedOut, true);

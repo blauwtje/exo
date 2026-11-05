@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ISOLATION_ENV, TIERS, childEnvironment, costSpreadLine, parseArguments, projectedCostLine, recordedRunCosts } from '../benchmarks/lean-gates.mjs';
+import { tempDir } from './harness.mjs';
 
 function savedRun(out, name, stdout) {
   mkdirSync(join(out, name), { recursive: true });
@@ -11,7 +12,7 @@ function savedRun(out, name, stdout) {
 }
 
 test('recordedRunCosts reads total_cost_usd of each saved run and skips probes, unreadable and costless runs', () => {
-  const out = mkdtempSync(join(tmpdir(), 'lean-gates-costs-'));
+  const out = tempDir('lean-gates-costs-');
   savedRun(out, '01-old', JSON.stringify({ total_cost_usd: 12 }));
   savedRun(out, '02-old', JSON.stringify({ total_cost_usd: 20 }));
   savedRun(out, '03-new', JSON.stringify({ total_cost_usd: 30 }));

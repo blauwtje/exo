@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -7,13 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 import { prepareBuildRepository, prepareReviewBranch } from '../benchmarks/sweep-fixtures.mjs';
 import { SAFE_TASKS } from '../benchmarks/tasks.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const REAL_SAFE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'safe');
-
-function git(cwd, args) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
-}
 
 // A copy of the fixtures with one stray file (as a check.mjs proof run leaves)
 // in every seed and solution folder.
@@ -34,7 +29,7 @@ test('review branches of every safe task change only the task file, despite stra
       const repo = path.join(tmp, `${task.id}-${source}`);
       fs.mkdirSync(repo);
       prepareReviewBranch(repo, task, source, safe);
-      const changed = git(repo, ['diff', '--name-only', 'main...HEAD']).split('\n');
+      const changed = git(repo, 'diff', '--name-only', 'main...HEAD').split('\n');
       assert.deepEqual(changed, [task.file], `${task.id}/${source}`);
     }
   }
@@ -47,7 +42,7 @@ test('build repositories of every safe task hold only the task file, despite str
     const repo = path.join(tmp, `${task.id}-build`);
     fs.mkdirSync(repo);
     prepareBuildRepository(repo, task, safe);
-    assert.deepEqual(git(repo, ['ls-files']).split('\n'), [task.file], task.id);
+    assert.deepEqual(git(repo, 'ls-files').split('\n'), [task.file], task.id);
   }
 });
 

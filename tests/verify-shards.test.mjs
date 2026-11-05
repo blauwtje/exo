@@ -1,17 +1,16 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import nodeFs from 'node:fs';
 import { contextLimit, reviewShardTokens, softLimit } from '../lib/context-limits.mjs';
 import { branchFiles, shardBranch } from '../skills/gate/scripts/review-shards.mjs';
-import { git } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 import { editApp, landingCheckout } from './land-task-fixture.mjs';
 
-const limitHome = nodeFs.mkdtempSync(path.join(os.tmpdir(), 'exo-shards-home-'));
+const limitHome = tempDir('exo-shards-home-');
 nodeFs.mkdirSync(path.join(limitHome, '.config', 'exo'), { recursive: true });
 nodeFs.writeFileSync(path.join(limitHome, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":80000}}');
 process.env.HOME = limitHome;
@@ -120,7 +119,7 @@ test('verify --reviews-only copies a landed task Boundary line into the review i
 });
 
 test('branchFiles diffs against the merge base, so files only the base gained stay out', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'branch-files-'));
+  const root = tempDir('branch-files-');
   git(root, 'init', '-q', '-b', 'main');
   git(root, 'commit', '-q', '--allow-empty', '-m', 'init');
   git(root, 'switch', '-q', '-c', 'work');
@@ -136,7 +135,7 @@ test('branchFiles diffs against the merge base, so files only the base gained st
 });
 
 test('branchFiles keeps a deleted file as its header only, so deletions fill no review shard', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'branch-files-'));
+  const root = tempDir('branch-files-');
   git(root, 'init', '-q', '-b', 'main');
   await fs.writeFile(path.join(root, 'old.md'), 'line\n'.repeat(5000));
   git(root, 'add', '.');

@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { baselineProblem, costOfLine, descriptionHashes, dryRunLine, evaluate, gradeStream, medianCost, modelInvocableSkills, quickPrompts, routingHome, withBaseline, withSkillRun } from '../benchmarks/routing.mjs';
+import { tempDir } from './harness.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const line = (content) => JSON.stringify({ type: 'assistant', message: { content } });
@@ -125,7 +125,7 @@ test('medianCost ignores sessions without a cost; dryRunLine multiplies sessions
 });
 
 test('--dry-run projects from the recorded --out file and starts no session', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'routing-dry-'));
+  const dir = tempDir('routing-dry-');
   const out = join(dir, 'recorded.json');
   const dryRun = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--full', '--cells', 'sonnet:low', '--arms', 'hook', '--runs', '1', '--split', 'held-out', '--out', out, ...args], { encoding: 'utf8' });
   const unknown = dryRun();
@@ -189,7 +189,7 @@ test('the default run is the quick set once; --write-baseline is the no-hook arm
   const prompts = JSON.parse(readFileSync(`${root}benchmarks/routing/prompts.json`, 'utf8'));
   const quick = quickPrompts(prompts).length;
   const sessions = (...args) => {
-    const result = spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(mkdtempSync(join(tmpdir(), 'routing-count-')), 'none.json'), ...args], { encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(tempDir('routing-count-'), 'none.json'), ...args], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     return Number(/dry-run: (\d+) sessions/.exec(result.stdout)[1]);
   };
@@ -225,7 +225,7 @@ test('withSkillRun for no skill swaps in the null sessions and keeps every hash'
 
 test('--skill runs only the prompts of that skill, or of no skill for none, and needs --full and a model-invocable skill', () => {
   const prompts = JSON.parse(readFileSync(`${root}benchmarks/routing/prompts.json`, 'utf8'));
-  const run = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(mkdtempSync(join(tmpdir(), 'routing-skill-')), 'none.json'), ...args], { encoding: 'utf8' });
+  const run = (...args) => spawnSync(process.execPath, [`${root}benchmarks/routing.mjs`, '--dry-run', '--out', join(tempDir('routing-skill-'), 'none.json'), ...args], { encoding: 'utf8' });
   const full = run('--full', '--skill', 'watch');
   assert.equal(full.status, 0, full.stderr);
   assert.equal(Number(/dry-run: (\d+) sessions/.exec(full.stdout)[1]), prompts.filter((entry) => entry.expect === 'watch').length * 2 * 3);
@@ -237,7 +237,7 @@ test('--skill runs only the prompts of that skill, or of no skill for none, and 
 });
 
 test('the routing home turns off every installed plugin', () => {
-  const home = mkdtempSync(join(tmpdir(), 'routing-home-test-'));
+  const home = tempDir('routing-home-test-');
   const before = process.env.HOME;
   let mirror;
   try {
@@ -249,7 +249,6 @@ test('the routing home turns off every installed plugin', () => {
     assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'tokeneconomizer@tokeneconomizer': false });
   } finally {
     process.env.HOME = before;
-    rmSync(home, { recursive: true, force: true });
     if (mirror) rmSync(mirror, { recursive: true, force: true });
   }
 });

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
@@ -8,7 +7,7 @@ import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { chainedForCaller, refreshProgress, taskBrief } from '../skills/build/scripts/next-task.mjs';
-import { commitFiles, git, planFixture, run } from './harness.mjs';
+import { commitFiles, git, planFixture, run, tempDir } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 
 const NEXT_TASK = new URL('../skills/build/scripts/next-task.mjs', import.meta.url).pathname;
@@ -97,7 +96,7 @@ test('a small task with no Decision prints no Decisions section', async () => {
 });
 
 test('an input the plan names outside the checkout reaches the brief', async () => {
-  const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'notes.md');
+  const input = path.join(tempDir('exo-input-'), 'notes.md');
   await fs.writeFile(input, 'notes\n');
   const result = await planWithInput(input);
   assert.match(result.stdout, /^Prompt:$/m);
@@ -107,7 +106,7 @@ test('an input the plan names outside the checkout reaches the brief', async () 
 
 test('only a brief carrying an input path tells the builder to block on an unreadable one', async () => {
   const blockLine = 'Inputs: read each absolute path above before building; one unreadable → end on `Task 1: BLOCKED input unreadable: <path>`, never write its content from memory.';
-  const input = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-'));
+  const input = tempDir('exo-input-');
   const withInput = await planWithInput(input);
   assert.ok((await fs.readFile(withInput.stdout.match(/^Brief: (.+)$/m)[1], 'utf8')).split('\n').includes(blockLine));
   const { root, planPath } = await landingCheckout();
@@ -130,7 +129,7 @@ test('absolute paths that exist only on another machine are no input and do not 
 });
 
 test('an unreachable input the plan names stops the task before dispatch', async () => {
-  const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'missing.md');
+  const input = path.join(tempDir('exo-input-'), 'missing.md');
   const result = await planWithInput(input);
   assert.ok(result.stdout.split('\n').includes(`PLAN DRIFT: Task 1: input \`${input}\` is unreachable`), result.stdout);
   assert.doesNotMatch(result.stdout, /^(?:Prompt|Dispatch):/m);
@@ -139,7 +138,7 @@ test('an unreachable input the plan names stops the task before dispatch', async
 });
 
 test('a region drift beside an unreachable input still stops the task as an unreachable input', async () => {
-  const input = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-')), 'missing.md');
+  const input = path.join(tempDir('exo-input-'), 'missing.md');
   const result = await planWithInput(input, 'farewell');
   const lines = result.stdout.split('\n');
   assert.ok(lines.includes(`PLAN DRIFT: Task 1: input \`${input}\` is unreachable`), result.stdout);
@@ -148,7 +147,7 @@ test('a region drift beside an unreachable input still stops the task as an unre
 });
 
 test('a region drift with no unreachable input keeps the plan drift handler', async () => {
-  const input = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-input-'));
+  const input = tempDir('exo-input-');
   const result = await planWithInput(input, 'farewell');
   const lines = result.stdout.split('\n');
   assert.ok(lines.includes('PLAN DRIFT: Task 1: region `farewell` is missing from `src/app.js`'), result.stdout);
@@ -355,7 +354,7 @@ const readProgress = async (file) => JSON.parse(await fs.readFile(file, 'utf8'))
 
 test('next-task refreshes the session record with landed counted on the checkout', async () => {
   const { root, planPath } = await landingCheckout();
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const file = await seedProgress(cache, { plan: planPath, root });
   await editApp(root);
   landTask({ planPath, planText: PLAN, number: 1, root });
@@ -369,7 +368,7 @@ test('next-task refreshes the session record with landed counted on the checkout
 
 test('next-task leaves the record alone without a session id, under EXO_RUN_TASK, for another plan or with no record', async () => {
   const { root, planPath } = await landingCheckout();
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const file = await seedProgress(cache, { plan: planPath, root });
   const other = await seedProgress(cache, { plan: '/elsewhere/other.md', root, id: 'sess-2' });
   await editApp(root);
@@ -391,7 +390,7 @@ test('next-task deletes the record once every task has landed', async () => {
   const { root, planPath } = await landingCheckout();
   const plan = planFixture({ tasks: [taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })] });
   await fs.writeFile(planPath, plan);
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const file = await seedProgress(cache, { plan: planPath, root });
   git(root, 'commit', '--allow-empty', '-q', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
   const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root, env: { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' } });
@@ -401,7 +400,7 @@ test('next-task deletes the record once every task has landed', async () => {
 
 test('next-task refreshes a record whose plan was given as a relative --plan', async () => {
   const { root, planPath } = await landingCheckout();
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const realPlan = await fs.realpath(planPath);
   const realRoot = await fs.realpath(root);
   const file = await seedProgress(cache, { plan: realPlan, root });
@@ -419,11 +418,11 @@ function setEnv(name, value) {
 
 test('refreshProgress counts landed on the record checkout, not the caller root', async () => {
   const { root, planPath } = await landingCheckout();
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const file = await seedProgress(cache, { plan: planPath, root });
   await editApp(root);
   landTask({ planPath, planText: PLAN, number: 1, root });
-  const elsewhere = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-elsewhere-'));
+  const elsewhere = tempDir('exo-elsewhere-');
   const saved = { cache: process.env.XDG_CACHE_HOME, id: process.env.CLAUDE_CODE_SESSION_ID, task: process.env.EXO_RUN_TASK };
   Object.assign(process.env, { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' });
   delete process.env.EXO_RUN_TASK;
@@ -439,7 +438,7 @@ test('next-task keeps the record of another plan even when this plan is fully la
   const { root, planPath } = await landingCheckout();
   const plan = planFixture({ tasks: [taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })] });
   await fs.writeFile(planPath, plan);
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const file = await seedProgress(cache, { plan: '/elsewhere/other.md', root });
   git(root, 'commit', '--allow-empty', '-q', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
   const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root, env: { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' } });

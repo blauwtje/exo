@@ -1,14 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { analysis, forkPrompt, prepareCheckpoint, runFork, verifyBlock, verifyPoint } from '../benchmarks/checkpoint-fork.mjs';
 import { keepRepository } from '../benchmarks/sweep.mjs';
 import { countsCost } from '../benchmarks/pricing.mjs';
-import { git } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'checkpoint-fork.mjs');
 const BRANCH = 'feat/text-helpers';
@@ -86,49 +85,41 @@ function writeKeptCell(base) {
 }
 
 test('verifyPoint finds the lead\'s first exo:gate call, and verifyBlock counts from there on', () => {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'fork-block-')));
-  try {
-    const main = writeTranscript(base);
-    assert.equal(verifyPoint(main), Date.parse(at('00:15:00')));
-    const block = verifyBlock(main);
-    const call = (output) => countsCost({ input: 100, cacheRead: 1000, cache5m: 0, cache1h: 0, output }, MODEL);
-    // m2 (last line wins), m3 and agent-b's two calls; m1 and agent-a come before the call.
-    assert.ok(Math.abs(block.costUsd - (call(60) + call(70) + call(90) + call(20))) < 1e-12);
-    assert.deepEqual(block.subagents, ['exo:fix-review']);
-    assert.equal(block.fixLoop, true);
-    assert.equal(block.wallMs, 3 * 60 * 1000);
-    assert.equal(verifyPoint(path.join(base, 'session', 'subagents', 'agent-a.jsonl')), null);
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const base = fs.realpathSync(tempDir('fork-block-'));
+  const main = writeTranscript(base);
+  assert.equal(verifyPoint(main), Date.parse(at('00:15:00')));
+  const block = verifyBlock(main);
+  const call = (output) => countsCost({ input: 100, cacheRead: 1000, cache5m: 0, cache1h: 0, output }, MODEL);
+  // m2 (last line wins), m3 and agent-b's two calls; m1 and agent-a come before the call.
+  assert.ok(Math.abs(block.costUsd - (call(60) + call(70) + call(90) + call(20))) < 1e-12);
+  assert.deepEqual(block.subagents, ['exo:fix-review']);
+  assert.equal(block.fixLoop, true);
+  assert.equal(block.wallMs, 3 * 60 * 1000);
+  assert.equal(verifyPoint(path.join(base, 'session', 'subagents', 'agent-a.jsonl')), null);
 });
 
 test('prepareCheckpoint rewinds the plan branch, keeps ignored .exo/ files from before the call and drops the rest', () => {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'fork-prepare-')));
-  try {
-    const kept = writeKeptCell(base);
-    const forkRoot = path.join(base, 'fork');
-    const result = prepareCheckpoint(kept, forkRoot, Date.parse(at('00:15:00')), { seenBefore: (relative) => relative === '.exo/state.json' });
-    const repository = path.join(forkRoot, 'repo');
-    assert.equal(git(repository, 'log', '-1', '--format=%s', BRANCH), 'two.txt');
-    assert.equal(git(repository, 'rev-parse', 'HEAD'), result.sha);
-    assert.equal(git(repository, 'branch', '--show-current'), BRANCH);
-    assert.equal(git(repository, 'remote', 'get-url', 'origin'), path.join(forkRoot, 'origin.git'));
-    assert.equal(git(repository, 'worktree', 'list').split('\n').length, 1, 'the stale worktree entry is pruned');
-    assert.ok(!fs.existsSync(path.join(repository, 'fixed.txt')));
-    assert.ok(!fs.existsSync(path.join(repository, 'stray.txt')), 'untracked files go');
-    assert.ok(fs.existsSync(path.join(repository, '.exo', 'old.txt')), '.exo/ files from before the call stay');
-    assert.deepEqual(fs.readdirSync(path.join(repository, '.exo')), ['old.txt']);
-    assert.deepEqual(result.removed.sort(), ['state.json', 'sub/late.md', 'verify-full.txt']);
-    assert.deepEqual(result.changed, ['state.json']);
-    assert.equal(git(path.join(kept, 'repo'), 'log', '-1', '--format=%s', BRANCH), 'fixed.txt', 'the kept cell is untouched');
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const base = fs.realpathSync(tempDir('fork-prepare-'));
+  const kept = writeKeptCell(base);
+  const forkRoot = path.join(base, 'fork');
+  const result = prepareCheckpoint(kept, forkRoot, Date.parse(at('00:15:00')), { seenBefore: (relative) => relative === '.exo/state.json' });
+  const repository = path.join(forkRoot, 'repo');
+  assert.equal(git(repository, 'log', '-1', '--format=%s', BRANCH), 'two.txt');
+  assert.equal(git(repository, 'rev-parse', 'HEAD'), result.sha);
+  assert.equal(git(repository, 'branch', '--show-current'), BRANCH);
+  assert.equal(git(repository, 'remote', 'get-url', 'origin'), path.join(forkRoot, 'origin.git'));
+  assert.equal(git(repository, 'worktree', 'list').split('\n').length, 1, 'the stale worktree entry is pruned');
+  assert.ok(!fs.existsSync(path.join(repository, 'fixed.txt')));
+  assert.ok(!fs.existsSync(path.join(repository, 'stray.txt')), 'untracked files go');
+  assert.ok(fs.existsSync(path.join(repository, '.exo', 'old.txt')), '.exo/ files from before the call stay');
+  assert.deepEqual(fs.readdirSync(path.join(repository, '.exo')), ['old.txt']);
+  assert.deepEqual(result.removed.sort(), ['state.json', 'sub/late.md', 'verify-full.txt']);
+  assert.deepEqual(result.changed, ['state.json']);
+  assert.equal(git(path.join(kept, 'repo'), 'log', '-1', '--format=%s', BRANCH), 'fixed.txt', 'the kept cell is untouched');
 });
 
 test('runFork records a fork the way a sweep cell is recorded, from a fake session', async () => {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'fork-run-')));
+  const base = fs.realpathSync(tempDir('fork-run-'));
   const saved = process.env.CLAUDE_CONFIG_DIR;
   try {
     const kept = writeKeptCell(base);
@@ -163,23 +154,18 @@ test('runFork records a fork the way a sweep cell is recorded, from a fake sessi
   } finally {
     if (saved === undefined) delete process.env.CLAUDE_CONFIG_DIR;
     else process.env.CLAUDE_CONFIG_DIR = saved;
-    fs.rmSync(base, { recursive: true, force: true });
   }
 });
 
 test('without --confirm the script lists the forks and starts none', () => {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'fork-cli-')));
-  try {
-    const run = spawnSync(process.execPath, [SCRIPT, '--checkpoints', path.join(base, 'keep'), '--full-runs', path.join(base, 'full'), '--out', path.join(base, 'out')], { encoding: 'utf8', timeout: 60000 });
-    assert.equal(run.status, 2);
-    assert.match(run.stdout, /^0 verify-only forks planned/);
-    assert.match(run.stdout, /Re-run with --confirm to start them/);
-    const bad = spawnSync(process.execPath, [SCRIPT, '--out', base], { encoding: 'utf8', timeout: 60000 });
-    assert.notEqual(bad.status, 0);
-    assert.match(bad.stderr, /name --full-runs/);
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const base = fs.realpathSync(tempDir('fork-cli-'));
+  const run = spawnSync(process.execPath, [SCRIPT, '--checkpoints', path.join(base, 'keep'), '--full-runs', path.join(base, 'full'), '--out', path.join(base, 'out')], { encoding: 'utf8', timeout: 60000 });
+  assert.equal(run.status, 2);
+  assert.match(run.stdout, /^0 verify-only forks planned/);
+  assert.match(run.stdout, /Re-run with --confirm to start them/);
+  const bad = spawnSync(process.execPath, [SCRIPT, '--out', base], { encoding: 'utf8', timeout: 60000 });
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /name --full-runs/);
 });
 
 function forkRecord(from, extra = {}) {

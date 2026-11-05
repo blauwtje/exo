@@ -1,12 +1,11 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
-import { git, run } from './harness.mjs';
+import { git, run, tempDir } from './harness.mjs';
 import { landingCheckout, editApp } from './land-task-fixture.mjs';
 
 const SCRIPT = new URL('../skills/build/scripts/land-slot.mjs', import.meta.url).pathname;
@@ -157,7 +156,7 @@ test('a landing with no other slot running ends with a Next: or Wave: refill lin
 
 test('a landed slot refreshes the session record', async () => {
   const { root, slot, land } = await slotFixture();
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const env = { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' };
   writeBuildProgress({ sessionId: 'sess-1', plan: path.join(root, 'docs/plans/fixture.md'), checkout: root, landed: 0, total: 4 }, { env, now: 1000 });
   await editApp(slot);

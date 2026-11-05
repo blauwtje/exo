@@ -6,16 +6,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
-import { after, afterEach, beforeEach, test } from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
 import { run } from '../install.mjs';
 import { adapters } from '../harnesses/registry.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const REPO = new URL('../', import.meta.url).pathname;
-const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'install-test-')));
-after(() => fs.rmSync(base, { recursive: true, force: true }));
+const base = fs.realpathSync(tempDir('install-test-'));
 
 const calls = [];
 
@@ -220,11 +219,6 @@ test('one failed install is reported, the others still run and the exit code is 
 test('--update pulls the clone first, then updates every adapter with the filter', async () => {
   register(stub('one', 'First'), stub('two', 'Second'));
   const origin = path.join(base, 'origin');
-  const git = (cwd, ...args) => {
-    const done = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
-    assert.equal(done.status, 0, done.stderr);
-    return done.stdout;
-  };
   fs.mkdirSync(origin);
   git(origin, 'init', '-q', '-b', 'main');
   fs.writeFileSync(path.join(origin, 'a.txt'), 'one');

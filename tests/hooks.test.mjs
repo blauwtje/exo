@@ -153,16 +153,12 @@ test('receipts off drops the "exo is on" line from the session hook', () => {
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   delete env.CLAUDE_PROJECT_DIR;
-  try {
-    fs.mkdirSync(path.join(project, '.claude'));
-    fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
-    const run = (cwd) => JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd }) }).toString());
-    const off = run(project);
-    assert.equal(Object.hasOwn(off, 'systemMessage'), false);
-    assert.equal(run(os.tmpdir()).systemMessage, 'exo is on');
-  } finally {
-    for (const directory of [configHome, project]) fs.rmSync(directory, { recursive: true, force: true });
-  }
+  fs.mkdirSync(path.join(project, '.claude'));
+  fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
+  const run = (cwd) => JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd }) }).toString());
+  const off = run(project);
+  assert.equal(Object.hasOwn(off, 'systemMessage'), false);
+  assert.equal(run(os.tmpdir()).systemMessage, 'exo is on');
 });
 
 test('the session hook shows the user one "exo is on" line and writes no welcomed marker', () => {
@@ -176,7 +172,7 @@ test('the session hook shows the user one "exo is on" line and writes no welcome
 });
 
 function sessionContext(prefix, option) {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const configHome = tempDir(prefix);
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
@@ -220,15 +216,11 @@ test('the session hook reads project settings from the session directory in the 
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
   for (const name of ['CODEX_HOME', 'EXO_HOST', 'CLAUDE_PROJECT_DIR']) delete env[name];
-  try {
-    execFileSync('git', ['init', '-q', project]);
-    fs.mkdirSync(path.join(project, '.claude'));
-    fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ specs: 'issues' }));
-    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, cwd: elsewhere, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd: project }) }).toString());
-    assert.ok(output.hookSpecificOutput.additionalContext.includes('specs=issues'));
-  } finally {
-    for (const directory of [configHome, project, elsewhere]) fs.rmSync(directory, { recursive: true, force: true });
-  }
+  execFileSync('git', ['init', '-q', project]);
+  fs.mkdirSync(path.join(project, '.claude'));
+  fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ specs: 'issues' }));
+  const output = JSON.parse(execFileSync(process.execPath, [hook], { env, cwd: elsewhere, input: JSON.stringify({ session_id: 's1', source: 'startup', cwd: project }) }).toString());
+  assert.ok(output.hookSpecificOutput.additionalContext.includes('specs=issues'));
 });
 
 test('the session hook adds a Node warning to the user line only when Node is older than package.json engines', () => {
@@ -240,19 +232,15 @@ test('the session hook adds a Node warning to the user line only when Node is ol
   fs.mkdirSync(path.join(copy, 'hooks'));
   for (const folder of new Set(Object.values(manifest.imports).map((target) => target.split('/')[1]))) fs.symlinkSync(path.join(REPOSITORY, folder), path.join(copy, folder));
   for (const file of ['session-start.mjs', 'dispatch-rules.mjs']) fs.copyFileSync(path.join(REPOSITORY, 'hooks', file), path.join(copy, 'hooks', file));
-  try {
-    const messageFor = (engines) => {
-      fs.writeFileSync(path.join(copy, 'package.json'), JSON.stringify({ type: 'module', engines, imports: manifest.imports }));
-      return JSON.parse(execFileSync(process.execPath, [path.join(copy, 'hooks', 'session-start.mjs')], { env, input: '{}' }).toString()).systemMessage;
-    };
-    const current = Number(process.versions.node.split('.')[0]);
-    assert.equal(messageFor({ node: `>=${current}` }), 'exo is on');
-    const warned = messageFor({ node: `>=${current + 1}` });
-    assert.ok(warned.startsWith('exo is on\n'));
-    assert.ok(warned.includes(`needs Node ${current + 1} or newer`) && warned.includes(`this is Node ${process.versions.node}`));
-  } finally {
-    for (const directory of [configHome, copy]) fs.rmSync(directory, { recursive: true, force: true });
-  }
+  const messageFor = (engines) => {
+    fs.writeFileSync(path.join(copy, 'package.json'), JSON.stringify({ type: 'module', engines, imports: manifest.imports }));
+    return JSON.parse(execFileSync(process.execPath, [path.join(copy, 'hooks', 'session-start.mjs')], { env, input: '{}' }).toString()).systemMessage;
+  };
+  const current = Number(process.versions.node.split('.')[0]);
+  assert.equal(messageFor({ node: `>=${current}` }), 'exo is on');
+  const warned = messageFor({ node: `>=${current + 1}` });
+  assert.ok(warned.startsWith('exo is on\n'));
+  assert.ok(warned.includes(`needs Node ${current + 1} or newer`) && warned.includes(`this is Node ${process.versions.node}`));
 });
 
 test('the Stop hook lets a repair session end without a task status line', async () => {
@@ -261,7 +249,6 @@ test('the Stop hook lets a repair session end without a task status line', async
   const env = { EXO_RUN: 'run', EXO_RUN_DIR: dir, EXO_RUN_TASK: 'plan/1', EXO_RUN_REPAIR: '1' };
   const input = { hook_event_name: 'Stop', session_id: 's', last_assistant_message: 'Plan: docs/plan.md\nTask 1 rewritten: Files: line names lib/a.mjs.' };
   assert.equal(runNoWait(input, { env }), null);
-  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('the dispatch rules leave agent models to the kind table and send long command output to a log', () => {
@@ -397,19 +384,15 @@ function progressPointer(source, { ageMs = 0, env = {}, files = ['topic/progress
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const hookEnv = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY, ...env };
   for (const name of ['CODEX_HOME', 'EXO_HOST', 'EXO_RUN_DIR']) delete hookEnv[name];
-  try {
-    files.forEach((file, index) => {
-      const target = path.join(project, '.exo', file);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, 'progress');
-      const stamp = new Date(Date.now() - ageMs - index * 1000);
-      fs.utimesSync(target, stamp, stamp);
-    });
-    const output = JSON.parse(execFileSync(process.execPath, [hook], { env: hookEnv, input: JSON.stringify({ session_id: 's1', source, cwd: project }) }).toString());
-    return output.hookSpecificOutput.additionalContext;
-  } finally {
-    for (const directory of [configHome, project]) fs.rmSync(directory, { recursive: true, force: true });
-  }
+  files.forEach((file, index) => {
+    const target = path.join(project, '.exo', file);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, 'progress');
+    const stamp = new Date(Date.now() - ageMs - index * 1000);
+    fs.utimesSync(target, stamp, stamp);
+  });
+  const output = JSON.parse(execFileSync(process.execPath, [hook], { env: hookEnv, input: JSON.stringify({ session_id: 's1', source, cwd: project }) }).toString());
+  return output.hookSpecificOutput.additionalContext;
 }
 
 test('the session hook names a fresh progress file after a compact, clear or resume only', () => {
@@ -544,7 +527,6 @@ test('the SessionStart hook sweeps saved Bash outputs older than EXO_SAVED_OUTPU
   assert.equal(fs.existsSync(old), false);
   assert.equal(fs.existsSync(fresh), true);
   assert.equal(fs.existsSync(other), true);
-  fs.rmSync(folder, { recursive: true, force: true });
 });
 
 test('the context-limit entry starts node only for Read, Skill, a run session or an agent past its soft limit', () => {
@@ -565,7 +547,6 @@ test('the context-limit entry starts node only for Read, Skill, a run session or
   assert.equal(traced({ tool_name: 'Grep', tool_input: {} }, { EXO_RUN_HANDOFF: path.join(folder, 'handoff.md') }), true);
   fs.writeFileSync(path.join(folder, 'exo-context-gate-a'), '1');
   assert.equal(traced({ tool_name: 'mcp__x__y', agent_id: 'gate-a', tool_input: {} }), true);
-  fs.rmSync(folder, { recursive: true, force: true });
 });
 
 test('a capped agent Bash keeps a timeout and skips background, trailing backslash, other modes and other types', async () => {

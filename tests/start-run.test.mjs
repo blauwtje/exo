@@ -1,21 +1,18 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/start-run.mjs', import.meta.url));
-const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
 
 function fixture() {
   const base = tempDir('start-run-');
   const repo = fs.realpathSync(base);
   git(repo, 'init', '-q', '-b', 'work');
-  git(repo, 'config', 'user.email', 't@t');
-  git(repo, 'config', 'user.name', 't');
   const plan = path.join(repo, 'docs', 'plans', 'demo.md');
   fs.mkdirSync(path.dirname(plan), { recursive: true });
   fs.writeFileSync(plan, [
@@ -118,11 +115,11 @@ test('start-run commits pre-existing work in its own trailerless commit and prin
   fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
   fs.writeFileSync(f.plan, `${fs.readFileSync(f.plan, 'utf8')}\n`);
   const stdout = runOutput(f);
-  const sha = git(f.repo, 'rev-parse', '--short', 'HEAD').trim();
-  assert.equal(git(f.repo, 'log', '-1', '--format=%s').trim(), 'fix(run): keep work present before the run');
+  const sha = git(f.repo, 'rev-parse', '--short', 'HEAD');
+  assert.equal(git(f.repo, 'log', '-1', '--format=%s'), 'fix(run): keep work present before the run');
   assert.doesNotMatch(git(f.repo, 'log', '-1', '--format=%B'), /Plan-task:/);
   assert.deepEqual(git(f.repo, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter(Boolean).sort(), ['a.txt', 'new.txt']);
-  assert.equal(git(f.repo, 'status', '--porcelain', '--untracked-files=no').trim(), 'M docs/plans/demo.md');
+  assert.equal(git(f.repo, 'status', '--porcelain', '--untracked-files=no'), 'M docs/plans/demo.md');
   assert.ok(stdout.indexOf(sha) !== -1 && stdout.indexOf(sha) < stdout.indexOf('run started'), stdout);
 });
 

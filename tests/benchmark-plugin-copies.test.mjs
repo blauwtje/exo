@@ -1,18 +1,12 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { BEFORE_ARM, beforeArm, beforePluginProblem, buildCopies, copyKey, exoRootOf, loadsCopy, withBeforeArm } from '../benchmarks/plugin-copies.mjs';
 import { ARMS, DEFAULT_ARMS, ROOT } from '../benchmarks/tasks.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const TIERS = ['template', 'safe', 'git', 'calibration', 'value'];
-
-function git(directory, args) {
-  execFileSync('git', ['-C', directory, '-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { stdio: 'ignore' });
-}
 
 function pluginDirectory(marker, { repo = false } = {}) {
   const directory = tempDir('exo-before-test-');
@@ -22,9 +16,9 @@ function pluginDirectory(marker, { repo = false } = {}) {
   fs.mkdirSync(path.join(directory, 'benchmarks', 'value', 'x', 'hidden'), { recursive: true });
   fs.writeFileSync(path.join(directory, 'benchmarks', 'value', 'x', 'hidden', 'secret.txt'), 'secret');
   if (repo) {
-    git(directory, ['init', '-q']);
-    git(directory, ['add', '-A']);
-    git(directory, ['commit', '-q', '-m', 'init']);
+    git(directory, 'init', '-q');
+    git(directory, 'add', '-A');
+    git(directory, 'commit', '-q', '-m', 'init');
   }
   return directory;
 }
@@ -53,24 +47,16 @@ test('exo-before copies from its own dir beside an exo arm copied from another',
   const arms = { exo: ARMS.exo, [BEFORE_ARM]: beforeArm(before) };
   const task = { id: 't', tier: 'value' };
   const cells = [{ task, arm: 'exo' }, { task, arm: BEFORE_ARM }];
-  const made = [];
-  const copies = buildCopies(cells, arms, () => {
-    made.push(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-before-copy-')));
-    return made[made.length - 1];
-  });
-  try {
-    assert.equal(Object.keys(copies).length, 2);
-    const exoCopy = copies[copyKey(arms.exo)];
-    const beforeCopy = copies[copyKey(arms[BEFORE_ARM])];
-    assert.notEqual(exoCopy, beforeCopy);
-    assert.equal(fs.existsSync(path.join(exoCopy, 'marker.txt')), false);
-    assert.equal(fs.existsSync(path.join(exoCopy, '.claude-plugin', 'plugin.json')), true);
-    assert.equal(fs.readFileSync(path.join(beforeCopy, 'marker.txt'), 'utf8'), 'B');
-    assert.equal(fs.existsSync(path.join(exoCopy, 'benchmarks')), false);
-    assert.equal(fs.existsSync(path.join(beforeCopy, 'benchmarks')), false);
-  } finally {
-    for (const directory of [...made, before]) fs.rmSync(directory, { recursive: true, force: true });
-  }
+  const copies = buildCopies(cells, arms, () => tempDir('exo-before-copy-'));
+  assert.equal(Object.keys(copies).length, 2);
+  const exoCopy = copies[copyKey(arms.exo)];
+  const beforeCopy = copies[copyKey(arms[BEFORE_ARM])];
+  assert.notEqual(exoCopy, beforeCopy);
+  assert.equal(fs.existsSync(path.join(exoCopy, 'marker.txt')), false);
+  assert.equal(fs.existsSync(path.join(exoCopy, '.claude-plugin', 'plugin.json')), true);
+  assert.equal(fs.readFileSync(path.join(beforeCopy, 'marker.txt'), 'utf8'), 'B');
+  assert.equal(fs.existsSync(path.join(exoCopy, 'benchmarks')), false);
+  assert.equal(fs.existsSync(path.join(beforeCopy, 'benchmarks')), false);
 });
 
 test('exo-before loads no copy on a non-value tier and stays out of the default arms', () => {
@@ -90,20 +76,16 @@ test('beforePluginProblem names each bad input', () => {
   const notRepo = pluginDirectory('N');
   const notExo = tempDir('exo-before-test-');
   fs.writeFileSync(path.join(dirty, 'marker.txt'), 'changed');
-  try {
-    assert.equal(beforePluginProblem(null, ['exo', BEFORE_ARM]), `arm ${BEFORE_ARM} needs --before-plugin <dir>`);
-    assert.equal(beforePluginProblem(null, ['exo']), null);
-    assert.equal(beforePluginProblem(undefined, [BEFORE_ARM]), '--before-plugin needs a directory');
-    assert.equal(beforePluginProblem('', ['exo']), '--before-plugin needs a directory');
-    assert.equal(beforePluginProblem(clean, ['exo']), `--before-plugin needs arm ${BEFORE_ARM} in --arms`);
-    const missing = path.join(clean, 'absent');
-    assert.equal(beforePluginProblem(missing, [BEFORE_ARM]), `--before-plugin ${missing}: no such directory`);
-    assert.equal(beforePluginProblem(notExo, [BEFORE_ARM]), `--before-plugin ${notExo}: not an exo plugin (no .claude-plugin/plugin.json naming exo)`);
-    assert.equal(beforePluginProblem(ROOT, [BEFORE_ARM]), `--before-plugin ${ROOT} is this checkout; give a worktree at the before commit`);
-    assert.equal(beforePluginProblem(notRepo, [BEFORE_ARM]), `--before-plugin ${notRepo}: not a git checkout`);
-    assert.equal(beforePluginProblem(dirty, [BEFORE_ARM]), `--before-plugin ${dirty} has uncommitted changes; the copy would not match its commit`);
-    assert.equal(beforePluginProblem(clean, [BEFORE_ARM]), null);
-  } finally {
-    for (const directory of [clean, dirty, notRepo, notExo]) fs.rmSync(directory, { recursive: true, force: true });
-  }
+  assert.equal(beforePluginProblem(null, ['exo', BEFORE_ARM]), `arm ${BEFORE_ARM} needs --before-plugin <dir>`);
+  assert.equal(beforePluginProblem(null, ['exo']), null);
+  assert.equal(beforePluginProblem(undefined, [BEFORE_ARM]), '--before-plugin needs a directory');
+  assert.equal(beforePluginProblem('', ['exo']), '--before-plugin needs a directory');
+  assert.equal(beforePluginProblem(clean, ['exo']), `--before-plugin needs arm ${BEFORE_ARM} in --arms`);
+  const missing = path.join(clean, 'absent');
+  assert.equal(beforePluginProblem(missing, [BEFORE_ARM]), `--before-plugin ${missing}: no such directory`);
+  assert.equal(beforePluginProblem(notExo, [BEFORE_ARM]), `--before-plugin ${notExo}: not an exo plugin (no .claude-plugin/plugin.json naming exo)`);
+  assert.equal(beforePluginProblem(ROOT, [BEFORE_ARM]), `--before-plugin ${ROOT} is this checkout; give a worktree at the before commit`);
+  assert.equal(beforePluginProblem(notRepo, [BEFORE_ARM]), `--before-plugin ${notRepo}: not a git checkout`);
+  assert.equal(beforePluginProblem(dirty, [BEFORE_ARM]), `--before-plugin ${dirty} has uncommitted changes; the copy would not match its commit`);
+  assert.equal(beforePluginProblem(clean, [BEFORE_ARM]), null);
 });

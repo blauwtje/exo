@@ -6,17 +6,16 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { planHoldout } from '../lib/holdout.mjs';
 import { caseMovers, improveDefaults, judgeKeep, scorerHash } from '../skills/improve/scripts/round.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const script = fileURLToPath(new URL('../skills/improve/scripts/round.mjs', import.meta.url));
-const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).stdout.trim();
 
 function setup({ direction = 'lower', command = 'cat src/x.txt', limit = 20, baseline = [10, 10], items = {}, score = 10, regex = 'score=(\\d+)' } = {}) {
   const root = tempDir('round-');
   fs.mkdirSync(path.join(root, 'src'));
   fs.writeFileSync(path.join(root, 'src/x.txt'), 'score=10\npad\n');
   fs.writeFileSync(path.join(root, 'score.sh'), 'x\n');
-  for (const args of [['init', '-q'], ['config', 'user.email', 'a@b.c'], ['config', 'user.name', 'a'], ['add', '-A'], ['commit', '-qm', 'base']]) git(root, ...args);
+  for (const args of [['init', '-q'], ['add', '-A'], ['commit', '-qm', 'base']]) git(root, ...args);
   fs.appendFileSync(path.join(root, '.git/info/exclude'), '.exo/\nruns.log\n');
   const dir = path.join(root, '.exo/improve');
   fs.mkdirSync(dir, { recursive: true });
@@ -302,7 +301,7 @@ test('a candidate that is not exactly one commit on the kept commit is refused u
   assert.equal(round(root, base).out, `ROW ${base} - not-one-commit best=10`);
   git(root, 'checkout', '-q', '--orphan', 'other');
   const stray = commitEdit(root, 'score=1\n', 'src/x.txt', 'stray');
-  git(root, 'checkout', '-q', '-');
+  git(root, 'checkout', '-q', base);
   assert.equal(round(root, stray).out, `ROW ${stray} - not-one-commit best=10`);
   assert.match(rows(root).at(-1), new RegExp(`not on ${base}, want one`));
   assert.equal(fs.existsSync(path.join(root, 'runs.log')), false);

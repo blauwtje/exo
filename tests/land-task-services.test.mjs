@@ -2,10 +2,9 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, writeFileSync as writeSync } from 'node:fs';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { compactPlanFixture, git, gitRepository, run } from './harness.mjs';
+import { compactPlanFixture, git, gitRepository, run, tempDir } from './harness.mjs';
 import { compactTask, editApp, SCRIPT, writeReport } from './land-task-fixture.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { EnvError, LandingError } from '../skills/build/scripts/land-errors.mjs';
@@ -96,7 +95,7 @@ test('a red Proof in a project that needs no services fails as before', async ()
 
 test('the command line prints the ENV refusal with no exo-retry line', async () => {
   const setup = await checkout();
-  const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'bin-'));
+  const bin = tempDir('bin-');
   await fs.symlink(process.execPath, path.join(bin, 'node'));
   await fs.symlink(execFileSync('which', ['git'], { encoding: 'utf8' }).trim(), path.join(bin, 'git'));
   const result = await run(SCRIPT, ['--plan', setup.planPath, '--task', '1', '--root', setup.root], { cwd: setup.root, env: { PATH: bin } });

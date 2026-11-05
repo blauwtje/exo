@@ -47,7 +47,6 @@ test('a judge call with no total_cost_usd is an error, not $0', async () => {
     await assert.rejects(claudeJudge({ system: 's', input: 'i' }), /total_cost_usd/);
   } finally {
     process.env.PATH = saved;
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -67,7 +66,6 @@ test('two judge calls overlap in time instead of blocking each other', async () 
     assert.ok(two < one * 1.8, `one call ${one} ms, two calls ${two} ms`);
   } finally {
     process.env.PATH = saved;
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -8,6 +7,7 @@ import {
   availableLanguages, chaptersFromHtml, decodeEntities, formatDuration, formatStamp, languagesOf, parseTimedText, parseVtt, pickCaptions, pickTrack, planChunks,
   renderTranscript, countWords, tracksOf, videoIdOf, watchAll, watchOne,
 } from '../skills/watch/scripts/transcript.mjs';
+import { tempDir } from './harness.mjs';
 
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
 
@@ -238,7 +238,7 @@ function fakeFetch({ player = playerOf(), page = pageOf([]), files = {}, playerS
 }
 
 function scratch() {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'watch-')));
+  const dir = fs.realpathSync(tempDir('watch-'));
   return { dir, options: { out: path.join(dir, 'out'), chunkMinutes: 30, stampSeconds: 45, fetchMs: 5000 } };
 }
 

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { ADHD_RUNS, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, makeStylePlugin, parseArgs, projectDryRun, readCases, readSaturated, runAddFailLabels, rescoreCases, runRescore, runScore, runToLabel, scoreCases, selectCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
@@ -235,7 +234,6 @@ test('a hung claude call is killed at the cap and retried once, then fails clear
     t.mock.timers.reset();
     process.env.PATH = savedPath;
     delete process.env.EXO_ADHD_CALL_MS;
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -256,7 +254,6 @@ test('a claude reply with no total_cost_usd is an error, not $0', async () => {
     await assert.rejects(claudeReply({ arm: 'default', prompt: 'q' }), /total_cost_usd/);
   } finally {
     process.env.PATH = saved;
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -276,7 +273,7 @@ test('buildBaseline records the cost of each case', async () => {
 });
 
 test('runToLabel keeps rows the user already labelled', () => {
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-labels-')), 'labels.jsonl');
+  const file = path.join(tempDir('exo-labels-'), 'labels.jsonl');
   const labelled = `${JSON.stringify({ id: 'x', dimension: 'facts', label: 'PASS' })}\n`;
   fs.writeFileSync(file, labelled);
   const base = { a: { replies: ['d1', 'd2', 'd3'] }, b: { replies: ['d4', 'd5', 'd6'] } };

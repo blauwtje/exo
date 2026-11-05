@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -11,7 +10,7 @@ const hook = path.resolve('hooks/session-end.mjs');
 const DAY_SECONDS = 24 * 60 * 60;
 
 function repository(branch = 'topic') {
-  const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'session-end-')));
+  const cwd = fs.realpathSync(tempDir('session-end-'));
   const git = (...args) => spawnSync('git', ['-C', cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
   git('init', '-q', '-b', branch);
   git('commit', '-q', '--allow-empty', '-m', 'start');

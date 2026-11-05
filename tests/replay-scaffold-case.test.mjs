@@ -5,13 +5,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { boundedDiff, changelogSymptom, isInputFile, MAX_DIFF_CHARS } from '../benchmarks/replay/scaffold-case.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../benchmarks/replay/scaffold-case.mjs', import.meta.url));
-
-function git(root, ...args) {
-  return execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { encoding: 'utf8' });
-}
 
 function fixRepository() {
   const root = tempDir('scaffold-case-');
@@ -41,10 +37,10 @@ test('a fix commit becomes a case with parent input, provenance and the symptom 
   scaffold(root, cases);
   const folder = path.join(cases, 'real-a');
   const definition = JSON.parse(fs.readFileSync(path.join(folder, 'case.json'), 'utf8'));
-  const head = git(root, 'rev-parse', 'HEAD').trim();
+  const head = git(root, 'rev-parse', 'HEAD');
   assert.equal(definition.provenance.type, 'fix-commit');
   assert.equal(definition.provenance.ref, head);
-  assert.equal(definition.provenance.parent, git(root, 'rev-parse', 'HEAD^').trim());
+  assert.equal(definition.provenance.parent, git(root, 'rev-parse', 'HEAD^'));
   assert.equal(definition.provenance.subject, 'fix(a): count three');
   assert.equal(definition.kind, 'case');
   assert.equal(definition.constructed, true);

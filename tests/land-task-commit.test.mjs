@@ -5,7 +5,6 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
@@ -14,7 +13,7 @@ import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { checkTask } from '../skills/build/scripts/land-check.mjs';
 import { fixLand } from '../skills/build/scripts/land-fix.mjs';
 import { LandingError } from '../skills/build/scripts/land-errors.mjs';
-import { compactPlanFixture, git, gitRepository, planFixture, run } from './harness.mjs';
+import { compactPlanFixture, git, gitRepository, planFixture, run, tempDir } from './harness.mjs';
 import {
   taskSection, SCRIPT, PLAN, landingCheckout, editApp, withLint, compactTask, compactCheckout, writeReport, PASS_REPORT, assertRefused
 } from './land-task-fixture.mjs';
@@ -114,7 +113,7 @@ test('Lint runs on the task Files script paths, without a shell, and a passing r
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
-  const tools = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-lint-'));
+  const tools = tempDir('exo-lint-');
   const record = path.join(tools, 'lint-args.txt');
   const linter = path.join(tools, 'linter.sh');
   await fs.writeFile(linter, `#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\n`, { mode: 0o755 });
@@ -126,7 +125,7 @@ test('Lint runs on the task Files script paths, without a shell, and a passing r
 test('a failing Lint is refused before anything commits, naming the command and its output', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const linter = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-lint-')), 'linter.sh');
+  const linter = path.join(tempDir('exo-lint-'), 'linter.sh');
   await fs.writeFile(linter, '#!/bin/sh\necho lint broke\nexit 1\n', { mode: 0o755 });
   assert.throws(
     () => landTask({ planPath, planText: withLint(linter), number: 1, root }),
@@ -156,7 +155,7 @@ async function deletedScriptCheckout(files) {
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
   await fs.rm(path.join(root, 'src/old.mjs'));
-  const tools = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-lint-'));
+  const tools = tempDir('exo-lint-');
   const record = path.join(tools, 'lint-args.txt');
   const linter = path.join(tools, 'linter.sh');
   await fs.writeFile(linter, `#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\n`, { mode: 0o755 });
@@ -304,7 +303,7 @@ test('a compact task without Evidence lands no Evidence trailer', async () => {
 
 test('land-task CLI refreshes the session record and a refused landing leaves it alone', async () => {
   const { root, planPath } = await landingCheckout();
-  const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-progress-'));
+  const cache = tempDir('exo-progress-');
   const env = { XDG_CACHE_HOME: cache, CLAUDE_CODE_SESSION_ID: 'sess-1' };
   writeBuildProgress({ sessionId: 'sess-1', plan: planPath, checkout: root, landed: 0, total: 4 }, { env, now: 1000 });
   const file = path.join(cache, 'exo', 'build', 'sess-1.json');

@@ -63,7 +63,6 @@ test('sweep prepares the flow-unit repository with the compact plan', async () =
     fs.mkdirSync(repository);
     prepareRepository(cells.find((cell) => cell.id === id), repository, path.join(base, 'origin.git'));
     plans[id] = fs.readFileSync(path.join(repository, FLOW_PLAN), 'utf8');
-    fs.rmSync(base, { recursive: true, force: true });
   }
   assert.ok(!plans['flow-unit'].includes('`'.repeat(3)), 'unit plan is compact');
   assert.ok(plans['flow-c7'].includes('`'.repeat(3)), 'c7 plan keeps its code');

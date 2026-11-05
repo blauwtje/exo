@@ -23,7 +23,6 @@ test('the cell home has no .claude/CLAUDE.md while the real home keeps it', () =
     assert.equal(fs.readFileSync(path.join(home, '.claude', 'CLAUDE.md'), 'utf8'), 'global\n');
   } finally {
     process.env.HOME = before;
-    fs.rmSync(home, { recursive: true, force: true });
     if (cellHome) fs.rmSync(cellHome, { recursive: true, force: true });
   }
 });
@@ -42,7 +41,6 @@ test('the cell home turns off every installed plugin', () => {
     assert.equal(JSON.parse(fs.readFileSync(path.join(home, '.claude', 'settings.json'), 'utf8')).enabledPlugins['exo@blauwtje'], true);
   } finally {
     process.env.HOME = before;
-    fs.rmSync(home, { recursive: true, force: true });
     if (cellHome) fs.rmSync(cellHome, { recursive: true, force: true });
   }
 });

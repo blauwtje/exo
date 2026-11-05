@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
@@ -36,7 +37,7 @@ function runHook(hook, input, pathValue) {
 }
 
 function emptyPath() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'exo-no-node-'));
+  return tempDir('exo-no-node-');
 }
 
 const SESSION_INPUT = { hook_event_name: 'SessionStart', source: 'startup', cwd: os.tmpdir(), session_id: 'node-guard' };

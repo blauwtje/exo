@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
 
 async function brief({ land, open = [] }) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'next-stage-'));
+  const directory = tempDir('next-stage-');
   const file = path.join(directory, 'brief.md');
   const lines = ['# Brief', '', '## Goal', 'A goal.', '', '## Plan basis', 'Repository: /repo', 'Branch: b', ...(land === null ? [] : [`Land: ${land}`]), ''];
   if (open.length > 0) lines.push('## Open points', ...open.map((entry) => `- ${entry}`), '');

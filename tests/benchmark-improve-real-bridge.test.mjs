@@ -2,22 +2,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 import { SPLITS } from '../benchmarks/improve-real-copy.mjs';
 import { scoreTarget, startScoreBridge, writeScoreClient } from '../benchmarks/improve-real-bridge.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FAST = { ...process.env, EXO_SCORE_POLL_MS: '20', EXO_SCORE_WAIT_MS: '10000' };
 
-function temp() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'improve-real-bridge-test-'));
-}
-
 function armCopy(target, text) {
-  const dir = temp();
-  const stateDir = path.join(temp(), 'state');
+  const dir = tempDir('improve-real-bridge-test-');
+  const stateDir = path.join(tempDir('improve-real-bridge-test-'), 'state');
   fs.mkdirSync(path.join(dir, path.dirname(SPLITS[target].file)), { recursive: true });
   fs.writeFileSync(path.join(dir, SPLITS[target].file), text);
   writeScoreClient({ dir, stateDir, target });

@@ -82,6 +82,5 @@ test('a file the routing check hashes is out of scope', () => {
   fs.writeFileSync(hashed, '- a → b\n- c → d\n');
   fs.writeFileSync(path.join(root, 'hooks', 'other.md'), '- a → b\n- c → d\n');
   const rows = proseStyleRows([path.join(root, 'hooks')], { exclude: hashedWholeFiles(root) });
-  fs.rmSync(root, { recursive: true, force: true });
   assert.deepEqual(rows.map((row) => path.basename(row.path)), ['other.md']);
 });

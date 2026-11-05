@@ -83,7 +83,6 @@ test('a Codex compact names a fresh progress file, a startup does not', () => {
   fs.writeFileSync(path.join(project, '.exo', 'topic', 'progress.md'), 'progress');
   const contextFor = (source) => {
     const { home, output } = run({ EXO_HOST: 'codex' }, { session_id: 's3', source, cwd: project });
-    fs.rmSync(home, { recursive: true, force: true });
     return output.hookSpecificOutput.additionalContext;
   };
   assert.match(contextFor('compact'), /A progress file sits at `[^`]*\.exo\/topic\/progress\.md`\. Read it only when this session continues that work\./);

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { watchOne } from '../skills/watch/scripts/transcript.mjs';
+import { tempDir } from './harness.mjs';
 
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
 const URL_ = 'https://www.tiktok.com/@u/video/7301234567890123456';
@@ -34,7 +34,7 @@ fs.writeFileSync(path.join(args[args.indexOf('--output_dir') + 1], 'audio.vtt'),
 };
 
 function setup(tools, { info = INFO, vtt = SPEECH_VTT } = {}) {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'speech-')));
+  const dir = fs.realpathSync(tempDir('speech-'));
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin);
   for (const tool of tools) fs.writeFileSync(path.join(bin, tool), STUBS[tool], { mode: 0o755 });
