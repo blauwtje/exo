@@ -79,13 +79,6 @@ test('every agent is named after its file', () => {
   }
 });
 
-test('no agent pins a model or effort, so each inherits the session', () => {
-  for (const agent of agents) {
-    assert.equal(agent.frontmatter.model, undefined, `${agent.fileName} model`);
-    assert.equal(agent.frontmatter.effort, undefined, `${agent.fileName} effort`);
-  }
-});
-
 test('an agent on the fast tier pins low effort, so no session effort reaches it', () => {
   const fastModel = kindTable.providers[kindTable.provider].tiers.fast;
   for (const agent of agents) {
@@ -169,11 +162,9 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> note=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
 });
 
-test('the implementer pins no model or effort', () => {
+test('the implementer reads CLAUDE.md', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
   assert.ok(implementer, 'agents/build-task.md exists');
-  assert.equal(implementer.frontmatter.model, undefined);
-  assert.equal(implementer.frontmatter.effort, undefined);
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 

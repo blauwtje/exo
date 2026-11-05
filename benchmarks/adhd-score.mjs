@@ -14,6 +14,7 @@ import { repoMetrics } from './adhd/metrics.mjs';
 import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
 import { intervalText } from './interval-text.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
+import { mean } from './basics.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CASES = path.join(import.meta.dirname, 'adhd', 'cases.jsonl');
@@ -51,7 +52,6 @@ export function selectCases(cases, { screen, caseIds }, saturated = readSaturate
   return cases.filter((c) => (!caseIds || caseIds.includes(c.id)) && !(screen && saturated.includes(c.id)));
 }
 
-const mean = (values) => values.reduce((sum, v) => sum + v, 0) / values.length;
 
 // why: `output_tokens` bills thinking too (a 20-word reply logged 186), so length is what the reader sees: each word or number and each punctuation mark counts 1. Local, deterministic, same counter for both arms.
 export const visibleTokens = (text) => (String(text).match(/[\p{L}\p{N}]+|[^\s\p{L}\p{N}]/gu) ?? []).length;

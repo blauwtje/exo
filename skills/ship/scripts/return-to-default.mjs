@@ -2,6 +2,7 @@
 
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { defaultBranch } from '#git';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
 const USAGE = 'usage: return-to-default.mjs [--merged <branch>]...';
@@ -21,12 +22,6 @@ function mainCheckout(dir) {
   const list = git(dir, ['worktree', 'list', '--porcelain']);
   const entry = list.ok ? list.text.split('\n').find((line) => line.startsWith('worktree ')) : undefined;
   return entry === undefined ? null : entry.slice('worktree '.length);
-}
-
-function defaultBranch(dir) {
-  const remote = git(dir, ['symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD']);
-  if (remote.ok) return remote.text.replace(/^origin\//, '');
-  return ['main', 'master'].find((name) => git(dir, ['rev-parse', '-q', '--verify', `refs/heads/${name}`]).ok) ?? null;
 }
 
 export function returnToDefault({ dir = process.cwd(), base = null, merged = [] } = {}) {

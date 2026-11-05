@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { benchmarkScripts, readScript } from './paid-benchmarks.mjs';
+import { benchmarkScripts, readScript } from './benchmark-entry-points.mjs';
 import { calibrationStatus, parseJsonl } from '../../lib/judge-agreement.mjs';
 
 const NAME = 'eval judges';

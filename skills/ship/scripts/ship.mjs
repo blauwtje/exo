@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { originDefaultBranch } from '#git';
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -65,15 +66,6 @@ function readFlags(argv) {
   return flags;
 }
 
-function defaultBranch() {
-  try {
-    const ref = execFileSync('git', ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    return ref.replace(/^origin\//, '');
-  } catch {
-    return null;
-  }
-}
-
 function currentBranch() {
   return execFileSync('git', ['branch', '--show-current'], { encoding: 'utf8' }).trim();
 }
@@ -122,7 +114,7 @@ function setRouteBlocked(onDefault, ghOk) {
 
 function unaskedLine() {
   if (settingValue('ship') !== 'ask' || !hasOrigin() || inRun()) return 'Unasked: none';
-  const base = defaultBranch();
+  const base = originDefaultBranch(process.cwd());
   const branch = currentBranch();
   return base !== null && branch !== '' && branch !== base ? 'Unasked: push' : 'Unasked: none';
 }
@@ -142,7 +134,7 @@ function printRouteMenu() {
     console.log('no origin remote; no route can run');
     return;
   }
-  const base = defaultBranch();
+  const base = originDefaultBranch(process.cwd());
   if (base === null) {
     if (setting === 'push') {
       console.log('route: push (set)');
@@ -175,7 +167,7 @@ function printMenu(menu, asked) {
 }
 
 function currentPatchId() {
-  const base = defaultBranch();
+  const base = originDefaultBranch(process.cwd());
   if (base === null) return null;
   const diff = execFileSync('git', ['diff', `origin/${base}...HEAD`], { encoding: 'utf8' });
   const patchId = execFileSync('git', ['patch-id', '--stable'], { encoding: 'utf8', input: diff });
@@ -317,7 +309,7 @@ function runMergeList(numbers) {
       exitCode = Math.max(exitCode, error.code === DIRTY_EXIT ? DIRTY_EXIT : 1);
     }
   }
-  if (merged.length > 0) console.log(returnToDefault({ base: defaultBranch(), merged }).line);
+  if (merged.length > 0) console.log(returnToDefault({ base: originDefaultBranch(process.cwd()), merged }).line);
   process.exitCode = exitCode;
 }
 
@@ -386,7 +378,7 @@ function main() {
   }
 
   const branch = currentBranch();
-  const base = defaultBranch();
+  const base = originDefaultBranch(process.cwd());
   if (flags.route !== 'push' && base !== null && branch === base) {
     console.error(`usage: ship.mjs: route '${flags.route}' refuses to run on the default branch '${base}'`);
     process.exitCode = USAGE_EXIT;

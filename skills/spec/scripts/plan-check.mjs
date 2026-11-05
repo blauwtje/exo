@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, defaultBase, defaultBranch, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBase, fenceAfter, frameOf, isCovered, landedTasks, loopCommands, openPoints, parallelValueValid, parsePlan, planIdOf, PlanError, taskSize } from '#plan-tasks';
 import { BYTES_PER_TOKEN, capHeadroomTokens, TASK_SPLIT_TOKENS } from '#context-limits';
 import { subjectProblem } from '#commit-text';
 import { dataLiterals, literalFinder, literalFragments } from '#data-literals';
@@ -11,6 +11,7 @@ import { derivedNames } from '#derivation';
 import { equalsLandGate } from '#land-gate';
 import { isEvidenceValue, WORDING_PATH } from '#evidence-rules';
 import { mcpToolCall } from '#mcp-tool-call';
+import { defaultBranch } from '#git';
 import { isTestPath } from '#red-green';
 import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { wholeSuiteKeys } from '#suite-command';
@@ -25,14 +26,6 @@ const TINY_TASK_TOKENS = 2000;
 const TINY_TASK_BYTES = TINY_TASK_TOKENS * BYTES_PER_TOKEN;
 const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
-
-// why: Markdown closes a fence only on a run of backticks at least as long as the one that opened it.
-function fenceAfter(line, open) {
-  const backticks = line.match(/^(`{3,})/);
-  if (backticks === null) return open;
-  if (open === 0) return backticks[1].length;
-  return backticks[1].length >= open ? 0 : open;
-}
 
 function stepsOf(section) {
   const steps = [];

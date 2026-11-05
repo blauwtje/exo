@@ -22,6 +22,7 @@ import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrator/
 import { installStub } from './agent-tier/task-runner/install-stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from './agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
+import { sum } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
@@ -53,7 +54,6 @@ Each cell records wilson95, the Wilson 95% interval of the share of its sessions
 --max-usd stops starting sessions once spent plus reserved estimates would pass the cap, writes the results so far and exits 1.
 Exit codes: 0 done, 1 sessions skipped by --max-usd or failed run, 2 usage error. Defaults: --tier quick, --concurrency 2, --runs 1.`;
 
-const sum = (values) => values.reduce((total, value) => total + value, 0);
 const labelOf = ({ model, effort }) => `${model}:${effort}`;
 const percent = (value) => (value === null ? 'n/a' : `${(value * 100).toFixed(1)}%`);
 const failed = (error) => ({ outcome: { error, durationMs: null } });

@@ -10,7 +10,7 @@ import { memoryOn } from '#memory-store';
 import { inSidecall, readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { pruneExo } from '#exo-prune';
-import { removeSavedOutputs } from '../lib/context-limits.mjs';
+import { removeSavedOutputs } from '../lib/saved-outputs.mjs';
 import { passUnmatchedGlobs } from '../lib/shell-fixes.mjs';
 import { environmentMs } from '../lib/script-flags.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';

@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { calibrationStatus, parseJsonl, statusLine, CALIBRATION_KAPPA_FLOOR, CALIBRATION_MIN_LABELS } from '../lib/judge-agreement.mjs';
 import { UsageError, isMain, parseFlags } from '../lib/script-flags.mjs';
+import { readJson } from './basics.mjs';
 
 export const ROOT = path.join(import.meta.dirname, '..');
 export const LABELS_DIR = path.join(import.meta.dirname, 'judge-labels');
@@ -55,7 +56,6 @@ export function calibrationLines(names, options = {}) {
   return graders.map((judge) => calibrationFor(judge, options).line);
 }
 
-const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const binary = (pass) => (pass ? 'PASS' : 'FAIL');
 
 function cellsUnder(directory) {

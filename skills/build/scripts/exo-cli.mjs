@@ -6,7 +6,8 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
+import { defaultBranch, gitLine } from '#git';
+import { frameOf, parsePlan } from '#plan-tasks';
 import { readPluginRoot } from '#plugin-pointer';
 import { readDecisions } from '#run-decision';
 import { environmentMs, isMain } from '#script-flags';
@@ -30,11 +31,6 @@ const watchCommand = (id) => `node "${CLI}" wait ${id}`;
 
 class Refusal extends Error {}
 
-function gitOut(root, args) {
-  const answer = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
-  return answer.status === 0 ? answer.stdout.trim() : null;
-}
-
 function newestPlan(root) {
   const plans = ['specs', 'plans'].flatMap((folder) => {
     let names = [];
@@ -56,8 +52,8 @@ function dirtyFiles(root) {
 }
 
 function putOnBranch(root, wanted) {
-  if (gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD']) === wanted) return;
-  const exists = gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
+  if (gitLine(root, ['symbolic-ref', '-q', '--short', 'HEAD']) === wanted) return;
+  const exists = gitLine(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
   let args = ['switch', wanted];
   if (!exists) {
     const base = defaultBranch(root);
@@ -73,7 +69,7 @@ function worktreeFor(root, wanted) {
   if (held?.main) throw new Refusal(`branch ${wanted} is checked out in the main checkout ${held.path}, which the loaded exo runs from; run git switch ${defaultBranch(root) ?? '<default branch>'} there first`);
   if (held !== undefined) return held.path;
   const where = path.join(root, '.worktrees', wanted.replaceAll('/', '-'));
-  const exists = gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
+  const exists = gitLine(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
   const base = defaultBranch(root);
   if (!exists && base === null) throw new Refusal(`branch ${wanted} is missing and the checkout has no default branch to create it from`);
   const args = exists ? ['worktree', 'add', where, wanted] : ['worktree', 'add', '-b', wanted, where, base];
@@ -314,7 +310,7 @@ async function buildRun(root, plan, flags, id) {
   const { branch, land } = planFrame(plan);
   const base = defaultBranch(root);
   const chores = base !== null && !flags.some((flag) => flag === '--dry-run' || flag === '--help');
-  const missing = branch !== null && gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${branch}`]) === null;
+  const missing = branch !== null && gitLine(root, ['rev-parse', '-q', '--verify', `refs/heads/${branch}`]) === null;
   if (chores) updateDefault(root, base, missing);
   const inTree = branch !== null && isPluginCheckout(root);
   let runRoot = root;
@@ -323,7 +319,7 @@ async function buildRun(root, plan, flags, id) {
     refuseLoadedCheckout(root, CLI);
     if (branch !== null) putOnBranch(root, branch);
   }
-  if (chores) cleanUp(root, base, [branch, gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
+  if (chores) cleanUp(root, base, [branch, gitLine(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
 
   const rootFlags = inTree ? ['--root', runRoot] : [];
   const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
@@ -376,8 +372,8 @@ function landStage(root, id, plan) {
 function branchRange(root, state) {
   const base = defaultBranch(root);
   if (!state.branch || base === null) return null;
-  const head = gitOut(state.runRoot ?? root, ['rev-parse', '-q', '--verify', `refs/heads/${state.branch}`]);
-  const fork = head === null ? null : gitOut(state.runRoot ?? root, ['merge-base', base, head]);
+  const head = gitLine(state.runRoot ?? root, ['rev-parse', '-q', '--verify', `refs/heads/${state.branch}`]);
+  const fork = head === null ? null : gitLine(state.runRoot ?? root, ['merge-base', base, head]);
   if (fork === null || fork === head) return null;
   return `${fork.slice(0, 7)}..${head.slice(0, 7)}`;
 }
@@ -427,7 +423,7 @@ function notify(id, phase) {
 }
 
 async function runCommand(argv, { approving = false } = {}) {
-  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  const root = gitLine(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const options = runOptions(argv);
   let { detach } = options;
@@ -548,7 +544,7 @@ async function runCommand(argv, { approving = false } = {}) {
 }
 
 async function approveCommand(args) {
-  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  const root = gitLine(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const id = args[0];
   if (id === undefined || args.length !== 1) throw new Refusal('usage: exo approve <id>');
@@ -565,7 +561,7 @@ function phaseText(state) {
 }
 
 function statusCommand(args) {
-  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  const root = gitLine(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const runs = args[0] === undefined ? listRuns(root) : [readState(root, args[0])].filter(Boolean);
   if (runs.length === 0) throw new Refusal(args[0] === undefined ? 'no runs in this checkout' : `no run ${args[0]} in this checkout`);
@@ -602,7 +598,7 @@ function finishWait(state, id, dir) {
 }
 
 async function waitCommand(args) {
-  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  const root = gitLine(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const id = args[0];
   if (id === undefined || args.length !== 1) throw new Refusal('usage: exo wait <id>');

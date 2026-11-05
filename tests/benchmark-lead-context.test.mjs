@@ -4,7 +4,7 @@ import nodeFs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { contextSeries } from '#context-limits';
+import { contextSeries } from '#context-decisions';
 import { fixture, run } from './harness.mjs';
 
 const limitHome = nodeFs.mkdtempSync(path.join(os.tmpdir(), 'exo-lead-home-'));

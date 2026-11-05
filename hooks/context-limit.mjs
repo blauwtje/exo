@@ -2,7 +2,7 @@
 
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { contextDecision, contextFields, persistedReadDecision, readCapDecision, searchCapDecision } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields, persistedReadDecision, readCapDecision, searchCapDecision } from '../lib/context-decisions.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingValue } from '../lib/settings-store.mjs';

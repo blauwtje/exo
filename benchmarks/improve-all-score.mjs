@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags } from '#script-flags';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { scoreOutDir } from './improve-speed.mjs';
+import { readJson, mean, sum } from './basics.mjs';
 
 const USAGE = 'Usage: node benchmarks/improve-all-score.mjs [--full] [--dry-run] [--serial] [--from-replay <runs dir>] [--from-build <out dir>]';
 const MAIN = { rounds: 1.857, verifyCost: 4.6, buildWall: 294.9487, buildCost: 0.95046258 };
@@ -27,9 +28,6 @@ const ABORTED_REASONS = new Set(['timed out', 'exit code not 0']);
 const SAMPLE_KEYS = { rounds: 'rounds', 'verify-cost': 'verifyCost', 'build-wall': 'buildWall', 'build-cost': 'buildCost' };
 const OUT_LINE = /^out (.+)$/m;
 
-const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
-const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
-const sum = (values) => values.reduce((total, value) => total + value, 0);
 
 class GateFailure extends Error {}
 

@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './tasks.mjs';
+import { mean } from './basics.mjs';
 
 export function stockStorePath(root = ROOT) {
   const common = execFileSync('git', ['-C', root, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim();
@@ -33,7 +34,6 @@ export function writeStock(file, fresh) {
   fs.writeFileSync(file, `${JSON.stringify(mergeStock(readStock(file), fresh), null, 2)}\n`);
 }
 
-const mean = (numbers) => numbers.reduce((sum, number) => sum + number, 0) / numbers.length;
 
 export function quickStock({ rows, tasks, model, claudeVersion }) {
   const missing = tasks.filter((task) => !rows.some((row) => row.task === task && row.model === model));

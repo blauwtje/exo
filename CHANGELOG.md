@@ -53,6 +53,12 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:improve` keeps a commit only when its gain clears the score's noise: it scores a candidate up to 3 times and keeps it when the 95% CI of the gain sits above 0, or when it shrinks the code with a mean gain of at least 0 after 3 runs (`defaults.improve` in `lib/run-providers.json`); every benchmark scorer prints each mean with its standard error and CI from the new `lib/eval-stats.mjs`, counts an aborted or errored run as a failure, and each paid benchmark has `--dry-run` and a quick default tier, so a bare `node benchmarks/run.mjs` runs the $1 quick tier; `npm run check` fails a scorer or paid entry point that reaches no variance gate, and `docs/principles/eval.md` holds the statistical eval checklist.
 - A subagent is bound by `defaults.agentContextTarget` (60k) while it runs, not by the lead's `contextLimit`: a note at 75% of the target, new reads, searches, fetches, skills and agents refused at the target, and every tool except Write and Edit refused at 125% of it, with a `Status: handover` result file in the refusal. The lead's `contextLimit` is unchanged.
 
+- The 16 identical agent-tier value checkers share `build-check.mjs` and `solve-check.mjs`, and benchmark scripts import `sum`, `mean` and `readJson` from `statistics.mjs`.
+- The paid-benchmarks, eval-variance and eval-power checks run as one `benchmark-entry-points.mjs` check that scans `benchmarks/` once and keeps the three names in its output.
+- `lib/context-limits.mjs` holds only limit values; transcript decisions move to `lib/context-decisions.mjs` and saved-output helpers to `lib/saved-outputs.mjs`, so `session-start.mjs` loads 737 lines instead of 1211.
+- `lib/git.mjs` holds the shared git line helper and default-branch lookups, and `plan-check.mjs` imports `fenceAfter` from `lib/plan-tasks.mjs`.
+- The hook-size, hook-cost, hook-latency, injected-context and session-load checks run from one `hook-budgets.mjs` module and keep their names in the check output.
+
 ### Fixed
 - The Agent brief check reads fields that share a line, list or bold labels, a number with a note, `~/` paths and the `Worktree:` base, its denials quote the label found and name the `Worktree:` line, the qualifier forms and the label that set the model, and the worker templates show `Reads:` and `Worktree:` lines (replay denials: 7 days 49 to 48, 30 days 60 to 58; every other denied row checked and found true).
 - `spec` starts its `locate-code`, `fetch-docs` and `find-open-points` agents in the background and waits for their completion notifications, instead of passing `run_in_background: false` (311 of 2491 such launches in 30 days came from this text).
@@ -79,6 +85,11 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:improve` ends a round as `timeout` with no score when a score run passes the time limit. Before, the killed run counted as an aborted run and was rerun, so a later run could still keep the commit.
 - The pre-dispatch Read gate lets an orchestrator read the handover template, and its cap of `orchestratorPredispatchReads` grows by the brief's `Reads:` paths plus the template, so the template read and the brief's own files no longer use up the cap.
 - A worker brief's `Reads:` line treats text in parentheses as prose, so a note such as `(not hooks/agents)` no longer rejects the brief, while a wrong path outside parentheses is still refused.
+
+### Removed
+- Unused scripts `strip-comments.mjs`, `verify/phrase-overlap.mjs` with its `overlap` npm script, `lib/prose-density.mjs`, `lib/session-record-path.mjs`, `lib/page-chrome.mjs`, `benchmarks/map-spike.mjs`, `benchmarks/demo/setup.mjs` and `benchmarks/split.mjs`.
+- The `context-peaks.mjs` peak CLI, `lib/agent-launch.mjs` and the peak summary exports only their tests used.
+- The subagent-start check, which guarded a hook that no longer exists.
 
 ## 0.138.0 - 2026-11-02
 

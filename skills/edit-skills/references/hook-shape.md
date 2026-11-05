@@ -9,8 +9,8 @@ Hook text and code run on every matching event, so each hook pays for itself in 
 - Pin `"shell": "bash"` in each entry, because a Windows host without Git Bash falls back to PowerShell. Keep the command in shell form, not `args`, so the harness resolves the shell.
 - Start each command path with `${CLAUDE_PLUGIN_ROOT}`.
 - Write hook code in Node without `jq`. `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
-- `verify/checks/hook-size.mjs` locks hook code size (`HOOK_LINES_LOCK` in `verify/budgets.mjs`). Growth fails, and a raise is a hand edit in the commit that pays for it.
-- `verify/checks/hook-latency.mjs` locks spawn time (`HOOK_SPAWN_MS_LOCK`). It fails when the median of seven `dispatch-bash.mjs` spawns runs above it, so keep imports lazy and avoid reads on the hook path.
+- `verify/checks/hook-budgets.mjs` locks hook code size (`HOOK_LINES_LOCK` in `verify/budgets.mjs`). Growth fails, and a raise is a hand edit in the commit that pays for it.
+- `verify/checks/hook-budgets.mjs` locks spawn time (`HOOK_SPAWN_MS_LOCK`). It fails when the median of seven `dispatch-bash.mjs` spawns runs above it, so keep imports lazy and avoid reads on the hook path.
 
 ## Output
 

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mannWhitney } from './statistics.mjs';
+import { mean } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const POOL = path.join(ROOT, 'benchmarks', 'baseline-pool.jsonl');
@@ -53,7 +54,6 @@ export function parseRows(text, arm) {
   return rows;
 }
 
-const mean = (values) => values.reduce((sum, v) => sum + v, 0) / values.length;
 const column = (rows, name) => rows.map((row) => row[name]);
 
 export function replayRounds(rounds = ROUNDS, root = ROOT) {

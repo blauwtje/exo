@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { checkHookCost, hookEntryCount, reasonBytes } from '../verify/checks/hook-cost.mjs';
+import { checkHookCost, hookEntryCount, reasonBytes } from '../verify/checks/hook-budgets.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const repository = { join: (...parts) => path.join(REPOSITORY, ...parts) };

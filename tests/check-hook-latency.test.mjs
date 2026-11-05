@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { HOOK_SPAWN_MS_LOCK } from '../verify/budgets.mjs';
-import { checkHookLatency } from '../verify/checks/hook-latency.mjs';
+import { checkHookLatency } from '../verify/checks/hook-budgets.mjs';
 import { createRepository } from '../verify/repository.mjs';
 
 function runCheck(dispatcher) {

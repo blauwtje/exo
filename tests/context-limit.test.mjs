@@ -5,7 +5,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
-import { agentContextTarget, contextDecision, contextLimit, readCapDecision, softLimit } from '../lib/context-limits.mjs';
+import { agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
+import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
@@ -111,7 +112,7 @@ test('Bash and Edit dispatchers give the interactive main session no context not
 });
 
 test('main session Read of a whole persisted tool output is denied; a range or another file passes', async () => {
-  const { persistedReadDecision } = await import('../lib/context-limits.mjs');
+  const { persistedReadDecision } = await import('../lib/context-decisions.mjs');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-persisted-'));
   const transcript_path = path.join(dir, 'session.jsonl');
   const persisted = path.join(dir, 'session', 'tool-results', 'b123.txt');
@@ -209,7 +210,7 @@ test('an Edit by a subagent past its hard limit passes the edit dispatcher', () 
 });
 
 test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {
-  const { hookAgentType } = await import('../lib/context-limits.mjs');
+  const { hookAgentType } = await import('../lib/context-decisions.mjs');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-type-'));
   const transcript_path = path.join(dir, 'session.jsonl');
   const subagents = path.join(dir, 'session', 'subagents');

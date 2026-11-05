@@ -2,7 +2,7 @@
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { impactFields } from '../lib/edit-impact.mjs';
-import { contextDecision, contextFields } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields } from '../lib/context-decisions.mjs';
 import { shellStopFields } from '../lib/live-shells.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';

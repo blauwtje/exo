@@ -6,7 +6,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { MIN_GRADUATION_RUNS, graduationCandidates, graduationReport, runFreeSuites } from '../benchmarks/suites.mjs';
-import { withoutVarianceGate } from '../verify/checks/eval-variance.mjs';
+import { withoutVarianceGate } from '../verify/checks/benchmark-entry-points.mjs';
 import { checkEvalSuites, manifestProblems, suiteFiles } from '../verify/checks/eval-suites.mjs';
 import { createRepository } from '../verify/repository.mjs';
 

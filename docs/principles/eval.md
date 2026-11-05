@@ -7,13 +7,13 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Start with 20-50 tasks from real failures.** [1] exo: `verify/checks/eval-real-failures.mjs`
 - **Write unambiguous tasks with reference solutions.** [1] exo: `tests/benchmark-value.test.mjs`
 - **Run several trials per task in a clean environment; use pass^k when consistency matters.** [1][3] exo: `benchmarks/run.mjs` `--runs`
-- **Report the SEM and a 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`, `clusteredMeanCi`
-- **Compare to the baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
-- **Compute the task count before a paid run.** [3] exo: `lib/eval-stats.mjs` `powerLine`; `verify/checks/eval-power.mjs`
-- **Treat gaps under 3 points as noise until configs match.** [4] exo: `verify/checks/eval-variance.mjs`
+- **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`, `clusteredMeanCi`
+- **Compare to baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
+- **Compute task count before a paid run.** [3] exo: `lib/eval-stats.mjs` `powerLine`; `verify/checks/benchmark-entry-points.mjs`
+- **Treat gaps under 3 points as noise until configs match.** [4] exo: `verify/checks/benchmark-entry-points.mjs`
 - **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default.** [4][7] exo: `skills/improve/scripts/round.mjs` `timedOut`
-- **Fix the random seed.** [6] exo: `skills/improve/scripts/round.mjs` `scoreEnv`
-- **Change one thing per round; at equal score keep the simpler code.** [6][7] exo: `skills/improve/scripts/round.mjs` `not-one-commit`, `judgeKeep`
+- **Fix the seed.** [6] exo: `skills/improve/scripts/round.mjs` `scoreEnv`
+- **Change one thing per round; at equal score keep simpler code.** [6][7] exo: `skills/improve/scripts/round.mjs` `not-one-commit`, `judgeKeep`
 - **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: `tests/benchmark-value.test.mjs`
 - **Read transcripts and outputs before trusting a score change.** [1][5][6][7] exo: `benchmarks/README.md` `--transcripts`
 - **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/test-design.md`

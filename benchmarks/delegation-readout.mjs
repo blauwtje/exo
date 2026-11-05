@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { findTranscript } from './cell-usage.mjs';
-import { contextSeries } from '#context-limits';
+import { contextSeries } from '#context-decisions';
 import { UsageError, isMain, parseFlags } from '#script-flags';
 
 const USAGE = `usage: node benchmarks/delegation-readout.mjs --check <out dir> [--run] [--dry-run]

@@ -4,8 +4,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { CLASSES, FREE_SUITE_TIMEOUT_MS, MANIFEST_FILE, TIERS, freeRegressionSuites, readManifest, suitesOf } from '../../benchmarks/suites.mjs';
-import { isScorer } from './eval-variance.mjs';
-import { benchmarkScripts, EXEMPT_HELPERS, isPaidEntry, readScript } from './paid-benchmarks.mjs';
+import { isScorer } from './benchmark-entry-points.mjs';
+import { benchmarkScripts, EXEMPT_HELPERS, isPaidEntry, readScript } from './benchmark-entry-points.mjs';
 
 const NAME = 'eval suites';
 const RUN_NAME = 'eval suites free regression';

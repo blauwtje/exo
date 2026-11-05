@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { meanCi } from '../lib/eval-stats.mjs';
 import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
+import { readJson } from './basics.mjs';
 
 const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost'];
 const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>]';
@@ -18,7 +19,6 @@ const UNRECORDED_VERSION = 'unrecorded';
 const POOL_SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'baseline-pool.mjs');
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const DECIMALS = { cost: 3 };
 const mean = (values, decimals = 2) => {
   const scale = 10 ** decimals;

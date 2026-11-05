@@ -130,7 +130,6 @@ node benchmarks/sweep.mjs --set flow --repeat 3          # --repeat applies to e
 node benchmarks/sweep.mjs --set flow --cells flow-unit --confirm --keep-repo <dir>   # copies each measured cell's repo, .exo/ and origin.git to <dir>/<cell dir>/ as a checkpoint; refused with the replay set
 node benchmarks/sweep.mjs --set build --provider deepseek --effort low,high,max   # each chosen cell once per effort on that provider of run.json, with its model and key; ids end in -<provider>-<effort>
 node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against the baseline (flow-base) over the flow records of one out dir per run
-node benchmarks/split.mjs <runDir>...                  # flow cells by token type, call count and context size, averaged over the run dirs
 ```
 
 Build-speed ideas that did not land, and why, are in [speed-ledger.md](speed-ledger.md); read it before trying one again. The source is `speed-ledger.jsonl`; after editing it run `node benchmarks/speed-ledger.mjs --render`, and `node verify.mjs` fails while the markdown is stale or a line is invalid.
@@ -167,11 +166,7 @@ Each of these prints its plan and spends nothing under `--dry-run`, runs a small
 | `node benchmarks/pressure/drive.mjs <scenario> <model> <arm> [maxTurns]` | 2 turns | 99 turns; an explicit `maxTurns` overrides the tier |
 | `node benchmarks/replay/grade.mjs <cellDir\|runDir>` | the first 3 cells, 1 judge vote each | every cell, 3 judge votes each; `--dry-run` prints the judge calls and the `calls x JUDGE_BUDGET_USD` upper bound |
 
-`verify/checks/paid-benchmarks.mjs` scans `benchmarks/` and its subfolders (not `fixtures`, `results`, `runs`, `value`) for an entry point that calls `claude -p`, the API or `confinedClaude`, and flags one that lacks `--dry-run` or a quick default tier (the quick tier runs without a tier flag; a word in a comment does not count). `benchmarks/confined-child.mjs` is exempt because its callers `run.mjs` and `sweep.mjs` both have both guards; the check prints that reason.
-
-`verify/checks/eval-variance.mjs` flags a paid entry point or a scorer (`score.mjs` or a name ending `-score`, `-stats`, `-report`, `-readout`, `-metrics`, `-summary`) that does not reach `benchmarks/statistics.mjs` or `lib/eval-stats.mjs` through its static relative and `#alias` imports, and prints `NO-VARIANCE <file>`.
-
-`verify/checks/eval-power.mjs` flags a paid entry point whose `--dry-run` cannot reach `powerLine` from `lib/eval-stats.mjs` and prints `NO-POWER <file>`.
+`verify/checks/benchmark-entry-points.mjs` scans `benchmarks/` and its subfolders (not `fixtures`, `results`, `runs`, `value`) for an entry point that calls `claude -p`, the API or `confinedClaude`, and flags one that lacks `--dry-run` or a quick default tier (the quick tier runs without a tier flag; a word in a comment does not count). `benchmarks/confined-child.mjs` is exempt because its callers `run.mjs` and `sweep.mjs` both have both guards; the check prints that reason.
 
 ## Power line
 

@@ -28,7 +28,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
 export const INJECTED_CONTEXT_LOCK = { bytes: 3946, measured: '2026-11-04' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
-// and session start; verify/checks/hook-size.mjs fails above it.
+// and session start; verify/checks/hook-budgets.mjs fails above it.
 // Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.
 export const HOOK_LINES_LOCK = { lines: 1098, measured: '2026-11-05' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
@@ -39,7 +39,7 @@ export const HOOK_SPAWN_MS_LOCK = { ms: 75, measured: '2026-10-29' };
 export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Words every session loads before the first prompt: the session-start output,
 // each model-invocable skill's name and description, each agent's name and
-// description; verify/checks/session-load.mjs fails above it.
+// description; verify/checks/hook-budgets.mjs fails above it.
 // Lowered 909 -> 635 in the round 2 merge: dispatch-only rules moved to the Agent hook, compression rule
 // text became the opt-in exo:short style, agent descriptions shortened; done-rule clauses added words back.
 // Raised 636 -> 667 with the TaskStop rule line.
@@ -48,7 +48,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 export const SESSION_LOAD_LOCK = { words: 1370, measured: '2026-11-03' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
-// verify/checks/session-load.mjs fails above it.
+// verify/checks/hook-budgets.mjs fails above it.
 // Lowered 3011 -> 1719 in the round 2 merge: dispatch-only rules delivered at the first Agent call, compression
 // off by default so no rule text rides the settings line; done-rule clauses added bytes back.
 // Raised 1719 -> 1739 with the proof-rule split above.
@@ -111,4 +111,3 @@ export const PRINCIPLE_PAGE_TOKENS = 800;
 export const PRINCIPLE_INDEX_TOKENS = 300;
 
 export const SCRIPT_OUTPUT_EXEMPT = ['skills/build/scripts/remove-worktree.mjs', 'skills/build/scripts/wait-report.mjs'];
-export const SUBAGENT_START_BYTES_LOCK = { bytes: 0, measured: '2026-11-04' };

@@ -10,7 +10,8 @@ import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
 import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
-import { defaultBranch, driftOf, frameOf, INPUT_UNREADABLE, inputPaths, isInputDrift, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { defaultBranch } from '#git';
+import { driftOf, frameOf, INPUT_UNREADABLE, inputPaths, isInputDrift, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 const SMALL_TASK_FILES = 2;
 
