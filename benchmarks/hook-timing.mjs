@@ -29,6 +29,12 @@ export const CASES = [
     script: 'agent-effort.mjs',
     without: AGENT_BASE,
     with: { ...AGENT_BASE, agent_id: 'timing-orchestrator', agent_type: 'orchestrator' }
+  },
+  {
+    name: 'worker count read',
+    script: 'dispatch-bash.mjs',
+    without: BASH_BASE,
+    with: { ...BASH_BASE, agent_id: 'timing-orchestrator', agent_type: 'orchestrator' }
   }
 ];
 

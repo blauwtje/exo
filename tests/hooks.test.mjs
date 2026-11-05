@@ -60,8 +60,8 @@ test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script'
   for (const { hook } of entries) assert.ok(hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/run-no-wait.mjs"'), hook.command);
 });
 
-test('only SessionStart, SessionEnd, PreToolUse and Stop have hooks, and the prompt dispatcher is gone', () => {
-  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop']);
+test('only SessionStart, SessionEnd, SubagentStop, PreToolUse and Stop have hooks, and the prompt dispatcher is gone', () => {
+  assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'Stop', 'SubagentStop']);
   for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs']) {
     assert.equal(fs.existsSync(path.join(REPOSITORY, file)), false, file);
   }
@@ -109,9 +109,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.ok(entry.hook.command.endsWith('; node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"'), entry.hook.command);
 });
 
-test('the plugin registers eight hook commands, each under bash', () => {
+test('the plugin registers nine hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 8, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 9, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
@@ -546,6 +546,25 @@ test('a capped agent Bash output is cut at the result cap and keeps the exit cod
   assert.equal((await cappedRun('echo hi; exit 7')).status, 7);
   assert.equal((await cappedRun('exit 3')).status, 3);
   assert.match((await cappedRun('echo hi')).stdout, /hi\n$/);
+});
+
+test('the SubagentStop hook removes the saved Bash outputs of the finished agent only', async () => {
+  const finished = `stop-agent-${process.pid}`;
+  const other = `stop-other-${process.pid}`;
+  const logOf = async (agent) => {
+    const { stdout } = await cappedRun(BIG_OUTPUT, { agent_id: agent });
+    return /full log: (.+)\]/.exec(stdout)[1];
+  };
+  const [first, second, kept] = [await logOf(finished), await logOf(finished), await logOf(other)];
+  assert.ok([first, second, kept].every((file) => fs.existsSync(file)));
+  const hook = HOOKS.SubagentStop[0].hooks[0];
+  assert.match(hook.command, /hooks\/agent-stop\.mjs"$/);
+  const run = spawnSync('node', [path.join(REPOSITORY, 'hooks', 'agent-stop.mjs')], { input: JSON.stringify({ hook_event_name: 'SubagentStop', agent_id: finished }), encoding: 'utf8' });
+  assert.equal(run.status, 0);
+  assert.equal(fs.existsSync(first), false);
+  assert.equal(fs.existsSync(second), false);
+  assert.equal(fs.existsSync(kept), true);
+  fs.rmSync(kept, { force: true });
 });
 
 test('a capped agent Bash keeps a timeout and skips background, trailing backslash, other modes and other types', async () => {

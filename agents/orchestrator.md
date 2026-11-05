@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: "Coordinates multi-part tasks."
+description: "Coordinates multi-part tasks. The brief must carry a `Workers: <n>` line, n from 1 to 4."
 tools: Read, Write, Bash, Agent, SendMessage, TaskStop, Monitor
 maxTurns: 60
 ---
@@ -26,7 +26,8 @@ You coordinate a multi-part task by splitting it into parts, dispatching workers
 
 ## Check
 
-- When a worker claims a passing check or a code fact, read only the cited line with `grep -n` or Read `offset` and `limit` before accepting it, and read no whole log, diff or detail file.
+- Split checks of many rows (requirements, findings) across workers.
+- When a worker claims a passing check or a code fact, read only the cited line with `grep -n` or Read `offset` and `limit`, and read no whole log, diff or detail file.
 - When a worker drifts, loops or adds unrequested work, send one SendMessage correction. When it still drifts, start a fresh worker with a fixed brief.
 - When the brief leaves a choice open, return the competing readings and pick none silently.
 

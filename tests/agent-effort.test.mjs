@@ -8,6 +8,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { agentEffort, agentHook } from '../hooks/agent-effort.mjs';
 import { dispatchMarker, readDispatchRules } from '../hooks/dispatch-rules.mjs';
+import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
 import { SCHEMA } from '../lib/settings-store.mjs';
 
@@ -258,6 +259,8 @@ test('worker size: an orchestrator dispatch needs Reads and Result and stays in 
   assert.equal(run('exo:orchestrator', 'do it'), 'deny');
   assert.equal(run('exo:orchestrator', 'Reads: big.txt\nResult: .exo/r.md'), 'deny');
   assert.equal(run('exo:orchestrator', 'Reads: none\nResult: .exo/r.md'), 'allow');
+  assert.equal(run('exo:orchestrator', 'Reads: none'), 'deny');
+  assert.equal(run('exo:orchestrator', 'Reads: none\nResult: out.txt'), 'deny');
   assert.equal(run(undefined, 'do it'), 'deny');
   assert.equal(run(undefined, 'Reads: none'), 'allow');
   assert.equal(run(undefined, 'Reads: big.txt'), 'deny');
@@ -277,6 +280,7 @@ test('worker size: a refusal names unresolved paths, invalid Fetches, the larges
   assert.match(reason('general-purpose', 'Reads: nope.txt\nResult: .exo/r.md'), /nope\.txt/);
   assert.match(reason('exo:fetch-docs', 'Reads: none\nFetches: many'), /Fetches/);
   assert.match(reason('general-purpose', 'Reads: big.txt\nResult: .exo/r.md'), /Largest reads: big\.txt \(\d+\).*path or line range/);
+  assert.match(reason('general-purpose', 'Reads: none'), /lacks Result\b.*`Result:` line naming one `\.exo\/<\.\.\.>\.md` file/);
   const fetchReason = reason('exo:fetch-docs', 'Reads: none\nFetches: 19');
   assert.match(fetchReason, /Fetches/);
   assert.doesNotMatch(fetchReason, /Result/);
@@ -290,4 +294,11 @@ test('worker size: an exo:orchestrator dispatch from a non-orchestrator needs Wo
   assert.equal(run(undefined, 'do it').permissionDecision, 'deny');
   assert.equal(run(undefined, 'Workers: 0').permissionDecision, 'deny');
   assert.notEqual(run('exo:orchestrator', 'do it')?.permissionDecision, 'deny');
+});
+
+test('the orchestrator description tells the lead the Workers line and its limit before the first dispatch', () => {
+  const agent = fs.readFileSync(new URL('../agents/orchestrator.md', import.meta.url), 'utf8');
+  const description = /^description: (.+)$/m.exec(agent)[1];
+  assert.match(description, /`Workers: <n>`/);
+  assert.match(description, new RegExp(`n from 1 to ${orchestratorWorkers()}\\b`));
 });

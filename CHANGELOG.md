@@ -10,6 +10,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- The hook timing benchmark has a `worker count read` case that times the orchestrator Bash step reading the slice file.
+- A `SubagentStop` hook, `hooks/agent-stop.mjs`, deletes the per-call Bash temp logs of the agent that finished.
 - Agent context is budgeted before dispatch: a worker brief carries `Reads:`, optional `Fetches: <n>` (1600 tokens per page, measured at WebFetch p90 1549, n=4999) and `Result:`, and `hooks/agent-effort.mjs` refuses an orchestrator worker whose estimated reads pass half of `defaults.agentContextTarget` (60000), naming its three largest reads.
 - An orchestrator runs one slice of at most `defaults.orchestratorWorkers` (4) dispatches, declared by a `Workers: <n>` line; the Agent hook refuses a missing line, n over the limit and call n+1.
 - `skills/gate/scripts/context-peaks.mjs` reports peak context per agent type and the U1-U8 verdicts that prove or retire each unmeasured default.
@@ -19,6 +21,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:watch` also reads TikTok, Instagram Reels, Facebook, X and other yt-dlp sites, and transcribes a video with no captions locally: yt-dlp fetches its audio, ffmpeg converts it, and whisper.cpp (`whisper-cli` with `--model`) or openai-whisper writes the transcript; a missing tool stops that video with an install hint, and nothing is installed
 
 ### Changed
+- The `exo:orchestrator` description tells the lead that its brief needs a `Workers: <n>` line with n from 1 to 4, so the first dispatch is no longer blocked and resent; the hook still refuses a missing line and n over the limit.
 - An orchestrator does no work before its first dispatch: its Bash is refused until then, so discovery goes to a `lookup` worker. `sleep` in command position is refused for the orchestrator and task-runner, which end their turn and wait for the notification.
 - Read and Bash results of capped subagent types are cut at `defaults.resultCapBytes` (4096 B) and `orchestratorResultCapBytes` (2048 B), with full Bash output kept in a per-call temp log; the lead, build-task and task-runner stay uncapped.
 - A subagent Bash command over `defaults.scriptBytes` (4096 B) is refused; the orchestrator runs at `high` effort instead of `xhigh`; Grep and Glob are dropped from six agents that never called them.
@@ -34,6 +37,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:improve` keeps a commit only when its gain clears the score's noise: it scores a candidate up to 3 times and keeps it when the 95% CI of the gain sits above 0, or when it shrinks the code with a mean gain of at least 0 after 3 runs (`defaults.improve` in `lib/run-providers.json`); every benchmark scorer prints each mean with its standard error and CI from the new `lib/eval-stats.mjs`, counts an aborted or errored run as a failure, and each paid benchmark has `--dry-run` and a quick default tier, so a bare `node benchmarks/run.mjs` runs the $1 quick tier; `npm run check` fails a scorer or paid entry point that reaches no variance gate, and `docs/principles/eval.md` holds the statistical eval checklist.
 
 ### Fixed
+- The worker-size test asserts again that an orchestrator brief with no `Result:` line, or one outside `.exo/`, is refused and that the refusal names `Result:`.
+- An orchestrator no longer spends its context before its first worker runs: until its first dispatch the Read hook refuses a Read outside its brief's `Reads:` paths and any Read past `defaults.orchestratorPredispatchReads` (4), as Bash already was, and its prompt gives the verification of many rows to workers split across them.
 - The status line's `ctx <used>/<window>` part now shows the window Claude Code compacts at: `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, else `autoCompactWindow` from the settings files, capped at the model's `context_window_size`, instead of the model's full window (1M for Opus 5.5).
 - The user's own session gets no exo context-limit note at any size, and its hook no longer reads the transcript for it; subagents and headless run sessions keep their limits. The `T5 at the soft limit` dispatch rule is gone, so the later triggers are now T5 and T6.
 - A `task-runner` dispatch lands only the lead's block: `next-task.mjs` and `land-slot.mjs` take `--only <n,m,...>`, and slot refills stay inside that set, so one runner no longer refills from the whole plan and grows past 120k tokens. The lead sends exactly the `Block:` tasks and keeps the gate for itself.

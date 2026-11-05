@@ -19,3 +19,10 @@ test('verdict is DISCARD when any extra reaches the limit', () => {
 test('each case spawns its hook and returns a number', () => {
   for (const timing of CASES) assert.equal(Number.isFinite(timeCase(timing, 3)), true);
 });
+
+test('a case times the worker-count file read by the orchestrator Bash step', () => {
+  const timing = CASES.find((entry) => entry.name === 'worker count read');
+  assert.equal(timing.script, 'dispatch-bash.mjs');
+  assert.equal(timing.with.agent_type, 'orchestrator');
+  assert.equal(timing.without.agent_id, undefined);
+});

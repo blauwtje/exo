@@ -4,20 +4,22 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { contextDecision, contextFields, hookAgentType, resultCapFor, scriptBytes } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields, hookAgentType, resultCapFor, savedOutputPrefix, scriptBytes } from '../lib/context-limits.mjs';
 import { sharesGitState } from '../lib/git-deny.mjs';
 import { fixShell } from '../lib/shell-fixes.mjs';
-import { sliceCount } from '../lib/slice-state.mjs';
+import { predispatchDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';
 
-export const CONTEXT_STEP = {
-  name: 'context-limit',
+const contextStep = (name, decide) => ({
+  name,
   run(hookInput) {
-    const fields = contextFields(contextDecision(hookInput));
+    const fields = contextFields(decide(hookInput));
     return fields && { hookSpecificOutput: fields };
   }
-};
+});
+
+export const CONTEXT_STEP = contextStep('context-limit', contextDecision);
 
 const WIDE_FIND = /(?:^|[;&|(]|&&|\|\|)\s*find\s+(?:-[HLP]\s+)*["']?(?:\/|~\/?|\$HOME|\$\{HOME\}|(?:\.\.\/?)+)["']?(?=\s|$)/;
 
@@ -50,13 +52,7 @@ export const SCRIPT_SIZE_STEP = {
   }
 };
 
-export const PREDISPATCH_STEP = {
-  name: 'predispatch',
-  run(hookInput) {
-    if (!hookInput.agent_id || hookAgentType(hookInput) !== 'orchestrator' || sliceCount(hookInput.agent_id) > 0) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'An orchestrator runs no Bash before its first dispatch. Send discovery and code reading to a lookup worker.' } };
-  }
-};
+export const PREDISPATCH_STEP = contextStep('predispatch', (hookInput) => predispatchDecision({ ...hookInput, tool_name: 'Bash' }));
 
 const SLEEP_COMMAND = /(?:^|[;&|({\n]|\b(?:do|then|else)\b)\s*sleep(?=\s|$)/;
 const SLEEP_AGENTS = new Set(['orchestrator', 'task-runner']);
@@ -93,7 +89,7 @@ export const RESULT_CAP_STEP = {
     if (!cap || !CAPPED_MODES.has(hookInput.permission_mode) || typeof toolInput?.command !== 'string') return null;
     if (toolInput.run_in_background || toolInput.command.endsWith('\\')) return null;
     const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShell(toolInput);
-    const log = path.join(os.tmpdir(), `exo-bash-${hookInput.agent_id}-${hookInput.tool_use_id ?? process.pid}.log`);
+    const log = path.join(os.tmpdir(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
     const command = cappedCommand((fixed ?? toolInput).command, cap, log);
     return { hookSpecificOutput: { updatedInput: { ...toolInput, command } } };
   }
