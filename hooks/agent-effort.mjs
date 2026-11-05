@@ -147,6 +147,7 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = se
 }
 
 const SHOWN_CANDIDATES = 5;
+const READS_GRAMMAR = 'Write `Reads:` as items split by `,` or `;`, each a path, optionally followed by `lines N-M` or `by grep`, or `Reads: none`; an item that does not start with a path is prose and is not read.';
 
 function unresolvedReason(unresolved, ambiguous, searched = []) {
   const several = ambiguous.map(({ name, matches }) => `${name} matches ${matches.slice(0, SHOWN_CANDIDATES).join(', ')}`);
@@ -155,7 +156,7 @@ function unresolvedReason(unresolved, ambiguous, searched = []) {
     several.length && `names that match several tracked files, so give the full path: ${several.join('; ')}`,
     missing.length && `paths that do not exist: ${missing.join(', ')} (searched ${searched.join(', ') || 'the working directory'}; name a pasted image by its full path)`,
   ].filter(Boolean);
-  return `This worker brief reads ${parts.join('. It also reads ')}. Expected: \`Reads: a.md, lib/b.mjs\` or \`Reads: none\`.`;
+  return `This worker brief reads ${parts.join('. It also reads ')}. ${READS_GRAMMAR}`;
 }
 
 function sizeReason(size, { missing, fetchDocs, ambiguous }) {
@@ -165,7 +166,7 @@ function sizeReason(size, { missing, fetchDocs, ambiguous }) {
   if (missing.length) return `This worker brief lacks ${missing.join(' and ')}. Add a \`Reads:\` line of paths or \`none\` and a \`Result:\` line naming one \`.exo/<...>.md\` file.`;
   const estimate = `This worker brief reads about ${size.tokens} tokens against a budget of ${size.budget}.`;
   if (fetchDocs) return `${estimate} Lower the \`Fetches:\` count or split the fetches across more agents.`;
-  return `${estimate} Largest reads: ${size.largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ')}. Cut at least ${size.tokens - size.budget} tokens: give the largest read its own agent or a line range, and split the rest by path so each agent's \`Reads:\` stays under ${size.budget} with its own \`Result:\`.`;
+  return `${estimate} Largest reads: ${size.largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ')}. Cut at least ${size.tokens - size.budget} tokens: give the largest read its own agent, \`lines N-M\` or \`by grep\` after its path, and split the rest by path so each agent's \`Reads:\` stays under ${size.budget} with its own \`Result:\`.`;
 }
 
 function workersFields(prompt) {
