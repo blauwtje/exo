@@ -4,7 +4,7 @@ import { hashedWholeFiles } from '../../benchmarks/routing.mjs';
 import { proseStyleRows, violates } from '../prose-style.mjs';
 
 const DIRECTORIES = ['skills', 'agents', 'hooks', 'output-styles'];
-const FILES = ['harnesses/codex/host-note.md', '.claude/CLAUDE.md', 'README.md', 'CONTRIBUTING.md'];
+const FILES = ['harnesses/codex/host-note.md', '.claude/CLAUDE.md', '.claude/landing.md', 'README.md', 'CONTRIBUTING.md'];
 
 function instructionTargets(root) {
   const directories = DIRECTORIES.map((name) => path.join(root, name));

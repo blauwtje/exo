@@ -16,7 +16,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo:watch` also reads TikTok, Instagram Reels, Facebook, X and other yt-dlp sites, and transcribes a video with no captions locally: yt-dlp fetches its audio, ffmpeg converts it, and whisper.cpp (`whisper-cli` with `--model`) or openai-whisper writes the transcript; a missing tool stops that video with an install hint, and nothing is installed
 
 ### Changed
-- The project `.claude/CLAUDE.md` is rewritten as a 40-line file of the rules Claude would get wrong, and its plan-loop, paid-eval and `### Highlights` details move to `CONTRIBUTING.md`.
+- The project `.claude/CLAUDE.md` is rewritten as a 32-line, 401-word file that keeps only rules no hook, script, check or skill already enforces; its plan-loop, paid-eval and `### Highlights` details move to `CONTRIBUTING.md`, and its start-of-run, squash, worktree-removal and push steps move to `.claude/landing.md`.
 - The Stop and AskUserQuestion hooks skip Node outside a run, which cuts them from about 31 ms to about 5 ms per call; in a run they still deny and block as before.
 - `benchmarks/results/2026-11-04-block-context-budget.md` records why blocks are not cut by predicted runner context: plan features explain 23% of runner peak variance, and the cut would split 0 of 258 recorded blocks.
 - `configure`, `improve`, `prompt`, `remember` and `start` are user-only with `disable-model-invocation: true`, so Claude no longer starts them and their descriptions leave the fixed context; type `/exo:<name>` to run one, and the session-start memory note and the docs now point at that typed command. The routing eval drops their 150 prompts, and `benchmarks/improve-real.mjs` drops its `routing-start` target.
