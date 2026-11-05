@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { mean, signTest } from '../statistics.mjs';
+import { mean } from '../basics.mjs';
+import { signTest } from '../statistics.mjs';
 import { classify, readTrials, streamResult, trialCost, trialMix, trialSetupMs, trialTask, trialWallMs } from './job.mjs';
 
 const ASK_PHRASE = /\b(would you like|let me know|want me to|should I|shall I)\b/i;
