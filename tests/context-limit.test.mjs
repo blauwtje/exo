@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
-import { contextDecision, contextLimit, readCapDecision, softLimit } from '../lib/context-limits.mjs';
+import { agentContextTarget, contextDecision, contextLimit, readCapDecision, softLimit } from '../lib/context-limits.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
@@ -24,6 +24,9 @@ function homeWith(content) {
 const catalogLimit = JSON.parse(fs.readFileSync(new URL('../lib/run-providers.json', import.meta.url), 'utf8')).defaults.contextLimit;
 const SOFT = softLimit(catalogLimit) + 1000;
 const HARD = catalogLimit + 1000;
+const TARGET = agentContextTarget();
+const AGENT_SOFT = softLimit(TARGET) + 1000;
+const AGENT_HARD = Math.round(TARGET * 1.25) + 1000;
 
 test('contextLimit is the catalog default when run.json sets none', () => {
   assert.equal(contextLimit(homeWith()), catalogLimit);
@@ -124,7 +127,7 @@ test('main session Read of a whole persisted tool output is denied; a range or a
   assert.equal(JSON.parse(out).hookSpecificOutput.permissionDecision, 'deny');
 });
 
-test('a subagent past the soft limit is told to hand over through its result file, past the hard limit that Write still works', () => {
+test('a subagent past its soft limit is told to hand over, past its hard limit only Write and Edit still work', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-'));
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
@@ -133,14 +136,15 @@ test('a subagent past the soft limit is told to hand over through its result fil
   };
   const agent_id = `a${process.pid}${Date.now()}`;
   const call = (tokens, tool_name) => contextDecision({ session_id: 'a', agent_id, agent_transcript_path: at(tokens), tool_name });
-  const soft = call(softLimit(contextLimit()) + 1000, 'Bash');
+  const soft = call(AGENT_SOFT, 'Bash');
   assert.match(soft.additionalContext, /exo context limit/);
   assert.match(soft.additionalContext, /result file/);
-  assert.equal(call(softLimit(contextLimit()) + 1000, 'Bash'), null);
-  const hard = call(contextLimit() + 1000, 'Bash');
-  assert.match(hard.deny, /Write is still allowed/);
-  assert.match(hard.deny, /result file/);
-  assert.equal(call(contextLimit() + 1000, 'Write'), null);
+  assert.equal(call(AGENT_SOFT, 'Bash'), null);
+  const hard = call(AGENT_HARD, 'Bash');
+  assert.match(hard.deny, /Write and Edit are still allowed/);
+  assert.match(hard.deny, /Status: handover/);
+  assert.equal(call(AGENT_HARD, 'Write'), null);
+  assert.equal(call(AGENT_HARD, 'Edit'), null);
 });
 
 test('a subagent is warned again after it shrinks below the soft limit', () => {
@@ -152,10 +156,56 @@ test('a subagent is warned again after it shrinks below the soft limit', () => {
   };
   const agent_id = `a-shrink-${process.pid}-${Date.now()}`;
   const call = (tokens) => contextDecision({ session_id: 'a', agent_id, agent_transcript_path: at(tokens), tool_name: 'Bash' });
-  assert.ok(call(SOFT));
-  assert.equal(call(SOFT + 1000), null);
+  assert.ok(call(AGENT_SOFT));
+  assert.equal(call(AGENT_SOFT + 1000), null);
   assert.equal(call(10_000), null);
-  assert.ok(call(SOFT));
+  assert.ok(call(AGENT_SOFT));
+});
+
+test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and is bound by agentContextTarget on the way', () => {
+  const runJson = path.join(testHome, '.config', 'exo', 'run.json');
+  fs.mkdirSync(path.dirname(runJson), { recursive: true });
+  fs.writeFileSync(runJson, '{"defaults":{"contextLimit":150000}}');
+  try {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-growth-'));
+    const agent_id = `a-growth-${process.pid}-${Date.now()}`;
+    const call = (tokens, tool_name) => {
+      const file = path.join(dir, `t${tokens}.jsonl`);
+      fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+      return contextDecision({ session_id: 'a', agent_id, agent_transcript_path: file, tool_name });
+    };
+    const intake = ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch', 'Skill', 'Agent', 'ToolSearch'];
+    for (const tokens of [10_000, 30_000, 44_000]) for (const tool of [...intake, 'Bash', 'Write']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
+
+    const note = call(46_000, 'Bash');
+    assert.match(note.additionalContext, /60k/);
+    assert.match(note.additionalContext, /75k/);
+    assert.match(note.additionalContext, /handover/);
+    assert.equal(call(46_000, 'Bash'), null);
+    for (const tool of intake) assert.equal(call(59_000, tool), null, `${tool} at 59000`);
+
+    for (const tokens of [61_000, 74_000]) {
+      for (const tool of intake) assert.match(call(tokens, tool).deny, /new reads, searches, fetches, skills and agents/, `${tool} at ${tokens}`);
+      for (const tool of ['Bash', 'Write', 'Edit']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
+    }
+
+    for (const tokens of [76_000, 120_000, 159_600]) {
+      for (const tool of [...intake, 'Bash']) assert.match(call(tokens, tool).deny, /Status: handover/, `${tool} at ${tokens}`);
+      for (const tool of ['Write', 'Edit']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
+    }
+  } finally {
+    fs.rmSync(runJson, { force: true });
+  }
+});
+
+test('an Edit by a subagent past its hard limit passes the edit dispatcher', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-edit-'));
+  const file = path.join(dir, 't.jsonl');
+  fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: AGENT_HARD } } })}\n`);
+  const agent_id = `a-edit-${process.pid}-${Date.now()}`;
+  const input = { session_id: 'a', agent_id, agent_transcript_path: file, tool_name: 'Edit', tool_input: { file_path: path.join(dir, 'x.txt'), old_string: 'a', new_string: 'b' } };
+  const output = dispatchEdit(input, () => false);
+  assert.notEqual(output?.hookSpecificOutput?.permissionDecision, 'deny');
 });
 
 test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {
@@ -233,7 +283,7 @@ test('readCapDecision runs a capped Read with the largest limit that fits instea
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cap-'));
   const file = path.join(dir, 'big.txt');
   fs.writeFileSync(file, `${'x'.repeat(99)}\n`.repeat(100));
-  const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:locate-code', tool_input: { file_path: file } };
+  const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:locate-code', permission_mode: 'bypassPermissions', tool_input: { file_path: file } };
   const corrected = readCapDecision(capped);
   assert.equal(corrected.deny, undefined);
   assert.deepEqual(corrected.updatedInput, { file_path: file, offset: 1, limit: 40 });
@@ -254,5 +304,48 @@ test('a Read whose single line is over the cap is not told to retry with limit 1
     assert.doesNotMatch(decision.deny, /limit 1/);
   } finally {
     fs.rmSync(file, { force: true });
+  }
+});
+
+function agentCaller(tokens, agent_type) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-caller-'));
+  const file = path.join(dir, 't.jsonl');
+  fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+  const agent_id = `a-caller-${process.pid}-${Date.now()}-${Math.random()}`;
+  return (tool_name) => contextDecision({ session_id: 'a', agent_id, agent_type, agent_transcript_path: file, tool_name });
+}
+
+test('an orchestrator over the target still dispatches and stops workers but cannot read', () => {
+  const call = agentCaller(TARGET + 1000, 'exo:orchestrator');
+  for (const tool of ['Agent', 'SendMessage', 'Monitor', 'TaskStop']) assert.equal(call(tool)?.deny, undefined, tool);
+  assert.match(call('Read').deny, /new reads, searches, fetches, skills and agents/);
+  assert.match(call('Grep').deny, /new reads/);
+});
+
+test('an orchestrator past the hard limit cannot dispatch', () => {
+  const call = agentCaller(AGENT_HARD, 'exo:orchestrator');
+  for (const tool of ['Agent', 'SendMessage', 'Monitor']) assert.match(call(tool).deny, /Status: handover/, tool);
+});
+
+test('a task-runner over the target still dispatches an agent but cannot read', () => {
+  const call = agentCaller(TARGET + 1000, 'exo:task-runner');
+  assert.equal(call('Agent')?.deny, undefined);
+  assert.equal(call('SendMessage')?.deny, undefined);
+  assert.match(call('Read').deny, /new reads/);
+});
+
+test('an agent that is not a coordinator is still refused Agent over the target', () => {
+  for (const type of ['exo:build-task', 'general-purpose', undefined]) {
+    const call = agentCaller(TARGET + 1000, type);
+    assert.match(call('Agent').deny, /new reads, searches, fetches, skills and agents/, String(type));
+  }
+});
+
+test('TaskStop stays allowed for any agent at the hard limit while Bash is refused', () => {
+  for (const type of ['exo:build-task', 'exo:orchestrator', undefined]) {
+    const call = agentCaller(AGENT_HARD, type);
+    assert.equal(call('TaskStop'), null, String(type));
+    assert.equal(call('Write'), null, String(type));
+    assert.match(call('Bash').deny, /Status: handover/, String(type));
   }
 });

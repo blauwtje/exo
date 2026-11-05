@@ -491,7 +491,7 @@ test('an orchestrator Bash command runs within the pre-dispatch read cap and is 
   const { orchestratorPredispatchReads } = await import('../lib/context-limits.mjs');
   const agentId = `predispatch-${process.pid}`;
   const input = (agentType) => ({ agent_id: agentId, agent_type: agentType, tool_input: { command: 'ls' } });
-  for (let call = 0; call < orchestratorPredispatchReads(); call += 1) assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
+  for (let call = 0; call < orchestratorPredispatchReads() + 1; call += 1) assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
   const denied = PREDISPATCH_STEP.run(input('exo:orchestrator'));
   assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
   assert.match(denied.hookSpecificOutput.permissionDecisionReason, /Bash calls before its first dispatch/);

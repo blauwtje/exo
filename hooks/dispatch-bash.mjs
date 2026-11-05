@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { contextDecision, contextFields, hookAgentType, resultCapFor, savedOutputDirectory, savedOutputPrefix, scriptBytes } from '../lib/context-limits.mjs';
+import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType, intakeCutLine, savedOutputDirectory, savedOutputPrefix, scriptBytes } from '../lib/context-limits.mjs';
 import { sharesGitState } from '../lib/git-deny.mjs';
 import { fixShellFor } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
@@ -66,17 +66,15 @@ export const SLEEP_STEP = {
   }
 };
 
-const CAPPED_MODES = new Set(['bypassPermissions', 'auto']);
-
-function cappedCommand(command, cap, log) {
+function cappedCommand(command, bound, log) {
   const quoted = `'${log}'`;
   return [
     `echo "output log: ${log}"`,
     `( ${command}`,
     `) > ${quoted} 2>&1`,
     'rc=$?',
-    `head -c ${cap} ${quoted}`,
-    `[ "$(wc -c < ${quoted})" -gt ${cap} ] && echo "[output cut at ${cap} bytes; full log: ${log}]"`,
+    `head -c ${bound.bytes} ${quoted}`,
+    `[ "$(wc -c < ${quoted})" -gt ${bound.bytes} ] && echo "${intakeCutLine(bound, log)}"`,
     'exit $rc'
   ].join('\n');
 }
@@ -85,13 +83,14 @@ export const RESULT_CAP_STEP = {
   name: 'result-cap',
   run(hookInput) {
     const toolInput = hookInput.tool_input;
-    const cap = resultCapFor(hookInput);
-    if (!cap || !CAPPED_MODES.has(hookInput.permission_mode) || typeof toolInput?.command !== 'string') return null;
+    if (!CAPPED_MODES.has(hookInput.permission_mode) || typeof toolInput?.command !== 'string') return null;
     if (toolInput.run_in_background || toolInput.command.endsWith('\\')) return null;
+    const bound = bashIntakeBound(hookInput);
+    if (!bound) return null;
     const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShellFor(hookInput, hookAgentType);
     fs.mkdirSync(savedOutputDirectory(), { recursive: true });
     const log = path.join(savedOutputDirectory(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
-    const command = cappedCommand((fixed ?? toolInput).command, cap, log);
+    const command = cappedCommand((fixed ?? toolInput).command, bound, log);
     return { hookSpecificOutput: { updatedInput: { ...toolInput, command } } };
   }
 };

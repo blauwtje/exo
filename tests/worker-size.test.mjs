@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { agentHook } from '../hooks/agent-effort.mjs';
 import { briefReads, normalizedReads, workerSize } from '../lib/worker-size.mjs';
 
 function folder() {
@@ -107,4 +109,74 @@ test('normalizedReads rewrites a pure path or none line and leaves prose alone',
   assert.equal(normalizedReads('Reads: b.txt and the tests', cwd), 'Reads: b.txt and the tests');
   assert.equal(normalizedReads('Reads: b.txt, dir', cwd), 'Reads: b.txt, dir');
   assert.deepEqual(briefReads('Reads: hooks/*.none, b.txt.', cwd), ['hooks/*.none', 'b.txt']);
+});
+
+test('parenthesized text in a Reads line is prose, but a wrong path outside parentheses is still unresolved', () => {
+  const cwd = folder();
+  const size = (reads) => workerSize({ prompt: `Reads: ${reads}\nResult: .exo/r.md`, cwd });
+  assert.deepEqual(size('b.txt (not hooks/agents), dir').unresolved, []);
+  assert.equal(size('b.txt (not hooks/agents), dir').tokens, 1500);
+  assert.deepEqual(size('b.txt (see hooks/agents and lib/x.mjs for context)').unresolved, []);
+  assert.deepEqual(size('b.txt, hooks/agents (the folder)').unresolved, ['hooks/agents']);
+  assert.deepEqual(briefReads('Reads: b.txt (not hooks/agents), dir', cwd), ['b.txt', 'dir']);
+  assert.equal(normalizedReads('Reads: b.txt (not hooks/agents), dir', cwd), 'Reads: b.txt, dir');
+});
+
+test('a parenthesis inside a path word is kept', () => {
+  const cwd = folder();
+  fs.mkdirSync(path.join(cwd, 'app', '(group)'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'app', '(group)', 'page.txt'), 'x'.repeat(400));
+  const size = workerSize({ prompt: 'Reads: app/(group)/page.txt\nResult: .exo/r.md', cwd });
+  assert.deepEqual(size.unresolved, []);
+  assert.equal(size.tokens, 200);
+});
+
+function repository(files) {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-repo-'));
+  for (const [name, size] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(cwd, name)), { recursive: true });
+    fs.writeFileSync(path.join(cwd, name), 'x'.repeat(size));
+  }
+  execFileSync('git', ['init', '-q'], { cwd });
+  execFileSync('git', ['add', '-A'], { cwd });
+  return cwd;
+}
+
+function dispatch(cwd, reads) {
+  const tool_input = { subagent_type: 'general-purpose', description: 'work', prompt: `Reads: ${reads}\nResult: .exo/r.md` };
+  return agentHook({ tool_name: 'Agent', cwd, tool_input }, 'on', () => false)?.hookSpecificOutput;
+}
+
+test('a bare file name with one tracked match is rewritten to its path and sized', () => {
+  const cwd = repository({ 'web/src/card.jsx': 400, 'lib/other.mjs': 10 });
+  const output = dispatch(cwd, 'card.jsx:1-5, lib/other.mjs');
+  assert.equal(output.permissionDecision, 'allow');
+  assert.match(output.updatedInput.prompt, /^Reads: web\/src\/card\.jsx:1-5, lib\/other\.mjs$/m);
+});
+
+test('a bare file name with several tracked matches is denied and the candidates are named', () => {
+  const cwd = repository({ 'a/card.jsx': 10, 'b/card.jsx': 10 });
+  const output = dispatch(cwd, 'card.jsx');
+  assert.equal(output.permissionDecision, 'deny');
+  assert.match(output.permissionDecisionReason, /card\.jsx[^\n]*a\/card\.jsx[^\n]*b\/card\.jsx/);
+});
+
+test('a bare file name with no tracked match is denied as a missing path', () => {
+  const cwd = repository({ 'a/card.jsx': 10 });
+  const output = dispatch(cwd, 'gone.jsx');
+  assert.equal(output.permissionDecision, 'deny');
+  assert.match(output.permissionDecisionReason, /do not exist: gone\.jsx/);
+});
+
+test('reads over budget move to a Search line, smallest fix first, and the dispatch is allowed', () => {
+  const cwd = repository({ 'big.txt': 40000, 'mid.txt': 30000, 'small.txt': 200 });
+  const output = dispatch(cwd, 'big.txt, mid.txt, small.txt');
+  assert.equal(output.permissionDecision, 'allow');
+  assert.match(output.updatedInput.prompt, /^Reads: big\.txt, small\.txt\nSearch: mid\.txt \(grep -n first, then read by range\)\nResult: \.exo\/r\.md$/m);
+});
+
+test('a single file over budget with no range is denied, alone or beside small reads', () => {
+  const cwd = repository({ 'huge.txt': 70000, 'small.txt': 200 });
+  assert.equal(dispatch(cwd, 'huge.txt').permissionDecision, 'deny');
+  assert.equal(dispatch(cwd, 'huge.txt, small.txt').permissionDecision, 'deny');
 });

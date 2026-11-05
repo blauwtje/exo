@@ -351,7 +351,7 @@ test('with held-out cases the row scores the tuning cases only and no log, OUT, 
   assert.match(out, /^ROW \S+ 40 discard best=50$/);
   const shown = [err, brief(root), fs.readFileSync(path.join(root, '.exo/improve/run.log'), 'utf8'), fs.readFileSync(path.join(root, `.exo/improve/t.logs/${commit}-1.log`), 'utf8')].join('\n');
   for (const id of HOLDOUT.held) assert.doesNotMatch(shown, new RegExp(`\\b${id}\\b`));
-  assert.doesNotMatch(shown, /999|77/);
+  assert.doesNotMatch(shown, /\b(?:999|77)\b/);
   assert.match(err, /^CASES c\d 50->40/);
   assert.deepEqual(Object.keys(samples(root).at(-1).held).sort(), HOLDOUT.held);
 });

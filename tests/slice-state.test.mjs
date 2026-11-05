@@ -39,6 +39,41 @@ test('an orchestrator slice of n workers is refused at call n+1, and a refused c
   fs.rmSync(path.join(os.tmpdir(), `exo-slice-${agent.agent_id}`));
 });
 
+const hear = (agent, entry) => fs.appendFileSync(agent.agent_transcript_path, `${JSON.stringify(entry)}\n`);
+const leadSays = (text) => ({ type: 'user', message: { role: 'user', content: `The coordinator sent a message while you were working:\n${text}` }, origin: { kind: 'coordinator' } });
+const queuedFrom = (kind, text) => ({ type: 'attachment', attachment: { type: 'queued_command', prompt: text, origin: { kind } } });
+
+test('a Workers line in a later lead message to the orchestrator replaces the slice worker count', () => {
+  const agent = orchestrator(2);
+  assert.equal(dispatch(agent).permissionDecision, 'allow');
+  hear(agent, leadSays('Workers: 3\nOne more worker is needed.'));
+  assert.equal(sliceWorkers(agent), 3);
+  assert.equal(dispatch(agent).permissionDecision, 'allow');
+  assert.equal(dispatch(agent).permissionDecision, 'allow');
+  const refused = dispatch(agent);
+  assert.equal(refused.permissionDecision, 'deny');
+  assert.match(refused.permissionDecisionReason, /sized at 3 workers/);
+  cleanup(agent);
+});
+
+test('a lead message delivered while the orchestrator works counts, and the latest valid Workers line wins', () => {
+  const agent = orchestrator(2);
+  hear(agent, queuedFrom('coordinator', 'Workers: 4'));
+  assert.equal(sliceWorkers(agent), 4);
+  hear(agent, leadSays('Workers: 1'));
+  assert.equal(sliceWorkers(agent), 1);
+});
+
+test('a Workers line from a worker, a notification or a number above the limit leaves the slice count alone', () => {
+  const agent = orchestrator(2);
+  hear(agent, queuedFrom('peer', 'Workers: 4'));
+  hear(agent, { ...leadSays('Workers: 4'), origin: { kind: 'peer', from: 'worker-id' } });
+  hear(agent, queuedFrom('task-notification', 'Workers: 3'));
+  hear(agent, leadSays('Workers: 9'));
+  hear(agent, leadSays('Workers: many'));
+  assert.equal(sliceWorkers(agent), 2);
+});
+
 test('a call denied by another check is not counted', () => {
   const agent = orchestrator(2);
   const output = agentHook({ ...agent, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'no reads' } }, 'on', () => false).hookSpecificOutput;
@@ -59,7 +94,7 @@ test('before its first dispatch an orchestrator reads only its brief Reads paths
   const offBrief = readFile(agent, 'requirements.md');
   assert.equal(offBrief.permissionDecision, 'deny');
   assert.match(offBrief.permissionDecisionReason, /reads only its brief's Reads: paths \(brief\.md\)/);
-  const limit = orchestratorPredispatchReads();
+  const limit = orchestratorPredispatchReads() + 2;
   assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }), null);
   for (let read = 1; read < limit; read += 1) assert.equal(readFile(agent, path.join(agent.cwd, 'brief.md')), null);
   assert.equal(predispatchReadCount(agent.agent_id), limit);
@@ -79,5 +114,29 @@ test('the pre-dispatch Read gate leaves the lead and other agent types alone', (
   assert.equal(readFile({ ...agent, agent_type: 'exo:task-runner' }, 'requirements.md'), null);
   assert.equal(readFile({ cwd: agent.cwd }, path.join(agent.cwd, 'requirements.md')), null);
   assert.equal(predispatchReadCount(agent.agent_id), 0);
+  cleanup(agent);
+});
+
+const template = path.resolve(import.meta.dirname, '../skills/route-skills/assets/handover-template.md');
+
+test('before its first dispatch an orchestrator may read the handover template, and its cap grows by the Reads paths plus the template', () => {
+  const agent = orchestrator(2, 'a.md, b.md, c.md');
+  for (const name of ['a.md', 'b.md', 'c.md']) fs.writeFileSync(path.join(agent.cwd, name), 'rows\n');
+  assert.equal(readFile(agent, template), null);
+  const limit = orchestratorPredispatchReads() + 4;
+  for (let call = 2; call <= limit; call += 1) assert.equal(readFile(agent, path.join(agent.cwd, 'a.md')), null, `call ${call}`);
+  assert.equal(predispatchReadCount(agent.agent_id), limit);
+  const over = readFile(agent, path.join(agent.cwd, 'b.md'));
+  assert.equal(over.permissionDecision, 'deny');
+  assert.match(over.permissionDecisionReason, new RegExp(`made ${limit} Reads or Bash calls`));
+  cleanup(agent);
+});
+
+test('an orchestrator with Reads none may still read the handover template, and a Bash call past its cap is refused', () => {
+  const agent = orchestrator(2);
+  assert.equal(readFile(agent, template), null);
+  const limit = orchestratorPredispatchReads() + 1;
+  for (let call = 2; call <= limit; call += 1) assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }), null);
+  assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }).hookSpecificOutput.permissionDecision, 'deny');
   cleanup(agent);
 });

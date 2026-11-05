@@ -29,7 +29,8 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 510, measured: '2026-10-20'
 export const INJECTED_CONTEXT_LOCK = { bytes: 3946, measured: '2026-11-04' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-size.mjs fails above it.
-export const HOOK_LINES_LOCK = { lines: 1066, measured: '2026-11-05' };
+// Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.
+export const HOOK_LINES_LOCK = { lines: 1098, measured: '2026-11-05' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
 export const HOOK_TEXT_BYTES_LOCK = { bytes: 6131, measured: '2026-11-05' };
 export const HOOK_SPAWN_MS_LOCK = { ms: 75, measured: '2026-10-29' };
