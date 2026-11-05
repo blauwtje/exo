@@ -8,23 +8,22 @@ import { parsePlan } from '#plan-tasks';
 import { planPrompt } from '../skills/build/scripts/run-prompts.mjs';
 import { SHARED_STATE_GIT } from '../lib/git-deny.mjs';
 import { childEnv, DENY_RULES, PLUGIN_ROOT } from '../skills/build/scripts/run-session.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const PROVIDER = { name: 'claude', env: {}, effort: null, promptCacheTtl: null };
 const GUARD = path.join(PLUGIN_ROOT, 'lib', 'stall-guard.mjs');
 
 function seedRepo() {
   const root = tempDir('exo-no-commit-');
-  const git = (...args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
-  git('init', '-q');
-  git('config', 'user.email', 'run@example.com');
-  git('config', 'user.name', 'run');
+  git(root, 'init', '-q');
+  git(root, 'config', 'user.email', 'run@example.com');
+  git(root, 'config', 'user.name', 'run');
   fs.writeFileSync(path.join(root, 'a.txt'), 'a\n');
-  git('add', 'a.txt');
-  git('commit', '-q', '-m', 'seed');
+  git(root, 'add', 'a.txt');
+  git(root, 'commit', '-q', '-m', 'seed');
   fs.writeFileSync(path.join(root, 'b.txt'), 'b\n');
-  git('add', 'b.txt');
-  return { root, head: () => git('rev-parse', 'HEAD').stdout.trim() };
+  git(root, 'add', 'b.txt');
+  return { root, head: () => git(root, 'rev-parse', 'HEAD') };
 }
 
 const sessionCommits = [

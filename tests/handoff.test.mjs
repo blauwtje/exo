@@ -2,7 +2,6 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -11,7 +10,7 @@ import { tempDir } from './harness.mjs';
 const script = path.resolve('skills/save-session/scripts/handoff.mjs');
 
 function handoffPath(host) {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'handoff-')));
+  const dir = fs.realpathSync(tempDir('handoff-'));
   const env = { ...process.env, EXO_HOST: host, CODEX_HOME: path.join(dir, 'codex'), CLAUDE_CONFIG_DIR: path.join(dir, 'claude') };
   const cwd = path.join(dir, 'work');
   fs.mkdirSync(cwd);

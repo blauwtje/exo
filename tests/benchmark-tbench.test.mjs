@@ -7,12 +7,9 @@ import test from 'node:test';
 import { importJobs } from '../benchmarks/tbench/import.mjs';
 import { bootstrapPerSolved, calibrate, isAsk, readCells, renderReport, scoreStream } from '../benchmarks/tbench/readouts.mjs';
 import { projectedCostLine, projectedSpend, watch } from '../benchmarks/tbench/watch.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
-
-function tmp() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'exo-tbench-'));
-}
 
 function trial(job, name, { task = 'fix-git', reward = 1, cost = 1, seconds = 60, exception = null, stream = null, finished = true } = {}) {
   const directory = path.join(job, name);
@@ -43,7 +40,7 @@ function cell(out, task, { arm, run }) {
 }
 
 test('T1 import classifies pass, fail, max_turns, rate-limit, timeout and skips a cancelled trial', () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   trial(job, 'a', { stream: { subtype: 'success', modelUsage: MODEL_USAGE } });
   trial(job, 'b', { reward: 0 });
   trial(job, 'c', { reward: 0, stream: { subtype: 'error_max_turns', is_error: false } });
@@ -51,7 +48,7 @@ test('T1 import classifies pass, fail, max_turns, rate-limit, timeout and skips 
   trial(job, 'e', { reward: null, stream: { subtype: 'success', is_error: true, result: 'API Error: 429 rate_limit_error' } });
   trial(job, 'f', { reward: null, exception: 'AgentTimeoutError' });
   trial(job, 'g', { reward: null, exception: 'CancelledError' });
-  const out = tmp();
+  const out = tempDir('exo-tbench-');
   const meta = importJobs({ jobs: [{ directory: job, arm: 'exo' }], out, model: 'm', date: '2026-10-18' });
   assert.equal(meta.cells, 6);
   assert.equal(meta.infra, 2);
@@ -74,13 +71,13 @@ test('T1 import classifies pass, fail, max_turns, rate-limit, timeout and skips 
 });
 
 test('T2 an infra cell in the control arm drops its task from every arm', () => {
-  const before = tmp();
-  const after = tmp();
+  const before = tempDir('exo-tbench-');
+  const after = tempDir('exo-tbench-');
   trial(before, 'a', { task: 'one', reward: null, exception: 'ApiRateLimitError' });
   trial(before, 'b', { task: 'two' });
   trial(after, 'c', { task: 'one' });
   trial(after, 'd', { task: 'two' });
-  const out = tmp();
+  const out = tempDir('exo-tbench-');
   const meta = importJobs({ jobs: [{ directory: before, arm: 'exo-before' }, { directory: after, arm: 'exo' }], out, model: 'm' });
   assert.deepEqual(meta.droppedTasks, ['one']);
   assert.deepEqual(meta.tasks, ['two']);
@@ -88,12 +85,12 @@ test('T2 an infra cell in the control arm drops its task from every arm', () => 
 });
 
 test('T3 score.mjs --compare counts an infra cell as a failed pass and leaves it out of the cost mean', () => {
-  const before = tmp();
-  const after = tmp();
+  const before = tempDir('exo-tbench-');
+  const after = tempDir('exo-tbench-');
   [1, 2, 3].forEach((n) => trial(before, `b${n}`, { cost: 1 + n / 10, stream: { modelUsage: MODEL_USAGE } }));
   [1, 2, 3].forEach((n) => trial(after, `a${n}`, { cost: 2 + n / 10, stream: { modelUsage: MODEL_USAGE } }));
   trial(after, 'a4', { reward: null, exception: 'ApiRateLimitError', cost: 9 });
-  const out = tmp();
+  const out = tempDir('exo-tbench-');
   importJobs({ jobs: [{ directory: before, arm: 'exo-before' }, { directory: after, arm: 'exo' }], out, model: 'm' });
   const run = spawnSync(process.execPath, [SCORE, out, '--compare', 'exo-before,exo'], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
@@ -102,19 +99,19 @@ test('T3 score.mjs --compare counts an infra cell as a failed pass and leaves it
 });
 
 test('W1 projected spend charges a running trial the job highest finished cost, trialUsd when none finished', () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   trial(job, 'a', { cost: 2.5 });
   trial(job, 'b', { cost: 0.5 });
   trial(job, 'c', { finished: false });
   assert.deepEqual(projectedSpend([job], 1.5), { finished: 3, running: 1, projected: 5.5 });
-  const fresh = tmp();
+  const fresh = tempDir('exo-tbench-');
   trial(fresh, 'x', { finished: false });
   assert.deepEqual(projectedSpend([fresh], 1.5), { finished: 0, running: 1, projected: 1.5 });
   assert.equal(projectedSpend([fresh]).projected, 1.5);
 });
 
 test('W2 the watcher sends SIGTERM once projected spend reaches the limit', async () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   trial(job, 'a', { cost: 13 });
   trial(job, 'b', { finished: false });
   trial(job, 'c', { finished: false });
@@ -131,7 +128,7 @@ test('W2 the watcher sends SIGTERM once projected spend reaches the limit', asyn
 });
 
 test('W3 the watcher stops after its rounds, and when the process has ended', async () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   trial(job, 'a', { cost: 1 });
   let sleeps = 0;
   const kill = () => assert.fail('under the limit');
@@ -143,13 +140,13 @@ test('W3 the watcher stops after its rounds, and when the process has ended', as
 });
 
 test('W4 --dry-run projects tasks x trials x median trial cost of a saved job, else cost unknown, without --pid or polling', () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   trial(job, 'a', { cost: 1 });
   trial(job, 'b', { cost: 3 });
   trial(job, 'c', { cost: 2 });
   trial(job, 'd', { finished: false });
   assert.equal(projectedCostLine([job], 5, 3), 'projected cost: 5 tasks x 3 trials x median $2.00 = $30.00');
-  const fresh = tmp();
+  const fresh = tempDir('exo-tbench-');
   trial(fresh, 'x', { finished: false });
   assert.equal(projectedCostLine([fresh], 5, 3), 'projected cost: cost unknown');
   const watcher = path.join(import.meta.dirname, '..', 'benchmarks', 'tbench', 'watch.mjs');
@@ -205,7 +202,7 @@ test('R1 a closing ask counts on "?", on an ask phrase ending in "!", not on a b
 });
 
 test('R3 scoreStream reads asks from the trial stream, an AskUserQuestion call counting too', () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   trial(job, 'a', { stream: { subtype: 'success', result: 'All merged!' } });
   const events = [{ type: 'result', subtype: 'success', result: "Let me know how you'd like to proceed!" }];
   fs.writeFileSync(path.join(job, 'a', 'agent', 'claude-code.txt'), events.map((event) => JSON.stringify(event)).join('\n'));
@@ -216,8 +213,8 @@ test('R3 scoreStream reads asks from the trial stream, an AskUserQuestion call c
 });
 
 test('R4 the report orders per solved task, passing cells only, raw per cell, and falls back when nothing passes', () => {
-  const before = tmp();
-  const after = tmp();
+  const before = tempDir('exo-tbench-');
+  const after = tempDir('exo-tbench-');
   trial(before, 'b1', { cost: 1, seconds: 10 });
   trial(before, 'b2', { cost: 3, seconds: 30, reward: 0 });
   trial(after, 'a1', { cost: 2, seconds: 20, reward: 0 });
@@ -233,8 +230,8 @@ test('R4 the report orders per solved task, passing cells only, raw per cell, an
 });
 
 test('R5 the report adds token mix, setup wall, paired cost with a sign test and failing transcripts', () => {
-  const before = tmp();
-  const after = tmp();
+  const before = tempDir('exo-tbench-');
+  const after = tempDir('exo-tbench-');
   const stream = { subtype: 'success', num_turns: 7, modelUsage: { m: { outputTokens: 50, cacheCreationInputTokens: 200, thinkingTokens: 30 } } };
   trial(before, 'b1', { cost: 3, stream });
   trial(after, 'a1', { cost: 2, reward: 0, stream });
@@ -251,7 +248,7 @@ test('R5 the report adds token mix, setup wall, paired cost with a sign test and
 });
 
 test('R6 --calibrate lists mixed tasks and prints saturated, exit 3, under 4 mixed', () => {
-  const job = tmp();
+  const job = tempDir('exo-tbench-');
   ['a', 'b', 'c', 'd'].forEach((task) => {
     trial(job, `${task}1`, { task });
     trial(job, `${task}2`, { task, reward: 0 });

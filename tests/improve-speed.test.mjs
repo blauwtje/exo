@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { contentKey } from '../benchmarks/baseline-pool.mjs';
 import { quickVerdict, scoreOutDir } from '../benchmarks/improve-speed.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'improve-speed.mjs');
 const GOOD_RECORD = { exitCode: 0, timedOut: false, hiddenPass: true, defects: [], verifyRan: true, outputTokens: 100 };
@@ -36,7 +36,7 @@ function addChild(transcript, id, { parent, entries }) {
 }
 
 function fixture() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'improve-speed-test-'));
+  return tempDir('improve-speed-test-');
 }
 
 function reasons(out) {

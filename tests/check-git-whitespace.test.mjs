@@ -1,16 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { checkGitWhitespace } from '../verify/checks/git-whitespace.mjs';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { commitFiles, git, gitRepository } from './harness.mjs';
+import { commitFiles, git, gitRepository, tempDir } from './harness.mjs';
 
 async function branchFixture() {
   const root = await gitRepository({ 'src/app.js': 'export const a = 1;\n' });
-  const bare = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'whitespace-origin-')), 'origin.git');
+  const bare = path.join(tempDir('whitespace-origin-'), 'origin.git');
   git(root, 'init', '-q', '--bare', '-b', 'main', bare);
   git(root, 'remote', 'add', 'origin', bare);
   git(root, 'push', '-q', 'origin', 'main');

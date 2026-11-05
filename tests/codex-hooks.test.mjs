@@ -138,7 +138,7 @@ test('the wrapper fails closed when the source hooks file does not parse', () =>
 
 test('the real bash dispatcher runs through the wrapper as a Codex hook and denies a subagent over the hard limit', () => {
   const handler = codexHookEntries(ROOT).PreToolUse[0].hooks[0];
-  const transcript = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'codex-ctx-')), 'agent.jsonl');
+  const transcript = path.join(tempDir('codex-ctx-'), 'agent.jsonl');
   fs.writeFileSync(transcript, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 120000 } } })}\n`);
   const input = { session_id: 's', cwd: os.tmpdir(), hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' }, agent_id: 'a1', agent_transcript_path: transcript };
   const run = spawnSync('/bin/sh', ['-c', handler.command], { encoding: 'utf8', input: JSON.stringify(input), env: { PATH: process.env.PATH, HOME: os.tmpdir(), CLAUDE_CONFIG_DIR: os.tmpdir(), CLAUDE_PROJECT_DIR: os.tmpdir() } });

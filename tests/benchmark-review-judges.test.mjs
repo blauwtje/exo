@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { measureReview } from '../benchmarks/sweep.mjs';
+import { tempDir } from './harness.mjs';
 
 const cell = { kind: 'review', variant: 'seeded', task: { id: 'safe-path', file: 'upload.js' } };
 const finding = (action, start, end) => ({ file: 'upload.js', start, end, action });
@@ -74,8 +75,7 @@ test('judgeCells makes one review cell per judge and leaves other cells', async 
 });
 
 const { mergeJudgeRecords } = await import('../benchmarks/merge-judges.mjs');
-const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
-const { tmpdir } = await import('node:os');
+const { mkdirSync, writeFileSync } = await import('node:fs');
 const { join } = await import('node:path');
 
 function writeCell(root, id, { report, ...record }) {
@@ -89,7 +89,7 @@ async function seededJudgeRoot() {
   const seeded = sweepCells().find((c) => c.kind === 'review' && c.variant === 'seeded');
   const { defectRange } = await import('../benchmarks/sweep-fixtures.mjs');
   const range = defectRange(seeded.task);
-  const root = mkdtempSync(join(tmpdir(), 'judges-'));
+  const root = tempDir('judges-');
   const hit = `FINDINGS\n\n${range.file}:${range.start}-${range.end} defect fix\nProbe: node x.js\nClass: swallowed failure\nSweep: grep -n catch x.js\n\nCount: defect=1 concern=0 question=0\n`;
   const clean = 'CLEAN\n\nCount: defect=0 concern=0 question=0\n';
   writeCell(root, `${seeded.id}-judge-plan-fit`, { wallMs: 100, tokens: 10, costUsd: 1, report: clean });
@@ -114,7 +114,7 @@ test('mergeJudgeRecords sums judge cost and grades the merged findings', async (
 test('mergeJudgeRecords merges a control record and nulls findings for a missing report', async () => {
   const { sweepCells } = await import('../benchmarks/sweep-cells.mjs');
   const cells = sweepCells().filter((c) => c.kind === 'review' && c.variant === 'seeded');
-  const root = mkdtempSync(join(tmpdir(), 'judges-'));
+  const root = tempDir('judges-');
   writeCell(root, cells[0].id, { wallMs: 50, tokens: 5, costUsd: 0.5, report: 'CLEAN\n\nCount: defect=0 concern=0 question=0\n' });
   writeCell(root, `${cells[1].id}-judge-plan-fit`, { wallMs: 10, tokens: 1, costUsd: 0.1, report: null });
   writeCell(root, `${cells[1].id}-judge-tests`, { wallMs: 20, tokens: 2, costUsd: 0.2, report: 'CLEAN\n' });
@@ -131,7 +131,7 @@ test('mergeJudgeRecords merges a control record and nulls findings for a missing
 test('mergeJudgeRecords nulls findings when a judge cell left no record', async () => {
   const { sweepCells } = await import('../benchmarks/sweep-cells.mjs');
   const seeded = sweepCells().find((c) => c.kind === 'review' && c.variant === 'seeded');
-  const root = mkdtempSync(join(tmpdir(), 'judges-'));
+  const root = tempDir('judges-');
   const clean = 'CLEAN\n\nCount: defect=0 concern=0 question=0\n';
   writeCell(root, `${seeded.id}-judge-plan-fit`, { wallMs: 10, tokens: 1, costUsd: 0.1, report: clean });
   writeCell(root, `${seeded.id}-judge-standard`, { wallMs: 20, tokens: 2, costUsd: 0.2, report: clean });

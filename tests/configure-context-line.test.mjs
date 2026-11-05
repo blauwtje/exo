@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +21,7 @@ function homeWith(content) {
 function contextLine(home) {
   const result = spawnSync(process.execPath, [script, 'context'], {
     encoding: 'utf8',
-    cwd: fs.mkdtempSync(path.join(os.tmpdir(), 'exo-context-line-cwd-')),
+    cwd: tempDir('exo-context-line-cwd-'),
     env: { ...process.env, HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: path.join(home, '.claude'), EXO_HOST: 'claude' }
   });
   assert.equal(result.status, 0, result.stderr);

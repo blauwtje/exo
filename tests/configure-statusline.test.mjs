@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 
 const repo = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const script = path.join(repo, 'skills', 'configure', 'scripts', 'settings.mjs');
@@ -16,10 +16,8 @@ function run(config, env = {}) {
   });
 }
 
-const tempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'exo-statusline-'));
-
 test('statusline writes the launcher and prints the statusLine block', () => {
-  const config = tempDir();
+  const config = tempDir('exo-statusline-');
   const result = run(config);
   const target = path.join(config, 'exo', 'statusline.mjs');
   assert.equal(result.status, 0, result.stderr);
@@ -31,7 +29,7 @@ test('statusline writes the launcher and prints the statusLine block', () => {
 });
 
 test('statusline refuses a foreign file and leaves it untouched', () => {
-  const config = tempDir();
+  const config = tempDir('exo-statusline-');
   const target = path.join(config, 'exo', 'statusline.mjs');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, 'mine\n');
@@ -42,7 +40,7 @@ test('statusline refuses a foreign file and leaves it untouched', () => {
 });
 
 test('statusline writes nothing on Codex', () => {
-  const config = tempDir();
+  const config = tempDir('exo-statusline-');
   const result = run(config, { EXO_HOST: 'codex' });
   assert.equal(result.status, 0);
   assert.match(result.stdout, /Claude Code only/);
@@ -50,14 +48,14 @@ test('statusline writes nothing on Codex', () => {
 });
 
 test('the launcher renders a fixture line through a plugin-root pointer', () => {
-  const config = tempDir();
+  const config = tempDir('exo-statusline-');
   run(config);
   fs.writeFileSync(path.join(config, 'exo', 'plugin-root'), `${repo}\n`);
   const payload = { model: { display_name: 'Opus 5.5' }, context_window: { total_input_tokens: 1000, context_window_size: 200000 } };
   const result = spawnSync(process.execPath, [path.join(config, 'exo', 'statusline.mjs')], {
     encoding: 'utf8',
     input: JSON.stringify(payload),
-    env: { ...process.env, NO_COLOR: '1', XDG_CACHE_HOME: tempDir() }
+    env: { ...process.env, NO_COLOR: '1', XDG_CACHE_HOME: tempDir('exo-statusline-') }
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /^◉ exo /);
@@ -65,7 +63,7 @@ test('the launcher renders a fixture line through a plugin-root pointer', () => 
 });
 
 test('the launcher prints nothing and exits 0 without a pointer', () => {
-  const config = tempDir();
+  const config = tempDir('exo-statusline-');
   run(config);
   const result = spawnSync(process.execPath, [path.join(config, 'exo', 'statusline.mjs')], { encoding: 'utf8', input: '{}' });
   assert.equal(result.status, 0);

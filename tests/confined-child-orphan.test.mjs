@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { confineRefusal } from '../lib/confine-claude.mjs';
+import { tempDir } from './harness.mjs';
 
 const WRAPPER = path.resolve(import.meta.dirname, '../benchmarks/confined-child.mjs');
 
@@ -60,7 +60,7 @@ function kill(pid, signal) {
 }
 
 test('confined-child ends its claude when its parent dies without a signal', { skip: confineRefusal() !== undefined, timeout: 50_000 }, async () => {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'confined-orphan-')));
+  const base = fs.realpathSync(tempDir('confined-orphan-'));
   const root = path.join(base, 'cell');
   const bin = path.join(base, 'bin');
   fs.mkdirSync(root);
@@ -96,6 +96,5 @@ test('confined-child ends its claude when its parent dies without a signal', { s
     parent.kill('SIGKILL');
     kill(wrapperPid, 'SIGKILL');
     kill(fakePid, 'SIGKILL');
-    fs.rmSync(base, { recursive: true, force: true });
   }
 });

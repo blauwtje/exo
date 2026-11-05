@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { keepRepository } from '../benchmarks/sweep.mjs';
-import { git } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SWEEP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'sweep.mjs');
 
@@ -15,38 +14,34 @@ function dryRun(...args) {
 }
 
 test('keepRepository copies the cell repository with its commits and excluded .exo/ files, and its origin', () => {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'sweep-keep-')));
-  try {
-    const cellRoot = path.join(base, 'cell');
-    const repository = path.join(cellRoot, 'repo');
-    fs.mkdirSync(repository, { recursive: true });
-    git(repository, 'init', '--quiet', '-b', 'main');
-    git(repository, 'config', 'user.email', 'test@example.com');
-    git(repository, 'config', 'user.name', 'test');
-    fs.writeFileSync(path.join(repository, 'a.txt'), 'a\n');
-    git(repository, 'add', 'a.txt');
-    git(repository, 'commit', '--quiet', '-m', 'one');
-    fs.appendFileSync(path.join(repository, '.git', 'info', 'exclude'), '.exo/\n');
-    fs.mkdirSync(path.join(repository, '.exo'));
-    fs.writeFileSync(path.join(repository, '.exo', 'state.json'), '{}\n');
-    const written = new Date('2020-01-02T03:04:05Z');
-    fs.utimesSync(path.join(repository, '.exo', 'state.json'), written, written);
-    git(path.join(cellRoot), 'init', '--quiet', '--bare', 'origin.git');
-    const keep = path.join(base, 'keep');
-    const kept = keepRepository(cellRoot, keep, 'flow-unit-2');
-    assert.equal(kept, path.join(keep, 'flow-unit-2'));
-    assert.equal(git(path.join(kept, 'repo'), 'rev-parse', 'HEAD'), git(repository, 'rev-parse', 'HEAD'));
-    assert.equal(fs.readFileSync(path.join(kept, 'repo', '.exo', 'state.json'), 'utf8'), '{}\n');
-    assert.equal(
-      fs.statSync(path.join(kept, 'repo', '.exo', 'state.json')).mtimeMs,
-      written.getTime(),
-      'a kept file keeps its modification time, so a checkpoint can tell what was written after a point in the cell',
-    );
-    assert.ok(fs.existsSync(path.join(kept, 'origin.git', 'HEAD')), 'origin.git is kept beside the repository');
-    assert.ok(!fs.existsSync(path.join(kept, 'tmp')), 'the cell tmp folder is not kept');
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const base = fs.realpathSync(tempDir('sweep-keep-'));
+  const cellRoot = path.join(base, 'cell');
+  const repository = path.join(cellRoot, 'repo');
+  fs.mkdirSync(repository, { recursive: true });
+  git(repository, 'init', '--quiet', '-b', 'main');
+  git(repository, 'config', 'user.email', 'test@example.com');
+  git(repository, 'config', 'user.name', 'test');
+  fs.writeFileSync(path.join(repository, 'a.txt'), 'a\n');
+  git(repository, 'add', 'a.txt');
+  git(repository, 'commit', '--quiet', '-m', 'one');
+  fs.appendFileSync(path.join(repository, '.git', 'info', 'exclude'), '.exo/\n');
+  fs.mkdirSync(path.join(repository, '.exo'));
+  fs.writeFileSync(path.join(repository, '.exo', 'state.json'), '{}\n');
+  const written = new Date('2020-01-02T03:04:05Z');
+  fs.utimesSync(path.join(repository, '.exo', 'state.json'), written, written);
+  git(path.join(cellRoot), 'init', '--quiet', '--bare', 'origin.git');
+  const keep = path.join(base, 'keep');
+  const kept = keepRepository(cellRoot, keep, 'flow-unit-2');
+  assert.equal(kept, path.join(keep, 'flow-unit-2'));
+  assert.equal(git(path.join(kept, 'repo'), 'rev-parse', 'HEAD'), git(repository, 'rev-parse', 'HEAD'));
+  assert.equal(fs.readFileSync(path.join(kept, 'repo', '.exo', 'state.json'), 'utf8'), '{}\n');
+  assert.equal(
+    fs.statSync(path.join(kept, 'repo', '.exo', 'state.json')).mtimeMs,
+    written.getTime(),
+    'a kept file keeps its modification time, so a checkpoint can tell what was written after a point in the cell',
+  );
+  assert.ok(fs.existsSync(path.join(kept, 'origin.git', 'HEAD')), 'origin.git is kept beside the repository');
+  assert.ok(!fs.existsSync(path.join(kept, 'tmp')), 'the cell tmp folder is not kept');
 });
 
 test('--keep-repo names its folder in the dry run', () => {

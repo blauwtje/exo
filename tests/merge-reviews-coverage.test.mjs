@@ -6,7 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { changedFiles, findingsDigest, mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const MERGE = fileURLToPath(new URL('../skills/gate/scripts/merge-reviews.mjs', import.meta.url));
 const FILES = ['a.js', 'b.js', 'c.js', 'd.js'];
@@ -58,13 +58,12 @@ test('absolute Read: paths inside the checkout root count as read and paths outs
 
 test('merge-reviews.mjs prints COVERAGE and one UNREAD-FILE line per changed file nobody read', () => {
   const root = tempDir('coverage-');
-  const git = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
-  git('init', '-q', '-b', 'main');
-  git('commit', '-q', '--allow-empty', '-m', 'init');
-  git('switch', '-q', '-c', 'feat/x');
+  git(root, 'init', '-q', '-b', 'main');
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'init');
+  git(root, 'switch', '-q', '-c', 'feat/x');
   for (const name of FILES) fs.writeFileSync(path.join(root, name), 'x\n');
-  git('add', '-A');
-  git('commit', '-q', '-m', 'feat: files');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'feat: files');
   const file = path.join(root, 'review-branch.md');
   fs.writeFileSync(file, 'CLEAN\n\nRead: a.js, b.js, c.js\n');
   const lines = execFileSync(process.execPath, [MERGE, '--root', root, '--base', 'main', '--report', file], { encoding: 'utf8' }).trim().split('\n');
@@ -86,18 +85,17 @@ test('findingsDigest ignores fixer marks, indented detail and FAIL lines, and se
 
 function divergedRepo() {
   const root = tempDir('diverged-');
-  const run = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args]);
-  run('init', '-q', '-b', 'main');
-  run('commit', '-q', '--allow-empty', '-m', 'init');
-  run('switch', '-q', '-c', 'work');
+  git(root, 'init', '-q', '-b', 'main');
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'init');
+  git(root, 'switch', '-q', '-c', 'work');
   fs.writeFileSync(path.join(root, 'branch.js'), 'a\n');
-  run('add', '.');
-  run('commit', '-q', '-m', 'branch change');
-  run('switch', '-q', 'main');
+  git(root, 'add', '.');
+  git(root, 'commit', '-q', '-m', 'branch change');
+  git(root, 'switch', '-q', 'main');
   fs.writeFileSync(path.join(root, 'main-only.js'), 'b\n');
-  run('add', '.');
-  run('commit', '-q', '-m', 'main change');
-  run('switch', '-q', 'work');
+  git(root, 'add', '.');
+  git(root, 'commit', '-q', '-m', 'main change');
+  git(root, 'switch', '-q', 'work');
   return root;
 }
 

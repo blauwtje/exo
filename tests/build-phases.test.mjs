@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildPhases } from '../benchmarks/build-phases.mjs';
+import { tempDir } from './harness.mjs';
 
 function message(id, tool) {
   const content = tool ? [{ type: 'tool_use', id: `tool-${id}`, name: tool.name, input: tool.input }] : [{ type: 'text', text: 'ok' }];
@@ -11,7 +11,7 @@ function message(id, tool) {
 }
 
 function phasesOf(tool) {
-  const directory = mkdtempSync(join(tmpdir(), 'build-phases-'));
+  const directory = tempDir('build-phases-');
   const file = join(directory, 'main.jsonl');
   writeFileSync(file, [message('m1'), message('m2', tool), message('m3'), message('m4')].join('\n'));
   return buildPhases(file);

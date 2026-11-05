@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { mergeReviews, parseFinding } from '../skills/gate/scripts/merge-reviews.mjs';
 import { boundaryLines, writeReviewInput } from '../skills/gate/scripts/review-input.mjs';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SCOPE_LINE = 'lib/a.mjs:4-6; out-of-scope; path escape; symlink bypass sits in an out class; report';
 
@@ -81,9 +80,8 @@ test('boundaryLines copies each landed task Boundary and says none without one',
 
 test('review input holds a Boundaries block that names the out-of-scope weight', () => {
   const checkout = tempDir('scope-');
-  const git = (...args) => execFileSync('git', ['-C', checkout, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args]);
-  git('init', '-q', '-b', 'main');
-  git('commit', '-q', '--allow-empty', '-m', 'init');
+  git(checkout, 'init', '-q', '-b', 'main');
+  git(checkout, 'commit', '-q', '--allow-empty', '-m', 'init');
   const boundaries = ['Task 1: Boundary: in a path | out symlinks | test t'];
   writeReviewInput({ goal: 'g', nonGoals: [] }, { checkout, base: 'HEAD', head: 'HEAD', redSection: ['none'], boundaries });
   const input = fs.readFileSync(path.join(checkout, '.exo', 'review-input.md'), 'utf8');
