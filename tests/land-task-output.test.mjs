@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { landingForCaller } from '../skills/build/scripts/land-task.mjs';
+import { landingForCaller } from '../skills/build/scripts/land-output.mjs';
 
 const LANDING = [
   'Landed: task 1',

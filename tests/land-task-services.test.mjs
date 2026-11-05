@@ -7,7 +7,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { compactPlanFixture, git, gitRepository, run } from './harness.mjs';
 import { compactTask, editApp, SCRIPT, writeReport } from './land-task-fixture.mjs';
-import { EnvError, LandingError, landTask } from '../skills/build/scripts/land-task.mjs';
+import { landTask } from '../skills/build/scripts/land-task.mjs';
+import { EnvError, LandingError } from '../skills/build/scripts/land-errors.mjs';
 
 const PROOF = 'node tests/gate.test.mjs';
 const GATE_TEST = [

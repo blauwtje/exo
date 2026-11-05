@@ -10,174 +10,27 @@ import process from 'node:process';
 import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
 import { defaultBranch } from '#git';
 import { commitsOf, criterionCommand, driftOf, frameOf, isInputDrift, isUnreachableInput, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
-import { INHERIT, readKindTable, TABLE_PATH } from '#model-kinds';
-import { contextLimit, softLimit } from '#context-limits';
-import { settingValue } from '#settings-store';
 import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
 import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { openGate, phaseForExit, recordStop, recordTask, updateRun } from './run-state.mjs';
+import { openGate, phaseForExit } from './run-state.mjs';
 import { runTail } from './run-tail.mjs';
-import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
-import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, SESSION_REFUSAL, insideClaudeCode, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, resolveClaude, sandboxMode, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
+import { agentMaxTurns, allowRules, appendLog, childEnv, claudeArgs, SESSION_REFUSAL, insideClaudeCode, denyRules, deniedFields, exoError, isFileOnDisk, parseStream, PLUGIN_ROOT, projectEcosystems, sandboxSettings, SCRIPT, spawnClaude } from './run-session.mjs';
 import { breachOf, gitOut, shelveLeftover, snapshot, untrackedPaths, worktreeTree } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { landChangelogTask } from './changelog-task.mjs';
-import { ensureServices } from '../../../lib/services.mjs';
 import { averageLines, cacheLines, clip, deniedLines, detailLines, idleLine, landedLine, money, numbersText, planLandedLine, planSessionLine, scriptLandedLine, startLine, summaryLines, taskSubject, wallClock } from './run-report.mjs';
-
-const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
-
-  node run-plan.mjs <plan.md> [--root <dir>] [--max-iterations <n>] [--timeout <minutes>]
-    [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--max-run-usd <x>]
-    [--session auto|task|plan] [--claude <path>] [--plugin-dir <path>] [--dry-run]
-
-Exit 0 done with gate PASS, 3 parked, 1 any other stop, 2 refusal or bad arguments.
-Logs, summary.txt, tasks.json and progress.md go to .exo/run-plan/<plan-id>/<UTC time>/.`;
-
-const DEFAULT_TIMEOUT_MINUTES = 60;
-
-class Refusal extends Error {}
+import { Refusal } from './run-plan-errors.mjs';
+import { RUN_PLAN_USAGE, DEFAULT_TIMEOUT_MINUTES } from './run-plan-usage.mjs';
+import { hasPin, isDocTask, chooseProvider } from './run-plan-provider.mjs';
+import { lastLine, taskOrder, utcStamp, preflight, numberFlag } from './run-plan-preflight.mjs';
+import { setPhase, noteTask, noteCounts, noteStop } from './run-plan-notes.mjs';
 
 // why: the run's one app process; the entry point's `finally` kills its tree.
 let appPid = null;
 
-function listedProvider(name) {
-  const { providers } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
-  return Object.hasOwn(providers, name);
-}
-
-const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
-
-export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingValue('budget') } = {}) {
-  if (flags.model !== undefined || flags.effort !== undefined) return {};
-  if (!listedProvider(name)) return {};
-  if (budget === 'off') return { model: null, effort: null };
-  const { model, effort } = readKindTable(undefined, { provider: name, budget, retry }).kinds[kind];
-  if (name !== 'claude') return { effort };
-  return { model: model === INHERIT ? null : model, effort };
-}
-
-// why: a task that edits only prose needs no build-task tier; code, skill, agent, rule, hook and CLAUDE.md files keep it.
-const DOC_EXCLUDED = /^(skills|agents|rules|hooks)\//;
-const isDocTask = (task) => task.files.length > 0 && task.files.every(({ path: file }) => file.endsWith('.md') && !DOC_EXCLUDED.test(file) && path.basename(file) !== 'CLAUDE.md');
-
-export function chooseProvider(flags, home, project) {
-  let config;
-  try {
-    config = loadRunConfig({ home });
-  } catch (error) {
-    throw new Refusal(`${path.join(configDir(home), 'run.json')} does not load: ${error.message}`);
-  }
-  const name = flags.provider ?? config.defaults.provider;
-  const asked = flags.effort ?? config.providers[name]?.effort ?? config.defaults.effort;
-  if (!config.efforts.includes(asked)) throw new Refusal(`unknown effort "${asked}"; use one of ${config.efforts.join(', ')}`);
-  const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
-  if (provider.refused !== undefined) throw new Refusal(provider.refused);
-  if (!Number.isInteger(config.defaults.attemptCap) || config.defaults.attemptCap < 1) throw new Refusal(`run.json defaults.attemptCap must be a positive integer, got ${JSON.stringify(config.defaults.attemptCap)}`);
-  return {
-    ...provider,
-    asked,
-    explicitEffort: flags.effort !== undefined,
-    model: flags.model ?? provider.model,
-    ...budgetPin(name, flags),
-    docPin: budgetPin(name, flags, { kind: 'doc-task' }),
-    retryPin: budgetPin(name, flags, { retry: true }),
-    docRetryPin: budgetPin(name, flags, { kind: 'doc-task', retry: true }),
-    shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
-    contextBudget: softLimit(contextLimit(home)),
-    cacheWriteBar: config.defaults.turnOneCacheWriteWarn,
-    attemptCap: config.defaults.attemptCap,
-    sandbox: sandboxMode(config, project)
-  };
-}
-
-const lastLine = (text) => text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).at(-1) ?? '';
-
-function taskOrder(tasks, landed) {
-  const done = [...landed];
-  const order = [];
-  for (;;) {
-    const next = readyTasks(tasks, done)[0];
-    if (next === undefined) return order;
-    order.push(next.number);
-    done.push(next.number);
-  }
-}
-
-function utcStamp(date = new Date()) {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
-}
-
-function preflight(planArgument, flags) {
-  const claude = resolveClaude({ flag: flags.claude });
-  if (claude.refused !== undefined) throw new Refusal(claude.refused);
-  const planPath = path.resolve(planArgument);
-  if (!isFileOnDisk(planPath)) throw new Refusal(`no plan at ${planArgument}`);
-  const root = gitOut(path.resolve(flags.root ?? '.'), ['rev-parse', '--show-toplevel']);
-  if (root === null) throw new Refusal(`${flags.root ?? process.cwd()} is not inside a git repository`);
-  let plan;
-  try {
-    plan = parsePlan(fs.readFileSync(planPath, 'utf8'));
-  } catch (error) {
-    throw new Refusal(`the plan does not parse: ${error.message}`);
-  }
-  const basis = frameOf(plan.frame);
-  const branch = gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD']);
-  const wanted = basis.branch?.trim() ?? null;
-  if (wanted === null) throw new Refusal("the plan's '## Plan basis' names no Branch:");
-  if (branch !== wanted) {
-    const exists = gitOut(root, ['show-ref', '--verify', '--quiet', `refs/heads/${wanted}`]) !== null;
-    throw new Refusal(`the checkout is on branch ${branch ?? '(detached)'}, not the plan's Branch: ${wanted}; run git switch ${exists ? '' : '-c '}${wanted}`);
-  }
-  if (wanted === defaultBranch(root)) throw new Refusal(`Branch: ${wanted} is the default branch`);
-  const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
-  if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
-  const passFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planIdOf(planPath), 'plan-check-ok');
-  const sha = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-  const passKey = `${sha(planPath)} ${gitOut(root, ['rev-parse', 'HEAD'])} ${sha(SCRIPT.planCheck)}\n`;
-  if (!(isFileOnDisk(passFile) && fs.readFileSync(passFile, 'utf8') === passKey)) {
-    const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
-    if (check.status !== 0) {
-      const lines = `${check.stdout}\n${check.stderr}`.split('\n').filter((line) => line.trim() !== '');
-      throw new Refusal(`plan-check --loop fails: ${lines.find((line) => line.startsWith('loop: ')) ?? lines[0] ?? `exit ${check.status}`}`);
-    }
-    fs.mkdirSync(path.dirname(passFile), { recursive: true });
-    fs.writeFileSync(passFile, passKey);
-  }
-  const services = ensureServices(root);
-  if (services !== 'up') throw new Refusal(services);
-  return { claude, planPath, root, plan, branch };
-}
-
-function numberFlag(value, name, { integer = false } = {}) {
-  if (value === undefined) return undefined;
-  const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0 || (integer && !Number.isInteger(number))) throw new UsageError(`flag '--${name}' needs a positive ${integer ? 'integer' : 'number'}`);
-  return number;
-}
-
-function setPhase(phase) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), { phase });
-}
-
-function noteTask(task) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) recordTask(path.resolve(dir, '..', '..', '..'), path.basename(dir), task);
-}
-
-function noteCounts(counts) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), counts);
-}
-
-function noteStop(stop) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) recordStop(path.resolve(dir, '..', '..', '..'), path.basename(dir), stop);
-}
 
 async function main(argv) {
   const [planArgument, ...rest] = argv;

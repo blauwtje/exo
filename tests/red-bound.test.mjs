@@ -4,7 +4,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
-import { landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { landTask } from '../skills/build/scripts/land-task.mjs';
+import { LandingError } from '../skills/build/scripts/land-errors.mjs';
 import { redGreen, runOnBase } from '../lib/red-green.mjs';
 import { commitFiles, gitRepository } from './harness.mjs';
 import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs';

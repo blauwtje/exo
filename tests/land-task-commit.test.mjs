@@ -10,7 +10,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
-import { checkTask, fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { landTask } from '../skills/build/scripts/land-task.mjs';
+import { checkTask } from '../skills/build/scripts/land-check.mjs';
+import { fixLand } from '../skills/build/scripts/land-fix.mjs';
+import { LandingError } from '../skills/build/scripts/land-errors.mjs';
 import { compactPlanFixture, git, gitRepository, planFixture, run } from './harness.mjs';
 import {
   taskSection, SCRIPT, PLAN, landingCheckout, editApp, withLint, compactTask, compactCheckout, writeReport, PASS_REPORT, assertRefused
