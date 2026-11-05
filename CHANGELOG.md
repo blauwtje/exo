@@ -10,6 +10,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `npm run check` fails when a file in `hooks/` or `lib/` other than `lib/read-estimate.mjs` turns a file size into read tokens or looks up the session images directory.
 - `npm run check` fails when an agent can start a background shell or Monitor but has no TaskStop and no "start no background" rule.
 - The speed ledger records the installed hook overhead per tool call across projects: about 80 ms per Bash call idle and 110 ms in transcripts, 70.6 of 7532 thread minutes in exo (under 1%), so hooks are not a cause of slow sessions.
 - Files the user opens (run report, handoff, manual checks, orchestrator result file) follow one plain-words format in `skills/route-skills/references/user-read-format.md`, which says they hold no machine text, and `npm run check` fails a listed source that breaks it, that has an all-caps word of 3 letters or more besides PR, CI, URL and API, or that has a line where a quarter of the tokens are code.
@@ -51,6 +52,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A subagent is bound by `defaults.agentContextTarget` (60k) while it runs, not by the lead's `contextLimit`: a note at 75% of the target, new reads, searches, fetches, skills and agents refused at the target, and every tool except Write and Edit refused at 125% of it, with a `Status: handover` result file in the refusal. The lead's `contextLimit` is unchanged.
 
 ### Fixed
+- A worker brief that names a pasted image by its bare file name now finds it in the session directory, images are sized by their pixels (at most 1600 tokens) instead of their bytes, and a denial names the directories searched or the tokens to cut.
 - locate-code and find-open-points now start no background shell, so none is left running after they return.
 - Build now runs independent plan tasks in one wave once their dependencies have landed, not only the tasks listed on the plan's `Parallel:` line. Tasks that share a file still run apart, and `Parallel: none` keeps a plan serial.
 - The held-out case in `tests/improve-round.test.mjs` no longer fails when a commit hash contains `77`, because it now matches held-out values as whole numbers.

@@ -61,6 +61,7 @@ import { checkFixClassLoad } from './verify/checks/fix-class-load.mjs';
 import { checkScriptHelp } from './verify/checks/script-help.mjs';
 import { checkScriptOutput } from './verify/checks/script-output.mjs';
 import { checkSubagentStart } from './verify/checks/subagent-start.mjs';
+import { checkReadEstimates } from './verify/checks/read-estimates.mjs';
 import { checkUserReadFormat } from './verify/checks/user-read-format.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -116,6 +117,7 @@ checkReferenceShape(report, repository);
 checkSharedContracts(report, repository);
 checkReturnCaps(report, repository);
 checkBackgroundStops(report, repository);
+checkReadEstimates(report, repository);
 checkScriptSyntax(report, repository);
 checkSkillScripts(report, repository);
 checkCodeComments(report, repository);

@@ -279,7 +279,7 @@ test('worker size: a refusal names unresolved paths, invalid Fetches, the larges
   const reason = (subagent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type, description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
   assert.match(reason('general-purpose', 'Reads: nope.txt\nResult: .exo/r.md'), /nope\.txt/);
   assert.match(reason('exo:fetch-docs', 'Reads: none\nFetches: many'), /Fetches/);
-  assert.match(reason('general-purpose', 'Reads: big.txt\nResult: .exo/r.md'), /Largest reads: big\.txt \(\d+\).*path or line range/);
+  assert.match(reason('general-purpose', 'Reads: big.txt\nResult: .exo/r.md'), /Largest reads: big\.txt \(\d+\).*Cut at least \d+ tokens.*line range.*by path/);
   assert.match(reason('general-purpose', 'Reads: none'), /lacks Result\b.*`Result:` line naming one `\.exo\/<\.\.\.>\.md` file/);
   const fetchReason = reason('exo:fetch-docs', 'Reads: none\nFetches: 19');
   assert.match(fetchReason, /Fetches/);
@@ -313,7 +313,7 @@ test('worker size: a none. or punctuated Reads line runs normalized and a missin
     assert.match(output.updatedInput.prompt, /^Reads: (none|a\.md)$/m, reads);
   }
   const reason = run('Reads: gone.md.\nResult: .exo/r.md').permissionDecisionReason;
-  assert.match(reason, /do not exist: gone\.md\. Expected: `Reads: a\.md, lib\/b\.mjs` or `Reads: none`\.$/);
+  assert.match(reason, /do not exist: gone\.md \(searched [^)]*\)\. Expected: `Reads: a\.md, lib\/b\.mjs` or `Reads: none`\.$/);
   assert.doesNotMatch(reason, /\.\./);
 });
 

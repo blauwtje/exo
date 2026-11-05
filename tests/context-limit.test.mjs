@@ -349,3 +349,12 @@ test('TaskStop stays allowed for any agent at the hard limit while Bash is refus
     assert.match(call('Bash').deny, /Status: handover/, String(type));
   }
 });
+
+test('imageTokenCap, pdfPageTokens and binaryReadTokens read the catalog and honor a run.json override', async () => {
+  const { imageTokenCap, pdfPageTokens, binaryReadTokens } = await import('../lib/context-limits.mjs');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'read-defaults-'));
+  assert.deepEqual([imageTokenCap(home), pdfPageTokens(home), binaryReadTokens(home)], [1600, 3000, 500]);
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { imageTokenCap: 900, pdfPageTokens: 2000, binaryReadTokens: 100 } }));
+  assert.deepEqual([imageTokenCap(home), pdfPageTokens(home), binaryReadTokens(home)], [900, 2000, 100]);
+});

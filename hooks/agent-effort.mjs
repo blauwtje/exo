@@ -103,9 +103,9 @@ function workerScope(hookInput) {
 function readsRewrite(hookInput = {}) {
   const { tool_name: tool, tool_input: input, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return { input, ambiguous: [], scope: null };
-  const { prompt: located, ambiguous } = locatedReads(input.prompt, cwd);
+  const { prompt: located, ambiguous } = locatedReads(input.prompt, cwd, hookInput);
   const scope = workerScope(hookInput);
-  const prompt = scope && !scope.fetchDocs ? budgetedReads(located, cwd) : located;
+  const prompt = scope && !scope.fetchDocs ? budgetedReads(located, cwd, hookInput) : located;
   return { input: prompt === input.prompt ? input : { ...input, prompt }, ambiguous, scope };
 }
 
@@ -148,24 +148,24 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = se
 
 const SHOWN_CANDIDATES = 5;
 
-function unresolvedReason(unresolved, ambiguous) {
+function unresolvedReason(unresolved, ambiguous, searched = []) {
   const several = ambiguous.map(({ name, matches }) => `${name} matches ${matches.slice(0, SHOWN_CANDIDATES).join(', ')}`);
   const missing = unresolved.filter((name) => !ambiguous.some((entry) => entry.name === name));
   const parts = [
     several.length && `names that match several tracked files, so give the full path: ${several.join('; ')}`,
-    missing.length && `paths that do not exist: ${missing.join(', ')}`,
+    missing.length && `paths that do not exist: ${missing.join(', ')} (searched ${searched.join(', ') || 'the working directory'}; name a pasted image by its full path)`,
   ].filter(Boolean);
   return `This worker brief reads ${parts.join('. It also reads ')}. Expected: \`Reads: a.md, lib/b.mjs\` or \`Reads: none\`.`;
 }
 
 function sizeReason(size, { missing, fetchDocs, ambiguous }) {
   if (size.invalid.length) return `This worker brief has an invalid ${size.invalid.join(' and ')} line. Give a whole number.`;
-  if (size.unresolved.length) return unresolvedReason(size.unresolved, ambiguous);
+  if (size.unresolved.length) return unresolvedReason(size.unresolved, ambiguous, size.searched);
   if (missing.join() === 'Reads') return 'This worker brief lacks a `Reads:` line. Add one of paths or `none`.';
   if (missing.length) return `This worker brief lacks ${missing.join(' and ')}. Add a \`Reads:\` line of paths or \`none\` and a \`Result:\` line naming one \`.exo/<...>.md\` file.`;
   const estimate = `This worker brief reads about ${size.tokens} tokens against a budget of ${size.budget}.`;
   if (fetchDocs) return `${estimate} Lower the \`Fetches:\` count or split the fetches across more agents.`;
-  return `${estimate} Largest reads: ${size.largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ')}. Split the work into more agents by path or line range, each with its own \`Reads:\` and \`Result:\`.`;
+  return `${estimate} Largest reads: ${size.largest.map((entry) => `${entry.path} (${entry.tokens})`).join(', ')}. Cut at least ${size.tokens - size.budget} tokens: give the largest read its own agent or a line range, and split the rest by path so each agent's \`Reads:\` stays under ${size.budget} with its own \`Result:\`.`;
 }
 
 function workersFields(prompt) {
@@ -182,7 +182,7 @@ function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return workersFields(input.prompt);
   if (!rewrite.scope) return null;
   const { fromOrchestrator, fetchDocs } = rewrite.scope;
-  const size = workerSize({ prompt: rewrite.input.prompt, cwd });
+  const size = workerSize({ prompt: rewrite.input.prompt, cwd, session: hookInput });
   const missing = fromOrchestrator ? (fetchDocs ? [] : size.missing) : (size.sized ? [] : ['Reads']);
   const refused = size.invalid.length > 0 || size.unresolved.length > 0 || missing.length > 0 || ((fromOrchestrator || size.sized) && size.tokens > size.budget);
   if (!refused) return null;
