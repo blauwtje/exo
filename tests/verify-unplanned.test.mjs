@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { findUnplannedPaths } from '../skills/gate/scripts/gate.mjs';
+import { findUnplannedPaths } from '../skills/gate/scripts/unplanned-paths.mjs';
 
 const tasks = (...paths) => [{ files: paths.map((path) => ({ path })) }];
 

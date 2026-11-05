@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { selfHostPlan, selfHostingGap } from '../skills/gate/scripts/gate.mjs';
+import { selfHostPlan, selfHostingGap } from '../skills/gate/scripts/self-host.mjs';
 import { tempDir } from './harness.mjs';
 
 function repoWithBranch(changedFiles) {

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { weakenedTests } from '../skills/gate/scripts/gate.mjs';
+import { weakenedTests } from '../skills/gate/scripts/test-defects.mjs';
 import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 import { git } from './harness.mjs';
 import { landingCheckout } from './land-task-fixture.mjs';

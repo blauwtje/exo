@@ -14,6 +14,7 @@ import { git } from './harness.mjs';
 const REPOSITORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SETTINGS = path.join(REPOSITORY, 'skills', 'configure', 'scripts', 'settings.mjs');
 const CLI = path.join(REPOSITORY, 'skills', 'build', 'scripts', 'exo-cli.mjs');
+const RUN_CHECKOUT = path.join(REPOSITORY, 'skills', 'build', 'scripts', 'run-checkout.mjs');
 const HOOK = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
 
 const tempDir = (label) => fs.mkdtempSync(path.join(os.tmpdir(), `exo-${label}-`));
@@ -63,7 +64,7 @@ test('the exo shim falls back to the main checkout once the pointed worktree is 
 test('exo-cli reads the main checkout as the pointer once the pointed worktree is gone', async () => {
   const main = tempDir('pointer-main');
   const config = goneWorktreeConfig(main);
-  const { refuseLoadedCheckout } = await import(CLI);
+  const { refuseLoadedCheckout } = await import(RUN_CHECKOUT);
   const before = process.env.CLAUDE_CONFIG_DIR;
   process.env.CLAUDE_CONFIG_DIR = config;
   try {
