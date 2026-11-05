@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import { shellQuote } from '#basics';
 import { parsePlan } from '#plan-tasks';
 import { planPrompt } from '../skills/build/scripts/run-prompts.mjs';
 import { SHARED_STATE_GIT } from '../lib/git-deny.mjs';
@@ -11,7 +12,6 @@ import { tempDir } from './harness.mjs';
 
 const PROVIDER = { name: 'claude', env: {}, effort: null, promptCacheTtl: null };
 const GUARD = path.join(PLUGIN_ROOT, 'lib', 'stall-guard.mjs');
-const shellQuote = (text) => `'${String(text).replaceAll("'", "'\\''")}'`;
 
 function seedRepo() {
   const root = tempDir('exo-no-commit-');

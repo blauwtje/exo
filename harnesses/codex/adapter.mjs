@@ -31,6 +31,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
+import { shellQuote, writeAtomic } from '../../lib/basics.mjs';
 import { onPath } from '../on-path.mjs';
 import { generateTree } from './generate.mjs';
 import { codexHookEntries } from './hooks.mjs';
@@ -77,13 +78,6 @@ function readJson(file) {
   } catch (error) {
     throw new Error(`${file} does not parse (${error.message}); fix or move it, nothing was written`);
   }
-}
-
-function writeAtomic(file, text) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temporary = `${file}.exo-${process.pid}.tmp`;
-  fs.writeFileSync(temporary, text);
-  fs.renameSync(temporary, file);
 }
 
 const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [], created: [] });
@@ -300,7 +294,7 @@ function mergeHooks(config, removed, additions) {
 // the POSIX `command`; lift it once Codex documents its Windows shell.
 function projectHookEntries(exoRoot) {
   const entryScript = path.join(exoRoot, 'harnesses', 'codex', 'hook-entry.mjs');
-  const quoted = `'${entryScript.replaceAll("'", "'\\''")}'`;
+  const quoted = shellQuote(entryScript);
   const entries = codexHookEntries(exoRoot);
   for (const groups of Object.values(entries)) {
     for (const group of groups) {

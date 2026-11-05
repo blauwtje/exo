@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { transcriptFolder } from '#confine-claude';
 import { contextLimit, softLimit } from '#context-limits';
-import { contextSeries } from '#context-decisions';
+import { contextSeries } from '#context-series';
 import { UsageError, isMain, parseFlags } from '#script-flags';
 
 const USAGE = `usage: node benchmarks/lead-context.mjs [--folder <transcript folder>] [--all]

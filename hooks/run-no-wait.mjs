@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readJsonOrNull } from '#basics';
 import { inSidecall, readHookText } from '#hook-input';
 import { inRun } from '../lib/run-decision.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -51,8 +52,7 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
   const line = lines(text).pop() ?? '';
   if (!asking && !missingStatus(line, task, text)) return null;
   const file = path.join(dir, 'blocks.json');
-  let counts = {};
-  try { counts = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { }
+  const counts = readJsonOrNull(file) ?? {};
   const session = String(input.session_id ?? '');
   const count = Number.isInteger(counts[session]) ? counts[session] : 0;
   const atLimit = count >= BLOCK_LIMIT;

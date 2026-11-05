@@ -43,7 +43,7 @@ import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks, newestRunLedger } from './value.mjs';
 import { applyVariant } from './variants.mjs';
-import { readJson } from './basics.mjs';
+import { readJson, readJsonOrNull } from './basics.mjs';
 
 const RUNS = path.join(ROOT, 'benchmarks', 'runs');
 const RESULTS = path.join(ROOT, 'benchmarks', 'results');
@@ -192,11 +192,7 @@ export function runClaude(cell, workdir, cellRoot, cellDirectory, copies, provid
 }
 
 function readResult(cellDirectory) {
-  try {
-    return readJson(path.join(cellDirectory, 'stdout.json'));
-  } catch {
-    return null;
-  }
+  return readJsonOrNull(path.join(cellDirectory, 'stdout.json'));
 }
 
 function runSafeCheck(taskId, directory) {

@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { findTranscript } from './cell-usage.mjs';
-import { contextSeries } from '#context-decisions';
+import { contextSeries } from '#context-series';
 import { UsageError, isMain, parseFlags } from '#script-flags';
 import { readJson, sum } from './basics.mjs';
 

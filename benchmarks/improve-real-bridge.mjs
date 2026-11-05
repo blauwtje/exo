@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { writeAtomic } from '#basics';
 import { environmentMs } from '#script-flags';
 import { SPLITS, isRouting, mean, locateScore, pristineView, routingScore, scorerSpend } from './improve-real-copy.mjs';
 
@@ -156,11 +157,6 @@ export function writeScoreClient({ dir, stateDir, target }) {
   return file;
 }
 
-function writeAtomic(file, value) {
-  fs.writeFileSync(`${file}.tmp`, `${JSON.stringify(value)}\n`);
-  fs.renameSync(`${file}.tmp`, file);
-}
-
 function pendingNumbers(stateDir) {
   return fs.readdirSync(stateDir)
     .map((name) => REQUEST_FILE.exec(name))
@@ -188,16 +184,16 @@ export function startScoreBridge({ stateDir, repo, target, calls, score = scoreT
     const request = readRequest(stateDir, n);
     if (!request) return;
     const resultFile = path.join(stateDir, `result-${n}.json`);
-    if (state.used >= calls) return writeAtomic(resultFile, { refused: true, calls: state.used });
+    if (state.used >= calls) return writeAtomic(resultFile, `${JSON.stringify({ refused: true, calls: state.used })}\n`);
     state.used += 1;
     try {
       const scored = await score({ repo, target, split: 'train', targetText: request.text, runs: 1 });
       state.spend += scored.spend;
       state.history.push({ n, score: scored.mean, spend: scored.spend });
-      writeAtomic(resultFile, { score: scored.mean });
+      writeAtomic(resultFile, `${JSON.stringify({ score: scored.mean })}\n`);
     } catch (error) {
       state.history.push({ n, error: error.message, spend: null });
-      writeAtomic(resultFile, { error: error.message });
+      writeAtomic(resultFile, `${JSON.stringify({ error: error.message })}\n`);
     }
   }
 

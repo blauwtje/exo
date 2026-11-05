@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { writeAtomic } from '../../lib/basics.mjs';
 import { onPath } from '../on-path.mjs';
 
 export const name = 'claude';
@@ -67,10 +68,7 @@ function writeInstalls(file, installs) {
     }
     return;
   }
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temporary = `${file}.exo-${process.pid}.tmp`;
-  fs.writeFileSync(temporary, `${JSON.stringify({ version: 2, installs }, null, 2)}\n`);
-  fs.renameSync(temporary, file);
+  writeAtomic(file, `${JSON.stringify({ version: 2, installs }, null, 2)}\n`);
 }
 
 const sameInstall = (left, right) => left.scope === right.scope && left.project === right.project;

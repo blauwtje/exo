@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { writeAtomic } from '#basics';
 import { currentHost } from '#host';
 import { OLD_STATUSLINE_LAUNCHERS, STATUSLINE_LAUNCHER } from '#plugin-pointer';
 import {
@@ -169,10 +170,7 @@ function set(root, key, value, scope) {
   const file = scope === 'global' ? relative : path.join(root, relative);
   const values = readLayer(file);
   values[key] = typed;
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temporary = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(temporary, `${JSON.stringify(values, null, 2)}\n`);
-  fs.renameSync(temporary, file);
+  writeAtomic(file, `${JSON.stringify(values, null, 2)}\n`);
   console.log(`${key}=${typed} set in ${relative}`);
 
   if (scope === 'global') return;

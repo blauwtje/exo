@@ -17,6 +17,7 @@
     "#config-directory": "./lib/config-directory.mjs",
     "#context-limits": "./lib/context-limits.mjs",
     "#context-decisions": "./lib/context-decisions.mjs",
+    "#context-series": "./lib/context-series.mjs",
     "#saved-outputs": "./lib/saved-outputs.mjs",
     "#data-literals": "./lib/data-literals.mjs",
     "#default-options-home": "./lib/default-options-home.mjs",

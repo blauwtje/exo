@@ -11,6 +11,7 @@ import { calibrationLines } from './judge-calibration.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
 import { repoMetrics } from './adhd/metrics.mjs';
+import { writeAtomic } from '../lib/basics.mjs';
 import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
 import { intervalText } from './interval-text.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
@@ -402,9 +403,7 @@ export function parseArgs(argv) {
 const logPath = (dir) => path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
 
 function writeLog(record, file) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(`${file}.tmp`, JSON.stringify(record, null, 2));
-  fs.renameSync(`${file}.tmp`, file);
+  writeAtomic(file, JSON.stringify(record, null, 2));
 }
 
 const readBaseline = () => {

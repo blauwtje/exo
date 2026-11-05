@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import nodeFs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { contextSeries } from '#context-decisions';
+import { contextSeries } from '#context-series';
 import { fixture, run, tempDir } from './harness.mjs';
 
 const limitHome = tempDir('exo-lead-home-');

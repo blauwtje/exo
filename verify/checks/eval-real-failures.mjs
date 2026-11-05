@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { readJsonOrNull } from '../../lib/basics.mjs';
 import { evalDefaults } from '../../lib/eval-stats.mjs';
 
 const NAME = 'eval real failures';
@@ -12,20 +13,12 @@ export const CONTROL_PROVENANCE_TYPE = 'control';
 export const COUNTED_KIND = 'case';
 const COMMIT_REF = /^[0-9a-f]{40}$/;
 
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
 export function replayCases(repository) {
   const folder = repository.join(REPLAY_CASES_FOLDER);
   if (!fs.existsSync(folder)) return [];
   return fs.readdirSync(folder, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => ({ id: entry.name, definition: readJson(path.join(folder, entry.name, 'case.json')) }))
+    .map((entry) => ({ id: entry.name, definition: readJsonOrNull(path.join(folder, entry.name, 'case.json')) }))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
