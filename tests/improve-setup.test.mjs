@@ -1,23 +1,17 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { improveDefaults } from '../skills/improve/scripts/round.mjs';
 import { baselineNoise } from '../skills/improve/scripts/setup.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const SETUP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'improve', 'scripts', 'setup.mjs');
 
-function git(cwd, ...args) {
-  const run = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
-  assert.equal(run.status, 0, run.stderr);
-  return run.stdout.trim();
-}
-
 function repo() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-setup-'));
+  const root = tempDir('improve-setup-');
   git(root, 'init', '-q', '-b', 'main');
   fs.writeFileSync(path.join(root, 'code.txt'), 'hello world\n');
   fs.writeFileSync(path.join(root, 'check.mjs'), "import fs from 'node:fs';console.log('score ' + fs.readFileSync('code.txt','utf8').length);\n");
@@ -94,7 +88,7 @@ test('resume resets the worktree to the last kept row and prints the settled lin
 
 test('a scope over defaults.improve.inlineBytes settles in worker mode', () => {
   const root = repo();
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-home-'));
+  const home = tempDir('improve-home-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { improve: { inlineBytes: 5 } } }));
   const result = spawnSync('node', [SETUP, '--root', root, ...base], { encoding: 'utf8', env: { ...process.env, HOME: home } });

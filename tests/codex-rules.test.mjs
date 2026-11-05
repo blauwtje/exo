@@ -3,12 +3,12 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { generateTree } from '../harnesses/codex/generate.mjs';
 import { codexBody } from '../harnesses/codex/rules.mjs';
+import { tempDir } from './harness.mjs';
 
 const SOURCE_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -34,7 +34,7 @@ test('a link above the exo root throws', () => {
 });
 
 test('a Finder file inside a skill folder is not generated', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-ds-store-'));
+  const root = tempDir('codex-ds-store-');
   for (const folder of ['skills', 'agents', 'lib', path.join('harnesses', 'codex')]) {
     fs.cpSync(path.join(SOURCE_ROOT, folder), path.join(root, folder), { recursive: true });
   }

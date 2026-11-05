@@ -6,6 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { HEADLESS_LINE, MAKER_LINE, assertSameJudge, caseMeans, compareToBaseline, makerArguments, makerPrompt, projectedCostLine, rawRecordsFile, recordedCosts, runFailure, scoreDirectory, unpricedRuns, usageOf, wrongCopyDirs } from '../benchmarks/ideas.mjs';
 import { JUDGE_ARGUMENTS, JUDGE_HASH, addRarity, calibration, compareMarkdown, decisions, extractRun, modalShare, resultsMarkdown, runRecord, scoreOption } from '../benchmarks/ideas-score.mjs';
+import { tempDir } from './harness.mjs';
 
 const IDEAS = path.join(import.meta.dirname, '..', 'benchmarks', 'ideas.mjs');
 const CASES = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'benchmarks', 'ideas', 'cases.json'), 'utf8'));
@@ -32,7 +33,7 @@ test('caseMeans averages each metric per case, skipping null values', () => {
 });
 
 test('compareToBaseline reads the stored base arm and prints each side\'s run count above the table', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-baseline-'));
+  const dir = tempDir('ideas-baseline-');
   const stored = ['tide', 'shopping', 'notes'].flatMap((id) => [1, 2, 3, 4, 5].map((run) => ({ case: id, run, judge: JUDGE_HASH, fit: 3, originality: 2 })));
   savedRecords(dir, 'base', JSON.stringify(stored));
   const text = compareToBaseline({ baselineDir: dir, records: [{ case: 'tide', run: 1, judge: JUDGE_HASH, fit: 4, originality: 2 }] });
@@ -47,14 +48,14 @@ test('a compare needs both sides scored by the same judge prompts', () => {
   assert.throws(() => assertSameJudge({ left: side('a'), right: side('b') }), /rescore the baseline with --score/);
   assert.throws(() => assertSameJudge({ left: side(undefined), right: side('a') }), /rescore the baseline with --score/);
   assert.throws(() => assertSameJudge({ left: side('a'), right: side(undefined) }), /rescore the baseline with --score/);
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-baseline-'));
+  const dir = tempDir('ideas-baseline-');
   savedRecords(dir, 'base', JSON.stringify(side(undefined)));
   assert.throws(() => compareToBaseline({ baselineDir: dir, records: side(JUDGE_HASH) }), /rescore the baseline with --score/);
 });
 
 test('--compare of folders with different or missing judges exits 2', () => {
   const folder = (judge) => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-compare-'));
+    const dir = tempDir('ideas-compare-');
     savedRecords(dir, 'base', JSON.stringify([{ case: 'tide', run: 1, ...(judge === undefined ? {} : { judge }), fit: 3 }]));
     return path.join(dir, 'base');
   };
@@ -91,7 +92,7 @@ function savedRecords(out, arm, records) {
 }
 
 test('recordedCosts reads costUsd from the arm records file, skipping null costs and a missing file, and throws on an unreadable one', () => {
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-costs-'));
+  const out = tempDir('ideas-costs-');
   savedRecords(out, 'base', JSON.stringify([{ costUsd: 1 }, { costUsd: 3 }, { costUsd: null }, {}]));
   savedRecords(out, 'broken', '{not json');
   assert.deepEqual(recordedCosts(out, 'base'), [1, 3]);
@@ -106,7 +107,7 @@ test('projectedCostLine multiplies planned cells by the median recorded USD, els
 });
 
 test('dry mode projects cost from the records file of --out, else prints cost unknown', () => {
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-dry-'));
+  const out = tempDir('ideas-dry-');
   const ideas = () => spawnSync(process.execPath, [IDEAS, '--n', '1', '--out', out], { encoding: 'utf8' });
   const cells = Object.keys(CASES).length;
   assert.match(ideas().stdout, /projected cost: cost unknown/);
@@ -117,7 +118,7 @@ test('dry mode projects cost from the records file of --out, else prints cost un
 });
 
 test('--dry-run plans only, even with --confirm, and exits 0 without a run', () => {
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-dry-confirm-'));
+  const out = tempDir('ideas-dry-confirm-');
   const run = spawnSync(process.execPath, [IDEAS, '--confirm', '--dry-run', '--out', out], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stdout, /nothing spent/);
@@ -125,7 +126,7 @@ test('--dry-run plans only, even with --confirm, and exits 0 without a run', () 
 });
 
 test('unpricedRuns counts recorded runs without a numeric cost', () => {
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-unpriced-'));
+  const out = tempDir('ideas-unpriced-');
   savedRecords(out, 'base', JSON.stringify([{ costUsd: 1 }, { costUsd: null }, {}]));
   assert.equal(unpricedRuns(out, 'base'), 2);
   assert.equal(unpricedRuns(out, 'absent'), 0);
@@ -196,7 +197,7 @@ function fakeJudge(options, controlsOk) {
 }
 
 async function scoreWith(controlsOk) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-test-'));
+  const dir = tempDir('ideas-test-');
   for (const caseId of Object.keys(CASES)) {
     const folder = path.join(dir, 'base', caseId, '1');
     fs.mkdirSync(folder, { recursive: true });
@@ -234,7 +235,7 @@ test('a miscalibrated judge marks the file and draws no decision', async () => {
 });
 
 test('a run that loaded a skill from another copy is flagged', () => {
-  const plugin = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-arm-'));
+  const plugin = tempDir('ideas-arm-');
   const event = (dir) => JSON.stringify({ type: 'user', message: { content: [{ type: 'text', text: `Base directory for this skill: ${dir}` }] } });
   const stdout = [event(path.join(plugin, 'skills', 'spec')), event('/elsewhere/exo/skills/spec')].join('\n');
   assert.deepEqual(wrongCopyDirs(stdout, plugin), ['/elsewhere/exo/skills/spec']);
@@ -249,7 +250,7 @@ test('a maker run that crashed, timed out or ended without an answer is failed; 
 });
 
 test('failed runs are listed in the results and left out of metrics and n', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-test-'));
+  const dir = tempDir('ideas-test-');
   const ids = Object.keys(CASES);
   for (const [caseId, run] of ids.flatMap((id) => ['1', '2'].map((number) => [id, number]))) {
     const folder = path.join(dir, 'base', caseId, run);
@@ -364,7 +365,7 @@ test('an answer with no parsable option fails before any judge call; a listed an
 });
 
 test('a run whose answer has no parsable option is listed as unscored', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideas-test-'));
+  const dir = tempDir('ideas-test-');
   const ids = Object.keys(CASES);
   for (const caseId of ids) {
     const folder = path.join(dir, 'base', caseId, '1');

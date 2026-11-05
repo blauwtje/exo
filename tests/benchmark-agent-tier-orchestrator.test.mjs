@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { readKindTable } from '#model-kinds';
@@ -8,6 +7,7 @@ import { planJobs, resolveFixtures, valueScore } from '../benchmarks/agent-tier.
 import { RESULT_FILE, ownedLines, partPhase, partVerdict, resultFindings } from '../benchmarks/agent-tier/orchestrator/grade.mjs';
 import { mainMessages, partOf, transcriptChecks, transcriptFindings } from '../benchmarks/agent-tier/orchestrator/transcript.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
+import { tempDir } from './harness.mjs';
 
 const ORCHESTRATOR_ROOT = path.join(import.meta.dirname, '..', 'benchmarks', 'agent-tier', 'orchestrator');
 const IDS = ['slugify', 'clamp', 'report-format'];
@@ -65,14 +65,10 @@ function solve(task, repo) {
 }
 
 async function scoreOrchestrator(task, solved) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-tier-orchestrator-'));
-  try {
-    const startTree = prepareValueRepo(task, repo);
-    if (solved) solve(task, repo);
-    return await scoreValueRepo(task, repo, startTree);
-  } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
-  }
+  const repo = tempDir('exo-agent-tier-orchestrator-');
+  const startTree = prepareValueRepo(task, repo);
+  if (solved) solve(task, repo);
+  return await scoreValueRepo(task, repo, startTree);
 }
 
 for (const task of loadValueTasks(ORCHESTRATOR_ROOT)) {
@@ -231,20 +227,16 @@ test('a cited claim needs the part flagged reopened or BLOCKED even when it was 
 });
 
 async function plantedScore(task, { files, result, session }) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-tier-claim-'));
-  try {
-    const startTree = prepareValueRepo(task, repo);
-    if (files === 'solution') fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
-    const resultFile = path.join(repo, RESULT_FILE);
-    fs.mkdirSync(path.dirname(resultFile), { recursive: true });
-    fs.writeFileSync(resultFile, result);
-    const scored = await scoreValueRepo(task, repo, startTree);
-    assert.equal(scored.harnessError, undefined);
-    const graded = { findings: transcriptFindings(session, result, task.transcript), checks: transcriptChecks(task.transcript) };
-    return valueScore(scored, graded);
-  } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
-  }
+  const repo = tempDir('exo-agent-tier-claim-');
+  const startTree = prepareValueRepo(task, repo);
+  if (files === 'solution') fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
+  const resultFile = path.join(repo, RESULT_FILE);
+  fs.mkdirSync(path.dirname(resultFile), { recursive: true });
+  fs.writeFileSync(resultFile, result);
+  const scored = await scoreValueRepo(task, repo, startTree);
+  assert.equal(scored.harnessError, undefined);
+  const graded = { findings: transcriptFindings(session, result, task.transcript), checks: transcriptChecks(task.transcript) };
+  return valueScore(scored, graded);
 }
 
 function plantedSession({ claim, next, cited, files }, { read }) {

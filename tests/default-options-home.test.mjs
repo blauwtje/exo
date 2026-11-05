@@ -5,11 +5,11 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome, withoutExoOptions } from '../lib/default-options-home.mjs';
 import { pressureHome, withHome as withPressureHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { tempDir } from './harness.mjs';
 
 function withHome(home, body) {
   const before = process.env.HOME;
@@ -32,7 +32,7 @@ test('withoutExoOptions drops the options of exo@ configs only', () => {
 });
 
 test('the mirror holds settings without exo options and links everything else', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  const home = tempDir('default-options-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude', 'projects'), { recursive: true });
@@ -51,7 +51,7 @@ test('the mirror holds settings without exo options and links everything else', 
 });
 
 test('the mirror keeps exo entries linked but its plugin-root is separate from the real one', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  const home = tempDir('default-options-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude', 'exo', 'handoff'), { recursive: true });
@@ -70,7 +70,7 @@ test('the mirror keeps exo entries linked but its plugin-root is separate from t
 });
 
 test('a home without an exo folder gets a mirror without one', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  const home = tempDir('default-options-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude'));
@@ -83,7 +83,7 @@ test('a home without an exo folder gets a mirror without one', () => {
 });
 
 test('a home whose exo is a file gets a mirror without an exo folder', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  const home = tempDir('default-options-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude'));
@@ -97,7 +97,7 @@ test('a home whose exo is a file gets a mirror without an exo folder', () => {
 });
 
 test('a pressure run spawns claude with HOME set to the mirror, whose settings hold no exo options', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  const home = tempDir('default-options-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude'));
@@ -116,7 +116,7 @@ test('a pressure run spawns claude with HOME set to the mirror, whose settings h
 });
 
 test('with withoutClaudeMd the mirror has no CLAUDE.md and links the rest', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'default-options-home-test-'));
+  const home = tempDir('default-options-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude', 'projects'), { recursive: true });
@@ -140,7 +140,7 @@ test('with withoutClaudeMd the mirror has no CLAUDE.md and links the rest', () =
 });
 
 test('the pressure home turns off every installed plugin', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-home-test-'));
+  const home = tempDir('pressure-home-test-');
   let mirror;
   try {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });

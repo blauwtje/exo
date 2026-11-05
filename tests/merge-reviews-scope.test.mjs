@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { mergeReviews, parseFinding } from '../skills/gate/scripts/merge-reviews.mjs';
 import { boundaryLines, writeReviewInput } from '../skills/gate/scripts/review-input.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCOPE_LINE = 'lib/a.mjs:4-6; out-of-scope; path escape; symlink bypass sits in an out class; report';
 
@@ -40,7 +40,7 @@ test('an out-of-scope finding beside a defect leaves the defect to set the verdi
 const settledFix = (file) => ['FINDINGS', `${file}:3-4; defect; swallowed failure; catch drops error; fix`, '  Probe: true', '  Class: swallowed failure', '  Sweep: true', ''].join('\n');
 
 function rootWithRow(state) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-'));
+  const root = tempDir('scope-');
   fs.mkdirSync(path.join(root, '.exo'));
   const row = { round: 1, rule: 'swallowed failure', path: 'lib/b.mjs', range: '1-2', weight: 'defect', state, head: null };
   fs.writeFileSync(path.join(root, '.exo', 'review-ledger.jsonl'), `${JSON.stringify(row)}\n`);
@@ -80,7 +80,7 @@ test('boundaryLines copies each landed task Boundary and says none without one',
 });
 
 test('review input holds a Boundaries block that names the out-of-scope weight', () => {
-  const checkout = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-'));
+  const checkout = tempDir('scope-');
   const git = (...args) => execFileSync('git', ['-C', checkout, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args]);
   git('init', '-q', '-b', 'main');
   git('commit', '-q', '--allow-empty', '-m', 'init');

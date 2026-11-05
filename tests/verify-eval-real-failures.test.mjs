@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { ADHD_FAILURE_SOURCES, MIN_REAL_FAILURES, adhdFailureCases, casesWithoutProvenance, checkEvalRealFailures, realFailureCount } from '../verify/checks/eval-real-failures.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const SHA = 'a'.repeat(40);
 
 function repositoryWith(cases, adhd = []) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-real-failures-'));
+  const root = tempDir('eval-real-failures-');
   for (const [id, definition] of Object.entries(cases)) {
     const folder = path.join(root, 'benchmarks/replay/cases', id);
     fs.mkdirSync(folder, { recursive: true });
@@ -91,7 +91,7 @@ test('this repository passes its own check', () => {
 });
 
 test('the real-failure minimum comes from defaults.eval', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-defaults-'));
+  const home = tempDir('eval-defaults-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { eval: { realFailuresMin: 9 } } }));
   const script = "import('./verify/checks/eval-real-failures.mjs').then((m) => console.log(m.MIN_REAL_FAILURES))";

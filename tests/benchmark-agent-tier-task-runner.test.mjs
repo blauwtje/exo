@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { readKindTable } from '#model-kinds';
@@ -12,6 +11,7 @@ import { installStub } from '../benchmarks/agent-tier/task-runner/install-stub.m
 import { applyPrepared } from '../benchmarks/agent-tier/task-runner/stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from '../benchmarks/agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const TASK_RUNNER_ROOT = path.join(ROOT, 'benchmarks', 'agent-tier', 'task-runner');
@@ -31,13 +31,9 @@ function build(repo, task, number, attempt) {
 }
 
 async function inRepo(task, work) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-task-runner-'));
-  try {
-    const startTree = prepareValueRepo(task, repo);
-    return await work(repo, startTree);
-  } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
-  }
+  const repo = tempDir('exo-task-runner-');
+  const startTree = prepareValueRepo(task, repo);
+  return await work(repo, startTree);
 }
 
 const everyTask = (task) => parsePlan(fs.readFileSync(path.join(task.directory, 'plan.md'), 'utf8')).tasks.map((each) => each.number);
@@ -100,41 +96,33 @@ test('the fixtures are the quick and full task-runner lists and resolve on disk'
 });
 
 test('installStub swaps build-task for the stub and runs it on haiku without touching the source plugin', () => {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-task-runner-stub-'));
-  try {
-    const source = copyPluginWithoutTasks(ROOT, path.join(scratch, 'source'));
-    const before = fs.readFileSync(path.join(source, 'agents', 'build-task.md'), 'utf8');
-    const copy = installStub({ pluginDir: source, fixture: path.join(TASK_RUNNER_ROOT, 'false-green'), destination: path.join(scratch, 'copy') });
-    assert.match(fs.readFileSync(path.join(copy, 'agents', 'build-task.md'), 'utf8'), /stub-build-task\/stub\.mjs/);
-    assert.equal(fs.readFileSync(path.join(source, 'agents', 'build-task.md'), 'utf8'), before);
-    assert.ok(fs.existsSync(path.join(copy, 'stub-build-task', 'prepared', 'task1', 'bad')));
-    const kinds = JSON.parse(fs.readFileSync(path.join(copy, 'lib', 'model-kinds.json'), 'utf8')).kinds['build-task'];
-    assert.deepEqual(kinds.on, { tier: 'fast', effort: null });
-    assert.equal(fs.readFileSync(path.join(ROOT, 'agents', 'build-task.md'), 'utf8'), before);
-  } finally {
-    fs.rmSync(scratch, { recursive: true, force: true });
-  }
+  const scratch = tempDir('exo-task-runner-stub-');
+  const source = copyPluginWithoutTasks(ROOT, path.join(scratch, 'source'));
+  const before = fs.readFileSync(path.join(source, 'agents', 'build-task.md'), 'utf8');
+  const copy = installStub({ pluginDir: source, fixture: path.join(TASK_RUNNER_ROOT, 'false-green'), destination: path.join(scratch, 'copy') });
+  assert.match(fs.readFileSync(path.join(copy, 'agents', 'build-task.md'), 'utf8'), /stub-build-task\/stub\.mjs/);
+  assert.equal(fs.readFileSync(path.join(source, 'agents', 'build-task.md'), 'utf8'), before);
+  assert.ok(fs.existsSync(path.join(copy, 'stub-build-task', 'prepared', 'task1', 'bad')));
+  const kinds = JSON.parse(fs.readFileSync(path.join(copy, 'lib', 'model-kinds.json'), 'utf8')).kinds['build-task'];
+  assert.deepEqual(kinds.on, { tier: 'fast', effort: null });
+  assert.equal(fs.readFileSync(path.join(ROOT, 'agents', 'build-task.md'), 'utf8'), before);
 });
 
 test('the installed stub applies the prepared change when reached through a symlinked directory', async () => {
   const task = tasks.find((each) => each.id === 'value-false-green');
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-task-runner-link-'));
-  try {
-    const source = copyPluginWithoutTasks(ROOT, path.join(scratch, 'source'));
-    const copy = installStub({ pluginDir: source, fixture: task.directory, destination: path.join(scratch, 'copy') });
-    const linked = path.join(scratch, 'linked');
-    fs.symlinkSync(copy, linked);
-    await inRepo(task, async (repo) => {
-      const run = spawnSync(process.execPath, [path.join(linked, 'stub-build-task', 'stub.mjs'), repo, '1'], { encoding: 'utf8', env: plainEnvironment() });
-      assert.equal(run.status, 0, run.stderr);
-      assert.match(run.stdout, /^Task 1: GREEN \| diff: /);
-      const applied = fs.readFileSync(path.join(repo, 'src', 'units.mjs'), 'utf8');
-      assert.equal(applied, fs.readFileSync(path.join(task.directory, 'prepared', 'task1', 'bad', 'src', 'units.mjs'), 'utf8'));
-      assert.ok(fs.existsSync(path.join(repo, '.exo', 'implementer-1.md')));
-    });
-  } finally {
-    fs.rmSync(scratch, { recursive: true, force: true });
-  }
+  const scratch = tempDir('exo-task-runner-link-');
+  const source = copyPluginWithoutTasks(ROOT, path.join(scratch, 'source'));
+  const copy = installStub({ pluginDir: source, fixture: task.directory, destination: path.join(scratch, 'copy') });
+  const linked = path.join(scratch, 'linked');
+  fs.symlinkSync(copy, linked);
+  await inRepo(task, async (repo) => {
+    const run = spawnSync(process.execPath, [path.join(linked, 'stub-build-task', 'stub.mjs'), repo, '1'], { encoding: 'utf8', env: plainEnvironment() });
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /^Task 1: GREEN \| diff: /);
+    const applied = fs.readFileSync(path.join(repo, 'src', 'units.mjs'), 'utf8');
+    assert.equal(applied, fs.readFileSync(path.join(task.directory, 'prepared', 'task1', 'bad', 'src', 'units.mjs'), 'utf8'));
+    assert.ok(fs.existsSync(path.join(repo, '.exo', 'implementer-1.md')));
+  });
 });
 
 test('taskRunnerPrompt fills the five-line dispatch shape', async () => {

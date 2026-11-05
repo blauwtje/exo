@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { mannWhitney, meanAndSd, minDetectableEffect, minDetectableMeanEffect, signTest } from '../benchmarks/statistics.mjs';
 import { summarize } from '../benchmarks/lean-gates-metrics.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
 
@@ -30,7 +30,7 @@ test('meanAndSd gives no spread for one value', () => {
 });
 
 test('score prints (n=1) for one-cell arms in the template and value tables', () => {
-  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-stats-'));
+  const runs = tempDir('exo-stats-');
   const meta = {
     model: 'm', claudeVersion: '1', fixture: { name: 'f', commit: 'c' }, runs: 1, date: '2026-01-01',
     arms: ['baseline', 'exo'], tasks: ['t'], cells: 2, mode: 'x'

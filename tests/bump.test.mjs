@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { tempDir } from './harness.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 
@@ -13,7 +13,7 @@ function copy(root, file, text) {
 }
 
 function checkout(lockVersion) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bump-'));
+  const root = tempDir('bump-');
   for (const file of ['bump.mjs', 'verify/changelog.mjs']) {
     copy(root, file, fs.readFileSync(path.join(REPO, file), 'utf8'));
   }

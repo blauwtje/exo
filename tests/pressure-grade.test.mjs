@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { aggregate, gradeLine, judgeArguments, gradeRun, judgeClauses, lintCriteria, linesForCase, newcombe, parseCriteria, parseMargins, runsNeeded, verdictFor } from '../skills/edit-skills/scripts/pressure-grade.mjs';
 import { regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
+import { tempDir } from './harness.mjs';
 
 const CRITERIA = `# x: criteria
 
@@ -41,7 +42,7 @@ test('parseCriteria rejects an untagged top-level bullet and a bad tag', () => {
 });
 
 test('deterministic graders check answer, files and commands in the case folder', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-grade-'));
+  const dir = tempDir('pressure-grade-');
   fs.mkdirSync(path.join(dir, 'notes'));
   fs.writeFileSync(path.join(dir, 'notes', 'a.md'), 'x');
   const line = (tag) => parseCriteria(`- t \`grade: ${tag}\`\n`)[0].lines[0];
@@ -175,7 +176,7 @@ test('lint flags a judge line with three clauses and passes one claim', () => {
 });
 
 test('--check prints a LINT line for a three-clause judge line and still exits 0', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-lint-'));
+  const dir = tempDir('pressure-lint-');
   const file = path.join(dir, 'c.md');
   fs.writeFileSync(file, '- Cause, and mechanism, and exclusion. `grade: judge`\n');
   const out = spawnSync('node', [path.resolve('skills/edit-skills/scripts/pressure-grade.mjs'), '--check', file], { encoding: 'utf8' });
@@ -190,7 +191,7 @@ test('gradeRun labels the lines with case, arm and run', () => {
 });
 
 test('--check parses a criteria file and exits 1 on an untagged bullet', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-check-'));
+  const dir = tempDir('pressure-check-');
   const script = path.resolve('skills/edit-skills/scripts/pressure-grade.mjs');
   const good = path.join(dir, 'good.md');
   const bad = path.join(dir, 'bad.md');
@@ -205,7 +206,7 @@ test('--check parses a criteria file and exits 1 on an untagged bullet', () => {
 });
 
 test('--check takes several criteria files, names each and exits 1 if any fails', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-check-'));
+  const dir = tempDir('pressure-check-');
   const script = path.resolve('skills/edit-skills/scripts/pressure-grade.mjs');
   const good = path.join(dir, 'good.md');
   const bad = path.join(dir, 'bad.md');
@@ -256,21 +257,17 @@ test('parseCriteria keeps unindented prose after a bullet as its context when no
 });
 
 test('self-test: regrading a good and a bad reference answer passes every line of the good and fails the bad, under a stub judge', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-selftest-'));
-  try {
-    const criteriaFile = path.join(dir, 'criteria.md');
-    fs.writeFileSync(criteriaFile, '- Names the cause. `grade: answer =~ /toCents/`\n- Gives no fix before the cause. `grade: answer !~ /^Fix:/`\n- Explains the mechanism. `grade: judge`\n');
-    fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-with-1.md'), 'The cause is toCents: it floors the product, so 29 comes out as 28.');
-    fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-without-1.md'), 'Fix: round the value.');
-    const judge = (prompt) => (/floors the product/.test(prompt) ? 'PASS\nexplains it' : 'FAIL\nno mechanism');
-    const runs = regradeFolder(dir, { promptFile: 'a.txt', grade: { criteriaFile, votes: 1 }, judge })['claude-sonnet-4:low'];
-    const [good, bad] = ['with', 'without'].map((arm) => runs.find((graded) => graded.arm === arm));
-    assert.deepEqual(good.lines.map((line) => line.pass), [true, true, true]);
-    assert.deepEqual(bad.lines.map((line) => line.pass), [false, false, false]);
-    assert.equal(bad.lines[2].skipped, true);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('pressure-selftest-');
+  const criteriaFile = path.join(dir, 'criteria.md');
+  fs.writeFileSync(criteriaFile, '- Names the cause. `grade: answer =~ /toCents/`\n- Gives no fix before the cause. `grade: answer !~ /^Fix:/`\n- Explains the mechanism. `grade: judge`\n');
+  fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-with-1.md'), 'The cause is toCents: it floors the product, so 29 comes out as 28.');
+  fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-without-1.md'), 'Fix: round the value.');
+  const judge = (prompt) => (/floors the product/.test(prompt) ? 'PASS\nexplains it' : 'FAIL\nno mechanism');
+  const runs = regradeFolder(dir, { promptFile: 'a.txt', grade: { criteriaFile, votes: 1 }, judge })['claude-sonnet-4:low'];
+  const [good, bad] = ['with', 'without'].map((arm) => runs.find((graded) => graded.arm === arm));
+  assert.deepEqual(good.lines.map((line) => line.pass), [true, true, true]);
+  assert.deepEqual(bad.lines.map((line) => line.pass), [false, false, false]);
+  assert.equal(bad.lines[2].skipped, true);
 });
 
 test('the judge call reads project and local settings only, so no installed plugin loads', () => {

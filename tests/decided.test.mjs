@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { prepareValueRepo } from '../benchmarks/value.mjs';
 import { countQuestions, loadFixtures, passesCheck, parseArguments, planCells, reportLines, selectFixtures, spendCap, summarize, targetVerdict, turnAborted } from '../benchmarks/decided.mjs';
+import { tempDir } from './harness.mjs';
 
 const FIXTURES = loadFixtures();
 
@@ -65,7 +65,7 @@ test('a recorded stream-json turn with one AskUserQuestion call and one final qu
 });
 
 test('a scoring copy is gone once its verdict is read', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'decided-scoring-'));
+  const root = tempDir('decided-scoring-');
   const fixture = FIXTURES[0];
   const repo = path.join(root, 'repo');
   const scratch = path.join(root, 'scoring');
@@ -97,7 +97,7 @@ test('the target needs half the exo-before mean and a fall, with the hidden pass
 });
 
 function checkVerdict(fixture, solution, checked) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'decided-fixture-'));
+  const repo = tempDir('decided-fixture-');
   fs.cpSync(path.join(fixture.directory, 'seed'), repo, { recursive: true });
   fs.cpSync(path.join(fixture.directory, `solution-${solution}`), repo, { recursive: true });
   fs.cpSync(path.join(fixture.directory, `hidden-${checked}`), repo, { recursive: true });

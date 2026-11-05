@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
 import { FULL_RUNS, QUICK_RUNS, parseFlags } from '../benchmarks/replay/runner.mjs';
 import { cellRecord, compareArms, failureRate, formatMeasure, isAborted, measure, readCellRecord, stoppedRecord, summaryLines } from '../benchmarks/replay/cell-stats.mjs';
+import { tempDir } from './harness.mjs';
 
 const RUNNER = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'benchmarks', 'replay', 'runner.mjs');
 const finished = { total_cost_usd: 0.5, wallMs: 4000, exitCode: 0 };
@@ -77,7 +77,7 @@ test('the summary prints the comparison line against another arm', () => {
 });
 
 test('readCellRecord reads grade and result, and skips a cell with no grade', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-stats-'));
+  const directory = tempDir('cell-stats-');
   assert.equal(readCellRecord(directory, 'a', 'k'), null);
   fs.writeFileSync(path.join(directory, 'grade.json'), JSON.stringify({ grade: 'pass' }));
   assert.equal(readCellRecord(directory, 'a', 'k').aborted, true);
@@ -103,7 +103,7 @@ test('runner --full with --runs is an error', () => {
 });
 
 test('runner --dry-run prints the quick plan and exits 0', () => {
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-dry-'));
+  const out = tempDir('runner-dry-');
   const cases = fs.readdirSync(path.join(path.dirname(RUNNER), 'cases'))[0];
   const result = spawnSync(process.execPath, [RUNNER, '--cases', cases, '--out', out, '--dry-run'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);

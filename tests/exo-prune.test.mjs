@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { pruneAfterDays, pruneExo } from '#exo-prune';
+import { tempDir } from './harness.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 9, 29, 12, 0, 0);
 
 function workspace() {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-prune-'));
+  const base = tempDir('exo-prune-');
   const cwd = path.join(base, 'project');
   const home = path.join(base, 'home');
   fs.mkdirSync(path.join(cwd, '.exo'), { recursive: true });

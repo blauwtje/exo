@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { hashedWholeFiles } from '../benchmarks/routing.mjs';
 import { proseStyleRow, proseStyleRows, violates } from '../verify/prose-style.mjs';
+import { tempDir } from './harness.mjs';
 
 const GOOD = '---\nname: x\n---\n# Title\n\nDo the thing well.\n\n- one\n- two\n';
 
@@ -54,7 +54,7 @@ test('the check reports a failing instruction file and passes the clean tree', a
   const fs = await import('node:fs');
   const os = await import('node:os');
   const path = await import('node:path');
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-'));
+  const root = tempDir('prose-');
   fs.mkdirSync(path.join(root, 'skills', 'x'), { recursive: true });
   fs.writeFileSync(path.join(root, 'skills', 'x', 'SKILL.md'), '# T\n\n- a\n');
   const calls = [];
@@ -76,7 +76,7 @@ test('code spans and quotes do not count', () => {
 });
 
 test('a file the routing check hashes is out of scope', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-style-'));
+  const root = tempDir('prose-style-');
   fs.mkdirSync(path.join(root, 'hooks'));
   const [hashed] = hashedWholeFiles(root);
   fs.writeFileSync(hashed, '- a → b\n- c → d\n');

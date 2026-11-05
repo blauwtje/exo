@@ -6,6 +6,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome } from '../lib/default-options-home.mjs';
 import { dryRunReport, makeRunFolder, readFlags, recordRun, recordedRuns, regradeFolder, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
+import { tempDir } from './harness.mjs';
 
 function git(cwd, home, args) {
   const run = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' } });
@@ -18,7 +19,7 @@ function removeAll(paths) {
 }
 
 test('a host without a git identity commits as the plan placeholder', () => {
-  const emptyHome = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-run-folder-home-'));
+  const emptyHome = tempDir('pressure-run-folder-home-');
   const saved = { HOME: process.env.HOME, XDG: process.env.XDG_CONFIG_HOME, NOSYSTEM: process.env.GIT_CONFIG_NOSYSTEM };
   let folder;
   try {
@@ -37,7 +38,7 @@ test('a host without a git identity commits as the plan placeholder', () => {
 });
 
 test('the scratch folder is a git repository where a worktree commit works under the options-free HOME', () => {
-  const emptyHome = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-run-folder-home-'));
+  const emptyHome = tempDir('pressure-run-folder-home-');
   const realHome = process.env.HOME;
   let mirror;
   let folder;
@@ -61,7 +62,7 @@ test('a graded run records its duration and cost, and the grades file keeps both
   const grade = { case: 'a.md', arm: 'with', run: 1, lines: [] };
   const recorded = recordRun(grade, { cost: 0.25, durationMs: 1200 });
   assert.deepEqual(recorded, { ...grade, durationMs: 1200, cost_usd: 0.25 });
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-grades-'));
+  const outDir = tempDir('pressure-grades-');
   try {
     writeGrades(outDir, { 'sonnet:low': [recorded] });
     const written = JSON.parse(fs.readFileSync(path.join(outDir, 'grades.json'), 'utf8'));
@@ -91,7 +92,7 @@ test('a missing grades file records no runs', () => {
 });
 
 test('regrade grades the saved answers of a run folder, keeps their cost and starts no session', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-regrade-'));
+  const dir = tempDir('pressure-regrade-');
   try {
     const criteriaFile = path.join(dir, 'criteria.md');
     fs.writeFileSync(criteriaFile, '- Says hi. `grade: answer =~ /hi/`\n- Kind. `grade: judge`\n');
@@ -109,7 +110,7 @@ test('regrade grades the saved answers of a run folder, keeps their cost and sta
 });
 
 test('regrade keeps the cost and the cell key of a model id that a file name changes', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-regrade-'));
+  const dir = tempDir('pressure-regrade-');
   try {
     const criteriaFile = path.join(dir, 'criteria.md');
     fs.writeFileSync(criteriaFile, '- Says hi. `grade: answer =~ /hi/`\n');
@@ -140,7 +141,7 @@ test('an explicit --runs or --judge-votes overrides the tier and the mode stays 
 });
 
 test('grades.json records the mode of the run', () => {
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-mode-'));
+  const outDir = tempDir('pressure-mode-');
   try {
     for (const mode of ['quick', 'full']) {
       writeGrades(outDir, { 'sonnet:low': [] }, { mode });

@@ -5,8 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { cacheUpdate, render } from '../lib/statusline.mjs';
+import { tempDir } from './harness.mjs';
 
-const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sl-'));
+const home = tempDir('exo-sl-');
 const env = { HOME: home };
 process.env.HOME = home;
 fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });

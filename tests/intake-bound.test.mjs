@@ -1,19 +1,19 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
 import { agentContextTarget, dispatchBytesPerToken } from '../lib/context-limits.mjs';
+import { tempDir } from './harness.mjs';
 
-const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-intake-home-'));
+const testHome = tempDir('exo-intake-home-');
 process.env.HOME = testHome;
 process.env.USERPROFILE = testHome;
 
 const TARGET = agentContextTarget();
 const BYTES = dispatchBytesPerToken();
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-intake-'));
+const dir = tempDir('exo-intake-');
 const transcript_path = path.join(dir, 'session.jsonl');
 const agentTranscript = path.join(dir, 'agent.jsonl');
 const testLog = path.join(dir, 'npm-test.log');

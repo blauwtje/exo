@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
 import { workerSize } from '../lib/worker-size.mjs';
+import { tempDir } from './harness.mjs';
 
 const SESSION = '00000000-0000-0000-0000-000000000000';
 const SLUG = '-Users-example-code-app';
@@ -44,7 +44,7 @@ function webp(width, height) {
 }
 
 function project() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'read-estimate-'));
+  const root = tempDir('read-estimate-');
   const cwd = path.join(root, 'app');
   const images = path.join(root, `claude-${process.getuid()}`, SLUG, SESSION, 'images');
   fs.mkdirSync(cwd);

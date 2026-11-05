@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { parseArguments } from '../benchmarks/checkpoint-fork.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCRIPT = path.join(import.meta.dirname, '..', 'benchmarks', 'checkpoint-fork.mjs');
 const base = ['--checkpoints', 'keep', '--full-runs', 'runs', '--out', 'out'];
@@ -38,14 +38,10 @@ test('--dry-run cannot combine with --confirm', () => {
 });
 
 test('--dry-run prints the plan, starts nothing and exits 0', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'fork-tier-'));
-  try {
-    const result = spawnSync(process.execPath, [SCRIPT, '--checkpoints', directory, '--full-runs', directory, '--out', path.join(directory, 'out'), '--dry-run'], { encoding: 'utf8', timeout: 30000 });
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /quick tier/);
-    assert.match(result.stdout, /dry run: nothing started/);
-    assert.equal(fs.existsSync(path.join(directory, 'out')), false);
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
+  const directory = tempDir('fork-tier-');
+  const result = spawnSync(process.execPath, [SCRIPT, '--checkpoints', directory, '--full-runs', directory, '--out', path.join(directory, 'out'), '--dry-run'], { encoding: 'utf8', timeout: 30000 });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /quick tier/);
+  assert.match(result.stdout, /dry run: nothing started/);
+  assert.equal(fs.existsSync(path.join(directory, 'out')), false);
 });

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INHERIT, TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
 import { findInheritanceGaps } from '../verify/model-kinds.mjs';
+import { tempDir } from './harness.mjs';
 
 const JOBS = [
   ['review', 'review'], ['verify', 'review'], ['audit', 'review'], ['judge', 'review'],
@@ -78,7 +79,7 @@ test('a provider kindEfforts naming an effort its efforts do not list is rejecte
 });
 
 function rootWith(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-root-'));
+  const root = tempDir('kinds-root-');
   for (const [file, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     fs.writeFileSync(path.join(root, file), text);

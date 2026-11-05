@@ -28,6 +28,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A background shell an agent started now blocks its first result-file Write: `lib/live-shells.mjs` reads the agent transcript for `run_in_background` Bash calls with no `TaskStop` or finished notice, and the Write is refused once with the shell ids. It runs on the existing Edit and Write hook entry, so no hook entry or Node start is added.
 
 ### Changed
+- Shared helpers replace local copies: `lib/basics.mjs` holds shellQuote, sleep, sleepSync and writeAtomic, benchmarks take mean, median and JSON reads from `benchmarks/basics.mjs`, and tests use one git helper and one tracked tempDir helper, 296 fewer lines.
 - An agent Grep or ToolSearch gets the head_limit or max_results that fit the context it has left, and a Glob or WebSearch whose largest output would not fit is denied, with the Glob steered to Grep; outside bypassPermissions and auto modes the Grep and ToolSearch are denied with that number.
 - An agent Read over the context it has left is cut to the offset and limit that fit, with a note on where to continue, instead of being denied.
 - An agent Read, Grep or ToolSearch over the context it has left is cut in every permission mode, not only bypassPermissions and auto, because the cut now returns `updatedInput` with no `permissionDecision` and the user's prompt still decides the call.

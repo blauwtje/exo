@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { buildMeasures, geometricMean, projectedUsd, ratioStats, ratios, replayMeasures, scoreLine, statLine, taskItems, tierFor } from '../benchmarks/improve-all-score.mjs';
+import { tempDir } from './harness.mjs';
 
 test('importing the scorer runs no measurement', () => {
   assert.equal(process.exitCode, undefined);
@@ -31,7 +31,7 @@ test('a quick replay at half the full repeat and half the cost scores a verify-c
 });
 
 const writeReplay = (cells) => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-all-test-'));
+  const directory = tempDir('improve-all-test-');
   cells.forEach((run, index) => {
     const folder = path.join(directory, `task-a-${index}`);
     fs.mkdirSync(folder);
@@ -85,7 +85,7 @@ test('dry-run prints child commands and projected usd without measuring', () => 
 });
 
 const writeBuild = (cells) => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-all-build-'));
+  const directory = tempDir('improve-all-build-');
   cells.forEach((record, index) => {
     const folder = path.join(directory, `cell-${index}`);
     fs.mkdirSync(folder);
@@ -95,7 +95,7 @@ const writeBuild = (cells) => {
 };
 
 const writeTasks = (runsByTask) => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-all-tasks-'));
+  const directory = tempDir('improve-all-tasks-');
   Object.entries(runsByTask).forEach(([task, runs]) => runs.forEach((run, index) => {
     const folder = path.join(directory, `${task}-${index}`);
     fs.mkdirSync(folder);

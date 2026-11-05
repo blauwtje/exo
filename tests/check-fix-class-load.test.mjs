@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkFixClassLoad } from '../verify/checks/fix-class-load.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TEXTS = ['agents/fix-review.md', 'skills/build/review-fixer-prompt.md', 'skills/find-cause/fixer-prompt.md', 'agents/build-task.md'];
 
 function lines(edit) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fix-class-load-'));
+  const root = tempDir('fix-class-load-');
   for (const file of TEXTS) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     fs.copyFileSync(path.join(ROOT, file), path.join(root, file));

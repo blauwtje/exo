@@ -11,6 +11,7 @@ import { dispatchMarker, readDispatchRules } from '../hooks/dispatch-rules.mjs';
 import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
 import { SCHEMA } from '../lib/settings-store.mjs';
+import { tempDir } from './harness.mjs';
 
 const call = (input, budget = 'on') => agentEffort({ tool_name: 'Agent', tool_input: input }, budget)?.hookSpecificOutput.updatedInput;
 
@@ -254,7 +255,7 @@ test('the denied call shows its reason in the hook line', () => {
 });
 
 test('worker size: an orchestrator dispatch needs Reads and Result and stays in budget', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  const dir = tempDir('worker-hook-');
   fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
   const run = (agent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type, cwd: dir, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecision;
   assert.equal(run('exo:orchestrator', 'do it'), 'deny');
@@ -275,7 +276,7 @@ test('worker size: an orchestrator exo:fetch-docs dispatch is sized by Fetches a
 });
 
 test('worker size: a refusal names unresolved paths, invalid Fetches, the largest reads and no Result for fetch-docs', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  const dir = tempDir('worker-hook-');
   fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
   const reason = (subagent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type, description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
   assert.match(reason('general-purpose', 'Reads: nope.txt\nResult: .exo/r.md'), /nope\.txt/);
@@ -305,7 +306,7 @@ test('the orchestrator description tells the lead the Workers line and its limit
 });
 
 test('worker size: a none. or punctuated Reads line runs normalized and a missing path names the expected shape', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  const dir = tempDir('worker-hook-');
   fs.writeFileSync(path.join(dir, 'a.md'), 'x');
   const run = (prompt) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput;
   for (const reads of ['none.', 'None', '`a.md`.']) {
@@ -321,9 +322,9 @@ test('worker size: a none. or punctuated Reads line runs normalized and a missin
 const workerReason = (prompt, cwd) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
 
 test('a missing path that exists under an absolute directory in the prompt asks for a Worktree line', () => {
-  const tree = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-tree-'));
+  const tree = tempDir('worker-tree-');
   fs.writeFileSync(path.join(tree, 'notes.md'), 'x');
-  const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-cwd-'));
+  const elsewhere = tempDir('worker-cwd-');
   assert.match(workerReason(`Work in ${tree}.\nReads: notes.md\nResult: .exo/r.md`, elsewhere), new RegExp(`add a \`Worktree: ${tree}\` line`));
   assert.doesNotMatch(workerReason('Reads: notes.md\nResult: .exo/r.md', elsewhere), /Worktree/);
 });
@@ -348,7 +349,7 @@ test('the lacks-Reads denial quotes a read label with a parenthetical, and a lab
 });
 
 test('an over-budget refusal says a qualifier is only lines N-M or by grep after the path', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  const dir = tempDir('worker-hook-');
   fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
   assert.match(workerReason('Reads: big.txt\nResult: .exo/r.md', dir), /a qualifier is only `lines N-M` or `by grep` right after the path/);
 });

@@ -3,13 +3,13 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { makeCellHome } from '../benchmarks/cell-home.mjs';
+import { tempDir } from './harness.mjs';
 
 test('the cell home has no .claude/CLAUDE.md while the real home keeps it', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-home-test-'));
+  const home = tempDir('cell-home-test-');
   const before = process.env.HOME;
   let cellHome;
   try {
@@ -29,7 +29,7 @@ test('the cell home has no .claude/CLAUDE.md while the real home keeps it', () =
 });
 
 test('the cell home turns off every installed plugin', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-home-test-'));
+  const home = tempDir('cell-home-test-');
   const before = process.env.HOME;
   let cellHome;
   try {

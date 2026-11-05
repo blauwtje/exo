@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { parseArguments } from '../benchmarks/run-args.mjs';
 import { loadValueTasks } from '../benchmarks/value.mjs';
 import { VALUE_QUICK_TASKS } from '../benchmarks/tasks.mjs';
 import { mergeStock, modeSummary, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from '../benchmarks/value-stock.mjs';
+import { tempDir } from './harness.mjs';
 
 const cell = (task, pass, cost) => ({ task, pass, cost_usd: cost, wallMs: 1000 });
 
@@ -47,16 +47,12 @@ test('mergeStock replaces rows of the same task and model and keeps the rest', (
 });
 
 test('writeStock creates the store and readStock reads it back', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-stock-'));
-  try {
-    const file = path.join(directory, 'exo', 'value', 'stock.json');
-    assert.deepEqual(readStock(file), []);
-    const rows = stockRows({ cells: [cell('a', true, 0.1)], model: 'm', claudeVersion: 'v' });
-    writeStock(file, rows);
-    assert.deepEqual(readStock(file), rows);
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
+  const directory = tempDir('exo-stock-');
+  const file = path.join(directory, 'exo', 'value', 'stock.json');
+  assert.deepEqual(readStock(file), []);
+  const rows = stockRows({ cells: [cell('a', true, 0.1)], model: 'm', claudeVersion: 'v' });
+  writeStock(file, rows);
+  assert.deepEqual(readStock(file), rows);
 });
 
 test('stockStorePath sits in the git common directory under exo/value', () => {

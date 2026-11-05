@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { tempDir } from './harness.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
 
@@ -16,7 +16,7 @@ function writeCell(runs, where, added) {
 }
 
 function publishedLines(baseline, exo) {
-  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cut-'));
+  const runs = tempDir('exo-cut-');
   const tasks = baseline.map((_, index) => `t${index}`);
   const meta = {
     model: 'm', claudeVersion: '1', fixture: { name: 'f', commit: 'c' }, runs: 1, date: '2026-01-01',
@@ -45,20 +45,16 @@ test('B = 100, 200, 300 with E = 90, 150, 270 gives cut 0.15 and spread 0.052', 
 });
 
 test('two arms with no shared task stop the publish with an error naming the metric', () => {
-  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cut-'));
-  try {
-    const meta = {
-      model: 'm', claudeVersion: '1', fixture: { name: 'f', commit: 'c' }, runs: 1, date: '2026-01-01',
-      arms: ['baseline', 'exo'], tasks: ['a', 'b'], cells: 2, mode: 'x'
-    };
-    fs.writeFileSync(path.join(runs, 'meta.json'), JSON.stringify(meta));
-    writeCell(runs, { task: 'a', arm: 'baseline' }, 100);
-    writeCell(runs, { task: 'b', arm: 'exo' }, 80);
-    const output = spawnSync(process.execPath, [SCORE, runs, '--publish', '--results', path.join(runs, 'out.md')], { encoding: 'utf8' });
-    assert.notEqual(output.status, 0);
-    assert.match(output.stderr, /needs a task with correct template cells in both arms for loc/);
-    assert.equal(fs.existsSync(path.join(runs, 'out.md')), false);
-  } finally {
-    fs.rmSync(runs, { recursive: true, force: true });
-  }
+  const runs = tempDir('exo-cut-');
+  const meta = {
+    model: 'm', claudeVersion: '1', fixture: { name: 'f', commit: 'c' }, runs: 1, date: '2026-01-01',
+    arms: ['baseline', 'exo'], tasks: ['a', 'b'], cells: 2, mode: 'x'
+  };
+  fs.writeFileSync(path.join(runs, 'meta.json'), JSON.stringify(meta));
+  writeCell(runs, { task: 'a', arm: 'baseline' }, 100);
+  writeCell(runs, { task: 'b', arm: 'exo' }, 80);
+  const output = spawnSync(process.execPath, [SCORE, runs, '--publish', '--results', path.join(runs, 'out.md')], { encoding: 'utf8' });
+  assert.notEqual(output.status, 0);
+  assert.match(output.stderr, /needs a task with correct template cells in both arms for loc/);
+  assert.equal(fs.existsSync(path.join(runs, 'out.md')), false);
 });

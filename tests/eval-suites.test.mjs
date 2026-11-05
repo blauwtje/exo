@@ -9,6 +9,7 @@ import { MIN_GRADUATION_RUNS, graduationCandidates, graduationReport, runFreeSui
 import { withoutVarianceGate } from '../verify/checks/benchmark-entry-points.mjs';
 import { checkEvalSuites, manifestProblems, suiteFiles } from '../verify/checks/eval-suites.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SUITES_SCRIPT = path.join(ROOT, 'benchmarks', 'suites.mjs');
@@ -21,7 +22,7 @@ function suite(id, overrides = {}) {
 }
 
 function repositoryWith(files, manifest) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-suites-'));
+  const root = tempDir('eval-suites-');
   const written = manifest === undefined ? files : { ...files, 'benchmarks/suites.json': JSON.stringify(manifest) };
   fs.writeFileSync(path.join(root, 'package.json'), '{}');
   for (const [name, source] of Object.entries(written)) {
@@ -237,7 +238,7 @@ test('suites.mjs --run exits 1 when a free regression suite fails', () => {
 });
 
 test('the graduation run minimum comes from defaults.eval', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-defaults-'));
+  const home = tempDir('eval-defaults-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { eval: { graduationRuns: 7 } } }));
   const script = "import('./benchmarks/suites.mjs').then((m) => console.log(m.MIN_GRADUATION_RUNS))";

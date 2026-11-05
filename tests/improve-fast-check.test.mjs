@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fastCheck } from '../skills/improve/scripts/fast-check.mjs';
+import { tempDir } from './harness.mjs';
 
 const script = fileURLToPath(new URL('../skills/improve/scripts/fast-check.mjs', import.meta.url));
 
@@ -24,7 +24,7 @@ function git(worktree, ...args) {
 }
 
 function setup({ testText, fastCheckCommand = null } = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fast-check-'));
+  const root = tempDir('fast-check-');
   const worktree = path.join(root, 'tree');
   write(worktree, 'src/x.js', 'export const x = 1;\n');
   if (testText) write(worktree, 'tests/x.test.mjs', testText);

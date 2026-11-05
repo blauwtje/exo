@@ -10,6 +10,7 @@ import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/
 import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
 import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
+import { tempDir } from './harness.mjs';
 
 const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner'];
 const CONFIG = {
@@ -313,14 +314,10 @@ test('build-task and solve-hard each hold ten distinct full-tier cases that reso
 });
 
 async function scoreValueRoot(task, solved) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-tier-value-'));
-  try {
-    const startTree = prepareValueRepo(task, repo);
-    if (solved) fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
-    return await scoreValueRepo(task, repo, startTree);
-  } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
-  }
+  const repo = tempDir('exo-agent-tier-value-');
+  const startTree = prepareValueRepo(task, repo);
+  if (solved) fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
+  return await scoreValueRepo(task, repo, startTree);
 }
 
 for (const task of loadValueTasks(AGENT_VALUE_ROOT)) {
@@ -388,15 +385,11 @@ test('runGated starts no other task when the first session did not use the api k
 });
 
 test('the session environment keeps ANTHROPIC_API_KEY from the caller and the isolated HOME', () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'tier-env-'));
-  try {
-    const run = withHome(confinedClaude({ args: ['-p', 'x'], roots: [folder], tmp: folder, platform: 'linux' }), '/isolated-home');
-    const env = { ...{ ANTHROPIC_API_KEY: 'sk-test', HOME: '/real' }, ...run.env };
-    assert.equal(env.ANTHROPIC_API_KEY, 'sk-test');
-    assert.equal(env.HOME, '/isolated-home');
-  } finally {
-    fs.rmSync(folder, { recursive: true, force: true });
-  }
+  const folder = tempDir('tier-env-');
+  const run = withHome(confinedClaude({ args: ['-p', 'x'], roots: [folder], tmp: folder, platform: 'linux' }), '/isolated-home');
+  const env = { ...{ ANTHROPIC_API_KEY: 'sk-test', HOME: '/real' }, ...run.env };
+  assert.equal(env.ANTHROPIC_API_KEY, 'sk-test');
+  assert.equal(env.HOME, '/isolated-home');
 });
 
 test('offsetRuns numbers a merged round after the last recorded run of the same setting', () => {
@@ -454,33 +447,25 @@ test('dryRunText prints the estimated wall as the summed session walls over the 
 });
 
 test('recordedSessions reads the earlier agent key orchestrate as orchestrator', () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'tier-history-'));
-  try {
-    const file = path.join(folder, 'old.json');
-    fs.writeFileSync(file, JSON.stringify({ sessions: [{ agent: 'orchestrate', model: 'opus', effort: 'low', fixture: 'f', cost_usd: 0.1 }, { agent: 'solve-hard', model: 'opus', effort: 'low' }] }));
-    assert.deepEqual(recordedSessions(file).map((session) => session.agent), ['orchestrator', 'solve-hard']);
-    assert.deepEqual(recordedSessions(path.join(folder, 'missing.json')), []);
-  } finally {
-    fs.rmSync(folder, { recursive: true, force: true });
-  }
+  const folder = tempDir('tier-history-');
+  const file = path.join(folder, 'old.json');
+  fs.writeFileSync(file, JSON.stringify({ sessions: [{ agent: 'orchestrate', model: 'opus', effort: 'low', fixture: 'f', cost_usd: 0.1 }, { agent: 'solve-hard', model: 'opus', effort: 'low' }] }));
+  assert.deepEqual(recordedSessions(file).map((session) => session.agent), ['orchestrator', 'solve-hard']);
+  assert.deepEqual(recordedSessions(path.join(folder, 'missing.json')), []);
 });
 
 test('--dry-run with --history prices a candidate from the recorded old sessions and the shipped profile otherwise', () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'tier-dry-'));
-  try {
-    const file = path.join(folder, 'old.json');
-    const sessions = ['false-pass', 'false-check', 'false-fact', 'false-change', 'five-parts', 'open-choice'].map((fixture) => ({ agent: 'orchestrate', model: 'opus', effort: 'xhigh', fixture, cost_usd: 1, durationMs: 60_000 }));
-    fs.writeFileSync(file, JSON.stringify({ sessions }));
-    const args = [SCRIPT, '--agent', 'orchestrator', '--tier', 'full', '--candidate', 'opus:xhigh', '--dry-run', '--out', path.join(folder, 'none.json')];
-    const withHistory = spawnSync('node', [...args, '--history', file], { encoding: 'utf8' });
-    assert.equal(withHistory.status, 0, withHistory.stderr);
-    assert.match(withHistory.stdout, /^total: 6 sessions, est \$6\.00, est wall 3\.0 min at concurrency 2$/m);
-    const profileOnly = spawnSync('node', args, { encoding: 'utf8' });
-    assert.match(profileOnly.stdout, /^total: 6 sessions, est \$\d\.\d\d, est wall \d/m);
-    assert.doesNotMatch(profileOnly.stdout, /est \$6\.00/);
-  } finally {
-    fs.rmSync(folder, { recursive: true, force: true });
-  }
+  const folder = tempDir('tier-dry-');
+  const file = path.join(folder, 'old.json');
+  const sessions = ['false-pass', 'false-check', 'false-fact', 'false-change', 'five-parts', 'open-choice'].map((fixture) => ({ agent: 'orchestrate', model: 'opus', effort: 'xhigh', fixture, cost_usd: 1, durationMs: 60_000 }));
+  fs.writeFileSync(file, JSON.stringify({ sessions }));
+  const args = [SCRIPT, '--agent', 'orchestrator', '--tier', 'full', '--candidate', 'opus:xhigh', '--dry-run', '--out', path.join(folder, 'none.json')];
+  const withHistory = spawnSync('node', [...args, '--history', file], { encoding: 'utf8' });
+  assert.equal(withHistory.status, 0, withHistory.stderr);
+  assert.match(withHistory.stdout, /^total: 6 sessions, est \$6\.00, est wall 3\.0 min at concurrency 2$/m);
+  const profileOnly = spawnSync('node', args, { encoding: 'utf8' });
+  assert.match(profileOnly.stdout, /^total: 6 sessions, est \$\d\.\d\d, est wall \d/m);
+  assert.doesNotMatch(profileOnly.stdout, /est \$6\.00/);
 });
 
 test('--require-api-key stops with a usage error before any session when ANTHROPIC_API_KEY is unset', () => {

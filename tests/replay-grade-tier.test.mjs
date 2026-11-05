@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
 import { QUICK_CELLS, QUICK_VOTES, parseGradeArguments, planGrade, selectCells, summaryLines, voteStability } from '../benchmarks/replay/grade.mjs';
+import { tempDir } from './harness.mjs';
 
 const GRADE = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'benchmarks', 'replay', 'grade.mjs');
 
 function makeRun(cells) {
-  const run = fs.mkdtempSync(path.join(os.tmpdir(), 'grade-tier-'));
+  const run = tempDir('grade-tier-');
   cells.forEach(({ name, type, output, prior }) => {
     const cell = path.join(run, name);
     fs.mkdirSync(cell);

@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { planHoldout } from '../lib/holdout.mjs';
 import { caseMovers, improveDefaults, judgeKeep, scorerHash } from '../skills/improve/scripts/round.mjs';
+import { tempDir } from './harness.mjs';
 
 const script = fileURLToPath(new URL('../skills/improve/scripts/round.mjs', import.meta.url));
 const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).stdout.trim();
 
 function setup({ direction = 'lower', command = 'cat src/x.txt', limit = 20, baseline = [10, 10], items = {}, score = 10, regex = 'score=(\\d+)' } = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'round-'));
+  const root = tempDir('round-');
   fs.mkdirSync(path.join(root, 'src'));
   fs.writeFileSync(path.join(root, 'src/x.txt'), 'score=10\npad\n');
   fs.writeFileSync(path.join(root, 'score.sh'), 'x\n');

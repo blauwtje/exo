@@ -6,6 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { changedFiles, findingsDigest, mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
+import { tempDir } from './harness.mjs';
 
 const MERGE = fileURLToPath(new URL('../skills/gate/scripts/merge-reviews.mjs', import.meta.url));
 const FILES = ['a.js', 'b.js', 'c.js', 'd.js'];
@@ -56,7 +57,7 @@ test('absolute Read: paths inside the checkout root count as read and paths outs
 });
 
 test('merge-reviews.mjs prints COVERAGE and one UNREAD-FILE line per changed file nobody read', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'coverage-'));
+  const root = tempDir('coverage-');
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
   git('init', '-q', '-b', 'main');
   git('commit', '-q', '--allow-empty', '-m', 'init');
@@ -84,7 +85,7 @@ test('findingsDigest ignores fixer marks, indented detail and FAIL lines, and se
 });
 
 function divergedRepo() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'diverged-'));
+  const root = tempDir('diverged-');
   const run = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args]);
   run('init', '-q', '-b', 'main');
   run('commit', '-q', '--allow-empty', '-m', 'init');

@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { codexHookEntries, codexHookTargets, DOCUMENTED_FIELDS } from '../harnesses/codex/hooks.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const TARGETS = ['hooks/session-start.mjs', 'hooks/dispatch-bash.mjs'];
@@ -19,7 +20,7 @@ function handlersOf(entries) {
 
 // A root of stub scripts, so the test sees what the wrapper hands the script.
 function stubRoot(name) {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-hooks-'));
+  const base = tempDir('codex-hooks-');
   const root = path.join(base, name);
   fs.mkdirSync(path.join(root, 'harnesses', 'codex'), { recursive: true });
   fs.mkdirSync(path.join(root, 'hooks'), { recursive: true });

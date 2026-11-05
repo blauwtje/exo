@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { liveBuild, pruneBuildProgress, refreshBuildProgress, removeBuildProgress, writeBuildProgress } from '#build-progress';
+import { tempDir } from './harness.mjs';
 
 function setup() {
-  const cache = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bp-'));
-  const checkout = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bp-co-'));
+  const cache = tempDir('exo-bp-');
+  const checkout = tempDir('exo-bp-co-');
   return { env: { XDG_CACHE_HOME: cache }, checkout, file: (id) => path.join(cache, 'exo', 'build', `${id}.json`) };
 }
 

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { Spend, judgeRate, parseArgs, readCases, readQuick, runQuick, selectCases } from '../benchmarks/adhd-score.mjs';
+import { tempDir } from './harness.mjs';
 
 const references = fs.readFileSync(new URL('../benchmarks/adhd/references.jsonl', import.meta.url), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
 const cases = selectCases(readCases(), { caseIds: readQuick() });
@@ -24,12 +24,8 @@ const goodReply = (log = []) => async ({ arm, prompt }) => {
 const optsIn = (dir, flags = []) => ({ ...parseArgs(flags), logDir: dir, model: 'm' });
 
 async function quickIn(task) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-quick-'));
-  try {
-    return await task(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('exo-adhd-quick-');
+  return await task(dir);
 }
 
 const logIn = (dir) => JSON.parse(fs.readFileSync(path.join(dir, fs.readdirSync(dir).find((f) => f.endsWith('.json'))), 'utf8'));

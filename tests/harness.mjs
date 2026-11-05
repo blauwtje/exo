@@ -3,6 +3,7 @@
 // hook registered here belongs to whichever test file imported it.
 
 import { execFile, execFileSync } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,10 +14,14 @@ const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const temporaryDirectories = [];
 
-export async function fixture() {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ui-design-test-'));
+export function tempDir(prefix = 'exo-test-') {
+  const directory = mkdtempSync(path.join(os.tmpdir(), prefix));
   temporaryDirectories.push(directory);
   return directory;
+}
+
+export async function fixture() {
+  return tempDir('ui-design-test-');
 }
 
 after(async () => {

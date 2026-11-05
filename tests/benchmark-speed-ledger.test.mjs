@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkLedger, fingerprint, indexSection, KEYS, readLedger, renderLedger } from '../benchmarks/speed-ledger.mjs';
+import { tempDir } from './harness.mjs';
 
 const row = (id, title, extra = {}) => {
   const base = Object.fromEntries(KEYS.map((key) => [key, null]));
@@ -14,7 +14,7 @@ const row = (id, title, extra = {}) => {
 };
 
 function makeRoot(rows, render = renderLedger) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'speed-ledger-'));
+  const root = tempDir('speed-ledger-');
   fs.mkdirSync(path.join(root, 'benchmarks'));
   fs.writeFileSync(path.join(root, 'benchmarks', 'speed-ledger.jsonl'), rows.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
   fs.writeFileSync(path.join(root, 'benchmarks', 'speed-ledger.md'), render(rows));

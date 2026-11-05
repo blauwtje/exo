@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkScriptHelp } from '../verify/checks/script-help.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function lines(scripts) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'script-help-'));
+  const root = tempDir('script-help-');
   fs.mkdirSync(path.join(root, 'skills', 'build', 'scripts'), { recursive: true });
   for (const [name, source] of Object.entries(scripts)) {
     fs.writeFileSync(path.join(root, 'skills', 'build', 'scripts', name), source);

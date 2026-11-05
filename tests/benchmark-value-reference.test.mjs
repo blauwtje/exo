@@ -1,22 +1,18 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
+import { tempDir } from './harness.mjs';
 
 const QUICK_SLUGS = ['test-pollution', 'rename-propagation', 'export-mismatch', 'web-research'];
 const tasks = loadValueTasks().filter((task) => QUICK_SLUGS.includes(path.basename(task.directory)));
 
 async function scoreRepoWith(task, solved) {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-value-reference-'));
-  try {
-    const startTree = prepareValueRepo(task, repo);
-    if (solved) fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
-    return await scoreValueRepo(task, repo, startTree);
-  } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
-  }
+  const repo = tempDir('exo-value-reference-');
+  const startTree = prepareValueRepo(task, repo);
+  if (solved) fs.cpSync(path.join(task.directory, 'solution'), repo, { recursive: true, force: true });
+  return await scoreValueRepo(task, repo, startTree);
 }
 
 test('every quick value task is found', () => {

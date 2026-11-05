@@ -5,9 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { selfHostPlan, selfHostingGap } from '../skills/gate/scripts/gate.mjs';
+import { tempDir } from './harness.mjs';
 
 function repoWithBranch(changedFiles) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'self-host-'));
+  const root = tempDir('self-host-');
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
   git('init', '-q', '-b', 'main');
   fs.writeFileSync(path.join(root, 'README.md'), 'start\n');

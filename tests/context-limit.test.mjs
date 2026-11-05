@@ -7,14 +7,15 @@ import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
+import { tempDir } from './harness.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
-const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
+const testHome = tempDir('exo-limit-home-');
 process.env.HOME = testHome;
 process.env.USERPROFILE = testHome;
 
 function homeWith(content) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-'));
+  const home = tempDir('exo-limit-');
   if (content !== undefined) {
     fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
     fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), content);
@@ -61,7 +62,7 @@ test('the hook limit follows an overriding run.json', () => {
 });
 
 test('the interactive main session gets no note and no refusal at any context size', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-main-'));
+  const dir = tempDir('exo-main-');
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
     fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
@@ -79,7 +80,7 @@ test('the interactive main session gets no note and no refusal at any context si
 });
 
 test('Bash and Edit dispatchers give the interactive main session no context note, and a deny still wins', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-dispatch-'));
+  const dir = tempDir('exo-dispatch-');
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
     fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
@@ -113,7 +114,7 @@ test('Bash and Edit dispatchers give the interactive main session no context not
 
 test('main session Read of a whole persisted tool output is denied; a range or another file passes', async () => {
   const { persistedReadDecision } = await import('../lib/context-decisions.mjs');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-persisted-'));
+  const dir = tempDir('exo-persisted-');
   const transcript_path = path.join(dir, 'session.jsonl');
   const persisted = path.join(dir, 'session', 'tool-results', 'b123.txt');
   const read = (tool_input, extra = {}) => persistedReadDecision({ transcript_path, tool_name: 'Read', tool_input, ...extra });
@@ -129,7 +130,7 @@ test('main session Read of a whole persisted tool output is denied; a range or a
 });
 
 test('a subagent past its soft limit is told to hand over, past its hard limit only Write and Edit still work', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-'));
+  const dir = tempDir('exo-agent-');
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
     fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
@@ -149,7 +150,7 @@ test('a subagent past its soft limit is told to hand over, past its hard limit o
 });
 
 test('a subagent is warned again after it shrinks below the soft limit', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-shrink-'));
+  const dir = tempDir('exo-agent-shrink-');
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
     fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
@@ -168,7 +169,7 @@ test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and
   fs.mkdirSync(path.dirname(runJson), { recursive: true });
   fs.writeFileSync(runJson, '{"defaults":{"contextLimit":150000}}');
   try {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-growth-'));
+    const dir = tempDir('exo-growth-');
     const agent_id = `a-growth-${process.pid}-${Date.now()}`;
     const call = (tokens, tool_name) => {
       const file = path.join(dir, `t${tokens}.jsonl`);
@@ -200,7 +201,7 @@ test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and
 });
 
 test('an Edit by a subagent past its hard limit passes the edit dispatcher', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-edit-'));
+  const dir = tempDir('exo-agent-edit-');
   const file = path.join(dir, 't.jsonl');
   fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: AGENT_HARD } } })}\n`);
   const agent_id = `a-edit-${process.pid}-${Date.now()}`;
@@ -211,7 +212,7 @@ test('an Edit by a subagent past its hard limit passes the edit dispatcher', () 
 
 test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {
   const { hookAgentType } = await import('../lib/context-decisions.mjs');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-agent-type-'));
+  const dir = tempDir('exo-agent-type-');
   const transcript_path = path.join(dir, 'session.jsonl');
   const subagents = path.join(dir, 'session', 'subagents');
   fs.mkdirSync(subagents, { recursive: true });
@@ -240,7 +241,7 @@ test('the SubagentStart hook, its file and subagentStartNote are gone', async ()
 
 test('agentContextTarget, dispatchBytesPerToken and fetchTokens read the catalog and honor a run.json override', async () => {
   const { agentContextTarget, dispatchBytesPerToken, fetchTokens } = await import('../lib/context-limits.mjs');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-target-'));
+  const home = tempDir('exo-target-');
   assert.equal(agentContextTarget(home), 60000);
   assert.equal(dispatchBytesPerToken(home), 2);
   assert.equal(fetchTokens(home), 1600);
@@ -253,7 +254,7 @@ test('agentContextTarget, dispatchBytesPerToken and fetchTokens read the catalog
 
 test('the slice, result cap and script size defaults read the catalog and honor a run.json override', async () => {
   const limits = await import('../lib/context-limits.mjs');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sizes-'));
+  const home = tempDir('exo-sizes-');
   assert.equal(limits.orchestratorWorkers(home), 4);
   assert.equal(limits.resultCapBytes(home), 4096);
   assert.equal(limits.orchestratorResultCapBytes(home), (limits.agentContextTarget(home) / 2) * limits.dispatchBytesPerToken(home) / (limits.orchestratorWorkers(home) + limits.orchestratorPredispatchReads(home)));
@@ -268,7 +269,7 @@ test('the slice, result cap and script size defaults read the catalog and honor 
 
 test('the shared reader accepts a fractional bytesPerToken and rejects zero, negative and non-numeric values', async () => {
   const { dispatchBytesPerToken, capHeadroomTokens } = await import('../lib/context-limits.mjs');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-reader-'));
+  const home = tempDir('exo-reader-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   const write = (defaults) => fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults }));
   write({ bytesPerToken: 1.85 });
@@ -281,7 +282,7 @@ test('the shared reader accepts a fractional bytesPerToken and rejects zero, neg
 });
 
 test('readCapDecision runs a capped Read with the largest limit that fits instead of denying it', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cap-'));
+  const dir = tempDir('exo-cap-');
   const file = path.join(dir, 'big.txt');
   fs.writeFileSync(file, `${'x'.repeat(99)}\n`.repeat(100));
   const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:locate-code', permission_mode: 'bypassPermissions', tool_input: { file_path: file } };
@@ -309,7 +310,7 @@ test('a Read whose single line is over the cap is not told to retry with limit 1
 });
 
 function agentCaller(tokens, agent_type) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-caller-'));
+  const dir = tempDir('exo-caller-');
   const file = path.join(dir, 't.jsonl');
   fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
   const agent_id = `a-caller-${process.pid}-${Date.now()}-${Math.random()}`;
@@ -353,7 +354,7 @@ test('TaskStop stays allowed for any agent at the hard limit while Bash is refus
 
 test('imageTokenCap, pdfPageTokens and binaryReadTokens read the catalog and honor a run.json override', async () => {
   const { imageTokenCap, pdfPageTokens, binaryReadTokens } = await import('../lib/context-limits.mjs');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'read-defaults-'));
+  const home = tempDir('read-defaults-');
   assert.deepEqual([imageTokenCap(home), pdfPageTokens(home), binaryReadTokens(home)], [1600, 3000, 500]);
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { imageTokenCap: 900, pdfPageTokens: 2000, binaryReadTokens: 100 } }));

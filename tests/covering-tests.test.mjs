@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -8,9 +7,10 @@ import { coveringTests } from '../lib/covering-tests.mjs';
 import { checkCoveringTests } from '../verify/checks/covering-tests.mjs';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 function repo(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-covering-'));
+  const root = tempDir('exo-covering-');
   for (const [name, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), text);

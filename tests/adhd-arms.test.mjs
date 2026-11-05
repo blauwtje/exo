@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { Spend, buildBaseline, claudeReply, parseArgs, readCases, readQuick, selectCases } from '../benchmarks/adhd-score.mjs';
+import { tempDir } from './harness.mjs';
 
 const cases = [
   { id: 'a', context: 'C', question: 'Q' },
@@ -21,7 +21,7 @@ test('the quick list names 11 existing cases', () => {
 });
 
 test('the concise arm appends "Answer concisely." to the default claude call', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
+  const dir = tempDir('exo-fake-claude-');
   const argsFile = path.join(dir, 'args');
   fs.writeFileSync(path.join(dir, 'claude'), `#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' "$@" > ${argsFile}\necho '{"result":"x","usage":{"output_tokens":1},"total_cost_usd":0}'\n`, { mode: 0o755 });
   const saved = process.env.PATH;
@@ -39,7 +39,7 @@ test('the concise arm appends "Answer concisely." to the default claude call', a
 });
 
 test('the caveman arm appends the concise prompt and the caveman rules, without the plugin', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
+  const dir = tempDir('exo-fake-claude-');
   const argsFile = path.join(dir, 'args');
   fs.writeFileSync(path.join(dir, 'claude'), `#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' "$@" > ${argsFile}\necho '{"result":"x","usage":{"output_tokens":1},"total_cost_usd":0}'\n`, { mode: 0o755 });
   const saved = process.env.PATH;

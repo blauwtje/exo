@@ -5,12 +5,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { checkEvalJudges, judgeFailures, skippedJudges } from '../verify/checks/eval-judges.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const GOOD = { name: 'j', kind: 'grader', dimension: 'facts', files: ['benchmarks/judges/j.md'], scorer: 'benchmarks/j-score.mjs' };
 const SCORER = "import { calibrationLines } from './judge-calibration.mjs';\nexport const line = calibrationLines(['j']);\n";
 
 function repositoryWith(judges, files = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-judges-'));
+  const root = tempDir('eval-judges-');
   const all = { 'benchmarks/judges.json': JSON.stringify({ judges }), 'benchmarks/judges/j.md': 'prompt', 'benchmarks/j-score.mjs': SCORER, ...files };
   for (const [name, source] of Object.entries(all)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });

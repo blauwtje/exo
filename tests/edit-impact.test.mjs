@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { impactNote, impactFields, importName, isTestPath } from '../lib/edit-impact.mjs';
+import { tempDir } from './harness.mjs';
 
 let counter = 0;
 const session = () => `impact-${process.pid}-${counter++}`;
 
 function repo(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-impact-'));
+  const root = tempDir('exo-impact-');
   for (const [name, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), text);

@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { descriptionHashes } from '../benchmarks/routing.mjs';
 import { checkRouting } from '../verify/checks/routing.mjs';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 function fixture(description) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'routing-check-'));
+  const root = tempDir('routing-check-');
   fs.mkdirSync(path.join(root, 'skills', 'build'), { recursive: true });
   fs.mkdirSync(path.join(root, 'hooks'));
   fs.mkdirSync(path.join(root, 'benchmarks', 'results'), { recursive: true });

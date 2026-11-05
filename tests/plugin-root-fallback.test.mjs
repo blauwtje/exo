@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { OLD_STATUSLINE_LAUNCHERS, STATUSLINE_LAUNCHER, mainCheckout } from '#plugin-pointer';
+import { git } from './harness.mjs';
 
 const REPOSITORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SETTINGS = path.join(REPOSITORY, 'skills', 'configure', 'scripts', 'settings.mjs');
@@ -16,10 +17,6 @@ const CLI = path.join(REPOSITORY, 'skills', 'build', 'scripts', 'exo-cli.mjs');
 const HOOK = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
 
 const tempDir = (label) => fs.mkdtempSync(path.join(os.tmpdir(), `exo-${label}-`));
-
-function git(cwd, ...args) {
-  return execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).trim();
-}
 
 // A main checkout with a linked worktree, then the worktree removed: plugin-root names the gone path.
 function goneWorktreeConfig(main) {

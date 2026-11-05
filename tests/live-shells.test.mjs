@@ -5,6 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { liveShells, shellStopDecision } from '../lib/live-shells.mjs';
+import { tempDir } from './harness.mjs';
 
 const start = (toolId, command = 'npm test') => ({ type: 'assistant', message: { content: [{ type: 'tool_use', id: toolId, name: 'Bash', input: { command, run_in_background: true } }] } });
 const started = (toolId, shellId) => ({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: toolId, content: `Command running in background with ID: ${shellId}. Output is being written to: /tmp/${shellId}.output. You will be notified when it completes.` }] } });
@@ -17,7 +18,7 @@ const watchEnded = (taskId, status, summary) => ({ type: 'user', message: { cont
 const foreground = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'fg', name: 'Bash', input: { command: 'ls' } }] } };
 
 function transcript(entries) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-shells-'));
+  const dir = tempDir('exo-shells-');
   const file = path.join(dir, 'agent.jsonl');
   fs.writeFileSync(file, `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
   return file;

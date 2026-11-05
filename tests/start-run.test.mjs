@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/start-run.mjs', import.meta.url));
 const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
 
 function fixture() {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'start-run-'));
+  const base = tempDir('start-run-');
   const repo = fs.realpathSync(base);
   git(repo, 'init', '-q', '-b', 'work');
   git(repo, 'config', 'user.email', 't@t');
@@ -159,7 +159,7 @@ test('start-run stops before the pre-run commit and run started when a service t
   const f = fixture();
   fs.writeFileSync(path.join(f.repo, 'compose.yaml'), 'services: {}\n');
   fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
-  const fakes = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-bin-'));
+  const fakes = tempDir('fake-bin-');
   for (const name of ['docker', 'open']) {
     fs.writeFileSync(path.join(fakes, name), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
   }

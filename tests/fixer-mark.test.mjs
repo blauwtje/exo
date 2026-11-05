@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { findingsDigest } from '../skills/gate/scripts/merge-reviews.mjs';
 import { fixedProbes } from '../skills/gate/scripts/run-probes.mjs';
 import { unprovenRisks } from '../skills/build/scripts/run-tail.mjs';
+import { tempDir } from './harness.mjs';
 
 const PROMPT = fs.readFileSync(new URL('../skills/build/review-fixer-prompt.md', import.meta.url), 'utf8');
 
@@ -71,7 +71,7 @@ test('fixedProbes reads fixed and reported marks from a fixer-written file', () 
 });
 
 test('unprovenRisks names a reported-unproven concern without its mark', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fixer-mark-'));
+  const dir = tempDir('fixer-mark-');
   const file = path.join(dir, 'branch-review.md');
   fs.writeFileSync(file, FIXER_WRITTEN);
   assert.deepEqual(unprovenRisks(file), ['hooks/task-runner.md:29; concern; plan fit; a red Proof goes to SendMessage first; report']);

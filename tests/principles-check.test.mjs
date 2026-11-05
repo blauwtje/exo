@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkPrinciples } from '../verify/checks/principles.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const today = new Date().toISOString().slice(0, 10);
@@ -23,7 +23,7 @@ ${extra}
 const INDEX = '# Principles\n\n[a](./a.md)\n';
 
 function run(files, extra = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'principles-'));
+  const root = tempDir('principles-');
   const directory = path.join(root, 'docs', 'principles');
   fs.mkdirSync(directory, { recursive: true });
   for (const [name, text] of Object.entries(files)) fs.writeFileSync(path.join(directory, name), text);

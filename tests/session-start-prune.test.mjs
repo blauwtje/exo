@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 
 const REPOSITORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const HOOK = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
 const DAY_SECONDS = 24 * 60 * 60;
 
 function workspace() {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-session-prune-'));
+  const base = tempDir('exo-session-prune-');
   const project = path.join(base, 'project');
   const home = path.join(base, 'home');
   fs.mkdirSync(path.join(project, '.exo'), { recursive: true });
@@ -70,72 +70,52 @@ function assertPruned(files, link, exo) {
 
 test('a session start prunes stale .exo entries and keeps the protected ones', () => {
   const { base, project, home, exo } = workspace();
-  try {
-    const files = fixtures(project, exo);
-    const link = path.join(exo, 'link');
-    fs.symlinkSync(files.outside, link);
-    const past = Date.now() / 1000 - 30 * DAY_SECONDS;
-    fs.lutimesSync(link, past, past);
-    startSession({ home, input: { session_id: 's1', source: 'startup', cwd: project } });
-    assertPruned(files, link, exo);
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const files = fixtures(project, exo);
+  const link = path.join(exo, 'link');
+  fs.symlinkSync(files.outside, link);
+  const past = Date.now() / 1000 - 30 * DAY_SECONDS;
+  fs.lutimesSync(link, past, past);
+  startSession({ home, input: { session_id: 's1', source: 'startup', cwd: project } });
+  assertPruned(files, link, exo);
 });
 
 test('a prune within 24 hours of the stamp leaves stale entries', () => {
   const { base, project, home, exo } = workspace();
-  try {
-    put(path.join(exo, 'pruned-at'), 0);
-    const stale = put(path.join(exo, 'old.log'), 10);
-    startSession({ home, input: { session_id: 's1', source: 'startup', cwd: project } });
-    assert.equal(present(stale), true, 'the walk ran despite a fresh stamp');
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  put(path.join(exo, 'pruned-at'), 0);
+  const stale = put(path.join(exo, 'old.log'), 10);
+  startSession({ home, input: { session_id: 's1', source: 'startup', cwd: project } });
+  assert.equal(present(stale), true, 'the walk ran despite a fresh stamp');
 });
 
 test('TE_SIDECALL=1 and a detached run session prune nothing', () => {
   const { base, project, home, exo } = workspace();
-  try {
-    const stale = put(path.join(exo, 'old.log'), 10);
-    const input = { session_id: 's1', source: 'startup', cwd: project };
-    startSession({ home, extraEnv: { TE_SIDECALL: '1' }, input });
-    startSession({ home, extraEnv: { EXO_RUN_DIR: project }, input });
-    assert.equal(present(stale), true, 'a skipped session pruned');
-    assert.equal(present(path.join(exo, 'pruned-at')), false, 'a skipped session wrote the stamp');
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const stale = put(path.join(exo, 'old.log'), 10);
+  const input = { session_id: 's1', source: 'startup', cwd: project };
+  startSession({ home, extraEnv: { TE_SIDECALL: '1' }, input });
+  startSession({ home, extraEnv: { EXO_RUN_DIR: project }, input });
+  assert.equal(present(stale), true, 'a skipped session pruned');
+  assert.equal(present(path.join(exo, 'pruned-at')), false, 'a skipped session wrote the stamp');
 });
 
 test('no .exo folder and a non-string cwd create nothing', () => {
   const { base, project, home } = workspace();
-  try {
-    const bare = path.join(base, 'bare');
-    fs.mkdirSync(bare);
-    startSession({ home, input: { session_id: 's1', source: 'startup', cwd: bare } });
-    startSession({ home, input: { session_id: 's1', source: 'startup', cwd: 42 } });
-    assert.deepEqual(fs.readdirSync(bare), []);
-    assert.deepEqual(fs.readdirSync(path.join(project, '.exo')), []);
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const bare = path.join(base, 'bare');
+  fs.mkdirSync(bare);
+  startSession({ home, input: { session_id: 's1', source: 'startup', cwd: bare } });
+  startSession({ home, input: { session_id: 's1', source: 'startup', cwd: 42 } });
+  assert.deepEqual(fs.readdirSync(bare), []);
+  assert.deepEqual(fs.readdirSync(path.join(project, '.exo')), []);
 });
 
 test('a .exo that is a symlink is not walked', () => {
   const { base, project, home } = workspace();
-  try {
-    const target = path.join(base, 'elsewhere');
-    const stale = put(path.join(target, 'old.log'), 10);
-    const linked = path.join(base, 'linked');
-    fs.mkdirSync(linked);
-    fs.symlinkSync(target, path.join(linked, '.exo'));
-    startSession({ home, input: { session_id: 's1', source: 'startup', cwd: linked } });
-    assert.equal(present(stale), true, 'the walk followed the .exo symlink');
-    assert.equal(present(path.join(target, 'pruned-at')), false, 'a stamp was written through the symlink');
-    assert.ok(present(project));
-  } finally {
-    fs.rmSync(base, { recursive: true, force: true });
-  }
+  const target = path.join(base, 'elsewhere');
+  const stale = put(path.join(target, 'old.log'), 10);
+  const linked = path.join(base, 'linked');
+  fs.mkdirSync(linked);
+  fs.symlinkSync(target, path.join(linked, '.exo'));
+  startSession({ home, input: { session_id: 's1', source: 'startup', cwd: linked } });
+  assert.equal(present(stale), true, 'the walk followed the .exo symlink');
+  assert.equal(present(path.join(target, 'pruned-at')), false, 'a stamp was written through the symlink');
+  assert.ok(present(project));
 });

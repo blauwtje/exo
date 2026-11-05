@@ -8,16 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { analysis, forkPrompt, prepareCheckpoint, runFork, verifyBlock, verifyPoint } from '../benchmarks/checkpoint-fork.mjs';
 import { keepRepository } from '../benchmarks/sweep.mjs';
 import { countsCost } from '../benchmarks/pricing.mjs';
+import { git } from './harness.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'checkpoint-fork.mjs');
 const BRANCH = 'feat/text-helpers';
 const MODEL = 'claude-sonnet-5-5';
 const at = (time) => `2026-01-01T${time}Z`;
 const seconds = (time) => Date.parse(at(time)) / 1000;
-
-function git(directory, ...args) {
-  return execFileSync('git', ['-C', directory, ...args], { encoding: 'utf8' }).trim();
-}
 
 function commit(repository, file, time) {
   fs.writeFileSync(path.join(repository, file), `${file}\n`);

@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { planTaskTrailer } from '#plan-tasks';
 import { landedTasks } from '../benchmarks/sweep.mjs';
-
-function git(directory, ...args) {
-  return execFileSync('git', ['-C', directory, ...args], { encoding: 'utf8' }).trim();
-}
+import { git } from './harness.mjs';
 
 function commit(directory, subject, trailer) {
   git(directory, 'commit', '--quiet', '--allow-empty', '-m', subject, '-m', trailer);

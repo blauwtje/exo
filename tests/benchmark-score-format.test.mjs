@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { tempDir } from './harness.mjs';
 
 const SCORE = path.join(import.meta.dirname, '..', 'benchmarks', 'score.mjs');
 
@@ -18,7 +18,7 @@ function writeCell(runs, where, files) {
 }
 
 function scoreCosts(tier, costs) {
-  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-format-'));
+  const runs = tempDir('exo-format-');
   const meta = {
     model: 'm', claudeVersion: '1', fixture: { name: 'f', commit: 'c' }, runs: costs.length, date: '2026-01-01',
     arms: ['exo'], tasks: ['t'], cells: costs.length, mode: 'x'

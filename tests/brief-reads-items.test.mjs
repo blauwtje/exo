@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { locatedReads, workerSize } from '../lib/worker-size.mjs';
+import { tempDir } from './harness.mjs';
 
 function folder() {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'brief-reads-'));
+  const cwd = tempDir('brief-reads-');
   const write = (name, text) => {
     fs.mkdirSync(path.dirname(path.join(cwd, name)), { recursive: true });
     fs.writeFileSync(path.join(cwd, name), text);
@@ -59,7 +59,7 @@ test('a brief with prose items keeps its Reads line as written', () => {
 });
 
 test('a leading ~/ in a Reads item resolves under the home directory', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'brief-home-'));
+  const home = tempDir('brief-home-');
   fs.writeFileSync(path.join(home, 'notes.md'), 'n'.repeat(1000));
   const saved = process.env.HOME;
   process.env.HOME = home;

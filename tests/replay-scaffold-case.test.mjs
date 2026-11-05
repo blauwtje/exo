@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { boundedDiff, changelogSymptom, isInputFile, MAX_DIFF_CHARS } from '../benchmarks/replay/scaffold-case.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../benchmarks/replay/scaffold-case.mjs', import.meta.url));
 
@@ -14,7 +14,7 @@ function git(root, ...args) {
 }
 
 function fixRepository() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'scaffold-case-'));
+  const root = tempDir('scaffold-case-');
   git(root, 'init', '-q');
   fs.mkdirSync(path.join(root, 'src'));
   fs.mkdirSync(path.join(root, 'tests'));
@@ -37,7 +37,7 @@ function scaffold(root, cases, ...extra) {
 
 test('a fix commit becomes a case with parent input, provenance and the symptom from the changelog line', () => {
   const root = fixRepository();
-  const cases = fs.mkdtempSync(path.join(os.tmpdir(), 'scaffold-cases-'));
+  const cases = tempDir('scaffold-cases-');
   scaffold(root, cases);
   const folder = path.join(cases, 'real-a');
   const definition = JSON.parse(fs.readFileSync(path.join(folder, 'case.json'), 'utf8'));
@@ -58,7 +58,7 @@ test('a fix commit becomes a case with parent input, provenance and the symptom 
 
 test('a dry run writes nothing and an existing case is refused without --force', () => {
   const root = fixRepository();
-  const cases = fs.mkdtempSync(path.join(os.tmpdir(), 'scaffold-cases-'));
+  const cases = tempDir('scaffold-cases-');
   assert.match(scaffold(root, cases, '--dry-run'), /^would write .*real-a \(1 input files: src\/a\.mjs/);
   assert.equal(fs.existsSync(path.join(cases, 'real-a')), false);
   scaffold(root, cases);
@@ -71,7 +71,7 @@ test('a commit with no changelog line and no --symptom leaves the case unready',
   git(root, 'commit', '-q', '--allow-empty', '-m', 'noop');
   fs.writeFileSync(path.join(root, 'src/a.mjs'), 'export const limit = 4;\n');
   git(root, 'commit', '-q', '-am', 'fix(a): four');
-  const cases = fs.mkdtempSync(path.join(os.tmpdir(), 'scaffold-cases-'));
+  const cases = tempDir('scaffold-cases-');
   scaffold(root, cases);
   const definition = JSON.parse(fs.readFileSync(path.join(cases, 'real-a/case.json'), 'utf8'));
   assert.equal(definition.ready, false);

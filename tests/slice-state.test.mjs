@@ -8,9 +8,10 @@ import { contextHook } from '../hooks/context-limit.mjs';
 import { PREDISPATCH_STEP } from '../hooks/dispatch-bash.mjs';
 import { orchestratorPredispatchReads } from '../lib/context-limits.mjs';
 import { predispatchReadCount, recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
+import { tempDir } from './harness.mjs';
 
 function orchestrator(workers, reads = 'none', extra = '') {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-'));
+  const dir = tempDir('slice-');
   const transcript = path.join(dir, 'agent.jsonl');
   const brief = { message: { content: [{ type: 'text', text: `Workers: ${workers}\n${extra}Reads: ${reads}` }] } };
   fs.writeFileSync(transcript, `${JSON.stringify(brief)}\n{}\n`);
@@ -109,7 +110,7 @@ test('before its first dispatch an orchestrator reads only its brief Reads paths
 });
 
 test('an orchestrator reads its brief Reads paths from the brief Worktree', () => {
-  const tree = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-tree-'));
+  const tree = tempDir('slice-tree-');
   fs.writeFileSync(path.join(tree, 'brief.md'), 'rows\n');
   const agent = orchestrator(2, 'brief.md', `Worktree: ${tree}\n`);
   assert.equal(readFile(agent, path.join(tree, 'brief.md')), null);

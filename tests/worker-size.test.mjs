@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
 import { briefReads, normalizedReads, workerSize } from '../lib/worker-size.mjs';
+import { tempDir } from './harness.mjs';
 
 function folder() {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-size-'));
+  const cwd = tempDir('worker-size-');
   fs.mkdirSync(path.join(cwd, 'dir'));
   fs.writeFileSync(path.join(cwd, 'dir', 'a.txt'), 'x'.repeat(2000));
   fs.writeFileSync(path.join(cwd, 'b.txt'), 'x'.repeat(1000));
@@ -132,7 +132,7 @@ test('a parenthesis inside a path word is kept', () => {
 });
 
 function repository(files) {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-repo-'));
+  const cwd = tempDir('worker-repo-');
   for (const [name, size] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(cwd, name)), { recursive: true });
     fs.writeFileSync(path.join(cwd, name), 'x'.repeat(size));

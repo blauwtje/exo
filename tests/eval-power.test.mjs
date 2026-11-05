@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
   ALPHA, POWER, TARGET_EFFECT, designVariance, evalDefaults, detectableEffect, normalQuantile, planningVariance, powerLine, rateVariance, scoreVariance, tasksNeeded, zSum
 } from '../lib/eval-stats.mjs';
 import { minDetectableEffect, nextRuns } from '../benchmarks/statistics.mjs';
+import { tempDir } from './harness.mjs';
 
 const near = (actual, expected, tolerance = 1e-5) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} is not ${expected}`);
 
@@ -129,7 +129,7 @@ test('the mde script prints the power line', () => {
 });
 
 test('the planning tunables come from defaults.eval and a user run.json overrides them', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-defaults-'));
+  const home = tempDir('eval-defaults-');
   assert.deepEqual(evalDefaults(home), { targetEffect: 0.03, alpha: 0.05, power: 0.8, pairedCorrelation: 0.5, calibrationMinLabels: 30, calibrationKappaFloor: 0.6, graduationRuns: 20, realFailuresMin: 20 });
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { eval: { targetEffect: 0.05, alpha: 0.1, power: 0.9, pairedCorrelation: 0.25 } } }));

@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { isTransientProviderError, spawnClaude } from '../skills/build/scripts/run-session.mjs';
+import { tempDir } from './harness.mjs';
 
 const RETRY_MS = 100;
 const SUCCESS = JSON.stringify({ type: 'result', subtype: 'success', is_error: false, result: 'done' });
@@ -14,7 +15,7 @@ const FAILURES = {
 };
 
 function stub(failure, failures) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-retry-'));
+  const dir = tempDir('exo-retry-');
   const counter = path.join(dir, 'count');
   const script = `const fs = require('node:fs'); const file = process.argv[1];
 const count = (fs.existsSync(file) ? Number(fs.readFileSync(file, 'utf8')) : 0) + 1;

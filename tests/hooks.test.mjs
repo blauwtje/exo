@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 
 // The hook reads the session provider from the environment; these tests expect the claude column.
 delete process.env.EXO_PROVIDER;
@@ -83,15 +84,11 @@ test('the session hook points at a memory file only where one exists', () => {
 });
 
 test('the session hook prints no book command', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-book-'));
+  const configHome = tempDir('exo-book-');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
-  try {
-    const output = execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString();
-    assert.doesNotMatch(JSON.parse(output).hookSpecificOutput.additionalContext, /book --claim/);
-  } finally {
-    fs.rmSync(configHome, { recursive: true, force: true });
-  }
+  const output = execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString();
+  assert.doesNotMatch(JSON.parse(output).hookSpecificOutput.additionalContext, /book --claim/);
 });
 
 test('no tool name matches more than one PreToolUse entry', () => {
@@ -127,40 +124,32 @@ test('the run-watch wake prompt names the watching reference, and that reference
 });
 
 test('the session hook writes plugin-root and leaves the rest of the config folder', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-config-'));
+  const configHome = tempDir('exo-config-');
   const exoDirectory = path.join(configHome, 'exo');
   fs.mkdirSync(path.join(exoDirectory, 'handoff'), { recursive: true });
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
-  try {
-    execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
-    assert.ok(fs.existsSync(path.join(exoDirectory, 'handoff')));
-    assert.ok(fs.existsSync(path.join(exoDirectory, 'plugin-root')));
-    execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
-  } finally {
-    fs.rmSync(configHome, { recursive: true, force: true });
-  }
+  execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+  assert.ok(fs.existsSync(path.join(exoDirectory, 'handoff')));
+  assert.ok(fs.existsSync(path.join(exoDirectory, 'plugin-root')));
+  execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
 });
 
 test('the session hook writes no plugin-root when CLAUDE_PLUGIN_ROOT is unset or names another folder', () => {
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   for (const loaded of [undefined, os.tmpdir()]) {
-    const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-pointer-'));
+    const configHome = tempDir('exo-pointer-');
     const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
     delete env.CLAUDE_PLUGIN_ROOT;
     if (loaded !== undefined) env.CLAUDE_PLUGIN_ROOT = loaded;
-    try {
-      execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
-      assert.equal(fs.existsSync(path.join(configHome, 'exo', 'plugin-root')), false, String(loaded));
-    } finally {
-      fs.rmSync(configHome, { recursive: true, force: true });
-    }
+    execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+    assert.equal(fs.existsSync(path.join(configHome, 'exo', 'plugin-root')), false, String(loaded));
   }
 });
 
 test('receipts off drops the "exo is on" line from the session hook', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-receipts-off-'));
-  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-receipts-off-project-'));
+  const configHome = tempDir('exo-receipts-off-');
+  const project = tempDir('exo-receipts-off-project-');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   delete env.CLAUDE_PROJECT_DIR;
@@ -177,17 +166,13 @@ test('receipts off drops the "exo is on" line from the session hook', () => {
 });
 
 test('the session hook shows the user one "exo is on" line and writes no welcomed marker', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-welcome-'));
+  const configHome = tempDir('exo-welcome-');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
-  try {
-    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
-    assert.equal(output.systemMessage, 'exo is on');
-    assert.doesNotMatch(output.hookSpecificOutput.additionalContext, /exo is on/);
-    assert.equal(fs.existsSync(path.join(configHome, 'exo', 'welcomed')), false);
-  } finally {
-    fs.rmSync(configHome, { recursive: true, force: true });
-  }
+  const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
+  assert.equal(output.systemMessage, 'exo is on');
+  assert.doesNotMatch(output.hookSpecificOutput.additionalContext, /exo is on/);
+  assert.equal(fs.existsSync(path.join(configHome, 'exo', 'welcomed')), false);
 });
 
 function sessionContext(prefix, option) {
@@ -197,12 +182,8 @@ function sessionContext(prefix, option) {
   for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
   for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
   if (option) env.CLAUDE_PLUGIN_OPTION_COMPRESSION = option;
-  try {
-    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
-    return output.hookSpecificOutput.additionalContext;
-  } finally {
-    fs.rmSync(configHome, { recursive: true, force: true });
-  }
+  const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
+  return output.hookSpecificOutput.additionalContext;
 }
 
 test('the session hook with no exo settings injects no reply rules, only the fix-all and confirm lines', () => {
@@ -232,9 +213,9 @@ test('the session hook gives no compression entry and no rule text for a stored 
 });
 
 test('the session hook reads project settings from the session directory in the hook input, not its own working directory', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cwd-'));
-  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cwd-project-'));
-  const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cwd-elsewhere-'));
+  const configHome = tempDir('exo-cwd-');
+  const project = tempDir('exo-cwd-project-');
+  const elsewhere = tempDir('exo-cwd-elsewhere-');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
@@ -251,8 +232,8 @@ test('the session hook reads project settings from the session directory in the 
 });
 
 test('the session hook adds a Node warning to the user line only when Node is older than package.json engines', () => {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-node-'));
-  const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-node-root-'));
+  const configHome = tempDir('exo-node-');
+  const copy = tempDir('exo-node-root-');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
   for (const name of ['CLAUDE_PLUGIN_ROOT', 'CODEX_HOME', 'EXO_HOST', 'EXO_RUN_DIR']) delete env[name];
   const manifest = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'package.json'), 'utf8'));
@@ -276,7 +257,7 @@ test('the session hook adds a Node warning to the user line only when Node is ol
 
 test('the Stop hook lets a repair session end without a task status line', async () => {
   const { runNoWait } = await import('../hooks/run-no-wait.mjs');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'run-no-wait-'));
+  const dir = tempDir('run-no-wait-');
   const env = { EXO_RUN: 'run', EXO_RUN_DIR: dir, EXO_RUN_TASK: 'plan/1', EXO_RUN_REPAIR: '1' };
   const input = { hook_event_name: 'Stop', session_id: 's', last_assistant_message: 'Plan: docs/plan.md\nTask 1 rewritten: Files: line names lib/a.mjs.' };
   assert.equal(runNoWait(input, { env }), null);
@@ -411,8 +392,8 @@ test('deciding a long run of git global options grows linearly with its length',
 });
 
 function progressPointer(source, { ageMs = 0, env = {}, files = ['topic/progress.md'] } = {}) {
-  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-progress-config-'));
-  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-progress-project-'));
+  const configHome = tempDir('exo-progress-config-');
+  const project = tempDir('exo-progress-project-');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const hookEnv = { ...process.env, CLAUDE_CONFIG_DIR: configHome, CLAUDE_PLUGIN_ROOT: REPOSITORY, ...env };
   for (const name of ['CODEX_HOME', 'EXO_HOST', 'EXO_RUN_DIR']) delete hookEnv[name];
@@ -551,7 +532,7 @@ test('a capped agent Bash output is cut at the result cap and keeps the exit cod
 });
 
 test('the SessionStart hook sweeps saved Bash outputs older than EXO_SAVED_OUTPUT_MS and keeps newer ones', () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sweep-'));
+  const folder = tempDir('exo-sweep-');
   fs.mkdirSync(path.join(folder, 'exo-bash'));
   const [old, fresh, other] = ['exo-bash-agent-old.log', 'exo-bash-agent-new.log', 'other.log'].map((name) => path.join(folder, 'exo-bash', name));
   for (const file of [old, fresh, other]) fs.writeFileSync(file, 'x');
@@ -568,7 +549,7 @@ test('the SessionStart hook sweeps saved Bash outputs older than EXO_SAVED_OUTPU
 
 test('the context-limit entry starts node only for Read, Skill, a run session or an agent past its soft limit', () => {
   const { command } = hookEntries().find((entry) => entry.matcher?.startsWith('Read|')).hook;
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-gate-'));
+  const folder = tempDir('exo-gate-');
   const traced = (input, extra = {}) => {
     const env = { ...process.env, TMPDIR: folder, CLAUDE_PLUGIN_ROOT: REPOSITORY };
     delete env.EXO_RUN_HANDOFF;
@@ -606,21 +587,17 @@ test('a capped agent Bash keeps a timeout and skips background, trailing backsla
 });
 
 test('the session hook makes an unmatched zsh glob pass through by one line in CLAUDE_ENV_FILE', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-env-file-'));
+  const home = tempDir('exo-env-file-');
   const envFile = path.join(home, 'sessionstart-hook-0.sh');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: home, CLAUDE_ENV_FILE: envFile, EXO_RUN_DIR: home };
-  try {
-    for (let run = 0; run < 2; run += 1) execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
-    const lines = fs.readFileSync(envFile, 'utf8').split('\n').filter((line) => line.includes('nonomatch'));
-    assert.equal(lines.length, 1);
-    for (const shell of ['zsh', 'bash'].filter((name) => spawnSync(name, ['-c', 'exit 0']).status === 0)) {
-      const result = spawnSync(shell, ['-c', `. '${envFile}'; eval 'echo --include=*.exo-no-match'`], { encoding: 'utf8' });
-      assert.equal(result.status, 0, `${shell}: ${result.stderr}`);
-      assert.equal(result.stdout, '--include=*.exo-no-match\n', shell);
-      assert.equal(result.stderr, '', shell);
-    }
-  } finally {
-    fs.rmSync(home, { recursive: true, force: true });
+  for (let run = 0; run < 2; run += 1) execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+  const lines = fs.readFileSync(envFile, 'utf8').split('\n').filter((line) => line.includes('nonomatch'));
+  assert.equal(lines.length, 1);
+  for (const shell of ['zsh', 'bash'].filter((name) => spawnSync(name, ['-c', 'exit 0']).status === 0)) {
+    const result = spawnSync(shell, ['-c', `. '${envFile}'; eval 'echo --include=*.exo-no-match'`], { encoding: 'utf8' });
+    assert.equal(result.status, 0, `${shell}: ${result.stderr}`);
+    assert.equal(result.stdout, '--include=*.exo-no-match\n', shell);
+    assert.equal(result.stderr, '', shell);
   }
 });

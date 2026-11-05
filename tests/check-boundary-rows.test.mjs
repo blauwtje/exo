@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkBoundaryRows } from '../verify/checks/boundary-rows.mjs';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const PLAN = [
   '# Plan', '', '### Task 1: guard the path', '',
@@ -15,7 +15,7 @@ const PLAN = [
 ].join('\n');
 
 function repo(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-boundary-rows-'));
+  const root = tempDir('exo-boundary-rows-');
   for (const [name, content] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), content);

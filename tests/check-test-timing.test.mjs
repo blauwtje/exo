@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { checkTestTiming, elapsedBounds } from '../verify/checks/test-timing.mjs';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 function run(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'test-timing-'));
+  const root = tempDir('test-timing-');
   fs.mkdirSync(path.join(root, 'tests'));
   for (const [name, text] of Object.entries(files)) fs.writeFileSync(path.join(root, 'tests', name), text);
   const lines = [];

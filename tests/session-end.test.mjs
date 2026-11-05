@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { problems, readReference, REFERENCE_PATH } from '../verify/user-read.mjs';
+import { tempDir } from './harness.mjs';
 
 const hook = path.resolve('hooks/session-end.mjs');
 const DAY_SECONDS = 24 * 60 * 60;
@@ -112,8 +113,8 @@ test('a clean repository with no progress file gets no stub', () => {
 });
 
 test('a directory outside a git repository gets no stub', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'session-end-home-'));
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'session-end-plain-'));
+  const home = tempDir('session-end-home-');
+  const cwd = tempDir('session-end-plain-');
   fs.writeFileSync(path.join(cwd, 'draft.txt'), 'x');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: home };
   delete env.EXO_RUN_DIR;

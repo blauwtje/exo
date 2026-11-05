@@ -1,8 +1,6 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -20,17 +18,14 @@ import {
   spendRefusal
 } from '../benchmarks/improve-real-copy.mjs';
 import { modelInvocableSkills } from '../benchmarks/routing.mjs';
+import { git, tempDir } from './harness.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'improve-real-test-'));
+const scratch = tempDir('improve-real-test-');
 const copies = {};
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
-}
-
-function git(dir, ...args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8' }).trim();
 }
 
 before(() => {

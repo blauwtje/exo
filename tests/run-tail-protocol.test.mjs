@@ -1,19 +1,17 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { runTail } from '../skills/build/scripts/run-tail.mjs';
+import { git, tempDir } from './harness.mjs';
 
-const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
 const answer = (stdout = '', status = 0) => ({ status, stdout, stderr: '' });
 const scriptOf = (file) => path.basename(file, '.mjs');
 const flagValue = (args, flag) => args[args.indexOf(flag) + 1];
 const promptValue = (prompt, label) => prompt.match(new RegExp(`^- ${label}: (.*)$`, 'm'))?.[1];
 
 function checkout() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'run-tail-protocol-'));
+  const root = tempDir('run-tail-protocol-');
   git(root, 'init', '-q', '-b', 'main');
   git(root, 'config', 'user.email', 'a@b.c');
   git(root, 'config', 'user.name', 'a');

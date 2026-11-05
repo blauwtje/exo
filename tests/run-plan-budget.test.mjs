@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { budgetPin, chooseProvider } from '../skills/build/scripts/run-plan.mjs';
 import { childEnv } from '../skills/build/scripts/run-session.mjs';
 import { contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
+import { tempDir } from './harness.mjs';
 
 const cell = (kind, retry) => {
   const { model, effort } = readKindTable(undefined, { budget: 'on', retry }).kinds[kind];
@@ -48,7 +48,7 @@ test('a resumed headless retry keeps the session pin, only a fresh retry uses th
 });
 
 test('chooseProvider takes the caller effort before the config default', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
+  const home = tempDir('exo-plan-home-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'keys.env'), 'DEEPSEEK_API_KEY=x\n');
   assert.equal(chooseProvider({ provider: 'deepseek' }, home, home).asked, 'medium');
@@ -56,7 +56,7 @@ test('chooseProvider takes the caller effort before the config default', () => {
 });
 
 test('an explicit effort reaches the session env, a default or a bare model does not', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
+  const home = tempDir('exo-plan-home-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'keys.env'), 'DEEPSEEK_API_KEY=x\n');
   const medium = childEnv(null, chooseProvider({ provider: 'deepseek', effort: 'medium' }, home, home));
@@ -68,7 +68,7 @@ test('an explicit effort reaches the session env, a default or a bare model does
 });
 
 test('the run plan budgets the soft limit and follows a run.json contextLimit', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plan-home-'));
+  const home = tempDir('exo-plan-home-');
   assert.equal(chooseProvider({}, home, home).contextBudget, softLimit(contextLimit(home)));
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":200000}}');

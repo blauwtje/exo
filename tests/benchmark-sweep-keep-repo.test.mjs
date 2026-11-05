@@ -1,17 +1,14 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { keepRepository } from '../benchmarks/sweep.mjs';
+import { git } from './harness.mjs';
 
 const SWEEP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'sweep.mjs');
-
-function git(directory, ...args) {
-  return execFileSync('git', ['-C', directory, ...args], { encoding: 'utf8' }).trim();
-}
 
 function dryRun(...args) {
   return spawnSync(process.execPath, [SWEEP, ...args], { encoding: 'utf8', timeout: 60000 });

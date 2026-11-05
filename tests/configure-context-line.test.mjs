@@ -5,12 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './harness.mjs';
 
 const repo = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const script = path.join(repo, 'skills', 'configure', 'scripts', 'settings.mjs');
 
 function homeWith(content) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-context-line-'));
+  const home = tempDir('exo-context-line-');
   if (content !== undefined) {
     fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
     fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), content);

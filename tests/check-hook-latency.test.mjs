@@ -1,25 +1,21 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { HOOK_SPAWN_MS_LOCK } from '../verify/budgets.mjs';
 import { checkHookLatency } from '../verify/checks/hook-budgets.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 function runCheck(dispatcher) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-latency-'));
-  try {
-    if (dispatcher !== null) {
-      fs.mkdirSync(path.join(root, 'hooks'));
-      fs.writeFileSync(path.join(root, 'hooks', 'dispatch-bash.mjs'), dispatcher);
-    }
-    const results = [];
-    checkHookLatency({ result: (status, name, detail) => results.push({ status, name, detail }) }, createRepository(root));
-    return results;
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+  const root = tempDir('hook-latency-');
+  if (dispatcher !== null) {
+    fs.mkdirSync(path.join(root, 'hooks'));
+    fs.writeFileSync(path.join(root, 'hooks', 'dispatch-bash.mjs'), dispatcher);
   }
+  const results = [];
+  checkHookLatency({ result: (status, name, detail) => results.push({ status, name, detail }) }, createRepository(root));
+  return results;
 }
 
 test('the lock is a positive millisecond count with a date', () => {

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { detailLogPath, forCaller, keepLines } from '#script-output';
+import { tempDir } from './harness.mjs';
 
 function tempRoot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'script-output-'));
+  const root = tempDir('script-output-');
   spawnSync('git', ['init', '-q', root]);
   return root;
 }

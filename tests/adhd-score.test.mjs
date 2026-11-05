@@ -6,6 +6,7 @@ import test from 'node:test';
 import { ADHD_RUNS, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, makeStylePlugin, parseArgs, projectDryRun, readCases, readSaturated, runAddFailLabels, rescoreCases, runRescore, runScore, runToLabel, scoreCases, selectCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
 import { buildFailRows, dropFact } from '../benchmarks/adhd/labels.mjs';
 import { BREVITY_LINES, withoutSentence } from '../benchmarks/tasks.mjs';
+import { tempDir } from './harness.mjs';
 
 const cases = [
   { id: 'a', context: 'C', question: 'Q', facts: ['f'], literals: [['KEY']], lead: [] },
@@ -201,7 +202,7 @@ const waitForStarts = async (file, count) => {
 };
 
 test('a hung claude call is killed at the cap and retried once, then fails clearly', async (t) => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
+  const dir = tempDir('exo-fake-claude-');
   const starts = path.join(dir, 'starts');
   const hangs = path.join(dir, 'hangs');
   const ok = '{"result":"x","usage":{"output_tokens":1},"total_cost_usd":0}';
@@ -247,7 +248,7 @@ test('projection ignores the cost of cases still in flight', async () => {
 });
 
 test('a claude reply with no total_cost_usd is an error, not $0', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
+  const dir = tempDir('exo-fake-claude-');
   fs.writeFileSync(path.join(dir, 'claude'), '#!/bin/sh\ncat >/dev/null\necho \'{"result":"x","usage":{"output_tokens":1}}\'\n', { mode: 0o755 });
   const saved = process.env.PATH;
   process.env.PATH = `${dir}:${saved}`;
@@ -322,7 +323,7 @@ test('buildFailRows labels FAIL by construction from human PASS rows and judged 
 });
 
 test('runAddFailLabels appends new rows once and leaves existing lines untouched', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-labels-'));
+  const dir = tempDir('exo-labels-');
   const file = path.join(dir, 'labels.jsonl');
   const logDir = path.join(dir, 'logs');
   fs.mkdirSync(logDir);
@@ -428,11 +429,7 @@ test('buildBaseline saves after each case and a failure names the case and arm',
 const STYLE_FILE = fs.readFileSync(new URL('../output-styles/adhd.md', import.meta.url), 'utf8');
 const pluginStyle = (ablate) => {
   const dir = makeStylePlugin(ablate);
-  try {
-    return fs.readFileSync(path.join(dir, 'output-styles', 'adhd.md'), 'utf8');
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  return fs.readFileSync(path.join(dir, 'output-styles', 'adhd.md'), 'utf8');
 };
 
 test('the style plugin without --ablate carries the full style file', () => {
@@ -452,14 +449,10 @@ test('the style plugin with an ablated slug lacks exactly that sentence', () => 
 test('the score log records the ablated slug, null without the flag', async () => {
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0.01 });
   const logged = async (flags) => {
-    const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
-    try {
-      const opts = { ...parseArgs([...flags, '--runs', '1']), logDir };
-      await runScore({ opts, cases, reply, judge: pass, spend: spendOf(1), baseline });
-      return JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
-    } finally {
-      fs.rmSync(logDir, { recursive: true, force: true });
-    }
+    const logDir = tempDir('exo-adhd-log-');
+    const opts = { ...parseArgs([...flags, '--runs', '1']), logDir };
+    await runScore({ opts, cases, reply, judge: pass, spend: spendOf(1), baseline });
+    return JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
   };
   assert.equal((await logged(['--ablate', 'no-why'])).ablate, 'no-why');
   assert.equal((await logged([])).ablate, null);
@@ -473,15 +466,11 @@ test('each case row holds its own reply and judge cost', async () => {
 
 test('the score log records the wall time of the run in milliseconds', async () => {
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0.01 });
-  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
-  try {
-    await runScore({ opts: { ...parseArgs(['--runs', '1']), logDir }, cases, reply, judge: pass, spend: spendOf(1), baseline });
-    const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
-    assert.equal(Number.isFinite(log.durationMs) && log.durationMs >= 0, true);
-    assert.equal(log.perCase.every((p) => typeof p.cost_usd === 'number'), true);
-  } finally {
-    fs.rmSync(logDir, { recursive: true, force: true });
-  }
+  const logDir = tempDir('exo-adhd-log-');
+  await runScore({ opts: { ...parseArgs(['--runs', '1']), logDir }, cases, reply, judge: pass, spend: spendOf(1), baseline });
+  const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
+  assert.equal(Number.isFinite(log.durationMs) && log.durationMs >= 0, true);
+  assert.equal(log.perCase.every((p) => typeof p.cost_usd === 'number'), true);
 });
 
 test('dry run prices the cells from the cached baseline cost per case, with zero calls', () => {
@@ -518,16 +507,12 @@ test('the saturated list holds 4 ids that all exist in the cases file', () => {
 
 test('the score log records screen and the scored case ids', async () => {
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0.01 });
-  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
-  try {
-    await runScore({ opts: { ...parseArgs(['--screen']), logDir }, cases, reply, judge: pass, spend: spendOf(1), baseline });
-    const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
-    assert.equal(log.screen, true);
-    assert.deepEqual(log.cases, ['a', 'b']);
-    assert.equal(log.runs, 1);
-  } finally {
-    fs.rmSync(logDir, { recursive: true, force: true });
-  }
+  const logDir = tempDir('exo-adhd-log-');
+  await runScore({ opts: { ...parseArgs(['--screen']), logDir }, cases, reply, judge: pass, spend: spendOf(1), baseline });
+  const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
+  assert.equal(log.screen, true);
+  assert.deepEqual(log.cases, ['a', 'b']);
+  assert.equal(log.runs, 1);
 });
 
 const storedLog = (perCase) => ({ runs: 2, screen: true, ablate: null, perCase });
@@ -556,35 +541,27 @@ test('rescoreCases rejects a log with no replies for the selected cases', async 
 });
 
 test('the rescore log names its source, keeps screen and the case ids, and makes no reply cost', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
-  try {
-    const source = path.join(dir, 'old.json');
-    fs.writeFileSync(source, JSON.stringify(storedLog([storedRow('b', [sized(100)])])));
-    const logDir = path.join(dir, 'out');
-    await runRescore({ opts: { ...parseArgs(['--rescore', '--log', source]), logDir }, cases, judge: pass, spend: new Spend(5), baseline });
-    const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
-    assert.equal(log.rescoredFrom, source);
-    assert.equal(log.screen, true);
-    assert.deepEqual(log.cases, ['b']);
-    assert.equal(log.reply_cost_usd, 0);
-    assert.equal(log.perCase[0].ratio, 0.5);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('exo-adhd-log-');
+  const source = path.join(dir, 'old.json');
+  fs.writeFileSync(source, JSON.stringify(storedLog([storedRow('b', [sized(100)])])));
+  const logDir = path.join(dir, 'out');
+  await runRescore({ opts: { ...parseArgs(['--rescore', '--log', source]), logDir }, cases, judge: pass, spend: new Spend(5), baseline });
+  const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
+  assert.equal(log.rescoredFrom, source);
+  assert.equal(log.screen, true);
+  assert.deepEqual(log.cases, ['b']);
+  assert.equal(log.reply_cost_usd, 0);
+  assert.equal(log.perCase[0].ratio, 0.5);
 });
 
 test('a --screen rescore of a full-arm log records screen true', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
-  try {
-    const source = path.join(dir, 'full.json');
-    fs.writeFileSync(source, JSON.stringify({ ...storedLog([storedRow('b', [sized(100)])]), screen: false }));
-    const logDir = path.join(dir, 'out');
-    await runRescore({ opts: { ...parseArgs(['--rescore', '--screen', '--log', source]), logDir }, cases, judge: pass, spend: new Spend(5), baseline });
-    const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
-    assert.equal(log.screen, true);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('exo-adhd-log-');
+  const source = path.join(dir, 'full.json');
+  fs.writeFileSync(source, JSON.stringify({ ...storedLog([storedRow('b', [sized(100)])]), screen: false }));
+  const logDir = path.join(dir, 'out');
+  await runRescore({ opts: { ...parseArgs(['--rescore', '--screen', '--log', source]), logDir }, cases, judge: pass, spend: new Spend(5), baseline });
+  const log = JSON.parse(fs.readFileSync(path.join(logDir, fs.readdirSync(logDir)[0]), 'utf8'));
+  assert.equal(log.screen, true);
 });
 
 function cutShort(logDir, reply) {
@@ -623,92 +600,68 @@ function assertFinishedAfterResume(done, partial) {
 }
 
 test('a run cut short leaves a partial log that --resume finishes without calling the model for done cases', async () => {
-  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+  const logDir = tempDir('exo-adhd-log-');
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0.01 });
   const readLog = readLogIn(logDir);
-  try {
-    const two = [cases[0], { ...cases[1], context: 'second' }];
-    const opts = { ...parseArgs(['--runs', '1']), logDir };
-    const { name, partial } = await writePartialLog({ logDir, opts, two, reply });
-    const prompts = await resumeRecordingPrompts({ opts: { ...opts, resume: path.join(logDir, name) }, two, reply });
-    assert.equal(prompts.length, 1);
-    assert.equal(prompts[0].includes('second'), true);
-    const [, finished] = fs.readdirSync(logDir).sort();
-    assert.equal(readLog(name).partial, true);
-    assertFinishedAfterResume(readLog(finished), partial);
-  } finally {
-    fs.rmSync(logDir, { recursive: true, force: true });
-  }
+  const two = [cases[0], { ...cases[1], context: 'second' }];
+  const opts = { ...parseArgs(['--runs', '1']), logDir };
+  const { name, partial } = await writePartialLog({ logDir, opts, two, reply });
+  const prompts = await resumeRecordingPrompts({ opts: { ...opts, resume: path.join(logDir, name) }, two, reply });
+  assert.equal(prompts.length, 1);
+  assert.equal(prompts[0].includes('second'), true);
+  const [, finished] = fs.readdirSync(logDir).sort();
+  assert.equal(readLog(name).partial, true);
+  assertFinishedAfterResume(readLog(finished), partial);
 });
 
 test('--resume refuses a finished log and a log made with other settings', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+  const dir = tempDir('exo-adhd-log-');
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0 });
   const attempt = (log, flags = []) => {
     const file = path.join(dir, 'p.json');
     fs.writeFileSync(file, JSON.stringify(log));
     return runScore({ opts: { ...parseArgs(['--runs', '1', ...flags]), logDir: dir, resume: file }, cases, reply, judge: pass, spend: spendOf(1), baseline });
   };
-  try {
-    await assert.rejects(attempt({ runs: 1, perCase: [] }), /not a partial log/);
-    await assert.rejects(attempt({ partial: true, runs: 2, perCase: [] }), /other --runs/);
-    await assert.rejects(attempt({ partial: true, runs: 1, ablate: 'no-why', perCase: [] }), /other --runs/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  await assert.rejects(attempt({ runs: 1, perCase: [] }), /not a partial log/);
+  await assert.rejects(attempt({ partial: true, runs: 2, perCase: [] }), /other --runs/);
+  await assert.rejects(attempt({ partial: true, runs: 1, ablate: 'no-why', perCase: [] }), /other --runs/);
 });
 
 test('stability and fail labels read finished logs only, never a partial one', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-labels-'));
+  const dir = tempDir('exo-labels-');
   const file = path.join(dir, 'labels.jsonl');
   const logDir = path.join(dir, 'logs');
   fs.mkdirSync(logDir);
   fs.writeFileSync(file, `${JSON.stringify({ id: 'h#0', dimension: 'facts', question: lidCase.question, facts: lidCase.facts, reply: 'Yes, it stays awake all night. caffeinate -di stops the Mac from sleeping.', label: 'PASS' })}\n`);
   fs.writeFileSync(path.join(logDir, 'a.json'), JSON.stringify({ partial: true, perCase: [{ id: 'lid', replies: ['Yes, it stays awake all night; caffeinate -di stops the Mac from sleeping!'], failed: [] }] }));
-  try {
-    assert.equal(runAddFailLabels([lidCase], { file, logDir, baseline: {} }).length, 1);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  assert.equal(runAddFailLabels([lidCase], { file, logDir, baseline: {} }).length, 1);
 });
 
 test('a corrupt log in the log folder is reported, not skipped as partial', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-labels-'));
+  const dir = tempDir('exo-labels-');
   const file = path.join(dir, 'labels.jsonl');
   const logDir = path.join(dir, 'logs');
   fs.mkdirSync(logDir);
   fs.writeFileSync(file, `${JSON.stringify({ id: 'h#0', dimension: 'facts', question: lidCase.question, facts: lidCase.facts, reply: 'Yes, it stays awake all night. caffeinate -di stops the Mac from sleeping.', label: 'PASS' })}\n`);
   fs.writeFileSync(path.join(logDir, 'a.json'), '{"runs":');
-  try {
-    assert.throws(() => runAddFailLabels([lidCase], { file, logDir, baseline: {} }), /a\.json/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  assert.throws(() => runAddFailLabels([lidCase], { file, logDir, baseline: {} }), /a\.json/);
 });
 
 test('--resume refuses a partial log made with another case list or model', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+  const dir = tempDir('exo-adhd-log-');
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0 });
   const attempt = (log) => {
     const file = path.join(dir, 'p.json');
     fs.writeFileSync(file, JSON.stringify({ partial: true, runs: 1, ablate: null, screen: false, model: parseArgs([]).model, cases: ['a', 'b'], perCase: [], ...log }));
     return runScore({ opts: { ...parseArgs(['--runs', '1']), logDir: dir, resume: file }, cases, reply, judge: pass, spend: spendOf(1), baseline });
   };
-  try {
-    await assert.rejects(attempt({ cases: ['zzz'] }), /other --runs, --ablate, --screen, --model or --cases/);
-    await assert.rejects(attempt({ model: 'other' }), /other --runs, --ablate, --screen, --model or --cases/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  await assert.rejects(attempt({ cases: ['zzz'] }), /other --runs, --ablate, --screen, --model or --cases/);
+  await assert.rejects(attempt({ model: 'other' }), /other --runs, --ablate, --screen, --model or --cases/);
 });
 
 test('--rescore refuses a partial log', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+  const dir = tempDir('exo-adhd-log-');
   const source = path.join(dir, 'src.json');
   fs.writeFileSync(source, JSON.stringify({ ...storedLog([storedRow('a', ['x'])]), partial: true }));
-  try {
-    await assert.rejects(runRescore({ opts: { ...parseArgs(['--rescore', '--log', source]), logDir: dir }, cases, judge: pass, spend: spendOf(1), baseline }), /partial/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  await assert.rejects(runRescore({ opts: { ...parseArgs(['--rescore', '--log', source]), logDir: dir }, cases, judge: pass, spend: spendOf(1), baseline }), /partial/);
 });

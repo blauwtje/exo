@@ -1,20 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { landRun } from '../skills/build/scripts/land-run.mjs';
 import { readGates, approveGates } from '../skills/build/scripts/run-state.mjs';
 import { recordPass } from '#check-cache';
+import { git, tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-run.mjs', import.meta.url));
-const git = (cwd, ...args) => {
-  const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
-  return r.stdout.trim();
-};
 const gitOk = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).status === 0;
 const write = (dir, file, text) => {
   fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
@@ -23,7 +18,7 @@ const write = (dir, file, text) => {
 
 // A bare origin, a main checkout on `main` and a run branch `feat` with one commit.
 function fixture({ review = 'CLEAN\n\nCount: defect=0 concern=0 question=0 fix=0\n', origin = true } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'land-run-'));
+  const dir = tempDir('land-run-');
   const bare = path.join(dir, 'origin.git');
   const root = path.join(dir, 'work');
   fs.mkdirSync(root);

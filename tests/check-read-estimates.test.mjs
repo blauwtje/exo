@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkReadEstimates } from '../verify/checks/read-estimates.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -16,7 +16,7 @@ function run(root) {
 }
 
 function outcome(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'read-estimates-'));
+  const root = tempDir('read-estimates-');
   for (const [name, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), text);

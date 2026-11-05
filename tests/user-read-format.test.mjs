@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { answerLine, capsWords, codeLines, codeShare, jargonPer100, problems, readReference, sourceText, userReadProblems, REFERENCE_PATH } from '../verify/user-read.mjs';
 import { checkUserReadFormat } from '../verify/checks/user-read-format.mjs';
+import { tempDir } from './harness.mjs';
 
 const REFERENCE = [
   '# Files the user reads',
@@ -31,7 +31,7 @@ const REFERENCE = [
 const GOOD = "<One line: the answer, in the user's language.>\n\n## Steps\n\n- Do the next thing.\n";
 
 function repositoryRoot(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'user-read-'));
+  const root = tempDir('user-read-');
   for (const [name, text] of Object.entries({ [REFERENCE_PATH]: REFERENCE, ...files })) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), text);

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { projectCost, projectedTimeLine, projectTime } from '../benchmarks/value.mjs';
+import { tempDir } from './harness.mjs';
 
 function writeCell(runs, run, { meta, cost, wallMs }) {
   const cell = path.join(runs, run, 'task-a', 'exo', '1');
@@ -14,7 +14,7 @@ function writeCell(runs, run, { meta, cost, wallMs }) {
 }
 
 test('projectCost matches past cells on effort and counts fallbacks', () => {
-  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-runs-'));
+  const runs = tempDir('exo-runs-');
   writeCell(runs, 'low', { meta: { effort: 'low' }, cost: 1 });
   writeCell(runs, 'max', { meta: { effort: 'max' }, cost: 5 });
   writeCell(runs, 'old', { meta: {}, cost: 100 });
@@ -28,7 +28,7 @@ test('projectCost matches past cells on effort and counts fallbacks', () => {
 });
 
 test('projectTime sums past mean wallMs at the same effort and counts unknown cells', () => {
-  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-runs-'));
+  const runs = tempDir('exo-runs-');
   writeCell(runs, 'low', { meta: { effort: 'low' }, cost: 1, wallMs: 60000 });
   writeCell(runs, 'max', { meta: { effort: 'max' }, cost: 5, wallMs: 300000 });
   const cells = [{ task: { id: 'task-a' }, arm: 'exo', modelId: 'm' }];

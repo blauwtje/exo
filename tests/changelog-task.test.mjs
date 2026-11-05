@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { changelogLine, landChangelogTask } from '../skills/build/scripts/changelog-task.mjs';
+import { tempDir } from './harness.mjs';
 
 const CHANGELOG = [
   '# Changelog', '', '## Unreleased', '', '### Added', '- first', '', '### Changed', '- old', '', '## 1.0.0', '', '### Added', '- shipped', ''
@@ -18,7 +18,7 @@ const task = (overrides = {}) => ({
 });
 
 function checkout(text = CHANGELOG) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'changelog-task-'));
+  const root = tempDir('changelog-task-');
   fs.writeFileSync(path.join(root, 'CHANGELOG.md'), text);
   return root;
 }

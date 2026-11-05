@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkSpeedLedger } from '../verify/checks/speed-ledger.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function verifyLedger(edit) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-'));
+  const root = tempDir('ledger-');
   fs.mkdirSync(path.join(root, 'benchmarks'));
   for (const name of ['speed-ledger.jsonl', 'speed-ledger.md']) fs.copyFileSync(path.join(ROOT, 'benchmarks', name), path.join(root, 'benchmarks', name));
   fs.cpSync(path.join(ROOT, 'benchmarks', 'results'), path.join(root, 'benchmarks', 'results'), { recursive: true });

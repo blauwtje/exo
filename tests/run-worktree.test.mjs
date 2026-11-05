@@ -1,16 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { snapshot, breachOf } from '../skills/build/scripts/run-worktree.mjs';
+import { git, tempDir } from './harness.mjs';
 
-const git = (cwd, ...args) => {
-  const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
-  return r.stdout.trim();
-};
 const commit = (cwd, file, message) => {
   fs.writeFileSync(path.join(cwd, file), `${message}\n`);
   git(cwd, 'add', '.');
@@ -22,7 +16,7 @@ const identify = (cwd) => {
 };
 
 function fixture({ own = true } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'run-worktree-'));
+  const dir = tempDir('run-worktree-');
   const bare = path.join(dir, 'origin.git');
   const root = path.join(dir, 'work');
   fs.mkdirSync(root);

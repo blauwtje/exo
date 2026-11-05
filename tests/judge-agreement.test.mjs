@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { CALIBRATION_MIN_LABELS, agreement, calibrationStatus, cohenKappa, pairVerdicts, parseJsonl, splitLabels, statusLine } from '../lib/judge-agreement.mjs';
+import { tempDir } from './harness.mjs';
 
 const rows = (pairs, dimension = 'd') => ({
   labels: pairs.map(([label], index) => ({ id: `i${index}`, dimension, label, labeler: 'rater-1' })),
@@ -94,7 +94,7 @@ test('parseJsonl names the bad line', () => {
 });
 
 test('the calibration minimum and kappa floor come from defaults.eval', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-defaults-'));
+  const home = tempDir('eval-defaults-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { eval: { calibrationMinLabels: 12, calibrationKappaFloor: 0.7 } } }));
   const script = "import('./lib/judge-agreement.mjs').then((m) => console.log(JSON.stringify([m.CALIBRATION_MIN_LABELS, m.CALIBRATION_KAPPA_FLOOR])))";

@@ -1,24 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { checkEditEvidence } from '../verify/checks/edit-evidence.mjs';
 import { createReport } from '../verify/report.mjs';
+import { git, tempDir } from './harness.mjs';
 
-const git = (cwd, ...args) => {
-  const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
-  return r.stdout.trim();
-};
 const write = (dir, file, text) => {
   fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
   fs.writeFileSync(path.join(dir, file), text);
 };
 
 function fixture() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edit-evidence-'));
+  const dir = tempDir('edit-evidence-');
   const root = path.join(dir, 'work');
   fs.mkdirSync(root);
   git(root, 'init', '-q', '-b', 'main');

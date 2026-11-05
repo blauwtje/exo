@@ -4,13 +4,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
 import { contextHook, receiptsOn } from '../hooks/context-limit.mjs';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
+import { tempDir } from './harness.mjs';
 
 // The hook reads the session provider from the environment; these tests expect the claude column.
 delete process.env.EXO_PROVIDER;
@@ -18,7 +18,7 @@ delete process.env.EXO_PROVIDER;
 const REPOSITORY = path.resolve(import.meta.dirname, '..');
 const ON = () => true;
 const OFF = () => false;
-const WORK = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-receipts-'));
+const WORK = tempDir('exo-receipts-');
 
 function transcript(tokens) {
   const file = path.join(WORK, `t${tokens}.jsonl`);

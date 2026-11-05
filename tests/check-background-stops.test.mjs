@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkBackgroundStops } from '../verify/checks/background-stops.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const agent = (tools, body) => `---\nname: sample\ndescription: "Sample."\ntools: ${tools}\n---\n# Sample\n\n${body}\n`;
 
 function outcome(agents) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'background-stops-'));
+  const root = tempDir('background-stops-');
   fs.mkdirSync(path.join(root, 'agents'));
   for (const [name, text] of Object.entries(agents)) fs.writeFileSync(path.join(root, 'agents', `${name}.md`), text);
   const results = [];

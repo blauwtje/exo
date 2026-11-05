@@ -6,6 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { BEFORE_ARM, beforeArm, beforePluginProblem, buildCopies, copyKey, exoRootOf, loadsCopy, withBeforeArm } from '../benchmarks/plugin-copies.mjs';
 import { ARMS, DEFAULT_ARMS, ROOT } from '../benchmarks/tasks.mjs';
+import { tempDir } from './harness.mjs';
 
 const TIERS = ['template', 'safe', 'git', 'calibration', 'value'];
 
@@ -14,7 +15,7 @@ function git(directory, args) {
 }
 
 function pluginDirectory(marker, { repo = false } = {}) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-before-test-'));
+  const directory = tempDir('exo-before-test-');
   fs.mkdirSync(path.join(directory, '.claude-plugin'));
   fs.writeFileSync(path.join(directory, '.claude-plugin', 'plugin.json'), '{"name":"exo"}\n');
   fs.writeFileSync(path.join(directory, 'marker.txt'), marker);
@@ -87,7 +88,7 @@ test('beforePluginProblem names each bad input', () => {
   const clean = pluginDirectory('B', { repo: true });
   const dirty = pluginDirectory('D', { repo: true });
   const notRepo = pluginDirectory('N');
-  const notExo = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-before-test-'));
+  const notExo = tempDir('exo-before-test-');
   fs.writeFileSync(path.join(dirty, 'marker.txt'), 'changed');
   try {
     assert.equal(beforePluginProblem(null, ['exo', BEFORE_ARM]), `arm ${BEFORE_ARM} needs --before-plugin <dir>`);

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { QUIET_ENV, calibrate, callStats, claudeJudge, factsInput, judgeFacts, judgePrompt, judgeStability, judgeVote, parseVerdicts } from '../benchmarks/adhd/judges.mjs';
+import { tempDir } from './harness.mjs';
 
 const factNumbers = (input) => [...input.matchAll(/^Fact (\d+):/gm)].map((m) => m[1]);
 const passAll = async ({ input }) => factNumbers(input).map((n) => `${n}: PASS`).join('\n');
@@ -39,7 +39,7 @@ test('judgeFacts judges one reply in one call and returns one verdict per fact',
 });
 
 test('a judge call with no total_cost_usd is an error, not $0', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
+  const dir = tempDir('exo-fake-claude-');
   fs.writeFileSync(path.join(dir, 'claude'), '#!/bin/sh\ncat >/dev/null\necho \'{"result":"PASS"}\'\n', { mode: 0o755 });
   const saved = process.env.PATH;
   process.env.PATH = `${dir}:${saved}`;
@@ -52,7 +52,7 @@ test('a judge call with no total_cost_usd is an error, not $0', async () => {
 });
 
 test('two judge calls overlap in time instead of blocking each other', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-fake-claude-'));
+  const dir = tempDir('exo-fake-claude-');
   fs.writeFileSync(path.join(dir, 'claude'), '#!/bin/sh\ncat >/dev/null\nsleep 1\necho \'{"result":"PASS","total_cost_usd":0}\'\n', { mode: 0o755 });
   const saved = process.env.PATH;
   process.env.PATH = `${dir}:${saved}`;

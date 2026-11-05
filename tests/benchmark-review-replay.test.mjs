@@ -7,6 +7,7 @@ import test from 'node:test';
 
 import { SessionError, changedRanges, gradeRepair, isClean, loadFixtures, loadPlants, main, parseFindings, renderTable, replayAll, saveBaseline, summarize, withBaseline, writeReport } from '../benchmarks/review-replay.mjs';
 import { SAFE_TASKS } from '../benchmarks/tasks.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
 const TASK = SAFE_TASKS[0];
@@ -120,48 +121,36 @@ function keptRuns(keepDir) {
 }
 
 test('a replay round merges the review into the ledger and keeps the run record', async () => {
-  const keepDir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-kept-'));
-  try {
-    const [cell] = await replayAll({ ...OPTIONS, repeat: 1, keepDir }, () => scriptedModel([]));
-    assert.equal(cell.roundsToClean.mean, 2);
-    const [run] = keptRuns(keepDir);
-    const rows = fs.readFileSync(path.join(run, 'review-ledger.jsonl'), 'utf8').trim().split('\n').map((row) => JSON.parse(row));
-    assert.deepEqual([...new Set(rows.map((row) => row.round))], [1, 2]);
-    assert.match(fs.readFileSync(path.join(run, 'review-input.md'), 'utf8'), /## Ledger/);
-    assert.match(fs.readFileSync(path.join(run, 'rounds', 'review-1.md'), 'utf8'), /unchecked join/);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(run, 'run.json'), 'utf8')).roundsToClean, 2);
-  } finally {
-    fs.rmSync(keepDir, { recursive: true, force: true });
-  }
+  const keepDir = tempDir('replay-kept-');
+  const [cell] = await replayAll({ ...OPTIONS, repeat: 1, keepDir }, () => scriptedModel([]));
+  assert.equal(cell.roundsToClean.mean, 2);
+  const [run] = keptRuns(keepDir);
+  const rows = fs.readFileSync(path.join(run, 'review-ledger.jsonl'), 'utf8').trim().split('\n').map((row) => JSON.parse(row));
+  assert.deepEqual([...new Set(rows.map((row) => row.round))], [1, 2]);
+  assert.match(fs.readFileSync(path.join(run, 'review-input.md'), 'utf8'), /## Ledger/);
+  assert.match(fs.readFileSync(path.join(run, 'rounds', 'review-1.md'), 'utf8'), /unchecked join/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(run, 'run.json'), 'utf8')).roundsToClean, 2);
 });
 
 test('the kept run record dir is named by task and repeat index and run.json names the task', async () => {
-  const keepDir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-kept-'));
-  try {
-    await replayAll({ ...OPTIONS, repeat: 2, jobs: 1, keepDir }, () => scriptedModel([]));
-    assert.deepEqual(fs.readdirSync(keepDir).sort(), [`${TASK.id}-r0`, `${TASK.id}-r1`]);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(keepDir, `${TASK.id}-r1`, 'run.json'), 'utf8')).task, TASK.id);
-  } finally {
-    fs.rmSync(keepDir, { recursive: true, force: true });
-  }
+  const keepDir = tempDir('replay-kept-');
+  await replayAll({ ...OPTIONS, repeat: 2, jobs: 1, keepDir }, () => scriptedModel([]));
+  assert.deepEqual(fs.readdirSync(keepDir).sort(), [`${TASK.id}-r0`, `${TASK.id}-r1`]);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(keepDir, `${TASK.id}-r1`, 'run.json'), 'utf8')).task, TASK.id);
 });
 
 test('a finding that recurs after its repair stops the run as never clean and records why', async () => {
-  const keepDir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-kept-'));
-  try {
-    const stubbed = scriptedModel([]);
-    const repeating = async (prompt, repository) => {
-      const cost = await stubbed(prompt, repository);
-      if (prompt.includes('exo:review-branch')) fs.writeFileSync(path.join(repository, '.exo', 'review-branch.md'), REVIEW_FINDINGS);
-      return cost;
-    };
-    const [cell] = await replayAll({ ...OPTIONS, repeat: 1, keepDir }, () => repeating);
-    assert.equal(cell.neverClean, 1);
-    const [run] = keptRuns(keepDir);
-    assert.match(JSON.parse(fs.readFileSync(path.join(run, 'run.json'), 'utf8')).stopReason, /^recurring unchecked join uploads\.js$/);
-  } finally {
-    fs.rmSync(keepDir, { recursive: true, force: true });
-  }
+  const keepDir = tempDir('replay-kept-');
+  const stubbed = scriptedModel([]);
+  const repeating = async (prompt, repository) => {
+    const cost = await stubbed(prompt, repository);
+    if (prompt.includes('exo:review-branch')) fs.writeFileSync(path.join(repository, '.exo', 'review-branch.md'), REVIEW_FINDINGS);
+    return cost;
+  };
+  const [cell] = await replayAll({ ...OPTIONS, repeat: 1, keepDir }, () => repeating);
+  assert.equal(cell.neverClean, 1);
+  const [run] = keptRuns(keepDir);
+  assert.match(JSON.parse(fs.readFileSync(path.join(run, 'run.json'), 'utf8')).stopReason, /^recurring unchecked join uploads\.js$/);
 });
 
 test('summarize reports the spread across repeated runs and the runs that never reach CLEAN', () => {
@@ -244,44 +233,32 @@ test('renderTable writes a header, a divider and one row per cell', () => {
 });
 
 test('log: each kept run.json records durationMs', async () => {
-  const keepDir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-kept-'));
-  try {
-    await replayAll({ ...OPTIONS, repeat: 1, keepDir }, () => scriptedModel([]));
-    const [run] = keptRuns(keepDir);
-    const { durationMs } = JSON.parse(fs.readFileSync(path.join(run, 'run.json'), 'utf8'));
-    assert.ok(Number.isInteger(durationMs) && durationMs >= 0, `durationMs ${durationMs}`);
-  } finally {
-    fs.rmSync(keepDir, { recursive: true, force: true });
-  }
+  const keepDir = tempDir('replay-kept-');
+  await replayAll({ ...OPTIONS, repeat: 1, keepDir }, () => scriptedModel([]));
+  const [run] = keptRuns(keepDir);
+  const { durationMs } = JSON.parse(fs.readFileSync(path.join(run, 'run.json'), 'utf8'));
+  assert.ok(Number.isInteger(durationMs) && durationMs >= 0, `durationMs ${durationMs}`);
 });
 
 test('the log beside the report holds mode, summed cost, duration and the cells', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-log-'));
-  try {
-    const cells = await replayAll({ ...OPTIONS, repeat: 2, jobs: 1 }, () => scriptedModel([], { costUsd: 0.5 }));
-    const out = path.join(dir, 'nested', 'report.md');
-    writeReport({ out, keepDir: `${out}.runs`, mode: 'quick', cells, durationMs: 1234 });
-    const log = JSON.parse(fs.readFileSync(`${out}.json`, 'utf8'));
-    assert.deepEqual(log, JSON.parse(JSON.stringify({ mode: 'quick', cost_usd: 3, durationMs: 1234, cells })));
-    assert.match(fs.readFileSync(out, 'utf8'), /^\| task \|/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('replay-log-');
+  const cells = await replayAll({ ...OPTIONS, repeat: 2, jobs: 1 }, () => scriptedModel([], { costUsd: 0.5 }));
+  const out = path.join(dir, 'nested', 'report.md');
+  writeReport({ out, keepDir: `${out}.runs`, mode: 'quick', cells, durationMs: 1234 });
+  const log = JSON.parse(fs.readFileSync(`${out}.json`, 'utf8'));
+  assert.deepEqual(log, JSON.parse(JSON.stringify({ mode: 'quick', cost_usd: 3, durationMs: 1234, cells })));
+  assert.match(fs.readFileSync(out, 'utf8'), /^\| task \|/);
 });
 
 test('loadFixtures strips the .seed suffix from the planted source and reads its plants', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fixture-load-'));
-  try {
-    fs.mkdirSync(path.join(root, 'dead-code', 'src'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'dead-code', 'src', 'a.js.seed'), 'one\ntwo\n');
-    fs.writeFileSync(path.join(root, 'dead-code', 'plants.json'), JSON.stringify([{ path: 'src/a.js', range: '1-2', class: 'dead code' }]));
-    const [fixture] = loadFixtures(root);
-    assert.deepEqual([fixture.id, fixture.file, fixture.plants.length], ['dead-code', path.join('src', 'a.js'), 1]);
-    fs.writeFileSync(path.join(root, 'dead-code', 'b.js.seed'), 'x\n');
-    assert.throws(() => loadFixtures(root), /exactly one \.seed source/);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
+  const root = tempDir('fixture-load-');
+  fs.mkdirSync(path.join(root, 'dead-code', 'src'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'dead-code', 'src', 'a.js.seed'), 'one\ntwo\n');
+  fs.writeFileSync(path.join(root, 'dead-code', 'plants.json'), JSON.stringify([{ path: 'src/a.js', range: '1-2', class: 'dead code' }]));
+  const [fixture] = loadFixtures(root);
+  assert.deepEqual([fixture.id, fixture.file, fixture.plants.length], ['dead-code', path.join('src', 'a.js'), 1]);
+  fs.writeFileSync(path.join(root, 'dead-code', 'b.js.seed'), 'x\n');
+  assert.throws(() => loadFixtures(root), /exactly one \.seed source/);
 });
 
 const CLASS_FIXTURES = ['copied-block', 'dead-code', 'duplicate-truth-source', 'narrating-comment', 'swallowed-failure', 'untested-branch'];
@@ -321,16 +298,12 @@ test('the dead-code plants change no output when removed', async () => {
 });
 
 test('a fixture replays through the stubbed model from its staged .seed source', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fixture-replay-'));
-  try {
-    fs.mkdirSync(path.join(root, 'swallow'));
-    fs.copyFileSync(path.join(ROOT, 'benchmarks', 'safe', TASK.id, 'seed', TASK.file), path.join(root, 'swallow', `${TASK.file}.seed`));
-    fs.writeFileSync(path.join(root, 'swallow', 'plants.json'), JSON.stringify(PLANTS));
-    const [cell] = await replayAll({ ...OPTIONS, tasks: loadFixtures(root), repeat: 1 }, () => scriptedModel([]));
-    assert.deepEqual([cell.task, cell.failures, cell.roundsToClean.mean, cell.fixedAfterOneRepair.mean], ['swallow', 0, 2, 1]);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
+  const root = tempDir('fixture-replay-');
+  fs.mkdirSync(path.join(root, 'swallow'));
+  fs.copyFileSync(path.join(ROOT, 'benchmarks', 'safe', TASK.id, 'seed', TASK.file), path.join(root, 'swallow', `${TASK.file}.seed`));
+  fs.writeFileSync(path.join(root, 'swallow', 'plants.json'), JSON.stringify(PLANTS));
+  const [cell] = await replayAll({ ...OPTIONS, tasks: loadFixtures(root), repeat: 1 }, () => scriptedModel([]));
+  assert.deepEqual([cell.task, cell.failures, cell.roundsToClean.mean, cell.fixedAfterOneRepair.mean], ['swallow', 0, 2, 1]);
 });
 
 test('the os temp folder is untouched by a finished replay', () => {
@@ -411,19 +384,15 @@ test('baseline: withBaseline attaches the stored row per task and the table prin
 });
 
 test('baseline: --save-baseline rewrites the rows of the tasks run and keeps the others', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-baseline-'));
-  try {
-    const file = path.join(dir, 'baseline.json');
-    fs.writeFileSync(file, JSON.stringify(BASELINE_ROWS));
-    const cells = [measuredCell('dead-code', { planted: 2, fixed: 1, falseFix: 0 }), measuredCell('new-task', { planted: 1, fixed: 1, falseFix: 0 }), { ...measuredCell('skipped-task', null), runs: 0 }];
-    saveBaseline(file, cells, { model: 'sonnet', source: 'run.md' });
-    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-    assert.deepEqual(saved.map((row) => row.task), ['copied-block', 'dead-code', 'new-task']);
-    assert.deepEqual(saved[0], BASELINE_ROWS[0]);
-    assert.deepEqual(saved[1], { task: 'dead-code', runs: 2, costUsdPerRun: 1, fixedAfterOneRepair: 0.5, neverClean: 2, model: 'sonnet', source: 'run.md' });
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('replay-baseline-');
+  const file = path.join(dir, 'baseline.json');
+  fs.writeFileSync(file, JSON.stringify(BASELINE_ROWS));
+  const cells = [measuredCell('dead-code', { planted: 2, fixed: 1, falseFix: 0 }), measuredCell('new-task', { planted: 1, fixed: 1, falseFix: 0 }), { ...measuredCell('skipped-task', null), runs: 0 }];
+  saveBaseline(file, cells, { model: 'sonnet', source: 'run.md' });
+  const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.deepEqual(saved.map((row) => row.task), ['copied-block', 'dead-code', 'new-task']);
+  assert.deepEqual(saved[0], BASELINE_ROWS[0]);
+  assert.deepEqual(saved[1], { task: 'dead-code', runs: 2, costUsdPerRun: 1, fixedAfterOneRepair: 0.5, neverClean: 2, model: 'sonnet', source: 'run.md' });
 });
 
 function keepRun(keepDir, name, result) {
@@ -432,43 +401,35 @@ function keepRun(keepDir, name, result) {
 }
 
 test('rescore rebuilds the cells, table and log from kept runs with zero model calls', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-rescore-'));
-  try {
-    const keepDir = path.join(dir, 'kept');
-    const run = { failure: null, roundsToClean: 2, stopReason: null, durationMs: 5, costUsd: 0.4 };
-    keepRun(keepDir, 'copied-block-r0', { ...run, grade: { planted: 2, fixed: 1, falseFix: 1 } });
-    keepRun(keepDir, 'copied-block-r1', { ...run, grade: { planted: 2, fixed: 2, falseFix: 0 } });
-    keepRun(keepDir, 'dead-code-r0', { ...run, roundsToClean: null, grade: null });
-    keepRun(keepDir, 'copied-block-Xy12ab', { ...run, grade: { planted: 2, fixed: 2, falseFix: 0 } });
-    const out = path.join(dir, 'report.md');
-    const printed = spawnSync(process.execPath, [path.join(ROOT, 'benchmarks', 'review-replay.mjs'), '--rescore', keepDir, '--out', out], { encoding: 'utf8' });
-    assert.equal(printed.status, 0, printed.stderr);
-    const cells = JSON.parse(printed.stdout);
-    assert.deepEqual(cells.map((cell) => [cell.task, cell.runs, cell.skipped, cell.neverClean, cell.fixedAfterOneRepair.mean]), [['copied-block', 2, 0, 0, 0.75], ['dead-code', 1, 0, 1, null]]);
-    assert.equal(cells[0].baseline.task, 'copied-block');
-    assert.match(fs.readFileSync(out, 'utf8'), /^\| task \|.*\n.*\n\| copied-block \| 2 \|/);
-    const log = JSON.parse(fs.readFileSync(`${out}.json`, 'utf8'));
-    assert.ok(Math.abs(log.cost_usd - 1.2) < 1e-9, `cost_usd ${log.cost_usd}`);
-    assert.deepEqual(log.cells, cells);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = tempDir('replay-rescore-');
+  const keepDir = path.join(dir, 'kept');
+  const run = { failure: null, roundsToClean: 2, stopReason: null, durationMs: 5, costUsd: 0.4 };
+  keepRun(keepDir, 'copied-block-r0', { ...run, grade: { planted: 2, fixed: 1, falseFix: 1 } });
+  keepRun(keepDir, 'copied-block-r1', { ...run, grade: { planted: 2, fixed: 2, falseFix: 0 } });
+  keepRun(keepDir, 'dead-code-r0', { ...run, roundsToClean: null, grade: null });
+  keepRun(keepDir, 'copied-block-Xy12ab', { ...run, grade: { planted: 2, fixed: 2, falseFix: 0 } });
+  const out = path.join(dir, 'report.md');
+  const printed = spawnSync(process.execPath, [path.join(ROOT, 'benchmarks', 'review-replay.mjs'), '--rescore', keepDir, '--out', out], { encoding: 'utf8' });
+  assert.equal(printed.status, 0, printed.stderr);
+  const cells = JSON.parse(printed.stdout);
+  assert.deepEqual(cells.map((cell) => [cell.task, cell.runs, cell.skipped, cell.neverClean, cell.fixedAfterOneRepair.mean]), [['copied-block', 2, 0, 0, 0.75], ['dead-code', 1, 0, 1, null]]);
+  assert.equal(cells[0].baseline.task, 'copied-block');
+  assert.match(fs.readFileSync(out, 'utf8'), /^\| task \|.*\n.*\n\| copied-block \| 2 \|/);
+  const log = JSON.parse(fs.readFileSync(`${out}.json`, 'utf8'));
+  assert.ok(Math.abs(log.cost_usd - 1.2) < 1e-9, `cost_usd ${log.cost_usd}`);
+  assert.deepEqual(log.cells, cells);
 });
 
 test('resume skips a run already kept and joins its stored result to the cell', async () => {
-  const keepDir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-resume-'));
-  try {
-    const stored = { task: TASK.id, failure: null, roundsToClean: 3, stopReason: null, grade: { planted: 1, fixed: 0, falseFix: 0 }, costUsd: 0.5, durationMs: 7 };
-    keepRun(keepDir, `${TASK.id}-r0`, stored);
-    const calls = [];
-    const [cell] = await replayAll({ ...OPTIONS, repeat: 2, jobs: 1, keepDir, resume: true }, () => scriptedModel(calls, { costUsd: 0.25 }));
-    assert.equal(cell.runs, 2);
-    assert.equal(cell.skipped, 0);
-    assert.equal(calls.filter((call) => call.includes('exo:fix-review')).length, 1);
-    assert.equal(cell.costUsd, 1.25);
-    assert.equal(cell.fixedAfterOneRepair.mean, 0.5);
-    assert.deepEqual(fs.readdirSync(keepDir).sort(), [`${TASK.id}-r0`, `${TASK.id}-r1`]);
-  } finally {
-    fs.rmSync(keepDir, { recursive: true, force: true });
-  }
+  const keepDir = tempDir('replay-resume-');
+  const stored = { task: TASK.id, failure: null, roundsToClean: 3, stopReason: null, grade: { planted: 1, fixed: 0, falseFix: 0 }, costUsd: 0.5, durationMs: 7 };
+  keepRun(keepDir, `${TASK.id}-r0`, stored);
+  const calls = [];
+  const [cell] = await replayAll({ ...OPTIONS, repeat: 2, jobs: 1, keepDir, resume: true }, () => scriptedModel(calls, { costUsd: 0.25 }));
+  assert.equal(cell.runs, 2);
+  assert.equal(cell.skipped, 0);
+  assert.equal(calls.filter((call) => call.includes('exo:fix-review')).length, 1);
+  assert.equal(cell.costUsd, 1.25);
+  assert.equal(cell.fixedAfterOneRepair.mean, 0.5);
+  assert.deepEqual(fs.readdirSync(keepDir).sort(), [`${TASK.id}-r0`, `${TASK.id}-r1`]);
 });

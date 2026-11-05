@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { dockerHost, ensureServices } from '../lib/services.mjs';
+import { tempDir } from './harness.mjs';
 
 const SERVICES = path.resolve(import.meta.dirname, '../lib/services.mjs');
 
 function project(files = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'services-'));
+  const root = tempDir('services-');
   spawnSync('git', ['-C', root, 'init', '-q']);
   for (const [name, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });

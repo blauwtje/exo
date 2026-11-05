@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { Spend, judgeRate, parseArgs, projectDryRun, runDryRun, runScore } from '../benchmarks/adhd-score.mjs';
+import { tempDir } from './harness.mjs';
 
 const cases = [
   { id: 'a', context: 'C', question: 'Q', facts: ['f'], literals: [['KEY']], lead: [] },
@@ -23,19 +24,15 @@ test('dry run adds the judge share: the newest finished log rate, else 0.4 of th
 });
 
 test('judgeRate reads the newest finished log and skips a partial one', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+  const dir = tempDir('exo-adhd-log-');
   const write = (name, log) => fs.writeFileSync(path.join(dir, name), JSON.stringify(log));
-  try {
-    assert.equal(judgeRate(dir), null);
-    write('1.json', { judge_cost_usd: 9, perCase: [storedRow('a', ['x', 'y'])] });
-    write('2.json', { judge_cost_usd: 0.3, perCase: [storedRow('a', ['x', 'y', 'z']), storedRow('b', ['x', 'y', 'z'])] });
-    write('3.json', { partial: true, judge_cost_usd: 99, perCase: [storedRow('a', ['x'])] });
-    assert.ok(Math.abs(judgeRate(dir) - 0.05) < 1e-9);
-    write('4.json', { perCase: [storedRow('a', ['x'])] });
-    assert.equal(judgeRate(dir), null);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  assert.equal(judgeRate(dir), null);
+  write('1.json', { judge_cost_usd: 9, perCase: [storedRow('a', ['x', 'y'])] });
+  write('2.json', { judge_cost_usd: 0.3, perCase: [storedRow('a', ['x', 'y', 'z']), storedRow('b', ['x', 'y', 'z'])] });
+  write('3.json', { partial: true, judge_cost_usd: 99, perCase: [storedRow('a', ['x'])] });
+  assert.ok(Math.abs(judgeRate(dir) - 0.05) < 1e-9);
+  write('4.json', { perCase: [storedRow('a', ['x'])] });
+  assert.equal(judgeRate(dir), null);
 });
 
 function captureOutput(run) {
@@ -67,13 +64,9 @@ test('a dry run under --max-usd prints the power line and no over-budget line', 
 });
 
 test('a paid run still fails once spend passes --max-usd', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-log-'));
+  const dir = tempDir('exo-adhd-log-');
   const reply = async () => ({ text: sized(50), tokens: 5000, cost: 0.02 });
-  try {
-    await assert.rejects(runScore({ opts: { ...parseArgs(['--runs', '1', '--max-usd', '0.01']), logDir: dir }, cases, reply, judge: pass, spend: new Spend(0.01), baseline }), /passed --max-usd 0\.01/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  await assert.rejects(runScore({ opts: { ...parseArgs(['--runs', '1', '--max-usd', '0.01']), logDir: dir }, cases, reply, judge: pass, spend: new Spend(0.01), baseline }), /passed --max-usd 0\.01/);
 });
 
 test('--concise-baseline gets the baseline cap, and --max-usd overrides it', () => {

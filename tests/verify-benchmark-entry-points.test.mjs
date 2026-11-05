@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkBenchmarkEntryPoints, unguardedPaidBenchmarks, withoutPowerLine, withoutVarianceGate } from '../verify/checks/benchmark-entry-points.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { tempDir } from './harness.mjs';
 
 const ROOT_Paid = fileURLToPath(new URL('..', import.meta.url));
 
 function repositoryWith_Paid(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'paid-benchmarks-'));
+  const root = tempDir('paid-benchmarks-');
   fs.mkdirSync(path.join(root, 'benchmarks'));
   for (const [name, source] of Object.entries(files)) {
     const file = path.join(root, 'benchmarks', name);
@@ -152,7 +152,7 @@ test('an exemption whose caller lacks --dry-run or a quick tier does not exempt'
 });
 
 test('a repository without benchmarks passes', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'paid-benchmarks-'));
+  const root = tempDir('paid-benchmarks-');
   assert.deepEqual(unguardedPaidBenchmarks(createRepository(root)), []);
 });
 
@@ -166,7 +166,7 @@ const PAID_ENTRY_Variance = "const args = ['-p', prompt];\nconst options = proce
 const MESSAGE_Variance = 'NO-VARIANCE benchmarks/score.mjs: import a variance or noise gate from benchmarks/statistics.mjs or lib/eval-stats.mjs';
 
 function repositoryWith_Variance(files, manifest = PACKAGE_Variance) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-variance-'));
+  const root = tempDir('eval-variance-');
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify(manifest));
   for (const [name, source] of Object.entries(files)) {
     const file = path.join(root, name);
@@ -300,7 +300,7 @@ test('the claude wrapper that paid-benchmarks exempts is not examined', () => {
 });
 
 test('a repository without benchmarks or package.json passes', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-variance-'));
+  const root = tempDir('eval-variance-');
   assert.deepEqual(withoutVarianceGate(createRepository(root)), []);
   assert.equal(runCheck_Variance(createRepository(root)).ok, true);
 });
@@ -320,7 +320,7 @@ const CALL_Power = "console.log(powerLine({ tasks: 3 }));\n";
 const MESSAGE_Power = 'NO-POWER benchmarks/drive.mjs: print powerLine from lib/eval-stats.mjs in its --dry-run';
 
 function repositoryWith_Power(files, manifest = PACKAGE_Power) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-power-'));
+  const root = tempDir('eval-power-');
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify(manifest));
   for (const [name, source] of Object.entries({ 'lib/eval-stats.mjs': 'export function powerLine() {}\n', ...files })) {
     const file = path.join(root, name);
@@ -397,7 +397,7 @@ test('a fixture, result or run folder and the claude wrapper are not examined', 
 });
 
 test('a repository without benchmarks or package.json passes', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-power-'));
+  const root = tempDir('eval-power-');
   assert.deepEqual(withoutPowerLine(createRepository(root)), []);
   assert.equal(runCheck_Power(createRepository(root)).ok, true);
 });
