@@ -46,7 +46,7 @@ To check, run `/exo:configure` in a new session. If it lists exo's settings, exo
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness codex
 ```
 
-To check, run `$configure` in a new session. Codex needs a ChatGPT plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. [docs/codex.md](docs/codex.md) lists what differs from Claude Code.
+To check, run `$configure` in a new session. [docs/codex.md](docs/codex.md) names the ChatGPT plan it needs and lists what differs from Claude Code.
 
 </details>
 
