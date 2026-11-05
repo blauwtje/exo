@@ -41,7 +41,7 @@ import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resul
 import { plannedPowerLine } from './power-plan.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
-import { copyPluginWithoutTasks } from './value.mjs';
+import { copyPluginWithoutTasks, newestRunLedger } from './value.mjs';
 import { applyVariant } from './variants.mjs';
 import { readJson } from './basics.mjs';
 
@@ -266,7 +266,7 @@ export function landedTasks(repository) {
 
 function flowTranscripts(repository, usage) {
   if (usage?.transcript) return [usage.transcript];
-  return ledgerTranscripts(runLedger(repository));
+  return ledgerTranscripts(newestRunLedger(repository));
 }
 
 // The hidden check reads the finished code, so it runs before the repository
@@ -357,15 +357,6 @@ export function prepareRepository(cell, repository, origin) {
   else prepareFlowRepository(repository, origin, cell.compactPlan ? 'compact' : cell.kind === 'flow');
 }
 
-// The newest sessions.jsonl under the repository's run logs, or null.
-function runLedger(repository) {
-  const logs = path.join(repository, '.exo', 'run-plan');
-  if (!fs.existsSync(logs)) return null;
-  const ledgers = fs.readdirSync(logs, { recursive: true }).filter((name) => path.basename(name) === 'sessions.jsonl').map((name) => path.join(logs, name));
-  ledgers.sort((left, right) => fs.statSync(right).mtimeMs - fs.statSync(left).mtimeMs);
-  return ledgers[0] ?? null;
-}
-
 // Copies a measured cell's repository, with its excluded .exo/ and its origin,
 // to <keep>/<name>/ before the cell root goes, so a later run can start from
 // that state; the cell's tmp folder is not kept.
@@ -392,7 +383,7 @@ async function runCell(cell, runDirectory, copies, keep = null, providerEnv = nu
     if (stopping) return null;
     const result = readResult(cellDirectory);
     const usage = cell.runSession
-      ? writeRunUsage(cellDirectory, runLedger(repository))
+      ? writeRunUsage(cellDirectory, newestRunLedger(repository))
       : typeof result?.session_id === 'string' ? writeCellUsage(cellDirectory, result.session_id) : null;
     // Read before cellRoot goes; a build session without a hook means the cell measured no exo.
     if (usage?.missingHooks > 0) throw new Error(`${cell.id}: exo hooks did not run`);

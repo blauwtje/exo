@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { meanOrNull, readJson } from './basics.mjs';
+import { filesNamed } from './tree-files.mjs';
 
 function pastRecords(runsRoot) {
   const byId = new Map();
   let unreadable = 0;
   if (!fs.existsSync(runsRoot)) return { byId, unreadable };
-  for (const file of fs.readdirSync(runsRoot, { recursive: true })) {
-    if (path.basename(file) !== 'record.json') continue;
+  for (const file of filesNamed(runsRoot, 'record.json')) {
     let record;
     try {
       record = readJson(path.join(runsRoot, file));

@@ -41,6 +41,7 @@ import { pairedDiff } from '../lib/eval-stats.mjs';
 import { compareMeans, meanAndSd, nextRuns, PLANNING_CV } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 import { readJson } from './basics.mjs';
+import { filesNamed } from './tree-files.mjs';
 
 const METRICS = ['loc', 'tokens', 'cost', 'time'];
 const LIMITATIONS = [
@@ -99,8 +100,7 @@ function parseArguments(argv) {
 
 function readCells(directory) {
   const cells = [];
-  for (const file of fs.readdirSync(directory, { recursive: true })) {
-    if (path.basename(file) !== 'checks.json') continue;
+  for (const file of filesNamed(directory, 'checks.json')) {
     const cellDirectory = path.join(directory, path.dirname(file));
     const checks = readJson(path.join(cellDirectory, 'checks.json'));
     const resultFile = path.join(cellDirectory, 'result.json');

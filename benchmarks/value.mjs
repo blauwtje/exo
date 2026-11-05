@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { LOCAL_FILE } from '../lib/settings-store.mjs';
 import { countLines } from './cell-checks.mjs';
 import { readJson } from './basics.mjs';
+import { filesNamed } from './tree-files.mjs';
 
 export const VALUE_ROOT = fileURLToPath(new URL('./value/', import.meta.url));
 export const GIT_IDENTITY = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com'];
@@ -153,7 +154,7 @@ export function checkoutPlanBranch(task, repo) {
 export function newestRunLedger(repo) {
   const logs = path.join(repo, '.exo', 'run-plan');
   if (!fs.existsSync(logs)) return null;
-  const ledgers = fs.readdirSync(logs, { recursive: true }).filter((name) => path.basename(name) === 'sessions.jsonl').map((name) => path.join(logs, name));
+  const ledgers = filesNamed(logs, 'sessions.jsonl').map((name) => path.join(logs, name));
   ledgers.sort((left, right) => fs.statSync(right).mtimeMs - fs.statSync(left).mtimeMs);
   return ledgers[0] ?? null;
 }

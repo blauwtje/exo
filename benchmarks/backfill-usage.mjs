@@ -11,14 +11,14 @@ import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
 import { readJson } from './basics.mjs';
+import { filesNamed } from './tree-files.mjs';
 
 function main() {
   if (!process.argv[2]) throw new Error('usage: backfill-usage.mjs <runs directory>');
   const runsDirectory = path.resolve(process.argv[2]);
   let written = 0;
   const missing = [];
-  for (const file of fs.readdirSync(runsDirectory, { recursive: true }).sort()) {
-    if (path.basename(file) !== 'result.json') continue;
+  for (const file of filesNamed(runsDirectory, 'result.json').sort()) {
     const cellDirectory = path.join(runsDirectory, path.dirname(file));
     if (fs.existsSync(path.join(cellDirectory, 'usage.json'))) continue;
     const result = readJson(path.join(cellDirectory, 'result.json'));

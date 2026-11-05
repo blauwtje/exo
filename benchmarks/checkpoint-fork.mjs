@@ -31,6 +31,7 @@ import { countsCost } from './pricing.mjs';
 import { NO_ANSWER, sweepCells } from './sweep-cells.mjs';
 import { FLOW_BRANCH, FLOW_PLAN } from './sweep-fixtures.mjs';
 import { reviewStages } from './sweep-score.mjs';
+import { relativeFiles } from './tree-files.mjs';
 import { runClaude } from './sweep.mjs';
 import { knownMean, knownMeanText, intervalText, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { wilson } from './routing-stats.mjs';
@@ -127,12 +128,8 @@ export function verifyBlock(transcriptFile) {
   };
 }
 
-function exoFiles(directory, prefix = '') {
-  if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const relative = path.join(prefix, entry.name);
-    return entry.isDirectory() ? exoFiles(path.join(directory, entry.name), relative) : [relative];
-  });
+function exoFiles(directory) {
+  return fs.existsSync(directory) ? relativeFiles(directory) : [];
 }
 
 function removeEmptyDirectories(directory) {

@@ -14,6 +14,7 @@ import { meanAndSd } from './statistics.mjs';
 import { defectRange, prepareReviewBranch, reviewPlanText } from './sweep-fixtures.mjs';
 import { MODELS, ROOT, SAFE_TASKS } from './tasks.mjs';
 import { readJson } from './basics.mjs';
+import { relativeFiles } from './tree-files.mjs';
 
 const USAGE = 'Usage: node benchmarks/review-replay.mjs [--checkout <exo checkout>] [--full] [--dry-run] [--rescore <runs dir>] [--resume] [--task <fixture or safe task id>]... [--rounds <n>] [--repeat <n>] [--jobs <n>] [--budget-usd <n>] [--save-baseline] [--out <path>] [--model <id>]';
 const SAFE = path.join(ROOT, 'benchmarks', 'safe');
@@ -39,12 +40,8 @@ function git(repository, args) {
   return execFileSync('git', ['-C', repository, ...GIT_SETTINGS, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
-function seedSources(directory, prefix = '') {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const relative = path.join(prefix, entry.name);
-    if (entry.isDirectory()) return seedSources(path.join(directory, entry.name), relative);
-    return entry.name.endsWith(SEED_SUFFIX) ? [relative.slice(0, -SEED_SUFFIX.length)] : [];
-  });
+function seedSources(directory) {
+  return relativeFiles(directory).filter((file) => file.endsWith(SEED_SUFFIX)).map((file) => file.slice(0, -SEED_SUFFIX.length));
 }
 
 export function loadFixtures(root = REPLAY) {
