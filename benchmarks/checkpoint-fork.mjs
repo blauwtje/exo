@@ -34,6 +34,7 @@ import { reviewStages } from './sweep-score.mjs';
 import { runClaude } from './sweep.mjs';
 import { knownMean, knownMeanText, intervalText, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { wilson } from './routing-stats.mjs';
+import { readJsonOrNull } from './basics.mjs';
 
 const VERIFY_SKILL = /(^|:)(verify|gate)$/;
 const MINUTE_MS = 60 * 1000;
@@ -198,14 +199,6 @@ function forkCell() {
   return { ...cell, id: `${FORK_CELL}-fork`, prompt: forkPrompt(), budgetUsd: String(FORK_BUDGET_USD), timeoutMs: FORK_TIMEOUT_MS };
 }
 
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
 // One verify-only session started from the checkpoint of kept cell `name`,
 // recorded as <forkDirectory>/record.json the way sweep.mjs records a cell.
 // `run` is runClaude, replaceable in the tests.
@@ -219,7 +212,7 @@ export async function runFork({ name, kept, fullTranscript, forkDirectory, run =
     const checkpoint = prepareCheckpoint(kept, forkRoot, atMs, { seenBefore: (relative) => before.includes(relative) });
     const cell = forkCell();
     const outcome = await run(cell, checkpoint.repository, forkRoot, forkDirectory, {});
-    const result = readJson(path.join(forkDirectory, 'stdout.json'));
+    const result = readJsonOrNull(path.join(forkDirectory, 'stdout.json'));
     const usage = typeof result?.session_id === 'string' ? writeCellUsage(forkDirectory, result.session_id) : null;
     const block = usage?.transcript ? verifyBlock(usage.transcript) : null;
     let check;
@@ -260,8 +253,8 @@ export async function runFork({ name, kept, fullTranscript, forkDirectory, run =
 function fullCells(fullRuns) {
   if (!fs.existsSync(fullRuns)) return [];
   return fs.readdirSync(fullRuns, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort().flatMap((name) => {
-    const usage = readJson(path.join(fullRuns, name, 'usage.json'));
-    const record = readJson(path.join(fullRuns, name, 'record.json'));
+    const usage = readJsonOrNull(path.join(fullRuns, name, 'usage.json'));
+    const record = readJsonOrNull(path.join(fullRuns, name, 'record.json'));
     return usage?.transcript && record !== null && fs.existsSync(usage.transcript) ? [{ name, transcript: usage.transcript, record }] : [];
   });
 }
@@ -269,7 +262,7 @@ function fullCells(fullRuns) {
 function forkRecords(out) {
   if (!fs.existsSync(out)) return [];
   return fs.readdirSync(out, { withFileTypes: true }).filter((entry) => entry.isDirectory()).sort((left, right) => left.name.localeCompare(right.name))
-    .map((entry) => readJson(path.join(out, entry.name, 'record.json'))).filter((record) => record !== null);
+    .map((entry) => readJsonOrNull(path.join(out, entry.name, 'record.json'))).filter((record) => record !== null);
 }
 
 const fixed = (value, digits = 3) => value === null || value === undefined ? '-' : value.toFixed(digits);
@@ -380,7 +373,7 @@ async function main() {
   let spent = 0;
   for (const { full, directory } of plan) {
     if (fs.existsSync(path.join(directory, 'record.json'))) {
-      spent += readJson(path.join(directory, 'record.json')).costUsd ?? 0;
+      spent += readJsonOrNull(path.join(directory, 'record.json')).costUsd ?? 0;
       continue;
     }
     if (spent + FORK_BUDGET_USD > options.maxUsd) {

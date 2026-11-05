@@ -22,7 +22,7 @@ import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrator/
 import { installStub } from './agent-tier/task-runner/install-stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from './agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
-import { sum } from './basics.mjs';
+import { meanOrNull, median, sum } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
@@ -88,12 +88,6 @@ export function planJobs({ config, agents, tier, candidates, table, runs = 1 }) 
   });
 }
 
-const median = (values) => {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-};
-
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 const settingOfJob = (candidate) => (session) => session.model === candidate.model && session.effort === candidate.effort;
 const wallOf = (session) => (isNumber(session.durationMs) && session.durationMs > 0 ? session.durationMs / 1000 : null);
@@ -105,7 +99,7 @@ function recordedEstimate(own, fixture, measure) {
   if (exact.length > 0) return median(exact.map((entry) => entry.value));
   const byFixture = new Map();
   for (const entry of measured) byFixture.set(entry.fixture, [...(byFixture.get(entry.fixture) ?? []), entry.value]);
-  return mean([...byFixture.values()].map(median));
+  return meanOrNull([...byFixture.values()].map(median));
 }
 
 const recordedOwn = (agent, candidate, recorded) => recorded.filter((session) => session.agent === agent && !session.skipped && settingOfJob(candidate)(session));
@@ -226,8 +220,6 @@ export function apiKeySourceOf(stdout) {
   return null;
 }
 
-const mean = (values) => (values.length === 0 ? null : sum(values) / values.length);
-
 export function wilson95(passes, total) {
   if (total === 0) return null;
   const share = passes / total;
@@ -274,10 +266,10 @@ export function summarizeCells(sessions) {
       scoreCi,
       fractionCi,
       cost_usd: sum(knownValues(own, costOf)),
-      costPerSession: mean(costs),
+      costPerSession: meanOrNull(costs),
       costExcluded: attempted.length - costs.length,
-      wallS: mean(walls),
-      wallMedianS: walls.length === 0 ? null : median(walls),
+      wallS: meanOrNull(walls),
+      wallMedianS: median(walls),
       wallExcluded: attempted.length - walls.length,
       wilson95: wilson95(passes, attempted.length)
     };

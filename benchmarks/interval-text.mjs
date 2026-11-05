@@ -1,4 +1,5 @@
 import { meanCi, pairedDiff } from '../lib/eval-stats.mjs';
+import { mean } from './basics.mjs';
 
 const DIGITS = 3;
 
@@ -39,11 +40,9 @@ export function pairedByCase(rows, pairOf) {
   return cases;
 }
 
-const average = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
-
 export function pairedArms(cases, base, candidate) {
   const pairs = [...cases.values()]
     .filter((arms) => arms.has(base) && arms.has(candidate))
-    .map((arms) => [average(arms.get(base)), average(arms.get(candidate))]);
+    .map((arms) => [mean(arms.get(base)), mean(arms.get(candidate))]);
   return pairs.length === 0 ? null : pairedDiff(pairs);
 }

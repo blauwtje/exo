@@ -66,6 +66,7 @@ import { withoutParentSession } from './lean-gates.mjs';
 import { countsCost } from './pricing.mjs';
 import { meanCi } from '../lib/eval-stats.mjs';
 import { meanAndSd } from './statistics.mjs';
+import { median, readJsonOrNull } from './basics.mjs';
 
 const SCRIPT_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']);
 const MANIFESTS = new Set(['package.json', 'package-lock.json', 'npm-shrinkwrap.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
@@ -519,14 +520,6 @@ function recheck(repo, runDirectory, head, force) {
 
 // ---------- one run ----------
 
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
 // The main transcript: <meta.transcriptDir>/<sessionId>.jsonl, else the
 // findTranscript lookup across every project slug; null when neither has it.
 function locateTranscript(sessionId, meta) {
@@ -557,8 +550,8 @@ function fullSuiteFromLog(runDirectory, meta) {
 
 export function runMetrics(runDirectory, { recheck: doRecheck = true, forceRecheck = false } = {}) {
   const id = path.basename(runDirectory);
-  const meta = readJson(path.join(runDirectory, 'meta.json')) ?? {};
-  const stdout = readJson(path.join(runDirectory, 'stdout.json'));
+  const meta = readJsonOrNull(path.join(runDirectory, 'meta.json')) ?? {};
+  const stdout = readJsonOrNull(path.join(runDirectory, 'stdout.json'));
   const version = meta.version ?? id.match(/(old|new)$/)?.[1] ?? 'unknown';
   const sessionId = meta.sessionId ?? stdout?.session_id ?? null;
   const transcript = locateTranscript(sessionId, meta);
@@ -675,13 +668,6 @@ export function runMetrics(runDirectory, { recheck: doRecheck = true, forceReche
 }
 
 // ---------- aggregate and table ----------
-
-function median(values) {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-}
 
 export function summarize(values) {
   const numbers = values.filter((value) => typeof value === 'number' && Number.isFinite(value));
@@ -810,7 +796,7 @@ function main(argv) {
     process.stderr.write('usage: node benchmarks/lean-gates-metrics.mjs <out> [--no-recheck] [--force-recheck] [--baseline <metrics.json>]\n');
     return 2;
   }
-  const baseline = baselineFile ? readJson(path.resolve(baselineFile)) : null;
+  const baseline = baselineFile ? readJsonOrNull(path.resolve(baselineFile)) : null;
   if (baselineFile && !baseline) {
     process.stderr.write(`cannot read baseline ${baselineFile}\n`);
     return 2;

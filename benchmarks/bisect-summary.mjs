@@ -1,4 +1,5 @@
 import { pairedDiff } from '../lib/eval-stats.mjs';
+import { sum } from './basics.mjs';
 import { BEFORE_ARM } from './plugin-copies.mjs';
 import { wilson } from './routing-stats.mjs';
 import { RISE_Z, meanAndSd } from './statistics.mjs';
@@ -40,10 +41,6 @@ function pairedStats(entries, metric, arms) {
   return entries
     .map((entry) => [entry.arms[arms.before]?.[metric], entry.arms[arms.after]?.[metric]])
     .filter(([before, after]) => before !== undefined && after !== undefined && before.n > 0 && after.n > 0);
-}
-
-function sum(values) {
-  return values.reduce((total, value) => total + value, 0);
 }
 
 function pairedCaseError(pairs) {

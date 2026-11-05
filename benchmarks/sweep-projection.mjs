@@ -1,9 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-function mean(values) {
-  return values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length;
-}
+import { meanOrNull } from './basics.mjs';
 
 function pastRecords(runsRoot) {
   const byId = new Map();
@@ -29,8 +26,8 @@ export function projectSweep(cellIds, runsRoot) {
   const projection = { costUsd: 0, wallMs: 0, fromRecords: 0, unknown: 0, costUnknown: 0, unreadable: past.unreadable };
   for (const id of cellIds) {
     const records = past.byId.get(id) ?? [];
-    const cost = mean(records.map((record) => record.costUsd).filter((value) => typeof value === 'number'));
-    const wall = mean(records.map((record) => record.wallMs).filter((value) => typeof value === 'number'));
+    const cost = meanOrNull(records.map((record) => record.costUsd).filter((value) => typeof value === 'number'));
+    const wall = meanOrNull(records.map((record) => record.wallMs).filter((value) => typeof value === 'number'));
     if (cost === null && wall === null) {
       projection.unknown += 1;
       continue;

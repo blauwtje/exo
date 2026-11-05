@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { environmentMs } from '#script-flags';
-import { SPLITS, isRouting, locateScore, pristineView, routingScore, scorerSpend } from './improve-real-copy.mjs';
+import { SPLITS, isRouting, mean, locateScore, pristineView, routingScore, scorerSpend } from './improve-real-copy.mjs';
 
 const SCORER_MS = 30 * 60 * 1000;
 const BRIDGE_POLL_MS = 500;
@@ -13,10 +13,6 @@ const REQUEST_FILE = /^request-(\d+)\.json$/;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function mean(values) {
-  return values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function scorerArgs(target, outFile, transcripts) {

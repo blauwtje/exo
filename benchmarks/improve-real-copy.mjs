@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { mean as basicMean, readJson } from './basics.mjs';
 
 const MAX_BUFFER = 1 << 30;
 const IDENTITY = ['-c', 'user.name=exo-bench', '-c', 'user.email=exo-bench@localhost', '-c', 'commit.gpgsign=false'];
@@ -39,10 +40,6 @@ function git(args, { cwd, input, check = true } = {}) {
 
 function gitText(args, options) {
   return String(git(args, options)).trim();
-}
-
-function readJson(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
 function writeJson(file, value) {
@@ -234,8 +231,8 @@ export function pristineView({ repo, target, split, targetText, dest }) {
   return dest;
 }
 
-function mean(values) {
-  return values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
+export function mean(values) {
+  return values.length === 0 ? 0 : basicMean(values);
 }
 
 export function routingScore(outJson, skill = SPLITS.routing.skill) {
