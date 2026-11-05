@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
-import { contextDecision, contextLimit, softLimit } from '../lib/context-limits.mjs';
+import { contextDecision, contextLimit, readCapDecision, resultCapFor, softLimit } from '../lib/context-limits.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-limit-home-'));
@@ -185,4 +185,72 @@ test('the SubagentStart hook, its file and subagentStartNote are gone', async ()
   assert.equal(fs.existsSync(new URL('../hooks/subagent-start.mjs', import.meta.url)), false);
   const limits = await import('../lib/context-limits.mjs');
   assert.equal('subagentStartNote' in limits, false);
+});
+
+test('agentContextTarget, dispatchBytesPerToken and fetchTokens read the catalog and honor a run.json override', async () => {
+  const { agentContextTarget, dispatchBytesPerToken, fetchTokens } = await import('../lib/context-limits.mjs');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-target-'));
+  assert.equal(agentContextTarget(home), 60000);
+  assert.equal(dispatchBytesPerToken(home), 2);
+  assert.equal(fetchTokens(home), 1600);
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { agentContextTarget: 40000, bytesPerToken: 3, fetchTokens: 2500 } }));
+  assert.equal(agentContextTarget(home), 40000);
+  assert.equal(dispatchBytesPerToken(home), 3);
+  assert.equal(fetchTokens(home), 2500);
+});
+
+test('the slice, result cap and script size defaults read the catalog and honor a run.json override', async () => {
+  const limits = await import('../lib/context-limits.mjs');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sizes-'));
+  assert.equal(limits.orchestratorWorkers(home), 4);
+  assert.equal(limits.resultCapBytes(home), 4096);
+  assert.equal(limits.orchestratorResultCapBytes(home), 2048);
+  assert.equal(limits.scriptBytes(home), 4096);
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { orchestratorWorkers: 3, resultCapBytes: 1, orchestratorResultCapBytes: 2, scriptBytes: 5 } }));
+  assert.equal(limits.orchestratorWorkers(home), 3);
+  assert.equal(limits.resultCapBytes(home), 1);
+  assert.equal(limits.orchestratorResultCapBytes(home), 2);
+  assert.equal(limits.scriptBytes(home), 5);
+});
+
+test('the shared reader accepts a fractional bytesPerToken and rejects zero, negative and non-numeric values', async () => {
+  const { dispatchBytesPerToken, capHeadroomTokens } = await import('../lib/context-limits.mjs');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-reader-'));
+  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+  const write = (defaults) => fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults }));
+  write({ bytesPerToken: 1.85 });
+  assert.equal(dispatchBytesPerToken(home), 1.85);
+  write({ bytesPerToken: 0, capHeadroomTokens: -5 });
+  assert.equal(dispatchBytesPerToken(home), 2);
+  assert.equal(capHeadroomTokens(home), 50);
+  write({ bytesPerToken: '3' });
+  assert.equal(dispatchBytesPerToken(home), 2);
+});
+
+test('readCapDecision denies a capped type reading over its cap with the largest limit that fits', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-cap-'));
+  const file = path.join(dir, 'big.txt');
+  fs.writeFileSync(file, `${'x'.repeat(99)}\n`.repeat(100));
+  const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:locate-code', tool_input: { file_path: file } };
+  const denied = readCapDecision(capped);
+  assert.match(denied.deny, /limit 40\b/);
+  assert.equal(readCapDecision({ ...capped, tool_input: { file_path: file, limit: 40 } }), null);
+  assert.equal(readCapDecision({ ...capped, tool_input: { file_path: file, pages: '1' } }), null);
+  assert.equal(readCapDecision({ ...capped, agent_type: 'exo:build-task' }), null);
+  assert.equal(readCapDecision({ tool_name: 'Read', tool_input: { file_path: file } }), null);
+  assert.equal(resultCapFor({ ...capped, agent_type: 'exo:orchestrator' }) < resultCapFor(capped), true);
+});
+
+test('a Read whose single line is over the cap is not told to retry with limit 1', () => {
+  const file = path.join(os.tmpdir(), `exo-long-line-${process.pid}.log`);
+  fs.writeFileSync(file, `${'x'.repeat(20000)}\n`);
+  try {
+    const decision = readCapDecision({ tool_name: 'Read', agent_type: 'exo:locate-code', agent_id: 'a', tool_input: { file_path: file, offset: 1, limit: 1 } });
+    assert.ok(decision?.deny);
+    assert.doesNotMatch(decision.deny, /limit 1/);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
 });

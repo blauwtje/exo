@@ -1,7 +1,7 @@
 ---
 name: locate-code
 description: "Finds where code lives across several files, or after one search failed. Not for a named file or symbol, a fix or a design."
-tools: Read, Write, Glob, Grep, Bash
+tools: Read, Write, Bash
 maxTurns: 20
 omitClaudeMd: true
 ---

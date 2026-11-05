@@ -3,7 +3,7 @@
 // fall back to PowerShell and a resumed session gets a current pointer.
 
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -344,6 +344,17 @@ test('the git deny list is not a sandbox: git code fed to a shell through here-s
   for (const command of outOfScope) assert.notEqual(await decide(command), 'deny', command);
 });
 
+test('a subagent Bash command over 4 KB is denied with a pointer to .exo/, the lead and small commands are not', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const run = (command, agentId) => dispatchBash({ hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: agentId, tool_input: { command } }, undefined, () => false);
+  const big = `echo ${'a'.repeat(4100)}`;
+  const denied = await run(big, 'agent-1');
+  assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(denied.hookSpecificOutput.permissionDecisionReason, /\.exo\//);
+  assert.notEqual((await run(big, undefined))?.hookSpecificOutput?.permissionDecision, 'deny');
+  assert.notEqual((await run('echo hi', 'agent-1'))?.hookSpecificOutput?.permissionDecision, 'deny');
+});
+
 const LINEAR_SMALL = 2000;
 const LINEAR_GROWTH = 8;
 const LINEAR_MAX_RATIO = 20;
@@ -449,4 +460,108 @@ test('hooks/session-rules.md states the irreversible-step rule and the safe-defa
   assert.equal(text.split('irreversible').length - 1, 1, 'irreversible');
   assert.equal(text.split('has a safe default').length - 1, 1, 'has a safe default');
   assert.equal(text.split('no safe default').length - 1, 1, 'no safe default');
+});
+
+test('the dispatch rules state the sized-brief lines, the read budget and the split', () => {
+  const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
+  assert.match(rules, /`Reads:` line[^\n]*`Fetches: <n>`[^\n]*30k tokens[^\n]*split into more agents/);
+});
+
+test('the dispatch rules add the Workers line, the slice plan, the worker Reads line and the wait', () => {
+  const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
+  assert.match(rules, /unnamed worker brief a `Reads:` or `Fetches:` line/);
+  assert.match(rules, /more than 4 workers[^\n]*`Workers: <n>` line of at most 4[^\n]*in parallel[^\n]*next slice's `Reads:`/);
+  assert.match(rules, /end the turn and wait for the notification/);
+});
+
+test('the script-size step reads its cap from defaults.scriptBytes', async () => {
+  const { SCRIPT_SIZE_STEP } = await import('../hooks/dispatch-bash.mjs');
+  const { scriptBytes } = await import('../lib/context-limits.mjs');
+  const limit = scriptBytes();
+  const run = (size) => SCRIPT_SIZE_STEP.run({ agent_id: 'a', tool_input: { command: 'x'.repeat(size) } });
+  assert.equal(run(limit), null);
+  const denied = run(limit + 1);
+  assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(denied.hookSpecificOutput.permissionDecisionReason, new RegExp(`over ${limit} bytes`));
+});
+
+test('an orchestrator Bash command is denied until its first dispatch is recorded', async () => {
+  const { PREDISPATCH_STEP } = await import('../hooks/dispatch-bash.mjs');
+  const { recordSlice } = await import('../lib/slice-state.mjs');
+  const agentId = `predispatch-${process.pid}`;
+  const input = (agentType) => ({ agent_id: agentId, agent_type: agentType, tool_input: { command: 'ls' } });
+  const denied = PREDISPATCH_STEP.run(input('exo:orchestrator'));
+  assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(denied.hookSpecificOutput.permissionDecisionReason, /lookup/);
+  assert.equal(PREDISPATCH_STEP.run(input('exo:task-runner')), null);
+  recordSlice(agentId);
+  assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
+  fs.rmSync(path.join(os.tmpdir(), `exo-slice-${agentId}`), { force: true });
+});
+
+test('the sleep step denies sleep in command position for an orchestrator or task-runner', async () => {
+  const { SLEEP_STEP } = await import('../hooks/dispatch-bash.mjs');
+  const run = (agentType, command) => SLEEP_STEP.run({ agent_id: 'a', agent_type: agentType, tool_input: { command } });
+  for (const command of ['sleep 30', 'ls && sleep 5', 'node x.mjs; sleep 1']) {
+    const denied = run('exo:task-runner', command);
+    assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny', command);
+    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /notification[\s\S]*wait-report\.mjs/);
+  }
+  assert.equal(run('exo:orchestrator', 'sleep 2').hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(run('exo:task-runner', 'grep sleep file.txt'), null);
+  assert.equal(run('exo:task-runner', 'node sleep.test.mjs'), null);
+  assert.equal(run('exo:build-task', 'sleep 5'), null);
+});
+
+async function cappedRun(command, extra = {}) {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', tool_input: { command }, ...extra };
+  const output = await dispatchBash(hookInput, undefined, () => false);
+  const rewritten = output?.hookSpecificOutput?.updatedInput?.command;
+  assert.ok(rewritten, command);
+  const run = spawnSync('bash', ['-c', rewritten], { encoding: 'utf8', cwd: os.tmpdir() });
+  return { stdout: run.stdout, status: run.status, rewritten };
+}
+
+const BIG_OUTPUT = 'head -c 9000 /dev/zero | tr "\\0" x';
+
+const CAP_FORMS = {
+  plain: BIG_OUTPUT,
+  pipe: `${BIG_OUTPUT} | cat`,
+  'inner redirect': `${BIG_OUTPUT} > /dev/null; ${BIG_OUTPUT}`,
+  heredoc: `cat <<EOT\n$(${BIG_OUTPUT})\nEOT`,
+  'trailing comment': `${BIG_OUTPUT} # note`,
+  exec: `exec ${BIG_OUTPUT.split(' | ')[0]}`,
+  cd: `cd /tmp && ${BIG_OUTPUT}`,
+  background: `${BIG_OUTPUT} &`
+};
+
+test('a capped agent Bash output is cut at the result cap and keeps the exit code', async () => {
+  for (const [form, command] of Object.entries(CAP_FORMS)) {
+    const { stdout } = await cappedRun(command);
+    assert.match(stdout, /^output log: .*exo-bash-cap-agent-.*\.log\n/, form);
+    assert.match(stdout, /\[output cut at 4096 bytes; full log: /, form);
+    assert.ok(Buffer.byteLength(stdout) < 4096 + 400, form);
+  }
+  assert.equal((await cappedRun('echo hi; exit 7')).status, 7);
+  assert.equal((await cappedRun('exit 3')).status, 3);
+  assert.match((await cappedRun('echo hi')).stdout, /hi\n$/);
+});
+
+test('a capped agent Bash keeps a timeout and skips background, trailing backslash, other modes and other types', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const timed = await cappedRun(`timeout 5 ${BIG_OUTPUT}`);
+  assert.match(timed.stdout, /output cut at 4096/);
+  const skipped = [
+    { tool_input: { command: 'echo hi', run_in_background: true } },
+    { tool_input: { command: 'echo hi \\' } },
+    { permission_mode: 'default' },
+    { agent_type: 'task-runner' },
+    { agent_id: undefined, agent_type: undefined }
+  ];
+  for (const extra of skipped) {
+    const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', tool_input: { command: 'echo hi' }, ...extra };
+    const output = await dispatchBash(hookInput, undefined, () => false);
+    assert.doesNotMatch(output?.hookSpecificOutput?.updatedInput?.command ?? '', /output log/, JSON.stringify(extra));
+  }
 });

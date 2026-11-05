@@ -56,3 +56,13 @@ test('deepseek and zai set no long-context window override', () => {
 test('the catalog sets pruneAfterDays to a positive integer of 7 days', () => {
   assert.equal(catalog.defaults.pruneAfterDays, 7)
 })
+
+test('the catalog sets agentContextTarget to 60000, bytesPerToken to 2 and fetchTokens to 1600', () => {
+  assert.equal(catalog.defaults.agentContextTarget, 60000)
+  assert.equal(catalog.defaults.bytesPerToken, 2)
+  assert.equal(catalog.defaults.fetchTokens, 1600)
+  assert.equal(catalog.defaults.orchestratorWorkers, 4)
+  assert.equal(catalog.defaults.resultCapBytes, 4096)
+  assert.equal(catalog.defaults.orchestratorResultCapBytes, 2048)
+  assert.equal(catalog.defaults.scriptBytes, 4096)
+})

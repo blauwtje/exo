@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+import os from 'node:os';
+import path from 'node:path';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { contextDecision, contextFields } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields, hookAgentType, resultCapFor, scriptBytes } from '../lib/context-limits.mjs';
 import { sharesGitState } from '../lib/git-deny.mjs';
 import { fixShell } from '../lib/shell-fixes.mjs';
+import { sliceCount } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { withReceipt } from './context-limit.mjs';
 
@@ -36,6 +39,66 @@ export const SHARED_STATE_STEP = {
   }
 };
 
+export const SCRIPT_SIZE_STEP = {
+  name: 'script-size',
+  run(hookInput) {
+    const command = hookInput.tool_input?.command;
+    if (!hookInput.agent_id || typeof command !== 'string') return null;
+    const limit = scriptBytes();
+    if (Buffer.byteLength(command) <= limit) return null;
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: `This command is over ${limit} bytes. Write the script under .exo/ and run the file.` } };
+  }
+};
+
+export const PREDISPATCH_STEP = {
+  name: 'predispatch',
+  run(hookInput) {
+    if (!hookInput.agent_id || hookAgentType(hookInput) !== 'orchestrator' || sliceCount(hookInput.agent_id) > 0) return null;
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'An orchestrator runs no Bash before its first dispatch. Send discovery and code reading to a lookup worker.' } };
+  }
+};
+
+const SLEEP_COMMAND = /(?:^|[;&|({\n]|\b(?:do|then|else)\b)\s*sleep(?=\s|$)/;
+const SLEEP_AGENTS = new Set(['orchestrator', 'task-runner']);
+
+export const SLEEP_STEP = {
+  name: 'sleep',
+  run(hookInput) {
+    const command = hookInput.tool_input?.command;
+    if (typeof command !== 'string' || !SLEEP_AGENTS.has(hookAgentType(hookInput)) || !SLEEP_COMMAND.test(command)) return null;
+    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'Sleep polling is refused. In an interactive session end your turn after the dispatch and wait for the notification; in a run session run wait-report.mjs with Bash timeout 600000.' } };
+  }
+};
+
+const CAPPED_MODES = new Set(['bypassPermissions', 'auto']);
+
+function cappedCommand(command, cap, log) {
+  const quoted = `'${log}'`;
+  return [
+    `echo "output log: ${log}"`,
+    `( ${command}`,
+    `) > ${quoted} 2>&1`,
+    'rc=$?',
+    `head -c ${cap} ${quoted}`,
+    `[ "$(wc -c < ${quoted})" -gt ${cap} ] && echo "[output cut at ${cap} bytes; full log: ${log}]"`,
+    'exit $rc'
+  ].join('\n');
+}
+
+export const RESULT_CAP_STEP = {
+  name: 'result-cap',
+  run(hookInput) {
+    const toolInput = hookInput.tool_input;
+    const cap = resultCapFor(hookInput);
+    if (!cap || !CAPPED_MODES.has(hookInput.permission_mode) || typeof toolInput?.command !== 'string') return null;
+    if (toolInput.run_in_background || toolInput.command.endsWith('\\')) return null;
+    const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShell(toolInput);
+    const log = path.join(os.tmpdir(), `exo-bash-${hookInput.agent_id}-${hookInput.tool_use_id ?? process.pid}.log`);
+    const command = cappedCommand((fixed ?? toolInput).command, cap, log);
+    return { hookSpecificOutput: { updatedInput: { ...toolInput, command } } };
+  }
+};
+
 export const SHELL_STEP = {
   name: 'shell-fix',
   run(hookInput) {
@@ -51,7 +114,7 @@ function firstRewrite(outputs) {
   return outputs.find((output) => output.updatedInput && output.permissionDecision === undefined)?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, SHELL_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, SCRIPT_SIZE_STEP, PREDISPATCH_STEP, SLEEP_STEP, RESULT_CAP_STEP, SHELL_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

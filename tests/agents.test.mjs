@@ -24,7 +24,7 @@ function unsupportedKeys(frontmatter) {
   return Object.keys(frontmatter).filter((key) => !SUPPORTED_KEYS.includes(key));
 }
 const KNOWN_TOOLS = [
-  'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage', 'TaskStop',
+  'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage', 'TaskStop', 'Monitor',
 ];
 const ORDINAL_TURNS = { tenth: 10, fifteenth: 15, twentieth: 20, thirtieth: 30, fortieth: 40, fiftieth: 50 };
 
@@ -226,7 +226,7 @@ test('the branch reviewer confirms with one test file or Probe command, never th
 
 test('the open-points finder is read-only, runs the decisions check first and caps its report', () => {
   const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
-  assert.deepEqual(finder.frontmatter.tools.split(', '), ['Read', 'Write', 'Glob', 'Grep', 'Bash']);
+  assert.deepEqual(finder.frontmatter.tools.split(', '), ['Read', 'Write', 'Bash']);
   assert.equal(finder.frontmatter.effort, undefined);
   assert.equal(finder.frontmatter.model, undefined);
   assert.ok(finder.body.indexOf('memory.mjs" decisions') > 0, 'no decisions run');
@@ -248,10 +248,10 @@ test('review-branch reads its opening inputs together in its first message', () 
   assert.match(reviewer.body, /^- Your first message Reads plan `## Goal`, `## Non-goals`, `## Context`, the standard, the diff and the nearest `CLAUDE\.md` or `AGENTS\.md` together, then the changed ranges\.$/m);
 });
 
-test('task-runner dispatches every build and repair in the foreground and never ends its turn on a dispatch', () => {
+test('task-runner dispatches every build and repair in the foreground and waits by W1 in a session and W2 in a run session', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'task-runner');
   assert.match(unit.body, /^ {2}- A `Wave:`\/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- When a dispatch returns `Async agent launched`, run the one printed `Wait:` per such return, timeout 600000, never a `sleep` loop; exit 2 reruns at most three times, then `BLOCKED <n> no report`\.$/m);
+  assert.match(unit.body, /^ {2}- After `Async agent launched`, end your turn to wait \(W1\)\. In a `-p` run session run `Wait:` \(W2\), timeout 600000, never a `sleep` loop; exit 2 reruns 3 times, then `BLOCKED <n> no report`\.$/m);
   assert.match(unit.body, /^ {2}- `Detail:` names a script's full log; read it only on a failure\.$/m);
   assert.match(unit.body, /^ {2}- Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise\.$/m);
   assert.match(unit.body, /^ {2}- When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot, do not `sleep`\.$/m);
@@ -295,7 +295,7 @@ test('the branch reviewer keeps the question, nit and note weights', () => {
 test('orchestrator holds Agent, Write and TaskStop, loads the project CLAUDE.md and runs on orchestrator', () => {
   const orchestrator = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   const tools = orchestrator.frontmatter.tools.split(', ');
-  for (const tool of ['Agent', 'Write', 'TaskStop']) assert.ok(tools.includes(tool), `orchestrator lists ${tool}`);
+  for (const tool of ['Agent', 'Write', 'TaskStop', 'Monitor']) assert.ok(tools.includes(tool), `orchestrator lists ${tool}`);
   assert.equal(orchestrator.frontmatter.omitClaudeMd, undefined);
   assert.equal(kindTable.agents['agents/orchestrator.md'].kind, 'orchestrator');
 });
@@ -307,4 +307,15 @@ test('orchestrator works in phases, keeps worker detail in files and hands over 
   assert.match(body, /in at most 5 lines, with detail in a named file/);
   assert.match(body, /read no whole log, diff or detail file/);
   assert.match(body, /exo context note, start no new phase[^\n]*return its path/);
+  assert.match(body, /a fresh orchestrator continues from it/);
+});
+
+test('orchestrator dispatches async within its Workers line, reads by range and sends discovery to lookup', () => {
+  const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
+  assert.doesNotMatch(body, /one foreground dispatch each/);
+  assert.match(body, /end your turn and wait for the notification/);
+  assert.match(body, /names `-p`[^\n]*wait-report\.mjs[^\n]*timeout 600000/);
+  assert.match(body, /no more workers than its `Workers:` line, retries included/);
+  assert.match(body, /Before the first dispatch[^\n]*Reads:[^\n]*by range/);
+  assert.match(body, /discovery and code reading to a `lookup` worker/);
 });

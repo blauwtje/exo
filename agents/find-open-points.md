@@ -1,7 +1,7 @@
 ---
 name: find-open-points
 description: "Dispatched by spec only."
-tools: Read, Write, Glob, Grep, Bash
+tools: Read, Write, Bash
 maxTurns: 30
 ---
 # Find open points
@@ -15,7 +15,7 @@ You read a draft brief as a builder who cannot ask anyone, and you write one fil
 - Write terse prose, result first.
 - First message: Read the brief and run `node "${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/memory.mjs" decisions` together.
 - Then read the code and files the brief names.
-- Grep for an existing equivalent of each helper or file the brief proposes, and add a `Reuse:` line when you find one.
+- Grep (Bash) for an existing equivalent of each helper or file the brief proposes, and add a `Reuse:` line when you find one.
 - A memory decision marked `settled` is not asked again. A decision marked `changed` becomes one yes/no point, `Still <decision>?`, of kind `user`.
 - A point is anything the builder would have to guess, where a wrong guess changes the build.
 - When part of the brief is not needed for the Goal, add a `Scope:` line. When you cannot restate a part in plain words, add a `Cannot follow:` line.

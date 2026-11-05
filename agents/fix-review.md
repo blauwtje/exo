@@ -1,7 +1,7 @@
 ---
 name: fix-review
 description: "Dispatched by gate only."
-tools: Read, Edit, Write, Grep, Bash, TaskStop
+tools: Read, Edit, Write, Bash, TaskStop
 maxTurns: 40
 omitClaudeMd: true
 ---

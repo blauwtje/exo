@@ -52,7 +52,8 @@
     "#stall-guard": "./lib/stall-guard.mjs",
     "#suite-command": "./lib/suite-command.mjs",
     "#token-weights": "./lib/token-weights.mjs",
-    "#fixer-mark": "./lib/fixer-mark.mjs"
+    "#fixer-mark": "./lib/fixer-mark.mjs",
+    "#worker-size": "./lib/worker-size.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {

@@ -43,7 +43,7 @@ test('settingOf reads the model and effort of each benchmarked agent from the ki
   assert.deepEqual(settingOf('fix-review', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('build-task', table), { model: 'sonnet', effort: 'low' });
   assert.deepEqual(settingOf('solve-hard', table), { model: 'opus', effort: 'high' });
-  assert.deepEqual(settingOf('orchestrator', table), { model: 'opus', effort: 'xhigh' });
+  assert.deepEqual(settingOf('orchestrator', table), { model: 'opus', effort: 'high' });
   assert.throws(() => settingOf('task-runner-x', table), /not in lib\/model-kinds.json/);
 });
 

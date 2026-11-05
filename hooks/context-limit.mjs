@@ -2,7 +2,7 @@
 
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { contextDecision, contextFields, persistedReadDecision } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields, persistedReadDecision, readCapDecision } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingValue } from '../lib/settings-store.mjs';
 
@@ -44,7 +44,7 @@ export function withReceipt(output, hookInput, fields, input, enabled = receipts
 }
 
 export function contextHook(input, enabled) {
-  const fields = contextFields(persistedReadDecision(input) ?? contextDecision(input));
+  const fields = contextFields(persistedReadDecision(input) ?? readCapDecision(input) ?? contextDecision(input));
   const output = fields ? { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } } : null;
   return withReceipt(output, input, fields, undefined, enabled);
 }

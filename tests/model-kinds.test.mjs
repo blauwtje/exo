@@ -113,3 +113,8 @@ test('this repository has no hooks text or CLAUDE.md line dispatching a kindless
   const root = fileURLToPath(new URL('..', import.meta.url));
   assert.deepEqual(findInheritanceGaps(root, readKindTable()).filter((gap) => /^(hooks|\.claude)\//.test(gap)), []);
 });
+
+test('kinds.orchestrator.on.effort is high', () => {
+  const { kinds } = readKindTable();
+  assert.equal(kinds.orchestrator.effort, 'high');
+});

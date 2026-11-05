@@ -57,7 +57,7 @@
       "on": { "tier": "standard", "effort": "medium" }
     },
     "orchestrator": {
-      "on": { "tier": "strong", "effort": "xhigh" }
+      "on": { "tier": "strong", "effort": "high" }
     },
     "task-runner": {
       "on": { "tier": "standard", "effort": "high" }

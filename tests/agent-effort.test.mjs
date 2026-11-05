@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { agentEffort, agentHook } from '../hooks/agent-effort.mjs';
@@ -54,7 +55,7 @@ test('an unnamed call with no exo-kind line runs as build with the line prepende
   const decision = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', ...input } }, budget, () => false)?.hookSpecificOutput.permissionDecision;
   const { kinds } = readKindTable(undefined, { budget: 'on' });
   const unlabelled = call({ description: 'Edit-evidence false block', prompt: 'x' });
-  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'x' }), 'allow');
+  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'Reads: none\nx' }), 'allow');
   assert.equal(unlabelled.prompt, 'exo-kind: build\nx');
   assert.equal(unlabelled.model, kinds.build.model);
   assert.equal(unlabelled.effort, kinds.build.effort);
@@ -65,12 +66,12 @@ test('an unnamed call with no exo-kind line runs as build with the line prepende
   assert.equal(unknown.permissionDecision, 'deny');
   assert.match(unknown.permissionDecisionReason, /exo-kind:/);
   assert.match(unknown.permissionDecisionReason, /hardest/);
-  assert.notEqual(decision({ description: 'review the branch', prompt: 'x' }), 'deny');
-  for (const word of ['Investigate', 'Research', 'Summarise', 'Summarize', 'Explore']) assert.notEqual(decision({ description: `${word} the stall`, prompt: 'x' }), 'deny');
+  assert.notEqual(decision({ description: 'review the branch', prompt: 'Reads: none' }), 'deny');
+  for (const word of ['Investigate', 'Research', 'Summarise', 'Summarize', 'Explore']) assert.notEqual(decision({ description: `${word} the stall`, prompt: 'Reads: none' }), 'deny');
   assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, kinds.hardest.model);
   assert.equal(call({ description: 'Fix the typo', prompt: 'exo-kind: hard\nx' }).model, kinds.build.model);
   for (const description of ['Pickup log lines', 'Picker colours', 'Designated owner', 'Collect findings', 'Add test fixtures']) assert.equal(call({ description, prompt: 'x' }).prompt, 'exo-kind: build\nx', description);
-  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'x' }, 'off'), undefined);
+  assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'Reads: none' }, 'off'), undefined);
   assert.notEqual(decision({ subagent_type: 'exo:locate-code', description: 'Edit-evidence false block', prompt: 'x' }), 'deny');
 });
 
@@ -168,30 +169,33 @@ const hookOutput = (input, budget = 'on') => agentHook({ tool_name: 'Agent', too
 
 test('an exo call whose passed model or effort differs from the table is denied with the table pair, the passed pair and the matching labels', () => {
   const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrator;
-  const output = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model: 'opus', effort: 'high' });
+  const output = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'xhigh' });
   assert.equal(output.permissionDecision, 'deny');
   assert.equal(output.updatedInput, undefined);
   const reason = output.permissionDecisionReason;
   assert.match(reason, new RegExp(`runs on ${model}, ${effort} by the kind table`));
-  assert.match(reason, /passed opus, high/);
-  assert.match(reason, /labels for opus, high: hardest, review, review-deep\./);
+  assert.match(reason, /passed opus, xhigh/);
+  assert.match(reason, /No kind runs opus, xhigh; closest on opus: hardest, review, review-deep, orchestrator\./);
   assert.match(reason, /No user request for that model → drop `model` and `effort`\./);
-  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', effort: 'high' }).permissionDecision, 'deny');
-  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model: 'haiku' }).permissionDecision, 'deny');
+  const buildTask = readKindTable(undefined, { budget: 'on' }).kinds['build-task'];
+  const runnable = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: buildTask.model, effort: buildTask.effort });
+  assert.match(runnable.permissionDecisionReason, new RegExp(`labels for ${buildTask.model}, ${buildTask.effort}: .*build-task`));
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', effort: 'xhigh' }).permissionDecision, 'deny');
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'haiku' }).permissionDecision, 'deny');
 });
 
 test('a denied pair that no kind runs names the closest kinds on that model, or none', () => {
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: orchestrator\./);
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model: 'fable', effort: 'high' }).permissionDecisionReason, /No kind runs fable, high, and none runs fable\./);
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: hardest, review, review-deep, orchestrator\./);
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'fable', effort: 'high' }).permissionDecisionReason, /No kind runs fable, high, and none runs fable\./);
 });
 
 test('an exo call passing the table model and effort, a label that makes the pair the table pair, off, and a general-purpose call pass through', () => {
   const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrator;
-  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model, effort }), undefined);
-  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model })?.permissionDecision, 'deny');
-  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: hardest\nx', model: 'opus', effort: 'high' })?.permissionDecision, 'deny');
-  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'x', model: 'opus', effort: 'high' }, 'off'), undefined);
-  assert.equal(hookOutput({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup', model: 'opus', effort: 'max' }), undefined);
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model, effort }), undefined);
+  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model })?.permissionDecision, 'deny');
+  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: hardest\nWorkers: 1', model: 'opus', effort: 'high' })?.permissionDecision, 'deny');
+  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'high' }, 'off'), undefined);
+  assert.equal(hookOutput({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nReads: none', model: 'opus', effort: 'max' }), undefined);
 });
 
 test('the session provider picks its kind column, an unlisted or unset one keeps the claude column', () => {
@@ -245,4 +249,45 @@ test('the raised find-open-points effort still wins over the table', () => {
 test('the denied call shows its reason in the hook line', () => {
   const hook = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code', prompt: 'x', model: 'opus', effort: 'max' } }, 'on', () => true);
   assert.match(hook.systemMessage, /^exo blocked: exo:locate-code runs on /);
+});
+
+test('worker size: an orchestrator dispatch needs Reads and Result and stays in budget', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
+  const run = (agent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type, cwd: dir, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecision;
+  assert.equal(run('exo:orchestrator', 'do it'), 'deny');
+  assert.equal(run('exo:orchestrator', 'Reads: big.txt\nResult: .exo/r.md'), 'deny');
+  assert.equal(run('exo:orchestrator', 'Reads: none\nResult: .exo/r.md'), 'allow');
+  assert.equal(run(undefined, 'do it'), 'deny');
+  assert.equal(run(undefined, 'Reads: none'), 'allow');
+  assert.equal(run(undefined, 'Reads: big.txt'), 'deny');
+});
+
+test('worker size: an orchestrator exo:fetch-docs dispatch is sized by Fetches and needs no Result; other callers stay unsized', () => {
+  const run = (agent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type, tool_input: { subagent_type: 'exo:fetch-docs', description: 'docs', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecision;
+  assert.equal(run('exo:orchestrator', 'Reads: none\nFetches: 19'), 'deny');
+  assert.equal(run('exo:orchestrator', 'Reads: none\nFetches: 1'), 'allow');
+  assert.equal(run(undefined, 'Reads: none\nFetches: 19'), 'allow');
+});
+
+test('worker size: a refusal names unresolved paths, invalid Fetches, the largest reads and no Result for fetch-docs', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'worker-hook-'));
+  fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
+  const reason = (subagent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type, description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
+  assert.match(reason('general-purpose', 'Reads: nope.txt\nResult: .exo/r.md'), /nope\.txt/);
+  assert.match(reason('exo:fetch-docs', 'Reads: none\nFetches: many'), /Fetches/);
+  assert.match(reason('general-purpose', 'Reads: big.txt\nResult: .exo/r.md'), /Largest reads: big\.txt \(\d+\).*path or line range/);
+  const fetchReason = reason('exo:fetch-docs', 'Reads: none\nFetches: 19');
+  assert.match(fetchReason, /Fetches/);
+  assert.doesNotMatch(fetchReason, /Result/);
+});
+
+test('worker size: an exo:orchestrator dispatch from a non-orchestrator needs Workers within the limit', () => {
+  const run = (agent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type, tool_input: { subagent_type: 'exo:orchestrator', description: 'slice', prompt } }, 'on', () => false)?.hookSpecificOutput;
+  assert.notEqual(run(undefined, 'Workers: 4')?.permissionDecision, 'deny');
+  assert.equal(run(undefined, 'Workers: 5').permissionDecision, 'deny');
+  assert.match(run(undefined, 'Workers: 5').permissionDecisionReason, /1 to 4.*slices/);
+  assert.equal(run(undefined, 'do it').permissionDecision, 'deny');
+  assert.equal(run(undefined, 'Workers: 0').permissionDecision, 'deny');
+  assert.notEqual(run('exo:orchestrator', 'do it')?.permissionDecision, 'deny');
 });

@@ -22,7 +22,7 @@ Land each task in the lead's block, no review.
   - A `Design:` task is `BLOCKED <n> Design: task`.
 3. **Dispatch the printed block.** Send each `Prompt:` verbatim to `exo:build-task` with its `Dispatch:` flag, in one message.
   - A `Wave:`/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone.
-  - When a dispatch returns `Async agent launched`, run the one printed `Wait:` per such return, timeout 600000, never a `sleep` loop; exit 2 reruns at most three times, then `BLOCKED <n> no report`.
+  - After `Async agent launched`, end your turn to wait (W1). In a `-p` run session run `Wait:` (W2), timeout 600000, never a `sleep` loop; exit 2 reruns 3 times, then `BLOCKED <n> no report`.
   - `Detail:` names a script's full log; read it only on a failure.
   - Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise.
   - When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot, do not `sleep`.

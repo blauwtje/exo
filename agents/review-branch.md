@@ -1,7 +1,7 @@
 ---
 name: review-branch
 description: "Dispatched by gate only."
-tools: Read, Write, Glob, Grep, Bash
+tools: Read, Write, Bash
 maxTurns: 30
 ---
 # Review branch

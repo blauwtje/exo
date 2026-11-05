@@ -1,7 +1,7 @@
 ---
 name: build-task
 description: "Dispatched by build only."
-tools: Read, Edit, Write, Grep, Bash
+tools: Read, Edit, Write, Bash
 maxTurns: 60
 ---
 # Build task
