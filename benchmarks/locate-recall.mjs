@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { confineRefusal, confinedClaude } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
-import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { intervalText, knownMean, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { plannedPowerLine, scoresByTask } from './power-plan.mjs';

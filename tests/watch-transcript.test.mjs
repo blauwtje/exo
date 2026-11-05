@@ -3,10 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import {
-  availableLanguages, chaptersFromHtml, decodeEntities, formatDuration, formatStamp, languagesOf, parseTimedText, parseVtt, pickCaptions, pickTrack, planChunks,
-  renderTranscript, countWords, tracksOf, videoIdOf, watchAll, watchOne,
-} from '../skills/watch/scripts/transcript.mjs';
+import { decodeEntities, parseTimedText, parseVtt } from '../skills/watch/scripts/cues.mjs';
+import { formatDuration, formatStamp, renderTranscript, countWords } from '../skills/watch/scripts/format.mjs';
+import { planChunks } from '../skills/watch/scripts/chunks.mjs';
+import { availableLanguages, pickCaptions } from '../skills/watch/scripts/ytdlp-info.mjs';
+import { videoIdOf } from '../skills/watch/scripts/video-url.mjs';
+import { tracksOf, pickTrack, languagesOf } from '../skills/watch/scripts/youtube.mjs';
+import { chaptersFromHtml } from '../skills/watch/scripts/youtube-chapters.mjs';
+import { watchAll, watchOne } from '../skills/watch/scripts/watch.mjs';
 import { tempDir } from './harness.mjs';
 
 const script = path.resolve('skills/watch/scripts/transcript.mjs');

@@ -8,7 +8,7 @@ import { readKindTable } from '#model-kinds';
 import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 import { confinedClaude } from '#confine-claude';
-import { withHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
 import { tempDir } from './harness.mjs';
 

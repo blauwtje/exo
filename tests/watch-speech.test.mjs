@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { watchOne } from '../skills/watch/scripts/transcript.mjs';
+import { watchOne } from '../skills/watch/scripts/watch.mjs';
 import { tempDir } from './harness.mjs';
 
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
@@ -178,13 +178,13 @@ test('a failed download that left a partial file is not transcribed', () => {
 });
 
 test('sourceOf refuses mistyped ids, mailto and tel inputs', async () => {
-  const { sourceOf } = await import('../skills/watch/scripts/transcript.mjs');
+  const { sourceOf } = await import('../skills/watch/scripts/video-url.mjs');
   for (const input of ['dQw4w9WgXc', 'mailto:user@example.com', 'tel:123', 'word']) assert.equal(sourceOf(input), null, input);
   assert.deepEqual(sourceOf('tiktok.com/@u/video/1'), { url: 'https://tiktok.com/@u/video/1', host: 'tiktok.com' });
 });
 
 test('sourceOf accepts a dotless host only with an explicit http(s) scheme', async () => {
-  const { sourceOf } = await import('../skills/watch/scripts/transcript.mjs');
+  const { sourceOf } = await import('../skills/watch/scripts/video-url.mjs');
   assert.deepEqual(sourceOf('https://intranet/video.mp4'), { url: 'https://intranet/video.mp4', host: 'intranet' });
   assert.deepEqual(sourceOf('http://localhost:8080/v.mp4'), { url: 'http://localhost:8080/v.mp4', host: 'localhost' });
   assert.equal(sourceOf('intranet/video.mp4'), null);

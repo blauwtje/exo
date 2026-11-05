@@ -1,6 +1,6 @@
 // makeDefaultOptionsHome mirrors the real home so a claude run started with
 // HOME set to the mirror reads settings without the user's exo options, while
-// every other entry of the home and of ~/.claude stays reachable; pressure.mjs
+// every other entry of the home and of ~/.claude stays reachable; pressure-home.mjs
 // spawns every arm with that HOME.
 
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome, withoutExoOptions } from '../lib/default-options-home.mjs';
-import { pressureHome, withHome as withPressureHome } from '../skills/edit-skills/scripts/pressure.mjs';
+import { pressureHome, withHome as withPressureHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 import { tempDir } from './harness.mjs';
 
 function withHome(home, body) {

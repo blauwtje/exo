@@ -5,8 +5,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome } from '../lib/default-options-home.mjs';
-import { dryRunReport, makeRunFolder, readFlags, recordRun, recordedRuns, regradeFolder, writeGrades } from '../skills/edit-skills/scripts/pressure.mjs';
+import { parseFlags } from '../lib/script-flags.mjs';
+import { SPEC, USAGE, optionsFrom } from '../skills/edit-skills/scripts/pressure-options.mjs';
+import { dryRunReport, recordRun, recordedRuns } from '../skills/edit-skills/scripts/pressure-records.mjs';
+import { regradeFolder } from '../skills/edit-skills/scripts/pressure-regrade.mjs';
+import { writeGrades } from '../skills/edit-skills/scripts/pressure-report.mjs';
+import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
 import { tempDir } from './harness.mjs';
+
+function readFlags(argv) {
+  return optionsFrom(parseFlags(argv, SPEC, { usage: USAGE }));
+}
 
 function git(cwd, home, args) {
   const run = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' } });
