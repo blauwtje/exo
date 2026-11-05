@@ -52,6 +52,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A subagent is bound by `defaults.agentContextTarget` (60k) while it runs, not by the lead's `contextLimit`: a note at 75% of the target, new reads, searches, fetches, skills and agents refused at the target, and every tool except Write and Edit refused at 125% of it, with a `Status: handover` result file in the refusal. The lead's `contextLimit` is unchanged.
 
 ### Fixed
+- `context-peaks --resumed` counts an Agent launch as background unless it sets `run_in_background: false`, as the platform does, so the wait verdict no longer misses orchestrator runs (wrong labels in a 7-day replay: 8651 of 12955 launches before, 0 after).
 - A worker brief that names a pasted image by its bare file name now finds it in the session directory, images are sized by their pixels (at most 1600 tokens) instead of their bytes, and a denial names the directories searched or the tokens to cut.
 - locate-code and find-open-points now start no background shell, so none is left running after they return.
 - Build now runs independent plan tasks in one wave once their dependencies have landed, not only the tasks listed on the plan's `Parallel:` line. Tasks that share a file still run apart, and `Parallel: none` keeps a plan serial.

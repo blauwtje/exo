@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import path from 'node:path';
+import { runsInBackground } from '#agent-launch';
 import { agentContextTarget, contextPeaks, contextSeries, peakSummary, u4Verdict } from '#context-limits';
 import { sumCounts, usageCounts } from '#token-weights';
 import { transcriptFolder } from '#confine-claude';
@@ -327,7 +328,7 @@ const NOTIFICATION_TEXT = '<task-notification>';
 function launchesAsync(entry) {
   const blocks = entry.message?.content;
   if (!Array.isArray(blocks)) return false;
-  return blocks.some((block) => block.type === 'tool_use' && block.name === 'Agent' && block.input?.run_in_background === true);
+  return blocks.some((block) => block.type === 'tool_use' && block.name === 'Agent' && runsInBackground(block.input));
 }
 
 function isNotification(entry) {

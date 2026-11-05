@@ -6,6 +6,7 @@
   "private": true,
   "type": "module",
   "imports": {
+    "#agent-launch": "./lib/agent-launch.mjs",
     "#attempt-fingerprint": "./lib/attempt-fingerprint.mjs",
     "#budgets": "./verify/budgets.mjs",
     "#build-progress": "./lib/build-progress.mjs",
