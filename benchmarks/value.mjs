@@ -238,8 +238,7 @@ function pastCellWalls(runsDirectory) {
 function pastCellMeans(runsDirectory, valueOf) {
   const values = new Map();
   if (!fs.existsSync(runsDirectory)) return values;
-  for (const file of fs.readdirSync(runsDirectory, { recursive: true })) {
-    if (path.basename(file) !== 'checks.json') continue;
+  for (const file of filesNamed(runsDirectory, 'checks.json')) {
     const checks = readJson(path.join(runsDirectory, file));
     const value = valueOf(checks, path.join(runsDirectory, path.dirname(file)));
     if (typeof value !== 'number') continue;

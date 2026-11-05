@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,6 +7,7 @@ import { confinedClaude } from '#confine-claude';
 import { loadedSkillDirs, wrongCopies } from '#plugin-copy';
 import { UsageError, environmentMs, isMain, parseFlags } from '#script-flags';
 import { claudeJudge, compareMarkdown, resultsMarkdown, scoreArm } from './ideas-score.mjs';
+import { captureChild } from './capture-child.mjs';
 import { makeCellHome } from './cell-home.mjs';
 import { applyVariant } from './variants.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
@@ -99,22 +100,8 @@ function runClaude({ cell, plugin, scratch, home }) {
   const prompt = makerPrompt(CASES[cell.caseId].feature);
   const run = confinedClaude({ args: makerArguments({ prompt, plugin, effort: process.env.EXO_IDEAS_EFFORT || undefined }), roots: [scratch], cwd: work, tmp });
   const timeoutMs = environmentMs('EXO_IDEAS_RUN_MS', 1_200_000);
-  return new Promise((resolve) => {
-    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, HOME: home, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill('SIGKILL');
-    }, timeoutMs);
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.on('close', (exitCode, signal) => {
-      clearTimeout(timer);
-      resolve({ stdout, stderr, exitCode, signal, timedOut, timeoutMs });
-    });
-  });
+  const env = { ...process.env, HOME: home, ...run.env };
+  return captureChild({ command: run.command, args: run.args, cwd: run.cwd, env, timeoutMs }).then((outcome) => ({ ...outcome, timeoutMs }));
 }
 
 // why: a crashed or cut-off maker run is no evidence about ideation, so it is recorded as failed and left out of every metric; a finished answer without options still scores 0.

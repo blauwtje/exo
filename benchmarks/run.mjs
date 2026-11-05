@@ -39,6 +39,7 @@ import { ARMS, FIXTURE, MODELS, NO_RUN, ROOT } from './tasks.mjs';
 import { modeSummary, quickStock, quickSummary, readStock, stockRows, stockStorePath, writeStock } from './value-stock.mjs';
 import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, newestRunLedger, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 import { readJson } from './basics.mjs';
+import { filesNamed } from './tree-files.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -300,8 +301,7 @@ function latestSmokeCost() {
   if (smokes.length === 0) return null;
   const costs = [];
   const directory = path.join(RUNS, smokes[smokes.length - 1]);
-  for (const file of fs.readdirSync(directory, { recursive: true })) {
-    if (path.basename(file) !== 'result.json') continue;
+  for (const file of filesNamed(directory, 'result.json')) {
     const result = readJson(path.join(directory, file));
     if (typeof result.total_cost_usd === 'number') costs.push(result.total_cost_usd);
   }

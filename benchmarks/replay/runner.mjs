@@ -11,11 +11,12 @@
 // cell's temp dir and asks no permission headless (checked on 2.1.302: a read outside is denied, not prompted).
 // Prints per cell: case, run, grade, cost, wall time, tokens, stop reason; per case: fails out of k, fail rate with SE and the 10-90% band.
 
-import { spawn, spawnSync, execFileSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { captureChild } from '../capture-child.mjs';
 import { withoutParentSession, ISOLATION_ENV } from '../lean-gates.mjs';
 import { writeCellUsage } from '../cell-usage.mjs';
 import crypto from 'node:crypto';
@@ -59,16 +60,7 @@ export function parseFlags(argv) {
 function runClaude(args, cwd, timeoutMs) {
   const command = process.platform === 'darwin' ? ['caffeinate', '-i', 'claude', ...args] : ['claude', ...args];
   const env = { ...withoutParentSession(process.env), ...ISOLATION_ENV };
-  return new Promise((resolve) => {
-    const child = spawn(command[0], command.slice(1), { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    const timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM'); }, timeoutMs);
-    child.on('close', (code) => { clearTimeout(timer); resolve({ stdout, stderr, code, timedOut }); });
-  });
+  return captureChild({ command: command[0], args: command.slice(1), cwd, env, timeoutMs, killSignal: 'SIGTERM' });
 }
 
 async function runCell(flags, caseId, run, claudeVersion) {
@@ -110,7 +102,7 @@ async function runCell(flags, caseId, run, claudeVersion) {
   fs.writeFileSync(path.join(cell, 'stdout.json'), run1.stdout);
   let result = {};
   try { result = JSON.parse(run1.stdout); } catch { result = { is_error: true, subtype: run1.timedOut ? 'timeout' : 'unparsable', stderr: run1.stderr.slice(0, 2000) }; }
-  result = { ...result, ...facts, wallMs, claudeVersion, effort: flags.effort, model: MODEL, exitCode: run1.code, timedOut: run1.timedOut };
+  result = { ...result, ...facts, wallMs, claudeVersion, effort: flags.effort, model: MODEL, exitCode: run1.exitCode, timedOut: run1.timedOut };
   fs.writeFileSync(path.join(cell, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
   const usage = result.session_id ? writeCellUsage(cell, result.session_id) : null;
   const graded = gradeCell(cell);
