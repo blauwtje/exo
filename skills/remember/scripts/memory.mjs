@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
 import { parseArgs } from 'node:util';
 import { MEMORY_BUDGET } from '#budgets';
+import { gitLine } from '#git';
 import { ATTESTATIONS_REQUIRED, memoryDirectory, memoryOn } from '#memory-store';
 
 function stateFile(cwd) {
@@ -155,16 +155,11 @@ function writeClaim(cwd, state, claim, refs, replaces, name = claim) {
   return bytes;
 }
 
-function git(cwd, ...args) {
-  return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
-}
-
 function decisionCommit(cwd) {
-  const head = git(cwd, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
-  const candidates = [head.status === 0 ? head.stdout.trim() : null, 'main', 'master'].filter(Boolean);
+  const candidates = [gitLine(cwd, ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']), 'main', 'master'].filter(Boolean);
   for (const branch of candidates) {
-    const base = git(cwd, 'merge-base', 'HEAD', branch);
-    if (base.status === 0) return base.stdout.trim();
+    const base = gitLine(cwd, ['merge-base', 'HEAD', branch]);
+    if (base !== null) return base;
   }
   return null;
 }
@@ -182,10 +177,10 @@ function writeDecision(cwd, state, claim, refs) {
 
 function decisionStatus(cwd, line) {
   if (!line.commit || line.refs.length === 0) return 'settled';
-  if (git(cwd, 'merge-base', '--is-ancestor', line.commit, 'HEAD').status !== 0) return 'changed';
+  if (gitLine(cwd, ['merge-base', '--is-ancestor', line.commit, 'HEAD']) === null) return 'changed';
   const files = line.refs.map((ref) => resolveRef(cwd, ref).relative);
-  const numstat = git(cwd, 'diff', '--numstat', line.commit, '--', ...files);
-  const added = numstat.stdout.split('\n').filter(Boolean)
+  const numstat = gitLine(cwd, ['diff', '--numstat', line.commit, '--', ...files]) ?? '';
+  const added = numstat.split('\n').filter(Boolean)
     .reduce((sum, row) => sum + (Number(row.split('\t')[0]) || 0), 0);
   const total = files.reduce((sum, file) => {
     const target = path.join(cwd, file);

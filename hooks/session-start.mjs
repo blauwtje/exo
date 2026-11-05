@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
 import { memoryOn } from '#memory-store';
+import { gitLine } from '#git';
 import { inSidecall, readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { pruneExo } from '#exo-prune';
@@ -20,11 +21,6 @@ const onCodex = currentHost() === 'codex';
 const configDirectory = onCodex
   ? path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'exo')
   : path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
-
-function git(cwd, ...args) {
-  const result = spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : null;
-}
 
 function located(file, top) {
   const relative = top ? path.relative(top, file) : '';
@@ -58,7 +54,7 @@ function handoffFileFor(gitDirectory, scope) {
 }
 
 function handoffPointer(cwd, gitDirectory, top) {
-  const scope = gitDirectory === null ? path.basename(cwd) : git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD') ?? '';
+  const scope = gitDirectory === null ? path.basename(cwd) : gitLine(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']) ?? '';
   const handoffFile = handoffFileFor(gitDirectory, scope);
   if (!fs.existsSync(handoffFile) || !fs.statSync(handoffFile).isFile()) return '';
   const staleness = gitDirectory === null ? '' : ' Compare its `Written:` commit with `git rev-parse --short HEAD`.';
@@ -69,7 +65,7 @@ function handoffPointer(cwd, gitDirectory, top) {
 
 function memoryPointer(cwd, top) {
   if (!memoryOn(cwd)) return '';
-  const commonDirectory = git(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir');
+  const commonDirectory = gitLine(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
   const memoryFile = commonDirectory === null
     ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')
     : path.join(commonDirectory, 'exo', 'memory.md');
@@ -78,8 +74,8 @@ function memoryPointer(cwd, top) {
 }
 
 function pointersFor(cwd, source) {
-  const gitDirectory = git(cwd, 'rev-parse', '--absolute-git-dir');
-  const top = gitDirectory === null ? null : git(cwd, 'rev-parse', '--show-toplevel');
+  const gitDirectory = gitLine(cwd, ['rev-parse', '--absolute-git-dir']);
+  const top = gitDirectory === null ? null : gitLine(cwd, ['rev-parse', '--show-toplevel']);
   return handoffPointer(cwd, gitDirectory, top) + memoryPointer(cwd, top) + progressPointer(cwd, source, top);
 }
 

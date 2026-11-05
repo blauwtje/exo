@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { readJsonOrNull } from '#basics';
 import { scratchPath } from '#scratch-path';
 
 const git = (directory, ...args) => spawnSync('git', ['-C', directory, ...args], { encoding: 'utf8' });
@@ -12,11 +13,7 @@ export const baselineFile = (root) => scratchPath(root, 'baseline.txt');
 export const slotOf = (toplevel, number) => `${toplevel}-task-${number}`;
 
 export function windowRecords(root) {
-  try {
-    return JSON.parse(fs.readFileSync(windowFile(root), 'utf8'));
-  } catch {
-    return {};
-  }
+  return readJsonOrNull(windowFile(root)) ?? {};
 }
 
 export function restartRecord(root, number, record) {

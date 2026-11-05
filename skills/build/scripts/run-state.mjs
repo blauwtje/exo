@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { sleepSync, writeAtomic } from '#basics';
+import { readJsonOrNull, sleepSync, writeAtomic } from '#basics';
 
 export const PHASES = ['starting', 'build', 'verify', 'landing', 'passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
@@ -38,11 +38,7 @@ export function newRunId(now = new Date()) {
 }
 
 export function readState(root, id) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(runDir(root, id), 'state.json'), 'utf8'));
-  } catch {
-    return null;
-  }
+  return readJsonOrNull(path.join(runDir(root, id), 'state.json'));
 }
 
 export function createRun(root, { id = newRunId(), plan, flags = [], detach = false, pid = process.pid, log = null, ownerSession }) {

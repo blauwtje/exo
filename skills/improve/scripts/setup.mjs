@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { gitLine } from '#git';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -30,7 +31,7 @@ function git(cwd, ...args) {
   return run.stdout.trim();
 }
 
-const gitOk = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).status === 0;
+const gitOk = (cwd, ...args) => gitLine(cwd, args) !== null;
 const list = (text) => (text ?? '').split(',').map((item) => item.trim()).filter(Boolean);
 
 function baselineRun(cwd, cfg) {

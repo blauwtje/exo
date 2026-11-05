@@ -1,21 +1,16 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { gitLine } from '#git';
 import { inSidecall, readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
 import { handoffFile } from '../skills/save-session/scripts/handoff.mjs';
 
 const AUTO_MARK = 'Source: auto';
 const DIRTY_FILE_CAP = 50;
-
-function git(cwd, ...args) {
-  const result = spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : null;
-}
 
 function entryTime(line) {
   try {
@@ -64,8 +59,8 @@ function stateText(dirty, progress) {
 function stubText(cwd, file, dirty, progress) {
   const values = {
     date: new Date().toISOString().slice(0, 10),
-    head: git(cwd, 'rev-parse', '--short', 'HEAD') ?? 'none',
-    branch: git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD') ?? path.basename(path.resolve(cwd)),
+    head: gitLine(cwd, ['rev-parse', '--short', 'HEAD']) ?? 'none',
+    branch: gitLine(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']) ?? path.basename(path.resolve(cwd)),
     state: stateText(dirty, progress),
     next: progress === undefined ? 'Look at the changed files, then continue the work.' : 'Read the progress file, then continue the work.',
     paragraph: RESUME_BLOCK.exec(fs.readFileSync(SKILL_FILE, 'utf8'))?.[1] ?? '',
@@ -75,10 +70,10 @@ function stubText(cwd, file, dirty, progress) {
 }
 
 export function writeHandoffStub({ cwd, transcript_path: transcriptPath }) {
-  if (git(cwd, 'rev-parse', '--git-dir') === null) return undefined;
+  if (gitLine(cwd, ['rev-parse', '--git-dir']) === null) return undefined;
   const file = handoffFile(cwd);
   if (handoffKept(file, sessionStartMs(transcriptPath))) return undefined;
-  const dirty = (git(cwd, 'status', '--short') ?? '').split('\n').filter(Boolean).slice(0, DIRTY_FILE_CAP);
+  const dirty = (gitLine(cwd, ['status', '--short']) ?? '').split('\n').filter(Boolean).slice(0, DIRTY_FILE_CAP);
   const progress = newestProgressFile(cwd);
   if (dirty.length === 0 && progress === undefined) return undefined;
   fs.mkdirSync(path.dirname(file), { recursive: true });

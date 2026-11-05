@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { gitLine } from '#git';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,11 +18,6 @@ const NO_KEEP_STOP = 10;
 const BRIEF_ROWS = 15;
 const TEMPLATE = new URL('../references/worker.md', import.meta.url);
 const SKILL_DIR = path.dirname(path.dirname(new URL(import.meta.url).pathname));
-
-function git(cwd, ...args) {
-  const run = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  return { ok: run.status === 0, out: (run.stdout ?? '').trim() };
-}
 
 export function filesUnder(cwd, entry) {
   const full = path.join(cwd, entry);
@@ -113,7 +109,7 @@ export const improveDefaults = (home = os.homedir()) => loadRunConfig({ home }).
 export const scoreEnv = (cfg) => ({ ...process.env, EXO_SEED: String(cfg.seed ?? improveDefaults().seed) });
 
 function treeFiles(cwd, commit) {
-  return git(cwd, 'ls-tree', '-r', '-z', '-l', commit).out.split('\0').filter(Boolean).map((line) => {
+  return (gitLine(cwd, ['ls-tree', '-r', '-z', '-l', commit]) ?? '').split('\0').filter(Boolean).map((line) => {
     const [meta, file] = line.split('\t');
     return { file, bytes: Number(meta.split(/\s+/)[3]) };
   }).filter((entry) => Number.isFinite(entry.bytes));
@@ -214,7 +210,7 @@ export function outputTail(output, count = improveDefaults().outputLines) {
   return output.split('\n').map((line) => line.trimEnd()).filter((line) => line.trim() && !frame.test(line)).slice(-count);
 }
 
-export const diffLines = (cwd, from, to) => git(cwd, 'diff', '--numstat', from, to).out.split('\n').filter(Boolean)
+export const diffLines = (cwd, from, to) => (gitLine(cwd, ['diff', '--numstat', from, to]) ?? '').split('\n').filter(Boolean)
   .reduce((sum, row) => { const [add, del] = row.split('\t'); return { added: sum.added + (Number(add) || 0), removed: sum.removed + (Number(del) || 0) }; }, { added: 0, removed: 0 });
 
 export function keepSettings(defaults = improveDefaults()) {
@@ -247,8 +243,8 @@ function statsNote(verdict, samples) {
 }
 
 export function commitsOnKept(cwd, kept, commit) {
-  if (!git(cwd, 'merge-base', '--is-ancestor', kept, commit).ok) return `not on ${kept}`;
-  const count = Number(git(cwd, 'rev-list', '--count', `${kept}..${commit}`).out);
+  if (gitLine(cwd, ['merge-base', '--is-ancestor', kept, commit]) === null) return `not on ${kept}`;
+  const count = Number(gitLine(cwd, ['rev-list', '--count', `${kept}..${commit}`]));
   return count === 1 ? null : `${count} commits on ${kept}`;
 }
 
@@ -271,7 +267,7 @@ function decide({ cfg, cwd, dir, tag, commit, rows }) {
   const stacked = commitsOnKept(cwd, kept.commit, commit);
   if (stacked) return { status: 'not-one-commit', score: null, kept, note: `${stacked}, want one` };
   const lines = diffLines(cwd, kept.commit, commit);
-  const files = git(cwd, 'diff', '--name-only', kept.commit, commit).out.split('\n').filter(Boolean);
+  const files = (gitLine(cwd, ['diff', '--name-only', kept.commit, commit]) ?? '').split('\n').filter(Boolean);
   const refusal = outOfScope(files, cfg);
   if (refusal) return { status: 'discard', score: kept.score, kept, note: refusal, lines };
   const stored = sampleLines(dir, tag);
@@ -292,7 +288,7 @@ function record({ dir, tag, commit, outcome, cwd }) {
   if (outcome.samples) appendSamples(dir, tag, { commit, status: outcome.status, ...outcome.samples });
   const size = outcome.lines ? `lines=+${outcome.lines.added}/-${outcome.lines.removed}` : null;
   const note = [outcome.note, size].filter(Boolean).join(' ');
-  const subject = git(cwd, 'log', '-1', '--format=%s', commit).out;
+  const subject = gitLine(cwd, ['log', '-1', '--format=%s', commit]) ?? '';
   fs.appendFileSync(path.join(dir, `${tag}.tsv`), `${commit}\t${scoreText(outcome.score)}\t${outcome.status}\t${note ? `${note}; ` : ''}${subject}\n`);
 }
 
@@ -324,9 +320,9 @@ function runRound(flags) {
   const finish = (line, code = 0) => { process.stdout.write(`${line}\n`); process.exit(code); };
   if (scorerHash(cwd, cfg.readOnly) !== cfg.scorerHash) finish('STOP scorer-changed score-files', 1);
   const rows = readRows(path.join(dir, `${flags.tag}.tsv`));
-  if (!git(cwd, 'reset', '--hard', flags.commit).ok) finish(`STOP reset-failed ${flags.commit}`, 1);
+  if (gitLine(cwd, ['reset', '--hard', flags.commit]) === null) finish(`STOP reset-failed ${flags.commit}`, 1);
   const outcome = decide({ cfg, cwd, dir, tag: flags.tag, commit: flags.commit, rows });
-  if (outcome.status !== 'keep' && !git(cwd, 'reset', '--hard', outcome.kept.commit).ok) finish(`STOP reset-failed ${outcome.kept.commit}`, 1);
+  if (outcome.status !== 'keep' && gitLine(cwd, ['reset', '--hard', outcome.kept.commit]) === null) finish(`STOP reset-failed ${outcome.kept.commit}`, 1);
   record({ dir, tag: flags.tag, commit: flags.commit, outcome, cwd });
   const after = readRows(path.join(dir, `${flags.tag}.tsv`));
   const { row, notes } = roundLines(flags.commit, outcome, lastKeep(after).score);
