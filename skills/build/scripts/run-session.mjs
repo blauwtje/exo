@@ -5,6 +5,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { sharedStateDenyRules } from '../../../lib/git-deny.mjs';
 import { environmentMs } from '../../../lib/script-flags.mjs';
+import { sleep } from '#basics';
 import { loopCommands } from '#plan-tasks';
 import { ECOSYSTEM_MANIFESTS } from '#size-facts';
 import { sumCounts, usageCounts } from '#token-weights';
@@ -453,7 +454,7 @@ export async function spawnClaude(claude, args, options) {
   const baseMs = environmentMs('EXO_PROVIDER_RETRY_MS', 30_000);
   let outcome = await spawnOnce(claude, args, options);
   for (let retry = 0; retry < PROVIDER_RETRIES && retriesProviderError(outcome); retry += 1) {
-    await new Promise((resolve) => setTimeout(resolve, baseMs * 2 ** retry));
+    await sleep(baseMs * 2 ** retry);
     outcome = await spawnOnce(claude, args, options);
   }
   return outcome;

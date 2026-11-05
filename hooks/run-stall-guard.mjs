@@ -5,12 +5,11 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { fixShell } from '../lib/shell-fixes.mjs';
 import { environmentMs, isMain } from '../lib/script-flags.mjs';
+import { shellQuote } from '#basics';
 
 const PLUGIN_ROOT = path.resolve(import.meta.dirname, '..');
 const GUARD = path.join(PLUGIN_ROOT, 'lib', 'stall-guard.mjs');
 const UNSANDBOXED = [path.join(PLUGIN_ROOT, 'skills', 'build', 'scripts', 'land-task.mjs'), path.join(PLUGIN_ROOT, 'lib', 'run-decision.mjs')];
-
-export const shellQuote = (text) => `'${String(text).replaceAll("'", "'\\''")}'`;
 
 const runsExoScript = (command) => [`node "${PLUGIN_ROOT}${path.sep}`, `node ${PLUGIN_ROOT}${path.sep}`].some((start) => command.startsWith(start));
 

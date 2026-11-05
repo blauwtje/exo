@@ -8,6 +8,7 @@ import { runInWorktree } from '#red-green';
 import { scratchPath } from '#scratch-path';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { runGuarded, stallSeconds, STALL_EXIT } from '#stall-guard';
+import { shellQuote } from '#basics';
 
 const SCRIPT = fileURLToPath(import.meta.url);
 const PROBE_DEFAULT_MS = 600_000;
@@ -108,8 +109,6 @@ function ancestorCandidates(root) {
   found.push({ sha: rootSha, reason: 'root commit' });
   return found;
 }
-
-const shellQuote = (text) => `'${String(text).replaceAll("'", "'\\''")}'`;
 
 const probeCommand = (repro) => `node ${shellQuote(SCRIPT)} --probe ${shellQuote(repro)}`;
 

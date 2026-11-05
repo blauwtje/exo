@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { sleepSync, writeAtomic } from '#basics';
 
 export const PHASES = ['starting', 'build', 'verify', 'landing', 'passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
@@ -42,13 +43,6 @@ export function readState(root, id) {
   } catch {
     return null;
   }
-}
-
-function writeAtomic(file, text) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, text);
-  fs.renameSync(tmp, file);
 }
 
 export function createRun(root, { id = newRunId(), plan, flags = [], detach = false, pid = process.pid, log = null, ownerSession }) {
@@ -157,7 +151,6 @@ export function keepRun(root, id) {
   }
 }
 
-const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const claimFile = (root, key, n) => path.join(runsDir(root), `lock.${key}.${n}`);
 
 function scratch(root, text) {
@@ -179,7 +172,7 @@ function settle(fn) {
       return fn();
     } catch (err) {
       if (attempt >= 40 || !['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
-      pause(5);
+      sleepSync(5);
     }
   }
 }
@@ -248,7 +241,7 @@ export function acquireLock(root, id) {
       token ??= scratch(root, `${process.pid}\n`);
       const n = claim(root, lock.key, token);
       if (n < 0) {
-        pause(5);
+        sleepSync(5);
         continue;
       }
       if (readLock(root)?.key === lock.key) {

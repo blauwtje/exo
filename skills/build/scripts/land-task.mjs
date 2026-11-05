@@ -21,6 +21,7 @@ import { attributionProblem, subjectProblem } from '#commit-text';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { dockerHost, ensureServices } from '../../../lib/services.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
+import { shellQuote } from '#basics';
 
 export class LandingError extends Error {
   kind = 'proof failed';
@@ -44,10 +45,6 @@ export class ReportMissingError extends LandingError {
 
 export class OutsideFilesError extends LandingError {
   kind = 'outside Files';
-}
-
-function shellQuote(value) {
-  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 function trailersOf(planId, number, signatures) {

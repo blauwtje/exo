@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { sleep } from '#basics';
 import { defaultBranch, gitLine } from '#git';
 import { frameOf, parsePlan } from '#plan-tasks';
 import { readPluginRoot } from '#plugin-pointer';
@@ -623,7 +624,7 @@ async function waitCommand(args) {
       // why: 124 is the exit code timeout(1) uses, so a deadline reads apart from a failed run.
       return 124;
     }
-    await new Promise((resolve) => setTimeout(resolve, Math.min(POLL_MS, left)));
+    await sleep(Math.min(POLL_MS, left));
   }
 }
 

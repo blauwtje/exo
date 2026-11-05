@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { sleep } from '#basics';
 
 export const DEFAULT_MINUTES = 20;
 const USAGE = 'usage: wait-checks.mjs --pr <number> [--minutes <n>] [--grace-seconds <n>]';
@@ -29,10 +30,6 @@ function readFlags(argv) {
   const minutes = positiveNumber(flags.minutes, DEFAULT_MINUTES, '--minutes', false);
   const graceSeconds = positiveNumber(flags['grace-seconds'], DEFAULT_GRACE_SECONDS, '--grace-seconds', true);
   return { pr: flags.pr, minutes, graceMs: graceSeconds * 1000 };
-}
-
-function sleep(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function openLog(cwd) {

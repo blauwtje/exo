@@ -6,6 +6,7 @@
   "private": true,
   "type": "module",
   "imports": {
+    "#basics": "./lib/basics.mjs",
     "#attempt-fingerprint": "./lib/attempt-fingerprint.mjs",
     "#budgets": "./verify/budgets.mjs",
     "#build-progress": "./lib/build-progress.mjs",
