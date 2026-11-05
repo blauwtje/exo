@@ -535,21 +535,34 @@ function cmdJson(graph) {
 // CLI dispatch
 // ---------------------------------------------------------------------------
 
+const COMMANDS = {
+  size: { usage: 'size <skill>', required: 1 },
+  range: { usage: 'range <path-or-skill> <heading text or prefix> [--sed]', required: 2 },
+  inbound: { usage: 'inbound <path>[#heading]', required: 1 },
+  pins: { usage: 'pins <skill|path>', required: 1 },
+  refs: { usage: 'refs <skill>', required: 1 },
+  overlap: { usage: 'overlap <json-file>', required: 1 },
+  json: { usage: 'json', required: 0 }
+};
+
 function main() {
   const [command, ...args] = process.argv.slice(2);
+  const positional = args.filter((arg) => arg !== '--sed');
+  const spec = COMMANDS[command];
+  if (spec && positional.length < spec.required) {
+    console.error(`usage: skill-graph.mjs ${spec.usage}`);
+    process.exitCode = 1;
+    return;
+  }
   const graph = buildGraph();
 
   switch (command) {
     case 'size':
       cmdSize(graph, args[0]);
       break;
-    case 'range': {
-      const sedFlagIndex = args.indexOf('--sed');
-      const useSed = sedFlagIndex >= 0;
-      const positional = useSed ? [...args.slice(0, sedFlagIndex), ...args.slice(sedFlagIndex + 1)] : args;
-      cmdRange(graph, positional[0], positional.slice(1).join(' '), useSed);
+    case 'range':
+      cmdRange(graph, positional[0], positional.slice(1).join(' '), args.includes('--sed'));
       break;
-    }
     case 'inbound':
       cmdInbound(graph, args[0]);
       break;
