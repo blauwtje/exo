@@ -19,7 +19,7 @@ The task list is the part of the brief that the build executes, so each field be
    - A command that passes on the run's base is refused unless `Red: none (<reason>)` follows it; for a flaky one add `Repeat: <2-5> (<reason>)`. Each goes on its own line under the command.
    - When `bin` or `scripts.start` exists, the command runs it, else write `Product run: none (<reason>)`.
 4. `## Checkpoint`: `Blocks first:`, `Shared state:` and `Smallest safe split:`, each naming tasks or `none`.
-   - `Parallel:` reads `Tasks 1, 2 and 3` or `every task` for tasks that share no `Depends on:` chain or `Files:` path, else `none`, and takes no range.
+   - `Parallel:` reads `Tasks 1, 2 and 3`, `every task` or `none` (serial), no range; no list limits waves, built from `Depends on:` and `Files:`.
 5. `## Tasks`, in dependency order.
 
 ## Template

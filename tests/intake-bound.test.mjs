@@ -42,7 +42,7 @@ test('replay: a Read over the room left is cut to the lines that fit and the age
   const room = (TARGET - 40_000) * BYTES;
   const cut = read({ file_path: sourceFile, offset: 11 });
   const lineBytes = Buffer.byteLength('export const line = "a line of source code in a module";\n');
-  assert.equal(cut.permissionDecision, 'allow');
+  assert.equal(cut.permissionDecision, undefined);
   assert.deepEqual(cut.updatedInput, { file_path: sourceFile, offset: 11, limit: Math.floor(room / lineBytes) });
   assert.match(cut.additionalContext, /cut/);
   assert.match(cut.additionalContext, new RegExp(`lines 11-${10 + cut.updatedInput.limit}`));
@@ -65,7 +65,7 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
   assert.equal(denied(read({ file_path: sourceFile })), false, 'whole source file at 10k');
   const logRead = read({ file_path: testLog });
   assert.equal(denied(logRead), false, 'whole npm test log at 10k is cut, not denied');
-  assert.equal(logRead.permissionDecision, 'allow');
+  assert.equal(logRead.permissionDecision, undefined);
   assert.equal(logRead.updatedInput.offset, 1);
   assert.ok(logRead.updatedInput.limit > 0 && logRead.updatedInput.limit < 2696);
   assert.match(logRead.additionalContext, new RegExp(`lines 1-${logRead.updatedInput.limit} .*offset ${logRead.updatedInput.limit + 1}.*grep -n`));
@@ -76,7 +76,7 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
   assert.equal(denied(read({ file_path: smallFile })), false, 'small read at 40k');
   const sourceRead = read({ file_path: sourceFile });
   assert.equal(denied(sourceRead), false, 'whole source file at 40k is cut, not denied');
-  assert.equal(sourceRead.permissionDecision, 'allow');
+  assert.equal(sourceRead.permissionDecision, undefined);
   assert.match(sourceRead.additionalContext, /grep -n/);
   const persistedRead = read({ file_path: persisted });
   assert.equal(denied(persistedRead), false, 'whole persisted result at 40k is cut, not denied');
@@ -144,29 +144,29 @@ test('replay: a growing agent has its Grep and ToolSearch cut to the room left, 
   assert.equal(search('Glob', { pattern: '**/*' }, lead), undefined, 'the lead globs as before');
 });
 
-test('replay: outside bypassPermissions and auto modes a cut would skip the permission prompt, so an over-room Read or Grep is denied with the input that fits', () => {
-  const prompted = { ...agent, permission_mode: 'default' };
+test('replay: in every permission mode an over-room Read or Grep is cut by updatedInput alone, so the permission prompt still runs', () => {
   growTo(40_000);
-  const sourceRead = read({ file_path: sourceFile }, prompted);
-  assert.equal(denied(sourceRead), true, 'an over-room Read in default mode is denied');
-  assert.equal(sourceRead.updatedInput, undefined, 'an over-room Read in default mode is not rewritten');
-  assert.match(sourceRead.permissionDecisionReason, /grep -n/);
-  assert.match(sourceRead.permissionDecisionReason, /offset and limit/);
-  assert.equal(read({ file_path: smallFile }, prompted), undefined, 'a small Read in default mode');
+  for (const mode of ['default', 'acceptEdits', 'plan', 'bypassPermissions', 'auto']) {
+    const prompted = { ...agent, permission_mode: mode };
+    const sourceRead = read({ file_path: sourceFile }, prompted);
+    assert.equal(denied(sourceRead), false, `an over-room Read in ${mode} mode is cut, not denied`);
+    assert.equal(sourceRead.permissionDecision, undefined, `the cut in ${mode} mode leaves the permission decision to the prompt`);
+    assert.ok(sourceRead.updatedInput.limit > 0, `${mode} mode`);
+    assert.equal(read({ file_path: smallFile }, prompted), undefined, `a small Read in ${mode} mode`);
+  }
 
   growTo(50_000);
   const lines = Math.floor((TARGET - 50_000) * BYTES / catalog.searchLineBytes);
   const grep = search('Grep', { pattern: 'line' }, { ...agent, permission_mode: 'acceptEdits' });
-  assert.equal(denied(grep), true, 'an over-room Grep in acceptEdits mode is denied');
-  assert.equal(grep.updatedInput, undefined);
-  assert.match(grep.permissionDecisionReason, new RegExp(`head_limit to ${lines} or less`));
-  const fits = search('Grep', { pattern: 'line', head_limit: lines }, prompted);
-  assert.equal(fits?.permissionDecision, undefined, 'the Grep that fits runs through the prompt as asked');
-  assert.equal(fits?.updatedInput, undefined);
+  assert.equal(denied(grep), false, 'an over-room Grep in acceptEdits mode is cut, not denied');
+  assert.equal(grep.permissionDecision, undefined);
+  assert.equal(grep.updatedInput.head_limit, lines);
+  const fits = search('Grep', { pattern: 'line', head_limit: lines }, { ...agent, permission_mode: 'default' });
+  assert.equal(fits?.updatedInput, undefined, 'the Grep that fits runs as asked');
 
-  const capped = { ...prompted, agent_id: `a-capped-prompted-${process.pid}`, agent_type: 'general-purpose' };
+  const capped = { ...agent, permission_mode: 'plan', agent_id: `a-capped-plan-${process.pid}`, agent_type: 'general-purpose' };
   growTo(10_000);
   const cappedRead = read({ file_path: sourceFile }, capped);
-  assert.equal(denied(cappedRead), true, 'a result-capped Read in default mode is denied');
-  assert.match(cappedRead.permissionDecisionReason, /offset 1 and limit \d+/);
+  assert.equal(denied(cappedRead), false, 'a result-capped Read in plan mode is cut');
+  assert.equal(cappedRead.updatedInput.offset, 1);
 });

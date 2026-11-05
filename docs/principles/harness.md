@@ -11,13 +11,14 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 - **Never let an agent remove or edit tests.** Let it change only status fields. [2] exo: `agents/build-task.md`, `skills/gate/scripts/gate.mjs`
 - **Strip harness parts one at a time.** Keep only what the model cannot do alone. Assumptions "can go stale as models improve". [1][9] exo: gap
 - **Use hooks for what must happen every time.** CLAUDE.md is advisory, hooks are deterministic. [3] exo: `hooks/hooks.json`
-- **Use prompt or agent hooks only where judgment is needed.** Use an agent hook to check codebase state. [3] exo: gap, only command hooks
+- **Use prompt or agent hooks only where judgment is needed.**  [3] exo: gap, only command hooks
 - **Guard Stop hooks against loops.** Check `stop_hook_active`. [3] exo: `hooks/run-no-wait.mjs` caps blocks at `BLOCK_LIMIT = 2` per session, stricter than it
-- **`SubagentStop` and `TaskCompleted` hooks can block.** Exit code 2 keeps the subagent or task from finishing. [6] exo: gap, unused
-- **Do not rely on one hook's deny to stop another, or let two hooks rewrite one tool input.** Hooks run independently. [3] exo: `hooks/dispatch-bash.mjs` merges deny in-process
-- **`/goal` is a prompt-based Stop hook judged by a fresh model.** It cannot run commands. [7] exo: gap, unused
+- **`SubagentStop` and `TaskCompleted` hooks can block.** Exit 2 keeps it going. [6] exo: gap, unused
+- **Do not rely on one hook's deny to stop another, or let two hooks rewrite one tool input.** [3] exo: `hooks/dispatch-bash.mjs` merges deny in-process
+- **Rewrite input with `updatedInput` alone.** `allow` skips the user's prompt. [6] exo: `lib/context-limits.mjs`
+- **`/goal` is a prompt-based Stop hook judged by a fresh model.** [7] exo: gap, unused
 - **Plugin agents ignore `hooks`, `permissionMode` and `mcpServers`.** Declare them at plugin level. [8] exo: `hooks/hooks.json`
-- **Give a subagent one task, and state its context and must-keep rules in the prompt.** It starts blank. [5] exo: `skills/build/run-task-prompt.md`, `skills/build/implementer-prompt.md`
+- **Give a subagent one task, with its context and must-keep rules in the prompt.** It starts blank. [5] exo: `skills/build/run-task-prompt.md`, `skills/build/implementer-prompt.md`
 
 ## Sources
 

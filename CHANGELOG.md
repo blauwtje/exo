@@ -10,6 +10,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ## Unreleased
 
 ### Added
+- `npm run check` fails when an agent can start a background shell or Monitor but has no TaskStop and no "start no background" rule.
+- The speed ledger records the installed hook overhead per tool call across projects: about 80 ms per Bash call idle and 110 ms in transcripts, 70.6 of 7532 thread minutes in exo (under 1%), so hooks are not a cause of slow sessions.
 - Files the user opens (run report, handoff, manual checks, orchestrator result file) follow one plain-words format in `skills/route-skills/references/user-read-format.md`, which says they hold no machine text, and `npm run check` fails a listed source that breaks it, that has an all-caps word of 3 letters or more besides PR, CI, URL and API, or that has a line where a quarter of the tokens are code.
 - The hook timing benchmark has a `worker count read` case that times the orchestrator Bash step reading the slice file.
 - Session start deletes the per-call Bash temp logs in `exo-bash/` under the OS temp folder once they are older than `EXO_SAVED_OUTPUT_MS` (one day).
@@ -24,7 +26,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 - An agent Grep or ToolSearch gets the head_limit or max_results that fit the context it has left, and a Glob or WebSearch whose largest output would not fit is denied, with the Glob steered to Grep; outside bypassPermissions and auto modes the Grep and ToolSearch are denied with that number.
-- An agent Read over the context it has left is cut to the offset and limit that fit, with a note on where to continue, instead of being denied; the cut runs only in bypassPermissions and auto modes, and other modes keep the deny with the range that fits.
+- An agent Read over the context it has left is cut to the offset and limit that fit, with a note on where to continue, instead of being denied.
+- An agent Read, Grep or ToolSearch over the context it has left is cut in every permission mode, not only bypassPermissions and auto, because the cut now returns `updatedInput` with no `permissionDecision` and the user's prompt still decides the call.
 - Every agent's Read and Bash result is cut or refused against the context it has left, not a fixed byte cap, so a whole test log or saved Bash log can no longer be read in one call by an uncapped agent; the cut line names the saved log and steers to `grep -n` and a line range.
 - A worker brief whose reads exceed the budget is rewritten to move the reads that overshoot into a `Search: <paths> (grep -n first, then read by range)` line instead of being denied; it is denied only when a single unranged file alone exceeds the budget or nothing can move.
 - An orchestrator or task-runner over its context target can still use Agent, SendMessage, TaskStop and Monitor to hand work to workers until the hard limit; its reads and searches stay refused.
@@ -48,6 +51,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A subagent is bound by `defaults.agentContextTarget` (60k) while it runs, not by the lead's `contextLimit`: a note at 75% of the target, new reads, searches, fetches, skills and agents refused at the target, and every tool except Write and Edit refused at 125% of it, with a `Status: handover` result file in the refusal. The lead's `contextLimit` is unchanged.
 
 ### Fixed
+- locate-code and find-open-points now start no background shell, so none is left running after they return.
+- Build now runs independent plan tasks in one wave once their dependencies have landed, not only the tasks listed on the plan's `Parallel:` line. Tasks that share a file still run apart, and `Parallel: none` keeps a plan serial.
 - The held-out case in `tests/improve-round.test.mjs` no longer fails when a commit hash contains `77`, because it now matches held-out values as whole numbers.
 - A Monitor an agent started and never stopped now counts as a live background task, so the agent is asked to stop it before it writes its handover.
 - A `Workers: <n>` line in a later lead message to an orchestrator now sets the slice's worker count, so a raise sent by SendMessage is no longer refused at the next dispatch; a lower number lowers it, and a number over the limit or from a worker is ignored.
