@@ -1,7 +1,9 @@
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs } from '#script-flags';
-import { criterionCommand, frameOf, isPlanDoc, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
+import { criterionCommand, frameOf } from '#plan-frame';
+import { isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
+import { parsePlan } from '#plan-tasks';
 import { cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';

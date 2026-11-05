@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { coversCompanion, isCovered } from '#plan-tasks';
+import { coversCompanion, isCovered } from '#plan-landed';
 
 export function repoPathOf(planPath, root) {
   const top = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();

@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
-import { planIdOf } from '#plan-tasks';
+import { planIdOf } from '#plan-landed';
 import { LandingError } from './land-errors.mjs';
 import { git } from './land-git.mjs';
 import { mcpProofOf } from './land-report.mjs';

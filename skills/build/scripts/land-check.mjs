@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { UsageError } from '#script-flags';
-import { frameOf, parsePlan, planIdOf } from '#plan-tasks';
+import { frameOf } from '#plan-frame';
+import { parsePlan } from '#plan-tasks';
+import { planIdOf } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';

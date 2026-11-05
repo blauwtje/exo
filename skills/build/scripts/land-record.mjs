@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { BLOCK_TASK_LIMIT, decisionsPathOf, proofRecordPath } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT } from '#plan-waves';
+import { decisionsPathOf, proofRecordPath } from '#plan-landed';
 
 const CHOICE_LINE =/^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
 

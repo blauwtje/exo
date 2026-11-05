@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { proofRecordPath } from '#plan-tasks';
+import { proofRecordPath } from '#plan-landed';
 import { ledgerPath, latestRound, ledgerRows } from './merge-reviews.mjs';
 import { reviewShardTokens } from '#context-limits';
 import { branchFiles, shardBranch, shardDiffText, shardFileLines } from './review-shards.mjs';

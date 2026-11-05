@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { frameOf, landedTasks, parsePlan, PlanError, planIdOf, proofRecordPath } from '#plan-tasks';
+import { frameOf } from '#plan-frame';
+import { landedTasks, planIdOf, proofRecordPath } from '#plan-landed';
+import { parsePlan, PlanError } from '#plan-tasks';
 import { forCaller } from '#script-output';
 import { refreshProgress } from './next-task.mjs';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';

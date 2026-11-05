@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { taskCommits } from '#plan-tasks';
+import { taskCommits } from '#plan-landed';
 import { codeRuleFindings } from '#code-rules';
 import { isTestFirst, isTestPath } from '#red-green';
 import { taskPaths } from './pick-reviewer.mjs';

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { frameOf, openPoints, parsePlan } from '#plan-tasks';
+import { frameOf, openPoints } from '#plan-frame';
+import { parsePlan } from '#plan-tasks';
 import { scratchPath, ScratchPathError } from '#scratch-path';
 
 const USAGE = [

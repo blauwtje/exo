@@ -1,6 +1,6 @@
 import { runTreeSync } from '#process-tree';
 import { environmentMs } from '#script-flags';
-import { landedTasks } from '#plan-tasks';
+import { landedTasks } from '#plan-landed';
 import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { LandingError } from './land-errors.mjs';
 import { dropsOf } from './land-commit-block.mjs';

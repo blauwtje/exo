@@ -11,7 +11,12 @@ import { proofLines, proofsReport } from '#proofs-report';
 import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { baselineFile, openSlots, slotOf, windowRecords } from './open-slots.mjs';
 import { defaultBranch } from '#git';
-import { driftOf, frameOf, INPUT_UNREADABLE, inputPaths, isInputDrift, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, relativeInputPaths, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { driftOf, INPUT_UNREADABLE, inputPaths, isInputDrift, relativeInputPaths } from '#plan-inputs';
+import { frameOf } from '#plan-frame';
+import { isolatedCheckout, nextBlock, nextWave, planRoute, routeLine, waveLine } from '#plan-waves';
+import { landedTasks, planIdOf } from '#plan-landed';
+import { parsePlan, PlanError } from '#plan-tasks';
+import { regionRange } from '#plan-regions';
 
 const SMALL_TASK_FILES = 2;
 

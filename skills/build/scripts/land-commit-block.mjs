@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { withoutRunVariables } from '#process-tree';
 import { UsageError } from '#script-flags';
-import { planTaskTrailer } from '#plan-tasks';
+import { planTaskTrailer } from '#plan-landed';
 import { shellQuote } from '#basics';
 import { LandingError } from './land-errors.mjs';
 import { git } from './land-git.mjs';

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { frameOf, parsePlan } from '#plan-tasks';
+import { frameOf } from '#plan-frame';
+import { parsePlan } from '#plan-tasks';
 import { Refusal } from './cli-refusal.mjs';
 
 export function newestPlan(root) {

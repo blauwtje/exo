@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { cachedPass } from '#check-cache';
 import { subjectProblem } from '#commit-text';
 import { defaultBranch } from '#git';
-import { isCovered, isPlanDoc, parsePlan } from '#plan-tasks';
+import { isCovered, isPlanDoc } from '#plan-landed';
+import { parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
 

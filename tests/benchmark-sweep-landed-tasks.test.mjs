@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { planTaskTrailer } from '#plan-tasks';
+import { planTaskTrailer } from '#plan-landed';
 import { landedTasks } from '../benchmarks/sweep.mjs';
 import { git, tempDir } from './harness.mjs';
 

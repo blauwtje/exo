@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import test from 'node:test';
-import { coversCompanion, driftOf, frameOf, INPUT_UNREADABLE, isCovered, isUnreachableInput, inputPaths, parsePlan, relativeInputPaths } from '../lib/plan-tasks.mjs';
+import { coversCompanion, isCovered } from '../lib/plan-landed.mjs';
+import { driftOf, INPUT_UNREADABLE, isUnreachableInput, inputPaths, relativeInputPaths } from '../lib/plan-inputs.mjs';
+import { frameOf } from '../lib/plan-frame.mjs';
+import { parsePlan } from '../lib/plan-tasks.mjs';
 
 test('a relative input under a dot folder is an input', () => {
   const frame = { assumptions: ['- assume: the hint is `.exo/carry/task1-partial.patch`'], context: [] };

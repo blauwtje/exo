@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { dataLiterals, literalFinder } from '#data-literals';
 import { environmentMs } from '#script-flags';
-import { defaultBase } from '#plan-tasks';
+import { defaultBase } from '#plan-landed';
 import { cachedPass } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';

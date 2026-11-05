@@ -8,7 +8,9 @@ import { readKindTable } from '#model-kinds';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { inRun, recordDecision } from '#run-decision';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
+import { parsePlan } from '#plan-tasks';
+import { planIdOf, taskCommits } from '#plan-landed';
+import { planRoute } from '#plan-waves';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;

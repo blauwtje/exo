@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { frameOf, nextWave, parsePlan } from '../lib/plan-tasks.mjs';
+import { frameOf } from '../lib/plan-frame.mjs';
+import { nextWave } from '../lib/plan-waves.mjs';
+import { parsePlan } from '../lib/plan-tasks.mjs';
 
 function planWith(parallelLine) {
   const task = (number, depends, file) => `### Task ${number}: step ${number}\n\nDepends on: ${depends} | Files: \`${file}\`\n`;

@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { frameOf, parsePlan } from '#plan-tasks';
+import { frameOf } from '#plan-frame';
+import { parsePlan } from '#plan-tasks';
 import { attributionProblem, subjectProblem } from '#commit-text';
 import { LandingError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';

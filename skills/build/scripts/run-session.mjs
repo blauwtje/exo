@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { sharedStateDenyRules } from '../../../lib/git-deny.mjs';
 import { environmentMs } from '../../../lib/script-flags.mjs';
 import { sleep } from '#basics';
-import { loopCommands } from '#plan-tasks';
+import { loopCommands } from '#plan-frame';
 import { ECOSYSTEM_MANIFESTS } from '#size-facts';
 import { sumCounts, usageCounts } from '#token-weights';
 

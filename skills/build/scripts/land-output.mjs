@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isolatedCheckout, nextWave, planRoute, routeLine, waveLine } from '#plan-tasks';
+import { isolatedCheckout, nextWave, planRoute, routeLine, waveLine } from '#plan-waves';
 import { keepLines } from '#script-output';
 import { chainedForCaller, nextTaskReport } from './next-task.mjs';
 import { proofOutcomeOf } from './land-record.mjs';

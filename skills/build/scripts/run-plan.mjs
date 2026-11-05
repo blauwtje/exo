@@ -7,10 +7,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import process from 'node:process';
-import { attemptFingerprint, failingLine, failureLine } from '#attempt-fingerprint';
+import { failingLine, failureLine } from '#attempt-fingerprint';
 import { defaultBranch } from '#git';
-import { commitsOf, criterionCommand, driftOf, frameOf, isInputDrift, isUnreachableInput, landedTasks, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
-import { killTree, startDetached, waitForUrl, withoutRunVariables } from '#process-tree';
+import { commitsOf, landedTasks, planIdOf, planTaskTrailer, taskCommits } from '#plan-landed';
+import { criterionCommand, frameOf } from '#plan-frame';
+import { driftOf, isInputDrift, isUnreachableInput } from '#plan-inputs';
+import { parsePlan } from '#plan-tasks';
+import { readyTasks } from '#plan-waves';
 import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
@@ -27,10 +30,9 @@ import { RUN_PLAN_USAGE, DEFAULT_TIMEOUT_MINUTES } from './run-plan-usage.mjs';
 import { hasPin, isDocTask, chooseProvider } from './run-plan-provider.mjs';
 import { lastLine, taskOrder, utcStamp, preflight, numberFlag } from './run-plan-preflight.mjs';
 import { setPhase, noteTask, noteCounts, noteStop } from './run-plan-notes.mjs';
-
-// why: the run's one app process; the entry point's `finally` kills its tree.
-let appPid = null;
-
+import { attemptsLeft, proofNotRun, recordAttempt, writeReplyReport } from './run-plan-attempts.mjs';
+import { appTail, ensureApp, killApp } from './run-plan-app.mjs';
+import { rebaseOntoMovedBase } from './run-plan-rebase.mjs';
 
 async function main(argv) {
   const [planArgument, ...rest] = argv;
@@ -159,9 +161,6 @@ async function main(argv) {
     if (liveSessions === 0) process.exit(1);
   };
   const stopSignals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
-  const killApp = () => {
-    if (appPid !== null) killTree(appPid);
-  };
   for (const signal of stopSignals) process.once(signal, onStopSignal);
   process.on('exit', killApp);
   writeTasks();
@@ -186,7 +185,7 @@ async function main(argv) {
   // why: the stall guard rewrites each Bash command, which then matches no Bash allow rule; only sandboxed sessions run Bash without one.
   const stallGuardOn = (kind) => sandbox.enabled && ['task', 'plan'].includes(kind);
   const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model, sessionEffort = effort, resume = null, taskCount = 1, repair = false, limitMs = timeoutMs }) => {
-    if (['task', 'plan'].includes(kind) && !(await ensureApp())) say(`app not ready, app log ends: ${appTail()}`);
+    if (['task', 'plan'].includes(kind) && !(await ensureApp(ctx))) say(`app not ready, app log ends: ${appTail(ctx)}`);
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
     liveSessions += 1;
@@ -210,37 +209,10 @@ async function main(argv) {
 
   const landedStats = [];
   let planLandedCount = 0;
-  // why: a task keeps its tries while each failed attempt differs from its earlier ones; the first repeat is no progress.
-  const fingerprints = new Map();
-  let failedAttempts = 0;
-  const recordAttempt = (n, check, line) => {
-    const seen = fingerprints.get(n) ?? new Set();
-    const paths = (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean).map((entry) => entry.slice(3)).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
-    const fingerprint = attemptFingerprint({ check, line, paths });
-    if (seen.has(fingerprint)) return true;
-    fingerprints.set(n, seen.add(fingerprint));
-    return false;
-  };
-  const attemptsLeft = () => Math.max(0, provider.attemptCap - failedAttempts);
   // why: a builder the sandbox kept from running its proof could not see the failure, so its first script proof failure is a free try; once per task, so it cannot loop.
   const unprovenRetried = new Set();
   const scriptTried = new Set();
   const failedSessions = new Map();
-  const proofNotRun = (n) => {
-    const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
-    return isFileOnDisk(report) && /\bnot run\b/i.test(fs.readFileSync(report, 'utf8'));
-  };
-  // why: a single-task build session carries its report in the reply above the last line; the script writes it where land-task and the run report read it. A report file this session wrote itself stays.
-  const writeReplyReport = (n, reply) => {
-    const report = path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`);
-    const lines = reply.split(/\r?\n/);
-    while (lines.length > 0 && lines.at(-1).trim() === '') lines.pop();
-    lines.pop();
-    const body = lines.join('\n').trim();
-    if (body === '' || isFileOnDisk(report)) return;
-    fs.mkdirSync(path.dirname(report), { recursive: true });
-    fs.writeFileSync(report, `${body}\n`);
-  };
   let retryNote = '';
   let iteration = 0;
   let stop;
@@ -249,20 +221,7 @@ async function main(argv) {
   const app = frameOf(plan.frame).app;
   const appLog = path.join(logDir, 'app.log');
   const appDeadlineMs = environmentMs('EXO_APP_READY_MS', 120_000);
-  let appHandle = null;
-  let appIsReady = false;
-  const ensureApp = async () => {
-    if (app === null || (appIsReady && !appHandle.exited())) return true;
-    if (appHandle === null || appHandle.exited()) {
-      say(`app start: ${clip(app.start, 80)}`);
-      appHandle = startDetached(app.start, { cwd: root, env: withoutRunVariables(), log: appLog });
-      appPid = appHandle.pid ?? null;
-    }
-    appIsReady = app.ready !== null && await waitForUrl(app.ready, { deadlineMs: appDeadlineMs, app: appHandle });
-    if (appIsReady) say(`app ready: ${app.ready}`);
-    return appIsReady;
-  };
-  const appTail = () => clip(lastLine(isFileOnDisk(appLog) ? fs.readFileSync(appLog, 'utf8') : '') || 'empty', 80);
+  const ctx = { root, branch, say, app, appLog, appDeadlineMs, appHandle: null, appIsReady: false, fetchNoted: false, provider, fingerprints: new Map(), failedAttempts: 0 };
   const takeParked = (name) => {
     const file = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'parked') : null;
     if (file === null || !fs.existsSync(file)) return null;
@@ -391,7 +350,7 @@ async function main(argv) {
   const noRedProofLine = (output) => output.split('\n').find((line) => line.includes('no red proof'))?.trim();
   const markLanded = (n, record, startedTask) => {
     lastLandOutput = '';
-    fingerprints.delete(n);
+    ctx.fingerprints.delete(n);
     retryNote = '';
     run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
     passes.add(n);
@@ -495,40 +454,6 @@ async function main(argv) {
     }
   }
   const fix = (log) => `read ${log}, fix the cause, then run exo run again`;
-  let fetchNoted = false;
-  const rebaseOntoMovedBase = () => {
-    const base = defaultBranch(root);
-    if (base === null || base === branch) return;
-    const hasBase = gitOut(root, ['rev-parse', '--verify', '--quiet', `refs/heads/${base}`]) !== null;
-    if (!hasBase) return;
-    const dirty = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
-    if (dirty !== '') return;
-    let target = `refs/heads/${base}`;
-    const noteFetch = (why) => {
-      if (fetchNoted) return;
-      fetchNoted = true;
-      say(`${why}, rebasing onto local ${base}`);
-    };
-    if (spawnSync('git', ['-C', root, 'remote', 'get-url', 'origin']).status !== 0) noteFetch('no origin remote');
-    else if (spawnSync('git', ['-C', root, 'fetch', 'origin'], { encoding: 'utf8' }).status !== 0) noteFetch('fetch origin failed');
-    else if (gitOut(root, ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${base}`]) === null) noteFetch(`origin/${base} missing`);
-    else {
-      const localAhead = spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', `origin/${base}`, base]).status === 0
-        && gitOut(root, ['rev-parse', base]) !== gitOut(root, ['rev-parse', `origin/${base}`]);
-      if (!localAhead) target = `origin/${base}`;
-    }
-    const contained = spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', target, 'HEAD']).status === 0;
-    if (contained) return;
-    const rebase = spawnSync('git', ['-C', root, 'rebase', target], { encoding: 'utf8' });
-    if (rebase.status === 0) {
-      say(`rebased onto ${target.replace('refs/heads/', '')}`);
-      return;
-    }
-    spawnSync('git', ['-C', root, 'rebase', '--abort']);
-    const shown = target.replace('refs/heads/', '');
-    say(`rebase onto ${shown} failed, task runs on the old base`);
-    return { conflict: shown };
-  };
   while (stop === undefined) {
     const landed = landedTasks(plan.tasks, root, planId);
     if (landed.length === plan.tasks.length) break;
@@ -546,11 +471,11 @@ async function main(argv) {
     if (stop !== undefined) break;
     iteration += 1;
     const n = task.number;
-    if (retryNote === '') rebaseOntoMovedBase();
+    if (retryNote === '') rebaseOntoMovedBase(ctx);
     if (currentTask !== n) lastLandOutput = '';
     currentTask = n;
     const startedTask = markNow();
-    say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${(fingerprints.get(n)?.size ?? 0) + 1})`}`);
+    say(`${startLine({ number: n, subject: taskSubject(task.title), model, effort })}${retryNote === '' ? '' : ` (try ${(ctx.fingerprints.get(n)?.size ?? 0) + 1})`}`);
     noteTask({ n, subject: taskSubject(task.title), landed: landed.length, total: plan.tasks.length });
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
@@ -570,7 +495,7 @@ async function main(argv) {
     const taskPin = isDocTask(task) && hasPin(docPin) ? docPin : basePin;
     const { before, outcome, parsed } = await spawnOne({ prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model ?? model, sessionEffort: taskPin.effort, resume });
     sayIdle(startedTask);
-    writeReplyReport(n, outcome.timedOut ? '' : parsed.resultText);
+    writeReplyReport(ctx, n, outcome.timedOut ? '' : parsed.resultText);
     const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     const record = { iteration, task: n, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
     run.records.push(record);
@@ -629,17 +554,17 @@ async function main(argv) {
       ? `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`
       : `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nThe script's proof and land output ended: ${failure}\nIts log: ${attempt.log}`;
     if (attempt !== null && parsed.sessionId) failedSessions.set(n, parsed.sessionId);
-    const freeTry = attempt !== null && !unprovenRetried.has(n) && proofNotRun(n);
+    const freeTry = attempt !== null && !unprovenRetried.has(n) && proofNotRun(ctx, n);
     say(`task ${n} failed: ${outcome.timedOut ? failure : clip(failure, 80)}`);
     if (freeTry) unprovenRetried.add(n);
-    else failedAttempts += 1;
-    const repeated = freeTry ? false : recordAttempt(n, attempt === null ? 'session' : 'land-task', failure);
+    else ctx.failedAttempts += 1;
+    const repeated = freeTry ? false : recordAttempt(ctx, n, attempt === null ? 'session' : 'land-task', failure);
     if (repeated) {
-      const tries = fingerprints.get(n).size + 1;
+      const tries = ctx.fingerprints.get(n).size + 1;
       stop = { line: `no progress on task ${n} in ${tries} iterations, log ${log}`, why: `Task ${n} did not land in ${tries} tries`, next: fix(log) };
       break;
     }
-    if (failedAttempts >= provider.attemptCap) {
+    if (ctx.failedAttempts >= provider.attemptCap) {
       stop = { line: `attempt cap ${provider.attemptCap} reached`, why: `The run hit its limit of ${provider.attemptCap} failed attempts`, next: fix(log) };
       break;
     }
@@ -659,9 +584,9 @@ async function main(argv) {
 
   let exitCode = 1;
   if (stop === undefined) stop = budgetStop() ?? undefined;
-  if (stop === undefined && !(await ensureApp())) {
+  if (stop === undefined && !(await ensureApp(ctx))) {
     say('app not ready');
-    stop = { line: `app not ready: ${app.ready ?? 'no Ready: url'} did not answer within ${Math.round(appDeadlineMs / 1000)} s, app log ends: ${appTail()}`, why: 'The plan App did not become ready', next: `check the App: start command and Ready: url in the plan and ${appLog}, then run exo run again` };
+    stop = { line: `app not ready: ${app.ready ?? 'no Ready: url'} did not answer within ${Math.round(appDeadlineMs / 1000)} s, app log ends: ${appTail(ctx)}`, why: 'The plan App did not become ready', next: `check the App: start command and Ready: url in the plan and ${appLog}, then run exo run again` };
   }
   if (stop === undefined) {
     setPhase('verify');
@@ -729,7 +654,7 @@ async function main(argv) {
       return result.outcome === 'proved' ? null : { line: `red-green: ${result.outcome}: ${result.lines[0]}`, why: `The Success criterion is not proved red-green (${clip(result.lines[0], 80)})`, next: 'fix the Success criterion or add Red: none (<reason>), then run exo run again', gate: 'FAIL' };
     };
     const reviewRebaseStop = () => {
-      const moved = rebaseOntoMovedBase();
+      const moved = rebaseOntoMovedBase(ctx);
       if (moved === undefined || !process.env.EXO_RUN_DIR) return null;
       const reason = 'rebase conflict';
       openGate(process.env.EXO_RUN_DIR, { source: 'land', action: `rebase ${branch} onto ${moved.conflict} yourself in ${root}`, reason });
@@ -737,7 +662,7 @@ async function main(argv) {
     };
     const gateStop = (await successGate()) ?? reviewRebaseStop();
     if (gateStop === null) say('all tasks landed, final review start');
-    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say, attemptsLeft: attemptsLeft(), attemptCap: provider.attemptCap }) : { stop: gateStop };
+    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say, attemptsLeft: attemptsLeft(ctx), attemptCap: provider.attemptCap }) : { stop: gateStop };
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
       const gate = tail.gate;
@@ -781,7 +706,7 @@ async function entry(argv) {
     process.stderr.write(`run-plan: ${error.message}\n`);
     return 2;
   } finally {
-    if (appPid !== null) killTree(appPid);
+    killApp();
   }
 }
 

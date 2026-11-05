@@ -8,7 +8,7 @@ import { readKindTable } from '#model-kinds';
 import { settingValue } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, recordReview, reviewVerdict, successCriterionPasses, workingTreeKey } from '#check-cache';
-import { criterionCommand } from '#plan-tasks';
+import { criterionCommand } from '#plan-frame';
 import { runTreeSync, withoutRunVariables } from '#process-tree';
 import { environmentMs } from '#script-flags';
 import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';

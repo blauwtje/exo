@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
-import { coversCompanion, decisionsPathOf, isCovered, planTaskTrailer } from '#plan-tasks';
+import { coversCompanion, decisionsPathOf, isCovered, planTaskTrailer } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError, OutsideFilesError } from './land-errors.mjs';
 import { git, headMessage, headSha, moveHead } from './land-git.mjs';

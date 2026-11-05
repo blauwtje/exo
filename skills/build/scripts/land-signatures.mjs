@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { exportSignatures } from '#export-signatures';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { isCovered } from '#plan-tasks';
+import { isCovered } from '#plan-landed';
 import { LandingError, PlanDriftError } from './land-errors.mjs';
 
 const STAGES_ALL = /^(?:\.|\.\/|-A|--all|:\/|.*[*?[].*)$/;
