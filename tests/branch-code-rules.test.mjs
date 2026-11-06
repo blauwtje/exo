@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { codeRuleConcerns, codeRuleFindings } from '../lib/code-rules.mjs';
 import { codeRulesReport } from '../skills/gate/scripts/code-rule-lines.mjs';
+import { parseFinding } from '../skills/gate/scripts/merge-reviews.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const FIXTURE = path.join(import.meta.dirname, 'fixtures', 'review-skip-defects');
@@ -35,7 +36,8 @@ function rulesAt(findings) {
 }
 
 test('the scan flags the duplicate literal and the unused export planted in the fixture', () => {
-  assert.deepEqual(rulesAt(codeRuleConcerns(fixtureBranch())), [`${MODULE}:3 duplicate-literal`, `${MODULE}:21 unused-export`]);
+  const found = codeRuleConcerns(fixtureBranch()).map((concern) => concern.split('; ').slice(0, 3).join('; '));
+  assert.deepEqual(found, [`${MODULE}:3; concern; duplicate-literal`, `${MODULE}:21; concern; unused-export`]);
 });
 
 test('the scan flags the swallowed catch planted in the fixture', () => {
@@ -44,8 +46,15 @@ test('the scan flags the swallowed catch planted in the fixture', () => {
 });
 
 test('the report lists a concern as a report finding', () => {
-  const report = codeRulesReport([], '/unused', { concerns: [`${MODULE}:3 duplicate-literal text`] });
-  assert.match(report, new RegExp(`^${MODULE}:3 duplicate-literal text concern report$`, 'm'));
+  const report = codeRulesReport([], '/unused', { concerns: [`${MODULE}:3; concern; duplicate-literal; text; report`] });
+  assert.match(report, new RegExp(`^${MODULE}:3; concern; duplicate-literal; text; report$`, 'm'));
+});
+
+test('a concern has the review finding shape: location, severity, id, one action', () => {
+  const concerns = codeRuleConcerns(fixtureBranch());
+  assert.equal(concerns.length, 2);
+  for (const concern of concerns) assert.match(concern, /^\S+:\d+; concern; [\w-]+; [^;]+; report$/);
+  assert.deepEqual(concerns.map((concern) => parseFinding(concern).rule), ['duplicate-literal', 'unused-export']);
 });
 
 test('an export another file imports is not flagged', () => {

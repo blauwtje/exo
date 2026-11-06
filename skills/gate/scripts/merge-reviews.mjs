@@ -123,9 +123,8 @@ export function latestRound(root) {
 
 const findingKey = (row) => `${row.rule}@${row.path}`;
 
-export function openInLastRound(root) {
+export function openInLastRound(root, round = latestRound(root)) {
   const rows = ledgerRows(root);
-  const round = latestRound(root);
   const open = new Map();
   for (const row of rows.filter((entry) => entry.round === round)) {
     if (row.state === 'open') open.set(findingKey(row), row);
@@ -134,9 +133,20 @@ export function openInLastRound(root) {
   return open;
 }
 
-export function appendLedger(root, findings, round) {
+function headSha(root) {
   const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
-  const sha = head.status === 0 ? head.stdout.trim() : null;
+  return head.status === 0 ? head.stdout.trim() : null;
+}
+
+export function mergeRound(root) {
+  const latest = latestRound(root);
+  const sha = headSha(root);
+  const repeat = sha !== null && ledgerRows(root).some((row) => row.round === latest && row.head === sha);
+  return repeat ? { round: latest, priorRound: latest - 1 } : { round: latest + 1, priorRound: latest };
+}
+
+export function appendLedger(root, findings, round) {
+  const sha = headSha(root);
   const entries = findings.length > 0 ? findings : [{ rule: null, path: null, range: null, weight: 0, state: 'none' }];
   const rows = entries.map((finding) => `${JSON.stringify({ round, ...finding, head: sha })}\n`);
   fs.mkdirSync(path.dirname(ledgerPath(root)), { recursive: true });
@@ -194,6 +204,19 @@ function quoteAbsent(quoteLine, file, root) {
   return !collapsed(shown.stdout).includes(collapsed(quote.replace(/^`(.*)`$/, '$1')));
 }
 
+const SWEEP_COMMAND = /^\s*Sweep:\s*((?:git\s+)?(?:grep|rg)\s.*)$/;
+const SWEEP_TIMEOUT_MS = 10000;
+
+function sweepInvalid(sweepLine, quoteLine, root) {
+  const command = SWEEP_COMMAND.exec(sweepLine ?? '')?.[1];
+  const quote = QUOTE_LINE.exec(quoteLine ?? '')?.[1];
+  if (command === undefined || quote === undefined) return false;
+  const ran = spawnSync('bash', ['-c', command], { cwd: root, encoding: 'utf8', timeout: SWEEP_TIMEOUT_MS });
+  const hits = (ran.stdout ?? '').split('\n').filter(Boolean);
+  const defect = collapsed(quote.replace(/^`(.*)`$/, '$1'));
+  return hits.length === 0 || !hits.every((hit) => collapsed(hit).endsWith(defect));
+}
+
 function recurringOf(findings, prior) {
   return findings.filter((finding) => finding.state === 'open' && prior.has(findingKey(finding)))
     .map((finding) => ({ now: finding, before: prior.get(findingKey(finding)) }));
@@ -208,6 +231,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   let hidden = 0;
   const entries = [];
   const quoteDemoted = [];
+  const sweepDemoted = [];
   const settledDemoted = [];
   let unread = 0;
   let unreadFix = 0;
@@ -249,11 +273,13 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
       let reported = match[2] !== 'fix' || lowered;
       const detailed = !reported && !outOfScope && !settled.has(findingKey(parsed)) && hasFixDetails(lines, index, name);
       const unquoted = detailed && name !== MECHANICAL_REPORT && root !== null && quoteAbsent(lines[index + 4], parsed.path, root);
-      if (detailed && !unquoted) {
+      const unswept = detailed && !unquoted && name !== MECHANICAL_REPORT && root !== null && sweepInvalid(lines[index + 3], lines[index + 4], root);
+      if (detailed && !unquoted && !unswept) {
         counts.fix += 1;
       } else if (!reported) {
         const location = `${parsed.path}:${parsed.range}`;
-        if (unquoted) quoteDemoted.push(location);
+        if (unswept) sweepDemoted.push(location);
+        else if (unquoted) quoteDemoted.push(location);
         else if (!outOfScope && settled.has(findingKey(parsed))) settledDemoted.push(location);
         else if (!outOfScope) demoted += 1;
         reported = true;
@@ -276,11 +302,11 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   const recurring = recurringOf(findings, prior);
   if (recurring.length > 0) verdict = 'BLOCKED';
   const coverage = coverageOf(reports, changed, root);
-  if (verdict === 'CLEAN' && coverage?.unread.length > 0) verdict = 'FINDINGS';
+  if (coverage?.unread.length > 0 && verdict !== 'BLOCKED') verdict = 'BLOCKED';
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix}\n`;
-  return { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
@@ -291,9 +317,9 @@ function main(argv) {
     name: path.basename(file, '.md'),
     text: fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'BLOCKED: report missing\n'
   }));
-  const round = latestRound(flags.root) + 1;
+  const { round, priorRound } = mergeRound(flags.root);
   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
-  const { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root, minScoreOf(flags['min-score']));
+  const { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root, priorRound), changed, flags.root, minScoreOf(flags['min-score']));
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
@@ -308,6 +334,7 @@ function main(argv) {
   }
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe:, Class: and Sweep: lines under them\n`);
   for (const location of quoteDemoted) process.stdout.write(`DEMOTED-QUOTE ${location}\n`);
+  for (const location of sweepDemoted) process.stdout.write(`DEMOTED-SWEEP ${location}\n`);
   for (const location of settledDemoted) process.stdout.write(`DEMOTED-SETTLED ${location}\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
   if (uncited > 0) process.stdout.write(`UNCITED ${uncited} finding(s) have no valid Cite: file:line and cannot block\n`);

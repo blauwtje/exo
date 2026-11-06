@@ -12,9 +12,9 @@ const MERGE = fileURLToPath(new URL('../skills/gate/scripts/merge-reviews.mjs', 
 const FILES = ['a.js', 'b.js', 'c.js', 'd.js'];
 const report = (name, ...read) => ({ name, text: `CLEAN\n\nCount: defect=0 concern=0 question=0 note=0\nRead: ${read.join(', ')}\nUnread: none\n` });
 
-test('a review that read 3 of 4 changed files merges as FINDINGS and names the unread file', () => {
+test('a review that read 3 of 4 changed files merges as BLOCKED and names the unread file', () => {
   const merged = mergeReviews([report('review-branch', 'a.js', 'b.js', 'c.js')], new Map(), FILES);
-  assert.equal(merged.verdict, 'FINDINGS');
+  assert.equal(merged.verdict, 'BLOCKED');
   assert.deepEqual(merged.coverage, { read: 3, total: 4, unread: ['d.js'] });
 });
 
@@ -26,7 +26,7 @@ test('Read: lines of several branch shards add up to full coverage', () => {
 
 test('a branch report with no Read: line leaves every changed file unread', () => {
   const merged = mergeReviews([{ name: 'review-branch', text: 'CLEAN\n' }], new Map(), FILES);
-  assert.equal(merged.verdict, 'FINDINGS');
+  assert.equal(merged.verdict, 'BLOCKED');
   assert.equal(merged.coverage.read, 0);
 });
 
@@ -67,7 +67,7 @@ test('merge-reviews.mjs prints COVERAGE and one UNREAD-FILE line per changed fil
   const file = path.join(root, 'review-branch.md');
   fs.writeFileSync(file, 'CLEAN\n\nRead: a.js, b.js, c.js\n');
   const lines = execFileSync(process.execPath, [MERGE, '--root', root, '--base', 'main', '--report', file], { encoding: 'utf8' }).trim().split('\n');
-  assert.match(lines[0], /^verdict=FINDINGS /);
+  assert.match(lines[0], /^verdict=BLOCKED /);
   assert.ok(lines.includes('COVERAGE 3/4'), lines.join('\n'));
   assert.ok(lines.includes('UNREAD-FILE d.js'), lines.join('\n'));
   assert.equal(lines.filter((line) => line.startsWith('UNREAD-FILE')).length, 1);

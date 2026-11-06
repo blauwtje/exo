@@ -3,9 +3,11 @@ import path from 'node:path';
 import { runTreeSync } from '#process-tree';
 import { environmentMs } from '#script-flags';
 import { cachedPass, gateRefusal, recordPass, workingTreeKey } from '#check-cache';
-import { recordShadow, shadowSelection } from '#suite-command';
+import { readShadow, recordShadow, shadowSelection, trialActive } from '#suite-command';
+import { changedTestsTrialRuns } from '../../../lib/context-limits.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
+import { parseTestPool, poolSize, testPoolCommand } from '../../../lib/test-pool.mjs';
 import { LandingError, EnvError } from './land-errors.mjs';
 import { proofEnvOf } from './land-commit-block.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES } from './land-report.mjs';
@@ -54,10 +56,20 @@ function shadowRun(task, command, selection, { root, pendingEvidence }, fullPass
   recordShadow(root, { command, files: selection.files.length, narrowed: outcome(narrowed), full: outcome(fullPassed) });
 }
 
+function trialPass(task, command, selection, { root, pendingEvidence }) {
+  if (selection === null || !trialActive(readShadow(root), command, changedTestsTrialRuns())) return null;
+  const narrowed = selection.files.length === 0 ? null : proofAttempt(task, selection.command, root, pendingEvidence);
+  if (narrowed !== null && !narrowed.passed) return null;
+  recordShadow(root, { command, files: selection.files.length, narrowed: 'pass', full: 'skipped' });
+  return { command, tail: narrowed === null ? ['  no changed tests, full suite skipped'] : [...narrowed.tail, '  changed tests only, full suite skipped'] };
+}
+
 export function runProof(task, command, options) {
   const { root, field, docker, pendingEvidence } = options;
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
   const selection = shadowSelection(root, command);
+  const trial = trialPass(task, command, selection, options);
+  if (trial !== null) return trial;
   const before = workingTreeKey(root);
   const started = Date.now();
   let attempt = proofAttempt(task, command, root, pendingEvidence);
@@ -77,15 +89,30 @@ function namedTestFiles(task, proofCommands, { root, planPath }) {
     && !proofCommands.some((command) => command.includes(file)));
 }
 
-function testFileFailure(task, file, root, pendingEvidence) {
-  const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
-  const testRun = runTreeSync(`node --test ${file}`, { cwd: root, timeoutMs: deadlineMs, env });
+function testRunFailure(file, testRun, deadlineMs) {
   if (quiet.file !== null) quiet.proofOutput += `node --test ${file}\n${testRun.output}\n`;
   if (testRun.status === 0 && !testRun.timedOut) return null;
   const reason = testRun.timedOut ? `timed out after ${deadlineMs / 1000}s` : `exit ${testRun.status}`;
   const tail = testRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   return [`${file} failed (${reason}):`, ...tail].join('\n');
+}
+
+function testFileFailure(task, file, root, pendingEvidence) {
+  const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
+  const testRun = runTreeSync(`node --test ${file}`, { cwd: root, timeoutMs: deadlineMs, env });
+  return testRunFailure(file, testRun, deadlineMs);
+}
+
+function parallelFailures(task, files, root, pendingEvidence) {
+  if (files.length === 0) return [];
+  const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
+  const waves = Math.ceil(files.length / poolSize(files.length));
+  const pool = runTreeSync(testPoolCommand(files), { cwd: root, timeoutMs: deadlineMs * waves, env: { ...env, EXO_TEST_POOL_TIMEOUT_MS: String(deadlineMs) } });
+  const results = pool.status === 0 ? parseTestPool(pool.output) : null;
+  if (results === null) return files.map((file) => testFileFailure(task, file, root, pendingEvidence));
+  return results.map((result) => testRunFailure(result.file, result, deadlineMs));
 }
 
 export function runNamedTests(task, proofCommands, options) {
@@ -96,10 +123,8 @@ export function runNamedTests(task, proofCommands, options) {
 }
 
 export function runCoveringTests(task, proofCommands, root, changed, pendingEvidence) {
-  const failures = coveringTests(root, changed)
-    .filter((file) => !proofCommands.some((command) => command.includes(file)))
-    .map((file) => testFileFailure(task, file, root, pendingEvidence))
-    .filter((failure) => failure !== null);
+  const files = coveringTests(root, changed).filter((file) => !proofCommands.some((command) => command.includes(file)));
+  const failures = parallelFailures(task, files, root, pendingEvidence).filter((failure) => failure !== null);
   if (failures.length === 0) return;
   throw new LandingError([`Task ${task.number}: ${failures.length} covering test(s) of the changed files failed:`, ...failures].join('\n'));
 }

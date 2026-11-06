@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { recordPass, recordReview, greenCommit } from '#check-cache';
-import { changedTestFiles, narrowedCommand, readShadow, recordShadow } from '#suite-command';
+import { changedTestFiles, narrowedCommand, readShadow, recordShadow, trialActive } from '#suite-command';
 import { landingCheckout } from './land-task-fixture.mjs';
 
 const PASS = 'ℹ tests 1\nℹ pass 1\nℹ fail 0\n';
@@ -55,4 +55,22 @@ test('only a whole suite of a runner that takes files is narrowed', () => {
   for (const command of ['npm test', 'npm run check', 'node --test tests/x.test.mjs', 'node --test && npm run lint', 'node --test > out.log', 'node build.mjs']) {
     assert.equal(narrowedCommand(command, ['tests/a.test.mjs']), null, command);
   }
+});
+
+const row = (full, missed = false) => ({ command: 'c', narrowed: 'pass', full, missed });
+const clean = (count) => Array.from({ length: count }, () => row('pass'));
+
+test('trial mode starts after N consecutive full runs with no miss', () => {
+  assert.equal(trialActive(clean(2), 'c', 3), false);
+  assert.equal(trialActive(clean(3), 'c', 3), true);
+});
+
+test('a miss restarts the count and other commands are ignored', () => {
+  assert.equal(trialActive([...clean(3), row('fail', true), ...clean(2)], 'c', 3), false);
+  assert.equal(trialActive([...clean(3), { ...row('pass'), command: 'other' }], 'c', 3), true);
+});
+
+test('trial mode runs the full suite again after N skipped runs', () => {
+  assert.equal(trialActive([...clean(3), row('skipped'), row('skipped')], 'c', 3), true);
+  assert.equal(trialActive([...clean(3), row('skipped'), row('skipped'), row('skipped')], 'c', 3), false);
 });

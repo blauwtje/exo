@@ -148,6 +148,7 @@ test('merge-reviews.mjs appends one ledger row per finding per round, the round 
   assert.deepEqual(first[1], { round: 1, rule: 'defect', path: 'src/b.js', range: '4', weight: 'defect', state: 'reported', head });
   assert.deepEqual(first[2], { round: 1, rule: 'question', path: 'src/c.js', range: '5', weight: 'question', state: 'reported', head });
   assert.deepEqual(first[5], { round: 1, rule: 'swallowed failure', path: 'src/f.js', range: '8-9', weight: 'defect', state: 'open', head });
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'fix: repair round 1');
   run('merge-reviews.mjs', ['--root', root, '--report', report]);
   const all = await rows();
   assert.equal(all.length, 12);
@@ -159,7 +160,9 @@ const FIX_LINE = (rule, file) => [`${file}:8-9; defect; ${rule}; catch drops err
 async function reviewRound(root, text) {
   const report = path.join(root, 'review-branch.md');
   await fs.writeFile(report, text);
-  return run('merge-reviews.mjs', ['--root', root, '--report', report]).trim().split('\n').filter((line) => !line.startsWith('COVERAGE'));
+  const printed = run('merge-reviews.mjs', ['--root', root, '--report', report]);
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'fix: repair round');
+  return printed.trim().split('\n').filter((line) => !line.startsWith('COVERAGE'));
 }
 
 test('the same rule@path open in two consecutive rounds prints BLOCKED recurring with both readings', async () => {

@@ -25,6 +25,11 @@ const REVIEW_FINDINGS = [
   ''
 ].join('\n');
 
+function readLines(repository) {
+  const changed = spawnSync('git', ['-C', repository, 'diff', '--name-only', 'main...HEAD'], { encoding: 'utf8' }).stdout.split('\n').filter(Boolean);
+  return `Read: ${changed.join(', ')}\nUnread: none\n`;
+}
+
 function scriptedModel(calls, { costUsd, onCall, commits = false } = {}) {
   const own = [];
   return async (prompt, repository) => {
@@ -42,7 +47,8 @@ function scriptedModel(calls, { costUsd, onCall, commits = false } = {}) {
       if (commits) await commitFiles(repository, {}, 'fix(safe): repair');
       return costUsd;
     }
-    fs.writeFileSync(findings, reviews === 1 ? REVIEW_FINDINGS : 'CLEAN\n\nCount: defect 0, concern 0, question 0, note 0\n');
+    const review = reviews === 1 ? REVIEW_FINDINGS : 'CLEAN\n\nCount: defect 0, concern 0, question 0, note 0\n';
+    fs.writeFileSync(findings, `${review}${readLines(repository)}`);
     return costUsd;
   };
 }

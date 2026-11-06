@@ -53,7 +53,7 @@ export function codeRulesReport(fails, root, { defects = [], concerns = [] } = {
     if (source === '') return [];
     return [`${finding} defect fix`, `  Probe: ! grep -nF -- '${source.replace(/'/g, "'\\''")}' ${at[1]}`];
   });
-  return ['FINDINGS', '', ...entries, ...defects, ...concerns.map((finding) => `${finding} concern report`), ''].join('\n');
+  return ['FINDINGS', '', ...entries, ...defects, ...concerns, ''].join('\n');
 }
 
 export function codeRuleLines(plan, landed, { root, planId, base }) {
