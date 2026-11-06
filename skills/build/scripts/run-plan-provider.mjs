@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { INHERIT, readKindTable, TABLE_PATH } from '#model-kinds';
 import { contextLimit, softLimit } from '#context-limits';
-import { settingValue } from '#settings-store';
+import { settingOrDefault } from '#settings-store';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { sandboxMode } from './run-session-sandbox.mjs';
 import { Refusal } from './run-plan-errors.mjs';
@@ -14,7 +14,7 @@ function listedProvider(name) {
 
 export const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
 
-export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingValue('budget') } = {}) {
+export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingOrDefault('budget').value } = {}) {
   if (flags.model !== undefined || flags.effort !== undefined) return {};
   if (!listedProvider(name)) return {};
   if (budget === 'off') return { model: null, effort: null };

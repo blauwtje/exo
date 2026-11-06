@@ -5,11 +5,11 @@ import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields, persistedReadDecision, readCapDecision, searchCapDecision } from '../lib/context-decisions.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
-import { settingValue } from '../lib/settings-store.mjs';
+import { settingOrDefault } from '../lib/settings-store.mjs';
 
 const REASON_MAX = 140;
 
-export function receiptsOn(read = () => settingValue('receipts')) {
+export function receiptsOn(read = () => settingOrDefault('receipts').value) {
   try {
     const value = read();
     return value !== 'off' && value !== false;

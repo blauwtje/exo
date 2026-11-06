@@ -17,7 +17,7 @@ import {
   projectRoot,
   readLayer,
   resolve,
-  settingValue,
+  settingOrDefault,
   typedValue,
   unknownKey
 } from '#settings-store';
@@ -93,6 +93,12 @@ function overview(keys, stack) {
   const legend = `[x] is the current value. This skill writes project and local; global is changed via ${globalSource()}.`;
   const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
   return ['```text', ...blocks, ...wrapped(legend, ''), '```', ...notes];
+}
+
+function printSetting(key) {
+  const { value, note } = settingOrDefault(key);
+  if (note) console.error(note);
+  console.log(value);
 }
 
 function show(root) {
@@ -222,7 +228,7 @@ try {
   } else if (command === 'menu') {
     menu(root, args[0]);
   } else if (command === 'get') {
-    console.log(settingValue(args[0]));
+    printSetting(args[0]);
   } else if (command === 'statusline') {
     statusline();
   } else if (command === 'set') {

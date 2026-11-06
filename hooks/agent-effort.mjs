@@ -8,7 +8,7 @@ import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { BUDGETS, EFFORTS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { settingValue } from '../lib/settings-store.mjs';
+import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { budgetedReads, locatedReads, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
@@ -66,9 +66,13 @@ function defaulted(input, budget) {
   return { ...input, prompt: `exo-kind: build\n${input.prompt ?? ''}` };
 }
 
+function budgetSetting() {
+  return settingOrDefault('budget').value;
+}
+
 const UNKNOWN_KIND_REASON = 'This delegate names an unknown kind. Start its brief with `exo-kind: <kind>`: `hardest` for an open choice or unknown cause, `build` for a fully decided fix, `review` for a review.';
 
-function unknownKindFields({ tool_name: tool, tool_input: input } = {}, budget = settingValue('budget')) {
+function unknownKindFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
   if (tool !== 'Agent' || !input || !unknownKind(input, budget)) return null;
   return { permissionDecision: 'deny', permissionDecisionReason: UNKNOWN_KIND_REASON };
 }
@@ -111,7 +115,7 @@ function readsRewrite(hookInput = {}) {
   return { input: prompt === input.prompt ? input : { ...input, prompt }, ambiguous, scope };
 }
 
-export function agentEffort(hookInput = {}, budget = settingValue('budget'), rewrite = readsRewrite(hookInput)) {
+export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = readsRewrite(hookInput)) {
   const { tool_name: tool, tool_input: input, effort } = hookInput;
   if (tool !== 'Agent' || !input) return null;
   const updated = raised(filled(defaulted(rewrite.input, budget), budget), effort?.level);
@@ -139,7 +143,7 @@ function kindLabels(kinds, passed) {
   return `No kind runs ${pairText(passed.model, passed.effort)}; closest on ${passed.model}: ${names(nearest)}.`;
 }
 
-function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = settingValue('budget')) {
+function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
   if (tool !== 'Agent' || !input) return null;
   const resolved = resolvedKind(input, budget);
   if (!resolved?.agent) return null;

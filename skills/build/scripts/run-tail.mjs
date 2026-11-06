@@ -5,7 +5,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { fixerMark, withoutFixerMark } from '#fixer-mark';
 import { readKindTable } from '#model-kinds';
-import { settingValue } from '#settings-store';
+import { settingOrDefault } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, recordReview, reviewVerdict, successCriterionPasses, workingTreeKey } from '#check-cache';
 import { criterionCommand } from '#plan-frame';
@@ -34,7 +34,7 @@ const out = (answer) => `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
 const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN_ROOT).trim();
 
 function agentModel(kind = 'review-branch') {
-  const budget = settingValue('budget');
+  const budget = settingOrDefault('budget').value;
   if (budget === 'off') return null;
   return readKindTable(undefined, { budget }).kinds[kind].model;
 }
