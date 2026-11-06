@@ -72,6 +72,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 - The Agent brief check reads fields that share a line, list or bold labels, a number with a note, `~/` paths and the `Worktree:` base, its denials quote the label found and name the `Worktree:` line, the qualifier forms and the label that set the model, and the worker templates show `Reads:` and `Worktree:` lines (replay denials: 7 days 49 to 48, 30 days 60 to 58; every other denied row checked and found true).
+- `watch` prints a missing yt-dlp, ffmpeg or whisper as a `missing tool` line with its install command, so step 2 relays the command instead of step 3 reporting a video with no transcript.
 - `spec` starts its `locate-code`, `fetch-docs` and `find-open-points` agents in the background and waits for their completion notifications, instead of passing `run_in_background: false` (311 of 2491 such launches in 30 days came from this text).
 - The Agent brief check reads each `Reads:` item as a path with an optional `lines N-M` or `by grep` qualifier, so prose and line ranges no longer cause false "path does not exist" or over-budget denials, and the denial states that grammar.
 - `context-peaks --resumed` counts an Agent launch as background unless it sets `run_in_background: false`, as the platform does, so the wait verdict no longer misses orchestrator runs (wrong labels in a 7-day replay: 8651 of 12955 launches before, 0 after).

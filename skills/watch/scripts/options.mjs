@@ -12,7 +12,7 @@ export const USAGE = [
   'A video with no captions is transcribed locally from its audio: yt-dlp downloads it, ffmpeg converts it, and whisper-cli (when --model names an existing ggml file) or whisper writes raw.vtt; --lang then names the spoken language. EXO_WATCH_TRANSCRIBE_MS sets the wait for ffmpeg and the engine (default 1800000).',
   'Prints one line per video: id, title, duration, caption source, words, token estimate, paths. The transcript itself is never printed.',
   'Defaults: --out .exo/watch, --chunk-minutes 30, --stamp-seconds 45, --lang the language of the video\'s default audio (manual captions first, else automatic). EXO_WATCH_FETCH_MS sets the wait per request (default 30000); EXO_WATCH_YTDLP_MS sets the wait per yt-dlp call (default 120000).',
-  'Exit codes: 0 every video done; 1 a video has no transcript (the message says why) or its language is missing; 2 bad usage.',
+  'Exit codes: 0 every video done; 1 a video has no transcript (the message says why), a tool is missing (`missing tool`, with its install command) or its language is missing; 2 bad usage.',
 ].join('\n');
 
 export function readOptions(flags) {

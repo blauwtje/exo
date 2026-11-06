@@ -19,7 +19,7 @@ Read a video through its captions, or a local transcript of its audio, on disk, 
 1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]`, one `--url` per video. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
    - Add `--lang <code>` only when the user names a language, because it picks a listed track, not a machine translation, and names the spoken language on the speech route.
    - Add `--model <ggml file>` for whisper.cpp on a video with no captions.
-2. When exit 1 names a missing tool and its install command, relay the command and ask the user before installing anything.
+2. When exit 1 says `missing tool` and gives an install command, relay the command and ask the user before installing anything.
 3. When exit 1 says `no transcript`, tell the user that video has no transcript and why, as the line says; offer no other route for it.
    - When exit 1 lists `available:`, ask which language and rerun with `--lang`.
 4. When the line shows `tokens` under 10000 and one video, read `transcript` yourself and answer.

@@ -90,7 +90,7 @@ test('a missing tool ends the video with the tool and its install command, and d
     const result = site.run();
     assert.equal(result.status, 1);
     assert.equal(result.stdout, '');
-    assert.ok(result.stderr.includes(`no transcript: the video has no captions, and transcribing its audio needs ${tool} on PATH; install it with `), result.stderr);
+    assert.ok(result.stderr.includes(`missing tool: the video has no captions, and transcribing its audio needs ${tool} on PATH; install it with `), result.stderr);
     assert.ok(result.stderr.includes(hint), result.stderr);
     assert.ok(!site.calls().some((args) => args[0] === 'yt-dlp' && args.includes('-f')));
   }

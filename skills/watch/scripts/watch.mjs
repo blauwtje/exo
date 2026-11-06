@@ -17,10 +17,14 @@ function noTranscript(id, reason) {
   return { failure: `${id}: no transcript: ${reason}` };
 }
 
+function missingTool(id, reason) {
+  return { failure: `${id}: missing tool: ${reason}` };
+}
+
 async function watchBySpeech({ label, url, dir, head, details, why }, options) {
   const speech = await transcribe(url, dir, { ...options, runYtDlp: runYtDlpWithRuntime, ytDlpReason });
   const lead = why ? `${why}; ` : '';
-  if (speech.missing) return noTranscript(label, `${lead}the video has no captions, and transcribing its audio needs ${speech.missing}, then rerun`);
+  if (speech.missing) return missingTool(label, `${lead}the video has no captions, and transcribing its audio needs ${speech.missing}, then rerun`);
   if (speech.failure) return noTranscript(label, `${lead}the video has no captions, and ${speech.failure}`);
   const cues = parseVtt(fs.readFileSync(speech.vtt, 'utf8'));
   if (cues.length === 0) return noTranscript(label, 'no speech found in the audio');
@@ -84,7 +88,7 @@ async function watchWithYtDlp({ id, url }, options, why) {
 
 async function watchSite({ url, host }, options) {
   if (!(await ytDlpAvailable(options.ytDlpMs))) {
-    return noTranscript(url, `reading ${host} videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun`);
+    return missingTool(url, `reading ${host} videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun`);
   }
   return watchWithYtDlp({ url }, options);
 }

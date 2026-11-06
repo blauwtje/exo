@@ -413,6 +413,7 @@ test('a missing length falls back to the last cue', async () => {
 });
 
 const NO_TRANSCRIPT = new RegExp(`^${ID}: no transcript: `);
+const MISSING_TOOL = new RegExp(`^${ID}: missing tool: `);
 
 async function withoutYtDlp(work) {
   const { dir, options } = scratch();
@@ -427,10 +428,10 @@ async function withoutYtDlp(work) {
   }
 }
 
-test('a video with no caption tracks and no tools reports no transcript', async () => {
+test('a video with no caption tracks and no tools reports a missing tool', async () => {
   await withoutYtDlp(async ({ options }) => {
     const result = await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn);
-    assert.match(result.failure, NO_TRANSCRIPT);
+    assert.match(result.failure, MISSING_TOOL);
     assert.match(result.failure, /no captions, and transcribing its audio needs yt-dlp on PATH/);
     assert.equal(result.line, undefined);
     assert.ok(!fs.existsSync(path.join(options.out, ID)));
@@ -620,7 +621,7 @@ test('yt-dlp is not called when the fetch works or the video has no captions', a
     const manual = track('en');
     const worked = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
     assert.equal((await watchOne(ID, options, worked.fn)).failure, undefined);
-    assert.match((await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn)).failure, NO_TRANSCRIPT);
+    assert.match((await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn)).failure, MISSING_TOOL);
     const gone = playerOf({ status: 'ERROR', reason: 'This video is unavailable' });
     assert.match((await watchOne(ID, options, fakeFetch({ player: gone }).fn)).failure, NO_TRANSCRIPT);
     assert.deepEqual(callLog(dir), []);
@@ -636,11 +637,11 @@ test('a refused fetch with no yt-dlp on PATH reports no transcript and installs 
   });
 });
 
-test('yt-dlp failing too reports no transcript with both reasons', async () => {
+test('yt-dlp failing too reports a missing tool with both reasons', async () => {
   await withFakeYtDlp({ ...YT_INFO, subtitles: {}, automatic_captions: {} }, async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
     const result = await watchOne(OTHER_ID, options, fakeFetch({ player: bot }).fn);
-    assert.match(result.failure, /^xyz98765432: no transcript: YouTube asks this network to sign in.*; the video has no captions, and transcribing its audio needs ffmpeg on PATH; install it with 'brew install ffmpeg', then rerun$/s);
+    assert.match(result.failure, /^xyz98765432: missing tool: YouTube asks this network to sign in.*; the video has no captions, and transcribing its audio needs ffmpeg on PATH; install it with 'brew install ffmpeg', then rerun$/s);
   });
 });
 
@@ -700,5 +701,5 @@ test('a non-YouTube url without yt-dlp on PATH names the install line', async ()
   const saved = process.env.PATH;
   process.env.PATH = '';
   const result = await watchOne('https://www.tiktok.com/@u/video/1', options).finally(() => { process.env.PATH = saved; });
-  assert.match(result.failure, /: no transcript: reading www\.tiktok\.com videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
+  assert.match(result.failure, /: missing tool: reading www\.tiktok\.com videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
 });
