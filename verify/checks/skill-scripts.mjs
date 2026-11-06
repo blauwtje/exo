@@ -5,8 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import process from 'node:process';
+import { syntaxFailures } from '../syntax-failures.mjs';
 
 const PACKAGE_MANAGER_CALL = /\b(exec|execSync|execFile|execFileSync|spawn|spawnSync)\s*\(\s*['"`](npm|npx|yarn|pnpm)\b/i;
 const MACHINE_PATH = /(\/var\/folders\/|\/private\/var\/folders\/|[A-Za-z]:\\Users\\)/;
@@ -27,6 +26,7 @@ export function checkSkillScripts(report, repository) {
 
   const problems = [];
   let checked = 0;
+  const parsable = [];
   for (const folder of folders) {
     for (const name of fs.readdirSync(folder).sort()) {
       // A dot-prefixed file is skipped deliberately rather than by the shell's
@@ -48,12 +48,12 @@ export function checkSkillScripts(report, repository) {
       if (MACHINE_PATH.test(content)) {
         problems.push(`${relative} hard-codes an absolute machine path`);
       }
-      const parse = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
-      if (parse.status !== 0) {
-        const message = `${parse.stdout ?? ''}${parse.stderr ?? ''}`.split('\n').join(' ').trim();
-        problems.push(`${relative} fails node --check: ${message}`);
-      }
+      parsable.push(file);
     }
+  }
+
+  for (const { file, message } of syntaxFailures(parsable)) {
+    problems.push(`${repository.relative(file)} fails to parse: ${message}`);
   }
 
   for (const file of repository.processFiles()) {

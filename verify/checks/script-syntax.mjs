@@ -2,9 +2,7 @@
 
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
-import process from 'node:process';
-
-const PARSER = path.join(import.meta.dirname, '..', 'parse-scripts.mjs');
+import { syntaxFailures } from '../syntax-failures.mjs';
 
 // A dot-prefixed folder holds tool caches and harness settings, not scripts this
 // repository ships, so the walk never enters one: `.git/objects` and `.worktrees/`
@@ -30,10 +28,7 @@ function scripts(repository, extension) {
 
 export function checkScriptSyntax(report, repository) {
   const files = scripts(repository, '.mjs');
-  const parse = spawnSync(process.execPath, [PARSER], { input: files.join('\n'), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  const javascriptErrors = parse.status === 0
-    ? JSON.parse(parse.stdout).map(({ file, message }) => `${repository.relative(file)}: ${message}`)
-    : [`the parser stopped: ${`${parse.stdout ?? ''}${parse.stderr ?? ''}`.split('\n').join(' ').trim()}`];
+  const javascriptErrors = syntaxFailures(files).map(({ file, message }) => `${repository.relative(file)}: ${message}`);
   report.assert(
     javascriptErrors.length === 0,
     'javascript syntax',

@@ -88,7 +88,6 @@ export const SLEEP_STEP = {
 function cappedCommand(command, bound, log) {
   const quoted = `'${log}'`;
   return [
-    `echo "output log: ${log}"`,
     `( ${command}`,
     `) > ${quoted} 2>&1`,
     'rc=$?',

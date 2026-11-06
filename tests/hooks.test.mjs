@@ -505,13 +505,12 @@ const CAP_FORMS = {
 test('a capped agent Bash output is cut at the result cap and keeps the exit code', async () => {
   for (const [form, command] of Object.entries(CAP_FORMS)) {
     const { stdout } = await cappedRun(command);
-    assert.match(stdout, /^output log: .*exo-bash-cap-agent-.*\.log\n/, form);
-    assert.match(stdout, /\[output cut at 4096 bytes; full log: /, form);
+    assert.match(stdout, /^[\s\S]{4096}\[output cut at 4096 bytes; full log: .*exo-bash-cap-agent-.*\.log\]\n$/, form);
     assert.ok(Buffer.byteLength(stdout) < 4096 + 400, form);
   }
   assert.equal((await cappedRun('echo hi; exit 7')).status, 7);
   assert.equal((await cappedRun('exit 3')).status, 3);
-  assert.match((await cappedRun('echo hi')).stdout, /hi\n$/);
+  assert.equal((await cappedRun('echo hi')).stdout, 'hi\n');
 });
 
 test('the SessionStart hook sweeps saved Bash outputs older than EXO_SAVED_OUTPUT_MS and keeps newer ones', () => {
