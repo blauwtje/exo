@@ -24,6 +24,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- The land lock no longer throws `spawnSync /bin/ps EPERM` inside a macOS sandbox: when `ps` cannot run it checks the owner with `process.kill(pid, 0)`.
 - A second review merge at the same HEAD keeps its round and no longer blocks as recurring, unread changed files make the merge `BLOCKED`, code-rules concerns carry the review finding shape, and a fix whose `Sweep:` hits a line other than its `Quote:` is demoted to report.
 - A build proof that runs a whole test suite also runs only the test files changed since its last full green, in shadow mode, and logs each miss to `suite-shadow.jsonl`; the full run still decides the land.
 - A gate fixer writes `Before:` for each probe, and a finding whose probe already passed is demoted only when it still passes after the fix.

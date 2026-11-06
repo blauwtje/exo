@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 import * as landLock from '../lib/land-lock.mjs';
@@ -82,4 +83,12 @@ test('a lock written by withLandLock names the running process and is removed af
     assert.equal(fs.readFileSync(lock, 'utf8'), `${process.pid}\n${landLock.processStart(process.pid)}\n`);
   });
   assert.equal(fs.existsSync(lock), false);
+});
+
+test('processStart works inside a sandbox that blocks ps', { skip: process.platform !== 'darwin', timeout: 60_000 }, async () => {
+  const { sandboxProfile } = await import('../lib/confine-claude.mjs');
+  const module = new URL('../lib/land-lock.mjs', import.meta.url).href;
+  const script = `import(${JSON.stringify(module)}).then((m) => { const a = m.processStart(process.pid); console.log(a === m.processStart(process.pid) && a !== null ? 'OK' : 'BAD'); });`;
+  const result = spawnSync('sandbox-exec', ['-p', sandboxProfile([os.tmpdir(), process.cwd()]), process.execPath, '-e', script], { encoding: 'utf8' });
+  assert.equal(result.stdout.trim(), 'OK', result.stderr);
 });
