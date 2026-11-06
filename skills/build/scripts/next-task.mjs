@@ -2,10 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { forCaller } from '#script-output';
+import { resolvePlanPath } from '#checkout';
+import { unfinishedMergeNote } from '#merge-state';
 import { proofsReport } from '#proofs-report';
 import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { landedTasks, planIdOf } from '#plan-landed';
 import { parsePlan, PlanError } from '#plan-tasks';
+import { parsePin } from './land-pin.mjs';
+import { RefusedError } from './land-errors.mjs';
 import { frameOnlyReport } from './next-task-brief.mjs';
 import { chainedForCaller } from './next-task-caller.mjs';
 import { nextTaskReport } from './next-task-report.mjs';
@@ -41,11 +45,22 @@ export function taskNumbers(text, flag) {
   return numbers;
 }
 
+function pinnedLine() {
+  try {
+    const pin = parsePin(process.env.EXO_RUN_TASK);
+    return pin === null ? '' : `Pinned: ${pin.planId}/${pin.number}\n`;
+  } catch (error) {
+    if (error instanceof RefusedError) return '';
+    throw error;
+  }
+}
+
 function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value', only: 'value' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
-  if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
-  const planText = fs.readFileSync(flags.plan, 'utf8');
+  const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
+  if (!fs.existsSync(plan)) throw new UsageError(`no plan at '${flags.plan}'`);
+  const planText = fs.readFileSync(plan, 'utf8');
   if (flags.frame) {
     process.stdout.write(frameOnlyReport(planText));
     return;
@@ -53,13 +68,18 @@ function main(argv) {
   let report = nextTaskReport;
   if (flags.block) report = blockReport;
   if (flags.proofs) report = proofsReport;
+  const root = flags.root ?? process.cwd();
+  const unfinished = report === nextTaskReport ? unfinishedMergeNote(root) : null;
+  if (unfinished !== null) {
+    process.stdout.write(`${pinnedLine()}Start: none\n${unfinished}\n`);
+    return;
+  }
   const inFlight = taskNumbers(flags['in-flight'], 'in-flight') ?? [];
   const only = taskNumbers(flags.only, 'only');
-  const root = flags.root ?? process.cwd();
   const open = flags['open-slots'] === true;
-  const output = report({ planPath: flags.plan, planText, root, inFlight, only, open });
+  const output = (report === nextTaskReport ? pinnedLine() : '') + report({ planPath: plan, planText, root, inFlight, only, open });
   process.stdout.write(open && report === nextTaskReport ? forCaller({ root, name: `next-task-${Date.now()}`, full: output, shown: chainedForCaller(output) }) : output);
-  refreshProgress({ planPath: flags.plan, planText, root });
+  refreshProgress({ planPath: plan, planText, root });
 }
 
 if (isMain(import.meta.url)) {

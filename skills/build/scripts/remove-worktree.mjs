@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { gitLine } from '#git';
+import { squashBlock } from '#merge-state';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
 export class RemoveWorktreeError extends Error {}
@@ -35,12 +37,34 @@ function untrackedFiles(worktree, folder) {
     .map((entry) => entry.slice(folder.length + 1));
 }
 
+function strayFiles(worktree) {
+  const args = ['-C', worktree, 'status', '--porcelain', '-z', '--untracked-files=all'];
+  return execFileSync('git', args, { encoding: 'utf8' })
+    .split('\0')
+    .filter((line) => line.startsWith('?? '))
+    .map((line) => line.slice(3))
+    .filter((entry) => !entry.startsWith('.exo/') && !entry.startsWith(`${SPECS}/`));
+}
+
+function refuseStray(worktree) {
+  const stray = strayFiles(worktree);
+  if (stray.length === 0) return;
+  throw new RemoveWorktreeError(`'${worktree}' holds untracked file(s) outside .exo/ and ${SPECS}/ that removal would drop: ${stray.join(', ')}; save them or pass --patch to discard; removed nothing`);
+}
+
 function moveAside(folder) {
   const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
   let target = `${folder}-${stamp}`;
   for (let suffix = 2; fs.existsSync(target); suffix += 1) target = `${folder}-${stamp}-${suffix}`;
   fs.renameSync(folder, target);
   return target;
+}
+
+function refuseUnsquashable(worktree, run) {
+  const branch = gitLine(worktree, ['symbolic-ref', '-q', '--short', 'HEAD']);
+  const block = squashBlock(run, branch ?? 'HEAD');
+  if (block === null || block.landed) return;
+  throw new RemoveWorktreeError(`${[block.problem, block.fix].filter(Boolean).join('; ')}; removed nothing, the worktree and branch are kept`);
 }
 
 export function removeWorktree({ worktree, run, report, patch, kept = false }) {
@@ -50,6 +74,8 @@ export function removeWorktree({ worktree, run, report, patch, kept = false }) {
   if (patch !== undefined && !(fs.existsSync(patch) && fs.statSync(patch).size > 0)) {
     throw new RemoveWorktreeError(`patch '${patch}' is absent or empty, so the worktree's work is not saved; removed nothing`);
   }
+  refuseUnsquashable(worktree, run);
+  if (patch === undefined) refuseStray(worktree);
   const keptRoot = path.join(run, '.exo', 'kept', path.basename(worktree));
   const keptTarget = `${keptRoot}/`;
   const briefs = untrackedFiles(worktree, SPECS);

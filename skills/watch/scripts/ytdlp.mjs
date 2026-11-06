@@ -1,15 +1,29 @@
 import { execFile } from 'node:child_process';
 import process from 'node:process';
+import { environmentMs } from '#script-flags';
+import { DEFAULTS } from './defaults.mjs';
+import { resolveYtDlp } from './ytdlp-binary.mjs';
+
+export const YTDLP_INSTALL = "'brew install yt-dlp' or 'pipx install yt-dlp'";
 
 const JS_RUNTIME = ['--js-runtimes', `node:${process.execPath}`];
 const UNKNOWN_RUNTIME_OPTION = /no such option: --js-runtimes|unrecognized arguments:.*--js-runtimes/;
 
-function runYtDlp(args, timeout) {
+function resolution() {
+  return resolveYtDlp({ fetchMs: environmentMs('EXO_WATCH_FETCH_MS', DEFAULTS.fetchMs) });
+}
+
+function execute(command, args, timeout) {
   return new Promise((resolve) => {
-    execFile('yt-dlp', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout }, (error, stdout, stderr) => {
+    execFile(command, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout }, (error, stdout, stderr) => {
       resolve({ error, stdout, stderr });
     });
   });
+}
+
+async function runYtDlp(args, timeout) {
+  const { command } = await resolution();
+  return execute(command ?? 'yt-dlp', args, timeout);
 }
 
 export async function runYtDlpWithRuntime(args, timeout) {
@@ -28,6 +42,15 @@ export function ytDlpReason(run, options) {
 }
 
 export async function ytDlpAvailable(timeout) {
-  const { error } = await runYtDlp(['--version'], timeout);
+  const { command } = await resolution();
+  if (!command) return false;
+  const { error } = await execute(command, ['--version'], timeout);
   return !(error && error.code === 'ENOENT');
+}
+
+export async function ytDlpNeed() {
+  const { command, reason } = await resolution();
+  if (command) return null;
+  const note = reason ? ` (fetching the release binary failed: ${reason})` : '';
+  return `yt-dlp on PATH${note}; install it with ${YTDLP_INSTALL}`;
 }

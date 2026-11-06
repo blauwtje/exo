@@ -11,7 +11,7 @@ Goal: act on the comments worth acting on, and answer each one after its fix is 
 
 - Resolve the active pull request for the current branch and confirm it is the one the request meant, since a fix or reply on the wrong one is an unasked remote write.
 - Fetch discussion comments and reviews with `gh pr view <n> --json comments,reviews`.
-- Fetch inline review comments with `gh api repos/<owner>/<repo>/pulls/<n>/comments`, because `gh pr view` omits them.
+- Fetch inline review comments with `gh api repos/<owner>/<repo>/pulls/<n>/comments`, because `gh pr view` omits them. The fix route below does that fetch.
 
 ## Triage into an action list
 
@@ -32,3 +32,11 @@ Goal: act on the comments worth acting on, and answer each one after its fix is 
 ## Report
 
 - Name the grouped feedback summary, the priority-ordered action list, open questions still needing clarification.
+
+## Fix tasks
+
+Reviewer line comments turn into the findings `gate` already repairs, with no second fix path.
+- Run `node "${CLAUDE_SKILL_DIR}/scripts/pr-comment-tasks.mjs" --pr <n> --root <checkout>`. It keeps a human top-level comment that has a path and line present at HEAD, writes `<checkout>/.exo/pr-comments/<n>-<id>.md` per comment in the review findings format, and prints one `TASK <id> <path>:<line> findings=<file>` line each.
+- It skips and names bot comments, replies, resolved threads, outdated threads, comments with no file and line, and lines absent at HEAD. Thread state comes from one GraphQL call.
+- Dispatch `exo:fix-review` once per `TASK` line with `../../build/review-fixer-prompt.md` and that findings file, with no model override.
+- After the last return, rerun the plan's `Land gate:`; with no plan, the project check. Push and reply only after it passes.

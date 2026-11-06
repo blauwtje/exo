@@ -5,6 +5,10 @@ A compact plan reads exactly as the checker expects it. The enemy is an example 
 ## Goal
 A task row shows a colored badge for its due date.
 
+## Verdict
+Verdict: go
+Objection: the list already truncates long rows, so the badge may be clipped on narrow screens.
+
 ## Manual checks
 - A task due tomorrow shows its badge in the app's task list.
 

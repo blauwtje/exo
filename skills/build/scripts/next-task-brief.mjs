@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { scratchPath } from '#scratch-path';
+import { relativeFor } from '#checkout';
+import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -8,7 +9,9 @@ import { driftOf, INPUT_UNREADABLE, inputPaths, isInputDrift } from '#plan-input
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { regionRange } from '#plan-regions';
+import { lessonLines } from '#memory-store';
 import { SKILL_DIRECTORY } from './next-task-paths.mjs';
+import { handoffLines } from './next-task-handoff.mjs';
 import { headedLines, sectionLines, bulletLines } from './next-task-sections.mjs';
 
 function visualDirectionLines(task, frame) {
@@ -94,9 +97,10 @@ function inputLines(task, sections) {
   return [`Inputs: read each absolute path above before building; one unreadable → end on \`Task ${task.number}: BLOCKED ${INPUT_UNREADABLE}: <path>\`, never write its content from memory.`];
 }
 
-export function taskBrief(task, frame, root) {
+export function taskBrief(task, frame, root, { relative = false } = {}) {
   const rulesPath = scratchPath(root, 'run-rules.md');
   const hasRules = readable(rulesPath);
+  const shownRules = relative ? relativeFor(root, path.join(root, SCRATCH_FOLDER, 'run-rules.md')) : rulesPath;
   const direction = visualDirectionLines(task, frame);
   const sections = [
     ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
@@ -105,13 +109,15 @@ export function taskBrief(task, frame, root) {
     ...sectionLines(task, 'Assumptions for these paths and inputs:', frame.assumptions)
   ];
   return [
-    ...(hasRules ? [`Rules: read ${rulesPath} first; it holds this run's Goal, Success criterion, report cap and boundaries.`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
+    ...(hasRules ? [`Rules: read ${shownRules} first; it holds this run's Goal, Success criterion, report cap and boundaries.`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
     ...sections,
     ...inputLines(task, sections),
+    ...handoffLines(task, root),
     ...(hasRules && direction.length === 1 ? [] : direction),
     ...(hasRules ? [] : reportCapLines()),
     ...deferredLines(task),
     ...modifyRangeLines(task, root),
+    ...lessonLines(root, task.files.map((file) => file.path)),
     '',
     ...(hasRules ? [] : ['The task section:']),
     task.section,

@@ -14,6 +14,7 @@ import {
   SESSION_LOAD_LOCK,
   SESSION_START_BYTES_LOCK
 } from '../budgets.mjs';
+import { spawnOverhead, timedSpawn } from '../machine-baseline.mjs';
 
 function lineCount(file) {
   const text = fs.readFileSync(file, 'utf8');
@@ -66,8 +67,6 @@ export function checkHookCost(report, repository, locks = { entries: HOOK_ENTRIE
   report.result('FAIL', NAME, `${detail}; every entry spawns a process on its event and every byte rides each turn, so merge or gate the hook and cut the text, or raise the lock in verify/budgets.mjs in the commit that pays for it`);
 }
 
-const WARMUP_SPAWNS = 1;
-const TIMED_SPAWNS = 7;
 const SCRUBBED_VARIABLES = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'EXO_HOST', 'EXO_RUN', 'EXO_RUN_DIR', 'EXO_RUN_SESSION'];
 
 function scratchEnv(scratch) {
@@ -76,7 +75,8 @@ function scratchEnv(scratch) {
   return env;
 }
 
-function spawnMilliseconds(script, scratch) {
+function measureOverhead(script, spawn) {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-hook-latency-'));
   const input = JSON.stringify({
     hook_event_name: 'PreToolUse',
     tool_name: 'Bash',
@@ -84,36 +84,22 @@ function spawnMilliseconds(script, scratch) {
     session_id: 'hook-latency',
     cwd: scratch
   });
-  const started = performance.now();
-  const run = spawnSync(process.execPath, [script], { env: scratchEnv(scratch), input, encoding: 'utf8', cwd: scratch });
-  const elapsed = performance.now() - started;
-  return run.status === 0 ? elapsed : null;
-}
-
-function median(values) {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
-
-function measureMedian(script) {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-hook-latency-'));
   try {
-    const runs = Array.from({ length: WARMUP_SPAWNS + TIMED_SPAWNS }, () => spawnMilliseconds(script, scratch)).slice(WARMUP_SPAWNS);
-    return runs.includes(null) ? null : median(runs);
+    return spawnOverhead(script, { spawn, env: scratchEnv(scratch), input, cwd: scratch });
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
 }
 
-export function checkHookLatency(report, repository) {
+export function checkHookLatency(report, repository, spawn = timedSpawn) {
   const script = repository.join('hooks', 'dispatch-bash.mjs');
-  const milliseconds = fs.existsSync(script) ? measureMedian(script) : null;
-  if (milliseconds === null) {
+  const measured = fs.existsSync(script) ? measureOverhead(script, spawn) : null;
+  if (measured === null) {
     report.result('FAIL', 'hook latency', 'hooks/dispatch-bash.mjs is missing or exited non-zero on a Bash input');
     return;
   }
-  const detail = `${milliseconds.toFixed(1)} ms median per Bash hook spawn over ${TIMED_SPAWNS} runs against the ${HOOK_SPAWN_MS_LOCK.ms} ms locked on ${HOOK_SPAWN_MS_LOCK.measured}`;
-  if (milliseconds > HOOK_SPAWN_MS_LOCK.ms) {
+  const detail = `${measured.overhead.toFixed(1)} ms median overhead per Bash hook spawn (${measured.hook.toFixed(1)} ms against ${measured.bare.toFixed(1)} ms for a bare node, interleaved over ${measured.rounds} rounds) against the ${HOOK_SPAWN_MS_LOCK.ms} ms locked on ${HOOK_SPAWN_MS_LOCK.measured}`;
+  if (measured.overhead > HOOK_SPAWN_MS_LOCK.ms) {
     report.result('FAIL', 'hook latency', `${detail}; cut work on the hook path (eager imports, file reads), or raise the lock in verify/budgets.mjs in the commit that pays for it`);
     return;
   }

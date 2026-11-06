@@ -56,6 +56,34 @@ export const scriptLandedLine = ({ number, sha }) => `task ${number} landed ${sh
 
 export const planSessionLine = ({ count, ms, turns, weightedTokens, cost }) => `plan session: ${count} ${count === 1 ? 'task' : 'tasks'} landed · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(weightedTokens)}k weighted tokens · ${money(cost)}`;
 
+function spendGroups(entries, keyOf) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = keyOf(entry);
+    const group = groups.get(key) ?? { cost: 0, unknown: 0 };
+    if (entry.known) group.cost += entry.cost;
+    else group.unknown += 1;
+    groups.set(key, group);
+  }
+  return groups;
+}
+
+function spendText({ cost, unknown }) {
+  if (unknown === 0) return money(cost);
+  const note = `${unknown} ${unknown === 1 ? 'session' : 'sessions'} reported no cost`;
+  return cost === 0 ? `unknown (${note})` : `${money(cost)} plus unknown (${note})`;
+}
+
+export function receiptLines(entries) {
+  if (entries.length === 0) return [];
+  const perTask = spendGroups(entries, (entry) => (entry.task === null ? 'run' : `task ${entry.task}`));
+  const perKind = spendGroups(entries, (entry) => entry.kind);
+  return [
+    ...[...perTask].map(([label, group]) => `receipt ${label}: ${spendText(group)}`),
+    ...[...perKind].map(([label, group]) => `receipt ${label} sessions: ${spendText(group)}`)
+  ];
+}
+
 export function averageLines(landed) {
   if (landed.length === 0) return [];
   const sum = (field) => landed.reduce((total, entry) => total + entry[field], 0);

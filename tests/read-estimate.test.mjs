@@ -112,7 +112,7 @@ test('an over-budget denial names the tokens to cut and the largest reads', () =
   const { cwd, session } = project();
   fs.writeFileSync(path.join(cwd, 'big.txt'), 'x'.repeat(80000));
   const reason = denial(brief('big.txt'), cwd, session);
-  assert.match(reason, /Cut at least 10000 tokens/);
+  assert.match(reason, /cut at least 10000 tokens/);
   assert.match(reason, /big\.txt \(40000\)/);
   assert.match(reason, /budget of 30000/);
 });

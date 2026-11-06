@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { execFileSync } from 'node:child_process';
+import { commonDir } from '#checkout';
 import { makeCellHome } from './cell-home.mjs';
 import { BREVITY_LINES, withoutSentence } from './tasks.mjs';
 import { gateReply } from './adhd/gates.mjs';
@@ -23,7 +23,7 @@ const SATURATED = path.join(import.meta.dirname, 'adhd', 'saturated.json');
 const QUICK = path.join(import.meta.dirname, 'adhd', 'quick.json');
 const CAVEMAN = path.join(import.meta.dirname, 'adhd', 'arms', 'caveman.md');
 // why: the baseline and labels are gitignored, so inside the checkout every new worktree lacks them and removing one deletes them; the git common dir is shared by all worktrees and never committed.
-const STORE = path.resolve(ROOT, execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8' }).trim(), 'exo', 'adhd');
+const STORE = path.join(commonDir(ROOT), 'exo', 'adhd');
 const BASELINE = path.join(STORE, 'baseline.json');
 const CONCISE = path.join(STORE, 'concise.json');
 const LOG_DIR = path.join(ROOT, '.exo', 'adhd-score');

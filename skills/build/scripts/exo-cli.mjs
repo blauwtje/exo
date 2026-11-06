@@ -7,9 +7,10 @@ import { configCommand } from './config-command.mjs';
 import { SESSION_REFUSAL, insideClaudeCode } from './run-session-env.mjs';
 import { approveCommand, runCommand } from './run-command.mjs';
 import { claudeCommand, keyCommand, setupCommand } from './setup-commands.mjs';
+import { undoCommand } from './run-undo.mjs';
 import { statusCommand, waitCommand } from './watch-commands.mjs';
 
-const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo run config [<key> <value>] | exo key set <provider> | exo claude [--provider <name>] [--effort <level>] [-- <claude args>] | exo setup';
+const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo undo <id> [--apply] | exo run config [<key> <value>] | exo key set <provider> | exo claude [--provider <name>] [--effort <level>] [-- <claude args>] | exo setup';
 
 async function dispatch(command, rest) {
   if (command === 'setup') return setupCommand();
@@ -17,6 +18,11 @@ async function dispatch(command, rest) {
   if (command === 'claude') return claudeCommand(rest);
   if (command === 'run' && rest[0] === 'config') return configCommand(rest.slice(1));
   if ((command === 'run' || command === 'approve') && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
+  if (command === 'undo' && rest.includes('--apply') && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
+  if (command === 'undo') {
+    process.exitCode = undoCommand(rest);
+    return;
+  }
   if (command === 'approve') {
     process.exitCode = await approveCommand(rest);
     return;

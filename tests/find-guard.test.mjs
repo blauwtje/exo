@@ -14,11 +14,11 @@ async function decide(command) {
   return output?.hookSpecificOutput;
 }
 
-test('find on /, ~, $HOME or .. is denied with a reason that points inside the checkout', async () => {
+test('find on /, ~, $HOME or .. is denied with a reason that names find . and git ls-files', async () => {
   for (const command of ['find / -name plan.md', 'find ~ -name plan.md', 'find ~/ -name x', 'find $HOME -name x', 'find "$HOME" -name x', 'find .. -name plan.md', 'find ../.. -name x', 'cd x && find / -name y', 'ls | xargs echo; find -L / -name y']) {
     const verdict = await decide(command);
     assert.equal(verdict?.permissionDecision, 'deny', command);
-    assert.match(verdict.permissionDecisionReason, /inside the checkout/, command);
+    assert.match(verdict.permissionDecisionReason, /`find \.`.*`git ls-files`/, command);
     assert.match(verdict.permissionDecisionReason, /BLOCKED/, command);
   }
 });

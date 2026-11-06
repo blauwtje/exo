@@ -26,6 +26,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { createWorktree } from '#checkout';
 import { confinedClaude } from '#confine-claude';
 import { killTree } from '#process-tree';
 import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
@@ -332,7 +333,8 @@ async function measureCell(cell, repository, usage, cellDirectory) {
 const replayFindings = (repository) => path.join(path.dirname(repository), 'branch-review.md');
 
 function addReplayWorktree(cell, repository) {
-  git(ROOT, ['worktree', 'add', '--detach', repository, cell.replay.head]);
+  const added = createWorktree(ROOT, repository, ['worktree', 'add', '--detach', repository, cell.replay.head], { env: false });
+  if (!added.ok) throw new Error(`git worktree add --detach ${repository} ${cell.replay.head} failed: ${added.error}`);
   const { base, scope } = cell.replay;
   const source = path.resolve(ROOT, cell.replay.plan);
   if (!fs.existsSync(source)) throw new Error(`replay case ${cell.replay.id}: plan ${source} does not exist`);

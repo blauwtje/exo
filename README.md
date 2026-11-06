@@ -84,6 +84,7 @@ Other skills, written as you call them. Those with `/exo:` start only when you t
 - `design-ui`: builds the real page or component directly, asks only when it cannot build without the answer, and finishes motion, reduced motion and every state.
 - `watch`: reads videos from YouTube, TikTok, Instagram, Facebook, X and other yt-dlp sites, including 1-2 hour ones, through their captions or a local transcript of the audio, and answers, summarises or extracts from them.
 - `/exo:improve`: changes code in a loop against one fixed score command, keeps a commit only when the score gets better, and logs every round.
+- `/exo:review`: reviews a diff, commit, branch or pull request that has no plan with the gate reviewer, and changes nothing.
 - `/exo:check-docs`: looks up how the installed version of a library behaves.
 - `/exo:write-docs`: writes READMEs, pull requests and commit messages.
 - `/exo:file-issues`: writes GitHub issues and files them.

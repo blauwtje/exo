@@ -8,7 +8,7 @@
 - Run the plan's Proof, Run, Lint and Allow commands exactly as written.
 - Add no `$( )`, `;`, `&&`, `|`, redirect, heredoc or `for` loop of your own: the run's allowlist denies anything else, and a denied command never runs.
 - Create and change files only with the Write and Edit tools; read them with the Read tool.
-- Work in `<checkout>`, the session's current checkout, with that path literally.
+- Work in the current directory, this session's checkout; name every path relative to it.
 - Ask nothing: a choice you cannot rule is `BLOCKED NEEDS ANSWER: <one short question>`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.
 - Dispatch no agent; run no `start-run.mjs`, worktree, tail or `ship`.
 - Push nothing, and leave `land-task.mjs --fix` unrun.

@@ -3,9 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
+import { createWorktree } from '#checkout';
 import { defaultBranch, gitLine } from '#git';
 import { readPluginRoot } from '#plugin-pointer';
-import { layers, resolve as resolveSetting } from '#settings-store';
 import { Refusal } from './cli-refusal.mjs';
 
 function dirtyFiles(root) {
@@ -35,24 +35,9 @@ export function worktreeFor(root, wanted) {
   const base = defaultBranch(root);
   if (!exists && base === null) throw new Refusal(`branch ${wanted} is missing and the checkout has no default branch to create it from`);
   const args = exists ? ['worktree', 'add', where, wanted] : ['worktree', 'add', '-b', wanted, where, base];
-  const done = git(root, args);
+  const done = createWorktree(root, where, args);
   if (!done.ok) throw new Refusal(`git ${args.join(' ')} failed: ${done.error}`);
-  if (resolveSetting('env', layers(root)).value === 'copy') copyEnvFiles(root, where);
   return where;
-}
-
-
-const ENV_NAME = /^\.env/;
-
-function copyEnvFiles(root, where) {
-  const files = fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
-  const copied = [];
-  for (const name of files.filter((name) => ENV_NAME.test(name))) {
-    if (!git(root, ['check-ignore', '-q', '--', name]).ok || fs.existsSync(path.join(where, name))) continue;
-    fs.copyFileSync(path.join(root, name), path.join(where, name));
-    copied.push(name);
-  }
-  return copied;
 }
 
 function pluginPointer() {

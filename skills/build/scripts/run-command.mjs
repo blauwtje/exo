@@ -1,15 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { CLI, watchCommand } from './cli-paths.mjs';
-import { FINAL_PHASES, acquireLock, approveGates, createRun, isAlive, keepRun, liveLogFile, newRunId, phaseForExit, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
+import { FINAL_PHASES, acquireLock, approveGates, createRun, isAlive, keepRun, liveLogFile, newRunId, pauseCleared, phaseForExit, readState, releaseLock, removeRun, runDir, unfinishedRun, updateRun } from './run-state.mjs';
 import { Refusal, checkoutRoot } from './cli-refusal.mjs';
 import { buildRun } from './run-child.mjs';
 import { landStage } from './run-land-stage.mjs';
 import { newestPlan } from './plan-file.mjs';
 import { refuseDirty } from './run-checkout.mjs';
 import { writeReport } from './report-file.mjs';
+import { notifyRun } from './notify.mjs';
 
 function runOptions(argv) {
   const rest = [];
@@ -25,6 +26,10 @@ function runOptions(argv) {
   return { ...options, rest };
 }
 
+function refuseParked(root, old, approving) {
+  if (old.phase === 'parked' && !approving && !pauseCleared(root, old)) throw new Refusal(`refused: run ${old.id} is parked; use exo approve ${old.id}`);
+}
+
 function teeToFile(file) {
   for (const stream of [process.stdout, process.stderr]) {
     const write = stream.write.bind(stream);
@@ -33,11 +38,6 @@ function teeToFile(file) {
       return write(chunk, ...rest);
     };
   }
-}
-
-function notify(id, phase) {
-  // why: a host without osascript makes spawnSync return an error, which is ignored.
-  spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
 }
 
 export async function runCommand(argv, { approving = false } = {}) {
@@ -53,7 +53,7 @@ export async function runCommand(argv, { approving = false } = {}) {
     if (old === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
     if (old.phase === 'passed') throw new Refusal(`refused: run ${id} already passed`);
     if (old.phase === 'landed') throw new Refusal(`refused: run ${id} already landed`);
-    if (old.phase === 'parked' && !approving) throw new Refusal(`refused: run ${id} is parked; use exo approve ${id}`);
+    refuseParked(root, old, approving);
     if (isAlive(old.pid) && !FINAL_PHASES.includes(old.phase)) throw new Refusal(`refused: run ${id} is still running (pid ${old.pid})`);
     ({ plan, flags, detach } = old);
   } else {
@@ -63,6 +63,12 @@ export async function runCommand(argv, { approving = false } = {}) {
     if (plan === null) throw new Refusal('no plan under docs/specs/ or docs/plans/; pass one: exo run <plan>');
     if (!given && options.runId === null) process.stdout.write(`exo: plan ${plan}\n`);
     if (!fs.existsSync(plan)) throw new Refusal(`cannot read ${plan}: no such file`);
+    if (options.runId === null && !flags.some((flag) => flag === '--dry-run' || flag === '--help')) old = unfinishedRun(root, plan);
+    if (old !== null) {
+      id = old.id;
+      refuseParked(root, old, approving);
+      process.stdout.write(`exo: continuing run ${id}\n`);
+    }
   }
 
   const child = options.runId !== null;
@@ -70,7 +76,7 @@ export async function runCommand(argv, { approving = false } = {}) {
   if (!child) {
     const log = detach ? path.join(runDir(root, id), 'run.log') : null;
     const ownerSession = process.env.CLAUDE_CODE_SESSION_ID || undefined;
-    if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log, ...(ownerSession ? { ownerSession } : {}) });
+    if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log, plan, flags, detach, ...(ownerSession ? { ownerSession } : {}) });
     else createRun(root, { id, plan, flags, detach, log, ownerSession });
     const lock = acquireLock(root, id);
     if (!lock.ok) {
@@ -154,7 +160,7 @@ export async function runCommand(argv, { approving = false } = {}) {
     } catch (error) {
       process.stderr.write(`exo: report.md not written: ${error.message}\n`);
     }
-    notify(id, phase);
+    await notifyRun(root, { id, plan }, phase, reason);
     if (['landed', 'passed', 'refused'].includes(phase)) keepRun(root, id);
   }
   return code;

@@ -7,7 +7,7 @@
 - `Task <n>: BLOCKED NEEDS ANSWER: <question>` parks that task. Land the green siblings first, ask each question after the wave in its own message, and redispatch `exo:build-task` with the answer in its dispatch prompt only, not in the plan file.
 - In a wave, a failed sibling leaves a green task landed.
 - That reference's step 4 saves each worktree's diff, then removes it.
-- Land-task refusal `no build report at`: SendMessage the agent that wrote the build once, with land-task's full refusal verbatim, so it writes the report. Without SendMessage, dispatch a fresh agent with the prior result path.
+- A build report held as text and not on disk lands by piping its full text to `land-task.mjs --report -`, which refuses no file as missing.
 - Land-task refusal about the report's content (no Proof command, a command listed as failing): dispatch a fresh `exo:build-task` from `../implementer-prompt.md` with land-task's full refusal added verbatim. This session reruns no proof to repair a report.
 - Off-brief build-task return: SendMessage it once, per `${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.md`. A second one gets a fresh `exo:build-task` as above.
 - Build-task stopped at its turn limit before green: redispatch `exo:build-task` from `../implementer-prompt.md`, not an improvised prompt to another agent.

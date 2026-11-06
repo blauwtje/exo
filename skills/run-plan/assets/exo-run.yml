@@ -1,0 +1,90 @@
+name: exo run
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: exo-run-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  agent:
+    if: github.event.issue.pull_request == null && ((github.event_name == 'issues' && github.event.label.name == '__LABEL__' && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) || (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/exo run ') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    outputs:
+      has-result: ${{ steps.run.outputs.has-result }}
+    env:
+      EXO_REPOSITORY: __EXO_REPOSITORY__
+      EXO_REF: __EXO_REF__
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Install exo and Claude Code
+        run: |
+          git clone --depth 1 --branch "$EXO_REF" "https://github.com/$EXO_REPOSITORY" "$RUNNER_TEMP/exo"
+          npm install --global @anthropic-ai/claude-code
+      - name: Read the plan path
+        id: plan
+        env:
+          EXO_TEXT: ${{ github.event.comment.body || github.event.issue.body }}
+        run: node "$RUNNER_TEMP/exo/skills/run-plan/scripts/ci-plan-path.mjs" >> "$GITHUB_OUTPUT"
+      - name: Run the plan
+        id: run
+        env:
+          EXO_PLAN: ${{ steps.plan.outputs.plan }}
+          EXO_RESULT_DIR: ${{ runner.temp }}/exo-result
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node "$RUNNER_TEMP/exo/skills/run-plan/scripts/ci-run.mjs"
+      - name: Hand over the result
+        if: steps.run.outputs.has-result == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exo-result
+          path: ${{ runner.temp }}/exo-result
+          retention-days: 3
+          if-no-files-found: error
+
+  push:
+    needs: agent
+    if: needs.agent.result == 'success' && needs.agent.outputs.has-result == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      EXO_REPOSITORY: __EXO_REPOSITORY__
+      EXO_REF: __EXO_REF__
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: exo-result
+          path: ${{ runner.temp }}/exo-result
+      - name: Push the branch and open the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXO_RESULT_DIR: ${{ runner.temp }}/exo-result
+          EXO_BASE: ${{ github.event.repository.default_branch }}
+          EXO_ISSUE: ${{ github.event.issue.number }}
+          EXO_RUN_ID: ${{ github.run_id }}
+        run: |
+          git clone --depth 1 --branch "$EXO_REF" "https://github.com/$EXO_REPOSITORY" "$RUNNER_TEMP/exo"
+          node "$RUNNER_TEMP/exo/skills/run-plan/scripts/ci-publish.mjs"

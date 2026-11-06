@@ -3,14 +3,15 @@
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { sizeReason } from '../lib/brief-denials.mjs';
+import { briefedInput, isolationFields, resultToolsFields, sizeReason } from '../lib/brief-denials.mjs';
 import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
+import { denyReason } from '../lib/guard-rules.mjs';
 import { BUDGETS, EFFORTS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
-import { budgetedReads, locatedReads, workerSize } from '#worker-size';
+import { baseOf, budgetedReads, locatedReads, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
 
@@ -70,11 +71,9 @@ function budgetSetting() {
   return settingOrDefault('budget').value;
 }
 
-const UNKNOWN_KIND_REASON = 'This delegate names an unknown kind. Start its brief with `exo-kind: <kind>`: `hardest` for an open choice or unknown cause, `build` for a fully decided fix, `review` for a review.';
-
 function unknownKindFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
   if (tool !== 'Agent' || !input || !unknownKind(input, budget)) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: UNKNOWN_KIND_REASON };
+  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('unknown-kind') };
 }
 
 function resolvedKind(input, budget) {
@@ -116,9 +115,9 @@ function readsRewrite(hookInput = {}) {
 }
 
 export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = readsRewrite(hookInput)) {
-  const { tool_name: tool, tool_input: input, effort } = hookInput;
+  const { tool_name: tool, tool_input: input, effort, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
-  const updated = raised(filled(defaulted(rewrite.input, budget), budget), effort?.level);
+  const updated = briefedInput(raised(filled(defaulted(rewrite.input, budget), budget), effort?.level), cwd);
   if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
@@ -135,12 +134,12 @@ function kindLabels(kinds, passed) {
   const entries = Object.entries(kinds);
   const names = (list) => list.map(([name]) => name).join(', ');
   const exact = entries.filter(([, kind]) => runsPassed(kind, passed));
-  if (exact.length) return `\`exo-kind:\` labels for ${pairText(passed.model, passed.effort)}: ${names(exact)}.`;
+  if (exact.length) return `\`exo-kind:\` labels for ${pairText(passed.model, passed.effort)}: ${names(exact)}`;
   const gap = ([, kind]) => Math.abs(EFFORTS.indexOf(kind.effort) - EFFORTS.indexOf(passed.effort));
   const sameModel = entries.filter(([, kind]) => kind.model === passed.model);
   const nearest = sameModel.filter((entry) => gap(entry) === Math.min(...sameModel.map(gap)));
-  if (!nearest.length) return `No kind runs ${pairText(passed.model, passed.effort)}, and none runs ${passed.model ?? 'that model'}.`;
-  return `No kind runs ${pairText(passed.model, passed.effort)}; closest on ${passed.model}: ${names(nearest)}.`;
+  if (!nearest.length) return `No kind runs ${pairText(passed.model, passed.effort)}, and none runs ${passed.model ?? 'that model'}`;
+  return `No kind runs ${pairText(passed.model, passed.effort)}; closest on ${passed.model}: ${names(nearest)}`;
 }
 
 function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
@@ -153,17 +152,16 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = bu
   if (!['model', 'effort'].some(differs)) return null;
   const passed = Object.fromEntries(['model', 'effort'].filter((key) => input[key] !== undefined).map((key) => [key, input[key]]));
   const source = label ? `because \`exo-kind: ${label}\` in the brief moved it` : 'by the kind table';
-  const ending = Object.values(table.kinds).some((entry) => runsPassed(entry, passed)) ? 'Start the brief with the label to run that pair, or drop `model` and `effort`.' : 'Drop `model` and `effort`.';
-  const reason = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} ${source}; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)} ${ending}`;
-  return { permissionDecision: 'deny', permissionDecisionReason: reason };
+  const rule = Object.values(table.kinds).some((entry) => runsPassed(entry, passed)) ? 'kind-mismatch-label' : 'kind-mismatch';
+  const detail = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} ${source}; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)}`;
+  return { permissionDecision: 'deny', permissionDecisionReason: denyReason(rule, detail) };
 }
 
 function workersFields(prompt) {
   const { workers } = workerSize({ prompt });
   const limit = orchestratorWorkers();
   if (workers !== undefined && workers <= limit) return null;
-  const reason = `This orchestrator dispatch needs a \`Workers: <n>\` line with n from 1 to ${limit}. Split the job into slices of its own phases, each at most ${limit} workers, retries included.`;
-  return { permissionDecision: 'deny', permissionDecisionReason: reason };
+  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('workers-line', `n from 1 to ${limit}`) };
 }
 
 function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
@@ -176,7 +174,7 @@ function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const missing = fromOrchestrator ? (fetchDocs ? [] : size.missing) : (size.sized ? [] : ['Reads']);
   const refused = size.invalid.length > 0 || size.unresolved.length > 0 || missing.length > 0 || ((fromOrchestrator || size.sized) && size.tokens > size.budget);
   if (!refused) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: sizeReason(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt }) };
+  return { permissionDecision: 'deny', permissionDecisionReason: sizeReason(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) }) };
 }
 
 function isSliceCall(hookInput) {
@@ -187,8 +185,7 @@ function sliceFields(hookInput) {
   if (!isSliceCall(hookInput)) return null;
   const workers = sliceWorkers(hookInput);
   if (workers === undefined || sliceCount(hookInput.agent_id) < workers) return null;
-  const reason = `This orchestrator slice was sized at ${workers} workers and has made ${workers} dispatches, retries included. Write the result file your brief names and return; the lead plans the next slice.`;
-  return { permissionDecision: 'deny', permissionDecisionReason: reason };
+  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('slice-spent', `sized at ${workers} workers, it has made ${workers} dispatches, retries included`) };
 }
 
 function recordDispatch(hookInput) {
@@ -198,7 +195,7 @@ function recordDispatch(hookInput) {
 export function agentHook(hookInput, budget, enabled) {
   const rewrite = readsRewrite(hookInput);
   const output = agentEffort(hookInput, budget, rewrite);
-  const fields = mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
+  const fields = mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
   const receipt = (message, receiptFields) => withReceipt(message, hookInput, receiptFields, ran, enabled);
   if (fields?.permissionDecision) return receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);

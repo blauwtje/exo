@@ -4,8 +4,7 @@
 
 1. **Baseline.** `next-task.mjs --open-slots` runs steps 1 and 2, and you run them by hand only after `Wave discarded:`. Before the first slot, write the run checkout's `git status --porcelain` once to `<root>/.exo/baseline.txt`.
 2. **Open a slot.**
-   - Record the slot's own `<base>`.
-   - Create its worktree per wave worktrees step 1.
+   - Record the slot's own `<base>` and create its worktree per wave worktrees step 1.
    - When `git worktree add` or setup fails, close the window to refills. The task then builds alone in the run's checkout.
 3. **Land.**
    - For a green slot run `node "<skill>/scripts/land-slot.mjs" --plan <plan> --task <n> --root <root> --slot "<root>-task-<n>" --base <base> --baseline <root>/.exo/baseline.txt --in-flight <other running task numbers, comma separated> --only <block>`.
@@ -19,7 +18,7 @@
    - A repair takes a fresh slot worktree at the current `HEAD`, and the run's checkout holds no uncommitted work while the window is open.
 6. **Missing report.**
    - Resume a returned build with no report once, via SendMessage, to write it.
-   - If there is still no report, the child is dead. Leave its slot folder in place, since `remove-worktree.mjs --report` refuses without the report, and name the folder and that refusal in the return.
+   - With no report still, land from the return text (`land-slot.mjs --report -`), handoff or checkpoint commit. With none of these the child is dead: keep its slot folder and name it in the return.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
    - Send each window build, including a `Next:` build, to `exo:build-task`. When it returns `Async agent launched`, run the printed `Wait:` command; never end the turn, since an outliving nested child reports to the main conversation.

@@ -31,12 +31,13 @@ Decided change with no plan file → `references/no-spec.md`. After a compaction
 |---|---|
 | `references/run-loop.md` | Steps 1-6, without `--task`. |
 | `references/run-loop-inline.md` | Left to next-task. |
-| `references/run-loop-direct.md` | Step 6, on `BLOCKED all nested dispatch unavailable`. |
+| `references/run-loop-direct.md` | Step 6, `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7; `Route: inline` only if its `Steps:` fall back. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
-| `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
+| `references/wave-worktrees.md` | `Wave:` line. |
+| `references/conflict-wave.md` | `Conflict branch:` line. |
 | `references/rolling-window.md` | Left to the unit. |
 | `implementer-prompt.md` | Left to the unit. |
 | `drift-repairer-prompt.md` | Left to the unit. |
@@ -48,14 +49,14 @@ Decided change with no plan file → `references/no-spec.md`. After a compaction
 | `run-task-prompt.md` | Left to `run-plan.mjs`. |
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
-| `references/critique.md` | No spec step 7, last fallback. |
+| `references/critique.md` | No spec step 7, last resort. |
 | `references/security.md` | When its first line applies. |
 | `references/data-migration.md` | When its first line applies. |
 | `references/test-design.md` | When its first line applies. |
-| `references/test-first.md` | No spec test-first work, before first boundary. |
-| `references/project-knowledge.md` | No spec step 6, if its first line applies. |
-| `references/performance.md` | No spec speed-only work, before measuring. |
-| `../route-skills/references/question.md` | Before asking the user to pick. |
+| `references/test-first.md` | No spec test-first, before a boundary. |
+| `references/project-knowledge.md` | No spec step 6, if first line applies. |
+| `references/performance.md` | No spec speed work, before measuring. |
+| `../route-skills/references/question.md` | Before asking the user. |
 | `../route-skills/references/closing.md` | Before the final message. |
 
 Report: `ship`'s overview only.

@@ -14,5 +14,6 @@ node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" book --source review -
 - `<finding line>` is the line verbatim.
 - Quote every value in single quotes and write each `'` inside a value as `'\''`, because finding lines carry backticks and `$`, which a double-quoted argument runs as a command.
 - Quote no password, token or key, because the quote is stored as given.
+- A later `write` scopes the lesson by globs in `--refs`, and `build` briefs and `memory.mjs lessons --files <path,path>` serve it only for files those globs match.
 - Run no `write` and load no `remember`, because the user approves a lesson there, and approval does not happen here.
 - A refused or denied booking blocks nothing. Name it in one line of the report and go on to the finish.

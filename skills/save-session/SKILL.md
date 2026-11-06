@@ -35,13 +35,14 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 
 Fill `assets/handoff-template.md`. Its first line answers in one sentence where the work stands, and `## Resume` is always present while the other sections are left out when the session has nothing true for them. The file is read by the user, so write plain words in the user's language per `../route-skills/references/user-read-format.md`.
 
-The last line of the file is `Resume: <prompt>`, one sentence telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue, such as `Resume: lees .git/exo/handoff/<branch>.md en ga verder`. The sections carry every step, so this one line suffices.
+The last line of the file is `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue. The sections carry every step, so this one line suffices.
 
 In those sections:
 
 - Record the user's decision as theirs, in their wording, not as shared.
 - When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Decisions` unchanged.
 - Put a claim no command proved under `## Open questions`, not `## Proven`.
+- Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` for the task in progress and carry its lines into `## Open questions` as approaches the next session must not retry.
 - Read `## Current state` from `git status --short`, not memory.
 - List which changes are committed, then every uncommitted path in full, because a next session that cannot see the difference treats working-tree edits as saved and discards them.
 - For a session running a plan, open `## Current state` with the plan path and the number of the task in progress.
@@ -51,7 +52,7 @@ In those sections:
 Copy this paragraph into `## Resume` exactly, so the reading session inherits the rule without this skill:
 
 ```text
-Diff what `## Proven` and `## Files touched` already cover against what `## Next step` and `## Open questions` still need, name the resume point, and repeat no step `## Proven` already covers. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof.
+Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof.
 ```
 
 ## References

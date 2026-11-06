@@ -3,9 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { landedTasks, planIdOf } from '#plan-landed';
+import { resolvePlanPath } from '#checkout';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { forCaller } from '#script-output';
 import { landTask } from './land-task.mjs';
+import { reportFlagOf } from './land-stopped.mjs';
 import { landingForCaller } from './land-output.mjs';
 import { LandingError } from './land-errors.mjs';
 import { chainedForCaller } from './next-task-caller.mjs';
@@ -13,6 +15,7 @@ import { nextTaskReport } from './next-task-report.mjs';
 import { refreshProgress, taskNumbers } from './next-task.mjs';
 import { windowLines } from './next-task-window.mjs';
 import { restartRecord } from './open-slots.mjs';
+import { keepConflict, resolverOn } from './conflict-wave.mjs';
 import { removeWorktree, RemoveWorktreeError } from './remove-worktree.mjs';
 
 const statusOf = (directory) => execFileSync('git', ['-C', directory, 'status', '--porcelain'], { encoding: 'utf8' }).split('\n').filter(Boolean);
@@ -30,12 +33,19 @@ function conflictOf(root, sha) {
   return { output, aborted };
 }
 
+function conflictReport({ planPath, root, slot, base, number, sha, conflict }) {
+  const plain = refusal('CONFLICT', number, `cherry-pick of ${sha} failed and ${conflict.aborted}; slot ${slot} kept\n${conflict.output}`);
+  if (!resolverOn()) return plain;
+  const lines = keepConflict({ planPath, root, number, sha, base });
+  return `${plain.replace(/Start: none\n$/, '')}${lines.join('\n')}\nStart: none\n`;
+}
+
 function removeSlot({ slot, root, base, number }) {
   const patch = path.join(slot, '.exo', `task-${number}.patch`);
   try {
     execFileSync('git', ['-C', slot, 'add', '-A'], { encoding: 'utf8' });
     fs.writeFileSync(patch, execFileSync('git', ['-C', slot, 'diff', '--cached', base], { encoding: 'utf8' }));
-    return removeWorktree({ worktree: slot, run: root, report: path.join(slot, '.exo', `implementer-${number}.md`) });
+    return removeWorktree({ worktree: slot, run: root });
   } catch (error) {
     if (error instanceof RemoveWorktreeError || error.status !== undefined) return `slot ${slot} kept: ${error.message.split('\n')[0]}\n`;
     throw error;
@@ -50,7 +60,7 @@ function rebuildLines({ planPath, number, root, slot, base, inFlight, unlanded, 
 }
 
 // why: --chained marks a `Land all:` command before the last; the last one prints the next step for the whole chain.
-export function landSlot({ planPath, number, root, slot, base, baseline, inFlight: named = [], chained = false, only = null }) {
+export function landSlot({ planPath, number, root, slot, base, baseline, inFlight: named = [], chained = false, only = null, report = {} }) {
   const known = fs.readFileSync(baseline, 'utf8').split('\n');
   const fresh = statusOf(root).filter((line) => !known.includes(line));
   if (fresh.length > 0) return whole(refusal('NEWPATH', number, `the run's checkout gained ${fresh.map((line) => line.slice(3)).join(', ')}; slot ${slot} kept, nothing landed`));
@@ -59,18 +69,16 @@ export function landSlot({ planPath, number, root, slot, base, baseline, inFligh
   const landedBefore = landedTasks(tasks, root, planIdOf(planPath));
   const inFlight = named.filter((other) => !landedBefore.includes(other));
   const unlanded = tasks.map((task) => task.number).filter((other) => !landedBefore.includes(other) && (only === null || only.includes(other)));
-  const reportPath = path.join(slot, '.exo', `implementer-${number}.md`);
-  const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
   let landed;
   try {
-    landed = landTask({ planText, number, root: slot, reportText, reportPath, planPath });
+    landed = landTask({ planText, number, root: slot, ...report, planPath });
   } catch (error) {
     if (error instanceof LandingError || error instanceof PlanError) return whole(`${refusal('REFUSED', number, `${error.message}\nslot ${slot} kept`)}${rebuildLines({ planPath, number, root, slot, base, inFlight, unlanded, chained, only })}`);
     throw error;
   }
   const sha = execFileSync('git', ['-C', slot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const conflict = conflictOf(root, sha);
-  if (conflict !== null) return whole(refusal('CONFLICT', number, `cherry-pick of ${sha} failed and ${conflict.aborted}; slot ${slot} kept\n${conflict.output}`));
+  if (conflict !== null) return whole(conflictReport({ planPath, root, slot, base, number, sha, conflict }));
   const kept = landed.split('\n').filter((line) => !line.startsWith('Then: ')).join('\n');
   const removal = removeSlot({ slot, root, base, number });
   const next = chained ? '' : nextTaskReport({ planPath, planText, root, inFlight, open: true, only });
@@ -81,24 +89,24 @@ export function landSlot({ planPath, number, root, slot, base, baseline, inFligh
 }
 
 const USAGE = [
-  'usage: land-slot.mjs --plan <plan> --task <n> --root <dir> --slot <dir> --base <sha> --baseline <file> [--in-flight <n,n>] [--only <n,n>] [--chained]',
+  'usage: land-slot.mjs --plan <plan> --task <n> --root <dir> --slot <dir> --base <sha> --baseline <file> [--in-flight <n,n>] [--only <n,n>] [--report <file>|-] [--chained]',
   "Lands a task's slot worktree onto the run checkout and prints LANDED, REFUSED or CONFLICT; exits 2 on a usage error.",
-  '--in-flight names the task numbers still running, comma separated; --only limits refills to the lead\'s Block: tasks; --chained skips the next-task report.'
+  '--in-flight names the task numbers still running, comma separated; --only limits refills to the lead\'s Block: tasks; --report names the build report, or `-` for stdin, in place of the slot\'s .exo/implementer-<n>.md; --chained skips the next-task report.'
 ].join('\n');
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', slot: 'value', base: 'value', baseline: 'value', 'in-flight': 'value', only: 'value', chained: 'boolean' }, { usage: USAGE });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', slot: 'value', base: 'value', baseline: 'value', 'in-flight': 'value', only: 'value', report: 'value', chained: 'boolean' }, { usage: USAGE });
   for (const name of ['plan', 'root', 'slot', 'base', 'baseline']) {
     if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required`);
   }
   if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
-  for (const name of ['plan', 'baseline']) {
-    if (!fs.existsSync(flags[name])) throw new UsageError(`no file at '${flags[name]}'`);
-  }
+  const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
+  if (!fs.existsSync(plan)) throw new UsageError(`no file at '${flags.plan}'`);
+  if (!fs.existsSync(flags.baseline)) throw new UsageError(`no file at '${flags.baseline}'`);
   const inFlight = taskNumbers(flags['in-flight'], 'in-flight') ?? [];
-  const { full, shown } = landSlot({ planPath: flags.plan, number: Number(flags.task), root: flags.root, slot: flags.slot, base: flags.base, baseline: flags.baseline, inFlight, only: taskNumbers(flags.only, 'only'), chained: flags.chained === true });
+  const { full, shown } = landSlot({ planPath: plan, number: Number(flags.task), root: flags.root, slot: flags.slot, base: flags.base, baseline: flags.baseline, inFlight, only: taskNumbers(flags.only, 'only'), chained: flags.chained === true, report: reportFlagOf(flags.report) });
   process.stdout.write(forCaller({ root: flags.root, name: `land-slot-${flags.task}`, full, shown }));
-  refreshProgress({ planPath: flags.plan, planText: fs.readFileSync(flags.plan, 'utf8'), root: flags.root });
+  refreshProgress({ planPath: plan, planText: fs.readFileSync(plan, 'utf8'), root: flags.root });
 }
 
 function refuseUsage(error) {

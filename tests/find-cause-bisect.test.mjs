@@ -217,3 +217,11 @@ test('out-of-scope: the repro never runs in the fixture checkout and leaves it u
   assert.equal(fs.existsSync(path.join(root, 'stray.txt')), false);
   assert.deepEqual(snapshot(root), before);
 });
+
+test('a regression in a 40-commit history is named without a good ref', async () => {
+  const root = await longHistoryRepository({ total: 40, culpritAge: 17 });
+  const culprit = git(root, 'rev-parse', 'HEAD~17');
+  const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root });
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.equal(result.stdout.split('\n')[0], `First bad: ${culprit} feat: commit 23`);
+});

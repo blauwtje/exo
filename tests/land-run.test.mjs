@@ -220,14 +220,14 @@ test('a local main ahead of origin main is the rebase target and keeps its commi
 
 test('an unmoved branch whose tree last passed the criterion skips the re-check', () => {
   const f = fixture();
-  recordPass(f.root, 'false', 1);
+  recordPass(f.root, 'false', 1, undefined, 'SUMMARY PASS=1 FAIL=0 WARN=0 UNRUN=0');
   assert.equal(f.land({ success: '`false`' }).phase, 'landed');
   assert.equal(fixture().land({ success: '`mcp:browser check`' }).phase, 'landed');
 });
 
 test('a branch rebased by hand after its last criterion pass reruns the re-check', () => {
   const f = fixture();
-  recordPass(f.root, 'false', 1);
+  recordPass(f.root, 'false', 1, undefined, 'SUMMARY PASS=1 FAIL=0 WARN=0 UNRUN=0');
   const other = path.join(f.dir, 'other');
   git(f.dir, 'clone', '-q', f.bare, other);
   git(other, 'config', 'user.email', 't@t');

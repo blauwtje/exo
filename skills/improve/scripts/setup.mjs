@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { createWorktree } from '#checkout';
 import { gitLine } from '#git';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,6 +30,12 @@ function git(cwd, ...args) {
   const run = spawnSync('git', args, { cwd, encoding: 'utf8' });
   if (run.status !== 0) throw new SetupError(`git ${args.join(' ')} failed: ${(run.stderr || run.stdout).trim()}`);
   return run.stdout.trim();
+}
+
+function addWorktree(root, worktree, ...rest) {
+  const args = ['worktree', 'add', ...rest];
+  const done = createWorktree(root, path.resolve(root, worktree), args, { env: false });
+  if (!done.ok) throw new SetupError(`git ${args.join(' ')} failed: ${done.error}`);
 }
 
 const gitOk = (cwd, ...args) => gitLine(cwd, args) !== null;
@@ -189,7 +196,7 @@ function fresh(flags) {
   excludeScratch(root);
   fs.mkdirSync(dir, { recursive: true });
   const worktree = `.worktrees/improve-${tag}`;
-  git(root, 'worktree', 'add', '-b', branch, worktree);
+  addWorktree(root, worktree, '-b', branch, worktree);
   const cwd = path.join(root, worktree);
   try {
     commitScorer(root, cwd, list(flags.scorer));
@@ -224,7 +231,7 @@ function resume(flags) {
   const rows = readRows(path.join(dir, `${tag}.tsv`));
   const kept = lastKeep(rows);
   if (!kept) throw new SetupError(`${tag}.tsv has no kept row`);
-  if (!fs.existsSync(path.join(root, cfg.worktree))) git(root, 'worktree', 'add', cfg.worktree, `improve/${tag}`);
+  if (!fs.existsSync(path.join(root, cfg.worktree))) addWorktree(root, cfg.worktree, cfg.worktree, `improve/${tag}`);
   git(path.join(root, cfg.worktree), 'reset', '--hard', kept.commit);
   writeBrief({ dir, tag, cfg, rows });
   settled({ root, dir, cfg, tag, score: kept.score });

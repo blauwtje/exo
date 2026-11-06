@@ -2,13 +2,14 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { dataLiterals, literalFinder } from '#data-literals';
 import { environmentMs } from '#script-flags';
-import { defaultBase } from '#plan-landed';
-import { cachedPass } from '#check-cache';
+import { defaultBase, landedTasks, taskCommits } from '#plan-landed';
+import { treePassMs } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
-import { LandingError, OutsideFilesError } from './land-errors.mjs';
+import { AlreadyLandedError, LandingError, OutsideFilesError, UnfinishedMergeError } from './land-errors.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { unplannedPaths } from './land-paths.mjs';
+import { unfinishedMergeNote } from '#merge-state';
 
 export function taskChangedPaths(root) {
   const entries = execFileSync('git', ['-C', root, 'status', '--porcelain', '-z', '-uall'], { encoding: 'utf8' }).split('\0').filter((entry) => entry !== '');
@@ -41,7 +42,7 @@ export function redGreenLine(task, proofCommands, root, pending) {
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
   for (const command of proofCommands) {
-    const base = runOnBase({ root, base: 'HEAD', command, overlay, timeoutMs, headMs: cachedPass(root, command)?.ms });
+    const base = runOnBase({ root, base: 'HEAD', command, overlay, timeoutMs, headMs: treePassMs(root, command) ?? undefined });
     sha = base.sha.slice(0, 7);
     if (base.status === 'error') {
       throw new LandingError(`Task ${task.number}: the red-green check of "${command}" on ${sha || 'HEAD'} failed to finish:\n${base.output.trim().split('\n').slice(-PROOF_TAIL_LINES).join('\n')}`);
@@ -58,6 +59,12 @@ export function refuseUntestedTestFirst(task, root) {
   }
 }
 
+export function refuseAlreadyLanded(plan, task, root, planId) {
+  if (!landedTasks(plan.tasks, root, planId).includes(task.number)) return;
+  const [sha] = taskCommits(task, root, planId);
+  throw new AlreadyLandedError(`Task ${task.number} is already landed as ${sha.slice(0, 7)}; landing it again would add no change`);
+}
+
 export function refuseMissingLiterals(task, root, planPath = null) {
   if (task.literals !== null || !task.data) return;
   const literals = dataLiterals(task.data);
@@ -69,17 +76,19 @@ export function refuseMissingLiterals(task, root, planPath = null) {
   }
 }
 
-export function refuseUnplannedPaths(task, options) {
-  const unplanned = unplannedPaths(task, options);
-  if (unplanned.length > 0) {
-    throw new OutsideFilesError(`Task ${task.number} changed a path outside Files: ${unplanned.map((file) => `\`${file}\``).join(', ')}`);
-  }
+export function refuseUnfinishedMerge(root) {
+  const note = unfinishedMergeNote(root);
+  if (note !== null) throw new UnfinishedMergeError(note);
 }
 
+export function refuseUnplannedPaths(task, options) {
+  const unplanned = unplannedPaths(task, options);
+  if (unplanned.length === 0) return;
+  const unfinished = unfinishedMergeNote(options.root);
+  const paths = unplanned.map((file) => `\`${file}\``).join(', ');
+  throw new OutsideFilesError(`Task ${task.number} changed a path outside Files: ${paths}${unfinished === null ? '' : `; ${unfinished}`}`);
+}
 
-// A long-format task's proof: each distinct `Run:` command some step expects
-// to pass, never one only a test-first red step or a failure demo runs, nor an
-// MCP call only the session can make.
 export function passingRunsOf(task) {
   return [...new Set(task.runs.filter((run) => run.expectsPass && mcpToolCall(run.command) === null).map((run) => run.command))];
 }
@@ -90,10 +99,3 @@ export function checkReport(task, reportText, reportPath) {
   const proofCommand = task.compact && pending === null ? proofCommandOf(task, reportText, reportPath) : null;
   return { proofCommand, pending };
 }
-
-/**
- * The unplanned-path and report checks landTask runs first, then Lint and the Land
- * gate as landTask runs them, a failure refusing closed: nothing runs the
- * Proof or commits, so a builder can run it before it reports and fix a
- * trivial gate failure itself.
- */

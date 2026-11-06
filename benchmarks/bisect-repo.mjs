@@ -2,6 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createWorktree } from '#checkout';
 import { environmentMs } from '#script-flags';
 import { linkedWorktrees } from './value.mjs';
 
@@ -28,8 +29,7 @@ export function reproHolds(directory, spec) {
 }
 
 function addWorktree(repo, directory, revision) {
-  const run = spawnSync('git', ['-C', repo, 'worktree', 'add', '--detach', '--quiet', directory, revision], { stdio: 'ignore' });
-  return run.status === 0;
+  return createWorktree(repo, directory, ['worktree', 'add', '--detach', '--quiet', directory, revision], { env: false }).ok;
 }
 
 export function holdsAt(repo, revision, spec) {

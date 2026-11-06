@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { mainCheckout } from '#checkout';
 import { proofsReport } from '#proofs-report';
 import { answerOf, renderRunReport } from './gate-report.mjs';
 import { transcriptFolder } from '#confine-claude';
@@ -15,7 +16,7 @@ function contextSection(planPath, root) {
       since = Number(git('log', '--diff-filter=A', '--format=%ct', '--', planPath).split('\n').filter(Boolean).pop()) * 1000;
     } catch { }
     if (!Number.isFinite(since) || since <= 0) since = fs.statSync(planPath).mtimeMs;
-    const main = path.dirname(path.resolve(root, git('rev-parse', '--git-common-dir')));
+    const main = mainCheckout(root);
     const folders = new Set([fs.realpathSync(main), fs.realpathSync(root)]);
     const rows = [...folders].flatMap((folder) => contextPeaks({ folder: transcriptFolder(folder), since }));
     rows.sort((a, b) => b.peak - a.peak);

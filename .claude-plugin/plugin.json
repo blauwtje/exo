@@ -58,6 +58,12 @@
       "description": "ask: the run puts the question. copy: copy the local env files into the run's worktree. never: copy none. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
       "options": ["ask", "copy", "never"],
       "default": "ask"
+    },
+    "notify": {
+      "type": "string",
+      "title": "Remote notice url",
+      "description": "An http(s) url, such as an ntfy topic, that exo run posts a one-line notice to when a plan is done, a task is stuck or a question waits. Empty posts nothing. A public topic with no login shows plan names to anyone who knows the topic. A project overrides this in .claude/exo.json.",
+      "default": ""
     }
   }
 }

@@ -37,16 +37,18 @@ Claims two separate sessions had booked when this skill loaded, before this sess
    - Any other claim → ask it as above.
    - User declines the claim, or a check carries it → run `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" reject --session "<this session id>"`; else `propose --count` keeps counting it in ship's `Lessons:` line.
    - Reject a lesson `propose` printed with `(key: <key>)` by `--key '<key>'`, any other claim by `--claim "<the claim>"`.
-5. **Write** an approved claim with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --claim "<the claim>" --refs "<path,path#symbol>"`.
+5. **Write** an approved claim with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --claim "<the claim>" --refs "<path,glob,path#symbol>"`.
+   - A ref is the claim's scope: `build` briefs, `gate` and `spec` read it only for files a ref matches, so a glob such as `src/billing/**` keeps it out of other tasks, and `**` means every task.
    - Lesson `propose` printed with `(key: <key>)` → add `--key '<key>'`.
    - Claim answers a question an earlier line already answered → add `--replaces "<the old claim>"`; file never holds two answers to one question.
 6. **Relay a refusal** exactly as the script printed it.
    - Line the refusal names → retire with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" retire --claim "<the claim>"` before trying again.
    - Edit neither file by hand; memory.md is rendered from memory.json.
-7. **Prune** with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" verify` whenever the user asks what is still true; report every dropped line the script named.
+7. **Prune** with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" verify` whenever the user asks what is still true; report every dropped line the script named, one whose glob matches no tracked file included.
 8. **Store a spec decision** the user answered with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`; it needs no second session and stays out of memory.md.
    - `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" decisions` lists each as `settled` or `changed`.
-9. **Report** rendered path and its byte count against the budget, one line.
+9. **Propose** a lesson scoped `**` for `CLAUDE.md` with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" claude-md`; relay its lines as a proposal and edit neither `CLAUDE.md` nor `AGENTS.md`, because the user writes those.
+10. **Report** rendered path and its byte count against the budget, one line.
 
 ## References
 

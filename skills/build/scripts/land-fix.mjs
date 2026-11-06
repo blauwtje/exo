@@ -4,9 +4,10 @@ import path from 'node:path';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { attributionProblem, subjectProblem } from '#commit-text';
-import { LandingError } from './land-errors.mjs';
+import { LandingError, PinError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
 import { refuseMismatchedToplevel } from './land-pin.mjs';
+import { refuseUnfinishedMerge } from './land-refusals.mjs';
 import { changedPaths } from './land-paths.mjs';
 import { runLint } from './land-code-rules.mjs';
 
@@ -16,8 +17,9 @@ export function refuseBadCommitText(subject, rest = '') {
 }
 
 export function fixLand({ root, subject, body = null, plan = null, pin = null }) {
-  if (pin !== null) throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
+  if (pin !== null) throw new PinError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
   refuseMismatchedToplevel(root);
+  refuseUnfinishedMerge(root);
   refuseBadCommitText(subject, body ?? '');
   return locked(root, () => fixLandLocked({ root, subject, body, plan }));
 }

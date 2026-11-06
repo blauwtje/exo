@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { git, run, tempDir } from './harness.mjs';
-import { landingCheckout, editApp } from './land-task-fixture.mjs';
+import { landingCheckout, compactCheckout, editApp, PASS_REPORT } from './land-task-fixture.mjs';
 
 const SCRIPT = new URL('../skills/build/scripts/land-slot.mjs', import.meta.url).pathname;
 
@@ -38,6 +38,24 @@ test('a green slot lands on the run branch and its worktree leaves', async () =>
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
   assert.doesNotMatch(worktrees(root), new RegExp(slot));
   assert.match(await fs.readFile(path.join(root, 'src/app.js'), 'utf8'), /hello/);
+});
+
+test('a slot build whose return text comes on stdin and whose report file is missing lands', async () => {
+  const { root, planPath } = await compactCheckout();
+  git(root, 'checkout', '--', 'src/app.js');
+  const base = git(root, 'rev-parse', 'HEAD');
+  const slot = `${root}-task-1`;
+  git(root, 'worktree', 'add', '--detach', slot, 'HEAD');
+  const baseline = path.join(root, '.exo', 'baseline.txt');
+  await fs.mkdir(path.dirname(baseline), { recursive: true });
+  await fs.writeFile(baseline, git(root, 'status', '--porcelain'));
+  await editApp(slot);
+  const args = ['--plan', planPath, '--task', '1', '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, '--in-flight', '3', '--report', '-'];
+  const result = await run(SCRIPT, args, { cwd: root, input: PASS_REPORT });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^LANDED 1\b/);
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: compact\/1$/m);
+  assert.doesNotMatch(worktrees(root), new RegExp(slot));
 });
 
 test('a green slot prints the caller view and names the full text in a land-slot log', async () => {

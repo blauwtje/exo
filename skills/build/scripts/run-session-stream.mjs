@@ -49,6 +49,7 @@ export function parseStream(text) {
     subtype: typeof final?.subtype === 'string' ? final.subtype : null,
     turns: results.reduce((sum, result) => sum + (Number(result.num_turns) || 0), 0),
     cost: costs.at(-1) ?? 0,
+    costKnown: costs.length > 0,
     peakContext,
     model: typeof init?.model === 'string' ? init.model : null,
     weightedTokens,

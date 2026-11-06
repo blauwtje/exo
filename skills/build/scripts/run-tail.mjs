@@ -136,7 +136,7 @@ function runCriterion(command, root) {
   const failing = lines.filter((line) => CRITERION_FAIL.test(line));
   const first = failing[0] ?? lines.at(-1) ?? (answer.error?.message ?? `exit ${answer.status ?? answer.signal}`);
   const tail = (failing.length > 0 ? failing : lines).slice(0, 20).map((line) => line.slice(0, 200));
-  return { ok: answer.status === 0 && !answer.timedOut && successCriterionPasses({ ok: true, output }), ms: Date.now() - started, first: first.trim(), tail };
+  return { ok: successCriterionPasses({ ok: answer.status === 0 && !answer.timedOut, output }), output, ms: Date.now() - started, first: first.trim(), tail };
 }
 
 function landRepair({ planPath, plan, root }) {
@@ -170,7 +170,7 @@ async function proveCriterion({ planPath, plan, root, logDir, runSession, say })
     result = runCriterion(command, root);
   }
   if (!result.ok) return stopOf(`success criterion failed: ${result.first}`, `The Success criterion is still red before the review: ${result.first}`, 'repair the Success criterion on the branch, then run exo run again');
-  recordPass(root, command, result.ms);
+  recordPass(root, command, result.ms, undefined, result.output);
   return null;
 }
 

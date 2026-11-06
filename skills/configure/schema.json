@@ -29,9 +29,9 @@
   },
   "ship": {
     "type": "string",
-    "options": ["ask", "pr-merge", "open-pr", "push", "local"],
+    "options": ["ask", "pr-merge", "open-pr", "stack", "push", "local"],
     "default": "ask",
-    "description": "the finish route ship takes without asking: ask puts the question; pr-merge, open-pr, push or local run that route when it can",
+    "description": "the finish route ship takes without asking: ask puts the question; pr-merge, open-pr, stack, push or local run that route when it can",
     "label": "Finished work",
     "about": "what happens once work is done",
     "question": "What should happen once work is finished?",
@@ -39,6 +39,7 @@
       "ask": { "label": "Ask me", "gives": "I ask each time" },
       "pr-merge": { "label": "Merge it", "gives": "a pull request, merged once checks pass" },
       "open-pr": { "label": "Open a PR", "gives": "a pull request left open for you" },
+      "stack": { "label": "Stack of PRs", "gives": "one pull request per plan wave, left open for you" },
       "push": { "label": "Push", "gives": "pushed straight up, no pull request" },
       "local": { "label": "Keep it here", "gives": "nothing leaves this machine" }
     }
@@ -97,5 +98,14 @@
       "copy": { "label": "Copy them", "gives": "env files are copied into the run folder" },
       "never": { "label": "Never", "gives": "no env file is copied" }
     }
+  },
+  "notify": {
+    "type": "string",
+    "default": "",
+    "description": "an http(s) url, such as an ntfy topic, that exo run posts a one-line notice to when a plan is done, a task is stuck or a question waits; empty posts nothing",
+    "label": "Remote notice",
+    "about": "where a finished, stuck or waiting run sends a line",
+    "question": "Where should a run send a notice?",
+    "typed": "Type an http(s) url such as https://ntfy.sh/your-topic, or leave it empty for no notice."
   }
 }

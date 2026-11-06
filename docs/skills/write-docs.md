@@ -14,7 +14,8 @@ Not for chat replies or code comments.
 - Real file, option and command names, one name per thing.
 - Whole sentences in plain words.
 - A check against a list of AI writing tells, each with an id a review can cite.
+- Release notes drafted from the commits (and merged pull request titles, when `gh` is signed in) between two refs, the last release tag to `HEAD` by default: breaking changes first with an upgrade step, then Added, Changed, Fixed and Removed, with no commit hashes. The reply or the file you name holds the draft, and `--uncovered` lists the commits that `CHANGELOG.md` misses. It never tags or releases.
 
 ## Source
 
-`skills/write-docs/SKILL.md` and `references/ai-tics.md`.
+`skills/write-docs/SKILL.md`, `references/ai-tics.md`, `references/release-notes.md` and `scripts/release-notes-draft.mjs`.

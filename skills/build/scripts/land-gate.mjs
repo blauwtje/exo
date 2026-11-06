@@ -1,7 +1,7 @@
 import { runTreeSync } from '#process-tree';
 import { environmentMs } from '#script-flags';
 import { landedTasks } from '#plan-landed';
-import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
+import { cachedPass, gateRefusal, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { LandingError } from './land-errors.mjs';
 import { dropsOf } from './land-commit-block.mjs';
 import { PROOF_TIMEOUT_MS } from './land-report.mjs';
@@ -44,7 +44,7 @@ export function gateEnvOf(plan, task, root, planId) {
 
 export function runLandGate(landGate, root, gateEnv = {}) {
   if (landGate === null || landGate === 'none') return null;
-  if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: it already passed on this tree.\n`;
+  if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: its log shows a clean pass on this tree.\n`;
   const last = lastPassMs(root, landGate);
   if (last !== null && last >= SLOW_GATE_MS) {
     return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so gate runs it once.\n`;
@@ -64,6 +64,8 @@ export function runLandGate(landGate, root, gateEnv = {}) {
     const output = `${gate.output}${timedOut || (gate.error?.message ?? '')}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
-  recordPass(root, landGate, Date.now() - started, before);
+  const refusal = gateRefusal(landGate, gate.output);
+  if (refusal !== null) throw new LandingError(`Land gate "${landGate}" exited 0 but ${refusal}:\n${gate.output.trim()}`);
+  recordPass(root, landGate, Date.now() - started, before, gate.output);
   return '';
 }

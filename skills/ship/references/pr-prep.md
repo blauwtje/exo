@@ -21,8 +21,7 @@ Goal: open a pull request a reviewer can read, with small ordered commits and a 
 - Read the commits, line count, paths touched, generated files, description.
 - Note what slows a reviewer: noise commits, a description the diff outgrew, off-goal changes, mechanical edits tangled with logic, absent tests, no clear place to start.
 - Improve the description, not the pushed history.
-- Open it with a TL;DR true to the current diff and set core files apart from generated or mechanical ones.
-- Flag risky edits, migration order, rollout, test coverage.
+- Build the body with `node "${CLAUDE_SKILL_DIR}/scripts/pr-body.mjs" --help`'s sections, proof lines and issue table, then pass its output as `--body`.
 - When notes alone cannot make it reviewable, put a split recommendation in the report.
 
 ## Title

@@ -1,7 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { readJsonOrNull } from '#basics';
+import { createWorktree } from '#checkout';
 import { scratchPath } from '#scratch-path';
 
 const git = (directory, ...args) => spawnSync('git', ['-C', directory, ...args], { encoding: 'utf8' });
@@ -12,12 +14,34 @@ export const baselineFile = (root) => scratchPath(root, 'baseline.txt');
 
 export const slotOf = (toplevel, number) => `${toplevel}-task-${number}`;
 
+const PORT_STRIDE = 10;
+
+const DEFAULT_PORT_START = 42000;
+
+export function slotEnv(toplevel, index, env = process.env) {
+  const start = Number.parseInt(env.EXO_SLOT_PORT_START ?? '', 10);
+  const portBase = (Number.isInteger(start) && start > 0 ? start : DEFAULT_PORT_START) + index * PORT_STRIDE;
+  return { EXO_SLOT: String(index), EXO_PORT_BASE: String(portBase), EXO_STATE_DIR: path.join(toplevel, '.exo', 'slot-state', String(index)) };
+}
+
+const envLine = (variables) => Object.entries(variables).map(([name, value]) => `${name}=${value}`).join(' ');
+
+export const slotEnvLine = (record) => envLine(record.env ?? {});
+
+function freeIndexes(toplevel, numbers, records) {
+  const taken = new Set(Object.entries(records).filter(([number, record]) => !numbers.includes(Number(number)) && record.index !== undefined && fs.existsSync(record.slot)).map(([, record]) => record.index));
+  const free = [];
+  for (let index = 0; free.length < numbers.length; index += 1) if (!taken.has(index)) free.push(index);
+  return free;
+}
+
 export function windowRecords(root) {
   return readJsonOrNull(windowFile(root)) ?? {};
 }
 
 export function restartRecord(root, number, record) {
-  const records = { ...windowRecords(root), [number]: record };
+  const known = windowRecords(root);
+  const records = { ...known, [number]: { ...known[number], ...record } };
   fs.writeFileSync(windowFile(root), JSON.stringify(records));
   return records;
 }
@@ -50,23 +74,27 @@ function writeBaseline(toplevel, fresh) {
   return null;
 }
 
-function runSetup(slot, setup) {
+function writeSlotEnv(slot, variables) {
+  fs.mkdirSync(variables.EXO_STATE_DIR, { recursive: true });
+  fs.writeFileSync(path.join(slot, '.exo', 'slot.env'), `${Object.entries(variables).map(([name, value]) => `export ${name}=${JSON.stringify(value)}`).join('\n')}\n`);
+}
+
+function runSetup(slot, setup, variables) {
   if (setup === null || setup === 'none') return null;
-  const ran = spawnSync(setup, { cwd: slot, shell: true, encoding: 'utf8' });
+  const ran = spawnSync(setup, { cwd: slot, shell: true, encoding: 'utf8', env: { ...process.env, ...variables } });
   if (ran.status === 0) return null;
   return { reason: `Worktree setup failed in ${slot}: ${`${ran.stdout}${ran.stderr}`.trim().split('\n').at(-1)}` };
 }
 
-function openSlot(toplevel, number, { setup, inputs }, made) {
+function openSlot(toplevel, number, { setup, inputs, variables }, made) {
   const slot = slotOf(toplevel, number);
-  const add = git(toplevel, 'worktree', 'add', '--detach', slot, 'HEAD');
-  if (add.status !== 0) {
-    return { reason: `git worktree add ${slot} failed: ${(add.stderr || add.stdout).trim().split('\n')[0]}` };
-  }
+  const add = createWorktree(toplevel, slot, ['worktree', 'add', '--detach', slot, 'HEAD'], { env: false });
+  if (!add.ok) return { reason: `git worktree add ${slot} failed: ${add.error}` };
   made.push(slot);
   fs.mkdirSync(path.join(slot, '.exo'), { recursive: true });
   copyInputs(toplevel, slot, inputs);
-  return runSetup(slot, setup);
+  writeSlotEnv(slot, variables);
+  return runSetup(slot, setup, variables);
 }
 
 export function openSlots({ root, numbers, setup, inputs = [], fresh, since }) {
@@ -79,14 +107,16 @@ export function openSlots({ root, numbers, setup, inputs = [], fresh, since }) {
   if (head.status !== 0) return { reason: `git rev-parse HEAD failed: ${head.stderr.trim()}` };
   const base = head.stdout.trim();
   const made = [];
-  for (const number of numbers) {
-    const problem = openSlot(toplevel, number, { setup, inputs }, made);
+  const records = fresh ? {} : windowRecords(toplevel);
+  const indexes = freeIndexes(toplevel, numbers, records);
+  const variables = numbers.map((number, position) => slotEnv(toplevel, indexes[position]));
+  for (const [position, number] of numbers.entries()) {
+    const problem = openSlot(toplevel, number, { setup, inputs, variables: variables[position] }, made);
     if (!problem) continue;
     discard(toplevel, made);
     return problem;
   }
-  const records = fresh ? {} : windowRecords(toplevel);
-  for (const number of numbers) records[number] = { slot: slotOf(toplevel, number), base, since };
+  for (const [position, number] of numbers.entries()) records[number] = { slot: slotOf(toplevel, number), base, since, index: indexes[position], env: variables[position] };
   fs.writeFileSync(windowFile(toplevel), JSON.stringify(records));
   return { toplevel, base, baseline: baselineFile(toplevel), records };
 }

@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
-import { fixture, git, gitRepository, run } from './harness.mjs';
+import { fixture, run } from './harness.mjs';
 
 const TOOL = path.resolve('benchmarks/delegation-readout.mjs');
-const { mainCheckout, runArguments } = await import(TOOL);
+const { runArguments } = await import(TOOL);
 
 const TASKS = ['value-web-research', 'value-rename-propagation', 'value-lean-minimal-diff'];
 const LEAN = 'value-lean-minimal-diff';
@@ -61,14 +61,6 @@ test('runArguments swaps --confirm for --dry-run so no session starts', () => {
   const argv = runArguments({ out: 'bench', beforePlugin: '/main', dryRun: true });
   assert.equal(argv.at(-1), '--dry-run');
   assert.equal(argv.includes('--confirm'), false);
-});
-
-test('mainCheckout resolves the main checkout from inside a linked worktree', async () => {
-  const root = await gitRepository({ 'a.txt': 'a\n' });
-  const linked = path.join(await fixture(), 'linked');
-  git(root, 'worktree', 'add', '-q', '-b', 'side', linked);
-  assert.equal(mainCheckout(linked), root);
-  assert.equal(mainCheckout(root), root);
 });
 
 test('--check exits 0 and prints pass, cost, peak and Agent calls per arm when exo is cheaper and nothing is lost', async () => {

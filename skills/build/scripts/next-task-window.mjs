@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { baselineFile, openSlots, slotOf } from './open-slots.mjs';
+import { baselineFile, openSlots, slotEnvLine, slotOf } from './open-slots.mjs';
 import { driftOf, relativeInputPaths } from '#plan-inputs';
 import { scriptPath } from './next-task-paths.mjs';
 import { taskLines } from './next-task-brief.mjs';
@@ -50,7 +50,7 @@ export function openedLines({ wave, frame, planPath, root, inFlight, briefDirect
   for (const task of wave) {
     const slot = slotOf(opened.toplevel, task.number);
     const brief = path.join(briefDirectory, `task-${task.number}.md`);
-    lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, ...(dispatchable(task, frame, root) ? promptLines(task, frame, planPath, slot, brief) : []));
+    lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, `Slot env: ${slotEnvLine(opened.records[task.number])} (run '. .exo/slot.env' before a proof that binds a port or writes state)`, ...(dispatchable(task, frame, root) ? promptLines(task, frame, planPath, slot, brief) : []));
   }
   const running = [...inFlight, ...wave.map((task) => task.number)];
   return { reason: undefined, lines: [...lines, '', ...windowLines({ planPath, root: opened.toplevel, records: opened.records, running, unlanded, only })] };

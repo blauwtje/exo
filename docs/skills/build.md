@@ -16,6 +16,7 @@ Not for writing or repairing a plan, or a change of two files or fewer.
 
 - One commit per task, so a resumed run knows what landed.
 - Independent tasks built in parallel in their own worktrees.
+- Each parallel slot exports `EXO_SLOT`, `EXO_PORT_BASE` and `EXO_STATE_DIR` to its setup command and `.exo/slot.env`, so servers and local state in parallel proofs do not collide; `EXO_SLOT_PORT_START` moves the port range.
 - Test-first work shows the failing test before the fix and the passing test after.
 - A point the plan leaves open is parked, not guessed: after the wave lands you get one question per message, and that task is rebuilt with your answer.
 - A short final message naming a run report that holds the proofs and the brief's `## Manual checks`, the checks only you can make.

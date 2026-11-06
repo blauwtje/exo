@@ -7,7 +7,10 @@ import { inSidecall, readHookText } from '#hook-input';
 import { scriptBytes } from '../lib/context-limits.mjs';
 import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType, intakeCutLine } from '../lib/context-decisions.mjs';
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
-import { sharesGitState } from '../lib/git-deny.mjs';
+import { commitAttributionReason } from '../lib/commit-messages.mjs';
+import { saveLongCommand } from '../lib/long-command.mjs';
+import { sharedStateReason } from '../lib/git-deny.mjs';
+import { denyReason } from '../lib/guard-rules.mjs';
 import { fixShellFor } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -25,12 +28,13 @@ export const CONTEXT_STEP = contextStep('context-limit', contextDecision);
 
 const WIDE_FIND = /(?:^|[;&|(]|&&|\|\|)\s*find\s+(?:-[HLP]\s+)*["']?(?:\/|~\/?|\$HOME|\$\{HOME\}|(?:\.\.\/?)+)["']?(?=\s|$)/;
 
+const deny = (reason) => ({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: reason } });
+
 export const FIND_STEP = {
   name: 'wide-find',
   run(hookInput) {
     const command = hookInput.tool_input?.command;
-    if (typeof command !== 'string' || /-maxdepth\s+1(?!\d)/.test(command) || !WIDE_FIND.test(command)) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'A find over /, ~, $HOME or .. runs past the 120 s tool timeout. Search inside the checkout; a plan input that is missing there → report BLOCKED.' } };
+    return typeof command === 'string' && !/-maxdepth\s+1(?!\d)/.test(command) && WIDE_FIND.test(command) ? deny(denyReason('wide-find')) : null;
   }
 };
 
@@ -38,19 +42,33 @@ export const SHARED_STATE_STEP = {
   name: 'shared-state-git',
   run(hookInput) {
     const command = hookInput.tool_input?.command;
-    if (!hookInput.agent_id || typeof command !== 'string' || !sharesGitState(command)) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'Subagents share stash, worktrees and branches with every worktree, so git stash, worktree remove/prune/move and branch delete/rename are denied. Tell the lead.' } };
+    if (!hookInput.agent_id || typeof command !== 'string') return null;
+    const reason = sharedStateReason(command);
+    return reason && deny(reason);
+  }
+};
+
+export const COMMIT_ATTRIBUTION_STEP = {
+  name: 'commit-attribution',
+  run(hookInput) {
+    const command = hookInput.tool_input?.command;
+    if (typeof command !== 'string') return null;
+    const reason = commitAttributionReason(command, hookInput.cwd ?? process.cwd());
+    return reason && deny(reason);
   }
 };
 
 export const SCRIPT_SIZE_STEP = {
   name: 'script-size',
-  run(hookInput) {
+  run(hookInput, earlier = []) {
     const command = hookInput.tool_input?.command;
     if (!hookInput.agent_id || typeof command !== 'string') return null;
     const limit = scriptBytes();
     if (Buffer.byteLength(command) <= limit) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: `This command is over ${limit} bytes. Write the script under .exo/ and run the file.` } };
+    if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
+    const saved = saveLongCommand(command, hookInput.cwd ?? process.cwd());
+    const detail = `this command is over ${limit} bytes`;
+    return deny(saved ? denyReason('script-saved', `${detail} and is saved as ${saved}`).replace('<saved path>', saved) : denyReason('script-size', detail));
   }
 };
 
@@ -63,8 +81,7 @@ export const SLEEP_STEP = {
   name: 'sleep',
   run(hookInput) {
     const command = hookInput.tool_input?.command;
-    if (typeof command !== 'string' || !SLEEP_AGENTS.has(hookAgentType(hookInput)) || !SLEEP_COMMAND.test(command)) return null;
-    return { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'No sleep polling. Interactive: end your turn and wait for the notification; run session: wait-report.mjs with Bash timeout 600000.' } };
+    return typeof command === 'string' && SLEEP_AGENTS.has(hookAgentType(hookInput)) && SLEEP_COMMAND.test(command) ? deny(denyReason('sleep')) : null;
   }
 };
 
@@ -112,11 +129,11 @@ function firstRewrite(outputs) {
   return outputs.find((output) => output.updatedInput && output.permissionDecision === undefined)?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, SCRIPT_SIZE_STEP, PREDISPATCH_STEP, SLEEP_STEP, RESULT_CAP_STEP, SHELL_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {
-      const output = await step.run(hookInput);
+      const output = await step.run(hookInput, outputs);
       if (output) outputs.push(output.hookSpecificOutput ?? {});
     } catch (error) {
       console.error(`${step.name}: ${error.message}`);

@@ -10,10 +10,11 @@ Brief:
 [[brief]]
 
 Rules:
-- Work in [[root]], with that path literally.
+- Work in [[root]]; use relative paths.
 - Run one command per Bash call, exactly as the plan writes it. Add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
 - Create and change files only with the Write and Edit tools; read with Read.
 - Run at most one test inside this session.
+- If `.exo/ruled-out/task-<n>.md` exists in [[root]], <n> being [[task]]'s number, repeat no approach it lists.
 - Send build and test output to `.exo/logs/<name>.log`; read only the summary and failing lines.
 - After the first red Proof, rerun it at most once per edit.
 - A test or command your sandbox or permission rules refuse is not a block: never end `[[task]]: BLOCKED` on one; report it as `not run`, not `failed`.

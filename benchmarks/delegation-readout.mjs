@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { findTranscript } from './cell-usage.mjs';
+import { mainCheckout } from '#checkout';
 import { contextSeries } from '#context-series';
 import { UsageError, isMain, parseFlags } from '#script-flags';
 import { readJson, sum } from './basics.mjs';
@@ -33,11 +34,6 @@ const RUNS = 3;
 const MAX_TOTAL_USD = '25';
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const RUN_SCRIPT = path.join(REPOSITORY, 'benchmarks', 'run.mjs');
-
-export function mainCheckout(cwd = REPOSITORY) {
-  const common = execFileSync('git', ['-C', cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim();
-  return path.dirname(common);
-}
 
 export function runArguments({ out, beforePlugin, dryRun }) {
   return [
@@ -188,8 +184,8 @@ function main(argv) {
     if (flags[flag] && flags.check === undefined) throw new UsageError(`--${flag} needs --check <out dir>`);
   }
   if (flags.check === undefined) throw new UsageError('name --check <out dir>');
-  if (flags['dry-run']) return launch(runArguments({ out: flags.check, beforePlugin: mainCheckout(), dryRun: true }));
-  if (flags.run) launch(runArguments({ out: flags.check, beforePlugin: mainCheckout(), dryRun: false }));
+  if (flags['dry-run']) return launch(runArguments({ out: flags.check, beforePlugin: mainCheckout(REPOSITORY), dryRun: true }));
+  if (flags.run) launch(runArguments({ out: flags.check, beforePlugin: mainCheckout(REPOSITORY), dryRun: false }));
   const { rows } = readCells(flags.check);
   const { lines, problems } = readout(rows);
   console.log(lines.join('\n'));

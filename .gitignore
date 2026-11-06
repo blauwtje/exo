@@ -6,6 +6,7 @@ node_modules/
 .DS_Store
 docs/*
 !docs/principles/
+!docs/behaviour/
 !docs/skills/
 !docs/codex.md
 !docs/settings.md

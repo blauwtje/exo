@@ -1,22 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { phaseForExit } from './run-state.mjs';
 import { appendLog } from './run-session.mjs';
-import { averageLines, cacheLines, deniedLines, detailLines, summaryLines } from './run-report.mjs';
-import { noteStop } from './run-plan-notes.mjs';
-
-function noteRunEnd(exitCode, stop) {
-  if (exitCode === 0) return noteStop({ reason: stop.line });
-  noteStop({ phase: phaseForExit(exitCode), reason: stop.line });
-}
+import { averageLines, receiptLines, cacheLines, deniedLines, detailLines, summaryLines } from './run-report.mjs';
+import { stopRun } from './run-plan-stops.mjs';
 
 export function finishRun(ctx, { stop, exitCode: planned, progressFile }) {
   const { say, run } = ctx;
-  const exitCode = stop?.parked ? 3 : planned;
-  noteRunEnd(exitCode, stop);
+  const exitCode = stopRun(ctx, stop, planned);
   for (const line of averageLines(ctx.landedStats)) say(line);
-  say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
+  for (const line of receiptLines(ctx.spendLog ?? [])) say(line);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
 
   const detail = detailLines(run, stop);

@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
 import { inRun, recordDecision } from '#run-decision';
-import { attributionProblem, branchNameProblem, subjectProblem } from '#commit-text';
+import { StepError, createPullRequest, existingPullRequest, firstLine, refuseBadText, runGh, runGit } from './pull-request.mjs';
+import { restackChildren } from './stack.mjs';
 import { returnToDefault } from './return-to-default.mjs';
 
 export const USAGE_EXIT = 2;
@@ -21,15 +22,6 @@ const MAX_BEHIND_UPDATES = 2;
 const PR_NUMBER = /^[1-9][0-9]*$/;
 const WAIT_CHECKS = fileURLToPath(new URL('./wait-checks.mjs', import.meta.url));
 const SHIP_GATE = fileURLToPath(new URL('./ship-gate.mjs', import.meta.url));
-
-class StepError extends Error {
-  constructor(step, reason, { subject, code = 1 } = {}) {
-    super(reason);
-    this.step = step;
-    this.subject = subject;
-    this.code = code;
-  }
-}
 
 function announce(step, number) {
   process.stderr.write(`ship: ${step}${number === undefined ? '' : ` #${number}`}\n`);
@@ -174,60 +166,9 @@ function currentPatchId() {
   return patchId.trim().split(/\s+/)[0] || null;
 }
 
-function firstLine(text) {
-  return (text.split('\n').find((line) => line.trim() !== '') ?? 'no output').trim();
-}
-
-function runGit(args) {
-  try {
-    return { ok: true, stdout: execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) };
-  } catch (error) {
-    return { ok: false, error: firstLine(`${error.stderr ?? ''}`) };
-  }
-}
-
-function runGh(args) {
-  try {
-    return { ok: true, stdout: execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) };
-  } catch (error) {
-    return { ok: false, error: firstLine(`${error.stderr ?? ''}`) };
-  }
-}
-
 // why: GitHub closes an issue on merge only for its closing keywords (close, fix, resolve and their forms).
 function closesIssue(body, issue) {
   return new RegExp(`\\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?\\s+#${issue}\\b`, 'i').test(body);
-}
-
-function existingPullRequest(branch) {
-  const result = runGh(['pr', 'view', branch, '--json', 'number,url,state']);
-  if (!result.ok) return null;
-  const pullRequest = JSON.parse(result.stdout);
-  return pullRequest.state === 'OPEN' ? pullRequest : null;
-}
-
-function issueFields(issue) {
-  const result = runGh(['issue', 'view', String(issue), '--json', 'labels,milestone,projectItems']);
-  if (!result.ok) throw new StepError('create', `gh=${result.error}`);
-  const data = JSON.parse(result.stdout);
-  return {
-    labels: (data.labels ?? []).map((label) => label.name),
-    milestone: data.milestone?.title,
-    projects: (data.projectItems ?? []).map((item) => item.title).filter(Boolean)
-  };
-}
-
-function createPullRequest(branch, base, flags) {
-  const fields = flags.issue !== undefined ? issueFields(flags.issue) : { labels: [], milestone: undefined, projects: [] };
-  const args = ['pr', 'create', '--base', base, '--head', branch, '--title', flags.title, '--body-file', flags.body];
-  for (const label of fields.labels) args.push('--label', label);
-  if (fields.milestone) args.push('--milestone', fields.milestone);
-  for (const project of fields.projects) args.push('--project', project);
-  const result = runGh(args);
-  if (!result.ok) throw new StepError('create', `gh=${result.error}`);
-  const url = firstLine(result.stdout);
-  const number = Number(url.match(/\/pull\/(\d+)/)?.[1]);
-  return { number, url };
 }
 
 function pullRequestView(number) {
@@ -302,6 +243,7 @@ function runMergeList(numbers) {
       runGate(number, pullRequest.url);
       mergePullRequest(number, 'squash', pullRequest.url);
       console.log(confirmMerge(number, pullRequest.url));
+      restackChildren(pullRequest.headRefName, originDefaultBranch(process.cwd()));
       merged.push(pullRequest.headRefName);
     } catch (error) {
       if (!(error instanceof StepError)) throw error;
@@ -311,18 +253,6 @@ function runMergeList(numbers) {
   }
   if (merged.length > 0) console.log(returnToDefault({ base: originDefaultBranch(process.cwd()), merged }).line);
   process.exitCode = exitCode;
-}
-
-function refuseBadText(flags, branch) {
-  if (flags.route === 'push') return;
-  let body;
-  try {
-    body = fs.readFileSync(flags.body, 'utf8');
-  } catch {
-    throw new StepError('create', `body-unreadable ${flags.body}`);
-  }
-  const problem = subjectProblem(flags.title) ?? attributionProblem(`${flags.title}\n${body}`) ?? branchNameProblem(branch);
-  if (problem !== null) throw new StepError('create', `text-refused: ${problem}`);
 }
 
 function run(flags, branch, base) {

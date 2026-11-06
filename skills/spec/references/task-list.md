@@ -11,6 +11,7 @@ The task list is the part of the brief that the build executes, so each field be
    - `Land gate:` is `npm run <script>` for the first of `check`, `test` and `typecheck` in the root package.json, else `none`.
      - A task lands only when it passes; it runs per task only if the full check takes under 60 s, and otherwise the gate runs it once.
    - `Land:` comes from the `ship` setting: `push` gives `push-main`, `open-pr` and `pr-merge` give `pr`, and `ask` recommends `local`.
+   - `Autonomy: auto | pause-flagged | approve-each` is optional (default `auto`). Add `| Pause: yes` to an irreversible or outward-facing task (migration, delete, publish) and set `pause-flagged`.
    - With `Land:` `local` or `push-main`, add `Commit: <type(scope): subject>`, the subject of the squash commit.
    - When the root package.json has a `lint` script, write `Lint: <linter binary>`, else `none`. `npm run lint` skips `Files:`.
    - When proofs need a running app, write `App: <start command> | Ready: <url>`, else `none`. The proofs run with it started.

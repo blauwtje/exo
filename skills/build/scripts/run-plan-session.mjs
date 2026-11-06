@@ -12,6 +12,7 @@ import { isFileOnDisk } from './run-session-claude.mjs';
 import { PLUGIN_ROOT } from './run-session-paths.mjs';
 import { snapshot } from './run-worktree.mjs';
 import { appTail, ensureApp } from './run-plan-app.mjs';
+import { noteCounts } from './run-plan-notes.mjs';
 
 const BUILD_KINDS = ['task', 'plan'];
 
@@ -23,10 +24,14 @@ export function planBreach(ctx) {
   return planHash(ctx) === ctx.planAtStart ? null : 'plan changed';
 }
 
-export function budgetStop(ctx) {
+const SOFT_SHARE = 0.8;
+
+function noteSpend(ctx, entry) {
+  (ctx.spendLog ??= []).push(entry);
   const { runCap, spent } = ctx;
-  if (runCap === undefined || spent < runCap) return null;
-  return { line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd, then run exo run again' };
+  if (runCap === undefined || ctx.softNoted || spent < runCap * SOFT_SHARE || spent >= runCap) return;
+  ctx.softNoted = true;
+  ctx.say(`budget: ${money(spent)} of ${money(runCap)} spent, the run stops after the task that reaches the ceiling`);
 }
 
 export function handoffFile(ctx, number) {
@@ -66,10 +71,14 @@ export async function spawnOne(ctx, { prompt, allow, settings, pin, log, kind = 
   } finally {
     ctx.liveSessions -= 1;
   }
+  if (!repair) ctx.sessionFallback = outcome.fallback ?? null;
+  if (outcome.fallback) ctx.say(`${task === null ? kind : `task ${task}`} model ${outcome.fallback.from} -> ${outcome.fallback.to}: provider overloaded`);
   const reported = parseStream(outcome.text);
   const parsed = { ...reported, cost: costBeyondEarlierTry(ctx, reported, resume) };
   if (reported.sessionId) ctx.sessionCosts.set(reported.sessionId, reported.cost);
   ctx.spent += parsed.cost;
+  noteCounts({ spent: Number(ctx.spent.toFixed(6)) });
+  noteSpend(ctx, { kind: repair ? 'repair' : kind, task, cost: parsed.cost, known: reported.costKnown });
   appendLog(ctx.ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, model: parsed.model ?? sessionModel })}\n`);
   return { before, outcome, parsed: { ...parsed, model: parsed.model ?? sessionModel } };
 }

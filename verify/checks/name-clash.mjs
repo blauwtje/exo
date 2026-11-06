@@ -90,7 +90,8 @@ export const BASELINE = new Map([
   ['configure ~ claude-plugins-official/external_plugins/telegram skill', 'channel plugin, rarely installed with exo; rename deferred'],
   ['configure ~ config (Claude Code command)', 'typing /config reaches the built-in; rename deferred'],
   ['run-plan ~ run (Claude Code bundled skill)', 'typing /run reaches the bundled skill; rename deferred'],
-  ['design-ui ~ design (ui-ux-pro-max-skill/cli/assets skill)', 'third-party skill; rename deferred']
+  ['design-ui ~ design (ui-ux-pro-max-skill/cli/assets skill)', 'third-party skill; rename deferred'],
+  ['review ~ Claude Code command', 'typing /review reaches the built-in; the skill is typed as /exo:review']
 ]);
 
 const keyOf = (item) => `${item.name} ~ ${item.with}`;

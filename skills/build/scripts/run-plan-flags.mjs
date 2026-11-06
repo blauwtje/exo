@@ -12,7 +12,7 @@ export function requirePlanArgument(argument) {
   return argument;
 }
 
-export function runPlanOptions(flags) {
+export function runPlanOptions(flags, defaults = {}) {
   const sessionFlag = flags.session ?? 'auto';
   if (!['auto', 'task', 'plan'].includes(sessionFlag)) throw new UsageError("flag '--session' needs auto, task or plan");
   return {
@@ -20,6 +20,6 @@ export function runPlanOptions(flags) {
     maxIterations: numberFlag(flags['max-iterations'], 'max-iterations', { integer: true }),
     timeoutMs: (numberFlag(flags.timeout, 'timeout') ?? DEFAULT_TIMEOUT_MINUTES) * 60_000,
     sessionCap: numberFlag(flags['max-budget-usd'], 'max-budget-usd'),
-    runCap: numberFlag(flags['max-run-usd'], 'max-run-usd')
+    runCap: numberFlag(flags['max-run-usd'] ?? defaults.maxRunUsd, 'max-run-usd')
   };
 }

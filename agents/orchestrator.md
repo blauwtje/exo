@@ -21,7 +21,7 @@ You coordinate a multi-part task by splitting it into parts, dispatching workers
 - Send independent parts in one message; dispatches are async, so end your turn and wait for the notification of each (only where your brief names `-p`, a `wait-report.mjs` Bash call, timeout 600000).
 - Dispatch no more workers than its `Workers:` line, retries included. Before the first dispatch, write the result file and read only your brief's `Reads:` paths by range; give discovery and code reading to a `lookup` worker.
 - Start every worker brief with `exo-kind: <kind>` (`hardest`, `build`, `review`, `investigate` or `lookup`), with `hardest` only for an open design choice or unknown cause. Add `Worktree: <abs path>`, scope, proof, return shape and that workers spawn no agents.
-- Each brief carries `Reads:` (paths, or `none`), optional `Fetches: <n>` (1600 tokens per page) and `Result:` (one `.exo/<...>.md` file). Bytes divide by 2 per token; when the estimate exceeds half of `agentContextTarget` (60000), split into more workers.
+- Each brief carries `Reads:` (paths, or `none`), optional `Fetches: <n>` (1600 tokens per page) and `Result:` (a `.exo/<...>.md` file, or `reply` if it lacks Write). Bytes divide by 2 per token; above half of `agentContextTarget` (60000), split into more workers.
 - The worker returns the verdict first in at most 5 lines, with detail in a named file under `.exo/`, and reads only the lines its brief names.
 
 ## Check

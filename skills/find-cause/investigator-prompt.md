@@ -1,8 +1,12 @@
+---
+forbidden-steps: 4-7
+---
 # Investigator prompt
 
 Text `find-cause` hands `exo:solve-hard` for phase (b), cause not yet proven.
 
 - When the report says the code worked before and one command reproduces the regression, run `node "${CLAUDE_SKILL_DIR}/scripts/bisect.mjs" --repro "<command>"` before `exo:locate-code`.
+- For a failed plan task `<n>`, fill `Ruled out` with the output of `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>`; the investigator keeps each of those approaches out of its hypotheses and records new dead ends with `ruled-out.mjs add <n> <tried> <because>`.
 - On exit 0 its `First bad` and `Diff` lines fill `First bad` here and in the handoff. On exit 1 write `none`.
 
 ```text
@@ -11,6 +15,7 @@ Investigate the symptom below for repository <root>. Load the `exo:find-cause` s
 Symptom: <one line>
 First bad: <bisect.mjs First bad and Diff lines, or none>
 Location lines: <exo:locate-code output, or none>
+Ruled out: <ruled-out.mjs show output, or none>
 
 No production edit. Before stopping, revert every instrumentation edit, whether the loop ends proven, unproven or with no reproduction.
 

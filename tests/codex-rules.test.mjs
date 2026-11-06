@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { generateTree } from '../harnesses/codex/generate.mjs';
-import { codexBody } from '../harnesses/codex/rules.mjs';
+import { codexBody, codexMarkdown } from '../harnesses/codex/rules.mjs';
 import { tempDir } from './harness.mjs';
 
 const SOURCE_ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -41,4 +41,9 @@ test('a Finder file inside a skill folder is not generated', () => {
   fs.writeFileSync(path.join(root, 'skills', 'build', '.DS_Store'), 'x');
   const files = [...generateTree(root).keys()];
   assert.deepEqual(files.filter((file) => file.endsWith('.DS_Store')), []);
+});
+
+test('a delegate prompt drops its repository-only front matter', () => {
+  const text = '---\nforbidden-steps: 6-7\n---\n# Fixer prompt\n';
+  assert.equal(codexMarkdown('skills/find-cause/fixer-prompt.md', text, new Set()), '# Fixer prompt\n');
 });

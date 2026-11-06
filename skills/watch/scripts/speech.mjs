@@ -5,7 +5,6 @@ import process from 'node:process';
 
 const MODEL_SOURCE = 'huggingface.co/ggerganov/whisper.cpp';
 const HINTS = {
-  'yt-dlp': "'brew install yt-dlp' or 'pipx install yt-dlp'",
   ffmpeg: "'brew install ffmpeg'",
   'whisper-cli': `'brew install whisper-cpp' plus a ggml model from ${MODEL_SOURCE} passed as --model`,
   whisper: `'pipx install openai-whisper', or 'brew install whisper-cpp' plus a ggml model from ${MODEL_SOURCE} passed as --model`,
@@ -45,9 +44,10 @@ function engineOf(options) {
   return useCpp ? 'whisper-cli' : 'whisper';
 }
 
-function missingTool(options) {
-  const tools = ['yt-dlp', 'ffmpeg', engineOf(options)];
-  const tool = tools.find((name) => !onPath(name));
+async function missingTool(options) {
+  const need = await options.ytDlpNeed();
+  if (need) return need;
+  const tool = ['ffmpeg', engineOf(options)].find((name) => !onPath(name));
   if (!tool) return null;
   return `${tool} on PATH; install it with ${HINTS[tool]}`;
 }
@@ -114,7 +114,7 @@ function removeAudio(dir) {
 }
 
 export async function transcribe(url, dir, options) {
-  const missing = missingTool(options);
+  const missing = await missingTool(options);
   if (missing) return { missing };
   fs.mkdirSync(dir, { recursive: true });
   const engine = engineOf(options);

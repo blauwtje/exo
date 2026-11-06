@@ -7,7 +7,7 @@ description: Use when a page or component's look or copy changes, or it looks em
 
 Build the page as a real product someone could ship tomorrow, designed from the world of the people who use it. The enemy is a style picked with no link to the subject, which gives one house look across unrelated briefs. The overcorrection is a page that passes every lint line, or paints one themed motif on every surface, yet nobody would choose it. The subject's own world makes a page specific, and a critique by fresh eyes makes it good.
 
-Plan on about 900 s at effort high. Spend it on the direction, the imagery and the critique round, since those decide the result; a fast build that skips them looks finished and generic.
+Plan on about 900 s at effort high. Spend it on the direction, the imagery and the critique round; a build that skips them looks finished and generic.
 
 ## Kind
 
@@ -25,13 +25,13 @@ A named direction wins: the request's own look, the repo's tokens, a plan's `## 
 
 1. Name the category default: the look most products in this category ship (white cards and a blue primary for a dashboard, a food photo hero on cream for a recipe site), then its opposite. The default is where the page drifts unless something specific pulls it away.
 2. List 5-7 artifacts and traditions from the audience's own life: objects they handle, places they go, crafts and print they know. A cycling club suggests race numbers, jersey stripes and route cards; a tea shop suggests tins, paper wrappers and ledger books.
-3. Run `node "${CLAUDE_SKILL_DIR}/scripts/deal.mjs"` and add its two seeds to the list. They are nudges from outside the subject, useful when your own list feels thin; a seed with no link to the audience loses to one that has it.
+3. Run `node "${CLAUDE_SKILL_DIR}/scripts/deal.mjs"` and add its two seeds to the list. They are nudges from outside the subject; a seed with no link to the audience loses to one that has it.
 4. Pick the candidate that fits this audience best and is furthest from the category default.
 5. Write the contract in a few lines: thesis (what the page should feel like and why), world and materials, palette (dominant color, sharp accent), type roles (display face, text face). Add the signature object that recurs across the page and the per-item imagery idea.
-6. Add density, tight or airy, for this audience: a trading desk runs tight, a recipe journal can breathe. Airy is where pages drift, so pick it on purpose.
+6. Add density, tight or airy, for this audience: a trading desk runs tight, a recipe journal can breathe. Airy is where pages drift; pick it on purpose.
 7. Add a region inventory: every region of the first viewport at 1440 (each pane, rail, band and the hero's two halves) with the content it holds. A region with nothing to list is a dead region; give it a module that belongs there or remove it, before any code.
 
-Read `references/slop.md` while choosing; it names the generic looks and copy tells to steer away from. Ask the user only when the page cannot be built without the answer; else decide and list the decision in the report.
+Read `references/slop.md` while choosing; it names the generic looks and copy tells to steer away from. Ask only when the page cannot be built without the answer; else decide and report the decision.
 
 Steer away from the exo house look, since it is what this skill produced across unrelated briefs: pale ground, serif display with sans body and mono labels, hairline rules, small stamped props. The model's own defaults are listed in `references/slop.md`. Banning a look alone swaps it for another fixed look, or leaves the space empty, so put working detail where the banned detail stood:
 
@@ -47,6 +47,7 @@ Open each reference when you reach its part of the build; each holds the reasons
 - Color: `references/color.md`: one dominant color with a sharp accent, value range, materials and depth.
 - Layout: `references/layout.md`: app and document structure, filling the frame, hierarchy, spacing, density.
 - Marketing: `references/marketing.md`: product in the hero, an artifact per section, band rhythm.
+- Reference: `references/reference-input.md`: a supplied image, recording or URL, shown beside the result with numbered regions.
 - Motion: `references/motion.md`: one orchestrated load, state transitions, reduced motion.
 
 ## Imagery
@@ -74,11 +75,11 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 
 ## Check
 
-The floors catch what is broken; the critique catches what is weak. A page with zero lint lines can still be generic, so the critique is part of done.
+The floors catch what is broken; the critique catches what is weak.
 
 1. Floors: `node "${CLAUDE_SKILL_DIR}/scripts/look.mjs" <file-or-url> --out <dir>`, with `--app` for an app, one `--expect "<text>"` per explicit ask, and one `--state "<name>=<js>"` per state worth seeing (a second tab, an open sheet, a filled form, an error, keyboard focus). The JS runs in the page and puts it in that state, for example `document.querySelector('#tab-friends').click()`.
 2. Fix each printed line: `CONTRAST` (the ratio decides, not the eye), `CLIP`, `OVERLAP`, `FONTS`, `FIT`, `NAV`, `OVERFLOW`, `CONSOLE`, `MISSING`, `BELOW`, `STATE`. A hidden view counts for an ask only when its tab or control is visible and its content is in the DOM.
-3. Critique: dispatch one fresh delegate whose prompt opens with `exo-kind: review` as critic with `Reads: <shot paths>` and `Worktree: <abs path>` lines, briefed per `references/critic.md`. It sees the shots, the request and the contract, never your code or reasoning, so it judges what a user sees.
+3. Critique: dispatch one fresh delegate whose prompt opens with `exo-kind: review` as critic with `Reads: <shot paths>` and `Worktree: <abs path>` lines, briefed per `references/critic.md`. It sees the shots, the request and the contract, never your code or reasoning.
 4. Fix round: act on its findings in one round of edits, then rerun look with `--no-shots` to confirm the floors still hold. A `rebuild` verdict on one area means rebuilding that area in this round.
 
 ## Report
@@ -96,6 +97,7 @@ The floors catch what is broken; the critique catches what is weak. A page with 
 | `references/layout.md` | Before laying out the page. |
 | `references/marketing.md` | Before laying out any document page (landing, marketing, docs). |
 | `references/motion.md` | Before adding motion or state transitions. |
+| `references/reference-input.md` | When a reference is supplied, and when a follow-up names a region. |
 | `references/critic.md` | At the critique step, to brief the critic. |
 
 ## Judgment

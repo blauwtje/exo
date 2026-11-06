@@ -2,6 +2,7 @@
 
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { mainCheckout } from '#checkout';
 import { defaultBranch } from '#git';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
@@ -16,12 +17,6 @@ function git(dir, args) {
 
 function firstLine(text) {
   return text.split('\n').find((line) => line.trim() !== '')?.trim() ?? 'no output';
-}
-
-function mainCheckout(dir) {
-  const list = git(dir, ['worktree', 'list', '--porcelain']);
-  const entry = list.ok ? list.text.split('\n').find((line) => line.startsWith('worktree ')) : undefined;
-  return entry === undefined ? null : entry.slice('worktree '.length);
 }
 
 export function returnToDefault({ dir = process.cwd(), base = null, merged = [] } = {}) {

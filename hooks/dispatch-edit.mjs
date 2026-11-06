@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
+import { editRuleFields } from '../lib/edit-code-rules.mjs';
 import { impactFields } from '../lib/edit-impact.mjs';
 import { contextDecision, contextFields } from '../lib/context-decisions.mjs';
 import { shellStopFields } from '../lib/live-shells.mjs';
@@ -10,6 +11,7 @@ import { withReceipt } from './context-limit.mjs';
 const STEPS = [
   { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) },
   { name: 'shell-stop', run: shellStopFields },
+  { name: 'code-rules', run: editRuleFields },
   { name: 'edit-impact', run: impactFields }
 ];
 

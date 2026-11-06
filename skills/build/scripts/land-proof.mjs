@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { runTreeSync } from '#process-tree';
 import { environmentMs } from '#script-flags';
-import { cachedPass, recordPass, workingTreeKey } from '#check-cache';
+import { cachedPass, gateRefusal, recordPass, workingTreeKey } from '#check-cache';
 import { ensureServices } from '../../../lib/services.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
 import { LandingError, EnvError } from './land-errors.mjs';
@@ -27,7 +27,7 @@ function proofAttempt(task, command, root, pendingEvidence) {
   const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: proofEnvOf(task, pendingEvidence) });
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
-  return { proofRun, deadlineMs, tail, passed: proofRun.status === 0 && !proofRun.timedOut };
+  return { command, proofRun, deadlineMs, tail, passed: proofRun.status === 0 && !proofRun.timedOut && gateRefusal(command, proofRun.output) === null };
 }
 
 function startedServices(root, docker) {
@@ -42,6 +42,7 @@ function proofFailure(attempt) {
   if (proofRun.timedOut) return `timed out after ${deadlineMs / 1000}s`;
   if (proofRun.error !== undefined) return `spawn error ${proofRun.error.message}`;
   if (proofRun.signal !== null) return `signal ${proofRun.signal}`;
+  if (proofRun.status === 0) return `exit 0 but ${gateRefusal(attempt.command, proofRun.output)}`;
   return `exit ${proofRun.status}`;
 }
 
@@ -52,7 +53,7 @@ export function runProof(task, command, { root, field, docker, pendingEvidence }
   let attempt = proofAttempt(task, command, root, pendingEvidence);
   if (!attempt.passed && startedServices(root, docker)) attempt = proofAttempt(task, command, root, pendingEvidence);
   if (attempt.passed) {
-    recordPass(root, command, Date.now() - started, before);
+    recordPass(root, command, Date.now() - started, before, attempt.proofRun.output);
     return { command, tail: attempt.tail };
   }
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${proofFailure(attempt)}):`, ...attempt.tail].join('\n'));

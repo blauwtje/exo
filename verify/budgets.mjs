@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve', 'watch'
+  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve', 'watch', 'review'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -33,7 +33,7 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 3946, measured: '2026-11-04' };
 export const HOOK_LINES_LOCK = { lines: 1098, measured: '2026-11-05' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
 export const HOOK_TEXT_BYTES_LOCK = { bytes: 6131, measured: '2026-11-05' };
-export const HOOK_SPAWN_MS_LOCK = { ms: 75, measured: '2026-10-29' };
+export const HOOK_SPAWN_MS_LOCK = { ms: 30, measured: '2026-11-06' };
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
 // large test file is split before it lands.
 export const TEST_FILE_CAP = { bytes: 40 * 1024 };
@@ -75,7 +75,7 @@ export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 // cap because its pinned gate sentences hold it at its measured 790.
 // Raised 783 -> 790: the principles row names AI agent work (0/3 -> 3/3 runs opened the index, benchmarks/results/2026-10-22-spec-principles-read-reworded.md).
 export const STAGE_BODY_TOKENS = {
-  'start': 474, 'spec': 935, 'build': 739, 'gate': 750, 'find-cause': 746, 'ship': 750,
+  'start': 486, 'spec': 935, 'build': 739, 'gate': 750, 'find-cause': 746, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. An agent is exempt only by exact name, never by pattern.
@@ -94,10 +94,10 @@ export const REFERENCE_TOKEN_LOCKS = {
   // autonomous-exo-5 Task 10; their older rules stay whole.
   'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 963,
-  'skills/build/run-task-prompt.md': 756,
-  'skills/ship/references/pr-prep.md': 849,
+  'skills/build/run-task-prompt.md': 782,
+  'skills/ship/references/pr-prep.md': 845,
   'skills/spec/references/brief.md': 1032,
-  'skills/spec/references/task-list.md': 1074,
+  'skills/spec/references/task-list.md': 1124,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in

@@ -143,6 +143,17 @@ test('open-pr still stops when the default branch cannot be read', async () => {
   assert.equal(after, before);
 });
 
+test('a repository with no origin lists no route and stops a push', async () => {
+  const root = await gitRepository({ 'README.md': '# fixture\n' });
+  const routes = await shipRun(root, ['--routes']);
+  assert.equal(routes.code, 0, routes.stderr);
+  assert.match(routes.stdout, /^no origin remote; no route can run\n/);
+  const outcome = await shipRun(root, ['--route', 'push']);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.match(outcome.stdout, /^main stopped push /);
+  assert.deepEqual(outcome.calls, []);
+});
+
 test('a body missing "Closes #<n>" stops before any push', async () => {
   const { workDir, origin } = await shipRepository();
   git(workDir, 'checkout', '-q', '-b', 'feat/x');
@@ -362,6 +373,7 @@ function mergeScenario(number, url) {
     [`pr view ${number} --json ${VIEW_FIELDS}`]: { stdout: `${JSON.stringify({ number, url, state: 'OPEN', headRefName: `feat/${number}` })}\n` },
     [`pr view ${number} --json ${GATE_FIELDS}`]: { stdout: `${JSON.stringify({ number, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', reviewDecision: null, statusCheckRollup: [] })}\n` },
     [`pr merge ${number} --squash`]: { stdout: '' },
+    'pr list --state open --json number,url,headRefName,baseRefName,body': { stdout: '[]\n' },
     [`pr view ${number} --json state,mergedAt,url`]: { stdout: `${JSON.stringify({ state: 'MERGED', mergedAt: '2026-01-01T00:00:00Z', url })}\n` }
   };
 }

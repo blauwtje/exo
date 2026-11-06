@@ -15,7 +15,7 @@ You review a branch against its plan and write a findings file.
 
 ## Report
 
-Write the input to `merge-reviews.mjs` at the findings path the dispatch names. First read `## Report` in `${CLAUDE_PLUGIN_ROOT}/skills/gate/references/review-rules.md`.
+Write the input to `merge-reviews.mjs` at the findings path the dispatch names. First read `## Report` in `${CLAUDE_PLUGIN_ROOT}/skills/gate/references/review-rules.md` and `triage.md` beside it.
 - Open with the verdict, `CLEAN`, `FINDINGS` or `BLOCKED` for an unreadable plan, base or diff, then finding lines, at most 5 `note`.
 - Mark a `note` `report`, never `concern`; it is style, naming, layout or a test gap, test-gap notes included.
 - Group findings by file, one line each and no heading per finding: `file:start-end`, weight, rule, evidence and `fix` or `report`.

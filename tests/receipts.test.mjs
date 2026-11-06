@@ -61,8 +61,8 @@ test('an exo agent with a model and effort already set shows those', () => {
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: input }, 'off', ON).systemMessage, 'exo › build-task (opus, high)');
 });
 
-test('an agent that is not an exo agent gives no line, and no output when nothing changes', () => {
-  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'Explore', prompt: 'x' } }, 'on', ON), null);
+test('an agent that is not an exo agent gives no line', () => {
+  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'Explore', prompt: 'x' } }, 'on', ON).systemMessage, undefined);
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'exo-kind: build\nReads: none\nx' } }, 'on', ON).systemMessage, undefined);
 });
 
@@ -75,7 +75,7 @@ test('a refusal gives one line with its reason from the Bash, Edit and Agent hoo
   assert.match(edit.systemMessage, /^exo blocked: Background shells you started still run/);
   for (const output of [bash, agent, read]) {
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(output.systemMessage, /^exo blocked: Context use is \d+k tokens\./);
+    assert.match(output.systemMessage, /^exo blocked: Over the (hard )?context (limit|target)/);
     assert.ok(output.systemMessage.length <= 'exo blocked: '.length + 140);
   }
 });

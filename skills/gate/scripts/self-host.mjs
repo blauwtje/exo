@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { commonDir } from '#checkout';
 import { DEFAULT_BASE } from './gate-constants.mjs';
 import { gitOutput } from './gate-command.mjs';
 
@@ -21,8 +22,7 @@ export function selfHostingGap(root, base = DEFAULT_BASE) {
 
 function sharesRepository(root, pluginRoot) {
   if (spawnSync('git', ['-C', pluginRoot, 'rev-parse', '--git-dir'], { stdio: 'ignore' }).status !== 0) return false;
-  const commonDir = (dir) => fs.realpathSync(path.resolve(dir, gitOutput(dir, ['rev-parse', '--git-common-dir'])));
-  return commonDir(root) === commonDir(pluginRoot);
+  return fs.realpathSync(commonDir(root)) === fs.realpathSync(commonDir(pluginRoot));
 }
 
 function hostingFor({ root, base, running, pluginRoot }) {

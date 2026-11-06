@@ -3,7 +3,7 @@ import path from 'node:path';
 import { transcribe } from './speech.mjs';
 import { parseVtt } from './cues.mjs';
 import { writeOutputs, headOf } from './outputs.mjs';
-import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable } from './ytdlp.mjs';
+import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './ytdlp.mjs';
 import { pickCaptions, availableLanguages, chaptersOf, folderOf } from './ytdlp-info.mjs';
 import { sourceOf } from './video-url.mjs';
 import { chaptersFromHtml } from './youtube-chapters.mjs';
@@ -22,7 +22,7 @@ function missingTool(id, reason) {
 }
 
 async function watchBySpeech({ label, url, dir, head, details, why }, options) {
-  const speech = await transcribe(url, dir, { ...options, runYtDlp: runYtDlpWithRuntime, ytDlpReason });
+  const speech = await transcribe(url, dir, { ...options, runYtDlp: runYtDlpWithRuntime, ytDlpReason, ytDlpNeed });
   const lead = why ? `${why}; ` : '';
   if (speech.missing) return missingTool(label, `${lead}the video has no captions, and transcribing its audio needs ${speech.missing}, then rerun`);
   if (speech.failure) return noTranscript(label, `${lead}the video has no captions, and ${speech.failure}`);
@@ -87,9 +87,8 @@ async function watchWithYtDlp({ id, url }, options, why) {
 }
 
 async function watchSite({ url, host }, options) {
-  if (!(await ytDlpAvailable(options.ytDlpMs))) {
-    return missingTool(url, `reading ${host} videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun`);
-  }
+  const need = await ytDlpNeed();
+  if (need) return missingTool(url, `reading ${host} videos needs ${need}, then rerun`);
   return watchWithYtDlp({ url }, options);
 }
 

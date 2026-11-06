@@ -1,6 +1,6 @@
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
+import { commonDir } from '#checkout';
 import { realpathOr, SCRIPTS_DIR } from './run-session-paths.mjs';
 
 const SESSION_MARKERS = [
@@ -18,7 +18,7 @@ const SESSION_GIT_HOOKS = path.join(SCRIPTS_DIR, 'session-git-hooks');
 // why: config set through the env reaches every git the session starts, sandboxed or wrapped by the stall guard, yet not the script's land after the session.
 function refusingCommits(env, root) {
   const count = Number(env.GIT_CONFIG_COUNT) || 0;
-  const common = spawnSync('git', ['-C', root, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).stdout.trim();
+  const common = commonDir(root) ?? '';
   return {
     ...env,
     EXO_RUN_GIT_DIR: realpathOr(common),

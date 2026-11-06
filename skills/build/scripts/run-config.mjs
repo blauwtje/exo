@@ -27,6 +27,14 @@ export function loadRunConfig({ home }) {
   return deepMerge(catalog, JSON.parse(fs.readFileSync(file, 'utf8')));
 }
 
+export function runDefaults(home) {
+  try {
+    return loadRunConfig({ home }).defaults ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export function readKeys(file) {
   const keys = {};
   if (!fs.existsSync(file)) return keys;

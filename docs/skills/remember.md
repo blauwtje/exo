@@ -15,6 +15,8 @@ Not for build or test commands, which go in `AGENTS.md` or `CLAUDE.md`.
 - A line you decline, or turn into a check, is not proposed again until a new session records it.
 - A size limit on the memory file.
 - Lines dropped when the files they mention are gone.
+- `memory.mjs lessons --files <paths>` lists the lessons whose path glob matches those files; build briefs, spec and gate read them this way.
+- `memory.mjs claude-md` prints the lessons scoped `**` as proposed `CLAUDE.md` lines and writes no file.
 
 ## Source
 

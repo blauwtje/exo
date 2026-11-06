@@ -43,7 +43,7 @@ export function readState(root, id) {
 
 export function createRun(root, { id = newRunId(), plan, flags = [], detach = false, pid = process.pid, log = null, ownerSession }) {
   const now = new Date().toISOString();
-  const state = { id, plan, root, flags, detach, pid, phase: 'starting', stage: 'build', log, startedAt: now, updatedAt: now, exitCode: null };
+  const state = { id, plan, root, flags, detach, pid, phase: 'starting', stage: 'build', log, startedAt: now, updatedAt: now, exitCode: null, journal: 'journal.jsonl', ops: 'ops.jsonl' };
   if (ownerSession) state.ownerSession = ownerSession;
   writeAtomic(path.join(runDir(root, id), 'state.json'), `${JSON.stringify(state, null, 2)}\n`);
   return state;
@@ -62,8 +62,64 @@ export function recordTask(root, id, { n, subject, landed, total }) {
   return updateRun(root, id, { task: { n, subject }, landed, total });
 }
 
-export function recordStop(root, id, { phase, reason }) {
-  return updateRun(root, id, phase === undefined ? { reason } : { phase, reason });
+export function recordStop(root, id, { phase, reason, stop }) {
+  return updateRun(root, id, { ...(phase === undefined ? {} : { phase }), reason, ...(stop === undefined ? {} : { stop }) });
+}
+
+export const journalFile = (root, id) => path.join(runDir(root, id), 'journal.jsonl');
+export const opsFile = (root, id) => path.join(runDir(root, id), 'ops.jsonl');
+
+export function appendOp(root, id, op) {
+  fs.mkdirSync(runDir(root, id), { recursive: true });
+  fs.appendFileSync(opsFile(root, id), `${JSON.stringify({ at: new Date().toISOString(), ...op })}\n`);
+}
+
+function readLines(file) {
+  let text;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  return text.split('\n').filter(Boolean).flatMap((line) => {
+    try {
+      return [JSON.parse(line)];
+    } catch {
+      return [];
+    }
+  });
+}
+
+export function readOps(root, id) {
+  const kept = path.join(keptDir(root, id), path.basename(opsFile(root, id)));
+  return readLines(opsFile(root, id)) ?? readLines(kept) ?? [];
+}
+
+export function appendStep(root, id, step) {
+  const at = new Date().toISOString();
+  fs.mkdirSync(runDir(root, id), { recursive: true });
+  fs.appendFileSync(journalFile(root, id), `${JSON.stringify({ at, ...step })}\n`);
+  if (readState(root, id) !== null) updateRun(root, id, { step: { kind: step.kind, task: step.task ?? null, at } });
+}
+
+export function readJournal(root, id) {
+  return readLines(journalFile(root, id)) ?? [];
+}
+
+export function resumePoint(steps) {
+  const open = new Map();
+  let pending = null;
+  let failedAttempts = 0;
+  for (const step of steps) {
+    if (step.kind === 'session') pending = step;
+    else if (step.kind !== 'check') pending = null;
+    if (step.kind === 'attempt') {
+      open.set(step.task, step);
+      failedAttempts = step.failedAttempts;
+    }
+    if (step.kind === 'commit') open.delete(step.task);
+  }
+  return { pending, attempts: open, failedAttempts };
 }
 
 const gatesFile =(dir) => path.join(dir, 'gates.md');
@@ -121,6 +177,17 @@ export function listRuns(root) {
   }
   return names.map((n) => readState(root, n)).filter(Boolean)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt) || a.id.localeCompare(b.id));
+}
+
+const SETTLED_PHASES = ['passed', 'landed', 'refused'];
+
+export function unfinishedRun(root, plan) {
+  const open = (state) => !SETTLED_PHASES.includes(state.phase) && (FINAL_PHASES.includes(state.phase) || !isAlive(state.pid));
+  return listRuns(root).filter((state) => state.plan === plan && open(state)).at(-1) ?? null;
+}
+
+export function pauseCleared(root, state) {
+  return state.stop?.resumable !== false && !readGates(runDir(root, state.id)).some((gate) => gate.status === 'open');
 }
 
 export function removeRun(root, id) {

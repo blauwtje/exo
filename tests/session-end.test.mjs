@@ -71,7 +71,7 @@ test('the stub carries the template sections and the fixed resume paragraph', ()
   const text = stubFor();
   const headings = text.split('\n').filter((line) => line.startsWith('## '));
   assert.deepEqual(headings, ['## Current state', '## Next step', '## Resume']);
-  assert.match(text, /repeat no step `## Proven` already covers/);
+  assert.match(text, /repeat no step it records as proven/);
 });
 
 test('a handoff without a Source: auto line stays untouched', () => {

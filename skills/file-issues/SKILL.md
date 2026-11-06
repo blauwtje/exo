@@ -3,7 +3,7 @@ name: file-issues
 description: Use when the user types /exo:file-issues to file, open, write or split GitHub issues. Not for a brief spec stores, closing or editing an existing issue, a plan, or a repository the working directory does not point at.
 disable-model-invocation: true
 argument-hint: <what the issue or issues should cover>
-allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh pr list *), Bash(git log *), Bash(node *repo-fields.mjs*)
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh pr list *), Bash(git log *), Bash(node *repo-fields.mjs*), Bash(node *find-duplicates.mjs*)
 ---
 
 # File issues that read as specs
@@ -23,6 +23,8 @@ Typing `/exo:file-issues` starts this and authorizes creating the issues, with l
 3. **Ground the references.** Check each path or symbol the goal sentences name with Glob or Grep, so `References` carries real paths.
    - For behavior named without a path, dispatch `exo:locate-code`.
    - For an issue naming no code, skip this step.
+
+3b. **Check for duplicates.** Run `node "${CLAUDE_SKILL_DIR}/scripts/find-duplicates.mjs" --titles <JSON array of draft titles>`. For a draft with matches, show the top ones with their `reason` and ask one question, link or file; no match files unchanged. Never edit or comment on a match.
 
 4. **Create in dependency order**, same turn, no approval question first: parent before children, blocker before what it blocks, with the commands and field settings in `references/fields.md`.
    - Run no `gh` command that closes, deletes or edits an existing issue, even at the user's request; the pre-approved `gh issue *` would run it unconfirmed. Give the user the command instead.

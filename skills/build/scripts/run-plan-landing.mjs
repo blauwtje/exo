@@ -4,6 +4,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import { failingLine } from '#attempt-fingerprint';
+import { ruledOutText } from '../../../lib/ruled-out.mjs';
 import { landedTasks } from '#plan-landed';
 import { environmentMs } from '#script-flags';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -13,7 +14,7 @@ import { appendLog } from './run-session.mjs';
 import { SCRIPT } from './run-session-paths.mjs';
 import { gitOut } from './run-worktree.mjs';
 import { isDocTask } from './run-plan-provider.mjs';
-import { noteTask } from './run-plan-notes.mjs';
+import { noteStep, noteTask } from './run-plan-notes.mjs';
 import { handoffFile } from './run-plan-session.mjs';
 
 export function markNow() {
@@ -36,6 +37,7 @@ export function markLanded(ctx, n, record, startedTask) {
   ctx.retryNote = '';
   run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
   passes.add(n);
+  noteStep({ kind: 'commit', task: n, sha: run.landings.get(n).sha });
   fs.rmSync(handoffFile(ctx, n), { force: true });
   ctx.writeTasks();
   const sha = run.landings.get(n).sha;
@@ -66,13 +68,26 @@ export function landByScript(ctx, n) {
   appendLog(log, output);
   ctx.lastLandOutput = output;
   ctx.lastLandTask = n;
-  return { landed: answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n), output, log };
+  const landed = answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n);
+  noteStep({ kind: 'check', task: n, passed: landed, line: landed ? '' : failingLine(output) });
+  return { landed, output, log };
 }
 
 export function landedByChangelogScript(ctx, task) {
   if (!isDocTask(task) || ctx.scriptTried.has(task.number)) return false;
   ctx.scriptTried.add(task.number);
   return landChangelogTask({ root: ctx.root, task, land: () => landByScript(ctx, task.number).landed });
+}
+
+export function failedAttemptNote({ root, task, last, proofEnd, log, fallback }) {
+  const lines = [
+    `The previous attempt did not land task ${task}. Its last result line: ${last}`,
+    ...(proofEnd === undefined ? [] : [`The script's proof and land output ended: ${proofEnd}`]),
+    `Its log: ${log}`,
+    ...(fallback ? [`That attempt ran on ${fallback.to} instead of ${fallback.from} because the provider was overloaded.`] : []),
+    ...[ruledOutText(root, task).trimEnd()].filter((text) => text !== '')
+  ];
+  return `\n${lines.join('\n')}`;
 }
 
 export function landInOrder(ctx, numbers, record, started) {
@@ -85,7 +100,7 @@ export function landInOrder(ctx, numbers, record, started) {
     ctx.say(`task ${n} not landed by the script: ${clip(failingLine(attempt.output), 80)}`);
     const noRed = noRedProofLine(attempt.output);
     if (noRed !== undefined) return { n, reason: noRed };
-    ctx.retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${failingLine(attempt.output)}\nIts log: ${attempt.log}`;
+    ctx.retryNote = failedAttemptNote({ root: ctx.root, task: n, last: failingLine(attempt.output), log: attempt.log, fallback: ctx.sessionFallback });
     return;
   }
 }

@@ -1,3 +1,6 @@
+---
+forbidden-steps: 6-7
+---
 # Fixer prompt
 
 Text `find-cause` hands a `general-purpose` delegate whose prompt opens with `exo-kind: build` for phase (c), and `build` hands `exo:solve-hard` for a failed `Run:` naming no causal line: caller's opening, then shared block.
@@ -5,17 +8,17 @@ Text `find-cause` hands a `general-purpose` delegate whose prompt opens with `ex
 ## find-cause opening
 
 ```text
-Fix the proven cause in the handoff, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only that file and its `Ranges`.
+Fix the proven cause in the handoff, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only it and its `Ranges`.
 
 Reads: <handoff path>
 Worktree: <abs path>
 Paths in scope: the `Ranges` paths and the new test files under `Tests`.
 
 First write the failing test the test-design row calls for, in files the fix does not touch where the repository allows, because the session commits them alone before the fix. Quote its failure.
-Then make the predicted fix and prove it: re-run the reproduction and isolated case, then the required suite.
-A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
+Then make the predicted fix and prove it: rerun the reproduction and isolated case, then the required suite.
+A run that skips the test or shows no pass is not proof: return `failed`, not `fixed`.
 
-Return this one line: `status=<fixed|failed|blocked> handoff=<path>`.
+Return: `status=<fixed|failed|blocked> handoff=<path>`.
 ```
 
 ## build opening

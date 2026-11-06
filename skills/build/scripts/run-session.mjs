@@ -4,6 +4,7 @@ import process from 'node:process';
 import { environmentMs } from '../../../lib/script-flags.mjs';
 import { sleep } from '#basics';
 import { parseStream } from './run-session-stream.mjs';
+import { fallbackModel } from './run-plan-provider.mjs';
 
 const KILL_GRACE_MS = 5000;
 const PARENT_POLL_MS = 5000;
@@ -129,6 +130,24 @@ export function isTransientProviderError(text) {
 
 const retriesProviderError = (outcome) => !outcome.timedOut && !outcome.aborted && isTransientProviderError(outcome.text);
 
+function primaryModel(args) {
+  const at = args.indexOf('--model');
+  return at < 0 ? null : args[at + 1];
+}
+
+function withModel(args, model) {
+  const at = args.indexOf('--model');
+  return at < 0 ? [...args, '--model', model] : args.with(at + 1, model);
+}
+
+async function spawnOnFallback(claude, args, options, outcome) {
+  const from = primaryModel(args);
+  const to = fallbackModel(from);
+  if (to === null) return outcome;
+  appendLog(options.log, `exo: provider overloaded on ${from ?? 'the default model'} after ${PROVIDER_RETRIES} retries, running once on ${to}\n`);
+  return { ...(await spawnOnce(claude, withModel(args, to), options)), fallback: { from, to } };
+}
+
 export async function spawnClaude(claude, args, options) {
   const baseMs = environmentMs('EXO_PROVIDER_RETRY_MS', 30_000);
   let outcome = await spawnOnce(claude, args, options);
@@ -136,5 +155,6 @@ export async function spawnClaude(claude, args, options) {
     await sleep(baseMs * 2 ** retry);
     outcome = await spawnOnce(claude, args, options);
   }
-  return outcome;
+  if (!retriesProviderError(outcome)) return outcome;
+  return spawnOnFallback(claude, args, options, outcome);
 }

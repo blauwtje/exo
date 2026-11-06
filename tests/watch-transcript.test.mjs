@@ -13,6 +13,9 @@ import { chaptersFromHtml } from '../skills/watch/scripts/youtube-chapters.mjs';
 import { watchAll, watchOne } from '../skills/watch/scripts/watch.mjs';
 import { tempDir } from './harness.mjs';
 
+process.env.CLAUDE_PLUGIN_DATA = tempDir('plugin-data-');
+globalThis.fetch = async () => { throw new Error('network blocked in tests'); };
+
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
 
 const SPACE = ' ';
@@ -247,7 +250,8 @@ function scratch() {
 }
 
 const XML_TEXT = "[00:00] Hello there yeah yeah Tom & Jerry's\n\n[01:30] A new thought\n";
-const readText = (file) => fs.readFileSync(file, 'utf8');
+const TIME_LINK = /\(https:\/\/(?:www\.youtube\.com|vimeo\.com)[^)]*\)/g;
+const readText = (file) => fs.readFileSync(file, 'utf8').replace(TIME_LINK, '');
 
 test('videoIdOf reads an id, watch, short, embed and youtu.be links and refuses the rest', () => {
   assert.equal(videoIdOf(ID), ID);
@@ -701,5 +705,5 @@ test('a non-YouTube url without yt-dlp on PATH names the install line', async ()
   const saved = process.env.PATH;
   process.env.PATH = '';
   const result = await watchOne('https://www.tiktok.com/@u/video/1', options).finally(() => { process.env.PATH = saved; });
-  assert.match(result.failure, /: missing tool: reading www\.tiktok\.com videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
+  assert.match(result.failure, /: missing tool: reading www\.tiktok\.com videos needs yt-dlp on PATH \(fetching the release binary failed: network blocked in tests\); install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
 });

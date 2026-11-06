@@ -26,6 +26,15 @@ function cueStart(line) {
   return Number(hours) * HOUR + Number(minutes) * 60 + Number(seconds) + Number(millis) / 1000;
 }
 
+const VOICE_TAG = /^<v(?:\.[^\s>]*)*\s+([^>]+)>/;
+const DIARIZED_PREFIX = /^\[(SPEAKER_\d+)\]:\s*/;
+
+function speakerOf(line) {
+  const voice = VOICE_TAG.exec(line);
+  if (voice) return voice[1].trim();
+  return DIARIZED_PREFIX.exec(line)?.[1] ?? null;
+}
+
 function cleanLine(line) {
   return decodeEntities(line.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim();
 }
@@ -38,9 +47,12 @@ export function parseVtt(vtt, { auto = false } = {}) {
     const timingAt = lines.findIndex((line) => line.includes('-->'));
     const start = timingAt < 0 ? null : cueStart(lines[timingAt]);
     if (start === null) continue;
-    for (const line of lines.slice(timingAt + 1).map(cleanLine)) {
+    let speaker = null;
+    for (const raw of lines.slice(timingAt + 1)) {
+      speaker = speakerOf(raw) ?? speaker;
+      const line = cleanLine(raw.replace(DIARIZED_PREFIX, ''));
       if (line === '' || (auto && line === previous)) continue;
-      cues.push({ start, text: line });
+      cues.push(speaker ? { start, text: line, speaker } : { start, text: line });
       previous = line;
     }
   }

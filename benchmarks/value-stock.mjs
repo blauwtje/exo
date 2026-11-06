@@ -1,11 +1,11 @@
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { commonDir } from '#checkout';
 import { ROOT } from './tasks.mjs';
 import { mean, readJson } from './basics.mjs';
 
 export function stockStorePath(root = ROOT) {
-  const common = execFileSync('git', ['-C', root, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim();
+  const common = commonDir(root);
   return path.join(common, 'exo', 'value', 'stock.json');
 }
 

@@ -5,9 +5,19 @@ import { CLI, RUN_PLAN } from './cli-paths.mjs';
 import { cleanUp, updateDefault } from './run-chores.mjs';
 import { isPluginCheckout, putOnBranch, refuseLoadedCheckout, worktreeFor } from './run-checkout.mjs';
 import { planFrame } from './plan-file.mjs';
+import { recordRefDiff, recordWorktree, snapshotRefs } from './run-ops.mjs';
 import { runDir } from './run-state.mjs';
 
 export async function buildRun(root, plan, flags, id) {
+  const before = snapshotRefs(root);
+  try {
+    return await buildRunSteps(root, plan, flags, id);
+  } finally {
+    if (!flags.some((flag) => flag === '--dry-run' || flag === '--help')) recordRefDiff(root, id, before, 'build');
+  }
+}
+
+async function buildRunSteps(root, plan, flags, id) {
   const { branch, land } = planFrame(plan);
   const base = defaultBranch(root);
   const chores = base !== null && !flags.some((flag) => flag === '--dry-run' || flag === '--help');
@@ -15,7 +25,10 @@ export async function buildRun(root, plan, flags, id) {
   if (chores) updateDefault(root, base, missing);
   const inTree = branch !== null && isPluginCheckout(root);
   let runRoot = root;
-  if (inTree) runRoot = worktreeFor(root, branch);
+  if (inTree) {
+    runRoot = worktreeFor(root, branch);
+    if (runRoot !== root) recordWorktree(root, id, 'build', runRoot, branch);
+  }
   else {
     refuseLoadedCheckout(root, CLI);
     if (branch !== null) putOnBranch(root, branch);

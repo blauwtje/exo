@@ -41,7 +41,7 @@ const RUN_PIN_VARIABLE = 'EXO_RUN_TASK';
 const SESSION_VARIABLE = 'CLAUDECODE';
 // why: git refuses a commit on a host with no configured identity, such as a CI
 // runner, and the scripts under test commit through plain git.
-const GIT_IDENTITY = { GIT_AUTHOR_NAME: 'stub', GIT_AUTHOR_EMAIL: 'stub@example.com', GIT_COMMITTER_NAME: 'stub', GIT_COMMITTER_EMAIL: 'stub@example.com' };
+export const GIT_IDENTITY = { GIT_AUTHOR_NAME: 'stub', GIT_AUTHOR_EMAIL: 'stub@example.com', GIT_COMMITTER_NAME: 'stub', GIT_COMMITTER_EMAIL: 'stub@example.com' };
 
 let emptyConfigDirectory;
 

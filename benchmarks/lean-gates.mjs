@@ -43,6 +43,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { BENCHMARK_CACHE_ENV, confinedClaude } from '#confine-claude';
+import { mainCheckout } from '#checkout';
 import { configDirectory } from '#config-directory';
 import { exoLoaded } from './cell-usage.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
@@ -57,7 +58,7 @@ const PLANS = path.join(BENCH, 'plans');
 const CACHE = path.join(ROOT, 'benchmarks', 'runs', 'lean-gates-cache');
 // The bench worktrees sit under the main checkout's .worktrees/, whichever
 // checkout of this repository runs the script.
-const MAIN_CHECKOUT = path.dirname(execFileSync('git', ['-C', ROOT, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim());
+const MAIN_CHECKOUT = mainCheckout(ROOT);
 const WORKTREES = path.join(MAIN_CHECKOUT, '.worktrees');
 export const PLUGIN_DIRS = { old: path.join(WORKTREES, 'bench-old'), new: path.join(WORKTREES, 'bench-new') };
 

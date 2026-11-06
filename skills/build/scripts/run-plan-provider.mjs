@@ -12,6 +12,18 @@ function listedProvider(name) {
   return Object.hasOwn(providers, name);
 }
 
+export function fallbackModel(model, env = process.env) {
+  const chosen = env.EXO_FALLBACK_MODEL;
+  if (chosen === 'off') return null;
+  if (chosen !== undefined && chosen !== '') return chosen === model ? null : chosen;
+  if (model === null) return null;
+  const { providers } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
+  const tiers = Object.values(providers).map((provider) => provider.tiers).find((candidate) => Object.values(candidate).includes(model));
+  if (tiers === undefined) return null;
+  const next = model === tiers.strong ? tiers.standard : tiers.strong;
+  return next === model ? null : next;
+}
+
 export const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
 
 export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingOrDefault('budget').value } = {}) {

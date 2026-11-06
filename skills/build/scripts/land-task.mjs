@@ -1,37 +1,58 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf } from '#plan-frame';
 import { landedTasks, planIdOf, proofRecordPath } from '#plan-landed';
 import { parsePlan, PlanError } from '#plan-tasks';
+import { SCRATCH_FOLDER } from '#scratch-path';
+import { appendRuledOut } from '../../../lib/ruled-out.mjs';
 import { forCaller } from '#script-output';
+import { resolvePlanPath } from '#checkout';
 import { refreshProgress } from './next-task.mjs';
-import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
+import { refusalTail } from '../../../lib/refusal-handlers.mjs';
 import { dockerHost } from '../../../lib/services.mjs';
-import { LandingError, PlanDriftError, CodeRuleError, EnvError } from './land-errors.mjs';
+import { LandingError, PlanDriftError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
 import { parsePin, refuseOutsidePin, refuseMismatchedToplevel } from './land-pin.mjs';
 import { fixLand } from './land-fix.mjs';
 import { quiet, quietText, runCoveringTests } from './land-proof.mjs';
 import { appendDecisions, writeProofRecord } from './land-record.mjs';
 import { proofEvidenceOf, gateEnvOf } from './land-gate.mjs';
-import { taskChangedPaths } from './land-refusals.mjs';
+import { refuseAlreadyLanded, refuseUnfinishedMerge, taskChangedPaths } from './land-refusals.mjs';
 import { checkTask, checkCodeRules } from './land-check.mjs';
 import { taskOf, refuseBeforeProof, proveTask, runPreCommitGates } from './land-prove.mjs';
 import { dropCandidate, clearStaleCandidate, commitCandidate, promoteCandidate, gateCandidate, committedSha } from './land-candidate.mjs';
 import { landingReport, landingForCaller, withNext } from './land-output.mjs';
+import { foldCheckpoints, reportFlagOf, reportSourceOf } from './land-stopped.mjs';
 
-export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null, docker = dockerHost }) {
+export function landTask({ planText, number, root, reportText = null, reportPath = null, planPath, pin = null, docker = dockerHost }) {
   refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
-  return locked(root, () => landTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin, docker }));
+  refuseUnfinishedMerge(root);
+  return locked(root, () => ruledOutOnFailure(root, number, () => landTaskLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath, pin, docker })));
+}
+
+function ruledOutOnFailure(root, number, land) {
+  try {
+    return land();
+  } catch (error) {
+    if (error instanceof LandingError && error.kind === 'proof failed') recordRuledOut(root, number, error);
+    throw error;
+  }
+}
+
+function recordRuledOut(root, number, error) {
+  const paths = taskChangedPaths(root).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
+  const reason = error.message.split('\n').find((line) => line.trim() !== '') ?? error.message;
+  appendRuledOut(root, number, paths.length === 0 ? 'no file change' : `a change to ${paths.join(', ')}`, reason);
 }
 
 function landTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin, docker }) {
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
   clearStaleCandidate(root, planId);
+  foldCheckpoints(root);
   const task = taskOf(plan, number);
+  refuseAlreadyLanded(plan, task, root, planId);
   const block = refuseBeforeProof(plan, task, { root, planPath, pin, planId });
   const pendingEvidence = proofEvidenceOf(plan, root, planId);
   const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
@@ -56,9 +77,9 @@ function landTaskLocked({ planText, number, root, reportText, reportPath, planPa
 
 
 const USAGE = [
-  'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>] [--check] [--code-rules] [--next]',
+  'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>|-] [--check] [--code-rules] [--next]',
   '       land-task.mjs --fix <subject> [--body <text>] [--plan <plan>] [--root <dir>]',
-  "Lands a plan task from its implementer report, or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer, --body adds the commit body after a blank line. Exits 2 on a usage error."
+  "Lands a plan task from its implementer report (a file, or stdin with `--report -`), or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer, --body adds the commit body after a blank line. Exits 2 on a usage error."
 ].join('\n');
 
 function callerParts(output, { run, next, planPath, planText, root }) {
@@ -70,35 +91,33 @@ function callerParts(output, { run, next, planPath, planText, root }) {
 function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', body: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' }, { usage: USAGE });
   const root = flags.root ?? process.cwd();
+  const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
   const pin = parsePin(process.env.EXO_RUN_TASK);
   const codeRulesOnly = flags['code-rules'] === true;
   if (pin !== null && !codeRulesOnly && flags.check !== true) quiet.file = proofRecordPath(root, pin.planId, pin.number);
   if (flags.fix !== undefined) {
-    process.stdout.write(fixLand({ root, subject: flags.fix, body: flags.body ?? null, plan: flags.plan ?? null, pin }));
+    process.stdout.write(fixLand({ root, subject: flags.fix, body: flags.body ?? null, plan: plan ?? null, pin }));
     return;
   }
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
-  if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
-  const planText = fs.readFileSync(flags.plan, 'utf8');
+  if (!fs.existsSync(plan)) throw new UsageError(`no plan at '${flags.plan}'`);
+  const planText = fs.readFileSync(plan, 'utf8');
   if (codeRulesOnly) {
-    process.stdout.write(checkCodeRules({ planText, number: Number(flags.task), root, planPath: flags.plan, pin }));
+    process.stdout.write(checkCodeRules({ planText, number: Number(flags.task), root, planPath: plan, pin }));
     return;
   }
-  const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
-  const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
+  const { reportPath, reportText } = reportFlagOf(flags.report);
   const run = flags.check === true ? checkTask : landTask;
-  const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
-  const { full, shown } = callerParts(output, { run, next: flags.next === true, planPath: flags.plan, planText, root });
+  const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: plan, pin });
+  const { full, shown } = callerParts(output, { run, next: flags.next === true, planPath: plan, planText, root });
   process.stdout.write(quiet.file === null ? forCaller({ root, name: `land-task-${flags.task}`, full, shown }) : quietText(full, true));
-  if (run === landTask) refreshProgress({ planPath: flags.plan, planText, root });
+  if (run === landTask) refreshProgress({ planPath: plan, planText, root });
 }
 
 function refusal(error) {
   if (error instanceof UsageError) return { text: `land-task: ${error.message}\n`, code: 2, usage: true };
-  if (error instanceof CodeRuleError || error instanceof EnvError) return { text: `land-task: ${error.message}\n${refusalHandler(error.kind)}\n`, code: 1 };
-  if (error instanceof PlanDriftError) return { text: `${error.message}\n${refusalHandler(error.kind)}\nexo-retry\n`, code: 1 };
-  if (error instanceof LandingError) return { text: `land-task: ${error.message}\n${refusalHandler(error.kind)}\nexo-retry\n`, code: 1 };
+  if (error instanceof LandingError) return { text: `${error instanceof PlanDriftError ? '' : 'land-task: '}${error.message}\n${refusalTail(error.kind)}`, code: 1 };
   if (error instanceof PlanError) return { text: `land-task: ${error.message}\n`, code: 1 };
   throw error;
 }

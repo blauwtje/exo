@@ -143,7 +143,7 @@ test('a subagent past its soft limit is told to hand over, past its hard limit o
   assert.match(soft.additionalContext, /result file/);
   assert.equal(call(AGENT_SOFT, 'Bash'), null);
   const hard = call(AGENT_HARD, 'Bash');
-  assert.match(hard.deny, /Write and Edit are still allowed/);
+  assert.match(hard.deny, /Write, Edit and .*checkpoint\.mjs/);
   assert.match(hard.deny, /Status: handover/);
   assert.equal(call(AGENT_HARD, 'Write'), null);
   assert.equal(call(AGENT_HARD, 'Edit'), null);

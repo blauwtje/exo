@@ -1,6 +1,6 @@
 import path from 'node:path';
 import process from 'node:process';
-import { recordStop, recordTask, updateRun } from './run-state.mjs';
+import { appendStep, readJournal, readState, recordStop, recordTask, updateRun } from './run-state.mjs';
 
 export function setPhase(phase) {
   const dir = process.env.EXO_RUN_DIR;
@@ -20,4 +20,19 @@ export function noteCounts(counts) {
 export function noteStop(stop) {
   const dir = process.env.EXO_RUN_DIR;
   if (dir) recordStop(path.resolve(dir, '..', '..', '..'), path.basename(dir), stop);
+}
+
+export function noteStep(step) {
+  const dir = process.env.EXO_RUN_DIR;
+  if (dir) appendStep(path.resolve(dir, '..', '..', '..'), path.basename(dir), step);
+}
+
+export function journalSteps() {
+  const dir = process.env.EXO_RUN_DIR;
+  return dir ? readJournal(path.resolve(dir, '..', '..', '..'), path.basename(dir)) : [];
+}
+
+export function savedSpend() {
+  const dir = process.env.EXO_RUN_DIR;
+  return dir ? readState(path.resolve(dir, '..', '..', '..'), path.basename(dir))?.spent ?? 0 : 0;
 }

@@ -61,16 +61,6 @@ test('a Land gate whose last pass was slow is skipped with one line and the land
   await assert.rejects(fs.access(path.join(root, 'gate.log')));
 });
 
-test('a Land gate that already passed on this tree is skipped with one line', async () => {
-  const { root, planPath } = await landingCheckout();
-  await editApp(root);
-  const { recordPass } = await import('#check-cache');
-  recordPass(root, 'exit 1', 5);
-  const output = landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root });
-  assert.match(output, /^Land gate "exit 1" skipped: it already passed on this tree\.$/m);
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-});
-
 test('a fast record still runs the Land gate and refuses a failing one', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

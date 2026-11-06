@@ -28,7 +28,7 @@ test('a bare call of an unsandboxed exo script passes unchanged', () => {
 });
 
 test('any other command is wrapped in the stall guard', () => {
-  const output = stallGuardInput(bash('for t in a b; do node --test src/$t.test.js; done'))?.hookSpecificOutput;
+  const output = stallGuardInput(bash('for t in a b; do node --test "src/$t.test.js"; done'))?.hookSpecificOutput;
   assert.equal(output?.permissionDecision, undefined);
   assert.match(output.updatedInput.command, /stall-guard\.mjs" -- 'for t in a b;/);
 });

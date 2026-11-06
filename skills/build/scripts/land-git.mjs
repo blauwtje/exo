@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { LandLockError, withLandLock } from '#land-lock';
-import { LandingError } from './land-errors.mjs';
+import { LockHeldError } from './land-errors.mjs';
 
 export function git(root, ...args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
@@ -26,7 +26,7 @@ export function locked(root, action) {
   try {
     return withLandLock(root, action);
   } catch (error) {
-    if (error instanceof LandLockError) throw new LandingError(error.message);
+    if (error instanceof LandLockError) throw new LockHeldError(error.message);
     throw error;
   }
 }

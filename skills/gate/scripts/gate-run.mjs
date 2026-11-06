@@ -100,7 +100,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     }
     const proofRun = proofResults[index];
     if (proofRun.ok) {
-      recordPass(root, run.command, proofRun.ms);
+      recordPass(root, run.command, proofRun.ms, undefined, proofRun.output);
       lines.push(`PASS Task ${run.number}`);
     } else {
       const tool = unmarkedMcpTool(run.command, proofRun);
@@ -117,7 +117,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else if (!gateRuns) {
     lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
-    if (successCriterionPasses(gateRun)) recordPass(root, gateCommand, gateRun.ms);
+    if (successCriterionPasses(gateRun)) recordPass(root, gateCommand, gateRun.ms, undefined, gateRun.output);
     if (successCriterionPasses(gateRun) && testScriptGate) {
       lines.push(TEST_SCRIPT_PASS);
       if (!packageHasEntryPoint(root)) lines.push(`Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);

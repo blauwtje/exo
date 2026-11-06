@@ -6,6 +6,7 @@ import { parsePlan } from '#plan-tasks';
 import { planIdOf } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError } from './land-errors.mjs';
+import { reportSourceOf } from './land-stopped.mjs';
 import { locked } from './land-git.mjs';
 import { commitBlockOf } from './land-commit-block.mjs';
 import { refuseOtherPlan, refuseMcpProofUnderPin, refuseMismatchedToplevel } from './land-pin.mjs';
@@ -17,10 +18,10 @@ import { refuseUnplannedPaths, checkReport } from './land-refusals.mjs';
 import { runPreCommitGates } from './land-prove.mjs';
 import { dropCandidate, clearStaleCandidate, commitCandidate, gateCandidate } from './land-candidate.mjs';
 
-export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
+export function checkTask({ planText, number, root, reportText = null, reportPath = null, planPath, pin = null }) {
   refuseOtherPlan(pin, planPath, number);
   refuseMismatchedToplevel(root);
-  return locked(root, () => checkTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin }));
+  return locked(root, () => checkTaskLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath, pin }));
 }
 
 function checkTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin }) {

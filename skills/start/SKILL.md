@@ -11,7 +11,7 @@ One door for a user who does not remember a skill's name. The enemy is a pick ha
 
 ## No goal
 
-- Relay the two tables in `references/cheat-sheet.md` as the whole reply, rows unchanged; they line up only as written.
+- Run `node "${CLAUDE_SKILL_DIR}/scripts/board.mjs"` and relay its output as the whole reply; on `Nothing open.` relay `references/cheat-sheet.md` the way it says.
 
 ## With a goal
 

@@ -110,6 +110,7 @@ export function checkCompactFields(task) {
   if (task.risk !== null && !RISK_CATEGORIES.includes(task.risk)) {
     problems.push(`Task ${task.number}: 'Risk: ${task.risk}' is not one of ${RISK_CATEGORIES.join(', ')}`);
   }
+  if (task.pause !== null && task.pause !== 'yes') problems.push(`Task ${task.number}: 'Pause: ${task.pause}' is not 'Pause: yes'`);
   return [...problems, ...checkBoundary(task), ...checkWholeSuiteProof(task), ...checkBareDefaultBranchProof(task)];
 }
 

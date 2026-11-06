@@ -2,13 +2,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { briefLines } from '../lib/guard-rules.mjs';
 
 const RULES = new URL('./dispatch-rules.md', import.meta.url);
 
 export const dispatchMarker = (sessionId) => path.join(os.tmpdir(), `exo-dispatch-${String(sessionId).replace(/[^\w-]/g, '_')}`);
 
-export function readDispatchRules() {
-  return fs.readFileSync(RULES, 'utf8').trimEnd();
+export function readDispatchRules(tools = null) {
+  return [fs.readFileSync(RULES, 'utf8').trimEnd(), ...briefLines(tools)].join('\n');
 }
 
 // why: the lead pays for these rules at its first Agent call of a session, not at session start; a subagent and a detached run session never got the session text.

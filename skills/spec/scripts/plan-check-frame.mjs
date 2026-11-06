@@ -9,6 +9,7 @@ import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { reachesThrough } from './plan-check-files.mjs';
 import { main } from './plan-check.mjs';
 
+export const AUTONOMY_MODES = ['auto', 'pause-flagged', 'approve-each'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
 export function checkParallelForm(frame) {
@@ -55,6 +56,7 @@ export function checkPlanBasis(frame, run) {
   if (!/^Branch: .+$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Branch:' line");
   const landOptional = run && !/^Land:/m.test(basis);
   if (!landOptional && !/^Land: (local|pr|push-main)$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Land:' line, or it is not one of local, pr, push-main");
+  if (!AUTONOMY_MODES.includes(frameOf(frame).autonomy)) problems.push(`the plan's '## Plan basis' 'Autonomy: ${frameOf(frame).autonomy}' is not one of ${AUTONOMY_MODES.join(', ')}`);
   if (frameOf(frame).app?.ready === null) problems.push("the plan's '## Plan basis' 'App:' line has no 'Ready:' URL: write 'App: <start command> | Ready: <url>' or 'App: none'");
   if (/^Land: (local|push-main)$/m.test(basis)) {
     const commit = frameOf(frame).commit;

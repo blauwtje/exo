@@ -5,42 +5,13 @@ import { Buffer } from 'node:buffer';
 import { parseArgs } from 'node:util';
 import { MEMORY_BUDGET } from '#budgets';
 import { gitLine } from '#git';
-import { ATTESTATIONS_REQUIRED, memoryDirectory, memoryOn } from '#memory-store';
-
-function stateFile(cwd) {
-  return path.join(memoryDirectory(cwd), 'memory.json');
-}
+import { ATTESTATIONS_REQUIRED, isGlob, isLive, isMemory, lessonsFor, memoryDirectory, memoryOn, readState, refMatches, refPath, stateFile } from '#memory-store';
 
 function memoryFile(cwd) {
   return path.join(memoryDirectory(cwd), 'memory.md');
 }
 
-function readState(cwd) {
-  let text;
-  try {
-    text = fs.readFileSync(stateFile(cwd), 'utf8');
-  } catch (error) {
-    if (error.code === 'ENOENT') return { candidates: {}, lines: [], rejected: {} };
-    throw error;
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch (error) {
-    throw new Error(`${stateFile(cwd)} is not valid JSON: ${error.message}`);
-  }
-  return { candidates: parsed.candidates ?? {}, lines: parsed.lines ?? [], rejected: parsed.rejected ?? {} };
-}
-
 const HEADER = '# Project memory';
-
-function isMemory(line) {
-  return isLive(line) && line.decision !== true;
-}
-
-function isLive(line) {
-  return line.superseded === null && line.dropped === null && line.retired == null;
-}
 
 function render(state) {
   const live = state.lines.filter(isMemory);
@@ -189,6 +160,10 @@ function decisionStatus(cwd, line) {
   return added > total / 2 ? 'changed' : 'settled';
 }
 
+function trackedFiles(cwd) {
+  return (gitLine(cwd, ['ls-files']) ?? '').split('\n').filter(Boolean);
+}
+
 function verifyLines(cwd, state) {
   const date = today();
   let checked = 0;
@@ -197,6 +172,7 @@ function verifyLines(cwd, state) {
     if (!isLive(line)) return line;
     checked += 1;
     const missing = line.refs.filter((ref) => {
+      if (isGlob(refPath(ref))) return !trackedFiles(cwd).some((file) => refMatches(ref, file));
       const { symbol, target } = resolveRef(cwd, ref);
       if (!fs.existsSync(target)) return true;
       return symbol !== undefined && !fs.readFileSync(target, 'utf8').includes(symbol);
@@ -217,6 +193,8 @@ const USAGE = [
   '       node memory.mjs reject --session <id> (--key <key> | --claim "<the claim>")',
   '       node memory.mjs write --decision --claim "<the decision>" --refs <paths>',
   '       node memory.mjs decisions',
+  '       node memory.mjs lessons --files <path,path>',
+  '       node memory.mjs claude-md',
   'With memory=off every write command prints one line and writes nothing, and every read command prints nothing; both exit 0.',
   'Every command takes --cwd naming the repository, defaulting to the process working directory.',
 ].join('\n');
@@ -234,6 +212,7 @@ const { values, positionals } = parseArgs({
     key: { type: 'string' },
     source: { type: 'string' },
     count: { type: 'boolean' },
+    files: { type: 'string' },
     decision: { type: 'boolean' }
   }
 });
@@ -242,7 +221,7 @@ const cwd = values.cwd ?? process.cwd();
 const command = positionals[0];
 const OFF_LINE = 'exo memory is off (memory=off); nothing written';
 const WRITE_COMMANDS = ['book', 'write', 'retire', 'reject', 'verify'];
-const READ_COMMANDS = ['render', 'propose', 'decisions'];
+const READ_COMMANDS = ['render', 'propose', 'decisions', 'lessons', 'claude-md'];
 
 if (values.help) {
   console.log(USAGE);
@@ -318,6 +297,16 @@ if (values.help) {
     const name = values.key === undefined ? values.claim : `review:${normalizeKey(values.key)}`;
     const bytes = writeClaim(cwd, readState(cwd), values.claim, refs, values.replaces, name);
     console.log(`wrote "${values.claim}"; ${memoryFile(cwd)} is now ${bytes} of ${MEMORY_BUDGET.bytes} bytes`);
+  } catch (error) {
+    fail(error.message);
+  }
+} else if (command === 'lessons') {
+  const files = (values.files ?? '').split(',').map((file) => file.trim()).filter(Boolean);
+  for (const claim of lessonsFor(cwd, files)) console.log(`- ${claim}`);
+} else if (command === 'claude-md') {
+  try {
+    const wide = readState(cwd).lines.filter((line) => isMemory(line) && line.refs.some((ref) => refPath(ref) === '**'));
+    for (const line of wide) console.log(`Proposed CLAUDE.md line (nothing written): ${line.claim}`);
   } catch (error) {
     fail(error.message);
   }

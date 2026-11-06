@@ -9,6 +9,7 @@ import { defaultBranch } from '#git';
 import { isCovered, isPlanDoc } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { recordPush, recordRefDiff, snapshotRefs } from './run-ops.mjs';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
 
 const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'remove-worktree.mjs');
@@ -101,7 +102,16 @@ function squashRun(runRoot, target, commit) {
   return made.ok ? null : `squash commit failed: ${made.err.split('\n')[0]}`;
 }
 
-export function landRun({ root, runRoot, branch, mode, runDir, success = '', commit = '', startedAt }) {
+export function landRun(args) {
+  const before = snapshotRefs(args.root);
+  try {
+    return landSteps(args);
+  } finally {
+    recordRefDiff(args.root, path.basename(args.runDir), before, 'land');
+  }
+}
+
+function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit = '', startedAt }) {
   const parked = (action, reason) => {
     openGate(runDir, { source: 'land', action, reason });
     return { phase: 'parked', gate: reason, range: null, pushed: null, prUrl: null, cleanup: null };
@@ -167,6 +177,7 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', com
       const diverged = /rejected|non-fast-forward|fetch first/.test(push.err);
       return parked(diverged ? forceAction : `git push -u origin ${branch}`, `push of ${branch} failed${diverged ? ': remote branch diverged' : ''}`);
     }
+    recordPush(root, path.basename(runDir), 'land', 'origin', branch, head);
     const ghArgs = ['pr', 'create', '--base', base, '--head', branch, '--fill'];
     const gh = run(runRoot, 'gh', ghArgs);
     if (!gh.ok) return parked(`gh ${ghArgs.join(' ')}`, `gh failed: ${gh.err.split('\n')[0]}`);
@@ -197,6 +208,7 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', com
   if (mode === 'push-main') {
     const push = git(root, 'push', 'origin', base);
     if (!push.ok) return parkedOnBranch(`fetch origin and rebase ${base} yourself in ${root}`, `push of ${base} failed: ${push.err.split('\n')[0]}`);
+    recordPush(root, path.basename(runDir), 'land', 'origin', base, git(root, 'rev-parse', base).out);
     pushed = `origin/${base}`;
   }
   const notes = [];

@@ -27,3 +27,4 @@ This page keeps one outcome to one brief. New wishes edit it where it stands. Th
 ## Judgment
 
 - The stored brief outranks a new one while both name the same outcome.
+- For an area the request changes, read `docs/behaviour/<area>.md` when it exists, in place of the shipped briefs it lists; `node "${CLAUDE_SKILL_DIR}/scripts/behaviour.mjs"` rebuilds it from them.

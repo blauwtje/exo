@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { commonDir } from '#checkout';
 import { currentHost } from '#host';
 import { memoryOn } from '#memory-store';
 import { gitLine } from '#git';
@@ -65,9 +66,8 @@ function handoffPointer(cwd, gitDirectory, top) {
 
 function memoryPointer(cwd, top) {
   if (!memoryOn(cwd)) return '';
-  const commonDirectory = gitLine(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
-  const memoryFile = commonDirectory === null
-    ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')
+  const commonDirectory = commonDir(cwd);
+  const memoryFile = commonDirectory === null ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')
     : path.join(commonDirectory, 'exo', 'memory.md');
   if (!fs.existsSync(memoryFile) || !fs.statSync(memoryFile).isFile()) return '';
   return `A project memory for this repository sits at ${located(memoryFile, top)}. Read it before changing code you have not read here, and ask the user to type \`/exo:remember\` to change it.\n\n`;

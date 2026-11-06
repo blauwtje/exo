@@ -35,6 +35,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 | File | Read it when |
 |---|---|
 | `references/ai-tics.md` | Step 6, on every draft, and when reviewing a text for machine-written tone. |
+| `references/release-notes.md` | The user asks for release notes or the missing `## Unreleased` lines from a ref range. |
 
 ## Judgment
 

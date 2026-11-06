@@ -6,6 +6,9 @@ import { test } from 'node:test';
 import { watchOne } from '../skills/watch/scripts/watch.mjs';
 import { tempDir } from './harness.mjs';
 
+process.env.CLAUDE_PLUGIN_DATA = tempDir('plugin-data-');
+globalThis.fetch = async () => { throw new Error('network blocked in tests'); };
+
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
 const URL_ = 'https://www.tiktok.com/@u/video/7301234567890123456';
 const SPEECH_VTT = 'WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nHello from the audio\n\n00:00:03.000 --> 00:00:06.000\nsecond spoken line\n';

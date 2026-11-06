@@ -1,5 +1,5 @@
 import { planRoute } from '#plan-waves';
-import { BRANCH_REVIEW_KEY, cachedPass } from '#check-cache';
+import { BRANCH_REVIEW_KEY, reviewVerdict } from '#check-cache';
 import { REVIEWER_AGENTS, redProvedOf, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 import { DEFAULT_BASE } from './gate-constants.mjs';
@@ -17,7 +17,7 @@ export function reviewLines(plan, landed, { root, planId, base }) {
   if (reviewers.length > 0) {
     const reviewer = reviewers.find((entry) => entry === REVIEWER_AGENTS.deep) ?? reviewers.find((entry) => !entry.startsWith('none')) ?? reviewers[0];
     const range = `${base ?? DEFAULT_BASE}..HEAD`;
-    lines.push(cachedPass(root, BRANCH_REVIEW_KEY) === null ? `REVIEW Branch ${range}: ${reviewer}` : `REVIEW Branch ${range}: none (reviewed on this same tree)`);
+    lines.push(reviewVerdict(root, BRANCH_REVIEW_KEY) === null ? `REVIEW Branch ${range}: ${reviewer}` : `REVIEW Branch ${range}: none (reviewed on this same tree)`);
   }
   lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
   return lines;

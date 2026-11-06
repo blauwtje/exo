@@ -29,12 +29,13 @@ test('a timeout word gets the function prefix and the command text stays as writ
   assert.equal(fix('echo =x; timeout 5 y'), '[ -n "$ZSH_VERSION" ] && setopt noequals; ' + TIMEOUT_FUNCTION + 'echo =x; timeout 5 y');
 });
 
-test('an unquoted $NAME list in a for loop adds shwordsplit; other commands keep the prefix', () => {
-  const split = '[ -n "$ZSH_VERSION" ] && setopt noequals shwordsplit; ';
-  for (const command of ['for f in $P; do echo $f; done', 'echo =x; for f in $FILES\ndo echo $f; done']) {
+test('an unquoted $NAME adds shwordsplit; other commands keep the prefix', () => {
+  const split = '[ -n "$ZSH_VERSION" ] && setopt shwordsplit; ';
+  for (const command of ['for f in $P; do echo $f; done', 'for f in "$P"; do echo $f; done', 'for f in $(ls); do echo $f; done']) {
     assert.equal(fix(command), split + command, command);
   }
-  for (const command of ['for f in "$P"; do echo $f; done', 'for f in a b; do echo $f; done', 'for f in $(ls); do echo $f; done']) {
+  assert.equal(fix('echo =x; for f in $FILES\ndo echo $f; done'), '[ -n "$ZSH_VERSION" ] && setopt noequals shwordsplit; echo =x; for f in $FILES\ndo echo $f; done');
+  for (const command of ['for f in "$P"; do echo "$f"; done', 'for f in a b; do echo "$f"; done', 'for f in $(ls); do echo "$f"; done']) {
     assert.equal(fix(command), null, command);
   }
   assert.equal(fix('echo =x; for f in "$P"; do :; done'), '[ -n "$ZSH_VERSION" ] && setopt noequals; echo =x; for f in "$P"; do :; done');
@@ -43,6 +44,24 @@ test('an unquoted $NAME list in a for loop adds shwordsplit; other commands keep
 test('zsh splits an unquoted for-loop list after the fix', { skip: !onPath('zsh', process.env) }, () => {
   const out = spawnSync('zsh', ['-f', '-c', fix('P="a b"; for f in $P; do echo "[$f]"; done')], { encoding: 'utf8' }).stdout;
   assert.equal(out, '[a]\n[b]\n');
+});
+
+test('zsh runs a bash-style command as bash would after the fix', { skip: !onPath('zsh', process.env) }, () => {
+  const dir = tempDir();
+  writeFileSync(join(dir, 'a.test.mjs'), 'x\n');
+  writeFileSync(join(dir, 'b.test.mjs'), 'x\n');
+  const zsh = (command) => spawnSync('/bin/zsh', ['-f', '-c', fix(command) ?? command], { cwd: dir, encoding: 'utf8' }).stdout;
+  assert.equal(zsh(`files=$(grep -l x *.test.mjs); node -e 'console.log(process.argv.slice(1).join(","))' $files`), 'a.test.mjs,b.test.mjs\n');
+  assert.equal(zsh('set -- "a b" c; printf "[%s]" $1 $@; echo'), '[a][b][a][b][c]\n');
+  assert.equal(zsh('arr=(a b); echo "${arr[0]}" ${arr[1]}'), 'a b\n');
+});
+
+test('only an expansion zsh treats unlike bash gets a zsh option', () => {
+  assert.equal(fix('node --test $FILES'), '[ -n "$ZSH_VERSION" ] && setopt shwordsplit; node --test $FILES');
+  assert.equal(fix('echo "${arr[0]}"'), '[ -n "$ZSH_VERSION" ] && setopt ksharrays; echo "${arr[0]}"');
+  for (const command of ["node -e 'console.log($x)'", 'echo "$HOME" "${x:-y}"', 'echo $(ls) $((1 + 2))', 'echo "${#arr[@]}" "${arr[@]}"']) {
+    assert.equal(fix(command), null, command);
+  }
 });
 
 test('a word starting with == gets the setopt prefix', () => {

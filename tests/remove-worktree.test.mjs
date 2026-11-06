@@ -269,6 +269,27 @@ test('git refusal over an untracked brief leaves no kept folder, and --patch kee
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
+test('refuses and removes nothing over an untracked file outside .exo/ and docs/specs/, and --patch discards it', async () => {
+  const { root, worktree } = await runWithWorktree();
+  writeFile(worktree, '.exo/report.md', 'report\n');
+  writeFile(worktree, 'notes.txt', 'notes\n');
+
+  assert.throws(() => removeWorktree({ worktree, run: root }), (error) => {
+    assert.ok(error instanceof RemoveWorktreeError);
+    assert.match(error.message, /notes\.txt.*removed nothing/);
+    return true;
+  });
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'report.md')), false);
+  assert.equal(fs.readFileSync(path.join(worktree, 'notes.txt'), 'utf8'), 'notes\n');
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+
+  const patch = path.join(root, 'task-1.patch');
+  fs.writeFileSync(patch, 'diff --git a/x b/x\n');
+  removeWorktree({ worktree, run: root, patch });
+  assert.equal(fs.existsSync(worktree), false);
+  assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
+});
+
 test('--patch refuses and removes nothing while the patch file is absent or empty', async () => {
   const { root, worktree } = await runWithWorktree();
   writeFile(worktree, '.exo/report.md', 'report\n');

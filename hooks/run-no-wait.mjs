@@ -6,14 +6,13 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readJsonOrNull } from '#basics';
 import { inSidecall, readHookText } from '#hook-input';
+import { denyReason } from '../lib/guard-rules.mjs';
 import { inRun } from '../lib/run-decision.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
 export const BLOCK_LIMIT = 2;
 
 const RECORD = fileURLToPath(new URL('../lib/run-decision.mjs', import.meta.url));
-const DECIDE = `Do not wait for the user: decide from the spec and the exo settings, record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to`;
-const FINAL = 'If no decision is possible, end with `Task <n>: BLOCKED <question>`.';
 const OPTION = /^(?:[-*+]\s+)?[*_`]*(?:Option\s+(?:[A-Za-z]|\d{1,2})\b|(?:[A-Za-z]|\d{1,2})(?:\s*\([^)]*\))?[*_`]*\s*[):.])/;
 
 const lines = (text) => String(text ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
@@ -62,7 +61,8 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ ...counts, [session]: count + 1 }));
   }
-  const why = `${DECIDE} ${path.join(dir, 'decisions.md')}, and continue.${count + 1 >= BLOCK_LIMIT ? ` ${FINAL}` : ''}`;
+  const record = `record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to ${path.join(dir, 'decisions.md')}`;
+  const why = denyReason(count + 1 >= BLOCK_LIMIT ? 'run-no-wait-final' : 'run-no-wait', record);
   if (asking) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } };
   return atLimit ? null : { decision: 'block', reason: why };
 }

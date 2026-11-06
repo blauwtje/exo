@@ -15,7 +15,15 @@ const PROBE_LINE = /^\s*Probe:\s*\S/;
 const CLASS_LINE = /^\s*Class:\s*\S/;
 const SWEEP_LINE = /^\s*Sweep:\s*\S/;
 const QUOTE_LINE = /^\s*Quote:\s*(\S.*)$/;
-const FIX_DETAIL_LINE = /^\s*(?:Probe|Class|Sweep|Quote):\s*\S/;
+const FIX_DETAIL_LINE = /^\s*(?:Probe|Class|Sweep|Quote|Cite|Score|Category):\s*\S/;
+const TRIAGE_LINE = /^\s+(?:Cite|Score|Category):\s*\S/;
+const CITE_LINE = /^\s*Cite:\s*`?([^\s`:]+):(\d+)(?:-\d+)?`?\s*$/;
+const SCORE_LINE = /^\s*Score:\s*(\d+)\s*$/;
+const CATEGORY_LINE = /^\s*Category:\s*([\w-]+)\s*$/;
+const DEFAULT_MIN_SCORE = 4;
+const MAX_SCORE = 10;
+const OTHER_CATEGORY = 'other';
+const UNCITED_CATEGORY = 'uncited';
 const MECHANICAL_REPORT = 'code-rules';
 const UNREAD = /\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\W*$/;
 const LOCATION = /^\s*(?:[-*]\s*)?(\S+?):(\d+)(?:-(\d+))?\b(.*)$/;
@@ -29,6 +37,37 @@ Merges review reports into <checkout>/.exo/branch-review.md and prints the verdi
 then COVERAGE <read>/<total> and one UNREAD-FILE line per file changed since --base (default main) that no review-branch report lists on a Read: line,
 then each question, note and report finding as a FINDING line, then FINDINGS-SHA <digest> (the findings lines without fixer marks, indented detail and FAIL lines), then a CODEX offer or CODEX none line.
 Inside an exo run the CODEX line is none and records no decision.`;
+
+export function minScoreOf(flag, env = process.env) {
+  const text = String(flag ?? env.EXO_REVIEW_MIN_SCORE ?? '');
+  return /^\d+$/.test(text) ? Number(text) : DEFAULT_MIN_SCORE;
+}
+
+function triageOf(lines, index) {
+  const detail = [];
+  for (let next = index + 1; next < lines.length && /^\s+\S/.test(lines[next]); next += 1) detail.push(lines[next]);
+  const score = detail.map((line) => SCORE_LINE.exec(line)?.[1]).find(Boolean);
+  return {
+    cite: detail.map((line) => CITE_LINE.exec(line)).find(Boolean) ?? null,
+    score: score === undefined ? null : Math.min(Number(score), MAX_SCORE),
+    category: detail.map((line) => CATEGORY_LINE.exec(line)?.[1]).find(Boolean) ?? OTHER_CATEGORY
+  };
+}
+
+function citeHolds(cite, root) {
+  if (cite === null) return false;
+  if (root === null) return true;
+  const file = path.join(root, cite[1]);
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return true;
+  return Number(cite[2]) <= fs.readFileSync(file, 'utf8').split('\n').length;
+}
+
+function grouped(entries) {
+  const best = new Map();
+  for (const { category, score } of entries) best.set(category, Math.max(best.get(category) ?? 0, score));
+  const rank = (category) => (category === UNCITED_CATEGORY ? -1 : best.get(category));
+  return [...entries].sort((a, b) => rank(b.category) - rank(a.category) || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0) || b.score - a.score || a.order - b.order);
+}
 
 export function findingsDigest(text) {
   const lines = text.split('\n').filter((line) => line.trim() !== '' && !/^\s/.test(line) && !line.startsWith('FAIL '));
@@ -141,9 +180,12 @@ function recurringOf(findings, prior) {
 
 const reading = ({ round, path: file, range, weight }) => `round ${round}: ${file}:${range} ${weight}`;
 
-export function mergeReviews(reports, prior = new Map(), changed = null, root = null) {
+export function mergeReviews(reports, prior = new Map(), changed = null, root = null, minScore = DEFAULT_MIN_SCORE) {
   const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0, 'out-of-scope': 0 };
   let demoted = 0;
+  let uncited = 0;
+  let hidden = 0;
+  const entries = [];
   const quoteDemoted = [];
   const settledDemoted = [];
   let unread = 0;
@@ -155,6 +197,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   const findings = [];
   for (const { name, text } of reports) {
     const lines = text.split('\n');
+    const triagedReport = lines.some((line) => TRIAGE_LINE.test(line));
     const weights = lines.map((line) => line.match(FINDING)?.[1]).filter(Boolean);
     const scopedOnly = weights.length > 0 && weights.every((weight) => weight === 'out-of-scope');
     const own = scopedOnly && verdictOf(text) === 'FINDINGS' ? 'CLEAN' : verdictOf(text);
@@ -166,14 +209,23 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
         if (loose) {
           unread += 1;
           if (loose[2] === 'fix') unreadFix += 1;
-          shown.push(`unread: ${line.trim()}`);
+          entries.push({ category: 'unread', score: MAX_SCORE + 1, order: entries.length, text: `unread: ${line.trim()}` });
         }
         return;
       }
-      counts[match[1]] += 1;
       const outOfScope = match[1] === 'out-of-scope';
+      const triage = triageOf(lines, index);
+      const exempt = outOfScope || !triagedReport || name === MECHANICAL_REPORT;
+      const isUncited = !exempt && !citeHolds(triage.cite, root);
+      const isLow = !outOfScope && triage.score !== null && triage.score < minScore;
+      const lowered = isUncited || isLow;
+      const weight = lowered && match[1] === 'concern' ? 'note' : match[1];
+      if (weight !== match[1]) lines[index] = lines[index].replace(/\bconcern\b/, weight);
+      if (lowered && match[2] === 'fix') lines[index] = lines[index].replace(/\bfix(\W*)$/, 'report$1');
+      if (isUncited) uncited += 1;
+      counts[weight] += 1;
       const parsed = parseFinding(line);
-      let reported = match[2] !== 'fix';
+      let reported = match[2] !== 'fix' || lowered;
       const detailed = !reported && !outOfScope && !settled.has(findingKey(parsed)) && hasFixDetails(lines, index, name);
       const unquoted = detailed && name !== MECHANICAL_REPORT && root !== null && quoteAbsent(lines[index + 4], parsed.path, root);
       if (detailed && !unquoted) {
@@ -186,11 +238,20 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
         reported = true;
         lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
       }
-      findings.push({ ...parsed, weight: match[1], state: reported ? 'reported' : 'open' });
-      if (reported || match[1] === 'question' || match[1] === 'note') shown.push(lines[index].trim());
+      findings.push({ ...parsed, weight, state: reported ? 'reported' : 'open' });
+      const blocking = !reported && triagedReport;
+      if (!(blocking || reported || weight === 'question' || weight === 'note')) return;
+      if (isLow) {
+        hidden += 1;
+        return;
+      }
+      const category = isUncited ? UNCITED_CATEGORY : triage.category;
+      entries.push({ category, score: triage.score ?? minScore, order: entries.length, blocking, text: lines[index].trim() });
     });
     sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
   }
+  const groups = grouped(entries);
+  shown.push(...groups.filter(({ blocking }) => !blocking).map(({ text }) => text));
   const recurring = recurringOf(findings, prior);
   if (recurring.length > 0) verdict = 'BLOCKED';
   const coverage = coverageOf(reports, changed, root);
@@ -198,11 +259,11 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix}\n`;
-  return { verdict, counts, demoted, quoteDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', base: 'value', report: 'list' }, { usage: USAGE });
+  const flags = parseFlags(argv, { root: 'value', base: 'value', report: 'list', 'min-score': 'value' }, { usage: USAGE });
   if (!flags.root) throw new UsageError('--root is required');
   if (!flags.report?.length) throw new UsageError('--report is required');
   const reports = flags.report.map((file) => ({
@@ -211,7 +272,7 @@ function main(argv) {
   }));
   const round = latestRound(flags.root) + 1;
   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
-  const { verdict, counts, demoted, quoteDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root);
+  const { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root), changed, flags.root, minScoreOf(flags['min-score']));
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
@@ -228,7 +289,14 @@ function main(argv) {
   for (const location of quoteDemoted) process.stdout.write(`DEMOTED-QUOTE ${location}\n`);
   for (const location of settledDemoted) process.stdout.write(`DEMOTED-SETTLED ${location}\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
-  for (const line of shown) process.stdout.write(`FINDING ${line}\n`);
+  if (uncited > 0) process.stdout.write(`UNCITED ${uncited} finding(s) have no valid Cite: file:line and cannot block\n`);
+  if (hidden > 0) process.stdout.write(`${hidden} findings under score ${minScore} hidden\n`);
+  let category = null;
+  for (const entry of groups) {
+    if (entry.category !== category) process.stdout.write(`CATEGORY ${entry.category}\n`);
+    category = entry.category;
+    process.stdout.write(`FINDING ${entry.text}\n`);
+  }
   process.stdout.write(`FINDINGS-SHA ${findingsDigest(text)}\n`);
   process.stdout.write(`CODEX ${inRun() ? 'none' : codexVerdict()}\n`);
 }

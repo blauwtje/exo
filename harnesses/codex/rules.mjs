@@ -53,6 +53,8 @@ const AGENT_SKILL_DIR = [
   ['${CLAUDE_SKILL_DIR}', 'the skill folder path the dispatch passes']
 ];
 
+const PROMPT_SUFFIX = '-prompt.md';
+
 export function splitFrontmatter(text) {
   const match = FRONTMATTER.exec(text);
   if (match === null) return { fields: null, body: text };
@@ -173,7 +175,7 @@ export function codexHeader(file, text, known) {
 export function codexMarkdown(file, text, known) {
   const { fields, body } = splitFrontmatter(text);
   const mapped = codexBody(file, body, known);
-  if (fields === null) return mapped;
+  if (fields === null || file.endsWith(PROMPT_SUFFIX)) return mapped;
   const { name, description } = codexHeader(file, text, known);
   return `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\n---\n${mapped}`;
 }

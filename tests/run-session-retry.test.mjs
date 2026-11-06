@@ -78,3 +78,51 @@ test('spawnClaude does not retry a timed-out session', { timeout: 30000 }, async
   assert.equal(result.timedOut, true);
   assert.equal(fs.readFileSync(counter, 'utf8'), 'x');
 });
+
+function modelStub(overloadedModel) {
+  const dir = tempDir('exo-fallback-');
+  const script = `const fs = require('node:fs');
+fs.appendFileSync(process.argv[1], process.argv[process.argv.indexOf('--model') + 1] + '\\n');
+const overloaded = process.argv[process.argv.indexOf('--model') + 1] === ${JSON.stringify(overloadedModel)};
+process.stdout.write((overloaded ? ${JSON.stringify(TRANSIENT_TEXT.replace('rate_limit_error', 'overloaded_error'))} : ${JSON.stringify(SUCCESS)}) + '\\n');`;
+  const seen = path.join(dir, 'models');
+  return {
+    claude: { command: process.execPath, prefix: ['-e', script, seen] },
+    models: () => fs.readFileSync(seen, 'utf8').trim().split('\n'),
+    log: path.join(dir, 'session.log')
+  };
+}
+
+test('spawnClaude runs once on the fallback model after the overload retries are spent', { timeout: 30000 }, async () => {
+  process.env.EXO_PROVIDER_RETRY_MS = '10';
+  delete process.env.EXO_FALLBACK_MODEL;
+  const session = modelStub('sonnet');
+  const result = await spawnClaude(session.claude, ['--model', 'sonnet'], { cwd: process.cwd(), env: process.env, prompt: '', log: session.log, timeoutMs: 30000 });
+  assert.deepEqual(session.models(), ['sonnet', 'sonnet', 'sonnet', 'sonnet', 'opus']);
+  assert.deepEqual(result.fallback, { from: 'sonnet', to: 'opus' });
+  assert.match(result.text, /"is_error":false/);
+  assert.match(fs.readFileSync(session.log, 'utf8'), /exo: provider overloaded on sonnet after 3 retries, running once on opus/);
+});
+
+test('spawnClaude takes the fallback model from EXO_FALLBACK_MODEL and stops when it is off', { timeout: 30000 }, async () => {
+  process.env.EXO_PROVIDER_RETRY_MS = '10';
+  process.env.EXO_FALLBACK_MODEL = 'haiku';
+  const named = modelStub('sonnet');
+  await spawnClaude(named.claude, ['--model', 'sonnet'], { cwd: process.cwd(), env: process.env, prompt: '', log: named.log, timeoutMs: 30000 });
+  assert.equal(named.models().at(-1), 'haiku');
+  process.env.EXO_FALLBACK_MODEL = 'off';
+  const off = modelStub('sonnet');
+  const result = await spawnClaude(off.claude, ['--model', 'sonnet'], { cwd: process.cwd(), env: process.env, prompt: '', log: off.log, timeoutMs: 30000 });
+  delete process.env.EXO_FALLBACK_MODEL;
+  assert.equal(off.models().length, 4);
+  assert.equal(result.fallback, undefined);
+});
+
+test('spawnClaude does not fall back from a model the table does not list', { timeout: 30000 }, async () => {
+  process.env.EXO_PROVIDER_RETRY_MS = '10';
+  delete process.env.EXO_FALLBACK_MODEL;
+  const session = modelStub('unlisted');
+  const result = await spawnClaude(session.claude, ['--model', 'unlisted'], { cwd: process.cwd(), env: process.env, prompt: '', log: session.log, timeoutMs: 30000 });
+  assert.equal(session.models().length, 4);
+  assert.equal(result.fallback, undefined);
+});
