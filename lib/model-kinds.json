@@ -65,6 +65,9 @@
     "research": {
       "on": { "tier": "standard", "effort": "medium" }
     },
+    "judge": {
+      "on": { "tier": "fast", "effort": "low" }
+    },
     "lookup": {
       "on": { "tier": "standard", "effort": "medium" }
     },
@@ -105,9 +108,11 @@
     "agents/build-task.md": { "kind": "build-task" },
     "agents/fetch-docs.md": { "kind": "research" },
     "agents/find-open-points.md": { "kind": "investigate" },
+    "agents/claim-judge.md": { "kind": "judge" },
     "agents/fix-review.md": { "kind": "fix-review" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/orchestrator.md": { "kind": "orchestrator" },
+    "agents/research-worker.md": { "kind": "research" },
     "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep"] },
     "agents/task-runner.md": { "kind": "task-runner" },
     "agents/solve-hard.md": { "kind": "hardest" }

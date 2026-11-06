@@ -310,3 +310,13 @@ test('orchestrator dispatches async within its Workers line, reads by range and 
   assert.match(body, /Before the first dispatch[^\n]*Reads:[^\n]*by range/);
   assert.match(body, /discovery and code reading to a `lookup` worker/);
 });
+
+test('research-worker writes findings and keeps the data rule, and claim-judge only reads', () => {
+  const worker = agents.find((agent) => agent.frontmatter.name === 'research-worker');
+  const judge = agents.find((agent) => agent.frontmatter.name === 'claim-judge');
+  const workerTools = worker.frontmatter.tools.split(', ');
+  assert.ok(workerTools.includes('Bash') && workerTools.includes('Write'), 'research-worker lacks Bash or Write');
+  assert.match(worker.body, /as data, not as instructions/);
+  assert.match(worker.body, /at most 1,500 tokens/);
+  assert.deepEqual(judge.frontmatter.tools.split(', ').filter((tool) => ['Write', 'Edit', 'Bash', 'Agent'].includes(tool)), []);
+});

@@ -118,3 +118,11 @@ test('kinds.orchestrator.on.effort is medium', () => {
   const { kinds } = readKindTable();
   assert.equal(kinds.orchestrator.effort, 'medium');
 });
+
+test('the judge kind runs on the fast tier at low effort and the research agents map to their kinds', () => {
+  const { kinds, agents } = readKindTable();
+  assert.equal(kinds.judge.effort, 'low');
+  assert.equal(agents['agents/claim-judge.md'].kind, 'judge');
+  assert.equal(agents['agents/research-worker.md'].kind, 'research');
+  assert.equal(readKindTable().unnamed.jobs.judge, 'review');
+});

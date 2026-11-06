@@ -59,7 +59,7 @@ function landTaskLocked({ planText, number, root, reportText, reportPath, planPa
   const frame = frameOf(plan.frame);
   const warnLines = runPreCommitGates(task, frame, root);
   const changed = taskChangedPaths(root);
-  const candidate = commitCandidate(block, root, task, planId);
+  const candidate = commitCandidate(block, root, task, planId, reportText);
   const gateLine = warnLines + gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
   try {
     runCoveringTests(task, proofs.map(({ command }) => command), root, changed, pendingEvidence);

@@ -1,0 +1,22 @@
+[
+  {"id":"mh-1","category":"multi-hop","question":"Which city hosted the first Summer Olympics after the Berlin Wall fell, and in which year?","gold":["barcelona","1992"],"wrong":[]},
+  {"id":"mh-2","category":"multi-hop","question":"Who was the first listed author of the paper that introduced the Transformer architecture, and which company employed the authors?","gold":["vaswani","google"],"wrong":[]},
+  {"id":"mh-3","category":"multi-hop","question":"In which country was the creator of the Linux kernel born, and what is that country's capital?","gold":["finland","helsinki"],"wrong":[]},
+  {"id":"mh-4","category":"multi-hop","question":"Who created the Git version control system, and in which language was it first written?","gold":["torvalds"],"wrong":[]},
+  {"id":"mh-5","category":"multi-hop","question":"Which river flows through the capital of Hungary, and into which sea does it finally empty?","gold":["danube","black sea"],"wrong":[]},
+  {"id":"mh-6","category":"multi-hop","question":"Who wrote the novel that the film Blade Runner is based on, and what is its title?","gold":["dick","electric sheep"],"wrong":[]},
+  {"id":"mh-7","category":"multi-hop","question":"Which space shuttle launched the Hubble Space Telescope, and in what year?","gold":["discovery","1990"],"wrong":[]},
+  {"id":"mh-8","category":"multi-hop","question":"Which foundation currently stewards the Rust language, and under which licences is the compiler released?","gold":["rust foundation","mit","apache"],"wrong":[]},
+  {"id":"fp-1","category":"false-premise","question":"Why did Albert Einstein win the Nobel Prize for his theory of relativity?","gold":["photoelectric"],"wrong":[]},
+  {"id":"fp-2","category":"false-premise","question":"How did the Great Wall of China become visible to the naked eye from the Moon?","gold":["not visible"],"wrong":[]},
+  {"id":"fp-3","category":"false-premise","question":"Why did Python 3 drop the print function?","gold":["print"],"wrong":["dropped the print function because"]},
+  {"id":"fp-4","category":"false-premise","question":"When did Australia's capital move from Sydney to Melbourne?","gold":["canberra"],"wrong":[]},
+  {"id":"ci-1","category":"citation-integrity","question":"What does RFC 2119 define? Quote the sentence from the RFC that says so.","gold":["requirement"],"wrong":[]},
+  {"id":"ci-2","category":"citation-integrity","question":"What is the first aphorism of the Zen of Python? Cite the page.","gold":["beautiful is better than ugly"],"wrong":[]},
+  {"id":"ci-3","category":"citation-integrity","question":"What default port does HTTPS use? Cite a standard or reference.","gold":["443"],"wrong":[]},
+  {"id":"ci-4","category":"citation-integrity","question":"How does the Semantic Versioning specification define a major version bump? Cite the text.","gold":["incompatible"],"wrong":[]},
+  {"id":"cmp-1","category":"comparison","question":"Compare SQLite and PostgreSQL for an embedded single-user app.","gold":["sqlite","postgres"],"wrong":[]},
+  {"id":"cmp-2","category":"comparison","question":"Compare the Rust and Go approaches to memory management.","gold":["garbage","ownership"],"wrong":[]},
+  {"id":"cmp-3","category":"comparison","question":"Compare REST and GraphQL for fetching nested data.","gold":["graphql","rest"],"wrong":[]},
+  {"id":"cmp-4","category":"comparison","question":"Compare TCP and UDP for live video streaming.","gold":["udp","tcp"],"wrong":[]}
+]

@@ -33,7 +33,11 @@ async function runWithRuntime(args, timeout) {
   return runYtDlp(args, timeout);
 }
 
+const SEARCH_QUERY = /^ytsearch(?:date)?\d+:/;
+const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results';
+
 function urlOf(args) {
+  if (args.some((arg) => SEARCH_QUERY.test(arg))) return YOUTUBE_SEARCH_URL;
   const marker = args.indexOf('--');
   return marker === -1 ? args.find((arg) => /^https?:\/\//.test(arg)) : args[marker + 1];
 }

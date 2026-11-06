@@ -8,6 +8,7 @@ import { git, headMessage, headSha, moveHead } from './land-git.mjs';
 import { candidateTrailer } from './land-commit-block.mjs';
 import { nestedWorktrees } from './land-paths.mjs';
 import { runLandGate } from './land-gate.mjs';
+import { carryRaises } from './land-raises.mjs';
 
 export function dropCandidate(root, { base, candidate }) {
   return moveHead(root, 'land-task: drop candidate', base, candidate) || headSha(root) === base;
@@ -21,10 +22,11 @@ export function clearStaleCandidate(root, planId) {
   dropCandidate(root, { base: base.stdout.trim(), candidate });
 }
 
-export function commitCandidate(block, root, task, planId) {
+export function commitCandidate(block, root, task, planId, reportText = null) {
   const trailer = candidateTrailer(planId, task.number);
   const base = headSha(root);
   runCommitBlock(block.replace(planTaskTrailer(planId, task.number), trailer), root, task.number);
+  carryRaises(root, reportText);
   const candidate = headSha(root);
   if (!headMessage(root).split('\n').includes(trailer)) throw new LandingError(`the Commit: block of Task ${task.number} left no commit carrying "${trailer}"`);
   if (git(root, 'rev-parse', `${candidate}~1`) !== base) throw new LandingError(`the Commit: block of Task ${task.number} did not make exactly one commit on ${base.slice(0, 7)}`);

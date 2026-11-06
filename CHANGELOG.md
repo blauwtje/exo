@@ -11,6 +11,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- `/exo:research <question>` answers with a short cited report from keyless web, Reddit, GitHub, Hacker News, Stack Overflow, Wikipedia, arXiv, podcast and YouTube sources through the new `research-worker` and `claim-judge` agents, and `verify.mjs` blocks the report until every quote is on its cached page and every footnote maps to a stored claim.
 - Once `suite-shadow.jsonl` shows `changedTestsTrialRuns` (run.json `defaults`, 10) consecutive full runs with no miss, a whole-suite proof runs only the changed tests, with a full run every that many runs; a miss restarts the count.
 
 ### Changed

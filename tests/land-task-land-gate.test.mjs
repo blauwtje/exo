@@ -372,3 +372,15 @@ test('a passing covering test lets the task land', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Committed: [0-9a-f]+ Task 1$/m);
 });
+
+const RAISE_LINE = 'Budget-raise: STAGE_BODY_TOKENS.spec 935 to 955: the new step needs twenty tokens';
+
+test('a Budget-raise line in the report is on the candidate during the Land gate and in the landed commit', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const gate = `git log -1 --format=%B | grep -qF '${RAISE_LINE}'`;
+  landTask({ planPath, planText: withLandGate(gate), number: 1, root, reportText: `Done.\n${RAISE_LINE}\n` });
+  const body = git(root, 'log', '-1', '--format=%B');
+  assert.ok(body.split('\n').includes(RAISE_LINE));
+  assert.match(body, /^Plan-task: fixture\/1$/m);
+});
