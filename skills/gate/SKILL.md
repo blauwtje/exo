@@ -16,7 +16,7 @@ The gate readies a branch for a pull request.
    - No plan file → end the turn: ask for its path and name `build`'s no-plan route; never hand-run checks or `ship`.
    - `SKIP`, `WARN`, `FIX-ONLY`, `SESSION` or `SELF-HOSTED` line → read `references/gate-lines.md`.
    - On `FAIL` or `UNPLANNED`, end the turn with its report; rerun no check. Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`.
-2. **Review the branch.** Skip `REVIEW Branch` when reviewer is `none`.
+2. **Review the branch.** Reviewer `none`: skip only the dispatch, still merge.
    - Dispatch `exo:review-branch` per `DISPATCH Branch`, one message. Start with `exo-kind: review-deep` unless the line names no kind, add its fields, end each with `Read:` and changed files read.
    - Add 3-5 questions from Goal and each task's `Data:`, `Risk:` and Acceptance. When `OVERLAP` is not `none`, add `DISPATCH Overlap`.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --base <base> --report <each report path>`, each `CODE-RULES` path included. Its first line is step 3's verdict, `FINDING` lines are the `question`, `note` and `report` findings only, `UNREAD-FILE` lines unread files.

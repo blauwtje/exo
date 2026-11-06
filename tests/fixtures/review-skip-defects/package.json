@@ -1,0 +1,8 @@
+{
+  "name": "review-skip-defects-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

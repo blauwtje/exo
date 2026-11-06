@@ -11,6 +11,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- The gate's code-rules scan flags a duplicated literal and an unused export as concerns, and a skipped branch review still sends the CODE-RULES findings to the fix step.
 - The flow report adds median, MAD and outliers (beyond 3 scaled MADs) per arm metric.
 - `usage.json` adds `byRole`, the tokens, cost and estimated Read-result tokens per agent type.
 - `npm run check` parses every brief example in skill, agent and hook text with the real brief parser, and fails a delegate template without a `Reads:` line.

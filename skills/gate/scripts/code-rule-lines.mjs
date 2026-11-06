@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { taskCommits } from '#plan-landed';
-import { codeRuleFindings } from '#code-rules';
+import { codeRuleConcerns, codeRuleFindings } from '#code-rules';
 import { isTestFirst, isTestPath } from '#red-green';
 import { taskPaths } from './pick-reviewer.mjs';
 import { isTrailerlessFix, commitsTouching } from './unplanned-paths.mjs';
@@ -45,7 +45,7 @@ function testDefectLines(task, { root, planId }) {
   });
 }
 
-export function codeRulesReport(fails, root, defects = []) {
+export function codeRulesReport(fails, root, { defects = [], concerns = [] } = {}) {
   const entries = fails.flatMap((finding) => {
     const at = /^(.+?):(\d+) /.exec(finding);
     if (at === null) return [];
@@ -53,7 +53,7 @@ export function codeRulesReport(fails, root, defects = []) {
     if (source === '') return [];
     return [`${finding} defect fix`, `  Probe: ! grep -nF -- '${source.replace(/'/g, "'\\''")}' ${at[1]}`];
   });
-  return ['FINDINGS', '', ...entries, ...defects, ''].join('\n');
+  return ['FINDINGS', '', ...entries, ...defects, ...concerns.map((finding) => `${finding} concern report`), ''].join('\n');
 }
 
 export function codeRuleLines(plan, landed, { root, planId, base }) {
@@ -63,15 +63,18 @@ export function codeRuleLines(plan, landed, { root, planId, base }) {
   const fails = new Set();
   const defects = new Set();
   const lines = [];
+  const landedPaths = [];
   for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
+    landedPaths.push(...taskPaths(task, root, planId));
     testDefectLines(task, { root, planId }).forEach((line) => defects.add(line));
     const found = codeRuleFindings({ root, base, paths: taskPaths(task, root, planId) });
     found.fails.forEach((finding) => fails.add(finding));
     lines.push(...found.warns.map((warn) => `WARN code-rules Task ${task.number} (${warn})`));
   }
-  if (fails.size === 0 && defects.size === 0) return lines;
+  const concerns = codeRuleConcerns({ root, base, paths: [...new Set(landedPaths)] });
+  if (fails.size === 0 && defects.size === 0 && concerns.length === 0) return lines;
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  fs.writeFileSync(reportPath, codeRulesReport([...fails], root, [...defects]));
+  fs.writeFileSync(reportPath, codeRulesReport([...fails], root, { defects: [...defects], concerns }));
   return [...lines, `CODE-RULES ${reportPath}`];
 }
 
