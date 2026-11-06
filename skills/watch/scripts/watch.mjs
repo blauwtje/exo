@@ -6,6 +6,7 @@ import { writeOutputs, headOf } from './outputs.mjs';
 import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './ytdlp.mjs';
 import { pickCaptions, availableLanguages, chaptersOf, folderOf } from './ytdlp-info.mjs';
 import { sourceOf } from './video-url.mjs';
+import { withKeyframes } from './keyframes.mjs';
 import { chaptersFromHtml } from './youtube-chapters.mjs';
 import { Unreadable, WATCH_URL, fetchPlayer, fetchWatchPage, checkPlayable, tracksOf, defaultLanguage, pickTrack, languagesOf, readCaptions } from './youtube.mjs';
 
@@ -27,8 +28,7 @@ async function watchBySpeech({ label, url, dir, head, details, why }, options) {
   if (speech.missing) return missingTool(label, `${lead}the video has no captions, and transcribing its audio needs ${speech.missing}, then rerun`);
   if (speech.failure) return noTranscript(label, `${lead}the video has no captions, and ${speech.failure}`);
   const cues = parseVtt(fs.readFileSync(speech.vtt, 'utf8'));
-  if (cues.length === 0) return noTranscript(label, 'no speech found in the audio');
-  const duration = details.duration > 0 ? details.duration : Math.ceil(cues.at(-1).start);
+  const duration = details.duration > 0 ? details.duration : Math.ceil(cues.at(-1)?.start ?? 0);
   const chapters = details.chapters(duration);
   return writeOutputs({ dir, cues, duration, chapters, head, captions: `speech:${speech.engine}` }, options);
 }
@@ -60,7 +60,7 @@ function ytDlpFailure(why, reason) {
 
 async function watchWithYtDlp({ id, url }, options, why) {
   const label = id ?? url;
-  const meta = await runYtDlpWithRuntime(['-J', '--no-playlist', '--no-warnings', '--', url], options.ytDlpMs);
+  const meta = await runYtDlpWithRuntime(['-J', '--write-subs', '--write-auto-subs', '--no-playlist', '--no-warnings', '--', url], options.ytDlpMs);
   if (meta.error) return noTranscript(label, ytDlpFailure(why, ytDlpReason(meta, options)));
   const answer = JSON.parse(meta.stdout);
   const info = answer._type === 'playlist' ? answer.entries[0] : answer;
@@ -92,9 +92,7 @@ async function watchSite({ url, host }, options) {
   return watchWithYtDlp({ url }, options);
 }
 
-export async function watchOne(input, options, fetchFn = globalThis.fetch) {
-  const source = sourceOf(input);
-  if (!source) return { failure: `${input}: not a video url or an 11-character YouTube id` };
+async function watchSource(source, options, fetchFn) {
   if (!source.id) return watchSite(source, options);
   const { id } = source;
   try {
@@ -106,10 +104,13 @@ export async function watchOne(input, options, fetchFn = globalThis.fetch) {
   }
 }
 
-function guarded(label, work) {
-  return Promise.resolve().then(work).catch((error) => ({ failure: `${label}: ${error.message}` }));
+export async function watchOne(input, options, fetchFn = globalThis.fetch) {
+  const source = sourceOf(input);
+  if (!source) return { failure: `${input}: not a video url or an 11-character YouTube id` };
+  const result = await watchSource(source, options, fetchFn);
+  return withKeyframes(result, source.id ? `${WATCH_URL}${source.id}` : source.url, options);
 }
 
-export function watchAll(options, fetchFn = globalThis.fetch) {
-  return Promise.all(options.urls.map((url) => guarded(url, () => watchOne(url, options, fetchFn))));
+export function watchGuarded(input, options, fetchFn = globalThis.fetch) {
+  return Promise.resolve().then(() => watchOne(input, options, fetchFn)).catch((error) => ({ failure: `${input}: ${error.message}` }));
 }

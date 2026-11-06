@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { watchOne } from '../skills/watch/scripts/watch.mjs';
+import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 
 process.env.CLAUDE_PLUGIN_DATA = tempDir('plugin-data-');
@@ -21,14 +22,11 @@ const STUBS = {
 if (args.includes('--version')) process.exit(0);
 if (args.includes('-J')) { console.log(process.env.FAKE_INFO); process.exit(0); }
 if (process.env.FAKE_FAIL === 'download') { console.error('ERROR: download denied'); process.exit(1); }
-fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], 'audio.m4a'), 'audio');
-`,
-  ffmpeg: `${shebang}${logged('ffmpeg')}
-if (process.env.FAKE_FAIL === 'ffmpeg') { console.error('Invalid data found'); process.exit(1); }
-if (process.env.FAKE_FAIL === 'hang') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);
-fs.writeFileSync(args.at(-1), 'wav');
+fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], 'audio.mp3'), 'audio');
 `,
   'whisper-cli': `${shebang}${logged('whisper-cli')}
+if (process.env.FAKE_FAIL === 'engine') { console.error('model rejected'); process.exit(1); }
+if (process.env.FAKE_FAIL === 'hang') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);
 fs.writeFileSync(args[args.indexOf('-of') + 1] + '.vtt', process.env.FAKE_VTT);
 `,
   whisper: `${shebang}${logged('whisper')}
@@ -50,7 +48,8 @@ function setup(tools, { info = INFO, vtt = SPEECH_VTT } = {}) {
   return { dir, model, out, run, calls, folder: path.join(out, `tiktok-${INFO.id}`) };
 }
 
-const ALL = ['yt-dlp', 'ffmpeg', 'whisper-cli', 'whisper'];
+const ALL = ['yt-dlp', 'whisper-cli', 'whisper'];
+const OPENAI = ['yt-dlp', 'whisper'];
 
 test('whisper.cpp transcribes the audio when --model names an existing file', () => {
   const site = setup(ALL);
@@ -60,11 +59,8 @@ test('whisper.cpp transcribes the audio when --model names an existing file', ()
   assert.equal(fs.readFileSync(path.join(site.folder, 'transcript.txt'), 'utf8'), '[00:00] Hello from the audio second spoken line\n');
   const calls = site.calls();
   const download = calls.find((args) => args[0] === 'yt-dlp' && args.includes('-f'));
-  assert.deepEqual(download.slice(1, 6), ['--js-runtimes', download[2], '-f', 'bestaudio/best', '--no-playlist']);
+  assert.deepEqual(download.slice(1, 6), ['--js-runtimes', download[2], '-f', 'bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best', '--no-playlist']);
   assert.ok(download.includes('audio.%(ext)s'));
-  const ffmpeg = calls.find((args) => args[0] === 'ffmpeg');
-  assert.deepEqual(ffmpeg.slice(1, 3), ['-nostdin', '-y']);
-  assert.ok(ffmpeg.join(' ').includes('-ar 16000 -ac 1 -c:a pcm_s16le'));
   const engine = calls.find((args) => args[0] === 'whisper-cli');
   assert.equal(engine[engine.indexOf('-l') + 1], 'pt');
   assert.ok(engine.includes('-ovtt'));
@@ -72,7 +68,7 @@ test('whisper.cpp transcribes the audio when --model names an existing file', ()
 });
 
 test('openai-whisper runs without a model, detects the language and is renamed to raw.vtt', () => {
-  const site = setup(ALL);
+  const site = setup(OPENAI);
   const result = site.run();
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /captions=speech:whisper /);
@@ -83,34 +79,21 @@ test('openai-whisper runs without a model, detects the language and is renamed t
   assert.ok(!fs.existsSync(path.join(site.folder, 'audio.vtt')));
 });
 
-test('a missing tool ends the video with the tool and its install command, and downloads nothing', () => {
-  const cases = [
-    [['yt-dlp', 'whisper'], 'ffmpeg', "'brew install ffmpeg'"],
-    [['yt-dlp', 'ffmpeg'], 'whisper', "'pipx install openai-whisper'"],
-  ];
-  for (const [tools, tool, hint] of cases) {
-    const site = setup(tools);
-    const result = site.run();
-    assert.equal(result.status, 1);
-    assert.equal(result.stdout, '');
-    assert.ok(result.stderr.includes(`missing tool: the video has no captions, and transcribing its audio needs ${tool} on PATH; install it with `), result.stderr);
-    assert.ok(result.stderr.includes(hint), result.stderr);
-    assert.ok(!site.calls().some((args) => args[0] === 'yt-dlp' && args.includes('-f')));
-  }
-});
-
-test('whisper.cpp missing with a model names its install command', () => {
-  const site = setup(['yt-dlp', 'ffmpeg', 'whisper']);
-  const result = site.run(['--model', site.model]);
+test('without a whisper command and without npm the video ends with the install step that failed', () => {
+  const site = setup(['yt-dlp']);
+  const result = site.run();
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /needs whisper-cli on PATH; install it with 'brew install whisper-cpp' plus a ggml model from huggingface\.co\/ggerganov\/whisper\.cpp passed as --model, then rerun/);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /no transcript: the video has no captions, and /);
+  assert.match(result.stderr, /npm/);
+  assert.ok(!result.stderr.includes('missing tool'), result.stderr);
 });
 
-test('a failing download, ffmpeg or timeout names its step and leaves no audio behind', () => {
+test('a failing download, engine or timeout names its step and leaves no audio behind', () => {
   const cases = [
     [{ FAKE_FAIL: 'download' }, /no transcript: the video has no captions, and audio download failed: ERROR: download denied/],
-    [{ FAKE_FAIL: 'ffmpeg' }, /ffmpeg failed: Invalid data found/],
-    [{ FAKE_FAIL: 'hang', EXO_WATCH_TRANSCRIBE_MS: '300' }, /ffmpeg failed: did not finish within 0\.3 s/],
+    [{ FAKE_FAIL: 'engine' }, /whisper-cli failed: model rejected/],
+    [{ FAKE_FAIL: 'hang', EXO_WATCH_TRANSCRIBE_MS: '300' }, /whisper-cli failed: did not finish within 0\.3 s/],
   ];
   for (const [env, pattern] of cases) {
     const site = setup(ALL);
@@ -121,18 +104,18 @@ test('a failing download, ffmpeg or timeout names its step and leaves no audio b
   }
 });
 
-test('a transcript with no cues fails instead of printing words=0', () => {
+test('a transcript with no cues writes the no-speech transcript instead of failing', () => {
   const site = setup(ALL, { vtt: 'WEBVTT\n' });
   const result = site.run();
-  assert.equal(result.status, 1);
-  assert.equal(result.stdout, '');
-  assert.match(result.stderr, /no transcript: no speech found in the audio/);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /captions=speech:whisper\.cpp words=0 /);
+  assert.equal(fs.readFileSync(path.join(site.folder, 'transcript.txt'), 'utf8'), 'no speech in this video\n');
 });
 
 test('a video that has captions never starts the speech route', () => {
   const site = setup(ALL, { info: { ...INFO, subtitles: { en: [{ ext: 'vtt' }] } } });
   site.run();
-  assert.ok(!site.calls().some((args) => args[0] === 'ffmpeg' || args[0] === 'whisper'));
+  assert.ok(!site.calls().some((args) => args[0] === 'whisper-cli' || args[0] === 'whisper'));
 });
 
 test('a --lang miss among existing tracks does not start the speech route', () => {
@@ -140,11 +123,11 @@ test('a --lang miss among existing tracks does not start the speech route', () =
   const result = site.run(['--lang', 'de']);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /no captions in language 'de'/);
-  assert.ok(!site.calls().some((args) => args[0] === 'ffmpeg'));
+  assert.ok(!site.calls().some((args) => args[0] === 'whisper-cli'));
 });
 
 test('a YouTube video with zero caption tracks is transcribed from its audio', async () => {
-  const site = setup(ALL);
+  const site = setup(OPENAI);
   const saved = { ...process.env };
   Object.assign(process.env, { PATH: path.join(site.dir, 'bin'), FAKE_LOG: path.join(site.dir, 'calls.log'), FAKE_INFO: JSON.stringify(INFO), FAKE_VTT: SPEECH_VTT });
   const player = { playabilityStatus: { status: 'OK' }, videoDetails: { title: 'Tube', lengthSeconds: '6' }, captions: {} };
@@ -156,7 +139,7 @@ test('a YouTube video with zero caption tracks is transcribed from its audio', a
 });
 
 test('openai-whisper receives --model for a name that is not a file', () => {
-  const site = setup(ALL);
+  const site = setup(OPENAI);
   const result = site.run(['--model', 'turbo']);
   assert.equal(result.status, 0, result.stderr);
   const engine = site.calls().find((args) => args[0] === 'whisper');
@@ -177,7 +160,7 @@ test('a failed download that left a partial file is not transcribed', () => {
   const result = site.run([], { FAKE_FAIL: 'download' });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /audio download failed: ERROR: download denied/);
-  assert.ok(!site.calls().some((args) => args[0] === 'ffmpeg'));
+  assert.ok(!site.calls().some((args) => args[0] === 'whisper-cli'));
 });
 
 test('sourceOf refuses mistyped ids, mailto and tel inputs', async () => {
@@ -193,4 +176,28 @@ test('sourceOf accepts a dotless host only with an explicit http(s) scheme', asy
   assert.equal(sourceOf('intranet/video.mp4'), null);
   assert.equal(sourceOf('localhost:8080/v.mp4'), null);
   assert.equal(sourceOf('mailto:1234@example.com'), null);
+});
+
+async function rendered(cues, duration) {
+  const { writeOutputs } = await import('../skills/watch/scripts/outputs.mjs');
+  const dir = tempDir('nonspeech-');
+  const result = writeOutputs({ dir, cues, duration, chapters: [], head: { id: 'x', title: '"t"' }, captions: 'speech:whisper.node' }, { chunkMinutes: 30, stampSeconds: 45 });
+  return { result, text: fs.readFileSync(path.join(dir, 'transcript.txt'), 'utf8') };
+}
+
+test('music tags and cues past the video end leave a one-line no-speech transcript', async () => {
+  const { result, text } = await rendered([{ start: 0, text: '(piano music)' }, { start: 30, text: '(piano music)' }, { start: 60, text: '(gentle music)' }], 15);
+  assert.equal(text, 'no speech in this video\n');
+  assert.match(result.line, / words=0 /);
+});
+
+test('a lone [Music] cue longer than the clip leaves a one-line no-speech transcript', async () => {
+  const { text } = await rendered([{ start: 0, text: '[Music]' }], 14);
+  assert.equal(text, 'no speech in this video\n');
+});
+
+test('non-speech tokens are cut from spoken cues and later cues are dropped', async () => {
+  const cues = [{ start: 0, text: '♪ la la ♪ Hello [Applause] there' }, { start: 2, text: '[BLANK_AUDIO]' }, { start: 3, text: '[ ]' }, { start: 20, text: 'after the end' }];
+  const { text } = await rendered(cues, 10);
+  assert.equal(text, '[00:00] Hello there\n');
 });

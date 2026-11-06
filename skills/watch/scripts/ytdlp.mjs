@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process';
 import process from 'node:process';
-import { environmentMs } from '#script-flags';
+import { environmentDelayMs, environmentMs } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
+import { failureLine, gateRequest, isRetryable } from './request-gate.mjs';
 import { resolveYtDlp } from './ytdlp-binary.mjs';
 
 export const YTDLP_INSTALL = "'brew install yt-dlp' or 'pipx install yt-dlp'";
@@ -26,19 +27,38 @@ async function runYtDlp(args, timeout) {
   return execute(command ?? 'yt-dlp', args, timeout);
 }
 
-export async function runYtDlpWithRuntime(args, timeout) {
+async function runWithRuntime(args, timeout) {
   const run = await runYtDlp([...JS_RUNTIME, ...args], timeout);
   if (!run.error || !UNKNOWN_RUNTIME_OPTION.test(run.stderr)) return run;
   return runYtDlp(args, timeout);
 }
 
-function lastLine(text) {
-  return text.trim().split('\n').pop() ?? '';
+function urlOf(args) {
+  const marker = args.indexOf('--');
+  return marker === -1 ? args.find((arg) => /^https?:\/\//.test(arg)) : args[marker + 1];
+}
+
+function pause(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function backoffAfter(attempt) {
+  return environmentDelayMs('EXO_WATCH_BACKOFF_MS', DEFAULTS.retryBackoffMs) * 2 ** (attempt - 1);
+}
+
+export async function runYtDlpWithRuntime(args, timeout) {
+  const url = urlOf(args);
+  for (let attempt = 1; ; attempt += 1) {
+    await gateRequest(url);
+    const run = await runWithRuntime(args, timeout);
+    if (!isRetryable(run) || attempt >= DEFAULTS.retryTries) return run;
+    await pause(backoffAfter(attempt));
+  }
 }
 
 export function ytDlpReason(run, options) {
   if (run.error?.killed) return `did not finish within ${options.ytDlpMs / 1000} s`;
-  return lastLine(run.stderr) || run.error?.message || 'no error text';
+  return failureLine(run);
 }
 
 export async function ytDlpAvailable(timeout) {

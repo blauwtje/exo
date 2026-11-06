@@ -20,9 +20,13 @@ function binaryName(platform) {
   return platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
 }
 
+export function cacheRoot(env, home) {
+  if (env.CLAUDE_PLUGIN_DATA) return env.CLAUDE_PLUGIN_DATA;
+  return path.join(home, '.cache', 'exo');
+}
+
 function cacheDirOf(env, home) {
-  if (env.CLAUDE_PLUGIN_DATA) return path.join(env.CLAUDE_PLUGIN_DATA, 'bin');
-  return path.join(home, '.cache', 'exo', 'bin');
+  return path.join(cacheRoot(env, home), 'bin');
 }
 
 function isExecutable(file) {

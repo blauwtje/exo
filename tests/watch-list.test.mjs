@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
+import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 
 const script = path.resolve('skills/watch/scripts/list.mjs');
@@ -36,7 +37,7 @@ function site(reply, { withYtDlp = true } = {}) {
   fs.mkdirSync(bin);
   if (withYtDlp) fs.writeFileSync(path.join(bin, 'yt-dlp'), FAKE_YT_DLP, { mode: 0o755 });
   fs.writeFileSync(path.join(dir, 'reply.json'), JSON.stringify(reply));
-  const env = { PATH: bin, FAKE_LOG: path.join(dir, 'calls.log'), FAKE_REPLY: path.join(dir, 'reply.json') };
+  const env = { PATH: bin, CLAUDE_PLUGIN_DATA: process.env.CLAUDE_PLUGIN_DATA, EXO_WATCH_GATE_MS: '0', EXO_WATCH_BACKOFF_MS: '0', FAKE_LOG: path.join(dir, 'calls.log'), FAKE_REPLY: path.join(dir, 'reply.json') };
   const calls = () => (fs.existsSync(env.FAKE_LOG) ? fs.readFileSync(env.FAKE_LOG, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)) : []);
   const run = (args, extra = {}) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', env: { ...env, ...extra } });
   const listing = () => calls().find((call) => call.includes('--flat-playlist'));

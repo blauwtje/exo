@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { assetFor, resolveYtDlp } from '../skills/watch/scripts/ytdlp-binary.mjs';
 import { ytDlpAvailable, ytDlpNeed, runYtDlpWithRuntime } from '../skills/watch/scripts/ytdlp.mjs';
 import { watchOne } from '../skills/watch/scripts/watch.mjs';
+import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 
 const RELEASE = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/';
@@ -168,11 +169,11 @@ test('the yt-dlp calls run the fetched binary', { skip: !runnable }, async () =>
   });
 });
 
-test('a video url is read through the fetched yt-dlp, then asks for the tools it still lacks', { skip: !runnable }, async () => {
+test('a video url is read through the fetched yt-dlp, then fetches the audio', { skip: !runnable }, async () => {
   await withRelease(async ({ server }) => {
     const options = { out: tempDir('ytdlp-out-'), chunkMinutes: 30, stampSeconds: 45, fetchMs: 5000, ytDlpMs: 5000, transcribeMs: 5000 };
     const result = await watchOne('https://www.tiktok.com/@u/video/7301234567890123456', options);
-    assert.match(result.failure, /missing tool: the video has no captions, and transcribing its audio needs ffmpeg on PATH; install it with 'brew install ffmpeg', then rerun$/);
+    assert.match(result.failure, /no transcript: the video has no captions, and audio download failed: /);
     assert.equal(server.calls.length, 2);
   });
 });

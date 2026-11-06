@@ -21,6 +21,11 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- `exo:watch` runs a voice activity check before whisper.node (the pinned 0.9 MB Silero ggml-silero-v6.2.0 model, fetched on first use into the plugin cache): a video with no speech skips whisper and gets the no-speech transcript, otherwise whisper hears only the window from the first speech start to the last speech end, and any VAD failure falls back to the whole file.
+- `exo:watch` provisions a small ffmpeg decoder on first need (`@ffmpeg-installer`, 15 to 23 MB depending on the platform), so whisper.node reads any audio format and keyframes need no installed ffmpeg.
+- `exo:watch` grabs 6 keyframes into `frames/NN.jpg` (long side 640 px) when a video has no speech or under 15 words of it, and the per-video line then ends ` frames=<dir>/frames (6 files)`.
+- `exo:watch` transcribes a batch in one call, one video after another: repeat `--url`, or give `--from <file>` or `--from -` the `list.mjs` output; a finished video is skipped (`--force` redoes it), a failed one does not stop the batch, and a summary line counts done, skipped and failed with the failed ids grouped by failure.
+- `exo:watch` paces its yt-dlp calls per host across processes (about 2 s plus up to 1 s of jitter, tune with `EXO_WATCH_GATE_MS`) with a lock file in the plugin cache that also works on Windows.
 - The `notify` setting is an http(s) url, such as an ntfy topic, that `exo run` posts a one-line notice to when a plan is done, a task is stuck or a question waits; a failed post logs one line and never fails the run.
 - A plan corpus under `tests/fixtures/plans/` holds one `ok` or `bad` plan per shape a plan-check fix repaired, and `tests/plan-check-corpus.test.mjs` pins each one's exit code and first refusal line.
 - `/exo:start` with no goal prints a board of what is open in the repository (plans with landed tasks, parked or stopped runs, unmerged branches and worktrees, a saved session, briefs with open points) and the one next action, and falls back to the cheat sheet when nothing is open.
@@ -73,6 +78,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `npm run check` fails a skill or reference trim that drops a rule sentence found nowhere else in `skills/` or `hooks/`, with intended removals in `verify/rule-removals.txt`.
 
 ### Changed
+- `exo:watch` retries a yt-dlp call that fails with 403, 429 or 5xx up to 3 times with a doubling backoff (`EXO_WATCH_BACKOFF_MS`, 5 s default), and a failure reads `rate-limited, retry later`, `private/removed` or the short reason.
+- `exo:watch` transcribes a video with no captions without a tool to install: whisper-cli or whisper when on PATH, else whisper.node with the pinned ggml-base-q5_1 model fetched on first use (about 84 MB on darwin-arm64, checked by SHA-256), mp3, wav and flac are read as they come and other formats are decoded, the language is detected, and a video without speech gets the `no speech in this video` transcript.
 - `exo:ship` writes a reviewer-ready pull request body with `scripts/pr-body.mjs` (why, changes by theme, read order, risks, the gate's own proof lines, follow-ups, capped at `defaults.prBodyBytes` 4096) and an acceptance table from the linked issue's checklist, one met, unmet or unverifiable row per item with its evidence.
 - Gate review findings cite the rule they break and carry a category and a 1-10 score; `merge-reviews.mjs` groups them, demotes uncited ones and hides those under score 4 (`--min-score`, `EXO_REVIEW_MIN_SCORE`) with a count line.
 - The land gate decides from the SUMMARY line of its own log (FAIL=0, and WARN=0 UNRUN=0 unless static), refuses an exit 0 whose log ends FAIL>0 or a check gate with no SUMMARY line, and skips only a cached pass whose kept log it re-reads.
@@ -119,6 +126,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The hook-size, hook-cost, hook-latency, injected-context and session-load checks run from one `hook-budgets.mjs` module and keep their names in the check output.
 
 ### Fixed
+- `exo:watch` tests run in about 6 s instead of 95 s: the batch tests now pass `EXO_WATCH_GATE_MS` and `EXO_WATCH_BACKOFF_MS` to the script, and `0` turns the host pacing, its jitter and the retry wait off; the retry tests also pin the doubling wait and every retried status.
+- `exo:watch` drops non-speech cues and tags such as `(piano music)`, `[Music]`, `[Applause]`, `♪...♪` and `[BLANK_AUDIO]`, and cues past the video end, for every caption and speech source, and writes `no speech in this video` when nothing is left.
+- `exo:watch` asks yt-dlp for subtitle tracks in its metadata call, so a TikTok video with `eng-US` captions is read from them instead of reported as having none.
 - `exo:save-session` asks for the `Resume:` line in the user's language without a Dutch example, and its fixed resume paragraph names no section a handoff may leave out.
 - `tests/guard-rules.test.mjs` fails a rule row with no case that triggers its deny instead of skipping it, and the 13 rows it skipped now each have a case or, for the three brief-only rows, no unused `rule` and `allowed` text.
 - Worktree creation, main-checkout lookup, land lock path and headless task paths share `lib/checkout.mjs`; `remove-worktree` refuses untracked files outside `.exo` and `docs/specs`.

@@ -1,20 +1,18 @@
-import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { runTool, toolReason } from './run-tool.mjs';
+import { ensureModel } from './whisper-model.mjs';
+import { transcribeWithNode, vttOf } from './whisper-node.mjs';
 
-const MODEL_SOURCE = 'huggingface.co/ggerganov/whisper.cpp';
-const HINTS = {
-  ffmpeg: "'brew install ffmpeg'",
-  'whisper-cli': `'brew install whisper-cpp' plus a ggml model from ${MODEL_SOURCE} passed as --model`,
-  whisper: `'pipx install openai-whisper', or 'brew install whisper-cpp' plus a ggml model from ${MODEL_SOURCE} passed as --model`,
-};
-const ENGINE_NAMES = { 'whisper-cli': 'whisper.cpp', whisper: 'whisper' };
+const AUDIO_SELECTOR = 'bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best';
+const READABLE = new Set(['.mp3', '.wav', '.flac']);
+const ENGINE_NAMES = { 'whisper-cli': 'whisper.cpp', whisper: 'whisper', 'whisper-node': 'whisper.node' };
 
 let engineQueue = Promise.resolve();
 
-function onPath(tool) {
-  const folders = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
+function onPath(tool, env) {
+  const folders = (env.PATH ?? '').split(path.delimiter).filter(Boolean);
   return folders.some((folder) => {
     try {
       fs.accessSync(path.join(folder, tool), fs.constants.X_OK);
@@ -25,68 +23,56 @@ function onPath(tool) {
   });
 }
 
-function runTool(command, args, timeout) {
-  return new Promise((resolve) => {
-    execFile(command, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout }, (error, stdout, stderr) => {
-      resolve({ error, stdout, stderr });
-    });
-  });
-}
-
-function toolReason(run, options) {
-  if (run.error?.killed) return `did not finish within ${options.transcribeMs / 1000} s`;
-  const lastLine = run.stderr.trim().split('\n').pop();
-  return lastLine || run.error.message;
-}
-
 function engineOf(options) {
-  const useCpp = Boolean(options.model) && fs.existsSync(options.model);
-  return useCpp ? 'whisper-cli' : 'whisper';
-}
-
-async function missingTool(options) {
-  const need = await options.ytDlpNeed();
-  if (need) return need;
-  const tool = ['ffmpeg', engineOf(options)].find((name) => !onPath(name));
-  if (!tool) return null;
-  return `${tool} on PATH; install it with ${HINTS[tool]}`;
+  const env = options.env ?? process.env;
+  return ['whisper-cli', 'whisper'].find((tool) => onPath(tool, env)) ?? 'whisper-node';
 }
 
 function languageOf(options) {
   return options.lang?.split('-')[0].toLowerCase();
 }
 
-function engineArguments(wav, dir, options) {
+async function modelOf(options) {
+  if (options.model && fs.existsSync(options.model)) return { model: options.model };
+  return ensureModel(options);
+}
+
+function engineArguments({ file, dir, model }, options) {
   const language = languageOf(options);
   if (options.engine === 'whisper-cli') {
-    return ['-m', options.model, '-f', wav, '-l', language ?? 'auto', '-ovtt', '-of', path.join(dir, 'raw')];
+    return ['-m', model, '-f', file, '-l', language ?? 'auto', '-ovtt', '-of', path.join(dir, 'raw')];
   }
   const spoken = language ? ['--language', language] : [];
-  const model = options.model ? ['--model', options.model] : [];
-  return [wav, '--output_format', 'vtt', '--output_dir', dir, ...spoken, ...model];
+  const named = options.model ? ['--model', options.model] : [];
+  return [file, '--output_format', 'vtt', '--output_dir', dir, ...spoken, ...named];
 }
 
 async function downloadAudio(url, dir, options) {
   removeAudio(dir);
-  const args = ['-f', 'bestaudio/best', '--no-playlist', '--playlist-items', '1', '--no-warnings', '-P', dir, '-o', 'audio.%(ext)s', '--', url];
+  const args = ['-f', AUDIO_SELECTOR, '--no-playlist', '--playlist-items', '1', '--no-warnings', '-P', dir, '-o', 'audio.%(ext)s', '--', url];
   const run = await options.runYtDlp(args, options.ytDlpMs);
   const name = fs.readdirSync(dir).find((file) => file.startsWith('audio.'));
   if (name && !run.error) return { audio: path.join(dir, name) };
   return { failure: `audio download failed: ${options.ytDlpReason(run, options)}` };
 }
 
-async function convertAudio(audio, wav, options) {
-  const args = ['-nostdin', '-y', '-i', audio, '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', wav];
-  const run = await runTool('ffmpeg', args, options.transcribeMs);
-  if (!run.error) return {};
-  return { failure: `ffmpeg failed: ${toolReason(run, options)}` };
+async function readableAudio(audio, options) {
+  if (READABLE.has(path.extname(audio).toLowerCase())) return { file: audio };
+  try {
+    const toWav = options.toWav ?? (await import('./decoder.mjs')).toWav;
+    return { file: await toWav(audio, options) };
+  } catch (error) {
+    return { failure: `converting the audio failed: ${error.message}` };
+  }
 }
 
-async function recognise(wav, dir, options) {
+async function withCommand(file, dir, options) {
   const { engine } = options;
+  const modelled = engine === 'whisper-cli' ? await modelOf(options) : {};
+  if (modelled.failure) return modelled;
   const raw = path.join(dir, 'raw.vtt');
   fs.rmSync(raw, { force: true });
-  const run = await runTool(engine, engineArguments(wav, dir, options), options.transcribeMs);
+  const run = await options.runTool(engine, engineArguments({ file, dir, model: modelled.model }, options), options.transcribeMs);
   if (run.error) return { failure: `${engine} failed: ${toolReason(run, options)}` };
   const whisperOutput = path.join(dir, 'audio.vtt');
   if (fs.existsSync(whisperOutput)) fs.renameSync(whisperOutput, raw);
@@ -94,11 +80,23 @@ async function recognise(wav, dir, options) {
   return { vtt: raw };
 }
 
-async function convertAndRecognise(audio, dir, options) {
-  const wav = path.join(dir, 'audio.wav');
-  const converted = await convertAudio(audio, wav, options);
-  if (converted.failure) return converted;
-  return recognise(wav, dir, options);
+async function withNode(file, dir, options) {
+  const heard = await transcribeWithNode(file, languageOf(options), options);
+  if (heard.failure) return heard;
+  const raw = path.join(dir, 'raw.vtt');
+  fs.writeFileSync(raw, vttOf(heard.segments));
+  return { vtt: raw, language: heard.language };
+}
+
+async function listen(audio, dir, options) {
+  const readable = await readableAudio(audio, options);
+  if (readable.failure) return readable;
+  try {
+    const hear = options.engine === 'whisper-node' ? withNode : withCommand;
+    return await hear(readable.file, dir, options);
+  } finally {
+    if (readable.file !== audio) fs.rmSync(readable.file, { force: true });
+  }
 }
 
 function afterEarlierVideos(work) {
@@ -114,16 +112,15 @@ function removeAudio(dir) {
 }
 
 export async function transcribe(url, dir, options) {
-  const missing = await missingTool(options);
+  const missing = await options.ytDlpNeed();
   if (missing) return { missing };
   fs.mkdirSync(dir, { recursive: true });
-  const engine = engineOf(options);
-  const running = { ...options, engine };
+  const running = { runTool, ...options, engine: engineOf(options) };
   try {
-    const downloaded = await downloadAudio(url, dir, options);
+    const downloaded = await downloadAudio(url, dir, running);
     if (downloaded.failure) return downloaded;
-    const done = await afterEarlierVideos(() => convertAndRecognise(downloaded.audio, dir, running));
-    return done.failure ? done : { vtt: done.vtt, engine: ENGINE_NAMES[engine] };
+    const done = await afterEarlierVideos(() => listen(downloaded.audio, dir, running));
+    return done.failure ? done : { ...done, engine: ENGINE_NAMES[running.engine] };
   } finally {
     removeAudio(dir);
   }

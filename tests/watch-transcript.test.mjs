@@ -10,7 +10,8 @@ import { availableLanguages, pickCaptions } from '../skills/watch/scripts/ytdlp-
 import { videoIdOf } from '../skills/watch/scripts/video-url.mjs';
 import { tracksOf, pickTrack, languagesOf } from '../skills/watch/scripts/youtube.mjs';
 import { chaptersFromHtml } from '../skills/watch/scripts/youtube-chapters.mjs';
-import { watchAll, watchOne } from '../skills/watch/scripts/watch.mjs';
+import { watchGuarded, watchOne } from '../skills/watch/scripts/watch.mjs';
+import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 
 process.env.CLAUDE_PLUGIN_DATA = tempDir('plugin-data-');
@@ -418,6 +419,9 @@ test('a missing length falls back to the last cue', async () => {
 
 const NO_TRANSCRIPT = new RegExp(`^${ID}: no transcript: `);
 const MISSING_TOOL = new RegExp(`^${ID}: missing tool: `);
+const KEEP = async (input) => input;
+const NO_NPM = async () => ({ error: new Error('offline'), stdout: '', stderr: 'npm ERR! offline\n' });
+const NO_ENGINE = new RegExp(`^${ID}: no transcript: the video has no captions, and installing whisper\\.node failed: `);
 
 async function withoutYtDlp(work) {
   const { dir, options } = scratch();
@@ -528,7 +532,7 @@ test('a video that throws fails alone and does not hide the others', async () =>
   const manual = track('en');
   const good = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
   const broken = async (url, init) => (String(init.body ?? '').includes(OTHER_ID) ? null : good.fn(url, init));
-  const results = await watchAll({ ...options, urls: [ID, OTHER_ID] }, broken);
+  const results = [await watchGuarded(ID, options, broken), await watchGuarded(OTHER_ID, options, broken)];
   assert.match(results[0].line, new RegExp(`^id=${ID} `));
   assert.match(results[1].failure, new RegExp(`^${OTHER_ID}: `));
 });
@@ -601,8 +605,18 @@ test('an older yt-dlp that does not know --js-runtimes is retried once without i
     const result = await watchOne(OTHER_ID, options, fakeFetch({ player: bot }).fn);
     assert.equal(result.failure, undefined);
     assert.match(result.line, /captions=manual:en /);
-    const calls = callLog(dir).filter((args) => !args.includes('--version'));
+    const calls = callLog(dir).filter((args) => !args.includes('--version') && !args.includes('bv*/b'));
     assert.deepEqual(calls.map((args) => args.includes('--js-runtimes')), [true, false, true, false]);
+  });
+});
+
+test('the yt-dlp metadata call asks for subtitle tracks, because TikTok lists none without a subtitle flag', async () => {
+  await withFakeYtDlp(YT_INFO, async ({ dir, options }) => {
+    const unplayable = playerOf({ status: 'UNPLAYABLE', reason: 'This video is not available on this client' });
+    await watchOne(OTHER_ID, options, fakeFetch({ player: unplayable }).fn);
+    const metadata = callLog(dir).find((args) => args.includes('-J'));
+    assert.ok(metadata.includes('--write-subs'));
+    assert.ok(metadata.includes('--write-auto-subs'));
   });
 });
 
@@ -620,15 +634,17 @@ test('an UNPLAYABLE answer to the ANDROID client falls back to yt-dlp, and witho
   });
 });
 
-test('yt-dlp is not called when the fetch works or the video has no captions', async () => {
+test('yt-dlp is called only for the audio when the video has no captions', async () => {
   await withFakeYtDlp(YT_INFO, async ({ dir, options }) => {
     const manual = track('en');
     const worked = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
     assert.equal((await watchOne(ID, options, worked.fn)).failure, undefined);
-    assert.match((await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn)).failure, MISSING_TOOL);
+    assert.match((await watchOne(ID, { ...options, runTool: NO_NPM, toWav: KEEP }, fakeFetch({ player: playerOf() }).fn)).failure, NO_ENGINE);
     const gone = playerOf({ status: 'ERROR', reason: 'This video is unavailable' });
     assert.match((await watchOne(ID, options, fakeFetch({ player: gone }).fn)).failure, NO_TRANSCRIPT);
-    assert.deepEqual(callLog(dir), []);
+    const calls = callLog(dir).filter((args) => !args.includes('bv*/b'));
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].includes('-f'));
   });
 });
 
@@ -641,11 +657,11 @@ test('a refused fetch with no yt-dlp on PATH reports no transcript and installs 
   });
 });
 
-test('yt-dlp failing too reports a missing tool with both reasons', async () => {
+test('yt-dlp failing too reports both reasons', async () => {
   await withFakeYtDlp({ ...YT_INFO, subtitles: {}, automatic_captions: {} }, async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    const result = await watchOne(OTHER_ID, options, fakeFetch({ player: bot }).fn);
-    assert.match(result.failure, /^xyz98765432: missing tool: YouTube asks this network to sign in.*; the video has no captions, and transcribing its audio needs ffmpeg on PATH; install it with 'brew install ffmpeg', then rerun$/s);
+    const result = await watchOne(OTHER_ID, { ...options, runTool: NO_NPM, toWav: KEEP }, fakeFetch({ player: bot }).fn);
+    assert.match(result.failure, /^xyz98765432: no transcript: YouTube asks this network to sign in.*; the video has no captions, and installing whisper\.node failed: /s);
   });
 });
 
