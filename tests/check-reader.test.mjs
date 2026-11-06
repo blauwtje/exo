@@ -71,6 +71,8 @@ test('only the newest verdicts per command are kept', async () => {
     recordPass(root, 'npm test', round, undefined, NODE_PASS);
   }
   const entry = JSON.parse(await fs.readFile(cacheFile(root), 'utf8'))['npm test'];
-  assert.equal(entry.earlier.length, 5);
   assert.equal(entry.ms, 8);
+  assert.deepEqual(entry.earlier.map((verdict) => verdict.ms), [7, 6, 5, 4, 3]);
+  const logs = await fs.readdir(path.join(path.dirname(cacheFile(root)), 'check-logs'));
+  assert.deepEqual(logs.sort(), [entry, ...entry.earlier].map((verdict) => verdict.log).sort());
 });

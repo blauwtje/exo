@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { mad, median } from '../lib/eval-stats.mjs';
 import { isMain } from '#script-flags';
 
-export const COUNTS = [
+const COUNTS = [
   'assistantTurns',
   'toolCalls',
   'bashCalls',
@@ -18,10 +18,9 @@ export const COUNTS = [
   'activeMinutes',
   'totalTokens'
 ];
-export const DEFAULT_MIN_SESSIONS = 20;
-export const MIN_TURNS = 3;
+const DEFAULT_MIN_SESSIONS = 20;
+const MIN_TURNS = 3;
 const ACTIVE_GAP_MS = 5 * 60 * 1000;
-const BENCHMARK_CWD = /^\/(private\/)?tmp\/|\/benchmarks?\//;
 const TOKEN_FIELDS = ['input_tokens', 'output_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens'];
 const CHECK_COMMAND = /\bnpm (run )?(check|test|t)\b|\bnpm run (validate|test)[\w:.-]*|\bnode (--[\w-]+ \S+ )*--test\b/;
 const USAGE = 'usage: session-stats.mjs --repo <name> --before <date> --after <date> [--min-sessions <n>] [--projects <dir>] [--json]';
@@ -61,13 +60,15 @@ function countToolUse(record, block) {
   if (block.name === 'Agent' || block.name === 'Task') countDispatch(record, block);
 }
 
-function addUsage(record, message, seen) {
-  if (message?.id !== undefined) {
-    if (seen.has(message.id)) return false;
-    seen.add(message.id);
-  }
-  for (const field of TOKEN_FIELDS) record.totalTokens += message?.usage?.[field] ?? 0;
+function isFirstSight(message, seen) {
+  if (message?.id === undefined) return true;
+  if (seen.has(message.id)) return false;
+  seen.add(message.id);
   return true;
+}
+
+function addUsage(record, message) {
+  for (const field of TOKEN_FIELDS) record.totalTokens += message?.usage?.[field] ?? 0;
 }
 
 function noteEntry(record, entry) {
@@ -85,6 +86,11 @@ function isPrompt(entry) {
   return typeof content === 'string' || (Array.isArray(content) && content.some((block) => block.type === 'text'));
 }
 
+function countTools(record, entry) {
+  const blocks = Array.isArray(entry.message?.content) ? entry.message.content : [];
+  for (const block of blocks.filter((item) => item.type === 'tool_use')) countToolUse(record, block);
+}
+
 export function addLine(record, line, seen = new Set()) {
   let entry;
   try {
@@ -95,9 +101,11 @@ export function addLine(record, line, seen = new Set()) {
   noteEntry(record, entry);
   if (isPrompt(entry)) record.userPrompts += 1;
   if (entry.type !== 'assistant') return;
-  if (addUsage(record, entry.message, seen)) record.assistantTurns += 1;
-  const blocks = Array.isArray(entry.message?.content) ? entry.message.content : [];
-  for (const block of blocks.filter((item) => item.type === 'tool_use')) countToolUse(record, block);
+  if (isFirstSight(entry.message, seen)) {
+    addUsage(record, entry.message);
+    record.assistantTurns += 1;
+  }
+  countTools(record, entry);
 }
 
 async function addFile(record, file, seen) {
@@ -129,7 +137,7 @@ export async function sessionRecord(sessionFile) {
   return finishRecord(record);
 }
 
-export function projectDirs(projectsRoot, repo) {
+function projectDirs(projectsRoot, repo) {
   const own = new RegExp(`-${repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(-.*)?$`);
   return fs
     .readdirSync(projectsRoot)
@@ -137,7 +145,7 @@ export function projectDirs(projectsRoot, repo) {
     .map((name) => path.join(projectsRoot, name));
 }
 
-export function sessionFiles(directory) {
+function sessionFiles(directory) {
   return fs
     .readdirSync(directory)
     .filter((name) => name.endsWith('.jsonl'))
@@ -149,27 +157,26 @@ function belongsTo(record, repo) {
 }
 
 function skipReason(record) {
-  if (record.entrypoint === 'sdk-cli' && BENCHMARK_CWD.test(record.cwd ?? '')) return 'headless';
+  if (record.entrypoint === 'sdk-cli') return 'headless';
   if (record.userPrompts === 0 || record.assistantTurns < MIN_TURNS) return 'stub';
   return null;
 }
 
-function tally(reason, record, skipped, records) {
-  if (reason) skipped[reason] += 1;
-  else records.push(record);
+function tally(reason, record, result) {
+  if (reason) result.skipped[reason] += 1;
+  else result.records.push(record);
 }
 
 export async function loadSessions(projectsRoot, repo) {
-  const records = [];
-  const skipped = { stub: 0, headless: 0 };
+  const result = { records: [], skipped: { stub: 0, headless: 0 } };
   for (const directory of projectDirs(projectsRoot, repo)) {
     for (const file of sessionFiles(directory)) {
       const record = await sessionRecord(file);
       const reason = skipReason(record);
-      if (reason === 'headless' || belongsTo(record, repo)) tally(reason, record, skipped, records);
+      if (reason === 'headless' || belongsTo(record, repo)) tally(reason, record, result);
     }
   }
-  return { records, skipped };
+  return result;
 }
 
 const roundTo2 = (value) => Math.round(value * 100) / 100;
@@ -208,14 +215,15 @@ export function formatReport(windows) {
 }
 
 function parseOptions(argv) {
+  const text = { type: 'string' };
   return parseArgs({
     args: argv,
     options: {
-      repo: { type: 'string' },
-      before: { type: 'string' },
-      after: { type: 'string' },
-      'min-sessions': { type: 'string', default: String(DEFAULT_MIN_SESSIONS) },
-      projects: { type: 'string', default: path.join(os.homedir(), '.claude', 'projects') },
+      repo: text,
+      before: text,
+      after: text,
+      'min-sessions': { ...text, default: String(DEFAULT_MIN_SESSIONS) },
+      projects: { ...text, default: path.join(os.homedir(), '.claude', 'projects') },
       json: { type: 'boolean', default: false }
     }
   }).values;

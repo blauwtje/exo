@@ -15,9 +15,9 @@ Each `concern` → your agent body's concern rules.
 Each fix → `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
 Edit only paths `git diff --name-only <base>...HEAD` lists, a concern's test file and a guard; a fix needing another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited. Find them with unanchored `grep -nE 'Files:|Proof:|Run:' <plan>`: a compact task puts them mid-line.
-Under each `fixed` finding, `concern` included, keep the reviewer's `  Probe:` line or write `  Probe: <command failing before its edit, passing after>`; it must exit 0.
+Under each `fixed` finding, `concern` included, keep the reviewer's `  Probe:` line or write `  Probe: <command failing before its edit, passing after>`, exiting 0. Run it first, write `  Before: pass|fail`.
 Run each finding's `Sweep:` command before you mark it `fixed`: repair every hit in a branch-diff path like the named range; other hits count as reported. A Sweep still matching the repaired code is rewritten once, rerun once, else `reported: sweep matches repair`.
-Run the plan's `Land gate:` before each commit; it fails on a fix → revert it, reported with the gate output.
+Run the plan's `Land gate:` before each commit; on failure → revert it, reported with the gate output.
 Run no full test suite (`npm test`, `npm run check`); only the above.
 Search only the files a finding names; no repository-wide search except each `Sweep:` command and the plan `grep`.
 Give each command a timeout of at most 120 seconds; a timeout fails it, rerun once, narrower.

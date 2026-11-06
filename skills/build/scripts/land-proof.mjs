@@ -3,6 +3,7 @@ import path from 'node:path';
 import { runTreeSync } from '#process-tree';
 import { environmentMs } from '#script-flags';
 import { cachedPass, gateRefusal, recordPass, workingTreeKey } from '#check-cache';
+import { recordShadow, shadowSelection } from '#suite-command';
 import { ensureServices } from '../../../lib/services.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
 import { LandingError, EnvError } from './land-errors.mjs';
@@ -46,16 +47,24 @@ function proofFailure(attempt) {
   return `exit ${proofRun.status}`;
 }
 
-export function runProof(task, command, { root, field, docker, pendingEvidence }) {
+const outcome = (passed) => (passed ? 'pass' : 'fail');
+
+function shadowRun(task, command, selection, { root, pendingEvidence }, fullPassed) {
+  const narrowed = selection.files.length === 0 || proofAttempt(task, selection.command, root, pendingEvidence).passed;
+  recordShadow(root, { command, files: selection.files.length, narrowed: outcome(narrowed), full: outcome(fullPassed) });
+}
+
+export function runProof(task, command, options) {
+  const { root, field, docker, pendingEvidence } = options;
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
+  const selection = shadowSelection(root, command);
   const before = workingTreeKey(root);
   const started = Date.now();
   let attempt = proofAttempt(task, command, root, pendingEvidence);
   if (!attempt.passed && startedServices(root, docker)) attempt = proofAttempt(task, command, root, pendingEvidence);
-  if (attempt.passed) {
-    recordPass(root, command, Date.now() - started, before, attempt.proofRun.output);
-    return { command, tail: attempt.tail };
-  }
+  if (attempt.passed) recordPass(root, command, Date.now() - started, before, attempt.proofRun.output);
+  if (selection !== null) shadowRun(task, command, selection, options, attempt.passed);
+  if (attempt.passed) return { command, tail: attempt.tail };
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${proofFailure(attempt)}):`, ...attempt.tail].join('\n'));
 }
 

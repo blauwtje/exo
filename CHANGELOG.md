@@ -11,12 +11,15 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
-- The build speed and cost judge counts real sessions (`benchmarks/session-stats.mjs`) with verdicts `worse`, `not-shown` and `better`, screens frontend-only steps under `ideaScreenCapUsd` and confirms under `ideaConfirmCapUsd`, and `benchmarks/README.md` and `CONTRIBUTING.md` describe it.
+- The build speed and cost judge counts real sessions (`benchmarks/session-stats.mjs`) with verdicts `worse`, `not-shown` and `better`, screens frontend-only steps on flow-web under `ideaScreenCapUsd`, leaves the `ideaConfirmCapUsd` confirmation to a hand-run `--full`, and `benchmarks/README.md` and `CONTRIBUTING.md` describe it.
 - A fresh `exo run <plan>` adopts the plan's earlier unfinished run, `state.json` keeps the spent money so the spend ceiling counts it after a resume, and a plain `exo run` resumes a parked run once no gate is open and its stop is resumable.
 - Every `exo run` stop (spend ceiling, autonomy pause, parked, breach, blocked, cap, signal) goes through one `stopRun` in `run-plan-stops.mjs` and writes `stop` (`kind`, `reason`, `task`, `resumable`) into `state.json`.
 
 ### Fixed
 
+- A build proof that runs a whole test suite also runs only the test files changed since its last full green, in shadow mode, and logs each miss to `suite-shadow.jsonl`; the full run still decides the land.
+- A gate fixer writes `Before:` for each probe, and a finding whose probe already passed is demoted only when it still passes after the fix.
+- `benchmarks/session-stats.mjs` skips every `claude -p` session as headless and counts one turn per message.
 - Bash commands written for bash run as bash under zsh without a retry: any unquoted `$name`, `$1` or `$@` gets `shwordsplit` (not only a `for` loop list) and a `${name[i]}` subscript gets `ksharrays`, from one option table in `lib/shell-fixes.mjs`.
 - `remove-worktree.mjs` removes the worktree of a branch that already landed on main by squash, though later commits touch its files, and `squash-check.mjs` says such a branch has nothing left to squash; the branch is kept.
 

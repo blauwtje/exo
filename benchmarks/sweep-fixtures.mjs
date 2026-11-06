@@ -6,7 +6,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { generate } from './frontend-fixture/generate.mjs';
+import { FIXTURE_NAME, generate } from './frontend-fixture/generate.mjs';
 import { ROOT } from './tasks.mjs';
 
 const SAFE = path.join(ROOT, 'benchmarks', 'safe');
@@ -449,13 +449,12 @@ export function prepareGreenFirstBranch(repository) {
   writeFiles(repository, { '.exo/implementer-1.md': GREEN_FIRST_REPORT });
 }
 
-export const FLOW_WEB_BRANCH = 'feat/pinned-items';
-export const FLOW_WEB_FIXTURE = 'flow-web';
+const FLOW_WEB_BRANCH = 'feat/pinned-items';
 
 const FLOW_WEB_PROMPTS = {
-  'flow-web': `Load the exo:build skill, read TASK.md and build it. Commit on a new branch ${FLOW_WEB_BRANCH}; push nothing and open no pull request.`,
-  'flow-web-build': `Load the exo:build skill, read TASK.md and build it, without the review stage. Commit on a new branch ${FLOW_WEB_BRANCH}; push nothing and open no pull request.`,
-  'flow-web-review': `Load the exo:review skill and review the branch ${FLOW_WEB_BRANCH} against main. Write the findings to .exo/branch-review.md.`
+  [FIXTURE_NAME]: `Load the exo:build skill, read TASK.md and build it. Commit on a new branch ${FLOW_WEB_BRANCH}; push nothing and open no pull request.`,
+  [`${FIXTURE_NAME}-build`]: `Load the exo:build skill, read TASK.md and build it, without the review stage. Commit on a new branch ${FLOW_WEB_BRANCH}; push nothing and open no pull request.`,
+  [`${FIXTURE_NAME}-review`]: `Load the exo:review skill and review the branch ${FLOW_WEB_BRANCH} against main. Write the findings to .exo/branch-review.md.`
 };
 
 export function flowWebCells(shared, profile = 'full') {
@@ -463,9 +462,9 @@ export function flowWebCells(shared, profile = 'full') {
     ...shared,
     id,
     prompt,
-    fixture: FLOW_WEB_FIXTURE,
+    fixture: FIXTURE_NAME,
     fixtureProfile: profile,
-    reviewOnly: id === 'flow-web-review'
+    reviewOnly: id === `${FIXTURE_NAME}-review`
   }));
 }
 
@@ -476,5 +475,5 @@ export function prepareFlowWebRepository(repository, { profile, reviewOnly }) {
     git(repository, ['switch', '-q', '-c', FLOW_WEB_BRANCH]);
   }
   generate({ out: repository, profile });
-  commitAll(repository, 'chore: seed the flow-web app');
+  commitAll(repository, `chore: seed the ${FIXTURE_NAME} app`);
 }

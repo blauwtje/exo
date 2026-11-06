@@ -133,14 +133,27 @@ test('a Probe line under prose that follows a fixed finding stays off that findi
   assert.doesNotMatch(result.stdout, /FAIL/);
 });
 
-test('a fixed finding whose probe passed before the fix is demoted and not rerun', async () => {
-  const rows = await ledgerRowsAfter('a.mjs:1-2; defect; swallowed failure; catch drops error; fix; fixed\n  Probe: false\n  Before: pass\n');
+test('a fixed finding whose probe passed before and passes now is demoted', async () => {
+  const rows = await ledgerRowsAfter('a.mjs:1-2; defect; swallowed failure; catch drops error; fix; fixed\n  Probe: true\n  Before: pass\n');
   assert.equal(rows[1].state, 'declined');
   assert.equal(rows[1].reason, 'probe passed before fix');
 });
 
 test('a demoted prepass finding prints DEMOTED-PREPASS and exits 0', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: true\n  Before: pass\n');
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^DEMOTED-PREPASS: a\.mjs:1/m);
+});
+
+test('a Before: pass finding whose probe fails now stays red', async () => {
   const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: false\n  Before: pass\n');
+  assert.equal(result.code, 1);
+  assert.match(result.stdout, /^FAIL probe \(false\): a\.mjs:1/m);
+  assert.doesNotMatch(result.stdout, /DEMOTED/);
+});
+
+test('a Before line after the Cite, Score and Category lines still demotes', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: true\n  Cite: CLAUDE.md:3\n  Score: 9\n  Category: bug\n  Before: pass\n');
   assert.equal(result.code, 0);
   assert.match(result.stdout, /^DEMOTED-PREPASS: a\.mjs:1/m);
 });

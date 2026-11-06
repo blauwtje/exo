@@ -5,6 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { contentKey } from '../benchmarks/baseline-pool.mjs';
+import { NOT_SHOWN } from '../benchmarks/speed-ledger.mjs';
 import { routeOf, scoreOutDir, screenIdea, verdictRecord } from '../benchmarks/improve-speed.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -219,8 +220,11 @@ test('verdictRecord carries route, power line and runs needed from the pool nois
   assert.deepEqual(record.base, { commit: 'abc', n: 4, mean: 0.6, max: 0.8 });
 });
 
-test('verdictRecord never reports a screen route as worse and refuses an unknown step', () => {
-  assert.equal(verdictOf({ cost: 9 }, 'flaky-test'), 'not-shown');
+test('verdictRecord gives a screen route with no flow-web cost no screen and refuses an unknown step', () => {
+  const record = verdictRecord({ step: 'flaky-test', screen: { runArm: () => assert.fail('no arm may run') } });
+  assert.equal(record.verdict, 'not-shown');
+  assert.equal(record.stopped, 'no-estimate');
+  assert.equal(record.powerLine, null);
   assert.throws(() => verdictOf({}, 'no-such-step'), /no cell/);
 });
 
@@ -348,4 +352,44 @@ test('a screen whose 5-pair estimate passes the cap does not start, and a cap of
 test('the default cap is ideaScreenCapUsd from run defaults', () => {
   const record = screenIdea({ step: 'flaky-test', runArm: () => assert.fail('no arm may run'), pairCostUsd: 21 });
   assert.equal(record.capUsd, 20);
+});
+
+test('a screen stops in the loop when real arm costs pass the cap', () => {
+  const runArm = (arm, seed) => ({ ...armRows([10, 12, 11, 13, 12], [7, 8, 8, 9, 9])(arm, seed), cost: 3 });
+  const record = screenIdea({ step: 'flaky-test', runArm, pairCostUsd: 2, capUsd: 10 });
+  assert.equal(record.pairs.length, 2);
+  assert.equal(record.spendUsd, 12);
+  assert.equal(record.stopped, 'cap');
+  assert.equal(record.verdict, 'not-shown');
+});
+
+test('a screen keeps a measured zero cost and uses the estimate only for an arm with no cost', () => {
+  const free = screenIdea({ step: 'flaky-test', runArm: (arm, seed) => ({ ...armRows([10, 12, 11, 13, 12], [7, 8, 8, 9, 9])(arm, seed), cost: 0 }), pairCostUsd: 2, capUsd: 20 });
+  assert.equal(free.spendUsd, 0);
+  const unknown = screenIdea({ step: 'flaky-test', runArm: (arm, seed) => ({ pathCalls: seed, cost: arm === 'base' ? 1 : undefined }), pairCostUsd: 2, capUsd: 20 });
+  assert.equal(unknown.spendUsd, 10);
+});
+
+test('a screen whose candidate fails its checks is worse', () => {
+  const runArm = (arm, seed) => ({ ...armRows([10, 12, 11, 13, 12], [7, 8, 8, 9, 9])(arm, seed), failures: arm === 'candidate' && seed === 3 ? ['hidden tests failed'] : [] });
+  const record = screenIdea({ step: 'flaky-test', runArm, pairCostUsd: 2, capUsd: 20 });
+  assert.equal(record.pairs.length, 5);
+  assert.equal(record.verdict, 'worse');
+});
+
+test('verdictRecord screens a fixture-only step with the pair estimate and power line from flow-web costs', () => {
+  const runArm = armRows([10, 12, 11, 13, 12], [7, 8, 8, 9, 9]);
+  const record = verdictRecord({ step: 'flaky-test', screen: { runArm, costs: [0.8, 1.2, 1, 1], capUsd: 20 } });
+  assert.equal(record.route, 'screen');
+  assert.equal(record.pairCostUsd, 2);
+  assert.equal(record.pairs.length, 5);
+  assert.equal(record.verdict, 'better');
+  assert.match(record.powerLine, /^power: 5 tasks x 1 samples x 2 arms = 10 runs; an effect of 0\.1 needs \d+ tasks/);
+  assert.ok(Number.isInteger(record.runsNeeded));
+});
+
+test('not-shown is defined once, in speed-ledger.mjs', () => {
+  const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'improve-speed.mjs'), 'utf8');
+  assert.doesNotMatch(source, /'not-shown'/);
+  assert.equal(NOT_SHOWN, 'not-shown');
 });

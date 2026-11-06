@@ -87,6 +87,18 @@ test('stub and headless benchmark sessions are skipped and counted', async () =>
   assert.deepEqual(skipped, { stub: 2, headless: 1 });
 });
 
+test('a headless sdk-cli session is skipped whatever its cwd', async () => {
+  const root = tempDir('session-stats-headless-');
+  const dir = path.join(root, '-home-demo');
+  fs.mkdirSync(dir);
+  const lines = [user(), turn('2026-10-21T10:00:00Z'), turn('2026-10-21T10:01:00Z'), turn('2026-10-21T10:02:00Z')];
+  const headless = lines.map((line) => JSON.stringify({ ...JSON.parse(line), entrypoint: 'sdk-cli', cwd: '/home/me/demo' }));
+  writeSession(dir, 'headless', headless);
+  const { records, skipped } = await loadSessions(root, 'demo');
+  assert.equal(records.length, 0);
+  assert.deepEqual(skipped, { stub: 0, headless: 1 });
+});
+
 test('a session whose turns come from its subagents is not a stub', async () => {
   const root = tempDir('session-stats-sub-');
   const dir = path.join(root, '-home-demo');

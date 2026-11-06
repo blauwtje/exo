@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+export const FIXTURE_NAME = 'flow-web';
+const REACT_RANGE = '^18.3.0';
+
 export const PROFILES = {
   small: { modules: 10, casesPerModule: 10 },
   full: { modules: 60, casesPerModule: 40 },
@@ -83,7 +86,7 @@ export function generate({ out, profile = 'small', seed = 1 }) {
   const knobs = PROFILES[profile];
   if (!knobs) throw new Error(`unknown profile ${profile}`);
   const random = seededRandom(seed);
-  write(out, 'package.json', `${JSON.stringify({ name: 'flow-web', private: true, type: 'module', scripts: { dev: 'vite', build: 'vite build', test: 'node --test tests/*.test.mjs' }, dependencies: { react: '^18.3.0', 'react-dom': '^18.3.0' }, devDependencies: { vite: '^5.4.0', '@vitejs/plugin-react': '^4.3.0' } }, null, 2)}\n`);
+  write(out, 'package.json', `${JSON.stringify({ name: FIXTURE_NAME, private: true, type: 'module', scripts: { dev: 'vite', build: 'vite build', test: 'node --test tests/*.test.mjs' }, dependencies: { react: REACT_RANGE, 'react-dom': REACT_RANGE }, devDependencies: { vite: '^5.4.0', '@vitejs/plugin-react': '^4.3.0' } }, null, 2)}\n`);
   write(out, 'vite.config.mjs', `import react from '@vitejs/plugin-react';\nimport { defineConfig } from 'vite';\n\nexport default defineConfig({ plugins: [react()] });\n`);
   write(out, 'index.html', '<!doctype html>\n<div id="root"></div>\n<script type="module" src="/src/main.jsx"></script>\n');
   write(out, 'src/main.jsx', `import { createRoot } from 'react-dom/client';\nimport { Review } from './features/Review.jsx';\n\ncreateRoot(document.getElementById('root')).render(<Review items={[]} load={async () => []} />);\n`);

@@ -5,8 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const KEYS = ['id', 'title', 'area', 'targets', 'mechanism', 'verdict', 'metric', 'threshold', 'measured', 'n', 'costUsd', 'wallS', 'date', 'commit', 'results', 'retryWhen', 'related', 'fingerprint'];
-export const NEW_VERDICTS = ['worse', 'not-shown', 'better'];
-export const VERDICTS = ['rej', 'nog', 'un', 'deferred', 'pass', 'landed', ...NEW_VERDICTS];
+export const NOT_SHOWN = 'not-shown';
+const NEW_VERDICTS = ['worse', NOT_SHOWN, 'better'];
+const VERDICTS = ['rej', 'nog', 'un', 'deferred', 'pass', 'landed', ...NEW_VERDICTS];
 const WORSE_IDS = new Set(JSON.parse(readFileSync(path.join(ROOT, 'benchmarks', 'ledger-worse.json'), 'utf8')));
 const LANDED = ['landed'];
 const isText = (value) => typeof value === 'string';
@@ -66,7 +67,7 @@ export function derivedVerdict(row) {
   if (NEW_VERDICTS.includes(row.verdict)) return row.verdict;
   if (row.verdict === 'pass') return 'better';
   if (row.verdict !== 'rej' && row.verdict !== 'nog') return row.verdict;
-  return WORSE_IDS.has(row.id) ? 'worse' : 'not-shown';
+  return WORSE_IDS.has(row.id) ? 'worse' : NOT_SHOWN;
 }
 
 function link(id, byId) {
@@ -91,16 +92,20 @@ export function renderLedger(rows) {
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
-function stepProblems(row, where, root) {
+function stepProblems(row, where, cells) {
   if (!NEW_VERDICTS.includes(row.verdict)) return [];
   const label = `${where} (${row.id})`;
   if (!isText(row.step) || !isText(row.cell)) return [`${label}: verdict ${row.verdict} needs step and cell`];
-  const cells = JSON.parse(readFileSync(path.join(root, 'benchmarks', 'cell-steps.json'), 'utf8'));
   if (!(cells[row.cell]?.[row.step] > 0)) return [`${label}: cell ${row.cell} lacks step ${row.step}`];
   return [];
 }
 
-function rowProblems({ row, line }, root) {
+function cellSteps(dir, rows) {
+  if (!rows.some(({ row }) => NEW_VERDICTS.includes(row.verdict))) return {};
+  return JSON.parse(readFileSync(path.join(dir, 'cell-steps.json'), 'utf8'));
+}
+
+function rowProblems({ row, line }, root, cells) {
   const found = [];
   const where = `line ${line}`;
   const missing = KEYS.filter((key) => !(key in row));
@@ -108,7 +113,7 @@ function rowProblems({ row, line }, root) {
   const wrong = Object.entries(SHAPE).filter(([key, [, valid]]) => !valid(row[key]));
   if (wrong.length) return wrong.map(([key, [expected]]) => `${where} (${row.id}): ${key} is not ${expected}`);
   if (!VERDICTS.includes(row.verdict)) found.push(`${where} (${row.id}): invalid verdict ${row.verdict}`);
-  found.push(...stepProblems(row, where, root));
+  found.push(...stepProblems(row, where, cells));
   if (row.fingerprint !== fingerprint(row)) found.push(`${where} (${row.id}): fingerprint does not match title and targets`);
   if (row.results && !existsSync(path.join(root, row.results))) found.push(`${where} (${row.id}): results path ${row.results} does not exist`);
   return found;
@@ -134,7 +139,8 @@ export function checkLedger(root = ROOT) {
   const text = readFileSync(path.join(dir, 'speed-ledger.jsonl'), 'utf8');
   const { rows, problems } = parseLedger(text);
   const complete = rows.filter((entry) => KEYS.every((key) => key in entry.row));
-  problems.push(...rows.flatMap((entry) => rowProblems(entry, root)));
+  const cells = cellSteps(dir, rows);
+  problems.push(...rows.flatMap((entry) => rowProblems(entry, root, cells)));
   problems.push(...duplicateProblems(complete, 'id'), ...duplicateProblems(complete, 'fingerprint'), ...relatedProblems(complete));
   const ids = complete.map((entry) => entry.row.id);
   if (ids.join('\n') !== [...ids].sort().join('\n')) problems.push('rows are not sorted by id');

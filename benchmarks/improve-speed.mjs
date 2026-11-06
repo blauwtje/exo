@@ -7,12 +7,14 @@ import { evalDefaults, judgeIdea, meanCi, planningVariance, powerLine, tasksNeed
 import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { mean, readJson } from './basics.mjs';
+import { NOT_SHOWN } from './speed-ledger.mjs';
+import { filesNamed } from './tree-files.mjs';
 
 const CELL_STEPS = readJson(path.join(path.dirname(fileURLToPath(import.meta.url)), 'cell-steps.json'));
 const DEFAULT_STEP = 'build-task';
 const RELATIVE_EFFECT = 0.1;
 const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost'];
-const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>] [--step <step>]';
+const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>] [--step <step>] [--base-checkout <checkout>]';
 const FAILED_LINE = /^(FAIL|UNPLANNED)/m;
 const CELL_ID = 'flow-unit';
 const FULL_REPEAT = 15;
@@ -154,7 +156,7 @@ export function scoreOutDir(outDirectory) {
 }
 
 function parseArgs(argv) {
-  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: null, pool: null, step: DEFAULT_STEP };
+  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: null, pool: null, step: DEFAULT_STEP, baseCheckout: null };
   for (let index = 0; index < argv.length; index++) {
     const flag = argv[index];
     if (flag === '--from') options.from = argv[++index];
@@ -166,6 +168,7 @@ function parseArgs(argv) {
     else if (flag === '--claude-version') options.claudeVersion = argv[++index];
     else if (flag === '--step') options.step = argv[++index];
     else if (flag === '--pool') options.pool = argv[++index];
+    else if (flag === '--base-checkout') options.baseCheckout = argv[++index];
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else options.checkout = flag;
   }
@@ -173,13 +176,13 @@ function parseArgs(argv) {
   return options;
 }
 
-function runSweep(options) {
+function runSweep(options, cell = CELL_ID) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-improve-speed-'));
   const out = path.join(tmp, 'runs');
   const log = path.join(tmp, 'sweep.log');
   const descriptor = fs.openSync(log, 'w');
   const checkout = path.resolve(options.checkout);
-  const args = [path.join(checkout, 'benchmarks', 'sweep.mjs'), '--set', 'flow', '--cells', CELL_ID, '--repeat', String(options.repeat), '--concurrency', String(options.concurrency), '--confirm', '--out', out, '--results', path.join(tmp, 'results')];
+  const args = [path.join(checkout, 'benchmarks', 'sweep.mjs'), '--set', 'flow', '--cells', cell, '--repeat', String(options.repeat), '--concurrency', String(options.concurrency), '--confirm', '--out', out, '--results', path.join(tmp, 'results')];
   spawnSync(process.execPath, args, { stdio: ['ignore', descriptor, descriptor] });
   fs.closeSync(descriptor);
   console.log(`log ${log}`);
@@ -232,7 +235,8 @@ export function routeOf(step) {
   return null;
 }
 
-export function poolPower({ costs, runs }) {
+function costPower({ costs, runs }) {
+  if (costs.length < 2) return { powerLine: null, runsNeeded: null };
   const items = Object.fromEntries(costs.map((cost, index) => [index, [cost]]));
   const scores = { base: items, candidate: items };
   const effect = roundedMean(costs, DECIMALS.cost) * RELATIVE_EFFECT;
@@ -241,35 +245,77 @@ export function poolPower({ costs, runs }) {
   return { powerLine: powerLine({ tasks: runs, scores, effect: plannedEffect }), runsNeeded: tasksNeeded({ variance, effect: plannedEffect }) };
 }
 
+const armSpend = (row, pairCostUsd) => (Number.isFinite(row.cost) ? row.cost : pairCostUsd / 2);
+
+const passedChecks = (row) => (row.failures ?? []).length === 0;
+
 export function screenIdea({ step, runArm, pairCostUsd, measure = 'pathCalls', capUsd = evalDefaults().ideaScreenCapUsd }) {
-  const record = { route: 'screen', step, cell: SCREEN_CELL, n: SCREEN_PAIRS, measure, capUsd, pairs: [], spendUsd: 0, stopped: null, verdict: 'not-shown' };
+  const record = { route: 'screen', step, cell: SCREEN_CELL, n: SCREEN_PAIRS, measure, capUsd, pairCostUsd, pairs: [], spendUsd: 0, stopped: null, verdict: NOT_SHOWN };
   if (capUsd === 0) return { ...record, stopped: 'off' };
+  if (!Number.isFinite(pairCostUsd)) return { ...record, stopped: 'no-estimate' };
   if (SCREEN_PAIRS * pairCostUsd > capUsd) return { ...record, stopped: 'cap' };
   for (let seed = 1; seed <= SCREEN_PAIRS; seed++) {
     if (record.spendUsd + pairCostUsd > capUsd) return { ...record, stopped: 'cap' };
     const base = runArm('base', seed);
     const candidate = runArm('candidate', seed);
-    record.spendUsd += (base.cost ?? 0) + (candidate.cost ?? 0) || pairCostUsd;
-    record.pairs.push({ seed, base: base[measure], candidate: candidate[measure] });
+    record.spendUsd += armSpend(base, pairCostUsd) + armSpend(candidate, pairCostUsd);
+    record.pairs.push({ seed, base: base[measure], candidate: candidate[measure], candidatePassed: passedChecks(candidate) });
   }
   const pairs = record.pairs.map((pair) => [pair.base, pair.candidate]);
-  const checksPassed = record.pairs.length === SCREEN_PAIRS;
+  const checksPassed = record.pairs.every((pair) => pair.candidatePassed);
   return { ...record, verdict: judgeIdea({ pairs, checksPassed }).verdict };
+}
+
+function screenRecord({ step, runArm, costs = [], capUsd, measure }) {
+  const pairCostUsd = costs.length ? roundedMean(costs, DECIMALS.cost) * 2 : null;
+  const power = costPower({ costs, runs: SCREEN_PAIRS });
+  return { ...screenIdea({ step, runArm, pairCostUsd, measure, capUsd }), ...power };
 }
 
 function poolVerdict(row, base) {
   const cost = row.cost ?? null;
   const regressed = row.failures.length > 0 || (cost !== null && cost > base.max);
-  return regressed ? 'worse' : 'not-shown';
+  return regressed ? 'worse' : NOT_SHOWN;
 }
 
-export function verdictRecord({ row, base, step, runs = 1 }) {
+export function verdictRecord({ row, base, step, runs = 1, screen = {} }) {
   const route = routeOf(step);
   if (route === null) throw new RangeError(`step ${step} is in no cell of cell-steps.json`);
-  const verdict = route === 'pool' ? poolVerdict(row, base) : 'not-shown';
+  if (route === 'screen') return screenRecord({ step, ...screen });
   const { costs, ...baseSummary } = base;
-  const power = poolPower({ costs, runs });
-  return { route, verdict, ...power, step, hiddenPass: row.hiddenPass === true, cost_usd: row.cost ?? null, durationMs: row.durationMs ?? null, base: baseSummary };
+  const power = costPower({ costs, runs });
+  return { route, verdict: poolVerdict(row, base), ...power, step, hiddenPass: row.hiddenPass === true, cost_usd: row.cost ?? null, durationMs: row.durationMs ?? null, base: baseSummary };
+}
+
+function flowWebCosts(checkout) {
+  const runs = path.join(checkout, 'benchmarks', 'runs');
+  if (!fs.existsSync(runs)) return [];
+  const records = filesNamed(runs, 'record.json').map((file) => readJson(path.join(runs, file)));
+  return records.filter((record) => record?.id === SCREEN_CELL && Number.isFinite(record.costUsd)).map((record) => record.costUsd);
+}
+
+function mainCheckout(checkout) {
+  const run = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: checkout, encoding: 'utf8' });
+  return run.status === 0 ? path.dirname(run.stdout.trim()) : checkout;
+}
+
+function sweepArm(options) {
+  const candidate = checkoutOf(options);
+  const checkouts = { base: options.baseCheckout ?? mainCheckout(candidate), candidate };
+  return (arm) => {
+    const out = runSweep({ ...options, checkout: checkouts[arm], repeat: 1 }, SCREEN_CELL);
+    const { rows } = fs.existsSync(out) ? scoreOutDir(out) : { rows: [] };
+    return rows[0] ?? { failures: ['no cell recorded'] };
+  };
+}
+
+function runScreen(options) {
+  const screen = { runArm: sweepArm(options), costs: flowWebCosts(checkoutOf(options)), measure: options.measure };
+  const record = verdictRecord({ step: options.step, screen });
+  console.log(`verdict ${record.verdict}`);
+  console.log(JSON.stringify(record));
+  if (record.powerLine) console.log(record.powerLine);
+  return record.verdict === 'worse' ? 1 : 0;
 }
 
 const spreadText = ({ se, n, excluded }) => `${se === null ? 'no SE' : `se ${se.toFixed(3)}`} n ${n} excluded ${excluded}`;
@@ -284,6 +330,7 @@ function printBase(base) {
 }
 
 function runQuick(options) {
+  if (routeOf(options.step) === 'screen') return runScreen(options);
   const { base, error } = lookupBase(options);
   if (error) {
     console.error(error);
