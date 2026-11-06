@@ -12,7 +12,7 @@ import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
 import { tempDir } from './harness.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner', 'general-build', 'general-read'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }
@@ -35,6 +35,13 @@ test('candidatesFor stops at low effort and at the lowest model', () => {
 test('parseCandidate reads model:effort and refuses anything else', () => {
   assert.deepEqual(parseCandidate('haiku:xhigh'), { model: 'haiku', effort: 'xhigh' });
   for (const bad of ['haiku', 'gpt:low', 'sonnet:fast', 'sonnet:low:x']) assert.throws(() => parseCandidate(bad), /--candidate/);
+});
+
+test('settingOf gives a general entry the setting of its kind', () => {
+  const table = readKindTable();
+  const { model, effort } = table.kinds.build;
+  assert.deepEqual(settingOf('general-build', table), { model, effort });
+  assert.deepEqual(settingOf('general-read', table), { model, effort });
 });
 
 test('settingOf reads the model and effort of each benchmarked agent from the kind table', () => {

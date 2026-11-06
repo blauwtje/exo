@@ -200,7 +200,7 @@ function saveTranscript(directory, name, stdout, reports) {
 }
 
 export function agentArguments({ prompt, agent, model, effort, pluginDir }) {
-  return ['-p', '--agent', agent, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', pluginDir, '--', prompt];
+  return ['-p', ...(agent ? ['--agent', agent] : []), '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--plugin-dir', pluginDir, '--', prompt];
 }
 
 export function runAgent({ prompt, agent, model, effort, cwd, roots, tmp, home, pluginDir = ROOT, timeoutMs = SESSION_MS }) {

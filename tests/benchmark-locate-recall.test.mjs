@@ -86,6 +86,12 @@ test('dryRunLine multiplies the session count by the recorded median and prints 
   assert.equal(dryRunLine(6, []), 'dry-run: 6 sessions, cost unknown');
 });
 
+test('agentArguments leaves out --agent for the unnamed worker', () => {
+  const args = agentArguments({ agent: null, model: 'sonnet', effort: 'low', pluginDir: '/plugin', prompt: 'p' });
+  assert.equal(args.includes('--agent'), false);
+  assert.deepEqual(args.slice(0, 3), ['-p', '--model', 'sonnet']);
+});
+
 test('agentArguments passes the prompt last after -- so a leading dash stays positional', () => {
   const base = { agent: 'exo:task-runner', model: 'haiku', effort: 'low', pluginDir: '/plugin' };
   for (const prompt of ['- Plan: x', 'plain prompt']) {

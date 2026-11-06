@@ -73,7 +73,13 @@ export function candidatesFor({ model, effort }) {
   return [{ model, effort }, ...lowerEfforts, ...(lowerModel ? [{ model: lowerModel, effort }] : [])];
 }
 
+const generalKind = (agent) => readJson(CONFIG_FILE)[agent]?.kind;
+const dispatchPrompt = (agent, prompt) => (generalKind(agent) ? `exo-kind: ${generalKind(agent)}\n${prompt}` : prompt);
+const dispatchAgent = (agent) => (generalKind(agent) ? null : `exo:${agent}`);
+
 export function settingOf(agent, table) {
+  const kind = generalKind(agent);
+  if (kind) return { model: table.kinds[kind].model, effort: table.kinds[kind].effort };
   const entry = table.agents[`agents/${agent}.md`];
   if (!entry) throw new UsageError(`agent '${agent}' is not in lib/model-kinds.json`);
   const { model, effort } = table.kinds[entry.kind];
@@ -331,7 +337,7 @@ async function inCase(work) {
 
 function runIn(ctx, job, { prompt, cwd, base, tmp, timeoutMs }) {
   const { model, effort } = job.candidate;
-  return runAgent({ prompt, agent: `exo:${job.agent}`, model, effort, cwd, roots: [base], tmp, home: ctx.home, pluginDir: ctx.pluginDir, timeoutMs });
+  return runAgent({ prompt: dispatchPrompt(job.agent, prompt), agent: dispatchAgent(job.agent), model, effort, cwd, roots: [base], tmp, home: ctx.home, pluginDir: ctx.pluginDir, timeoutMs });
 }
 
 const reviewPrompt = (line) => `exo-kind: review-deep\n${line.replace(/^DISPATCH Branch:\s*/, '')}`;
@@ -360,7 +366,7 @@ function briefText(task) {
 
 async function locateSession(ctx, job, brief) {
   const { model, effort } = job.candidate;
-  const outcome = await claudeSession({ prompt: brief.prompt, model, flags: { agent: 'exo:locate-code', effort }, commit: ctx.locate.commit, home: ctx.home });
+  const outcome = await claudeSession({ prompt: dispatchPrompt(job.agent, brief.prompt), model, flags: { agent: dispatchAgent(job.agent), effort }, commit: ctx.locate.commit, home: ctx.home });
   const graded = gradedSession({ brief, model, run: 1, outcome, files: ctx.locate.files });
   return { outcome, score: graded.recall ?? null };
 }
@@ -446,6 +452,8 @@ const EXECUTORS = {
   'locate-code': locateSession,
   'review-branch': reviewSession,
   'fix-review': fixSession,
+  'general-read': locateSession,
+  'general-build': valueSession((task, repository) => `${briefText(task)}\nCheckout: ${repository}.`),
   'build-task': valueSession((task, repository) => `Brief: ${repository}/.exo/brief.md. Checkout: ${repository}.`, { prepare: writeBrief }),
   'solve-hard': valueSession(checkoutPrompt),
   orchestrator: valueSession(checkoutPrompt, { transcript: orchestratorTranscript }),
@@ -460,6 +468,8 @@ const FIXTURE_SOURCES = {
   'locate-code': () => new Map(readFixture().briefs.map((brief) => [brief.id, brief])),
   'review-branch': replayFixtures,
   'fix-review': replayFixtures,
+  'general-read': () => new Map(readFixture().briefs.map((brief) => [brief.id, brief])),
+  'general-build': valueFixtures,
   'build-task': valueFixtures,
   'solve-hard': valueFixtures,
   orchestrator: () => byFixtureId(loadValueTasks(ORCHESTRATOR_ROOT)),
@@ -563,7 +573,7 @@ function jobRunner(run) {
 
 async function buildContext(jobs, home, pluginRoot) {
   const ctx = { home, pluginDir: copyPluginWithoutTasks(ROOT, path.join(pluginRoot, 'exo')) };
-  if (jobs.some((job) => job.agent === 'locate-code')) {
+  if (jobs.some((job) => job.agent === 'locate-code' || job.agent === 'general-read')) {
     const fixture = readFixture();
     ctx.locate = { commit: fixture.commit, files: fixtureFiles(fixture.commit) };
   }

@@ -15,6 +15,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- The general build worker drops to sonnet low because agent-tier general-build and general-read show equal or better pass at about 15% lower cost.
 - A capped agent Bash result names its saved log only when the output is cut, so each uncut result drops a 131-byte `output log:` line that every later turn re-read (about 10 M tokens a week in this repo).
 - The static verifier parses every script in one process (`verify/parse-scripts.mjs` with `vm.SourceTextModule`) instead of one `node --check` per file, which cuts the Land gate `npm run validate:static` behind `land-task --check` from about 11.2 s to 4.4 s.
 - The land step runs the covering tests of the changed files side by side through `lib/test-pool.mjs` instead of one after another, so 27 covering files for two changed files take 23 s, not over 60 s.

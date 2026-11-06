@@ -49,5 +49,17 @@
       "usdScale": { "sonnet:medium": 1.02, "sonnet:high": 1.01, "sonnet:xhigh": 3.06, "sonnet:max": 11.94, "opus:low": 0.91, "opus:medium": 1.42, "opus:high": 1.69, "opus:xhigh": 2.53 },
       "wallScale": { "sonnet:medium": 0.99, "sonnet:high": 1.07, "sonnet:xhigh": 2.52, "sonnet:max": 14.46, "opus:low": 1.21, "opus:medium": 1.86, "opus:high": 2.23, "opus:xhigh": 3.41 }
     }
+  },
+  "general-build": {
+    "kind": "build",
+    "metric": "value-task check pass",
+    "fixtures": { "quick": ["build-limit-flag"], "full": ["lean-minimal-diff", "refactor-no-shim", "build-limit-flag", "build-retry-backoff", "build-ttl-cache"] },
+    "profile": { "input": 20000, "cacheRead": 120000, "output": 5000, "wallS": 40 }
+  },
+  "general-read": {
+    "kind": "build",
+    "metric": "expected-file recall",
+    "fixtures": { "quick": ["context-limit-note"], "full": ["context-limit-note", "model-kinds", "check-cache", "speed-ledger"] },
+    "profile": { "input": 20000, "cacheRead": 100000, "output": 4000, "wallS": 20 }
   }
 }
