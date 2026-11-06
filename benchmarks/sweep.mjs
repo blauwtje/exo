@@ -37,7 +37,7 @@ import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-me
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
 import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, providerCells, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/build/scripts/run-config.mjs';
-import { FLOW_BRANCH, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
+import { FLOW_BRANCH, flowWebCells, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareFlowWebRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
@@ -347,8 +347,15 @@ function addReplayWorktree(cell, repository) {
   return { ...cell, prompt: reviewPrompt({ planPath: plan, root: repository, base, branch: cell.replay.head, scope, findings: replayFindings(repository) }) };
 }
 
+export function allCells() {
+  const cells = sweepCells();
+  const shared = cells.find((cell) => cell.id === 'flow-unit');
+  return [...cells, ...flowWebCells(shared, process.env.EXO_FLOW_WEB_PROFILE ?? 'full')];
+}
+
 export function prepareRepository(cell, repository, origin) {
-  if (cell.variant === 'green-first') prepareGreenFirstBranch(repository);
+  if (cell.fixture === 'flow-web') prepareFlowWebRepository(repository, { profile: cell.fixtureProfile, reviewOnly: cell.reviewOnly });
+  else if (cell.variant === 'green-first') prepareGreenFirstBranch(repository);
   else if (cell.kind === 'review') prepareReviewBranch(repository, cell.task, cell.source);
   else if (cell.kind === 'build') prepareBuildRepository(repository, cell.task);
   else if (cell.kind === 'fixer') prepareFixerBranch(repository, cell.task);
@@ -488,8 +495,8 @@ async function main() {
   const options = parseArguments(process.argv.slice(2));
   const provider = sweepProvider(options);
   const replay = options.cases === null ? [] : replayCells(readJson(options.cases), options);
-  const judged = options.reviewerBodies === null ? sweepCells()
-    : judgeCells(sweepCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
+  const judged = options.reviewerBodies === null ? allCells()
+    : judgeCells(allCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
   const chosen = keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells);
   const cells = repeatCells(provider === null ? chosen : providerCells(chosen, provider, provider.efforts), options.repeat);
   console.log(`${options.tier} tier, ${cells.length} claude -p calls planned, one per cell and repeat:`);

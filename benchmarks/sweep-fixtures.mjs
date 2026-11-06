@@ -6,6 +6,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { generate } from './frontend-fixture/generate.mjs';
 import { ROOT } from './tasks.mjs';
 
 const SAFE = path.join(ROOT, 'benchmarks', 'safe');
@@ -446,4 +447,34 @@ export function prepareGreenFirstBranch(repository) {
   writeFiles(repository, { 'src/text.js': GREEN_FIRST_MODULE.replace('const lower = text.toLowerCase();', 'const lower = text.trim().toLowerCase();') });
   commitAll(repository, 'fix(text): trim the text before slugging');
   writeFiles(repository, { '.exo/implementer-1.md': GREEN_FIRST_REPORT });
+}
+
+export const FLOW_WEB_BRANCH = 'feat/pinned-items';
+export const FLOW_WEB_FIXTURE = 'flow-web';
+
+const FLOW_WEB_PROMPTS = {
+  'flow-web': `Load the exo:build skill, read TASK.md and build it. Commit on a new branch ${FLOW_WEB_BRANCH}; push nothing and open no pull request.`,
+  'flow-web-build': `Load the exo:build skill, read TASK.md and build it, without the review stage. Commit on a new branch ${FLOW_WEB_BRANCH}; push nothing and open no pull request.`,
+  'flow-web-review': `Load the exo:review skill and review the branch ${FLOW_WEB_BRANCH} against main. Write the findings to .exo/branch-review.md.`
+};
+
+export function flowWebCells(shared, profile = 'full') {
+  return Object.entries(FLOW_WEB_PROMPTS).map(([id, prompt]) => ({
+    ...shared,
+    id,
+    prompt,
+    fixture: FLOW_WEB_FIXTURE,
+    fixtureProfile: profile,
+    reviewOnly: id === 'flow-web-review'
+  }));
+}
+
+export function prepareFlowWebRepository(repository, { profile, reviewOnly }) {
+  git(repository, ['init', '-q', '-b', 'main']);
+  if (reviewOnly) {
+    git(repository, ['commit', '-q', '--allow-empty', '-m', 'chore: empty base']);
+    git(repository, ['switch', '-q', '-c', FLOW_WEB_BRANCH]);
+  }
+  generate({ out: repository, profile });
+  commitAll(repository, 'chore: seed the flow-web app');
 }

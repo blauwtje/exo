@@ -3,6 +3,7 @@ import { readdirSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { devServerUrl } from '../../../lib/dev-server.mjs';
 
 const USAGE = 'usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]... [--state "<name>=<js>"]...';
 const args = process.argv.slice(2);
@@ -32,7 +33,8 @@ const pw = await loadPlaywright();
 if (!pw) { console.log('playwright missing: run `npx -y playwright@latest install chromium`'); process.exit(2); }
 const chromium = pw.chromium ?? pw.default?.chromium;
 
-const url = /^[a-z]+:\/\//i.test(target) ? target : pathToFileURL(resolve(target)).href;
+const runServerUrl = process.env.EXO_RUN_STATE && target.startsWith('/') ? devServerUrl(process.env.EXO_RUN_STATE, target) : null;
+const url = runServerUrl ?? (/^[a-z]+:\/\//i.test(target) ? target : pathToFileURL(resolve(target)).href);
 mkdirSync(out, { recursive: true });
 
 function measure() {

@@ -11,6 +11,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- The build speed and cost judge counts real sessions (`benchmarks/session-stats.mjs`) with verdicts `worse`, `not-shown` and `better`, screens frontend-only steps under `ideaScreenCapUsd` and confirms under `ideaConfirmCapUsd`, and `benchmarks/README.md` and `CONTRIBUTING.md` describe it.
 - A fresh `exo run <plan>` adopts the plan's earlier unfinished run, `state.json` keeps the spent money so the spend ceiling counts it after a resume, and a plain `exo run` resumes a parked run once no gate is open and its stop is resumable.
 - Every `exo run` stop (spend ceiling, autonomy pause, parked, breach, blocked, cap, signal) goes through one `stopRun` in `run-plan-stops.mjs` and writes `stop` (`kind`, `reason`, `task`, `resumable`) into `state.json`.
 

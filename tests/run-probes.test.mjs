@@ -132,3 +132,15 @@ test('a Probe line under prose that follows a fixed finding stays off that findi
   assert.match(result.stdout, /^PASS probe \(true\): a\.mjs:1/m);
   assert.doesNotMatch(result.stdout, /FAIL/);
 });
+
+test('a fixed finding whose probe passed before the fix is demoted and not rerun', async () => {
+  const rows = await ledgerRowsAfter('a.mjs:1-2; defect; swallowed failure; catch drops error; fix; fixed\n  Probe: false\n  Before: pass\n');
+  assert.equal(rows[1].state, 'declined');
+  assert.equal(rows[1].reason, 'probe passed before fix');
+});
+
+test('a demoted prepass finding prints DEMOTED-PREPASS and exits 0', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: false\n  Before: pass\n');
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^DEMOTED-PREPASS: a\.mjs:1/m);
+});

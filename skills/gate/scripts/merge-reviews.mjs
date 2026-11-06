@@ -21,6 +21,7 @@ const CITE_LINE = /^\s*Cite:\s*`?([^\s`:]+):(\d+)(?:-\d+)?`?\s*$/;
 const SCORE_LINE = /^\s*Score:\s*(\d+)\s*$/;
 const CATEGORY_LINE = /^\s*Category:\s*([\w-]+)\s*$/;
 const DEFAULT_MIN_SCORE = 4;
+const CLUSTER_SIZE = 5;
 const MAX_SCORE = 10;
 const OTHER_CATEGORY = 'other';
 const UNCITED_CATEGORY = 'uncited';
@@ -85,6 +86,26 @@ export function parseFinding(line) {
     range: at[3] ? `${at[2]}-${at[3]}` : at[2],
     weight: WEIGHT.exec(rest)?.[1] ?? null
   };
+}
+
+function chunked(group, size) {
+  const pieces = [];
+  for (let start = 0; start < group.length; start += size) pieces.push(group.slice(start, start + size));
+  return pieces;
+}
+
+export function clusterFindings(findings, size = CLUSTER_SIZE) {
+  const byFile = new Map();
+  for (const finding of findings.filter(({ state }) => state === 'open')) {
+    byFile.set(finding.path, [...(byFile.get(finding.path) ?? []), finding]);
+  }
+  const clusters = [];
+  for (const piece of [...byFile.values()].flatMap((group) => chunked(group, size))) {
+    const room = clusters.find((cluster) => cluster.length + piece.length <= size);
+    if (room) room.push(...piece);
+    else clusters.push(piece);
+  }
+  return clusters;
 }
 
 export function ledgerPath(root) {
@@ -297,6 +318,9 @@ function main(argv) {
     category = entry.category;
     process.stdout.write(`FINDING ${entry.text}\n`);
   }
+  clusterFindings(findings).forEach((cluster, index) => {
+    process.stdout.write(`CLUSTER ${index + 1} ${cluster.map(({ path: file, range }) => `${file}:${range}`).join(' ')}\n`);
+  });
   process.stdout.write(`FINDINGS-SHA ${findingsDigest(text)}\n`);
   process.stdout.write(`CODEX ${inRun() ? 'none' : codexVerdict()}\n`);
 }

@@ -249,10 +249,13 @@ function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
 }
 
 const REVIEW_RULES = 'skills/gate/references/review-rules.md';
+const TRIAGE = 'skills/gate/references/triage.md';
 const LATER_ROUND_RULE = 'raise `fix` only for a defect inside the fix diff';
 const RED_SOURCE_RULE = 'only `Red:` source is `## Red lines` of the dispatch\'s `input=` file, else `<checkout>/.exo/review-input.md`';
 
 function checkReviewRules(errors, repository) {
+  const triage = repository.text(path.join(repository.root, TRIAGE));
+  if (!triage.includes('DEMOTED-PREPASS')) errors.push(`${TRIAGE}: lacks the pre-fix probe demotion 'DEMOTED-PREPASS'`);
   const rules = repository.text(path.join(repository.root, REVIEW_RULES));
   const probe = rules.split(/^## /m).find((section) => section.startsWith('Probe')) ?? '';
   if (!probe.includes(LATER_ROUND_RULE)) errors.push(`${REVIEW_RULES}: '## Probe' lacks the later-round rule '${LATER_ROUND_RULE}'`);

@@ -3,16 +3,21 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { meanCi } from '../lib/eval-stats.mjs';
+import { evalDefaults, judgeIdea, meanCi, planningVariance, powerLine, tasksNeeded } from '../lib/eval-stats.mjs';
 import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { mean, readJson } from './basics.mjs';
 
+const CELL_STEPS = readJson(path.join(path.dirname(fileURLToPath(import.meta.url)), 'cell-steps.json'));
+const DEFAULT_STEP = 'build-task';
+const RELATIVE_EFFECT = 0.1;
 const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost'];
-const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>]';
+const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>] [--step <step>]';
 const FAILED_LINE = /^(FAIL|UNPLANNED)/m;
 const CELL_ID = 'flow-unit';
 const FULL_REPEAT = 15;
+const SCREEN_PAIRS = 5;
+const SCREEN_CELL = 'flow-web';
 const LOOKUP_MODEL = 'claude-sonnet-5-5';
 const LOOKUP_EFFORT = 'high';
 const UNRECORDED_VERSION = 'unrecorded';
@@ -149,7 +154,7 @@ export function scoreOutDir(outDirectory) {
 }
 
 function parseArgs(argv) {
-  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: null, pool: null };
+  const options = { checkout: null, from: null, measure: 'pathCalls', repeat: null, concurrency: 5, dryRun: false, full: false, base: null, claudeVersion: null, pool: null, step: DEFAULT_STEP };
   for (let index = 0; index < argv.length; index++) {
     const flag = argv[index];
     if (flag === '--from') options.from = argv[++index];
@@ -159,6 +164,7 @@ function parseArgs(argv) {
     else if (flag === '--full') options.full = true;
     else if (flag === '--base') options.base = argv[++index];
     else if (flag === '--claude-version') options.claudeVersion = argv[++index];
+    else if (flag === '--step') options.step = argv[++index];
     else if (flag === '--pool') options.pool = argv[++index];
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else options.checkout = flag;
@@ -217,13 +223,53 @@ function lookupBase(options) {
   const row = JSON.parse(run.stdout);
   const costs = parseRows(fs.readFileSync(path.resolve(ROOT, row.results), 'utf8'), row.arm).map((entry) => entry['cost $']);
   if (costs.length === 0) return { error: `pooled base ${commit} has no cost rows in ${row.results}` };
-  return { base: { commit, n: costs.length, se: spreadOf(costs), mean: roundedMean(costs, DECIMALS.cost), max: Math.max(...costs) } };
+  return { base: { commit, n: costs.length, costs, se: spreadOf(costs), mean: roundedMean(costs, DECIMALS.cost), max: Math.max(...costs) } };
 }
 
-export function quickVerdict(row, base) {
+export function routeOf(step) {
+  if (CELL_STEPS[CELL_ID]?.[step]) return 'pool';
+  if (Object.values(CELL_STEPS).some((steps) => steps[step])) return 'screen';
+  return null;
+}
+
+export function poolPower({ costs, runs }) {
+  const items = Object.fromEntries(costs.map((cost, index) => [index, [cost]]));
+  const scores = { base: items, candidate: items };
+  const effect = roundedMean(costs, DECIMALS.cost) * RELATIVE_EFFECT;
+  const plannedEffect = Math.round(effect * 1000) / 1000;
+  const variance = planningVariance({ scores });
+  return { powerLine: powerLine({ tasks: runs, scores, effect: plannedEffect }), runsNeeded: tasksNeeded({ variance, effect: plannedEffect }) };
+}
+
+export function screenIdea({ step, runArm, pairCostUsd, measure = 'pathCalls', capUsd = evalDefaults().ideaScreenCapUsd }) {
+  const record = { route: 'screen', step, cell: SCREEN_CELL, n: SCREEN_PAIRS, measure, capUsd, pairs: [], spendUsd: 0, stopped: null, verdict: 'not-shown' };
+  if (capUsd === 0) return { ...record, stopped: 'off' };
+  if (SCREEN_PAIRS * pairCostUsd > capUsd) return { ...record, stopped: 'cap' };
+  for (let seed = 1; seed <= SCREEN_PAIRS; seed++) {
+    if (record.spendUsd + pairCostUsd > capUsd) return { ...record, stopped: 'cap' };
+    const base = runArm('base', seed);
+    const candidate = runArm('candidate', seed);
+    record.spendUsd += (base.cost ?? 0) + (candidate.cost ?? 0) || pairCostUsd;
+    record.pairs.push({ seed, base: base[measure], candidate: candidate[measure] });
+  }
+  const pairs = record.pairs.map((pair) => [pair.base, pair.candidate]);
+  const checksPassed = record.pairs.length === SCREEN_PAIRS;
+  return { ...record, verdict: judgeIdea({ pairs, checksPassed }).verdict };
+}
+
+function poolVerdict(row, base) {
   const cost = row.cost ?? null;
-  const verdict = row.failures.length > 0 || (cost !== null && cost > base.max) ? 'reject' : 'no SE';
-  return { mode: 'quick', verdict, hiddenPass: row.hiddenPass === true, cost_usd: cost, durationMs: row.durationMs ?? null, base };
+  const regressed = row.failures.length > 0 || (cost !== null && cost > base.max);
+  return regressed ? 'worse' : 'not-shown';
+}
+
+export function verdictRecord({ row, base, step, runs = 1 }) {
+  const route = routeOf(step);
+  if (route === null) throw new RangeError(`step ${step} is in no cell of cell-steps.json`);
+  const verdict = route === 'pool' ? poolVerdict(row, base) : 'not-shown';
+  const { costs, ...baseSummary } = base;
+  const power = poolPower({ costs, runs });
+  return { route, verdict, ...power, step, hiddenPass: row.hiddenPass === true, cost_usd: row.cost ?? null, durationMs: row.durationMs ?? null, base: baseSummary };
 }
 
 const spreadText = ({ se, n, excluded }) => `${se === null ? 'no SE' : `se ${se.toFixed(3)}`} n ${n} excluded ${excluded}`;
@@ -249,18 +295,19 @@ function runQuick(options) {
     console.log('FAIL no cells');
     return 1;
   }
-  const screened = quickVerdict(rows[0], base);
+  const screened = verdictRecord({ row: rows[0], base, step: options.step, runs: options.repeat });
   for (const reason of rows[0].failures) console.log(`FAIL ${rows[0].cell} ${reason}`);
   console.log(`verdict ${screened.verdict}`);
   console.log(JSON.stringify(screened));
+  console.log(screened.powerLine);
   printBase(base);
   printMeasures(measures, options.measure, spreads);
-  return screened.verdict === 'reject' ? 1 : 0;
+  return screened.verdict === 'worse' ? 1 : 0;
 }
 
 function main(argv) {
   const options = parseArgs(argv);
-  if (!MEASURES.includes(options.measure) || (!options.from && !options.checkout && !options.dryRun)) {
+  if (!MEASURES.includes(options.measure) || !routeOf(options.step) || (!options.from && !options.checkout && !options.dryRun)) {
     console.error(USAGE);
     return 2;
   }

@@ -53,3 +53,17 @@ test('the real safe fixtures hold only the task file in each seed and solution f
     }
   }
 });
+
+test('flow-web cells prepare a generated repository and match cell-steps.json', async () => {
+  const { allCells, prepareRepository } = await import('../benchmarks/sweep.mjs');
+  const steps = JSON.parse(fs.readFileSync(path.join(REAL_SAFE, '..', 'cell-steps.json'), 'utf8'));
+  const cells = allCells().filter((cell) => cell.fixture === 'flow-web');
+  assert.deepEqual(cells.map((cell) => cell.id), ['flow-web', 'flow-web-build', 'flow-web-review']);
+  for (const cell of cells) assert.ok(steps[cell.id], cell.id);
+  const build = tempDir('flow-web-');
+  prepareRepository({ ...cells[0], fixtureProfile: 'small' }, build, null);
+  assert.ok(fs.existsSync(path.join(build, 'TASK.md')));
+  const review = tempDir('flow-web-');
+  prepareRepository({ ...cells[2], fixtureProfile: 'small' }, review, null);
+  assert.deepEqual(git(review, 'diff', '--name-only', 'main...HEAD').split('\n').includes('TASK.md'), true);
+});

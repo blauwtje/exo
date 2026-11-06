@@ -23,7 +23,7 @@ The gate readies a branch for a pull request.
    - On a `CODEX offer` line, ask once for a `codex exec` review of plan and diff, adding them to findings path.
    - `--land` → skip.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:fix-review` agent, with no model override, filled dispatch line and `../build/review-fixer-prompt.md` by path.
-   - With `concern=1` or more and `fix=0`, still dispatch: the fixer, not this session, writes each concern's failing test, marking it unproven only if it passes.
+   - One `exo:fix-review` per `CLUSTER` line, in parallel, each with only its findings; `concern` findings dispatch too, not skipped.
    - With `fix=0` and `concern=0`, go to step 4 with `note` findings and no `exo:fix-review` dispatch, rerun or fix commit.
    - Else read `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.

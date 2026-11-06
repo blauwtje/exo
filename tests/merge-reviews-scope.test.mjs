@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { mergeReviews, parseFinding } from '../skills/gate/scripts/merge-reviews.mjs';
+import { clusterFindings, mergeReviews, parseFinding } from '../skills/gate/scripts/merge-reviews.mjs';
 import { boundaryLines, writeReviewInput } from '../skills/gate/scripts/review-input.mjs';
 import { git, tempDir } from './harness.mjs';
 
@@ -86,4 +86,13 @@ test('review input holds a Boundaries block that names the out-of-scope weight',
   writeReviewInput({ goal: 'g', nonGoals: [] }, { checkout, base: 'HEAD', head: 'HEAD', redSection: ['none'], boundaries });
   const input = fs.readFileSync(path.join(checkout, '.exo', 'review-input.md'), 'utf8');
   assert.match(input, /## Boundaries\n.*out-of-scope.*\nTask 1: Boundary: in a path \| out symlinks \| test t\n/);
+});
+
+test('open fix findings cluster by file into groups of at most five', () => {
+  const at = (file, count) => Array.from({ length: count }, (_, index) => ({ path: file, range: String(index + 1), state: 'open' }));
+  const findings = [...at('a.mjs', 3), ...at('b.mjs', 3), ...at('c.mjs', 7), { path: 'd.mjs', range: '1', state: 'reported' }];
+  const clusters = clusterFindings(findings);
+  assert.deepEqual(clusters.map((cluster) => cluster.length), [5, 3, 5]);
+  assert.deepEqual([...new Set(clusters[0].map((finding) => finding.path))], ['a.mjs', 'c.mjs']);
+  assert.equal(clusters.flat().some((finding) => finding.path === 'd.mjs'), false);
 });

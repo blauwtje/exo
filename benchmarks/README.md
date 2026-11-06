@@ -385,3 +385,13 @@ node benchmarks/bisect.mjs --report                                     # summar
 ```
 
 `--prompt-mode skill|natural` (default `skill`) sends `/exo:find-cause ` plus the bug report, or the bug report verbatim; each record keeps `promptMode` and `skillFired`, and the summary file holds one block per mode. `--cases a,b`, `--runs n`, `--arms`, `--max-budget-usd` (per cell, default 2), `--max-total-usd`, `--concurrency n` (default 4) and `--fresh` (ignore recorded cells) refine a run. Each finished cell is one line in `benchmarks/results/bisect.jsonl`, keyed by case, arm, run and the two plugin commits, so a rerun skips what is recorded. `benchmarks/results/bisect-summary.json` holds per-case means and the pooled after-minus-before sums per metric for regression cases and for controls, each with a fall, rise or noise verdict against 2 SE; raw streams go to `benchmarks/results/bisect.runs/`.
+
+## Speed and cost judge
+
+The default judge for a build speed or cost idea is free: `node benchmarks/session-stats.mjs --repo <name> --before <date> --after <date>` prints the median assistant turns, tool calls, Bash calls, agent dispatches and check runs of real sessions before and after the change, and needs at least 20 sessions per side (`--min-sessions`).
+
+A ledger verdict is `worse`, `not-shown` or `better`, and a `not-shown` verdict never counts as rejected. New rows in `benchmarks/speed-ledger.jsonl` carry `step` and `cell`, and `--check` refuses a verdict whose cell (listed in `benchmarks/cell-steps.json`) lacks the targeted step. Old rows keep their legacy verdict words; `--index` and `--check` derive their three-way verdict at read time: `worse` for the ids in `benchmarks/ledger-worse.json`, `not-shown` for every other `rej` or `nog` row.
+
+`benchmarks/improve-speed.mjs` routes an idea by its step. A step in the pooled flow cell runs on the pool, with the run count from the measured pool noise through `powerLine`. A step only in the frontend fixture is screened automatically at n=5 per arm, paired by seed, on proxy counts; a screen whose cost estimate passes `ideaScreenCapUsd` (20, in `defaults.eval` of `lib/run-providers.json`) does not start and returns `not-shown`. The n=10 wall and cost confirmation runs only after a `better` screen, on request, capped by `ideaConfirmCapUsd` (100). A cap of 0 turns the route off.
+
+`node benchmarks/effort-probe.mjs <subagents-dir> <passed-effort>` reads the subagent `.meta.json` files of one dispatch and says whether the effort shown matches the effort passed; run it before the effort re-sweep.

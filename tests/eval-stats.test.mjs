@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clusteredMeanCi, decideKeep, mad, meanCi, median, pairedDiff, pooledSd } from '../lib/eval-stats.mjs';
+import { clusteredMeanCi, decideKeep, judgeIdea, mad, meanCi, median, pairedDiff, pooledSd } from '../lib/eval-stats.mjs';
 
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 
@@ -133,4 +133,21 @@ test('mad is the median absolute deviation from the median', () => {
 test('median and mad reject an empty list', () => {
   assert.throws(() => median([]), RangeError);
   assert.throws(() => mad([]), RangeError);
+});
+
+test('judgeIdea returns worse, better or not-shown from the paired interval and a failed check', () => {
+  const base = [10, 12, 11, 13, 12, 10];
+  const lower = judgeIdea({ pairs: base.map((value) => [value, value - 3]), checksPassed: true });
+  assert.equal(lower.verdict, 'better');
+  const higher = judgeIdea({ pairs: base.map((value) => [value, value + 3]), checksPassed: true });
+  assert.equal(higher.verdict, 'worse');
+  const mixed = judgeIdea({ pairs: [[10, 12], [12, 10], [11, 11], [13, 12]], checksPassed: true });
+  assert.equal(mixed.verdict, 'not-shown');
+  assert.equal(judgeIdea({ pairs: base.map((value) => [value, value - 3]), checksPassed: false }).verdict, 'worse');
+});
+
+test('judgeIdea reports the runs needed from the measured pool noise', () => {
+  const scores = { base: { a: [10, 12], b: [20, 22], c: [15, 17] }, candidate: { a: [9, 11], b: [19, 21], c: [14, 16] } };
+  const { runs } = judgeIdea({ pairs: [[10, 9], [20, 19], [15, 14]], checksPassed: true, scores, paired: true, samples: 2, effect: 1 });
+  assert.match(runs, /^power: 3 tasks x 2 samples x 2 arms = 12 runs; an effect of 1 needs \d+ tasks/);
 });

@@ -133,3 +133,29 @@ test('a wrong-typed field or a non-object line is listed instead of thrown', () 
   assert.match(problems, /line 4: not a JSON object/);
   assert.match(problems, /line 5: not a JSON object/);
 });
+
+import { derivedVerdict } from '../benchmarks/speed-ledger.mjs';
+
+const stepRoot = (rows) => {
+  const root = makeRoot(rows);
+  fs.writeFileSync(path.join(root, 'benchmarks', 'cell-steps.json'), JSON.stringify({ 'flow-web': { review: 3 }, 'flow-unit': { review: 0 } }));
+  return root;
+};
+
+test('old verdicts derive worse, not-shown or better at read time', () => {
+  const worseId = JSON.parse(fs.readFileSync(new URL('../benchmarks/ledger-worse.json', import.meta.url), 'utf8'))[0];
+  assert.equal(derivedVerdict({ id: worseId, verdict: 'rej' }), 'worse');
+  assert.equal(derivedVerdict({ id: 'other', verdict: 'rej' }), 'not-shown');
+  assert.equal(derivedVerdict({ id: 'other', verdict: 'nog' }), 'not-shown');
+  assert.equal(derivedVerdict({ id: 'other', verdict: 'pass' }), 'better');
+  assert.equal(derivedVerdict({ id: 'other', verdict: 'un' }), 'un');
+});
+
+test('a new verdict needs a step that its cell contains', () => {
+  const ok = row('a', 'a', { verdict: 'better', step: 'review', cell: 'flow-web' });
+  assert.deepEqual(checkLedger(stepRoot([ok])), []);
+  const absent = row('b', 'b', { verdict: 'not-shown', step: 'review', cell: 'flow-unit' });
+  assert.match(checkLedger(stepRoot([absent])).join('\n'), /lacks step review/);
+  const bare = row('c', 'c', { verdict: 'worse' });
+  assert.match(checkLedger(stepRoot([bare])).join('\n'), /needs step and cell/);
+});

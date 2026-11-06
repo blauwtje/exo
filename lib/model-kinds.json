@@ -30,7 +30,7 @@
       "retry": { "tier": "strong", "effort": "high" }
     },
     "build": {
-      "on": { "tier": "standard", "effort": "high" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "hardest": {
       "on": { "tier": "strong", "effort": "high" }
@@ -39,7 +39,7 @@
       "on": { "tier": "standard", "effort": "medium" }
     },
     "review": {
-      "on": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "strong", "effort": "medium" }
     },
     "review-deep": {
       "on": { "tier": "strong", "effort": "high" }
@@ -57,10 +57,10 @@
       "on": { "tier": "standard", "effort": "medium" }
     },
     "orchestrator": {
-      "on": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "strong", "effort": "medium" }
     },
     "task-runner": {
-      "on": { "tier": "standard", "effort": "high" }
+      "on": { "tier": "standard", "effort": "medium" }
     },
     "research": {
       "on": { "tier": "standard", "effort": "medium" }

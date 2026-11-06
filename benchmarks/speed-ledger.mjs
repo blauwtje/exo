@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const KEYS = ['id', 'title', 'area', 'targets', 'mechanism', 'verdict', 'metric', 'threshold', 'measured', 'n', 'costUsd', 'wallS', 'date', 'commit', 'results', 'retryWhen', 'related', 'fingerprint'];
-export const VERDICTS = ['rej', 'nog', 'un', 'deferred', 'pass', 'landed'];
+export const NEW_VERDICTS = ['worse', 'not-shown', 'better'];
+export const VERDICTS = ['rej', 'nog', 'un', 'deferred', 'pass', 'landed', ...NEW_VERDICTS];
+const WORSE_IDS = new Set(JSON.parse(readFileSync(path.join(ROOT, 'benchmarks', 'ledger-worse.json'), 'utf8')));
 const LANDED = ['landed'];
 const isText = (value) => typeof value === 'string';
 const SHAPE = {
@@ -29,7 +31,7 @@ Read [the build profile](results/2026-10-19-build-profile.md) first for a speed 
 
 ${BASELINE}
 
-Open an entry below only when an idea is close. Verdict: rej = rejected, un = untried, nog = landed or tried, no measured gain, deferred = paid follow-up not run, pass = threshold met in a test but not landed, landed = landed with a gain.
+Open an entry below only when an idea is close. Verdict: rej = rejected, un = untried, nog = landed or tried, no measured gain, deferred = paid follow-up not run, pass = threshold met in a test but not landed, landed = landed with a gain. The index shows a derived verdict: worse = measured regression or quality loss, not-shown = never shown at the yardstick, better = a gain shown. A new row with worse, not-shown or better also carries step and cell, and the cell must contain the step (benchmarks/cell-steps.json).
 `;
 
 export function fingerprint({ title, targets }) {
@@ -60,6 +62,13 @@ export function readLedger(file = path.join(ROOT, 'benchmarks', 'speed-ledger.js
   return rows.map((entry) => entry.row);
 }
 
+export function derivedVerdict(row) {
+  if (NEW_VERDICTS.includes(row.verdict)) return row.verdict;
+  if (row.verdict === 'pass') return 'better';
+  if (row.verdict !== 'rej' && row.verdict !== 'nog') return row.verdict;
+  return WORSE_IDS.has(row.id) ? 'worse' : 'not-shown';
+}
+
 function link(id, byId) {
   return `[${byId.get(id)?.title ?? id}](#${id})`;
 }
@@ -74,12 +83,21 @@ function entryLine(row, byId) {
 
 export function renderLedger(rows) {
   const byId = new Map(rows.map((row) => [row.id, row]));
-  const index = rows.map((row) => `- ${link(row.id, byId)} → ${row.verdict}`);
+  const index = rows.map((row) => `- ${link(row.id, byId)} → ${derivedVerdict(row)}`);
   const open = rows.filter((row) => !LANDED.includes(row.verdict));
   const landed = rows.filter((row) => LANDED.includes(row.verdict));
   const section = (heading, list) => [`## ${heading}`, '', ...list.map((row) => entryLine(row, byId)), ''];
   const lines = [MD_FIRST_LINE, INTRO.trimEnd(), '', ...index, '', ...section('Not landed, or no measured gain', open), ...section('Landed with a measured gain', landed)];
   return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function stepProblems(row, where, root) {
+  if (!NEW_VERDICTS.includes(row.verdict)) return [];
+  const label = `${where} (${row.id})`;
+  if (!isText(row.step) || !isText(row.cell)) return [`${label}: verdict ${row.verdict} needs step and cell`];
+  const cells = JSON.parse(readFileSync(path.join(root, 'benchmarks', 'cell-steps.json'), 'utf8'));
+  if (!(cells[row.cell]?.[row.step] > 0)) return [`${label}: cell ${row.cell} lacks step ${row.step}`];
+  return [];
 }
 
 function rowProblems({ row, line }, root) {
@@ -90,6 +108,7 @@ function rowProblems({ row, line }, root) {
   const wrong = Object.entries(SHAPE).filter(([key, [, valid]]) => !valid(row[key]));
   if (wrong.length) return wrong.map(([key, [expected]]) => `${where} (${row.id}): ${key} is not ${expected}`);
   if (!VERDICTS.includes(row.verdict)) found.push(`${where} (${row.id}): invalid verdict ${row.verdict}`);
+  found.push(...stepProblems(row, where, root));
   if (row.fingerprint !== fingerprint(row)) found.push(`${where} (${row.id}): fingerprint does not match title and targets`);
   if (row.results && !existsSync(path.join(root, row.results))) found.push(`${where} (${row.id}): results path ${row.results} does not exist`);
   return found;

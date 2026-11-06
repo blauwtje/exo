@@ -66,3 +66,8 @@ test('the catalog sets agentContextTarget to 60000, bytesPerToken to 2 and fetch
   assert.equal(catalog.defaults.orchestratorResultCapBytes, undefined)
   assert.equal(catalog.defaults.scriptBytes, 4096)
 })
+
+test('the catalog caps the idea screen at 20 dollars and the confirmation at 100 in defaults.eval', () => {
+  assert.equal(catalog.defaults.eval.ideaScreenCapUsd, 20)
+  assert.equal(catalog.defaults.eval.ideaConfirmCapUsd, 100)
+})

@@ -11,243 +11,243 @@ Read [the build profile](results/2026-10-19-build-profile.md) first for a speed 
 
 Current flow-unit baseline: [round 8](results/2026-10-20-speed-round8.md), main `82ae8607` after the truncate fixture fix (wall 136.6 s, cost $0.598, n=15).
 
-Open an entry below only when an idea is close. Verdict: rej = rejected, un = untried, nog = landed or tried, no measured gain, deferred = paid follow-up not run, pass = threshold met in a test but not landed, landed = landed with a gain.
+Open an entry below only when an idea is close. Verdict: rej = rejected, un = untried, nog = landed or tried, no measured gain, deferred = paid follow-up not run, pass = threshold met in a test but not landed, landed = landed with a gain. The index shows a derived verdict: worse = measured regression or quality loss, not-shown = never shown at the yardstick, better = a gain shown. A new row with worse, not-shown or better also carries step and cell, and the cell must contain the step (benchmarks/cell-steps.json).
 
 - [A new, test-first module needs no branch review](#a-new-test-first-module-needs-no) → landed
-- [Affected-only test selection in the inner loop](#affected-only-test-selection-in-the-inner) → rej
+- [Affected-only test selection in the inner loop](#affected-only-test-selection-in-the-inner) → not-shown
 - [Agents are bound by their own context target and a brief resolves its reads](#agent-context-target) → landed
-- [Agent returns as one verdict line plus a report path](#agent-returns-as-one-verdict-line-plus) → rej
-- [An errored review-replay run does not stop the replay](#an-errored-review-replay-run-does-not-stop) → nog
+- [Agent returns as one verdict line plus a report path](#agent-returns-as-one-verdict-line-plus) → not-shown
+- [An errored review-replay run does not stop the replay](#an-errored-review-replay-run-does-not-stop) → not-shown
 - [`--bare` for headless `claude -p` runs](#bare-for-headless-claude-p-runs) → un
-- [Batch build-task first reads and write the report before --check](#batch-build-task-first-reads-and-write-the) → rej
+- [Batch build-task first reads and write the report before --check](#batch-build-task-first-reads-and-write-the) → not-shown
 - [Batch build workspace and run-loop reference reads in one turn](#batch-build-workspace-and-run-loop-reference-reads) → un
-- [Batched read verb for the builder](#batched-read-verb-for-the-builder) → rej
+- [Batched read verb for the builder](#batched-read-verb-for-the-builder) → not-shown
 - [Benchmark-started sessions write the prompt cache at the 5-minute rate](#benchmark-sessions-on-the-5-minute-prompt-cache) → landed
 - [Budget on: rule-table router with one-step retry step-up](#budget-on-router-against-balanced) → landed
-- [Build lead runs the `run-unit` loop itself (`fold-unit`)](#build-lead-runs-the-run-unit-loop) → rej
+- [Build lead runs the `run-unit` loop itself (`fold-unit`)](#build-lead-runs-the-run-unit-loop) → worse
 - [build-task at medium effort](#build-task-at-medium-effort) → landed
-- [build-task at sonnet low effort](#build-task-at-sonnet-low-effort) → pass
-- [Build-task rule docs inlined into the brief or loaded as a stable prefix](#build-task-rule-docs-as-stable-prefix) → rej
+- [build-task at sonnet low effort](#build-task-at-sonnet-low-effort) → better
+- [Build-task rule docs inlined into the brief or loaded as a stable prefix](#build-task-rule-docs-as-stable-prefix) → not-shown
 - [Build-task runs proof, report, diff and `--check` in one Bash](#build-task-runs-proof-report-diff) → un
-- [Stall guard in `build-task`](#build-task-stall-guard) → nog
-- [build-task stops at green plus report](#build-task-stops-at-green-plus-report) → rej
-- [Build-task tests every boundary a `Data:` line implies](#build-task-tests-every-boundary-a-data) → rej
-- [Builder lands its own task](#builder-lands-its-own-task) → rej
-- [Cache-miss cause in the statusline](#cache-miss-cause-in-the-statusline) → rej
+- [Stall guard in `build-task`](#build-task-stall-guard) → not-shown
+- [build-task stops at green plus report](#build-task-stops-at-green-plus-report) → worse
+- [Build-task tests every boundary a `Data:` line implies](#build-task-tests-every-boundary-a-data) → not-shown
+- [Builder lands its own task](#builder-lands-its-own-task) → worse
+- [Cache-miss cause in the statusline](#cache-miss-cause-in-the-statusline) → not-shown
 - [Cache scorer results per target text hash in the improve-real bridge](#cache-scorer-results-per-target-text-hash) → un
-- [Cache TTL of 1 hour on `build-task`, `review-branch` and `fix-review`](#cache-ttl-of-1-hour-on-build) → rej
-- [Cache warm-up stagger before fan-out](#cache-warm-up-stagger-before-fan-out) → rej
+- [Cache TTL of 1 hour on `build-task`, `review-branch` and `fix-review`](#cache-ttl-of-1-hour-on-build) → worse
+- [Cache warm-up stagger before fan-out](#cache-warm-up-stagger-before-fan-out) → not-shown
 - [Cheaper fixture plan for the lean-gates quick tier](#cheaper-fixture-plan-for-the-lean-gates) → un
-- [Cheapest-first check order with --fail-fast (pre-commit)](#cheapest-first-check-order-fail-fast) → rej
-- [Check that load-bearing rules sit in the first 5k tokens of each skill](#check-load-bearing-rules-sit-in-the-first-5k-tokens) → rej
-- [Add the code-rule line to build-task dispatches in the agent hook under on](#code-rule-line-in-build-task-dispatches-under-on) → rej
-- [Compact build tasks at medium effort as speed-pass Task 6](#compact-build-tasks-at-medium-effort-as) → rej
-- [Compare replay arms from graded cells already on disk](#compare-replay-arms-from-graded-cells-on) → nog
-- [Session-text compression split alone (K2)](#compress-split-alone-k2) → rej
+- [Cheapest-first check order with --fail-fast (pre-commit)](#cheapest-first-check-order-fail-fast) → not-shown
+- [Check that load-bearing rules sit in the first 5k tokens of each skill](#check-load-bearing-rules-sit-in-the-first-5k-tokens) → not-shown
+- [Add the code-rule line to build-task dispatches in the agent hook under on](#code-rule-line-in-build-task-dispatches-under-on) → not-shown
+- [Compact build tasks at medium effort as speed-pass Task 6](#compact-build-tasks-at-medium-effort-as) → not-shown
+- [Compare replay arms from graded cells already on disk](#compare-replay-arms-from-graded-cells-on) → not-shown
+- [Session-text compression split alone (K2)](#compress-split-alone-k2) → not-shown
 - [Shorter context-limit start note, soft note once](#ctx-agent-limit-notes) → landed
 - [Docs-only tasks skip the code standards](#ctx-docs-task-standards) → landed
-- [Orchestrator appends one verdict line per part](#ctx-orchestrator-check-cap) → rej
+- [Orchestrator appends one verdict line per part](#ctx-orchestrator-check-cap) → not-shown
 - [Run task prompt drops its repeated sandbox sentence](#ctx-run-prompt-sandbox-dupe) → landed
 - [task-runner reads only the reference for its failure case](#ctx-runner-case-reads) → landed
 - [Runner-facing build scripts print only the caller view, with detail in a log](#ctx-runner-script-output) → landed
 - [Shorter session-rules line 18](#ctx-session-rules-unlocked-lines) → landed
 - [adhd style drops its repeated Decided-for-you rule](#ctx-style-decided-dupe) → un
-- [Cut blocks by predicted runner context](#cut-blocks-by-predicted-runner-context) → rej
-- [Debug line from review agents](#debug-line-from-review-agents) → rej
-- [Dedupe repeat Read of an unchanged range](#dedupe-repeat-read-of-an-unchanged) → rej
-- [DeepSeek flash effort for the build job](#deepseek-flash-effort-build) → pass
-- [DeepSeek flash effort for the fixer job](#deepseek-flash-effort-fixer) → pass
-- [DeepSeek flash effort for the flow job](#deepseek-flash-effort-flow) → pass
-- [DeepSeek flash effort for the plan job](#deepseek-flash-effort-plan) → nog
-- [DeepSeek flash effort for the review job](#deepseek-flash-effort-review) → pass
-- [Deny a Write of a new code file that adds a comment](#deny-a-write-of-a-new-code-file) → rej
+- [Cut blocks by predicted runner context](#cut-blocks-by-predicted-runner-context) → not-shown
+- [Debug line from review agents](#debug-line-from-review-agents) → not-shown
+- [Dedupe repeat Read of an unchanged range](#dedupe-repeat-read-of-an-unchanged) → not-shown
+- [DeepSeek flash effort for the build job](#deepseek-flash-effort-build) → better
+- [DeepSeek flash effort for the fixer job](#deepseek-flash-effort-fixer) → better
+- [DeepSeek flash effort for the flow job](#deepseek-flash-effort-flow) → better
+- [DeepSeek flash effort for the plan job](#deepseek-flash-effort-plan) → not-shown
+- [DeepSeek flash effort for the review job](#deepseek-flash-effort-review) → better
+- [Deny a Write of a new code file that adds a comment](#deny-a-write-of-a-new-code-file) → worse
 - [design-ui check phase capped at 2 look runs and one batched fix round](#design-ui-capped-check-round) → un
 - [design-ui renders repeated items from one data array and one parametric art function](#design-ui-data-driven-items) → un
 - [design-ui deals 3 directions from a script before the contract](#design-ui-dealt-direction) → un
-- [design-ui fresh-context finish reviewer subagent](#design-ui-fresh-finish-reviewer) → rej
+- [design-ui fresh-context finish reviewer subagent](#design-ui-fresh-finish-reviewer) → not-shown
 - [look.mjs flags clipped and overlapping text, font count, window fit and mobile tab bar](#design-ui-layout-detector-in-look) → un
 - [look.mjs takes no 768 screenshot](#design-ui-no-768-shot) → un
 - [design-ui picks the first fitting dealt direction and writes the page in the next call](#design-ui-no-deliberation) → un
 - [design-ui writes one index.html under 35 KB in one Write](#design-ui-one-file-35kb) → un
 - [design-ui runs one look.mjs pass with shots and a text-only recheck](#design-ui-one-look-pass) → un
 - [design-ui loads one short reference instead of three](#design-ui-one-reference) → un
-- [design-ui rendered reference boards per direction](#design-ui-reference-image-boards) → rej
-- [design-ui skips reading the 1440 and 390 shots](#design-ui-skip-shot-reads) → rej
+- [design-ui rendered reference boards per direction](#design-ui-reference-image-boards) → not-shown
+- [design-ui skips reading the 1440 and 390 shots](#design-ui-skip-shot-reads) → worse
 - [design-ui reads slop.md in the deal Bash](#design-ui-slop-in-deal-bash) → un
 - [design-ui item art function capped at 40 lines](#design-ui-small-art-function) → un
-- [Dispatch rules delivered at the first Agent call (A)](#dispatch-rules-at-the-first-agent-call-a) → rej
-- [Done-rule lines: each variant took effect, each warning kind in full output](#done-rule-lines-f-variant-and-warning-proof) → rej
-- [Drop compact from the SessionStart matcher](#drop-compact-from-the-sessionstart-matcher) → rej
-- [Drop the bash wrapper in hooks.json (exec form via args)](#drop-the-bash-wrapper-in-hooks-json) → rej
-- [Drop the review-input read in review-branch](#drop-the-review-input-read-in-review-branch) → rej
-- [Early-prompt volatility audit (mini-swe-agent)](#early-prompt-volatility-audit) → rej
-- [Syntax check at the edit hook](#edit-syntax-check-at-the-edit-hook) → rej
-- [Effort low for run-unit and coordinate](#effort-low-for-run-unit-and-coordinate) → rej
-- [Emit one ITEM line per replay task in improve-all-score](#emit-one-item-line-per-replay-task-in-all) → nog
+- [Dispatch rules delivered at the first Agent call (A)](#dispatch-rules-at-the-first-agent-call-a) → not-shown
+- [Done-rule lines: each variant took effect, each warning kind in full output](#done-rule-lines-f-variant-and-warning-proof) → worse
+- [Drop compact from the SessionStart matcher](#drop-compact-from-the-sessionstart-matcher) → not-shown
+- [Drop the bash wrapper in hooks.json (exec form via args)](#drop-the-bash-wrapper-in-hooks-json) → not-shown
+- [Drop the review-input read in review-branch](#drop-the-review-input-read-in-review-branch) → worse
+- [Early-prompt volatility audit (mini-swe-agent)](#early-prompt-volatility-audit) → not-shown
+- [Syntax check at the edit hook](#edit-syntax-check-at-the-edit-hook) → not-shown
+- [Effort low for run-unit and coordinate](#effort-low-for-run-unit-and-coordinate) → not-shown
+- [Emit one ITEM line per replay task in improve-all-score](#emit-one-item-line-per-replay-task-in-all) → not-shown
 - [Free regression suites run in the full npm run check](#eval-suites-free-regression-in-npm-run-check) → landed
-- [Event-driven wait instead of the 5 s `wait-report` poll](#event-driven-wait-instead-of-the-5) → rej
-- [Exclude errored routing sessions from recall](#exclude-errored-routing-sessions-from) → rej
+- [Event-driven wait instead of the 5 s `wait-report` poll](#event-driven-wait-instead-of-the-5) → not-shown
+- [Exclude errored routing sessions from recall](#exclude-errored-routing-sessions-from) → not-shown
 - [Fan out the first wave when every task is independent](#fan-out-the-first-wave-when) → landed
-- [Fast mode for the serial hard unit](#fast-mode-for-the-serial-hard-unit) → rej
-- [find-open-points agent at low effort](#find-open-points-agent-at-low-effort) → rej
-- [One verbatim quote per review fix finding](#finding-quote-for-review-fix-findings) → nog
+- [Fast mode for the serial hard unit](#fast-mode-for-the-serial-hard-unit) → not-shown
+- [find-open-points agent at low effort](#find-open-points-agent-at-low-effort) → not-shown
+- [One verbatim quote per review fix finding](#finding-quote-for-review-fix-findings) → not-shown
 - [Finish unit-route builds on the lean verify tail, no skill load](#finish-unit-route-builds-on-the-lean-verify) → un
-- [fix-review at sonnet low effort](#fix-review-at-sonnet-low-effort) → pass
-- [fix-review checks its own repair diff for new defects](#fix-review-checks-its-own-repair-diff-for-new-defects) → rej
+- [fix-review at sonnet low effort](#fix-review-at-sonnet-low-effort) → better
+- [fix-review checks its own repair diff for new defects](#fix-review-checks-its-own-repair-diff-for-new-defects) → not-shown
 - [fix-review repairs an untestable concern directly](#fix-review-repairs-an-untestable-concern-directly) → landed
-- [Fix the model that reaches build-task (tier leak)](#fix-the-model-that-reaches-build-task-tier-leak) → rej
-- [Fix the usage and error text of exo's scripts from run-log error counts](#fix-the-usage-and-error-text-of) → rej
+- [Fix the model that reaches build-task (tier leak)](#fix-the-model-that-reaches-build-task-tier-leak) → not-shown
+- [Fix the usage and error text of exo's scripts from run-log error counts](#fix-the-usage-and-error-text-of) → not-shown
 - [Fixer removes what its repair leaves constant or unused](#fixer-removes-repair-residue) → landed
-- [Flip the remaining model-listed skills to disable-model-invocation](#flip-remaining-model-listed-skills-to-disable-model-invocation) → rej
-- [Fold plain-Bash phase chains into exo script output](#fold-plain-bash-phase-chains-into-script) → rej
+- [Flip the remaining model-listed skills to disable-model-invocation](#flip-remaining-model-listed-skills-to-disable-model-invocation) → not-shown
+- [Fold plain-Bash phase chains into exo script output](#fold-plain-bash-phase-chains-into-script) → not-shown
 - [Fork dispatch for wave siblings](#fork-dispatch-for-wave-siblings) → un
-- [Go straight to the tail on the unit's `Next: none`](#go-straight-to-the-tail-on) → rej
-- [Haiku for `run-unit`](#haiku-for-run-unit) → rej
-- [Haiku for search agents](#haiku-for-search-agents) → rej
-- [Hand the first dispatch from `next-task` to run-unit](#hand-the-first-dispatch-from-next) → rej
+- [Go straight to the tail on the unit's `Next: none`](#go-straight-to-the-tail-on) → not-shown
+- [Haiku for `run-unit`](#haiku-for-run-unit) → not-shown
+- [Haiku for search agents](#haiku-for-search-agents) → not-shown
+- [Hand the first dispatch from `next-task` to run-unit](#hand-the-first-dispatch-from-next) → not-shown
 - [Hooks spawn fewer processes per session](#hook-entries-per-session) → landed
-- [Installed hook overhead per tool call across projects](#hook-overhead-per-tool-call) → nog
-- [Hot-file index for locate-code and find-open-points](#hot-file-index-for-locate-code-and-find-open-points) → rej
-- [Ideas judge grades originality and fit in separate calls](#ideas-judge-split-originality-and-fit) → nog
-- [Strip the user output style from the improve-vs-goal bench home](#improve-bench-output-style-asymmetry) → rej
+- [Installed hook overhead per tool call across projects](#hook-overhead-per-tool-call) → not-shown
+- [Hot-file index for locate-code and find-open-points](#hot-file-index-for-locate-code-and-find-open-points) → not-shown
+- [Ideas judge grades originality and fit in separate calls](#ideas-judge-split-originality-and-fit) → not-shown
+- [Strip the user output style from the improve-vs-goal bench home](#improve-bench-output-style-asymmetry) → not-shown
 - [Cut exo:improve fixed overhead per run and per round](#improve-fixed-overhead-cut) → landed
-- [Open each inline exo:improve round with a cd to the absolute worktree path](#improve-inline-absolute-cd) → nog
-- [Make the first exo:improve tool call read the named files and run setup](#improve-inline-read-and-setup) → rej
-- [Run exo:improve setup and the first inline round in one command](#improve-inline-setup-merge) → rej
+- [Open each inline exo:improve round with a cd to the absolute worktree path](#improve-inline-absolute-cd) → not-shown
+- [Make the first exo:improve tool call read the named files and run setup](#improve-inline-read-and-setup) → worse
+- [Run exo:improve setup and the first inline round in one command](#improve-inline-setup-merge) → not-shown
 - [Load only the inline steps from the exo:improve skill body](#improve-inline-skill-body-split) → landed
 - [Run exo:improve rounds inline when the editable scope is small](#improve-inline-small-scope) → landed
 - [Start an inline exo:improve run with the strongest known method](#improve-inline-strongest-first) → landed
-- [Stop exo:improve after two NO-IDEA rounds in a row](#improve-plateau-stop) → pass
+- [Stop exo:improve after two NO-IDEA rounds in a row](#improve-plateau-stop) → better
 - [Stop exo:improve after 3 rounds with no keep instead of 10](#improve-plateau-stop-3) → un
-- [improve-real locate arms: improve vs goal, Sonnet vs Opus](#improve-real-locate-arms) → nog
-- [improve-real routing arms: improve vs goal, Sonnet vs Opus](#improve-real-routing-arms) → nog
+- [improve-real locate arms: improve vs goal, Sonnet vs Opus](#improve-real-locate-arms) → not-shown
+- [improve-real routing arms: improve vs goal, Sonnet vs Opus](#improve-real-routing-arms) → not-shown
 - [Show the score output after a failed exo:improve round so the lead skips its own check](#improve-round-output-tail) → landed
-- [Run exo:improve round workers on sonnet at low effort](#improve-round-sonnet-low) → rej
+- [Run exo:improve round workers on sonnet at low effort](#improve-round-sonnet-low) → worse
 - [Run exo:improve round workers on sonnet at medium effort](#improve-round-sonnet-medium) → landed
-- [Stop exo:improve when the score reaches its ceiling](#improve-score-ceiling-stop) → rej
+- [Stop exo:improve when the score reaches its ceiling](#improve-score-ceiling-stop) → not-shown
 - [Let exo:improve setup commit and score the first idea](#improve-setup-first-idea) → landed
-- [exo:improve against Claude Code /goal on one score](#improve-vs-goal-sort-fixture) → rej
+- [exo:improve against Claude Code /goal on one score](#improve-vs-goal-sort-fixture) → not-shown
 - [Move the exo:improve worker-round steps to a reference inline runs skip](#improve-worker-round-reference) → landed
-- [Let the improve worker run round.mjs and report the score](#improve-worker-runs-round) → rej
-- [Inline the run rules in each task brief](#inline-the-run-rules-in-each) → rej
+- [Let the improve worker run round.mjs and report the score](#improve-worker-runs-round) → not-shown
+- [Inline the run rules in each task brief](#inline-the-run-rules-in-each) → not-shown
 - [Invariant-edge Red: a `Data:` quantifier ("exactly", "at most", "never") needs a Red test at inputs 0, 1 and below any constant](#invariant-edge-red-a-data-quantifier-exactly) → un
 - [Three isolated review judges replace the single review-branch pass](#isolated-review-judges) → deferred
-- [L1.1 Protected-token conservation check](#l1-1-protected-token-conservation-check) → pass
-- [L1.2 Restore-to-pin memory](#l1-2-restore-to-pin-memory) → rej
-- [L1.3 Edit-survival score](#l1-3-edit-survival-score) → rej
-- [L2.1 Recurrence alarm](#l2-1-recurrence-alarm) → rej
-- [L2.2 Learned co-change rule](#l2-2-learned-co-change-rule) → rej
+- [L1.1 Protected-token conservation check](#l1-1-protected-token-conservation-check) → better
+- [L1.2 Restore-to-pin memory](#l1-2-restore-to-pin-memory) → worse
+- [L1.3 Edit-survival score](#l1-3-edit-survival-score) → not-shown
+- [L2.1 Recurrence alarm](#l2-1-recurrence-alarm) → not-shown
+- [L2.2 Learned co-change rule](#l2-2-learned-co-change-rule) → not-shown
 - [L2.3 Failure cause field](#l2-3-failure-cause-field) → un
-- [L3.1 Stage checkpoint fork](#l3-1-stage-checkpoint-fork) → rej
-- [L3.2 Time-paired blocks plus group-sequential stop](#l3-2-time-paired-blocks-plus-group) → rej
+- [L3.1 Stage checkpoint fork](#l3-1-stage-checkpoint-fork) → worse
+- [L3.2 Time-paired blocks plus group-sequential stop](#l3-2-time-paired-blocks-plus-group) → not-shown
 - [L3.3 Content-keyed baseline pool](#l3-3-content-keyed-baseline-pool) → landed
-- [L4.1 Structured ledger with duplicate gate](#l4-1-structured-ledger-with-duplicate-gate) → rej
-- [L4.2 Experiment queue ranked by power](#l4-2-experiment-queue-ranked-by-power) → rej
-- [L4.3 Retry triggers as dependency graph](#l4-3-retry-triggers-as-dependency-graph) → rej
-- [L5.1 Runtime context ledger plus residency ratchet](#l5-1-runtime-context-ledger-plus-residency) → rej
-- [L5.2 Cost-ranked self-pruning of hot rules](#l5-2-cost-ranked-self-pruning-of) → pass
+- [L4.1 Structured ledger with duplicate gate](#l4-1-structured-ledger-with-duplicate-gate) → not-shown
+- [L4.2 Experiment queue ranked by power](#l4-2-experiment-queue-ranked-by-power) → not-shown
+- [L4.3 Retry triggers as dependency graph](#l4-3-retry-triggers-as-dependency-graph) → not-shown
+- [L5.1 Runtime context ledger plus residency ratchet](#l5-1-runtime-context-ledger-plus-residency) → not-shown
+- [L5.2 Cost-ranked self-pruning of hot rules](#l5-2-cost-ranked-self-pruning-of) → better
 - [L6.1 Risk-routed first attempt](#l6-1-risk-routed-first-attempt) → deferred
-- [L6.2 Adaptive slot count per plan](#l6-2-adaptive-slot-count-per-plan) → rej
-- [`land-slot`: land one slot in one script call](#land-slot-land-one-slot-in-one) → nog
-- [Land-task refusals in one call](#land-task-refusals-in-one-call) → rej
+- [L6.2 Adaptive slot count per plan](#l6-2-adaptive-slot-count-per-plan) → not-shown
+- [`land-slot`: land one slot in one script call](#land-slot-land-one-slot-in-one) → not-shown
+- [Land-task refusals in one call](#land-task-refusals-in-one-call) → not-shown
 - [Latency-normalized wall as a secondary A/B metric](#latency-normalized-wall-as-a-secondary-a) → un
-- [Lazy import of shell-fixes and git-deny in dispatch-bash](#lazy-import-of-shell-fixes-and-git-deny) → rej
-- [Lead makes one-file edits itself](#lead-makes-one-file-edits-itself) → rej
-- [Lead stages verify while `run-unit` builds](#lead-stages-verify-while-run-unit-builds) → rej
-- [Lean lead tool pool through a plugin agent](#lean-lead-tool-pool-through-a-plugin-agent) → rej
-- [Leave errored sessions out of wall and cost means](#leave-errored-sessions-out-of-wall-and) → nog
-- [Let a dependent task refill a parallel slot](#let-a-dependent-task-refill-a-parallel) → rej
-- [Let the branch reviewer write its plan questions, not the verify lead](#let-the-branch-reviewer-write-its-plan-questions) → rej
-- [locate-code at sonnet low effort](#locate-code-at-sonnet-low-effort) → nog
-- [Lower lead effort or a condensed lead context](#lower-lead-effort-or-a-condensed-lead) → rej
+- [Lazy import of shell-fixes and git-deny in dispatch-bash](#lazy-import-of-shell-fixes-and-git-deny) → not-shown
+- [Lead makes one-file edits itself](#lead-makes-one-file-edits-itself) → not-shown
+- [Lead stages verify while `run-unit` builds](#lead-stages-verify-while-run-unit-builds) → not-shown
+- [Lean lead tool pool through a plugin agent](#lean-lead-tool-pool-through-a-plugin-agent) → not-shown
+- [Leave errored sessions out of wall and cost means](#leave-errored-sessions-out-of-wall-and) → not-shown
+- [Let a dependent task refill a parallel slot](#let-a-dependent-task-refill-a-parallel) → not-shown
+- [Let the branch reviewer write its plan questions, not the verify lead](#let-the-branch-reviewer-write-its-plan-questions) → not-shown
+- [locate-code at sonnet low effort](#locate-code-at-sonnet-low-effort) → not-shown
+- [Lower lead effort or a condensed lead context](#lower-lead-effort-or-a-condensed-lead) → not-shown
 - [`maxTurns` cap on `build-task` and `run-unit`](#maxturns-cap-on-build-task-and-run) → un
 - [maxTurns on agents that lack it](#maxturns-on-agents-that-lack-it) → landed
-- [`model: sonnet` on the `build` skill for the lead build turn](#model-sonnet-on-the-build-skill-for) → rej
+- [`model: sonnet` on the `build` skill for the lead build turn](#model-sonnet-on-the-build-skill-for) → worse
 - [More tasks instead of more runs per task](#more-tasks-instead-of-more-runs-per-task) → un
-- [More than 4 parallel slots](#more-than-4-parallel-slots) → rej
-- [Name the code rules in the run-rules file](#name-the-code-rules-in-the) → rej
-- [No SE or verdict from one cell in a quick tier](#no-se-or-verdict-from-one-cell-in-a-quick) → nog
-- [`omitClaudeMd: true` on `build-task` and `review-branch`](#omitclaudemd-true-on-build-task-and-review) → rej
+- [More than 4 parallel slots](#more-than-4-parallel-slots) → worse
+- [Name the code rules in the run-rules file](#name-the-code-rules-in-the) → not-shown
+- [No SE or verdict from one cell in a quick tier](#no-se-or-verdict-from-one-cell-in-a-quick) → not-shown
+- [`omitClaudeMd: true` on `build-task` and `review-branch`](#omitclaudemd-true-on-build-task-and-review) → worse
 - [`omitClaudeMd: true` on `run-unit`](#omitclaudemd-true-on-run-unit) → landed
-- [One gate per wave](#one-gate-per-wave) → rej
+- [One gate per wave](#one-gate-per-wave) → not-shown
 - [One review bundle file read with Read](#one-review-bundle-file-read-with-read) → un
-- [One `start-run` call starts the run and prints the first block](#one-start-run-call-starts-the) → nog
+- [One `start-run` call starts the run and prints the first block](#one-start-run-call-starts-the) → not-shown
 - [Pair improve against goal held-out scores per case](#pair-improve-against-goal-held-out-scores) → un
 - [Paired comparison per task or case instead of unpaired](#paired-comparison-per-task-or-case-instead) → un
-- [Parallel check steps (lefthook, nx)](#parallel-check-steps-lefthook-nx) → rej
-- [Parallel-tool-call line in agent prompts](#parallel-tool-call-line-in-agent-prompts) → rej
-- [Paste the short Context file into each task brief](#paste-the-short-context-file-into) → rej
-- [Per-step input-hash check cache (turborepo, wireit)](#per-step-input-hash-check-cache) → rej
-- [plan-check finds Files: gaps in any test layout](#plan-check-finds-files-gaps-in-any) → rej
+- [Parallel check steps (lefthook, nx)](#parallel-check-steps-lefthook-nx) → not-shown
+- [Parallel-tool-call line in agent prompts](#parallel-tool-call-line-in-agent-prompts) → not-shown
+- [Paste the short Context file into each task brief](#paste-the-short-context-file-into) → worse
+- [Per-step input-hash check cache (turborepo, wireit)](#per-step-input-hash-check-cache) → not-shown
+- [plan-check finds Files: gaps in any test layout](#plan-check-finds-files-gaps-in-any) → worse
 - [Plan session batches Writes and skips the separate code-rules step](#plan-session-batches-writes) → landed
-- [claude plugin details skip-if-absent check with a listing-budget guard](#plugin-details-skip-if-absent-check) → rej
-- [Print the minimum detectable gap before spending](#print-the-minimum-detectable-gap-before) → nog
-- [Print the recorded cost spread before a lean-gates run](#print-the-recorded-cost-spread-before-a) → nog
-- [Quick tier first, full tier only after a pass](#quick-tier-first-full-tier-only-after-a) → nog
-- [Raise review-branch effort to cut false findings](#raise-review-branch-effort-to-cut-false-findings) → rej
-- [Raise the block task cap from 8 to 16](#raise-the-block-task-cap-from-8-to-16) → rej
-- [Range reads above a size line for build-task](#range-reads-above-a-size-line-for-build-task) → rej
+- [claude plugin details skip-if-absent check with a listing-budget guard](#plugin-details-skip-if-absent-check) → not-shown
+- [Print the minimum detectable gap before spending](#print-the-minimum-detectable-gap-before) → not-shown
+- [Print the recorded cost spread before a lean-gates run](#print-the-recorded-cost-spread-before-a) → not-shown
+- [Quick tier first, full tier only after a pass](#quick-tier-first-full-tier-only-after-a) → not-shown
+- [Raise review-branch effort to cut false findings](#raise-review-branch-effort-to-cut-false-findings) → not-shown
+- [Raise the block task cap from 8 to 16](#raise-the-block-task-cap-from-8-to-16) → not-shown
+- [Range reads above a size line for build-task](#range-reads-above-a-size-line-for-build-task) → not-shown
 - [Read each file path in a fixer Guard line, not the whole line](#read-each-file-path-in-a-fixer-guard) → un
-- [Read findings, fix-class and named files once in fix-review first call](#read-findings-fix-class-and-named-files-once) → nog
-- [Read the code standard with the brief, before build-task first Write](#read-the-code-standard-with-the-brief-before) → nog
-- [Red-loop breaker (diagnose and BLOCKED after the 2nd red Proof run)](#red-loop-breaker-diagnose-and-blocked-after) → rej
-- [Repair dispatch inherits the failed attempt's facts](#repair-dispatch-inherits-the-failed-attempt-s) → rej
-- [Repeat guard in fix-review for a repeated command and output](#repeat-guard-in-fix-review) → rej
-- [Resume the builder for a repair instead of a fresh dispatch](#resume-the-builder-for-a-repair-instead) → rej
-- [Resume the gate fixer for round two](#resume-the-gate-fixer-for-round-two) → rej
-- [Reuse the build's passing Proof run at landing](#reuse-the-build-s-passing-proof-run) → rej
-- [review-branch at opus low or medium effort](#review-branch-at-opus-low-or-medium-effort) → pass
-- [Review diff file under the spill size](#review-diff-file-under-the-spill-size) → rej
-- [Review kind copied from script](#review-kind-copied-from-script) → nog
-- [Review the fix diff on the standard tier](#review-the-fix-diff-on-the-standard) → rej
-- [Reviewer fan-out or precision filtering](#reviewer-fan-out-or-precision-filtering) → rej
+- [Read findings, fix-class and named files once in fix-review first call](#read-findings-fix-class-and-named-files-once) → not-shown
+- [Read the code standard with the brief, before build-task first Write](#read-the-code-standard-with-the-brief-before) → not-shown
+- [Red-loop breaker (diagnose and BLOCKED after the 2nd red Proof run)](#red-loop-breaker-diagnose-and-blocked-after) → worse
+- [Repair dispatch inherits the failed attempt's facts](#repair-dispatch-inherits-the-failed-attempt-s) → not-shown
+- [Repeat guard in fix-review for a repeated command and output](#repeat-guard-in-fix-review) → not-shown
+- [Resume the builder for a repair instead of a fresh dispatch](#resume-the-builder-for-a-repair-instead) → not-shown
+- [Resume the gate fixer for round two](#resume-the-gate-fixer-for-round-two) → not-shown
+- [Reuse the build's passing Proof run at landing](#reuse-the-build-s-passing-proof-run) → not-shown
+- [review-branch at opus low or medium effort](#review-branch-at-opus-low-or-medium-effort) → better
+- [Review diff file under the spill size](#review-diff-file-under-the-spill-size) → worse
+- [Review kind copied from script](#review-kind-copied-from-script) → not-shown
+- [Review the fix diff on the standard tier](#review-the-fix-diff-on-the-standard) → worse
+- [Reviewer fan-out or precision filtering](#reviewer-fan-out-or-precision-filtering) → not-shown
 - [Rolling review: review starts while the last slot is still building](#rolling-review-review-starts-while-the-last) → un
 - [Round 1 bundle: standing-load split, attempt-first routing, done rules (T1)](#round-1-bundle-t1) → landed
-- [Round 2 bundle: dispatch rules at first Agent call, compression opt-in, short agent descriptions, done-rule lines (T3)](#round-2-bundle-t3) → rej
+- [Round 2 bundle: dispatch rules at first Agent call, compression opt-in, short agent descriptions, done-rule lines (T3)](#round-2-bundle-t3) → worse
 - [Round 3 bundle: bounded proof (one run per variant), proof reuse (T4)](#round-3-bundle-t4) → landed
-- [round.mjs caps total attempts at maxRuns, aborted runs included](#round-mjs-caps-total-attempts-at-maxruns) → nog
-- [round.mjs noise fallback from pooled within-commit sd](#round-mjs-noise-fallback-from-pooled-sd) → nog
+- [round.mjs caps total attempts at maxRuns, aborted runs included](#round-mjs-caps-total-attempts-at-maxruns) → not-shown
+- [round.mjs noise fallback from pooled within-commit sd](#round-mjs-noise-fallback-from-pooled-sd) → not-shown
 - [Route general-purpose calls to the kind table model](#route-general-purpose-calls-to-the-kind-table-model) → deferred
-- [Run build-task at medium effort on its first attempt](#run-build-task-at-medium-effort-on-its) → rej
-- [Run improve-real arms in parallel](#run-improve-real-arms-in-parallel) → rej
-- [Run later-round and fix-diff reviews on the standard tier](#run-later-round-and-fix-diff-reviews-on) → rej
+- [Run build-task at medium effort on its first attempt](#run-build-task-at-medium-effort-on-its) → not-shown
+- [Run improve-real arms in parallel](#run-improve-real-arms-in-parallel) → not-shown
+- [Run later-round and fix-diff reviews on the standard tier](#run-later-round-and-fix-diff-reviews-on) → not-shown
 - [Run the wave loop in a `Workflow` script](#run-the-wave-loop-in-a-workflow) → un
-- [`run-unit` at `low` effort on the balanced profile](#run-unit-at-low-effort-on-the) → nog
-- [run-unit cache TTL back to 5 minutes](#run-unit-cache-ttl-back-to-5-minutes) → rej
-- [run-unit hands over at a context line, not by task count](#run-unit-hands-over-at-a-context-line) → rej
+- [`run-unit` at `low` effort on the balanced profile](#run-unit-at-low-effort-on-the) → not-shown
+- [run-unit cache TTL back to 5 minutes](#run-unit-cache-ttl-back-to-5-minutes) → worse
+- [run-unit hands over at a context line, not by task count](#run-unit-hands-over-at-a-context-line) → worse
 - [Run-unit waits for the whole wave and lands every slot in one chained call](#run-unit-waits-for-the-whole) → landed
 - [Score an aborted build cell as a failed score, not a penalty fill](#score-an-aborted-build-cell-as-a-failed-a) → un
-- [Script-owned fan-out (`next-task.mjs --slots`)](#script-owned-fan-out-next-task-mjs) → nog
+- [Script-owned fan-out (`next-task.mjs --slots`)](#script-owned-fan-out-next-task-mjs) → worse
 - [Script stdout contract: a few lines by default, one `ERROR <reason>` line per failure, detail to a `.exo/*.log`, `--verbose` for the rest](#script-stdout-contract-a-few-lines-by) → un
 - [Script-written build report: `land-task.mjs --check --compose`](#script-written-build-report-land-task-mjs) → un
 - [Scripted acceptance of the fix diff replaces the second `review-branch`](#scripted-acceptance-of-the-fix-diff-replaces) → un
 - [Scripted design-eval sessions write the prompt cache at the 5-minute rate](#scripted-design-eval-sessions-on-the-5-minute-cache) → deferred
 - [Scripts print the next step](#scripts-print-the-next-step) → landed
-- [Session-text compression opt-in (B)](#session-text-compression-opt-in-b) → rej
+- [Session-text compression opt-in (B)](#session-text-compression-opt-in-b) → not-shown
 - [Shell fast path for the Stop and AskUserQuestion hooks outside a run](#shell-fast-path-for-run-no-wait) → landed
 - [Short verbs: a `bin/exo-step` command (`next`, `land 3`, `wait 2,3`, `check 3`) reading plan and root from `.exo/run.json`](#short-verbs-a-bin-exo-step-command) → un
-- [A signature map of the imported modules in the task brief, with dependency files in signature-only form](#signature-map-of-imported-modules-in-the-task-brief) → rej
-- [Size cap on a whole Read of a spilled tool result](#size-cap-on-a-whole-read-of-a-spilled-result) → rej
-- [Size cap on Bash cat](#size-cap-on-bash-cat) → rej
-- [Skip the fix-diff review and probes when the fixer changed nothing](#skip-the-fix-diff-review-and) → rej
-- [Skip the hidden-check runs and turn 2 of an aborted decided cell](#skip-the-hidden-check-runs-and-turn-2-of) → nog
-- [Skip `wait-report` after a foreground `Next:` build](#skip-wait-report-after-a-foreground-next) → nog
-- [solve-hard below opus high](#solve-hard-below-opus-high) → rej
-- [Spec stops at path level and the builder reads the lines](#spec-stops-at-path-level-and-the-builder) → rej
-- [Speculative next-action execution](#speculative-next-action-execution) → rej
+- [A signature map of the imported modules in the task brief, with dependency files in signature-only form](#signature-map-of-imported-modules-in-the-task-brief) → not-shown
+- [Size cap on a whole Read of a spilled tool result](#size-cap-on-a-whole-read-of-a-spilled-result) → not-shown
+- [Size cap on Bash cat](#size-cap-on-bash-cat) → not-shown
+- [Skip the fix-diff review and probes when the fixer changed nothing](#skip-the-fix-diff-review-and) → not-shown
+- [Skip the hidden-check runs and turn 2 of an aborted decided cell](#skip-the-hidden-check-runs-and-turn-2-of) → not-shown
+- [Skip `wait-report` after a foreground `Next:` build](#skip-wait-report-after-a-foreground-next) → not-shown
+- [solve-hard below opus high](#solve-hard-below-opus-high) → worse
+- [Spec stops at path level and the builder reads the lines](#spec-stops-at-path-level-and-the-builder) → not-shown
+- [Speculative next-action execution](#speculative-next-action-execution) → not-shown
 - [Speculative pathfinder: fan out the wave with Task 1 and hold landings until it lands](#speculative-pathfinder-fan-out-the-wave-with) → un
 - [Stall hedging (cancel and resend a stalled request)](#stall-hedging-cancel-and-resend-a-stalled) → un
 - [Start reviews without waiting for the gate](#start-reviews-without-waiting-for-the-gate) → landed
-- [Swap the option order in the ideas judge](#swap-the-option-order-in-the-ideas-judge) → rej
-- [Symbol slice for review-branch: each hunk widened to its enclosing symbol, plus its callers and covering tests](#symbol-slice-for-review-branch) → rej
+- [Swap the option order in the ideas judge](#swap-the-option-order-in-the-ideas-judge) → not-shown
+- [Symbol slice for review-branch: each hunk widened to its enclosing symbol, plus its callers and covering tests](#symbol-slice-for-review-branch) → not-shown
 - [The dispatch carries the read set](#the-dispatch-carries-the-read-set) → un
 - [`thinking: between_tools` for mechanical agents](#thinking-between-tools-for-mechanical-agents) → un
-- [Trim passing runner output to its tail](#trim-passing-runner-output-to-its) → rej
-- [Two-line build-task dispatch prompt and Block-form task numbers](#two-line-build-task-dispatch-prompt) → nog
-- [Verdict-first review output with a finding cap and a `--diff-only` scope for the fix-diff review](#verdict-first-review-output-with-a-finding) → nog
-- [Verify in a fresh subagent](#verify-in-a-fresh-subagent) → rej
+- [Trim passing runner output to its tail](#trim-passing-runner-output-to-its) → not-shown
+- [Two-line build-task dispatch prompt and Block-form task numbers](#two-line-build-task-dispatch-prompt) → not-shown
+- [Verdict-first review output with a finding cap and a `--diff-only` scope for the fix-diff review](#verdict-first-review-output-with-a-finding) → not-shown
+- [Verify in a fresh subagent](#verify-in-a-fresh-subagent) → not-shown
 - [`verify.mjs` runs the reviewer's mechanical rules](#verify-mjs-runs-the-reviewer-s-mechanical) → un
-- [Verify scripts print the chained next step](#verify-scripts-print-the-chained-next-step) → rej
+- [Verify scripts print the chained next step](#verify-scripts-print-the-chained-next-step) → not-shown
 - [Benchmark cells let git refresh its xcrun cache](#xcrun-cache-in-benchmark-cells) → landed
 
 ## Not landed, or no measured gain

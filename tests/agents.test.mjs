@@ -254,9 +254,9 @@ test('task-runner dispatches every build and repair in the foreground and waits 
   assert.doesNotMatch(unit.body, /notification resumes|notified/);
 });
 
-test('task-runner runs on its own kind, at sonnet high', () => {
+test('task-runner runs on its own kind, at sonnet medium', () => {
   assert.equal(kindTable.agents['agents/task-runner.md'].kind, 'task-runner');
-  assert.deepEqual(kindTable.kinds['task-runner'], { model: 'sonnet', effort: 'high' });
+  assert.deepEqual(kindTable.kinds['task-runner'], { model: 'sonnet', effort: 'medium' });
 });
 
 test('only build-task and doc-task hold a retry cell, above their on cell', () => {

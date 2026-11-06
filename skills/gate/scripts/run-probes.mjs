@@ -5,13 +5,14 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { fixerMark } from '#fixer-mark';
 import { appendLedger, latestRound, parseFinding } from './merge-reviews.mjs';
 
-const FIELD_LINE = /^\s*(Probe|Class|Sweep|Guard):\s*(.*)$/;
+const FIELD_LINE = /^\s*(Probe|Class|Sweep|Guard|Before):\s*(.*)$/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
 const TURN_CAP = 'turn cap';
+const PREPASS_REASON = 'probe passed before fix';
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
-Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding. Appends a fixed row to <root>/.exo/review-ledger.jsonl for each passing finding and a declined row, with the reason, for each finding marked reported: <reason> other than turn cap.
-A finding line starts with <file>:<line>; the Probe:, Class:, Sweep: and Guard: lines under it belong to it, in any order. Any other line ends the finding, so a field line under prose belongs to no finding.
+Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding. A fixed finding with Before: pass (its Probe already passed before the fix) is not rerun: it prints DEMOTED-PREPASS and appends a declined row. Appends a fixed row to <root>/.exo/review-ledger.jsonl for each passing finding and a declined row, with the reason, for each finding marked reported: <reason> other than turn cap.
+A finding line starts with <file>:<line>; the Probe:, Class:, Sweep:, Guard: and Before: lines under it belong to it, in any order. Any other line ends the finding, so a field line under prose belongs to no finding.
 A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding); a fixed finding with no Probe: line under it prints FAIL probe (no Probe line). Exits 1 on any FAIL.`;
 
 function findingBlocks(report) {
@@ -31,7 +32,7 @@ function findingBlocks(report) {
 
 export function fixedProbes(report) {
   return findingBlocks(report).flatMap(({ finding, mark, fields }) => {
-    if (mark?.state === 'fixed') return [{ finding, command: fields.Probe || null, sweep: fields.Sweep || null }];
+    if (mark?.state === 'fixed') return [{ finding, command: fields.Probe || null, sweep: fields.Sweep || null, prepass: fields.Before === 'pass' }];
     if (fields.Probe !== undefined && mark === null) return [{ finding, command: null, unmarked: true }];
     return [];
   });
@@ -44,9 +45,11 @@ function runProbe(command, root, { sweep = false } = {}) {
   return { passed, output: result.error ? `${result.error.message}\n${output}` : output };
 }
 
-function ledgerState(finding, state, root) {
+function ledgerState(finding, root, { state, reason }) {
   const parsed = parseFinding(finding);
-  if (parsed !== null) appendLedger(root, [{ ...parsed, state }], latestRound(root));
+  if (parsed === null) return;
+  const row = reason === undefined ? { ...parsed, state } : { ...parsed, state, reason };
+  appendLedger(root, [row], latestRound(root));
 }
 
 function declinedRows(report) {
@@ -59,7 +62,12 @@ export function runProbes(report, root) {
   let allPassed = true;
   const declined = declinedRows(report);
   if (declined.length > 0) appendLedger(root, declined, latestRound(root));
-  for (const { finding, command, sweep, unmarked } of fixedProbes(report)) {
+  for (const { finding, command, sweep, unmarked, prepass } of fixedProbes(report)) {
+    if (prepass && command !== null) {
+      lines.push(`DEMOTED-PREPASS: ${finding}`);
+      ledgerState(finding, root, { state: 'declined', reason: PREPASS_REASON });
+      continue;
+    }
     if (command === null) {
       lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding: add its Probe: line, or mark reported: <reason> when no commit repaired it'}): ${finding}`);
       allPassed = false;
@@ -70,7 +78,7 @@ export function runProbes(report, root) {
     const swept = probe.passed && sweep !== null ? runProbe(sweep, root, { sweep: true }) : null;
     if (swept !== null) lines.push(`${swept.passed ? 'PASS' : 'FAIL'} probe (sweep ${sweep}): ${finding}`);
     const failed = [probe, swept].filter((result) => result !== null && !result.passed);
-    if (failed.length === 0) ledgerState(finding, 'fixed', root);
+    if (failed.length === 0) ledgerState(finding, root, { state: 'fixed' });
     for (const { output } of failed) if (output) lines.push(output);
     if (failed.length > 0) allPassed = false;
   }

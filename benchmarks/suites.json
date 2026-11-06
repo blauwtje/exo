@@ -246,6 +246,16 @@
         "--test",
         "tests/benchmark-value-reference.test.mjs"
       ]
+    },
+    {
+      "id": "session-stats",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Real-session counts: medians and mad of turns, tool calls, dispatches and check runs before and after a change.",
+      "basis": "Counts come from recorded sessions and move with each change; the target is a lower median, not a held pass rate.",
+      "entries": [
+        "benchmarks/session-stats.mjs"
+      ]
     }
   ]
 }

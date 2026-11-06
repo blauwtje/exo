@@ -66,7 +66,8 @@ test('fixedProbes reads fixed and reported marks from a fixer-written file', () 
   assert.deepEqual(fixedProbes(FIXER_WRITTEN), [{
     finding: FIXER_WRITTEN.split('\n')[0],
     command: 'grep -c "manager subagent" lib/context-limits.mjs',
-    sweep: 'grep -L "manager subagent" lib/context-limits.mjs'
+    sweep: 'grep -L "manager subagent" lib/context-limits.mjs',
+    prepass: false
   }]);
 });
 

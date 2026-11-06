@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { existsSync } from 'node:fs';
-import { commonDir, createWorktree, mainCheckout, relativeFor } from '../lib/checkout.mjs';
+import { commonDir, createWorktree, mainCheckout, relativeFor, seedCaches } from '../lib/checkout.mjs';
 import { withLandLock } from '../lib/land-lock.mjs';
 import { applyPick } from '../lib/workspace.mjs';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
@@ -158,4 +158,29 @@ test('remove-worktree refuses an untracked file outside .exo and docs/specs and 
     return true;
   });
   assert.equal(existsSync(path.join(worktree, 'notes.txt')), true);
+});
+
+async function lockedRepository(worktreeLock) {
+  const root = await gitRepository({ '.gitignore': 'node_modules/\n', 'package-lock.json': '{"a":1}\n' });
+  await fs.mkdir(path.join(root, 'node_modules', 'dep'), { recursive: true });
+  await fs.writeFile(path.join(root, 'node_modules', 'dep', 'index.js'), 'x\n');
+  const where = path.join(root, '.worktrees', 'topic');
+  git(root, 'worktree', 'add', '-q', '-b', 'topic', where);
+  if (worktreeLock) await fs.writeFile(path.join(where, 'package-lock.json'), worktreeLock);
+  return { root, where };
+}
+
+test('createWorktree clones node_modules when the lockfile hash matches', async () => {
+  const { root, where } = await lockedRepository();
+  await fs.rm(where, { recursive: true, force: true });
+  git(root, 'worktree', 'prune');
+  const done = createWorktree(root, where, ['worktree', 'add', '-q', '-b', 'again', where]);
+  assert.equal(done.ok, true);
+  assert.equal(await fs.readFile(path.join(where, 'node_modules', 'dep', 'index.js'), 'utf8'), 'x\n');
+});
+
+test('createWorktree seeds nothing when the lockfile hash differs', async () => {
+  const { root, where } = await lockedRepository('{"a":2}\n');
+  assert.deepEqual(seedCaches(root, where), []);
+  assert.equal(existsSync(path.join(where, 'node_modules')), false);
 });

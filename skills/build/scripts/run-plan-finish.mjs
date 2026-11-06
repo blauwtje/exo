@@ -3,11 +3,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { appendLog } from './run-session.mjs';
 import { averageLines, receiptLines, cacheLines, deniedLines, detailLines, summaryLines } from './run-report.mjs';
+import { stopDevServer } from '../../../lib/dev-server.mjs';
 import { stopRun } from './run-plan-stops.mjs';
 
 export function finishRun(ctx, { stop, exitCode: planned, progressFile }) {
   const { say, run } = ctx;
   const exitCode = stopRun(ctx, stop, planned);
+  stopDevServer(path.join(run.logDir, 'state.json'));
   for (const line of averageLines(ctx.landedStats)) say(line);
   for (const line of receiptLines(ctx.spendLog ?? [])) say(line);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');

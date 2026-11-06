@@ -5,6 +5,7 @@ import { criterionCommand, frameOf } from '#plan-frame';
 import { isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
 import { cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
+import { failedTestFiles, isNodeTest, recordFlaky } from '../../../lib/flaky-record.mjs';
 import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
@@ -93,6 +94,16 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS)))),
     gateRuns ? runCommand(gateCommand, environmentMs('EXO_GATE_TIMEOUT_MS', GATE_TIMEOUT_MS)) : null
   ]);
+  for (const [index, run] of proofRuns.entries()) {
+    if (run.line || proofResults[index].ok || !isNodeTest(run.command)) continue;
+    const files = failedTestFiles(proofResults[index].output);
+    if (files.length === 0) continue;
+    const retried = await runCommand(`node --test ${files.join(' ')}`, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS));
+    if (!retried.ok) continue;
+    recordFlaky(root, files);
+    proofResults[index] = retried;
+    run.flaky = files;
+  }
   proofRuns.forEach((run, index) => {
     if (run.line) {
       lines.push(run.line);
@@ -101,7 +112,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     const proofRun = proofResults[index];
     if (proofRun.ok) {
       recordPass(root, run.command, proofRun.ms, undefined, proofRun.output);
-      lines.push(`PASS Task ${run.number}`);
+      lines.push(run.flaky ? `FLAKY Task ${run.number} (passed on retry: ${run.flaky.join(', ')})` : `PASS Task ${run.number}`);
     } else {
       const tool = unmarkedMcpTool(run.command, proofRun);
       const reason = tool === null ? failReason(proofRun) : `${failReason(proofRun)}, ${tool} looks like an MCP tool; write the Proof as mcp:${tool}`;

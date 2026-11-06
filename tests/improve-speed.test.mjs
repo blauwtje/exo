@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { contentKey } from '../benchmarks/baseline-pool.mjs';
-import { quickVerdict, scoreOutDir } from '../benchmarks/improve-speed.mjs';
+import { routeOf, scoreOutDir, screenIdea, verdictRecord } from '../benchmarks/improve-speed.mjs';
 import { tempDir } from './harness.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'improve-speed.mjs');
@@ -195,17 +195,33 @@ test('--dry-run without --repeat projects the one quick cell', () => {
   assert.match(run.stdout, /none of the 1 cells has a past record/);
 });
 
-const BASE = { commit: 'abc', n: 3, mean: 0.6, max: 0.8 };
+const BASE = { commit: 'abc', n: 4, mean: 0.6, max: 0.8, costs: [0.4, 0.5, 0.7, 0.8] };
 const row = (options = {}) => ({ cell: 'c', failures: [], hiddenPass: true, cost: 0.5, durationMs: 1000, ...options });
+const verdictOf = (options, step = 'build-task') => verdictRecord({ row: row(options), base: BASE, step }).verdict;
 
-test('quickVerdict rejects a failure or a cost above the base maximum and otherwise prints no SE for the single quick cell', () => {
-  assert.equal(quickVerdict(row({ failures: ['hidden tests failed'], hiddenPass: false }), BASE).verdict, 'reject');
-  assert.equal(quickVerdict(row({ cost: 0.81 }), BASE).verdict, 'reject');
-  for (const cost of [0.59, 0.7, 0.8, undefined]) assert.equal(quickVerdict(row({ cost }), BASE).verdict, 'no SE');
+test('verdictRecord is worse on a failure or a cost above the base maximum and otherwise not-shown', () => {
+  assert.equal(verdictOf({ failures: ['hidden tests failed'], hiddenPass: false }), 'worse');
+  assert.equal(verdictOf({ cost: 0.81 }), 'worse');
+  for (const cost of [0.59, 0.7, 0.8, undefined]) assert.equal(verdictOf({ cost }), 'not-shown');
 });
 
-test('quickVerdict carries the cell hidden result, cost, duration and the base', () => {
-  assert.deepEqual(quickVerdict(row(), BASE), { mode: 'quick', verdict: 'no SE', hiddenPass: true, cost_usd: 0.5, durationMs: 1000, base: BASE });
+test('routeOf sends a flow-unit step to the pool and a fixture-only step to the screen', () => {
+  assert.equal(routeOf('build-task'), 'pool');
+  assert.equal(routeOf('flaky-test'), 'screen');
+  assert.equal(routeOf('no-such-step'), null);
+});
+
+test('verdictRecord carries route, power line and runs needed from the pool noise', () => {
+  const record = verdictRecord({ row: row(), base: BASE, step: 'build-task', runs: 5 });
+  assert.equal(record.route, 'pool');
+  assert.match(record.powerLine, /^power: 5 tasks x 1 samples x 2 arms = 10 runs; an effect of 0\.06 needs \d+ tasks/);
+  assert.ok(Number.isInteger(record.runsNeeded) && record.runsNeeded >= 1);
+  assert.deepEqual(record.base, { commit: 'abc', n: 4, mean: 0.6, max: 0.8 });
+});
+
+test('verdictRecord never reports a screen route as worse and refuses an unknown step', () => {
+  assert.equal(verdictOf({ cost: 9 }, 'flaky-test'), 'not-shown');
+  assert.throws(() => verdictOf({}, 'no-such-step'), /no cell/);
 });
 
 function pooledBase(costs) {
@@ -245,12 +261,12 @@ test('flagless runs print the cell against the pooled base with its SE and no ve
   makeCell(cheap, 'ok', { record: { costUsd: 0.4, wallMs: 5000 } });
   const screened = quickRun(cheap, pool);
   assert.equal(screened.status, 0);
-  assert.match(screened.stdout, /^verdict no SE$/m);
+  assert.match(screened.stdout, /^verdict not-shown$/m);
   assert.match(screened.stdout, /"cost_usd":0.4,"durationMs":5000,"base":\{[^}]*"se":0.115,"mean":0.7,"max":0.9\}/);
   assert.match(screened.stdout, /^base cost 0.7 se 0.115 n 3$/m);
   assert.match(screened.stdout, /^measure cost 0.4 no SE n 1 excluded 0$/m);
   assert.match(screened.stdout, /^score: 2$/m);
-  assert.equal(JSON.parse(screened.stdout.split('\n').find((line) => line.startsWith('{'))).mode, 'quick');
+  assert.equal(JSON.parse(screened.stdout.split('\n').find((line) => line.startsWith('{'))).route, 'pool');
 });
 
 test('flagless runs reject a failing cell or a cost above the base and give no verdict in between', () => {
@@ -259,18 +275,18 @@ test('flagless runs reject a failing cell or a cost above the base and give no v
   makeCell(costly, 'ok', { record: { costUsd: 1.2 } });
   const rejected = quickRun(costly, pool);
   assert.equal(rejected.status, 1);
-  assert.match(rejected.stdout, /^verdict reject$/m);
+  assert.match(rejected.stdout, /^verdict worse$/m);
   const middle = fixture();
   makeCell(middle, 'ok', { record: { costUsd: 0.8 } });
   const unjudged = quickRun(middle, pool);
   assert.equal(unjudged.status, 0);
-  assert.match(unjudged.stdout, /^verdict no SE$/m);
+  assert.match(unjudged.stdout, /^verdict not-shown$/m);
   const failing = fixture();
   makeCell(failing, 'bad', { record: { costUsd: 0.4, hiddenPass: false } });
   const failed = quickRun(failing, pool);
   assert.equal(failed.status, 1);
   assert.match(failed.stdout, /^FAIL bad hidden tests failed$/m);
-  assert.match(failed.stdout, /^verdict reject$/m);
+  assert.match(failed.stdout, /^verdict worse$/m);
 });
 
 test('a flagless run starts as many cells as --repeat asks and one without it', () => {
@@ -297,4 +313,39 @@ test('a flagless run with no pooled base refuses before any cell and names basel
   assert.equal(run.status, 2);
   assert.match(run.stderr, /baseline-pool\.mjs add/);
   assert.doesNotMatch(run.stdout, /verdict/);
+});
+
+const armRows = (base, candidate) => (arm, seed) => ({ pathCalls: arm === 'base' ? base[seed - 1] : candidate[seed - 1], cost: 1 });
+
+test('a screen runs 5 seed pairs and is better when the paired proxy count drops', () => {
+  const record = screenIdea({ step: 'flaky-test', runArm: armRows([10, 12, 11, 13, 12], [7, 8, 8, 9, 9]), pairCostUsd: 2, capUsd: 20 });
+  assert.equal(record.route, 'screen');
+  assert.equal(record.n, 5);
+  assert.equal(record.pairs.length, 5);
+  assert.equal(record.spendUsd, 10);
+  assert.equal(record.verdict, 'better');
+});
+
+test('a screen whose estimate exceeds the cap does not start and is not-shown', () => {
+  const runArm = () => assert.fail('no arm may run');
+  const record = screenIdea({ step: 'flaky-test', runArm, pairCostUsd: 30, capUsd: 20 });
+  assert.equal(record.verdict, 'not-shown');
+  assert.equal(record.stopped, 'cap');
+  assert.equal(record.pairs.length, 0);
+});
+
+test('a screen whose 5-pair estimate passes the cap does not start, and a cap of 0 turns it off', () => {
+  const runArm = armRows([10, 12, 11, 13, 12], [1, 1, 1, 1, 1]);
+  const partial = screenIdea({ step: 'flaky-test', runArm, pairCostUsd: 2, capUsd: 5 });
+  assert.equal(partial.pairs.length, 0);
+  assert.equal(partial.stopped, 'cap');
+  assert.equal(partial.verdict, 'not-shown');
+  const off = screenIdea({ step: 'flaky-test', runArm, pairCostUsd: 2, capUsd: 0 });
+  assert.equal(off.stopped, 'off');
+  assert.equal(off.pairs.length, 0);
+});
+
+test('the default cap is ideaScreenCapUsd from run defaults', () => {
+  const record = screenIdea({ step: 'flaky-test', runArm: () => assert.fail('no arm may run'), pairCostUsd: 21 });
+  assert.equal(record.capUsd, 20);
 });

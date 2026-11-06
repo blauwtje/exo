@@ -130,7 +130,7 @@ test('the mde script prints the power line', () => {
 
 test('the planning tunables come from defaults.eval and a user run.json overrides them', () => {
   const home = tempDir('eval-defaults-');
-  assert.deepEqual(evalDefaults(home), { targetEffect: 0.03, alpha: 0.05, power: 0.8, pairedCorrelation: 0.5, calibrationMinLabels: 30, calibrationKappaFloor: 0.6, graduationRuns: 20, realFailuresMin: 20 });
+  assert.deepEqual(evalDefaults(home), { targetEffect: 0.03, alpha: 0.05, power: 0.8, pairedCorrelation: 0.5, calibrationMinLabels: 30, calibrationKappaFloor: 0.6, graduationRuns: 20, realFailuresMin: 20, ideaScreenCapUsd: 20, ideaConfirmCapUsd: 100 });
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { eval: { targetEffect: 0.05, alpha: 0.1, power: 0.9, pairedCorrelation: 0.25 } } }));
   assert.equal(evalDefaults(home).graduationRuns, 20);
