@@ -9,10 +9,10 @@ import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
-import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
+import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, formatCompliance, ideaBrief, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
 import { tempDir } from './harness.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner', 'general-build', 'general-read'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner', 'general-build', 'general-read', 'ideate-worker'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }
@@ -498,4 +498,18 @@ test('the shipped orchestrator profile predicts each recorded round-1 setting wi
     assert.ok(Math.abs(usd / meanUsd - 1) < 0.15, `${setting} usd ${usd} vs ${meanUsd}`);
     assert.ok(Math.abs(wall / meanWall - 1) < 0.15, `${setting} wall ${wall} vs ${meanWall}`);
   }
+});
+
+test('ideaBrief follows the ideate worker brief and formatCompliance scores returned lines', () => {
+  const question = { persona: 'Minimalist', question: 'Q?', banned: ['a', 'b', 'c'], grounding: 'G', ideas: 5 };
+  const brief = ideaBrief(question);
+  assert.match(brief, /^exo-kind: ideate\nPersona: Minimalist\nQuestion: Q\?\nDo not propose: a; b; c\nGrounding: G\nIdeas: 5\n/);
+  assert.equal(formatCompliance('Minimalist-1: Idea. One sentence. p=0.05\nstray line'), 0.5);
+  assert.equal(formatCompliance(''), 0);
+});
+
+test('dryRunText adds a power line for ideate-worker', () => {
+  const jobs = ['q1', 'q2'].flatMap((fixture) => [1, 2].flatMap((run) => [{ model: 'sonnet', effort: 'low' }, { model: 'opus', effort: 'low' }].map((candidate) => ({ agent: 'ideate-worker', candidate, fixture, run }))));
+  const config = { 'ideate-worker': { profile: { input: 1, output: 1, wallS: 1 } } };
+  assert.match(dryRunText(jobs, [], config), /^ideate-worker power: /m);
 });

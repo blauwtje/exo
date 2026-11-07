@@ -268,6 +268,11 @@ node benchmarks/agent-tier.mjs --tier full             # 3 fixtures per agent, w
 node benchmarks/agent-tier.mjs --agent locate-code --candidate sonnet:low --candidate haiku:medium   # one agent, chosen candidates
 node benchmarks/agent-tier.mjs --max-usd 3             # stops starting sessions at the cap, writes the results so far, exits 1
 node benchmarks/agent-tier.mjs --agent orchestrator --tier full --runs 3   # every fixture 3 times per candidate, with a spread per cell
+node benchmarks/agent-tier.mjs --agent ideate-worker --tier full --runs 3 --max-usd 8 --candidate sonnet:low --candidate sonnet:medium --candidate opus:low --transcripts .exo/ideate-worker/transcripts   # ideate-worker: 4 questions, 3 runs per variant
+node benchmarks/agent-tier.mjs --agent ideate-worker --candidate sonnet:low --candidate sonnet:medium --candidate opus:low --transcripts .exo/ideate-worker/transcripts   # ideate-worker quick: question 1 once per variant, writes agent-tier-quick.json
+node benchmarks/ideate-worker-score.mjs --dry-run      # no session: estimated USD and power line for the blind pairwise judge
+node benchmarks/ideate-worker-score.mjs --results benchmarks/results/agent-tier-quick.json --transcripts .exo/ideate-worker/transcripts   # quick: question 1 once per variant
+node benchmarks/ideate-worker-score.mjs --results benchmarks/results/agent-tier-full.json --transcripts .exo/ideate-worker/transcripts --tier full --max-usd 3   # all 4 questions, 3 repeats, judge pass
 ```
 
 Flags: `--agent <name>` (repeatable, default every agent), `--tier quick|full` (default `quick`), `--candidate <model:effort>` (repeatable, replaces the default list), `--max-usd`, `--concurrency` (default 2), `--runs` (default 1, repeats of every fixture per candidate), `--transcripts` (raw stream of each session, one file per fixture and run), `--out`, `--dry-run`. Exit codes: 0 done, 1 sessions skipped by `--max-usd` or a failed run, 2 usage error.

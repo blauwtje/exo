@@ -61,5 +61,10 @@
     "metric": "expected-file recall",
     "fixtures": { "quick": ["context-limit-note"], "full": ["context-limit-note", "model-kinds", "check-cache", "speed-ledger"] },
     "profile": { "input": 20000, "cacheRead": 100000, "output": 4000, "wallS": 20 }
+  },
+  "ideate-worker": {
+    "metric": "idea lines in format",
+    "fixtures": { "quick": ["q1"], "full": ["q1", "q2", "q3", "q4"] },
+    "profile": { "input": 8000, "cacheRead": 20000, "output": 2500, "wallS": 30 }
   }
 }

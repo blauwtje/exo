@@ -11,7 +11,7 @@ import { makeDefaultOptionsHome } from '#default-options-home';
 import { EFFORTS, readKindTable } from '#model-kinds';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { usageCounts } from '#token-weights';
-import { clusteredMeanCi } from '../lib/eval-stats.mjs';
+import { clusteredMeanCi, powerLine } from '../lib/eval-stats.mjs';
 import { pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { claudeSession, fixtureFiles, gradedSession, inPool, readFixture, runAgent } from './locate-recall.mjs';
 import { countsCost } from './pricing.mjs';
@@ -30,6 +30,7 @@ const REVIEW_ROOT = path.join(ROOT, 'benchmarks/agent-tier/review');
 const AGENT_VALUE_ROOT = path.join(ROOT, 'benchmarks/agent-tier/value');
 const ORCHESTRATOR_ROOT = path.join(ROOT, 'benchmarks/agent-tier/orchestrator');
 const TASK_RUNNER_ROOT = path.join(ROOT, 'benchmarks/agent-tier/task-runner');
+const IDEATE_QUESTIONS = path.join(ROOT, 'benchmarks/agent-tier/ideate/questions.json');
 const RESULTS = path.join(ROOT, 'benchmarks/results');
 const SESSION_MS = environmentMs('EXO_AGENT_TIER_SESSION_MS', 600_000);
 const MODEL_LADDER = ['haiku', 'sonnet', 'opus'];
@@ -148,8 +149,13 @@ export function dryRunText(jobs, recorded, config, concurrency = 2) {
     const labels = [...new Set(own.map((job) => labelOf(job.candidate)))].join(' ');
     return `${agent}: ${own.length} sessions, est $${estimateTotal(own, recorded, config).toFixed(2)}, est wall ${wallText(estimateWallTotalS(own, recorded, config, concurrency))} at concurrency ${concurrency} (${labels})`;
   });
+  const powerLines = agents.filter((agent) => agent === 'ideate-worker').map((agent) => {
+    const own = jobs.filter((job) => job.agent === agent);
+    const arms = new Set(own.map((job) => labelOf(job.candidate))).size;
+    return `${agent} ${powerLine({ tasks: new Set(own.map((job) => job.fixture)).size, samples: Math.max(...own.map((job) => job.run ?? 1)), arms })}`;
+  });
   const total = `total: ${jobs.length} sessions, est $${estimateTotal(jobs, recorded, config).toFixed(2)}, est wall ${wallText(estimateWallTotalS(jobs, recorded, config, concurrency))} at concurrency ${concurrency}`;
-  return `${[...lines, total, 'note: a recorded session of the same agent, model, effort and fixture in --out or --history wins; else the profile, whose usdScale and wallScale model effort where it lists them'].join('\n')}\n`;
+  return `${[...lines, ...powerLines, total, 'note: a recorded session of the same agent, model, effort and fixture in --out or --history wins; else the profile, whose usdScale and wallScale model effort where it lists them'].join('\n')}\n`;
 }
 
 export function flaggedShare(plants, findingsText) {
@@ -402,6 +408,36 @@ function fixSession(ctx, job, fixture) {
   });
 }
 
+const IDEA_LINE = /^.+-\d+: .*\bp=/;
+
+export function ideaBrief(question) {
+  return [
+    'exo-kind: ideate',
+    `Persona: ${question.persona}`,
+    `Question: ${question.question}`,
+    `Do not propose: ${question.banned.join('; ')}`,
+    `Grounding: ${question.grounding}`,
+    `Ideas: ${question.ideas}`,
+    'Give each idea a title, one sentence and a probability p= that an average answer would say it. At least 3 ideas have p of 0.10 or lower.'
+  ].join('\n');
+}
+
+export function formatCompliance(text) {
+  const lines = text.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+  if (lines.length === 0) return 0;
+  return lines.filter((line) => IDEA_LINE.test(line)).length / lines.length;
+}
+
+function ideateSession(ctx, job, question) {
+  return inCase(async (base, tmp) => {
+    const cwd = path.join(base, 'scratch');
+    fs.mkdirSync(cwd);
+    const outcome = await runIn(ctx, job, { prompt: ideaBrief(question), cwd, base, tmp });
+    if (outcome.error) return { outcome };
+    return { outcome, score: formatCompliance(outcome.text ?? '') };
+  });
+}
+
 const NO_TRANSCRIPT = () => ({ findings: [], checks: 0 });
 
 export function valueScore(scored, graded) {
@@ -454,6 +490,7 @@ const EXECUTORS = {
   'fix-review': fixSession,
   'general-read': locateSession,
   'general-build': valueSession((task, repository) => `${briefText(task)}\nCheckout: ${repository}.`),
+  'ideate-worker': ideateSession,
   'build-task': valueSession((task, repository) => `Brief: ${repository}/.exo/brief.md. Checkout: ${repository}.`, { prepare: writeBrief }),
   'solve-hard': valueSession(checkoutPrompt),
   orchestrator: valueSession(checkoutPrompt, { transcript: orchestratorTranscript }),
@@ -470,6 +507,7 @@ const FIXTURE_SOURCES = {
   'fix-review': replayFixtures,
   'general-read': () => new Map(readFixture().briefs.map((brief) => [brief.id, brief])),
   'general-build': valueFixtures,
+  'ideate-worker': () => new Map(readJson(IDEATE_QUESTIONS).map((question) => [question.id, question])),
   'build-task': valueFixtures,
   'solve-hard': valueFixtures,
   orchestrator: () => byFixtureId(loadValueTasks(ORCHESTRATOR_ROOT)),

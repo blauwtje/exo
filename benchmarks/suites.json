@@ -75,7 +75,8 @@
       "basis": "Scored by judges and compared per variant (results/2026-10-18-ideas-baseline.md and the ideas-spec runs); each variant is an attempt to beat the baseline.",
       "entries": [
         "benchmarks/ideas.mjs",
-        "benchmarks/ideas-score.mjs"
+        "benchmarks/ideas-score.mjs",
+        "benchmarks/ideate-worker-score.mjs"
       ]
     },
     {

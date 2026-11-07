@@ -11,6 +11,11 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- The research page fetch reads public Google Sheets through their CSV export route.
+- The research page fetch detects Cloudflare challenges, age gates, non-public and empty pages, labels them `status: blocked <reason>`, saves no gate text and prints the `--save` command for the user.
+- A blocked research page falls back to the Wayback snapshot (labelled `archived <date>`), the Khoros board feed, then an optional Playwright render when `playwright` is installed, each checked again for challenges.
+- The research page fetch follows the same-origin confirm link or form of an age gate on a public page.
+- `node benchmarks/ideate-worker-score.mjs` judges the `ideate-worker` at sonnet:low, sonnet:medium and opus:low from the `agent-tier.mjs --agent ideate-worker` transcripts (`--dry-run`, quick by default, `--tier full`, `--max-usd`).
 - `node benchmarks/ideate-tokens.mjs` measures one ideate run per mode (`--dry-run`, quick tier by default, `--tier full --confirm` for both modes) and writes token totals per model to `benchmarks/results/ideate-tokens.md`.
 - GitHub search hits from `research` carry the repository description on stdout and in the source ledger.
 - `/exo:ideate <design question> [fast]` writes the top 3 ideas to `.exo/ideate/<slug>/report.md` with a source, a risk, a first step and an already-exists mark from GitHub, through persona subagents on the new sonnet `ideate-worker` agent.
