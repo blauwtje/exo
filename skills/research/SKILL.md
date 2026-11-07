@@ -46,7 +46,6 @@ Today: <date>
 Sources: <routes from references/sources.md>
 Budget: <10-15> tool calls
 Fetches: <n>
-Result: .exo/research/<slug>/worker-<k>.md
 Return the claim ids you stored and the gaps, at most 1,500 tokens, no page text.
 ```
 

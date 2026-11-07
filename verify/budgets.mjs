@@ -26,7 +26,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 592, measured: '2026-11-06'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 3946, measured: '2026-11-04' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 4072, measured: '2026-11-07' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-budgets.mjs fails above it.
 // Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.

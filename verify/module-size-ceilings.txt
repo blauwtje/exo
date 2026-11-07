@@ -10,7 +10,7 @@
 8364 benchmarks/build-phases.mjs
 10136 benchmarks/cell-usage.mjs
 20108 benchmarks/checkpoint-fork.mjs
-21536 benchmarks/decided.mjs
+21542 benchmarks/decided.mjs
 10863 benchmarks/delegation-readout.mjs
 11833 benchmarks/flow-report.mjs
 16857 benchmarks/ideas-score.mjs
@@ -19,7 +19,7 @@
 12979 benchmarks/improve-all-score.mjs
 10576 benchmarks/improve-real-copy.mjs
 20371 benchmarks/improve-real.mjs
-18202 benchmarks/improve-speed.mjs
+17558 benchmarks/improve-speed.mjs
 15233 benchmarks/improve-vs-goal.mjs
 12174 benchmarks/judge-calibration.mjs
 44290 benchmarks/lean-gates-metrics.mjs

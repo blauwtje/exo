@@ -8,14 +8,14 @@ import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { mean, readJson } from './basics.mjs';
 import { NOT_SHOWN } from './speed-ledger.mjs';
+import { firstEditCalls, verifyFailure } from './transcript-reads.mjs';
 import { filesNamed } from './tree-files.mjs';
 
 const CELL_STEPS = readJson(path.join(path.dirname(fileURLToPath(import.meta.url)), 'cell-steps.json'));
 const DEFAULT_STEP = 'build-task';
 const RELATIVE_EFFECT = 0.1;
-const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost'];
-const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>] [--step <step>] [--base-checkout <checkout>]';
-const FAILED_LINE = /^(FAIL|UNPLANNED)/m;
+const MEASURES = ['pathCalls', 'calls', 'outputTokens', 'fixRounds', 'cost', 'firstEditCalls'];
+const USAGE = 'usage: node benchmarks/improve-speed.mjs <checkout> | --from <out dir> [--measure pathCalls|calls|outputTokens|fixRounds|cost|firstEditCalls] [--repeat 15] [--concurrency 5] [--dry-run] [--full] [--base <commit>] [--claude-version <version>] [--pool <file>] [--step <step>] [--base-checkout <checkout>]';
 const CELL_ID = 'flow-unit';
 const FULL_REPEAT = 15;
 const SCREEN_PAIRS = 5;
@@ -63,7 +63,9 @@ function subagentFiles(directory) {
 function subagentOf(directory, name) {
   const agent = agentOf(readLines(path.join(directory, name)));
   const metaFile = path.join(directory, name.replace(/\.jsonl$/, '.meta.json'));
-  agent.parent = fs.existsSync(metaFile) ? readJson(metaFile).parentAgentId : undefined;
+  const meta = fs.existsSync(metaFile) ? readJson(metaFile) : {};
+  agent.parent = meta.parentAgentId;
+  agent.type = meta.agentType;
   return agent;
 }
 
@@ -92,23 +94,6 @@ export function pathCalls(agent) {
   return agent.callIds.size + groups.reduce((sum, group) => sum + Math.max(...group.map(pathCalls)), 0);
 }
 
-function toolBlocks(entries) {
-  return entries.flatMap((entry) => (Array.isArray(entry.message?.content) ? entry.message.content : []));
-}
-
-const isVerifyRun = (block) => block.type === 'tool_use' && block.name === 'Bash' && /(verify|gate)\.mjs/.test(String(block.input?.command));
-
-const resultText = (content) => (Array.isArray(content) ? content.map((part) => part.text ?? '').join('\n') : String(content ?? ''));
-
-export function verifyFailure(main) {
-  const blocks = toolBlocks(main.entries);
-  const last = blocks.filter(isVerifyRun).at(-1);
-  if (!last) return 'verify gate not run';
-  const result = blocks.findLast((block) => block.type === 'tool_result' && block.tool_use_id === last.id);
-  if (!result || result.is_error || FAILED_LINE.test(resultText(result.content))) return 'verify gate failed';
-  return null;
-}
-
 function recordFailures(record) {
   const failures = [];
   if (record.exitCode !== 0) failures.push('exit code not 0');
@@ -124,7 +109,7 @@ function transcriptFailures(usage) {
   const { main, all } = loadAgents(usage.transcript);
   const gate = verifyFailure(main);
   const calls = new Set(all.flatMap((agent) => [...agent.callIds])).size;
-  return { failures: gate ? [gate] : [], calls, pathCalls: pathCalls(main) };
+  return { failures: gate ? [gate] : [], calls, pathCalls: pathCalls(main), firstEditCalls: firstEditCalls(all) };
 }
 
 export function cellRow(directory) {
@@ -134,7 +119,7 @@ export function cellRow(directory) {
   const measured = transcriptFailures(usage);
   const failures = [...recordFailures(record), ...measured.failures];
   const fixRounds = (usage?.subagents ?? []).filter((type) => type === 'exo:fix-review').length;
-  return { cell: path.basename(directory), failures: [...new Set(failures)], aborted: record.exitCode !== 0 || record.timedOut === true, hiddenPass: record.hiddenPass, durationMs: record.wallMs, outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls };
+  return { cell: path.basename(directory), failures: [...new Set(failures)], aborted: record.exitCode !== 0 || record.timedOut === true, hiddenPass: record.hiddenPass, durationMs: record.wallMs, outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls, firstEditCalls: measured.firstEditCalls };
 }
 
 function measureSpread(rows, name) {

@@ -11,6 +11,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- `improve-speed.mjs` scores `--measure firstEditCalls`, the mean build-task tool calls before the first edit per cell.
+- `usage-count.mjs` counts how often each skill, agent, hook and lib file is loaded, read or invoked across session transcripts, with `--all-projects` and `--sessions`.
 - The research page fetch reads public Google Sheets through their CSV export route.
 - The research page fetch detects Cloudflare challenges, age gates, non-public and empty pages, labels them `status: blocked <reason>`, saves no gate text and prints the `--save` command for the user.
 - A blocked research page falls back to the Wayback snapshot (labelled `archived <date>`), the Khoros board feed, then an optional Playwright render when `playwright` is installed, each checked again for challenges.
@@ -25,6 +27,10 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- `exo:prompt` reads its request-kind and model rules from references per request, and `validate:static` checks that skill selector pointers resolve and that no moved line stays duplicated.
+- The decided-for-you heading follows the user's language, and the decided benchmark parser accepts it.
+- Before a safe default, recommendation or question, exo checks every option against the criteria the request or repo sets and takes the winner, and each decided line states `because <criterion>`.
+- The research worker brief drops its `Result:` line, because workers store claims in `claims.jsonl` and write no result file.
 - The `ideate-worker` runs at sonnet medium instead of low, because an earlier idea worker at low effort came up with weaker ideas and cost 1.9x more over its rounds.
 - The general build worker drops to sonnet low because agent-tier general-build and general-read show equal or better pass at about 15% lower cost.
 - A capped agent Bash result names its saved log only when the output is cut, so each uncut result drops a 131-byte `output log:` line that every later turn re-read (about 10 M tokens a week in this repo).

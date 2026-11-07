@@ -51,17 +51,8 @@ A rewrite that drops a requirement changes the ask, so these stay.
 Add only what the request kind needs and the code shows. Do not add a guessed fact, such as a cause, a requirement or a file not found.
 
 Apply a kind rule only when the prompt is that kind:
-- Fix: add the symptom, where the code read puts it, and "fix the cause; do not silence the error, since a silenced error leaves the bug in place".
-- Fix with a test command found: add "reproduce it with a failing test first, so the test proves the fix".
-- Fix, or change or build whose success criterion runs tests: add "do not hard-code values that only make the tests pass; solve the problem in general, since tests verify correctness, not define the solution".
-- The same kinds also get "if a test is wrong, say so rather than work around it, so the test itself gets fixed".
-- Change or build: add "only make changes that are directly requested or clearly necessary, since each extra change is more to review". Name a pattern file found, and a runnable check from the repo's own test or build command.
-- Rewrite with a check or success criterion: add "show evidence of success, such as the output of each check you ran, rather than asserting it; evidence is faster to review than a rerun".
-- Visual ("better", "nicer"): add the user's visual words and any reference they gave, verbatim. Patterns and checks stay with `exo:design-ui`.
-- Research or report: name the sources to check, or add "explore broadly before acting, so the first source found does not set the answer". Add success criteria, the report's shape, and length only as the user gave it.
-- Research or report also gets "cross-check claims across sources and state confidence, since one source can be wrong".
-- Answer, plan or exploration only: the deliverable is the assessment, so add "do not edit, since the ask is an answer, not a change".
-- Review: add "flag only gaps that affect correctness or the stated requirements; treat the rest as optional, since chasing every finding leads to over-engineering".
+- Fix, change, build, rewrite with a check, or visual -> read `references/kinds-edit.md`.
+- Research, report, answer, plan, exploration or review -> read `references/kinds-report.md`.
 - Several parts: number them.
 - Only when the user's words say no one will be there to answer during the run, add "keep working until every part is done. A summary announcing a next step is not done, since a reply without a tool call stops the work".
 - Long, looping or open-ended job: add "stop after 5 rounds of change and check, or sooner when a round makes no progress; then report what is left".
@@ -98,10 +89,7 @@ Use these tags, each only when it has content, and put context and data before t
 
 ## Model
 
-Add lines for the model this session runs. For another or unknown model, use the Opus 5.5 form. Add the keep-working line only per its `## Add` rule, for every model.
-- Opus 5.5: no lines beyond the strip rules.
-- Sonnet 5.5: a named check that exercises the change, not a syntax-only check, and "name any check that could not run".
-- Fable: the shortest form, with the fewest behavior lines.
+Add lines for the model this session runs. For another or unknown model, use the Opus 5.5 form, in `references/model.md`. Add the keep-working line only per its `## Add` rule, for every model.
 
 ## References
 
@@ -109,6 +97,9 @@ Add lines for the model this session runs. For another or unknown model, use the
 |---|---|
 | `references/examples.md` | Step 3, before every rewrite. |
 | `references/note.md` | Step 4, before the note. |
+| `references/kinds-edit.md` | The request is a fix, change, build, rewrite with a check or visual. |
+| `references/kinds-report.md` | The request is research, a report, an answer, a plan, an exploration or a review. |
+| `references/model.md` | Before adding a model line. |
 
 ## Judgment
 

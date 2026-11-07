@@ -157,7 +157,7 @@ export function countQuestions(streamText) {
 
 export function listsDefaultFirst(streamText) {
   const reply = finalResult(streamText)?.result;
-  return typeof reply === 'string' && /\*\*Decided for you\*\*\s*\n\s*1\./.test(reply);
+  return typeof reply === 'string' && /\*\*[^*\n]+\*\*[ \t]*\n\s*1\.[^\n]*`\d+`/.test(reply);
 }
 
 function share(cells, predicate) {

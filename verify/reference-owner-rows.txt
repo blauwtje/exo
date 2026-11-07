@@ -53,6 +53,9 @@ skills/improve/SKILL.md references/worker-round.md
 skills/improve/SKILL.md references/worker.md
 skills/prompt/SKILL.md references/examples.md
 skills/prompt/SKILL.md references/note.md
+skills/prompt/SKILL.md references/kinds-edit.md
+skills/prompt/SKILL.md references/kinds-report.md
+skills/prompt/SKILL.md references/model.md
 skills/gate/SKILL.md references/review-rules.md
 skills/gate/SKILL.md references/triage.md
 skills/gate/SKILL.md references/repair.md

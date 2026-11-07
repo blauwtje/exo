@@ -104,6 +104,22 @@ test('pathCalls adds the largest of overlapping children and sums separate group
   assert.equal(row.calls, 2 + 2 + 4 + 3 + 2);
 });
 
+const use = (id, name, second) => ({ type: 'assistant', timestamp: stamp(second), message: { id: `u-${id}`, usage: { output_tokens: 1 }, content: [{ type: 'tool_use', id, name, input: {} }] } });
+
+test('firstEditCalls is the mean over build-task runs of the calls before the first edit, leaving out runs with no edit', () => {
+  const out = fixture();
+  const { transcript } = makeCell(out, 'f');
+  const folder = path.join(transcript.replace(/\.jsonl$/, ''), 'subagents');
+  addChild(transcript, 'a', { parent: undefined, entries: [use('a1', 'Read', 10), use('a2', 'Read', 11), use('a3', 'Edit', 12), use('a4', 'Read', 13)] });
+  addChild(transcript, 'b', { parent: undefined, entries: [use('b1', 'Read', 20), use('b2', 'Write', 21)] });
+  addChild(transcript, 'c', { parent: undefined, entries: [use('c1', 'Read', 30), use('c2', 'Read', 31)] });
+  addChild(transcript, 'd', { parent: undefined, entries: [use('d1', 'Edit', 40)] });
+  for (const id of ['a', 'b', 'c']) fs.writeFileSync(path.join(folder, `agent-${id}.meta.json`), JSON.stringify({ agentType: 'exo:build-task' }));
+  const [row] = scoreOutDir(out).rows;
+  assert.equal(row.firstEditCalls, 1.5);
+  assert.equal(scoreOutDir(out).measures.firstEditCalls, 1.5);
+});
+
 test('measures are means rounded to two decimals', () => {
   const out = fixture();
   makeCell(out, 'one', { record: { outputTokens: 1 } });
