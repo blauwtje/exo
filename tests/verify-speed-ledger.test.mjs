@@ -13,6 +13,7 @@ function verifyLedger(edit) {
   const root = tempDir('ledger-');
   fs.mkdirSync(path.join(root, 'benchmarks'));
   for (const name of ['speed-ledger.jsonl', 'speed-ledger.md']) fs.copyFileSync(path.join(ROOT, 'benchmarks', name), path.join(root, 'benchmarks', name));
+  fs.copyFileSync(path.join(ROOT, 'benchmarks', 'cell-steps.json'), path.join(root, 'benchmarks', 'cell-steps.json'));
   fs.cpSync(path.join(ROOT, 'benchmarks', 'results'), path.join(root, 'benchmarks', 'results'), { recursive: true });
   edit(path.join(root, 'benchmarks'));
   const results = [];
@@ -47,4 +48,10 @@ test('a null title and a missing markdown view are FAIL lines, not a throw', () 
   assert.match(nulled.join('\n'), /^\[FAIL\].*title is not a string/);
   const bare = verifyLedger((dir) => fs.rmSync(path.join(dir, 'speed-ledger.md')));
   assert.match(bare.join('\n'), /^\[FAIL\].*speed-ledger\.md is missing/);
+});
+
+test('a missing cell-steps file is a FAIL line, not a throw', () => {
+  const lines = verifyLedger((dir) => fs.rmSync(path.join(dir, 'cell-steps.json')));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^\[FAIL\].*cell-steps\.json/);
 });

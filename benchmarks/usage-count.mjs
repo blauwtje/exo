@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitText } from './lib/git.mjs';
+import { gitText } from '../lib/git.mjs';
 
 const ROOTS = ['skills/', 'agents/', 'hooks/', 'lib/'];
 const IMPORT_PATTERN = /(?:from\s*|import\s*\(?\s*)['"]([^'"]+)['"]/g;
@@ -166,7 +166,7 @@ export function formatTable(usage) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const root = path.dirname(fileURLToPath(import.meta.url));
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const options = parseArgs(process.argv.slice(2));
   const usage = buildUsage(root, options);
   console.log(options.json ? JSON.stringify(usage, null, 2) : formatTable(usage));

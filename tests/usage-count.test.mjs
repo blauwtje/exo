@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { buildUsage, encodeDir, parseArgs } from '../usage-count.mjs';
+import { buildUsage, encodeDir, parseArgs } from '../benchmarks/usage-count.mjs';
 import { tempDir } from './harness.mjs';
 
 const write = (file, text) => {
