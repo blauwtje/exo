@@ -20,6 +20,7 @@
     "#context-decisions": "./lib/context-decisions.mjs",
     "#context-series": "./lib/context-series.mjs",
     "#saved-outputs": "./lib/saved-outputs.mjs",
+    "#draw": "./lib/draw.mjs",
     "#data-literals": "./lib/data-literals.mjs",
     "#default-options-home": "./lib/default-options-home.mjs",
     "#derivation": "./verify/checks/derivation.mjs",

@@ -499,7 +499,7 @@ const CAP_FORMS = {
   'trailing comment': `${BIG_OUTPUT} # note`,
   exec: `exec ${BIG_OUTPUT.split(' | ')[0]}`,
   cd: `cd /tmp && ${BIG_OUTPUT}`,
-  background: `${BIG_OUTPUT} &`
+  background: `${BIG_OUTPUT} & wait`
 };
 
 test('a capped agent Bash output is cut at the result cap and keeps the exit code', async () => {

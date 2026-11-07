@@ -19,11 +19,12 @@ function fromRepo(repo) {
     url: repo.url ?? repo.html_url,
     date: (repo.updatedAt ?? repo.updated_at ?? '').slice(0, 10),
     signals: { stars: repo.stargazersCount ?? repo.stargazers_count },
+    description: repo.description,
   };
 }
 
 async function viaCli({ query, limit }, exec) {
-  const fields = 'fullName,url,updatedAt,stargazersCount';
+  const fields = 'fullName,url,updatedAt,stargazersCount,description';
   const { stdout } = await exec('gh', ['search', 'repos', query, '--limit', String(limit), '--json', fields]);
   return JSON.parse(stdout).map(fromRepo);
 }

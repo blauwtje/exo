@@ -49,14 +49,17 @@ test('reddit html answer is a blocked route', async () => {
 });
 
 test('github without a logged-in gh falls back to the REST search', async () => {
-  const body = JSON.stringify({ items: [{ full_name: 'a/b', html_url: 'https://github.com/a/b', updated_at: '2025-01-01T00:00:00Z', stargazers_count: 7 }] });
+  const body = JSON.stringify({ items: [{ full_name: 'a/b', html_url: 'https://github.com/a/b', updated_at: '2025-01-01T00:00:00Z', stargazers_count: 7, description: 'does b' }] });
   const calls = [];
   const exec = async () => {
     throw new Error('not logged in');
   };
   const context = { ...answering(body, calls), exec };
-  const [row] = await searchSource({ source: 'github', query: 'x', limit: 1, runDir: runFolder() }, context);
+  const runDir = runFolder();
+  const [row] = await searchSource({ source: 'github', query: 'x', limit: 1, runDir }, context);
   assert.equal(row.title, 'a/b');
+  assert.equal(row.description, 'does b');
+  assert.equal(readSources(runDir).at(-1).description, 'does b');
   assert.match(calls[0], /api\.github\.com/);
 });
 

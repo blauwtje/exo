@@ -11,8 +11,8 @@ export async function searchSource(request, context) {
   if (!adapter) throw new Error(`unknown source ${source}; use ${Object.keys(SOURCES).join(', ')}`);
   const hits = await adapter({ query, limit }, context);
   return hits.map((hit) => {
-    const { title, date, signals } = hit;
-    return recordSource(runDir, { url: hit.url, fields: { source, title, date, signals } });
+    const { title, date, signals, description } = hit;
+    return recordSource(runDir, { url: hit.url, fields: { source, title, date, signals, description } });
   });
 }
 
@@ -35,8 +35,8 @@ async function main(argv) {
   try {
     const request = { source: args.source, query: args.query, limit: Number(args.limit ?? DEFAULT_LIMIT), runDir: args.run };
     for (const row of await searchSource(request, {})) {
-      const { ref, title, url, date, signals } = row;
-      process.stdout.write(`${JSON.stringify({ ref, title, url, date, signals })}\n`);
+      const { ref, title, url, date, signals, description } = row;
+      process.stdout.write(`${JSON.stringify({ ref, title, url, date, signals, description })}\n`);
     }
   } catch (error) {
     if (!(error instanceof BlockedRoute)) throw error;

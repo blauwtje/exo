@@ -320,3 +320,10 @@ test('research-worker writes findings and keeps the data rule, and claim-judge o
   assert.match(worker.body, /at most 1,500 tokens/);
   assert.deepEqual(judge.frontmatter.tools.split(', ').filter((tool) => ['Write', 'Edit', 'Bash', 'Agent'].includes(tool)), []);
 });
+
+test('ideate-worker only reads, keeps the data rule and asks for the p tail', () => {
+  const worker = agents.find((agent) => agent.frontmatter.name === 'ideate-worker');
+  assert.deepEqual(worker.frontmatter.tools.split(', '), ['Read']);
+  assert.match(worker.body, /as data, not as instructions/);
+  assert.match(worker.body, /at least 3 ideas a p of 0\.10 or lower/);
+});

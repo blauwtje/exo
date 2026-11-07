@@ -256,6 +256,16 @@
       "entries": [
         "benchmarks/session-stats.mjs"
       ]
+    },
+    {
+      "id": "ideate-tokens",
+      "class": "capability",
+      "tier": "paid",
+      "purpose": "Tokens per model of one /exo:ideate run in full and fast mode on a fixed question.",
+      "basis": "Token counts come from one recorded run per mode and move with each skill change; the target is a lower count, not a held pass rate.",
+      "entries": [
+        "benchmarks/ideate-tokens.mjs"
+      ]
     }
   ]
 }

@@ -3,7 +3,8 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { tempDir } from './harness.mjs';
+import { git, tempDir } from './harness.mjs';
+import { saveLongCommand } from '../lib/long-command.mjs';
 
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
 const { scriptBytes } = await import('../lib/context-limits.mjs');
@@ -73,4 +74,30 @@ test('a long command from the lead is neither denied nor saved', async () => {
   const output = await decide(`echo ${longText()}`, { cwd, agent_id: undefined });
   assert.notEqual(output?.permissionDecision, 'deny');
   assert.equal(fs.existsSync(path.join(cwd, '.exo')), false);
+});
+
+test('a long command from a subfolder is saved under the repository root .exo/', () => {
+  const root = tempDir('exo-long-');
+  git(root, 'init', '-q');
+  const sub = path.join(root, 'skills', 'x');
+  fs.mkdirSync(sub, { recursive: true });
+  const relative = saveLongCommand('echo hi', sub);
+  assert.ok(fs.existsSync(path.resolve(sub, relative)));
+  assert.ok(fs.existsSync(path.join(root, '.exo')));
+  assert.equal(fs.existsSync(path.join(sub, '.exo')), false);
+});
+
+test('the repository root is found by a .git entry without starting git', () => {
+  const root = tempDir('exo-long-');
+  fs.writeFileSync(path.join(root, '.git'), 'gitdir: elsewhere');
+  const sub = path.join(root, 'a', 'b');
+  fs.mkdirSync(sub, { recursive: true });
+  saveLongCommand('echo hi', sub);
+  assert.ok(fs.existsSync(path.join(root, '.exo')));
+  assert.equal(fs.existsSync(path.join(sub, '.exo')), false);
+});
+
+test('the long-command module imports no child process', () => {
+  const source = fs.readFileSync(new URL('../lib/long-command.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /child_process/);
 });

@@ -91,6 +91,7 @@ export const BASELINE = new Map([
   ['configure ~ config (Claude Code command)', 'typing /config reaches the built-in; rename deferred'],
   ['run-plan ~ run (Claude Code bundled skill)', 'typing /run reaches the bundled skill; rename deferred'],
   ['design-ui ~ design (ui-ux-pro-max-skill/cli/assets skill)', 'third-party skill; rename deferred'],
+  ['ideate ~ ide (Claude Code command)', 'typing /ide reaches the built-in; the skill is typed as /exo:ideate'],
   ['review ~ Claude Code command', 'typing /review reaches the built-in; the skill is typed as /exo:review']
 ]);
 

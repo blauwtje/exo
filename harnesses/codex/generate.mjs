@@ -32,8 +32,8 @@ import { codexBody, codexMarkdown, codexOpenaiYaml, splitFrontmatter } from './r
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const GENERATED = path.posix.join('harnesses', 'codex', 'generated');
 const OVERRIDES = path.posix.join('harnesses', 'codex', 'overrides');
-const IGNORED_FILES = ['.DS_Store'];
-const READ_ONLY = ['agents/claim-judge.md', 'agents/fetch-docs.md', 'agents/locate-code.md'];
+const IGNORED_FILES = ['.DS_Store', '.exo'];
+const READ_ONLY = ['agents/claim-judge.md', 'agents/fetch-docs.md', 'agents/ideate-worker.md', 'agents/locate-code.md'];
 const OVERRIDE_HEADER = /^<!-- exo:override source-sha256=([0-9a-f]{64}) -->\n/;
 
 const hashOf = (text) => crypto.createHash('sha256').update(text).digest('hex');

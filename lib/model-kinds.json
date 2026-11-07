@@ -65,6 +65,9 @@
     "research": {
       "on": { "tier": "standard", "effort": "medium" }
     },
+    "ideate": {
+      "on": { "tier": "standard", "effort": "low" }
+    },
     "judge": {
       "on": { "tier": "fast", "effort": "low" }
     },
@@ -110,6 +113,7 @@
     "agents/find-open-points.md": { "kind": "investigate" },
     "agents/claim-judge.md": { "kind": "judge" },
     "agents/fix-review.md": { "kind": "fix-review" },
+    "agents/ideate-worker.md": { "kind": "ideate" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/orchestrator.md": { "kind": "orchestrator" },
     "agents/research-worker.md": { "kind": "research" },

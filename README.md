@@ -84,6 +84,7 @@ Other skills, written as you call them. Those with `/exo:` start only when you t
 - `design-ui`: builds the real page or component directly, asks only when it cannot build without the answer, and finishes motion, reduced motion and every state.
 - `watch`: reads videos from YouTube, TikTok, Instagram, Facebook, X and other yt-dlp sites, including 1-2 hour ones, through their captions or a local transcript of the audio, and answers, summarises or extracts from them.
 - `research`: answers a question with a short cited report from keyless web, Reddit, GitHub, Hacker News, Stack Overflow, YouTube, TikTok, podcast and paper sources; a script refuses any citation whose quote is not on the fetched page. Run it as `/exo:research <question>`.
+- `ideate`: answers a design question with the top 3 ideas, each with a source, a risk and a first step and a mark when a GitHub project already does it; persona agents generate and you rank pairwise. Run it as `/exo:ideate <design question> [fast]`.
 - `/exo:improve`: changes code in a loop against one fixed score command, keeps a commit only when the score gets better, and logs every round.
 - `/exo:review`: reviews a diff, commit, branch or pull request that has no plan with the gate reviewer, and changes nothing.
 - `/exo:check-docs`: looks up how the installed version of a library behaves.

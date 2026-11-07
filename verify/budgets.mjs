@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve', 'watch', 'review', 'research'
+  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve', 'watch', 'review', 'research', 'ideate'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -17,7 +17,7 @@ export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 2764, measured: '2026-11-03' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 // Lowered 803 -> 510 when the nine dispatched-only agents got short descriptions (round 2 merge).
-export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 566, measured: '2026-11-06' };
+export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 592, measured: '2026-11-06' };
 // The authored text of hooks/session-routing.md and hooks/session-rules.md, summed, which the session hook injects.
 // This lock covers the authored text only; SESSION_START_BYTES_LOCK below locks the whole hook output.
 // Set 1777 -> 1580 in the round 2 merge: dispatch-only rules left for hooks/dispatch-rules.md (-464),

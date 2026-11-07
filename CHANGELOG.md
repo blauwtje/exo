@@ -11,6 +11,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 
+- `node benchmarks/ideate-tokens.mjs` measures one ideate run per mode (`--dry-run`, quick tier by default, `--tier full --confirm` for both modes) and writes token totals per model to `benchmarks/results/ideate-tokens.md`.
+- GitHub search hits from `research` carry the repository description on stdout and in the source ledger.
+- `/exo:ideate <design question> [fast]` writes the top 3 ideas to `.exo/ideate/<slug>/report.md` with a source, a risk, a first step and an already-exists mark from GitHub, through persona subagents on the new sonnet `ideate-worker` agent.
 - `/exo:research <question>` answers with a short cited report from keyless web, Reddit, GitHub, Hacker News, Stack Overflow, Wikipedia, arXiv, podcast and YouTube sources through the new `research-worker` and `claim-judge` agents, and `verify.mjs` blocks the report until every quote is on its cached page and every footnote maps to a stored claim.
 - Once `suite-shadow.jsonl` shows `changedTestsTrialRuns` (run.json `defaults`, 10) consecutive full runs with no miss, a whole-suite proof runs only the changed tests, with a full run every that many runs; a miss restarts the count.
 
@@ -26,6 +29,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- The Codex adapter skips a run-state `.exo/` folder inside a skill folder, and a saved long Bash command goes to the repository root's `.exo/`, not the folder the session is in.
+- The red-green check behind `land-task` no longer crashes with `EEXIST` when the worktree seed already copied `node_modules` into its temporary tree.
 - The land lock no longer throws `spawnSync /bin/ps EPERM` inside a macOS sandbox: when `ps` cannot run it checks the owner with `process.kill(pid, 0)`.
 - A second review merge at the same HEAD keeps its round and no longer blocks as recurring, unread changed files make the merge `BLOCKED`, code-rules concerns carry the review finding shape, and a fix whose `Sweep:` hits a line other than its `Quote:` is demoted to report.
 - A build proof that runs a whole test suite also runs only the test files changed since its last full green, in shadow mode, and logs each miss to `suite-shadow.jsonl`; the full run still decides the land.
