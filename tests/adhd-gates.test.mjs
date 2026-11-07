@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { gateReply } from "../benchmarks/adhd/gates.mjs";
 
-const c = { literals: [["10%", "10 %"], ["5x"]], lead: ["no", "nein"] };
+const c = { literals: [["10%", "10 %"], ["5x"]], lead: ["no"] };
 const good = "No, the style is cached at 10% of input price. Output costs 5x input.";
 
 test("a clean reply passes", () => {

@@ -27,7 +27,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
-- Translate all Dutch text in the repo to English, and use German where a test, example or benchmark needs a non-English language.
+- Translate all Dutch text in the repo to English, and name no example language in rules and docs.
 - `exo:prompt` reads its request-kind and model rules from references per request, and `validate:static` checks that skill selector pointers resolve and that no moved line stays duplicated.
 - The decided-for-you heading follows the user's language, and the decided benchmark parser accepts it.
 - Before a safe default, recommendation or question, exo checks every option against the criteria the request or repo sets and takes the winner, and each decided line states `because <criterion>`.

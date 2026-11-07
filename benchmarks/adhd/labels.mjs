@@ -4,7 +4,7 @@ const SEPARATOR = new RegExp(`(\\n+|(?<=[.!?])\\s+|;\\s+|:\\s+|\\s[${DASHES}]\\s
 const TRAILING = new RegExp(`[\\s,;:${DASHES}]+$`, 'u');
 const STOPWORDS = new Set(['the', 'and', 'for', 'are', 'was', 'were', 'with', 'from', 'that', 'this', 'these', 'those', 'its', 'into', 'than', 'then', 'them', 'they', 'their', 'there', 'has', 'have', 'had', 'but', 'not', 'can', 'will', 'would', 'should', 'could', 'only', 'also', 'just', 'all', 'any', 'each', 'per', 'via', 'yes', 'about', 'which', 'what', 'when', 'where', 'who', 'how', 'does', 'did', 'done', 'one', 'too', 'you', 'your', 'use', 'uses', 'used', 'own', 'more', 'less', 'most', 'mostly']);
 const STEM = 5;
-const POLARITY = { yes: 'yes', yeah: 'yes', ja: 'yes', no: 'no', nope: 'no', nein: 'no', maybe: 'maybe', vielleicht: 'maybe' };
+const POLARITY = { yes: 'yes', yeah: 'yes', no: 'no', nope: 'no', maybe: 'maybe' };
 
 const stems = (text) => new Set(text.toLowerCase().split(/[^\p{L}\p{N}]+/u)
   .filter((word) => /^\p{N}+$/u.test(word) || (word.length >= 3 && !STOPWORDS.has(word)))

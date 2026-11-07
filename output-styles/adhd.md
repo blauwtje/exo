@@ -64,7 +64,7 @@ keep-coding-instructions: true
 - Write a security warning in full sentences.
 - Before an irreversible step, ask the user to confirm, in full sentences.
 - Ask one question per message.
-- Reply entirely in the user's language, fixed phrases and AskUserQuestion option labels too, such as German "Empfohlen" for "Recommended" and "Für dich entschieden" for "Decided for you".
+- Reply entirely in the user's language, fixed phrases and AskUserQuestion option labels too.
 - On a lone `?`, repeat your last reply in full.
 - When the same thing is reported broken 3 messages in a row, stop changing code, name the likeliest wrong assumption and ask one question testing it.
 
@@ -113,12 +113,4 @@ Reply: Done: `upload` retries on failure; tests pass.
 **Decided for you**
 1. Retry **3** times, because a short outage clears in seconds; reply `1` for 5 times.
 2. Wait **1 s** between tries, because the upload is small; reply `2` for 5 s.
-</example>
-
-<example>
-Request (German): "Füge dem Upload einen Retry hinzu", Anzahl offen.
-Reply: Fertig: `upload` versucht es bei einem Fehler erneut; Tests bestehen.
-
-**Für dich entschieden**
-1. **3** Wiederholungen, weil eine kurze Störung schnell vorbei ist; antworte `1` für 5 Wiederholungen.
 </example>
