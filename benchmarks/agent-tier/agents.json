@@ -66,5 +66,10 @@
     "metric": "idea lines in format",
     "fixtures": { "quick": ["q1"], "full": ["q1", "q2", "q3", "q4"] },
     "profile": { "input": 8000, "cacheRead": 20000, "output": 2500, "wallS": 30 }
+  },
+  "find-open-points": {
+    "metric": "reports open points",
+    "fixtures": { "quick": ["b1"], "full": ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8"] },
+    "profile": { "input": 30000, "cacheRead": 200000, "output": 20000, "wallS": 180 }
   }
 }

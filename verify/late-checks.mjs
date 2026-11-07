@@ -1,0 +1,45 @@
+import { checkGitWhitespace } from './checks/git-whitespace.mjs';
+import { checkPluginVersion } from './checks/plugin-version.mjs';
+import { checkModelKinds } from './checks/model-kinds.mjs';
+import { checkCodexOverrides } from './checks/codex-overrides.mjs';
+import { checkQuestionOptions } from './checks/question-options.mjs';
+import { checkPaidRuns } from './checks/paid-runs.mjs';
+import { checkPrinciples } from './checks/principles.mjs';
+import { checkSpeedLedger } from './checks/speed-ledger.mjs';
+import { checkEvalJudges } from './checks/eval-judges.mjs';
+import { checkEvalSuites } from './checks/eval-suites.mjs';
+import { checkEvalRealFailures } from './checks/eval-real-failures.mjs';
+import { checkBenchmarkEntryPoints } from './checks/benchmark-entry-points.mjs';
+import { checkBoundaryWords } from './checks/boundary-words.mjs';
+import { checkEditEvidence } from './checks/edit-evidence.mjs';
+import { checkInstructionDensity } from './checks/instruction-density.mjs';
+import { checkProseStyle } from './checks/prose-style.mjs';
+import { checkFixClassLoad } from './checks/fix-class-load.mjs';
+import { checkScriptHelp } from './checks/script-help.mjs';
+import { checkUserReadFormat } from './checks/user-read-format.mjs';
+import { checkRuleRetention } from './checks/rule-retention.mjs';
+import { checkReviewJudges } from './checks/review-judges.mjs';
+
+export function runLateChecks(report, repository, staticOnly) {
+  checkGitWhitespace(report, repository);
+  if (!staticOnly) checkPluginVersion(report, repository);
+  checkModelKinds(report, repository);
+  checkCodexOverrides(report, repository);
+  checkQuestionOptions(report, repository);
+  checkPaidRuns(report, repository);
+  checkBenchmarkEntryPoints(report, repository);
+  checkEvalJudges(report, repository);
+  checkEvalRealFailures(report, repository);
+  if (!staticOnly) checkEvalSuites(report, repository);
+  checkSpeedLedger(report, repository);
+  checkPrinciples(report, repository);
+  checkInstructionDensity(report, repository);
+  checkProseStyle(report, repository);
+  checkBoundaryWords(report, repository);
+  checkEditEvidence(report, repository);
+  checkFixClassLoad(report, repository);
+  checkScriptHelp(report, repository);
+  checkUserReadFormat(report, repository);
+  checkRuleRetention(report, repository);
+  checkReviewJudges(report, repository);
+}

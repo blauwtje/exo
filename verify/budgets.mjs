@@ -111,3 +111,6 @@ export const PRINCIPLE_PAGE_TOKENS = 800;
 export const PRINCIPLE_INDEX_TOKENS = 300;
 
 export const SCRIPT_OUTPUT_EXEMPT = ['skills/build/scripts/remove-worktree.mjs', 'skills/build/scripts/wait-report.mjs'];
+// Bytes of each tracked .mjs file outside tests/; verify/checks/module-size.mjs fails above it.
+// A file already over it is held at its measured size in verify/module-size-ceilings.txt, a list that only shrinks.
+export const MODULE_FILE_CAP = { bytes: 8 * 1024 };

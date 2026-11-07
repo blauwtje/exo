@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +8,7 @@ import { scratchPath } from '#scratch-path';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { runGuarded, stallSeconds, STALL_EXIT } from '#stall-guard';
 import { shellQuote } from '#basics';
+import { gitText } from '#git';
 
 const SCRIPT = fileURLToPath(import.meta.url);
 const PROBE_DEFAULT_MS = 600_000;
@@ -24,13 +24,9 @@ Prints First bad, Good, Diff, Log and the changed files, up to 30 lines; the ful
 A repro that passes at HEAD, alternates, or cannot be bisected prints one Bisect: line and exits 1; a usage error exits 2.
 `;
 
-function git(root, ...args) {
-  return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-}
-
 function commitSha(root, ref) {
   try {
-    return git(root, 'rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`).trim();
+    return gitText(root, ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]).trim();
   } catch {
     return null;
   }
@@ -38,7 +34,7 @@ function commitSha(root, ref) {
 
 function isAncestorOfHead(root, sha) {
   try {
-    git(root, 'merge-base', '--is-ancestor', sha, 'HEAD');
+    gitText(root, ['merge-base', '--is-ancestor', sha, 'HEAD']);
     return true;
   } catch (error) {
     if (error.status === 1) return false;
@@ -47,7 +43,7 @@ function isAncestorOfHead(root, sha) {
 }
 
 function checkoutRoot() {
-  return git(process.cwd(), 'rev-parse', '--show-toplevel').trim();
+  return gitText(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
 }
 
 function checkedGood(root, flag) {
@@ -69,8 +65,8 @@ function namesCommand(body, command) {
 
 function proofCommits(root, command) {
   try {
-    const listed = git(root, 'log', '-F', `--grep=${command}`, '--format=%H', 'HEAD~1');
-    return listed.split('\n').filter(Boolean).filter((sha) => namesCommand(git(root, 'log', '-1', '--format=%B', sha), command));
+    const listed = gitText(root, ['log', '-F', `--grep=${command}`, '--format=%H', 'HEAD~1']);
+    return listed.split('\n').filter(Boolean).filter((sha) => namesCommand(gitText(root, ['log', '-1', '--format=%B', sha]), command));
   } catch {
     return [];
   }
@@ -78,7 +74,7 @@ function proofCommits(root, command) {
 
 function remoteBase(root, headSha) {
   try {
-    const sha = git(root, 'merge-base', 'HEAD', 'refs/remotes/origin/HEAD').trim();
+    const sha = gitText(root, ['merge-base', 'HEAD', 'refs/remotes/origin/HEAD']).trim();
     return sha === headSha ? null : sha;
   } catch {
     return null;
@@ -105,7 +101,7 @@ function ancestorCandidates(root) {
     if (sha === null) break;
     found.push({ sha, reason: `HEAD~${step}` });
   }
-  const rootSha = git(root, 'rev-list', '--max-parents=0', 'HEAD').trim().split('\n').at(-1);
+  const rootSha = gitText(root, ['rev-list', '--max-parents=0', 'HEAD']).trim().split('\n').at(-1);
   found.push({ sha: rootSha, reason: 'root commit' });
   return found;
 }
@@ -146,7 +142,7 @@ function goodCandidate(probe, list) {
 }
 
 function bisectRange(probe, { headSha, goodSha }) {
-  const count = Number(git(probe.root, 'rev-list', '--count', `${goodSha}..${headSha}`).trim());
+  const count = Number(gitText(probe.root, ['rev-list', '--count', `${goodSha}..${headSha}`]));
   const cap = probe.timeoutMs * (Math.ceil(Math.log2(count)) + 2);
   const command = `git bisect start ${headSha} ${goodSha} && git bisect run ${probe.command}`;
   return runInWorktree({ root: probe.root, base: 'HEAD', command, timeoutMs: cap });
@@ -167,7 +163,7 @@ function writeOutputs(probe, sha) {
   const name = `bisect-${sha.slice(0, 7)}`;
   const diff = scratchPath(probe.root, `debug/${name}.diff`);
   const trace = scratchPath(probe.root, `debug/${name}.log`);
-  fs.writeFileSync(diff, git(probe.root, 'show', sha));
+  fs.writeFileSync(diff, gitText(probe.root, ['show', sha], { trim: false }));
   fs.writeFileSync(trace, `${probe.log.join('\n')}\n`);
   return { diff, trace };
 }
@@ -179,15 +175,15 @@ function fallback(probe, reason) {
 }
 
 function hunkLines(root, sha, headOutput) {
-  const changed = git(root, 'show', '--name-only', '--format=', sha).split('\n').filter(Boolean);
+  const changed = gitText(root, ['show', '--name-only', '--format=', sha]).split('\n').filter(Boolean);
   const named = changed.filter((file) => headOutput.includes(file));
   if (named.length === 0) return [];
-  return git(root, 'show', '--format=', sha, '--', ...named).split('\n').filter(Boolean);
+  return gitText(root, ['show', '--format=', sha, '--', ...named]).split('\n').filter(Boolean);
 }
 
 function successLines(probe, { firstBad, good, paths, headOutput }) {
-  const subject = git(probe.root, 'show', '-s', '--format=%s', firstBad).trim();
-  const stat = git(probe.root, 'show', '--stat', '--format=', firstBad).split('\n').filter(Boolean);
+  const subject = gitText(probe.root, ['show', '-s', '--format=%s', firstBad]).trim();
+  const stat = gitText(probe.root, ['show', '--stat', '--format=', firstBad]).split('\n').filter(Boolean);
   return [
     `First bad: ${firstBad} ${subject}`,
     `Good: ${good.sha} (${good.reason})`,

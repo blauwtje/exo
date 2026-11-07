@@ -27,39 +27,19 @@ test('measureReview leaves hits null without a report', async () => {
   assert.equal(record.reportHits, null);
 });
 
-const sourceLines = readFileSync(new URL('../agents/review-branch.md', import.meta.url), 'utf8').split('\n');
-const judgeLines = (name) => readFileSync(new URL(`../benchmarks/review-judges/${name}.md`, import.meta.url), 'utf8')
-  .split('\n').filter((line) => line.trim() !== '');
-const frontmatterEnd = sourceLines.indexOf('---', 1) + 1;
-const focus = { 'plan-fit': [15], standard: [17], tests: [21, 22, 23] };
-const allFocus = Object.values(focus).flat();
+const { AGENT_PATH, FOCUS, buildJudges } = await import('../lib/review-judges.mjs');
+const sourceLines = readFileSync(new URL(`../${AGENT_PATH}`, import.meta.url), 'utf8').split('\n');
 
-test('every judge body line is a verbatim line of review-branch', () => {
-  for (const name of Object.keys(focus)) {
-    for (const line of judgeLines(name)) assert.ok(sourceLines.includes(line), `${name}: ${line}`);
-  }
-});
-
-test('every judge body keeps the line order of review-branch', () => {
-  for (const name of Object.keys(focus)) {
-    let cursor = 0;
-    for (const line of judgeLines(name)) {
-      const position = sourceLines.indexOf(line, cursor);
-      assert.ok(position >= 0, `${name}: ${line}`);
-      cursor = position + 1;
+test('each focus prefix matches one agent line and lands in only its judge', () => {
+  const judges = buildJudges(sourceLines.join('\n'));
+  for (const [name, prefixes] of Object.entries(FOCUS)) {
+    for (const prefix of prefixes) {
+      const matches = sourceLines.filter((line) => line.startsWith(prefix));
+      assert.equal(matches.length, 1, prefix);
+      const holders = Object.keys(judges).filter((judge) => judges[judge].split('\n').includes(matches[0]));
+      assert.deepEqual(holders, [name], prefix);
     }
   }
-});
-
-test('each focus line sits in exactly one judge and each shared line in all three', () => {
-  const bodies = Object.fromEntries(Object.keys(focus).map((name) => [name, judgeLines(name)]));
-  sourceLines.forEach((line, index) => {
-    const number = index + 1;
-    if (number <= frontmatterEnd || line.trim() === '') return;
-    const holders = Object.keys(bodies).filter((name) => bodies[name].includes(line));
-    const expected = allFocus.includes(number) ? Object.keys(focus).filter((name) => focus[name].includes(number)) : Object.keys(bodies);
-    assert.deepEqual(holders, expected, `line ${number}`);
-  });
 });
 
 test('judgeCells makes one review cell per judge and leaves other cells', async () => {

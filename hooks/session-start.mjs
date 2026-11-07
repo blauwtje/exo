@@ -5,16 +5,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { commonDir } from '#checkout';
 import { currentHost } from '#host';
-import { memoryOn } from '#memory-store';
-import { gitLine } from '#git';
 import { inSidecall, readHookText } from '#hook-input';
 import { refreshStatusLauncher, writePluginPointer } from '#plugin-pointer';
 import { pruneExo } from '#exo-prune';
 import { removeSavedOutputs } from '../lib/saved-outputs.mjs';
 import { passUnmatchedGlobs } from '../lib/shell-fixes.mjs';
-import { environmentMs } from '../lib/script-flags.mjs';
+import { pointersFor } from '../lib/session-pointers.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
 
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
@@ -22,62 +19,6 @@ const onCodex = currentHost() === 'codex';
 const configDirectory = onCodex
   ? path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'exo')
   : path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
-
-function located(file, top) {
-  const relative = top ? path.relative(top, file) : '';
-  if (relative === '' || relative.startsWith('..')) return `\`${file}\``;
-  return `\`${relative}\` from the repository root`;
-}
-
-function newestProgressFile(cwd) {
-  const folder = path.join(cwd, '.exo');
-  if (!fs.existsSync(folder)) return undefined;
-  const youngest = Date.now() - environmentMs('EXO_PROGRESS_POINTER_MS', 3600000);
-  const candidates = fs.readdirSync(folder, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => path.join(folder, entry.name, 'progress.md'))
-    .map((file) => ({ file, modified: fs.statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0 }))
-    .filter((candidate) => candidate.modified >= youngest);
-  candidates.sort((first, second) => second.modified - first.modified);
-  return candidates[0]?.file;
-}
-
-function progressPointer(cwd, source, top) {
-  if (!['compact', 'clear', 'resume'].includes(source)) return '';
-  const file = newestProgressFile(cwd);
-  if (file === undefined) return '';
-  return `A progress file sits at ${located(file, top)}. Read it only when this session continues that work.\n\n`;
-}
-
-function handoffFileFor(gitDirectory, scope) {
-  if (gitDirectory === null) return path.join(configDirectory, 'handoff', `${scope}.md`);
-  return path.join(gitDirectory, 'exo', 'handoff', `${scope}.md`);
-}
-
-function handoffPointer(cwd, gitDirectory, top) {
-  const scope = gitDirectory === null ? path.basename(cwd) : gitLine(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']) ?? '';
-  const handoffFile = handoffFileFor(gitDirectory, scope);
-  if (!fs.existsSync(handoffFile) || !fs.statSync(handoffFile).isFile()) return '';
-  const staleness = gitDirectory === null ? '' : ' Compare its `Written:` commit with `git rev-parse --short HEAD`.';
-  const resumeLine = fs.readFileSync(handoffFile, 'utf8').split('\n').map((line) => line.trim()).filter((line) => line.startsWith('Resume: ')).pop();
-  const resume = resumeLine === undefined ? '' : ` To continue it, the user sends: ${resumeLine.slice('Resume: '.length, 'Resume: '.length + 300)}`;
-  return `A handoff for \`${scope}\` sits at ${located(handoffFile, top)}. Read it only when this session continues that work.${staleness}${resume}\n\n`;
-}
-
-function memoryPointer(cwd, top) {
-  if (!memoryOn(cwd)) return '';
-  const commonDirectory = commonDir(cwd);
-  const memoryFile = commonDirectory === null ? path.join(configDirectory, 'memory', path.basename(cwd), 'memory.md')
-    : path.join(commonDirectory, 'exo', 'memory.md');
-  if (!fs.existsSync(memoryFile) || !fs.statSync(memoryFile).isFile()) return '';
-  return `A project memory for this repository sits at ${located(memoryFile, top)}. Read it before changing code you have not read here, and ask the user to type \`/exo:remember\` to change it.\n\n`;
-}
-
-function pointersFor(cwd, source) {
-  const gitDirectory = gitLine(cwd, ['rev-parse', '--absolute-git-dir']);
-  const top = gitDirectory === null ? null : gitLine(cwd, ['rev-parse', '--show-toplevel']);
-  return handoffPointer(cwd, gitDirectory, top) + memoryPointer(cwd, top) + progressPointer(cwd, source, top);
-}
 
 if (inSidecall()) process.exit(0);
 
@@ -112,17 +53,19 @@ if (process.env.EXO_RUN_DIR) process.exit(0);
 
 if (typeof input.cwd === 'string' && input.cwd !== '') pruneExo({ cwd: input.cwd });
 
-const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(input.cwd, input.source) : '';
+const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(configDirectory, input.cwd, input.source) : '';
 // why: the hook process starts wherever the host ran it; the session's folder, input.cwd, holds the project settings.
 const sessionDirectory = typeof input.cwd === 'string' && fs.existsSync(input.cwd) && fs.statSync(input.cwd).isDirectory() ? input.cwd : undefined;
 const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8', cwd: sessionDirectory });
 const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
 const parts = [`${pointers}${settings}`];
 if (onCodex) parts.push(fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd());
-const routingFile = path.join(root, 'hooks', 'session-routing.md');
-if (fs.existsSync(routingFile)) parts.push(fs.readFileSync(routingFile, 'utf8').trimEnd());
-const rulesFile = path.join(root, 'hooks', 'session-rules.md');
-if (fs.existsSync(rulesFile)) parts.push(fs.readFileSync(rulesFile, 'utf8').trimEnd());
+const rulesKeptByTranscript = !onCodex && input.source === 'resume';
+const staticFiles = rulesKeptByTranscript ? [] : ['session-routing.md', 'session-rules.md'];
+for (const name of staticFiles) {
+  const file = path.join(root, 'hooks', name);
+  if (fs.existsSync(file)) parts.push(fs.readFileSync(file, 'utf8').trimEnd());
+}
 // why: Codex serves no Agent hook, so its session text keeps the dispatch rules; on Claude Code a clear or compaction drops them, so the next Agent call delivers them again.
 if (onCodex) parts.push(readDispatchRules());
 else if (typeof input.session_id === 'string' && input.session_id !== '') fs.rmSync(dispatchMarker(input.session_id), { force: true });

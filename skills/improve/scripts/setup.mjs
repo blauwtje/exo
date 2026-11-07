@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { createWorktree } from '#checkout';
-import { gitLine } from '#git';
+import { git, gitLine } from '#git';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { pooledSd } from '../../../lib/eval-stats.mjs';
-import { planHoldout } from '../../../lib/holdout.mjs';
 import { readKindTable } from '../../../lib/model-kinds.mjs';
-import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { excludeScratch } from '../../../lib/scratch-exclude.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { addRun, editableBytes, emptySamples, filesUnder, improveDefaults, lastKeep, readItems, readRows, readRun, readScore, sampleScore, scoreEnv, scorerHash, writeBrief } from './round.mjs';
+import { editableBytes, filesUnder, improveDefaults, lastKeep, readRows, sampleScore, scorerHash, writeBrief } from './round.mjs';
+import { baselineNoise, baselineSamples, SetupError } from './baseline.mjs';
 import { matchScope, outOfScope, ScopeError } from './scope.mjs';
 
 const USAGE = 'usage: node setup.mjs --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--root <dir>] [--readonly <path,...>] [--limit <s>] [--fast-check <cmd>] [--scorer <path,...>] [--tag <tag>] [--first <dir> --first-subject <text>]\n       node setup.mjs --resume [--root <dir>] [--tag <tag>]\nScores the baseline defaults.improve.baselineRuns times; the row holds the mean, <tag>.samples.jsonl the runs.\nsd= is the SD of the baseline runs, mde= the smallest gain the keep rule can detect at defaults.improve.maxRuns runs, none with a single baseline run.\nEvery score run gets env EXO_SEED=defaults.improve.seed, stored as seed in <tag>.json.\nWith at least defaults.improve.holdoutMin ITEM ids, a stable hash of each id holds out a defaults.improve.holdoutShare of them: holdout=<held>/<cases>, stored in <tag>.json; score=, sd=, mde= and every round use the mean of the tuning ITEM values only. Fewer or no ITEM ids: holdout=none, score= is the command\'s number.\nOutput: one line, tag= branch= worktree= score= limit= seed= sd= mde= holdout= model= effort= noidea= mode=inline|worker brief=<path>; with --first, the files under <dir> (repo-relative paths, in scope) move into the worktree, <dir> is deleted, they are committed as round 1 and round.mjs output follows, its OUT lines on stderr, its exit code passed on. Exit 2 names the flag or step to fix.';
@@ -20,14 +18,11 @@ const SPEC = {
   limit: 'string', 'fast-check': 'string', scorer: 'string', tag: 'string', resume: 'boolean', first: 'string', 'first-subject': 'string',
 };
 const ROUND = new URL('./round.mjs', import.meta.url).pathname;
-const BASELINE_TIMEOUT_MS = 3_600_000;
 const LIMIT_FACTOR = 1.5;
 const LIMIT_SLACK_S = 60;
 
-class SetupError extends Error {}
-
-function git(cwd, ...args) {
-  const run = spawnSync('git', args, { cwd, encoding: 'utf8' });
+function gitStrict(cwd, ...args) {
+  const run = git(cwd, args);
   if (run.status !== 0) throw new SetupError(`git ${args.join(' ')} failed: ${(run.stderr || run.stdout).trim()}`);
   return run.stdout.trim();
 }
@@ -40,39 +35,6 @@ function addWorktree(root, worktree, ...rest) {
 
 const gitOk = (cwd, ...args) => gitLine(cwd, args) !== null;
 const list = (text) => (text ?? '').split(',').map((item) => item.trim()).filter(Boolean);
-
-function baselineRun(cwd, cfg) {
-  const { command, regex } = cfg;
-  const started = Date.now();
-  const run = runTreeSync(command, { cwd, timeoutMs: BASELINE_TIMEOUT_MS, env: scoreEnv(cfg) });
-  const score = readScore(run.output, regex);
-  if (run.status !== 0 || score === null) throw new SetupError(`score command failed on the baseline run: ${run.output.slice(-300)}`);
-  return { output: run.output, seconds: (Date.now() - started) / 1000 };
-}
-
-function baselineSamples(cwd, cfg) {
-  const runs = Array.from({ length: improveDefaults().baselineRuns }, () => baselineRun(cwd, cfg));
-  const holdout = planHoldout(runs.flatMap((run) => Object.keys(readItems(run.output))), improveDefaults());
-  const samples = emptySamples();
-  for (const run of runs) {
-    const scored = readRun(run.output, { ...cfg, holdout });
-    if (scored.score === null) throw new SetupError('baseline run printed no ITEM line for the tuning cases; print one ITEM <id> <number> line per case on every run');
-    addRun(samples, scored);
-  }
-  return { samples, holdout, seconds: Math.max(...runs.map((run) => run.seconds)) };
-}
-
-const round4 = (value) => (value === null ? null : Number(value.toFixed(4)));
-
-export function baselineNoise(samples, defaults = improveDefaults()) {
-  const sd = pooledSd([samples.runs]);
-  const items = Object.values(samples.items ?? {}).filter((values) => values.length > 0);
-  const paired = items.length >= 2;
-  const spread = paired ? pooledSd(items) : sd;
-  if (spread === null) return { sd: round4(sd), mde: null };
-  const se = spread * Math.sqrt(1 / samples.runs.length + 1 / defaults.maxRuns) / Math.sqrt(paired ? items.length : 1);
-  return { sd: round4(sd), mde: round4(defaults.keepFloor + defaults.keepZ * se) };
-}
 
 const deriveLimit = (seconds) => Math.ceil(Math.max(LIMIT_FACTOR * seconds, seconds + LIMIT_SLACK_S));
 
@@ -110,8 +72,8 @@ function commitScorer(root, worktree, paths) {
     if (!fs.existsSync(path.join(root, entry))) throw new SetupError(`scorer path missing: ${entry}`);
     fs.cpSync(path.join(root, entry), path.join(worktree, entry), { recursive: true });
   }
-  git(worktree, 'add', '--', ...paths);
-  if (!gitOk(worktree, 'diff', '--cached', '--quiet')) git(worktree, '-c', 'user.name=exo', '-c', 'user.email=exo@localhost', 'commit', '-m', 'chore(improve): add the frozen scorer');
+  gitStrict(worktree, 'add', '--', ...paths);
+  if (!gitOk(worktree, 'diff', '--cached', '--quiet')) gitStrict(worktree, '-c', 'user.name=exo', '-c', 'user.email=exo@localhost', 'commit', '-m', 'chore(improve): add the frozen scorer');
 }
 
 function discardBranch(root, worktree, branch) {
@@ -172,13 +134,13 @@ function firstRound({ root, cwd, tag, first }) {
     fs.copyFileSync(path.join(first.dir, file), path.join(cwd, file));
   }
   fs.rmSync(first.dir, { recursive: true });
-  git(cwd, 'add', '--', ...first.files);
+  gitStrict(cwd, 'add', '--', ...first.files);
   if (gitOk(cwd, 'diff', '--cached', '--quiet')) {
     process.stderr.write('--first files match the baseline; round 1 not scored, setup done\n');
     return 0;
   }
-  git(cwd, 'commit', '-q', '-m', first.subject);
-  const round = spawnSync(process.execPath, [ROUND, '--root', root, '--tag', tag, '--commit', git(cwd, 'rev-parse', '--short', 'HEAD')], { encoding: 'utf8' });
+  gitStrict(cwd, 'commit', '-q', '-m', first.subject);
+  const round = spawnSync(process.execPath, [ROUND, '--root', root, '--tag', tag, '--commit', gitStrict(cwd, 'rev-parse', '--short', 'HEAD')], { encoding: 'utf8' });
   process.stdout.write(round.stdout);
   process.stderr.write(round.stderr);
   return round.status ?? 1;
@@ -201,7 +163,7 @@ function fresh(flags) {
   try {
     commitScorer(root, cwd, list(flags.scorer));
     const { cfg, samples, score } = buildConfig(flags, cwd, worktree);
-    const commit = git(cwd, 'rev-parse', '--short', 'HEAD');
+    const commit = gitStrict(cwd, 'rev-parse', '--short', 'HEAD');
     fs.writeFileSync(path.join(dir, `${tag}.json`), `${JSON.stringify(cfg, null, 2)}\n`);
     fs.writeFileSync(path.join(dir, `${tag}.tsv`), `commit\tscore\tstatus\tdescription\n${commit}\t${score}\tkeep\tbaseline\n`);
     fs.writeFileSync(path.join(dir, `${tag}.samples.jsonl`), `${JSON.stringify({ commit, status: 'keep', ...samples })}\n`);
@@ -232,7 +194,7 @@ function resume(flags) {
   const kept = lastKeep(rows);
   if (!kept) throw new SetupError(`${tag}.tsv has no kept row`);
   if (!fs.existsSync(path.join(root, cfg.worktree))) addWorktree(root, cfg.worktree, cfg.worktree, `improve/${tag}`);
-  git(path.join(root, cfg.worktree), 'reset', '--hard', kept.commit);
+  gitStrict(path.join(root, cfg.worktree), 'reset', '--hard', kept.commit);
   writeBrief({ dir, tag, cfg, rows });
   settled({ root, dir, cfg, tag, score: kept.score });
 }

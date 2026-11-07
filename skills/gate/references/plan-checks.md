@@ -7,3 +7,7 @@ The `exo:review-branch` agent reads this page to catch faults that only show acr
 - When a `<plan stem>-decisions.md` file sits beside the plan, a choice that crosses a goal or non-goal is a finding.
 - Read only the heading and field lines of the plan tasks: `grep -nE '^### Task [0-9]+:|Files:|Proof:|^Run:' <plan>`.
 - A task with no naming commit or proof is a `defect` marked `report`.
+
+## Changed tests
+
+- A deleted test, removed or loosened assertion or added skip marker is a `defect` marked `report`, quoting the removed text, unless a plan non-goal or the task names it.

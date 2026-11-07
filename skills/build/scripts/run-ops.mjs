@@ -1,19 +1,14 @@
-import { spawnSync } from 'node:child_process';
 import { appendOp } from './run-state.mjs';
-
-function git(root, args) {
-  const done = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
-  return { ok: done.status === 0, text: (done.stdout ?? '').trim() };
-}
+import { gitResult } from '#git';
 
 export function snapshotRefs(root) {
   const refs = new Map();
-  const listed = git(root, ['for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads']);
+  const listed = gitResult(root, ['for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads']);
   for (const line of listed.text.split('\n').filter(Boolean)) {
     const [ref, sha] = line.split(' ');
     refs.set(ref, sha);
   }
-  const head = git(root, ['symbolic-ref', '-q', 'HEAD']);
+  const head = gitResult(root, ['symbolic-ref', '-q', 'HEAD']);
   return { refs, head: head.ok ? head.text : null };
 }
 

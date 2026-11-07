@@ -1,12 +1,8 @@
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { git } from '#git';
 
 const NAME = 'changelog placement';
 const HUNK = /^@@ -\S+ \+(\d+)(?:,(\d+))? @@/;
-
-function git(repository, args) {
-  return spawnSync('git', ['-C', repository.root, ...args], { encoding: 'utf8' });
-}
 
 function addedLineNumbers(diff) {
   const added = [];
@@ -37,11 +33,11 @@ function misplacedLines(lines, added) {
 }
 
 function releaseCommit(repository) {
-  if (git(repository, ['rev-parse', '--git-dir']).status !== 0) return { note: 'repository root is not inside a git work tree' };
-  const found = git(repository, ['log', '-1', '--format=%H', '--grep=^chore(release):', '--', 'CHANGELOG.md']);
+  if (git(repository.root, ['rev-parse', '--git-dir']).status !== 0) return { note: 'repository root is not inside a git work tree' };
+  const found = git(repository.root, ['log', '-1', '--format=%H', '--grep=^chore(release):', '--', 'CHANGELOG.md']);
   const sha = (found.stdout ?? '').trim();
   if (found.status !== 0 || sha === '') return { note: 'no chore(release) commit touches CHANGELOG.md' };
-  if (git(repository, ['merge-base', '--is-ancestor', sha, 'HEAD']).status !== 0) {
+  if (git(repository.root, ['merge-base', '--is-ancestor', sha, 'HEAD']).status !== 0) {
     return { note: `release commit ${sha.slice(0, 8)} is no ancestor of HEAD` };
   }
   return { sha };
@@ -58,7 +54,7 @@ export function checkChangelogPlacement(report, repository) {
     report.result('PASS', NAME, `${release.note}; nothing to compare`);
     return;
   }
-  const diff = git(repository, ['diff', '--unified=0', release.sha, '--', 'CHANGELOG.md']);
+  const diff = git(repository.root, ['diff', '--unified=0', release.sha, '--', 'CHANGELOG.md']);
   if (diff.status !== 0) {
     report.result('FAIL', NAME, `git diff against ${release.sha.slice(0, 8)} failed: ${(diff.stderr ?? '').trim() || `exit ${diff.status}`}`);
     return;

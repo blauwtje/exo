@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,19 +9,15 @@ import { confineRefusal } from '#confine-claude';
 import { makeDefaultOptionsHome } from '#default-options-home';
 import { EFFORTS, readKindTable } from '#model-kinds';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
-import { usageCounts } from '#token-weights';
-import { clusteredMeanCi, powerLine } from '../lib/eval-stats.mjs';
-import { pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { claudeSession, fixtureFiles, gradedSession, inPool, readFixture, runAgent } from './locate-recall.mjs';
-import { countsCost } from './pricing.mjs';
-import { dispatchLine, gradeRepair, loadFixtures, loadPlants, overlaps, parseFindings, parseRange, prepareCase } from './review-replay.mjs';
-import { MODELS } from './tasks.mjs';
+import { dispatchLine, gradeRepair, loadFixtures, loadPlants, prepareCase } from './review-replay.mjs';
 import { RESULT_FILE } from './agent-tier/orchestrator/grade.mjs';
 import { transcriptChecks, transcriptFindings } from './agent-tier/orchestrator/transcript.mjs';
 import { installStub } from './agent-tier/task-runner/install-stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from './agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
-import { meanOrNull, median, readJson, sum } from './basics.mjs';
+import { median, readJson } from './basics.mjs';
+import { settingOfJob, estimateUsd, dryRunText, flaggedShare, Budget, sessionCost, apiKeySourceOf, wilson95, summarizeCells, candidateComparisons, comparisonLine, cellLine } from './agent-tier/estimate.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = path.join(ROOT, 'benchmarks/agent-tier/agents.json');
@@ -30,6 +25,7 @@ const REVIEW_ROOT = path.join(ROOT, 'benchmarks/agent-tier/review');
 const AGENT_VALUE_ROOT = path.join(ROOT, 'benchmarks/agent-tier/value');
 const ORCHESTRATOR_ROOT = path.join(ROOT, 'benchmarks/agent-tier/orchestrator');
 const TASK_RUNNER_ROOT = path.join(ROOT, 'benchmarks/agent-tier/task-runner');
+const OPEN_POINT_BRIEFS = path.join(ROOT, 'benchmarks/agent-tier/find-open-points/briefs.json');
 const IDEATE_QUESTIONS = path.join(ROOT, 'benchmarks/agent-tier/ideate/questions.json');
 const RESULTS = path.join(ROOT, 'benchmarks/results');
 const SESSION_MS = environmentMs('EXO_AGENT_TIER_SESSION_MS', 600_000);
@@ -40,7 +36,6 @@ const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const FIXER_BLOCK = /```text\n([\s\S]*?)\n```/;
 const VALUE_PREFIX = /^value-/;
 const MS_PER_MINUTE = 60_000;
-const WILSON_Z = 1.96;
 const API_KEY_SOURCE = 'ANTHROPIC_API_KEY';
 const AGENT_ALIASES = { orchestrate: 'orchestrator' };
 const USAGE = `usage: agent-tier.mjs [--agent <name>]... [--tier quick|full] [--candidate <model:effort>]... [--max-usd <n>] [--concurrency <n>] [--runs <n>] [--transcripts <dir>] [--dry-run] [--out <file>] [--history <file>]... [--merge] [--require-api-key]
@@ -55,8 +50,6 @@ Each cell records wilson95, the Wilson 95% interval of the share of its sessions
 --max-usd stops starting sessions once spent plus reserved estimates would pass the cap, writes the results so far and exits 1.
 Exit codes: 0 done, 1 sessions skipped by --max-usd or failed run, 2 usage error. Defaults: --tier quick, --concurrency 2, --runs 1.`;
 
-const labelOf = ({ model, effort }) => `${model}:${effort}`;
-const percent = (value) => (value === null ? 'n/a' : `${(value * 100).toFixed(1)}%`);
 const failed = (error) => ({ outcome: { error, durationMs: null } });
 
 export function parseCandidate(text) {
@@ -94,241 +87,6 @@ export function planJobs({ config, agents, tier, candidates, table, runs = 1 }) 
     return repeats.flatMap((run) => list.flatMap((candidate) => config[agent].fixtures[tier].map((fixture) => ({ agent, candidate, fixture, run }))));
   });
 }
-
-const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
-const settingOfJob = (candidate) => (session) => session.model === candidate.model && session.effort === candidate.effort;
-const wallOf = (session) => (isNumber(session.durationMs) && session.durationMs > 0 ? session.durationMs / 1000 : null);
-
-function recordedEstimate(own, fixture, measure) {
-  const measured = own.map((session) => ({ fixture: session.fixture, value: measure(session) })).filter((entry) => isNumber(entry.value));
-  if (measured.length === 0) return null;
-  const exact = measured.filter((entry) => fixture !== undefined && entry.fixture === fixture);
-  if (exact.length > 0) return median(exact.map((entry) => entry.value));
-  const byFixture = new Map();
-  for (const entry of measured) byFixture.set(entry.fixture, [...(byFixture.get(entry.fixture) ?? []), entry.value]);
-  return meanOrNull([...byFixture.values()].map(median));
-}
-
-const recordedOwn = (agent, candidate, recorded) => recorded.filter((session) => session.agent === agent && !session.skipped && settingOfJob(candidate)(session));
-
-export function estimateUsd(agent, candidate, recorded, config, fixture) {
-  const seen = recordedEstimate(recordedOwn(agent, candidate, recorded), fixture, (session) => session.cost_usd);
-  if (seen !== null) return seen;
-  const profile = config[agent].profile;
-  const priced = countsCost(profile, MODELS[candidate.model]) ?? 0;
-  return priced * (profile.usdScale?.[labelOf(candidate)] ?? 1);
-}
-
-export function estimateWallS(agent, candidate, recorded, config, fixture) {
-  const seen = recordedEstimate(recordedOwn(agent, candidate, recorded), fixture, wallOf);
-  if (seen !== null) return seen;
-  const profile = config[agent].profile;
-  if (!isNumber(profile.wallS)) return null;
-  return profile.wallS * (profile.wallScale?.[labelOf(candidate)] ?? 1);
-}
-
-export function estimateTotal(jobs, recorded, config) {
-  return sum(jobs.map((job) => estimateUsd(job.agent, job.candidate, recorded, config, job.fixture)));
-}
-
-export function estimateWallTotalS(jobs, recorded, config, concurrency) {
-  const walls = jobs.map((job) => estimateWallS(job.agent, job.candidate, recorded, config, job.fixture));
-  if (walls.some((wall) => wall === null)) return null;
-  return sum(walls) / Math.max(1, Math.min(concurrency, jobs.length));
-}
-
-export function wallText(seconds) {
-  if (seconds === null) return 'n/a';
-  return seconds < 90 ? `${seconds.toFixed(0)} s` : `${(seconds / 60).toFixed(1)} min`;
-}
-
-export function dryRunText(jobs, recorded, config, concurrency = 2) {
-  const agents = [...new Set(jobs.map((job) => job.agent))];
-  const lines = agents.map((agent) => {
-    const own = jobs.filter((job) => job.agent === agent);
-    const labels = [...new Set(own.map((job) => labelOf(job.candidate)))].join(' ');
-    return `${agent}: ${own.length} sessions, est $${estimateTotal(own, recorded, config).toFixed(2)}, est wall ${wallText(estimateWallTotalS(own, recorded, config, concurrency))} at concurrency ${concurrency} (${labels})`;
-  });
-  const powerLines = agents.filter((agent) => agent === 'ideate-worker').map((agent) => {
-    const own = jobs.filter((job) => job.agent === agent);
-    const arms = new Set(own.map((job) => labelOf(job.candidate))).size;
-    return `${agent} ${powerLine({ tasks: new Set(own.map((job) => job.fixture)).size, samples: Math.max(...own.map((job) => job.run ?? 1)), arms })}`;
-  });
-  const total = `total: ${jobs.length} sessions, est $${estimateTotal(jobs, recorded, config).toFixed(2)}, est wall ${wallText(estimateWallTotalS(jobs, recorded, config, concurrency))} at concurrency ${concurrency}`;
-  return `${[...lines, ...powerLines, total, 'note: a recorded session of the same agent, model, effort and fixture in --out or --history wins; else the profile, whose usdScale and wallScale model effort where it lists them'].join('\n')}\n`;
-}
-
-export function flaggedShare(plants, findingsText) {
-  if (plants.length === 0) return null;
-  const flagged = parseFindings(findingsText).filter((finding) => finding.weight === 'defect' || finding.weight === 'concern');
-  const hit = plants.filter((plant) => flagged.some((finding) => overlaps({ path: plant.path, ...parseRange(plant.range) }, finding)));
-  return hit.length / plants.length;
-}
-
-export class Budget {
-  constructor(cap) {
-    this.cap = cap;
-    this.spent = 0;
-    this.reserved = 0;
-    this.skipped = 0;
-  }
-
-  reserve(estimate) {
-    if (this.cap !== null && this.spent + this.reserved + estimate > this.cap) {
-      this.skipped += 1;
-      return false;
-    }
-    this.reserved += estimate;
-    return true;
-  }
-
-  settle(estimate, actual) {
-    this.reserved -= estimate;
-    this.spent += actual ?? estimate;
-  }
-
-  message() {
-    if (this.skipped === 0) return null;
-    return `--max-usd $${this.cap} reached after $${this.spent.toFixed(2)}: ${this.skipped} sessions skipped`;
-  }
-}
-
-function resultOfStream(text) {
-  for (const line of text.split('\n').reverse()) {
-    let event;
-    try { event = JSON.parse(line); } catch { continue; }
-    if (event?.type === 'result') return event;
-  }
-  return null;
-}
-
-export function usageOfStream(text) {
-  return resultOfStream(text)?.usage ?? null;
-}
-
-const modelUsageCounts = (use) => ({ input: use.inputTokens ?? 0, cacheRead: use.cacheReadInputTokens ?? 0, cache5m: use.cacheCreationInputTokens ?? 0, cache1h: 0, output: use.outputTokens ?? 0 });
-
-export function modelUsageCost(modelUsage) {
-  const entries = Object.entries(modelUsage ?? {});
-  if (entries.length === 0) return null;
-  const costs = entries.map(([id, use]) => countsCost(modelUsageCounts(use), id));
-  return costs.every(Number.isFinite) ? sum(costs) : null;
-}
-
-export function sessionCost(outcome, model) {
-  const result = resultOfStream(outcome.stdout ?? '');
-  const usage = result?.usage;
-  const priced = modelUsageCost(result?.modelUsage) ?? (usage ? countsCost(usageCounts(usage), MODELS[model]) : null);
-  return priced ?? outcome.cost_usd ?? null;
-}
-
-export function apiKeySourceOf(stdout) {
-  for (const line of String(stdout ?? '').split('\n')) {
-    if (!line.includes('"init"')) continue;
-    let event;
-    try { event = JSON.parse(line); } catch { continue; }
-    if (event?.type === 'system' && event.subtype === 'init') return event.apiKeySource ?? null;
-  }
-  return null;
-}
-
-export function wilson95(passes, total) {
-  if (total === 0) return null;
-  const share = passes / total;
-  const z2 = WILSON_Z ** 2;
-  const denominator = 1 + z2 / total;
-  const centre = (share + z2 / (2 * total)) / denominator;
-  const half = (WILSON_Z * Math.sqrt((share * (1 - share)) / total + z2 / (4 * total ** 2))) / denominator;
-  return [Math.max(0, centre - half), Math.min(1, centre + half)].map((bound) => Number(bound.toFixed(4)));
-}
-
-const scoreOf = (session) => (session.error ? 0 : session.score);
-const fractionOf = (session) => (session.error ? 0 : session.fraction ?? session.score);
-const isScored = (session) => !session.skipped && (Boolean(session.error) || typeof session.score === 'number');
-const intervalOf = (sessions, valueOf) => (sessions.length === 0 ? null : clusteredMeanCi(sessions.map((session) => ({ cluster: session.fixture ?? '', value: valueOf(session) }))));
-const costOf = (session) => (isNumber(session.cost_usd) ? session.cost_usd : null);
-const knownValues = (sessions, measure) => sessions.map(measure).filter(isNumber);
-
-export function summarizeCells(sessions) {
-  const groups = new Map();
-  for (const session of sessions) {
-    const key = `${session.agent} ${labelOf(session)}`;
-    groups.set(key, [...(groups.get(key) ?? []), session]);
-  }
-  return [...groups.values()].map((own) => {
-    const attempted = own.filter((session) => !session.skipped);
-    const finished = attempted.filter((session) => !session.error);
-    const scored = own.filter(isScored);
-    const graded = finished.filter((session) => typeof session.score === 'number');
-    const passes = graded.filter((session) => session.score >= 1).length;
-    const costs = knownValues(finished, costOf);
-    const walls = knownValues(finished, wallOf);
-    const scoreCi = intervalOf(scored, scoreOf);
-    const fractionCi = intervalOf(scored, fractionOf);
-    return {
-      agent: own[0].agent,
-      model: own[0].model,
-      effort: own[0].effort,
-      sessions: own.length,
-      attempted: attempted.length,
-      graded: graded.length,
-      errored: attempted.length - finished.length,
-      score: scoreCi?.mean ?? null,
-      fraction: fractionCi?.mean ?? null,
-      scoreCi,
-      fractionCi,
-      cost_usd: sum(knownValues(own, costOf)),
-      costPerSession: meanOrNull(costs),
-      costExcluded: attempted.length - costs.length,
-      wallS: meanOrNull(walls),
-      wallMedianS: median(walls),
-      wallExcluded: attempted.length - walls.length,
-      wilson95: wilson95(passes, attempted.length)
-    };
-  });
-}
-
-const comparedScore = (session) => [session.fixture ?? '', labelOf(session), scoreOf(session)];
-
-export function candidateComparisons(sessions, currentOf) {
-  const agents = [...new Set(sessions.map((session) => session.agent))];
-  return agents.flatMap((agent) => {
-    const rows = sessions.filter((session) => session.agent === agent && isScored(session));
-    const cases = pairedByCase(rows, comparedScore);
-    const current = labelOf(currentOf(agent));
-    const labels = [...new Set(rows.map(labelOf))].filter((label) => label !== current);
-    if (!rows.some((session) => labelOf(session) === current)) return [];
-    return labels.map((label) => {
-      const interval = pairedArms(cases, current, label);
-      return { agent, current, candidate: label, interval, verdict: verdictWord(interval) };
-    });
-  });
-}
-
-const percentInterval = (interval) => {
-  if (!interval) return 'n/a';
-  if (interval.se === null) return `${percent(interval.mean)} no SE`;
-  return `${percent(interval.mean)} se ${percent(interval.se)} ci95 ${percent(interval.lo)}..${percent(interval.hi)}`;
-};
-
-const wilsonText = (interval) => (interval ? ` wilson95 [${percent(interval[0])}-${percent(interval[1])}]` : '');
-
-const wallSeconds = (seconds) => (isNumber(seconds) ? `${seconds.toFixed(0)}s` : 'n/a');
-
-export function comparisonLine({ agent, current, candidate, interval, verdict }) {
-  if (interval === null) return `${agent} ${candidate} minus ${current}: no shared fixture`;
-  const spread = interval.se === null ? 'no SE' : `se ${percent(interval.se)} ci95 ${percent(interval.lo)}..${percent(interval.hi)}`;
-  return `${agent} ${candidate} minus ${current}: score ${percent(interval.mean)} ${spread} over ${interval.n} shared fixtures: ${verdict}`;
-}
-
-export function cellLine(cell, config) {
-  const perSession = isNumber(cell.costPerSession) ? ` $${cell.costPerSession.toFixed(3)}/session` : '';
-  const medianWall = isNumber(cell.wallMedianS) ? ` median ${cell.wallMedianS.toFixed(0)}s` : '';
-  const excluded = ` errored ${cell.errored}, cost excluded ${cell.costExcluded} and wall excluded ${cell.wallExcluded} of ${cell.attempted}`;
-  return `${cell.agent} ${labelOf(cell)} ${config[cell.agent].metric} ${percentInterval(cell.scoreCi)} checks ${percentInterval(cell.fractionCi)} usd $${cell.cost_usd.toFixed(2)}${perSession} wall ${wallSeconds(cell.wallS)}${medianWall}${wilsonText(cell.wilson95)}${excluded}`;
-}
-
-const git = (repository, args) => execFileSync('git', ['-C', repository, ...args], { encoding: 'utf8' });
 
 async function inCase(work) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-tier-'));
@@ -438,6 +196,23 @@ function ideateSession(ctx, job, question) {
   });
 }
 
+const OPEN_POINT_LINE = /^\s*(\d+\. \[user\]|Assumptions:)/m;
+
+function openPointsSession(ctx, job, fixture) {
+  return inCase(async (base, tmp) => {
+    const cwd = path.join(base, 'scratch');
+    fs.mkdirSync(path.join(cwd, '.exo'), { recursive: true });
+    const briefPath = path.join(cwd, '.exo', 'brief.md');
+    fs.writeFileSync(briefPath, fixture.brief);
+    const outcome = await runIn(ctx, job, { prompt: `Brief: ${briefPath}`, cwd, base, tmp });
+    if (outcome.error) return { outcome };
+    const assumptions = path.join(cwd, '.exo', 'open-points', 'assumptions.md');
+    const filed = fs.existsSync(assumptions) ? fs.readFileSync(assumptions, 'utf8') : '';
+    const text = outcome.text ?? '';
+    return { outcome, score: OPEN_POINT_LINE.test(text) ? 1 : 0, detail: { text, assumptions: filed } };
+  });
+}
+
 const NO_TRANSCRIPT = () => ({ findings: [], checks: 0 });
 
 export function valueScore(scored, graded) {
@@ -491,6 +266,7 @@ const EXECUTORS = {
   'general-read': locateSession,
   'general-build': valueSession((task, repository) => `${briefText(task)}\nCheckout: ${repository}.`),
   'ideate-worker': ideateSession,
+  'find-open-points': openPointsSession,
   'build-task': valueSession((task, repository) => `Brief: ${repository}/.exo/brief.md. Checkout: ${repository}.`, { prepare: writeBrief }),
   'solve-hard': valueSession(checkoutPrompt),
   orchestrator: valueSession(checkoutPrompt, { transcript: orchestratorTranscript }),
@@ -507,6 +283,7 @@ const FIXTURE_SOURCES = {
   'fix-review': replayFixtures,
   'general-read': () => new Map(readFixture().briefs.map((brief) => [brief.id, brief])),
   'general-build': valueFixtures,
+  'find-open-points': () => new Map(readJson(OPEN_POINT_BRIEFS).map((brief) => [brief.id, brief])),
   'ideate-worker': () => new Map(readJson(IDEATE_QUESTIONS).map((question) => [question.id, question])),
   'build-task': valueFixtures,
   'solve-hard': valueFixtures,

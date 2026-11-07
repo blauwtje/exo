@@ -5,8 +5,7 @@ import process from 'node:process';
 import { readJsonOrNull } from '#basics';
 import { createWorktree } from '#checkout';
 import { scratchPath } from '#scratch-path';
-
-const git = (directory, ...args) => spawnSync('git', ['-C', directory, ...args], { encoding: 'utf8' });
+import { git } from '#git';
 
 const windowFile = (root) => scratchPath(root, 'window.json');
 
@@ -51,7 +50,7 @@ function copyInputs(toplevel, slot, inputs) {
   for (const input of inputs) {
     const from = path.join(toplevel, input);
     if (!fs.statSync(from, { throwIfNoEntry: false })?.isFile() || path.basename(input).startsWith('.env')) continue;
-    if (git(toplevel, 'check-ignore', '-q', '--', input).status !== 0) continue;
+    if (git(toplevel, ['check-ignore', '-q', '--', input]).status !== 0) continue;
     fs.mkdirSync(path.dirname(path.join(slot, input)), { recursive: true });
     fs.copyFileSync(from, path.join(slot, input));
   }
@@ -59,16 +58,16 @@ function copyInputs(toplevel, slot, inputs) {
 
 function discard(toplevel, slots) {
   for (const slot of slots) {
-    git(toplevel, 'worktree', 'remove', '--force', slot);
+    git(toplevel, ['worktree', 'remove', '--force', slot]);
     fs.rmSync(slot, { recursive: true, force: true });
   }
-  git(toplevel, 'worktree', 'prune');
+  git(toplevel, ['worktree', 'prune']);
 }
 
 function writeBaseline(toplevel, fresh) {
   fs.mkdirSync(path.dirname(baselineFile(toplevel)), { recursive: true });
   if (!fresh && fs.existsSync(baselineFile(toplevel))) return null;
-  const status = git(toplevel, 'status', '--porcelain');
+  const status = git(toplevel, ['status', '--porcelain']);
   if (status.status !== 0) return { reason: `git status failed: ${status.stderr.trim()}` };
   fs.writeFileSync(baselineFile(toplevel), status.stdout);
   return null;
@@ -98,12 +97,12 @@ function openSlot(toplevel, number, { setup, inputs, variables }, made) {
 }
 
 export function openSlots({ root, numbers, setup, inputs = [], fresh, since }) {
-  const top = git(root, 'rev-parse', '--show-toplevel');
+  const top = git(root, ['rev-parse', '--show-toplevel']);
   if (top.status !== 0) return { reason: `${root} is no git checkout` };
   const toplevel = top.stdout.trim();
   const failed = writeBaseline(toplevel, fresh);
   if (failed) return failed;
-  const head = git(toplevel, 'rev-parse', 'HEAD');
+  const head = git(toplevel, ['rev-parse', 'HEAD']);
   if (head.status !== 0) return { reason: `git rev-parse HEAD failed: ${head.stderr.trim()}` };
   const base = head.stdout.trim();
   const made = [];

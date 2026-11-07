@@ -2,15 +2,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { spawnSync } from 'node:child_process';
 import { defaultRef } from '../../lib/git.mjs';
+import { gitLine } from '#git';
 
 export const MINIMUM_OVERLAP = 0.7;
 export const BASE_VARIABLE = 'EXO_RULE_RETENTION_BASE';
 export const ALLOWLIST_FILE = 'verify/rule-removals.txt';
 const MINIMUM_HASH_LENGTH = 8;
 const SHOWN_HASH_LENGTH = 12;
-const MAXIMUM_DIFF_BYTES = 256 * 1024 * 1024;
 const CHECK_NAME = 'rule retention';
 const CHECKED_FILE = /^skills\/[^/]+\/(?:SKILL\.md|references\/[^/]+\.md)$/;
 const DIFF_PATHSPEC = ['skills/*/SKILL.md', 'skills/*/references/*.md'];
@@ -32,16 +31,11 @@ const STOP_WORDS = new Set([
   'does', 'did', 'out', 'any', 'all', 'each', 'per', 'via', 'also', 'your', 'you', 'one'
 ]);
 
-function git(root, args) {
-  const answer = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: MAXIMUM_DIFF_BYTES });
-  return answer.status === 0 ? answer.stdout : null;
-}
-
 function baseRevision(root, explicit) {
   if (explicit) return explicit;
   const ref = defaultRef(root);
   if (ref === null) return null;
-  const mergeBase = git(root, ['merge-base', 'HEAD', ref.ref]);
+  const mergeBase = gitLine(root, ['merge-base', 'HEAD', ref.ref]);
   return mergeBase === null ? null : mergeBase.trim();
 }
 
@@ -131,7 +125,7 @@ function isAllowed(text, allowed) {
 }
 
 function removedDiff(repository, base) {
-  return git(repository.root, ['diff', '--no-color', '--no-ext-diff', '--no-renames', '-U0', base, '--', ...DIFF_PATHSPEC]);
+  return gitLine(repository.root, ['diff', '--no-color', '--no-ext-diff', '--no-renames', '-U0', base, '--', ...DIFF_PATHSPEC], { trim: false });
 }
 
 export function checkRuleRetention(report, repository, options = {}) {

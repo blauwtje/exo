@@ -21,6 +21,7 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `/exo:ideate <design question> [fast]` writes the top 3 ideas to `.exo/ideate/<slug>/report.md` with a source, a risk, a first step and an already-exists mark from GitHub, through persona subagents on the new sonnet `ideate-worker` agent.
 - `/exo:research <question>` answers with a short cited report from keyless web, Reddit, GitHub, Hacker News, Stack Overflow, Wikipedia, arXiv, podcast and YouTube sources through the new `research-worker` and `claim-judge` agents, and `verify.mjs` blocks the report until every quote is on its cached page and every footnote maps to a stored claim.
 - Once `suite-shadow.jsonl` shows `changedTestsTrialRuns` (run.json `defaults`, 10) consecutive full runs with no miss, a whole-suite proof runs only the changed tests, with a full run every that many runs; a miss restarts the count.
+- Checks flag rule lines copied across agents and `.mjs` modules over 8 KB, and the no-delete rule now reaches every agent that has Bash from one guard row.
 
 ### Changed
 
@@ -32,6 +33,15 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The build speed and cost judge counts real sessions (`benchmarks/session-stats.mjs`) with verdicts `worse`, `not-shown` and `better`, screens frontend-only steps on flow-web under `ideaScreenCapUsd`, leaves the `ideaConfirmCapUsd` confirmation to a hand-run `--full`, and `benchmarks/README.md` and `CONTRIBUTING.md` describe it.
 - A fresh `exo run <plan>` adopts the plan's earlier unfinished run, `state.json` keeps the spent money so the spend ceiling counts it after a resume, and a plain `exo run` resumes a parked run once no gate is open and its stop is resumable.
 - Every `exo run` stop (spend ceiling, autonomy pause, parked, breach, blocked, cap, signal) goes through one `stopRun` in `run-plan-stops.mjs` and writes `stop` (`kind`, `reason`, `task`, `resumable`) into `state.json`.
+- The start cheat sheet is generated from skill frontmatter and checked for drift, so new skills appear without hand edits.
+- The kind table now sets when a subagent's effort follows the session effort, through a per-kind `ceiling`; find-open-points moves to the new `open-points` kind, unused kinds and `stages` are gone, and the model kinds check fails a kind nothing names.
+- The verifier reads and parses each script once, runs the skill graph as a check, and `npm run validate` now runs validate:static and then the unit tests.
+- Resume no longer re-sends the session rules that its transcript already holds, and a check fails any tool-event hook that has no matcher.
+- Shared git helpers (`git`, `gitText`, `gitResult`, `gitLine`) in `lib/git.mjs` replace local `git()` copies, and a new check fails any new local one.
+- The ship, spec, gate, build, find-cause, start and design-ui skills and four agent prompts are trimmed under their limits, with the moved rules in new references.
+- The reference owner registry is a data file, `verify/reference-owner-rows.txt`, so a new reference file needs no check-code edit.
+- The review judges under `benchmarks/review-judges/` are generated from `agents/review-branch.md`, and a check fails on drift.
+- find-open-points keeps its `max` effort ceiling: in blind 8-brief A/Bs, high found 64.8% and xhigh 74.1% of the reference open points against 87.0% for max (`benchmarks/results/2026-11-07-fop-ab.md`, `benchmarks/results/2026-11-07-fop-xhigh.md`).
 
 ### Fixed
 
@@ -44,6 +54,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `benchmarks/session-stats.mjs` skips every `claude -p` session as headless and counts one turn per message.
 - Bash commands written for bash run as bash under zsh without a retry: any unquoted `$name`, `$1` or `$@` gets `shwordsplit` (not only a `for` loop list) and a `${name[i]}` subscript gets `ksharrays`, from one option table in `lib/shell-fixes.mjs`.
 - `remove-worktree.mjs` removes the worktree of a branch that already landed on main by squash, though later commits touch its files, and `squash-check.mjs` says such a branch has nothing left to squash; the branch is kept.
+- Generated Codex agents now carry the shared brief rules, such as no-delete, filtered by each agent's tools.
+- The review-branch `Red:` rule names review-input.md and its one `Task <n>:` line per task again.
 
 ### Added
 

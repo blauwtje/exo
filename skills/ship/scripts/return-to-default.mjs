@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { mainCheckout } from '#checkout';
 import { defaultBranch } from '#git';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { git } from '#git';
 
 const USAGE = 'usage: return-to-default.mjs [--merged <branch>]...';
 const USAGE_EXIT = 2;
 
-function git(dir, args) {
-  const result = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
+function gitOutcome(dir, args) {
+  const result = git(dir, args);
   const output = result.status === 0 ? result.stdout : result.stderr || result.stdout;
   return { ok: result.status === 0, text: (output ?? '').trim() };
 }
@@ -23,22 +23,22 @@ export function returnToDefault({ dir = process.cwd(), base = null, merged = [] 
   const root = mainCheckout(dir);
   if (root === null) return { pulled: false, line: `${dir} not moved: no git checkout` };
   const target = base ?? defaultBranch(root);
-  const current = git(root, ['branch', '--show-current']).text;
+  const current = gitOutcome(root, ['branch', '--show-current']).text;
   const here = current === '' ? 'a detached HEAD' : current;
   if (target === null) return { pulled: false, line: `${root} stays on ${here}: default branch unknown` };
   if (current !== target && !merged.includes(current)) {
     return { pulled: false, line: `${root} stays on ${here}: not a merged branch` };
   }
 
-  const changes = git(root, ['status', '--porcelain', '--untracked-files=no']);
+  const changes = gitOutcome(root, ['status', '--porcelain', '--untracked-files=no']);
   if (!changes.ok) return { pulled: false, line: `${root} stays on ${here}: ${firstLine(changes.text)}` };
   if (changes.text !== '') return { pulled: false, line: `${root} stays on ${here}: uncommitted changes` };
 
   if (current !== target) {
-    const switched = git(root, ['switch', target]);
+    const switched = gitOutcome(root, ['switch', target]);
     if (!switched.ok) return { pulled: false, line: `${root} stays on ${here}: ${firstLine(switched.text)}` };
   }
-  const pull = git(root, ['pull', '--ff-only']);
+  const pull = gitOutcome(root, ['pull', '--ff-only']);
   if (!pull.ok) return { pulled: false, line: `${root} on ${target}, not pulled: ${firstLine(pull.text)}` };
   return { pulled: true, line: `${root} on ${target}, pulled` };
 }

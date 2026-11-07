@@ -15,24 +15,21 @@ Shaping turns a request into a brief that settles what done means, so the build 
    - Spec always ends on a brief; with no open decision the brief still gets written.
    - Open with the verdict.
    - An open decision is one the user would notice that neither request nor code settles.
-   - When the diff fits one sentence or code settles every point, ask no question and let exo close each choice.
+   - Read `references/verdict.md` for the no-question case.
    - Ask only per `../route-skills/references/question.md` `## When to ask`.
    - When the user asked for options, follow `references/architecture-sketch.md` and write no file.
 2. **Sort each point.**
    - When running or reading code answers a point, record it and ask nothing.
    - Each open decision passes `## When to ask`. A plain product choice only the user can make becomes a question, root first; exo decides any other.
    - A decision the user left open stays open whatever the code does.
-   - Name the owning layer and a smaller alternative.
+   - Name the owning layer and a smaller option.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`, and record each choice exo decides in Decisions.
-   - Recommend a loaded skill's pattern over one it rules out.
-   - Plan approval approves only the `Land:` mode, so ask about it only when `ship` is `ask`.
-   - With no git repo or no `origin`, write `Land: local` and ask nothing.
+   - Read `references/ask-rules.md` for recommendations and the `Land:` question.
    - After the last answer, write the brief with no recap and no yes question.
 4. **Map, then locate.**
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, in plan mode too.
-   - In one background message dispatch up to eight `exo:locate-code` agents for ranges the map omits and one `exo:fetch-docs` round for outside facts. Read none of their output, fill no gap; use results on each completion, no polling or sleep.
-   - Search the map with `grep -n`; never read it.
+   - Then read `references/map-locate.md`.
 5. **List tasks** per `references/task-list.md`, `references/brief.md` and `references/templates.md`.
 6. **Store it** per `references/brief.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`. Fix the flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
@@ -57,6 +54,8 @@ Shaping turns a request into a brief that settles what done means, so the build 
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
 | `../../docs/principles/README.md` | Request adds or changes an AI agent or LLM worker, its prompt, tools or loop. |
 | `references/verdict.md` | Step 1. |
+| `references/ask-rules.md` | Step 3. |
+| `references/map-locate.md` | Step 4. |
 | `references/hand-off.md` | Step 9. |
 | `references/watching.md` | Step 9, run started. |
 | `references/measured-goal.md` | Goal is a measured score, cost or time on a task set. |

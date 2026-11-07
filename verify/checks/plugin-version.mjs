@@ -5,8 +5,8 @@
 // and a raised version must carry the dated section `npm run bump` writes.
 
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
+import { git } from '#git';
 
 const PACKAGE_FILE = 'package.json';
 const PLUGIN_FILE = '.claude-plugin/plugin.json';
@@ -16,10 +16,6 @@ const CHANGELOG_FILE = 'CHANGELOG.md';
 // to itself and would pass every unrecorded commit.
 const BASE_REF = 'origin/main';
 const THREE_FIELDS = /^\d+\.\d+\.\d+$/;
-
-function git(repository, args) {
-  return spawnSync('git', ['-C', repository.root, ...args], { encoding: 'utf8' });
-}
 
 export function compareVersions(left, right) {
   const leftFields = left.split('.').map(Number);
@@ -38,8 +34,8 @@ function marketplaceEntry(manifest, pluginName) {
 
 // Tracked differences and new files both ship, and `git diff` sees only the first.
 function treeDiffers(repository) {
-  if (git(repository, ['diff', '--quiet', BASE_REF]).status !== 0) return true;
-  return (git(repository, ['ls-files', '--others', '--exclude-standard']).stdout ?? '').trim() !== '';
+  if (git(repository.root, ['diff', '--quiet', BASE_REF]).status !== 0) return true;
+  return (git(repository.root, ['ls-files', '--others', '--exclude-standard']).stdout ?? '').trim() !== '';
 }
 
 function changelogText(repository) {
@@ -91,7 +87,7 @@ export function checkPluginVersion(report, repository, { strict = false } = {}) 
     return;
   }
 
-  const shown = git(repository, ['show', `${BASE_REF}:${PLUGIN_FILE}`]);
+  const shown = git(repository.root, ['show', `${BASE_REF}:${PLUGIN_FILE}`]);
   if (shown.status !== 0) {
     report.result('UNRUN', name, `every manifest carries ${declared}; ${BASE_REF} is not available to compare against`);
     return;
@@ -102,8 +98,8 @@ export function checkPluginVersion(report, repository, { strict = false } = {}) 
   if (order < 0) {
     // A release pushed after this branch forked raises origin/main alone; a version
     // equal to the fork point's means the branch never lowered it.
-    const mergeBase = git(repository, ['merge-base', 'HEAD', BASE_REF]).stdout.trim();
-    const forked = mergeBase === '' ? { status: 1 } : git(repository, ['show', `${mergeBase}:${PLUGIN_FILE}`]);
+    const mergeBase = git(repository.root, ['merge-base', 'HEAD', BASE_REF]).stdout.trim();
+    const forked = mergeBase === '' ? { status: 1 } : git(repository.root, ['show', `${mergeBase}:${PLUGIN_FILE}`]);
     if (forked.status === 0 && JSON.parse(forked.stdout).version === declared) {
       report.result('WARN', name, `every manifest carries ${declared}, as at the fork point; ${BASE_REF} moved ahead to ${baseVersion} with a release: rebase onto ${BASE_REF}`);
       return;
@@ -138,7 +134,7 @@ export function checkPluginVersion(report, repository, { strict = false } = {}) 
   // Only the lead writes the changelog line, at landing: a branch waits for it, while
   // the default branch and a detached HEAD (CI on a pull request) must already carry it.
   // `strict` demands it on any branch.
-  const branch = git(repository, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
+  const branch = git(repository.root, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
   if (!strict && branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
     report.result('PASS', name, `every manifest carries ${declared}; the tree differs from ${BASE_REF} and the lead writes the ${UNRELEASED_HEADING} line at landing`);
     return;

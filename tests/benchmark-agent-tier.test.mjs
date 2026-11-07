@@ -9,10 +9,11 @@ import { gradeRepair, loadFixtures } from '../benchmarks/review-replay.mjs';
 import { loadValueTasks, prepareValueRepo, scoreValueRepo } from '../benchmarks/value.mjs';
 import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
-import { Budget, apiKeySourceOf, candidateComparisons, candidatesFor, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, formatCompliance, ideaBrief, modelUsageCost, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, sessionCost, settingOf, summarizeCells, usageOfStream, usesApiKey, valueScore, wilson95 } from '../benchmarks/agent-tier.mjs';
+import { candidatesFor, formatCompliance, ideaBrief, offsetRuns, parseCandidate, planJobs, recordOf, recordedSessions, refusalText, resolveFixtures, runGated, settingOf, usesApiKey, valueScore } from '../benchmarks/agent-tier.mjs';
+import { Budget, apiKeySourceOf, candidateComparisons, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, sessionCost, summarizeCells, usageOfStream, wilson95 } from '../benchmarks/agent-tier/estimate.mjs';
 import { tempDir } from './harness.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner', 'general-build', 'general-read', 'ideate-worker'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner', 'general-build', 'general-read', 'ideate-worker', 'find-open-points'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }

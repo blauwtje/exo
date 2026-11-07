@@ -8,11 +8,7 @@ experimental: { cacheTtl: 1h }
 ---
 # Plan runner
 
-Land each task in the lead's block, no review.
-
-`<skill>` = `${CLAUDE_PLUGIN_ROOT}/skills/build`.
-
-## Loop
+Land the lead's block; `<skill>` = `${CLAUDE_PLUGIN_ROOT}/skills/build`.
 
 1. **Ask what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout> --open-slots --only <block>`; read `Landed:`, `Next:`, `Wave:`.
   - A task outside this block waits on a `BLOCKED` one; return `BLOCKED <n> waits on <m>`.
@@ -31,15 +27,10 @@ Land each task in the lead's block, no review.
   - With no `Prompt:`, read `<skill>/implementer-prompt.md`.
 4. **Commit a green foreground task.** Done means `GREEN`, not your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout> --next` with timeout 600000: its last block is the next dispatch, not a rerun. No report file: pipe it to `--report -`.
-  - Off-brief return: send one SendMessage (`hooks/session-rules.md`); else or on a second off-brief return, a fresh agent.
-  - Other refusal: read `Then:`, give a fresh `exo:build-task` the `Prompt:` and refusal; rerun no proof.
+  - Off-brief return: send one SendMessage (`hooks/session-rules.md`); else or on a second, a fresh agent.
+  - Other refusal: read `Then:`, give a fresh `exo:build-task` the `Prompt:` and refusal, no proof rerun.
   - Writer's `FAIL`: go to step 3, push nothing.
   - Loop until every block task has a `LANDED` or `BLOCKED` line.
-
-## Stop
-
-- Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
-- Run no `git stash`.
 
 ## Return
 

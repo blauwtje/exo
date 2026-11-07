@@ -1,14 +1,10 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { git } from '#git';
 
 const NAME = 'budget raises';
 const BUDGETS_PATH = 'verify/budgets.mjs';
 const BASE_REFS = ['main', 'origin/main'];
 const RAISE_LINE = /^Budget-raise:[ \t]+(\S+)[ \t]+(-?\d+(?:\.\d+)?)[ \t]+to[ \t]+(-?\d+(?:\.\d+)?):[ \t]*(\S.*)$/;
-
-function git(root, args) {
-  return spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-}
 
 function mergeBase(root) {
   for (const ref of BASE_REFS) {

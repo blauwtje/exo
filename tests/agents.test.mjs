@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
+import { GUARD_RULES, briefedPrompt } from '../lib/guard-rules.mjs';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const agentsRoot = path.join(repositoryRoot, 'agents');
@@ -87,13 +88,11 @@ test('an agent on the fast tier pins low effort, so no session effort reaches it
   }
 });
 
-const NO_DELETE = 'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.';
-
-test('every agent that loads no CLAUDE.md and holds Bash carries the no-delete rule itself', () => {
+test('every brief to an agent that holds Bash carries the no-delete rule from one source', () => {
+  const rule = GUARD_RULES.find((row) => row.id === 'no-delete').brief;
   const missing = agents
-    .filter((agent) => agent.frontmatter.omitClaudeMd === 'true')
     .filter((agent) => (agent.frontmatter.tools ?? '').split(', ').includes('Bash'))
-    .filter((agent) => !agent.body.includes(NO_DELETE))
+    .filter((agent) => !briefedPrompt('task', agent.frontmatter.tools.split(', ')).includes(rule))
     .map((agent) => agent.fileName);
   assert.deepEqual(missing, []);
 });

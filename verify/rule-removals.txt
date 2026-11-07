@@ -1,2 +1,9 @@
 9163eaf7f292 land-task reads a build report from stdin, so a missing report file no longer needs a SendMessage retry
 6f6ec8edc29b the fixed resume paragraph names no section a handoff may leave out, so it no longer lists Proven, Files touched, Next step or Open questions
+435174cee5d4 the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+40ea53e57107 the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+dd7a7676ea1c the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+de30b68edd76 the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+630b1d62703a the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+eff91901a144 the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+660ffa6d1b2a the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row

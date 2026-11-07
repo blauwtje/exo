@@ -242,8 +242,8 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
 });
 
 test('an inherit kind sets no model on an exo call, and a passed model is denied', () => {
-  assert.equal(call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', effort: 'medium' }), undefined);
-  const output = hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: handover', model: 'opus' });
+  assert.equal(call({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: peer-review', effort: 'medium' }), undefined);
+  const output = hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: peer-review', model: 'opus' });
   assert.equal(output.permissionDecision, 'deny');
   assert.match(output.permissionDecisionReason, /runs on the session model/);
 });
@@ -262,10 +262,18 @@ test('a label on an exo call with no model or effort moves it only to a label it
   assert.equal(hookOutput({ subagent_type: 'exo:locate-code', prompt: 'exo-kind: hardest\nx', model: 'opus', effort: 'high' }), undefined);
 });
 
-test('the raised find-open-points effort still wins over the table', () => {
-  const run = (level) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:find-open-points', prompt: 'x' }, effort: { level } }, 'on').hookSpecificOutput.updatedInput;
-  assert.equal(run('max').effort, 'max');
-  assert.equal(run('xhigh').effort, 'xhigh');
+test('a kind ceiling lifts its effort to the session effort up to the ceiling, and names no agent in the hook', () => {
+  const { kinds, agents } = readKindTable(undefined, { budget: 'on' });
+  const kind = kinds[agents['agents/find-open-points.md'].kind];
+  assert.equal(kind.ceiling, 'max');
+  const run = (input, level) => agentEffort({ tool_name: 'Agent', tool_input: input, effort: { level } }, 'on')?.hookSpecificOutput.updatedInput.effort;
+  const openPoints = { subagent_type: 'exo:find-open-points', prompt: 'x' };
+  for (const level of ['max', 'xhigh']) assert.equal(run(openPoints, level), level);
+  for (const level of ['low', 'medium', 'high', undefined]) assert.equal(run(openPoints, level), kind.effort);
+  assert.equal(run({ ...openPoints, effort: 'max' }, 'xhigh'), 'max');
+  assert.equal(run({ subagent_type: 'exo:locate-code', prompt: 'x' }, 'max'), kinds.lookup.effort);
+  const hook = fs.readFileSync(new URL('../hooks/agent-effort.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(hook, /exo:find-open-points/);
 });
 
 test('the denied call shows its reason in the hook line', () => {

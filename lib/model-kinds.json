@@ -17,7 +17,7 @@
       "models": ["deepseek-flash"],
       "tiers": { "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
-      "kindEfforts": { "build-task": "low", "doc-task": "low", "coordinate": "low", "build": "high", "orchestrator": "high", "task-runner": "low" }
+      "kindEfforts": { "build-task": "low", "doc-task": "low", "build": "high", "orchestrator": "high", "task-runner": "low" }
     }
   },
   "kinds": {
@@ -53,8 +53,8 @@
     "investigate": {
       "on": { "tier": "standard", "effort": "high" }
     },
-    "coordinate": {
-      "on": { "tier": "standard", "effort": "medium" }
+    "open-points": {
+      "on": { "tier": "standard", "effort": "high", "ceiling": "max" }
     },
     "orchestrator": {
       "on": { "tier": "strong", "effort": "medium" }
@@ -74,9 +74,6 @@
     "lookup": {
       "on": { "tier": "standard", "effort": "medium" }
     },
-    "prose": {
-      "on": { "tier": "standard", "effort": "high" }
-    },
     "chore": {
       "on": { "tier": "standard", "effort": "medium" }
     },
@@ -85,14 +82,7 @@
     },
     "peer-review": {
       "on": { "tier": "inherit", "effort": "medium" }
-    },
-    "handover": {
-      "on": { "tier": "inherit", "effort": null }
     }
-  },
-  "stages": {
-    "build-no-spec": { "kind": "hardest" },
-    "build": { "kind": "coordinate" }
   },
   "unnamed": {
     "types": ["general-purpose", "claude"],
@@ -110,7 +100,7 @@
   "agents": {
     "agents/build-task.md": { "kind": "build-task" },
     "agents/fetch-docs.md": { "kind": "research" },
-    "agents/find-open-points.md": { "kind": "investigate" },
+    "agents/find-open-points.md": { "kind": "open-points" },
     "agents/claim-judge.md": { "kind": "judge" },
     "agents/fix-review.md": { "kind": "fix-review" },
     "agents/ideate-worker.md": { "kind": "ideate" },

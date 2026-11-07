@@ -1,12 +1,8 @@
-import { spawnSync } from 'node:child_process';
 import { NONE_VALUE, RESULT_VALUE, WORDING_PATH } from '../../lib/evidence-rules.mjs';
+import { git } from '#git';
 
 const BASE_REF = 'origin/main';
 const NAME = 'edit evidence';
-
-function git(root, args) {
-  return spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-}
 
 function lines(run) {
   return run.stdout.split('\n').filter((line) => line !== '');

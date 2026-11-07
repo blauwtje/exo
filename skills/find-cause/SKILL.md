@@ -18,7 +18,7 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 4. **Predict, then fix.**
 5. **Prove.**
 6. **Retain project knowledge.** Per the table.
-7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../gate/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`) and fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain, else on `ship`.
+7. **Fresh eyes.** With no PR review, read `references/finish.md`, which sets `code-review` for when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, then ends on `ship`.
    - Invoked by a stage or workflow: ask nothing, return to caller.
 
 ## References
@@ -32,6 +32,7 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 | `../build/references/performance.md` | Speed |
 | `references/loop.md` | 1-5 |
 | `references/profiling.md` | Trace |
+| `references/finish.md` | 7 |
 | `../build/references/critique.md` | No review |
 | `../build/references/security.md` | When its first line applies. |
 | `../build/references/data-migration.md` | When its first line applies. |

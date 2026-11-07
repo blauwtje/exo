@@ -9,146 +9,20 @@ const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
 const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
-const EXPECTED_OWNER_ROWS = {
-  'skills/find-cause/SKILL.md': [
-    '../build/references/workspace.md',
-    'investigator-prompt.md',
-    'fixer-prompt.md',
-    '../build/references/performance.md',
-    'references/profiling.md',
-    '../build/references/critique.md',
-    '../build/references/security.md',
-    '../build/references/data-migration.md',
-    '../build/references/test-design.md',
-    'references/handoff.md',
-    'references/loop.md',
-    '../build/references/project-knowledge.md',
-    '../route-skills/references/closing.md',
-  ],
-  'skills/build/SKILL.md': [
-    'references/run-loop.md',
-    'references/run-loop-direct.md',
-    'references/agent-cases.md',
-    'references/fix-class.md',
-    'references/run-loop-inline.md',
-    'references/tail.md',
-    'references/task-mode.md',
-    'references/no-spec.md',
-    'references/workspace.md',
-    'references/wave-worktrees.md',
-    'references/conflict-wave.md',
-    'implementer-prompt.md',
-    'bug-fixer-prompt.md',
-    'review-fixer-prompt.md',
-    'drift-repairer-prompt.md',
-    'run-task-prompt.md',
-    '../route-skills/references/question.md',
-    'references/design-tasks.md',
-    'reviewer-prompt.md',
-    'references/fresh-eyes.md',
-    'references/critique.md',
-    'references/security.md',
-    'references/data-migration.md',
-    'references/test-design.md',
-    'references/test-first.md',
-    'references/project-knowledge.md',
-    'references/performance.md',
-    'references/rolling-window.md',
-    '../route-skills/references/closing.md',
-  ],
-  'skills/check-docs/SKILL.md': [],
-  'skills/run-plan/SKILL.md': [],
-  'skills/watch/SKILL.md': [],
-  'skills/research/SKILL.md': ['references/sources.md', 'references/verification.md', 'references/report-shape.md'],
-  'skills/ideate/SKILL.md': [],
-  'skills/review/SKILL.md': ['../gate/references/triage.md'],
-  'skills/improve/SKILL.md': ['references/worker-round.md', 'references/worker.md'],
-  'skills/prompt/SKILL.md': ['references/examples.md', 'references/note.md'],
-  'skills/gate/SKILL.md': ['references/review-rules.md', 'references/triage.md', 'references/repair.md', 'references/gate-lines.md', 'references/plan-checks.md', 'references/lessons.md', '../route-skills/references/closing.md'],
-  'skills/start/SKILL.md': [
-    'references/cheat-sheet.md',
-  ],
-  'skills/configure/SKILL.md': [
-    'references/setup-map.md',
-    '../route-skills/references/question.md',
-  ],
-  'skills/ship/SKILL.md': [
-    '../file-issues/references/fields.md',
-    '../route-skills/references/question.md',
-    'references/pr-prep.md',
-    'references/commit-split.md',
-    'references/fix-ci.md',
-    'references/merge-conflicts.md',
-    'references/pr-comments.md',
-    'references/watch.md',
-    'references/pr-merge.md',
-    'references/stack.md',
-    '../route-skills/references/closing.md',
-  ],
-  'skills/remember/SKILL.md': [
-    '../route-skills/references/question.md',
-    '../edit-skills/references/where-a-fix-lives.md',
-  ],
-  'skills/save-session/SKILL.md': [
-    'references/reconstructing-without-a-note.md',
-  ],
-  'skills/file-issues/SKILL.md': [
-    'references/fields.md',
-  ],
-  'skills/refactor/SKILL.md': [
-    'references/behavior-pin.md',
-    'references/legacy-api.md',
-    '../route-skills/references/closing.md',
-  ],
-  'skills/spec/SKILL.md': [
-    'references/stored-brief.md',
-    '../route-skills/references/question.md',
-    'references/brief.md',
-    'references/task-list.md',
-    'references/example-plan.md',
-    'references/templates.md',
-    '../build/references/data-migration.md',
-    '../build/references/test-design.md',
-    '../build/references/security.md',
-    'references/brief-in-an-issue.md',
-    '../file-issues/references/fields.md',
-    'references/architecture-sketch.md',
-    'references/verdict.md',
-    'references/hand-off.md',
-    'references/watching.md',
-    'references/measured-goal.md',
-    '../../docs/principles/README.md',
-  ],
-  'skills/edit-skills/SKILL.md': [
-    'references/pressure-scenarios.md',
-    'references/where-a-fix-lives.md',
-    'references/instruction-style.md',
-    'references/wording.md',
-    'references/description.md',
-    'references/skill-shape.md',
-    'references/agent-shape.md',
-    'references/hook-shape.md',
-    'references/script-shape.md',
-    'references/plugging-holes.md',
-    'references/blind-eval.md',
-    '../route-skills/references/closing.md',
-    '../../docs/principles/README.md',
-  ],
-  'skills/design-ui/SKILL.md': [
-    'references/slop.md',
-    'references/typography.md',
-    'references/color.md',
-    'references/layout.md',
-    'references/marketing.md',
-    'references/motion.md',
-    'references/reference-input.md',
-    'references/critic.md',
-  ],
-  'skills/write-docs/SKILL.md': [
-    'references/ai-tics.md',
-    'references/release-notes.md',
-  ],
-};
+export const OWNER_ROWS_FILE = 'verify/reference-owner-rows.txt';
+
+export function ownerRows() {
+  const rows = {};
+  for (const line of fs.readFileSync(OWNER_ROWS_FILE, 'utf8').split('\n')) {
+    if (line.trim() === '') continue;
+    const [skill, row] = line.trim().split(/\s+/);
+    rows[skill] ??= [];
+    if (row !== undefined) rows[skill].push(row);
+  }
+  return rows;
+}
+
+const EXPECTED_OWNER_ROWS = ownerRows();
 
 // A row that defers to its target's first line points at a file whose first
 // non-empty line is a read-when predicate, so the row can never name a file

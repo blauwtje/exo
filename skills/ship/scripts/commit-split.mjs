@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { attributionProblem, subjectProblem } from '#commit-text';
 import { UsageError, isMain, parseFlags } from '#script-flags';
+import { git } from '#git';
 
 const USAGE = 'usage: commit-split.mjs --list | --plan <file> [--apply] [--dir <path>]';
 const USAGE_EXIT = 2;
@@ -14,18 +14,18 @@ const FLAGS = { dir: 'string', list: 'boolean', plan: 'string', apply: 'boolean'
 
 export class SplitError extends Error {}
 
-function git(root, args, env = {}) {
-  const result = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: { ...process.env, ...env } });
+function gitStrict(root, args, env = {}) {
+  const result = git(root, args, { env: { ...process.env, ...env } });
   if (result.status !== 0) throw new SplitError(`git ${args[0]} failed: ${(result.stderr || result.stdout).trim()}`);
   return result.stdout;
 }
 
 export function repositoryRoot(dir) {
-  return git(dir, ['rev-parse', '--show-toplevel']).trim();
+  return gitStrict(dir, ['rev-parse', '--show-toplevel']).trim();
 }
 
 export function dirtyFiles(root) {
-  const output = git(root, ['status', '--porcelain=v1', '-z', '-uall', '--no-renames']);
+  const output = gitStrict(root, ['status', '--porcelain=v1', '-z', '-uall', '--no-renames']);
   return output
     .split('\0')
     .filter((entry) => entry !== '')
@@ -76,30 +76,30 @@ function workingTreeHash(root) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-split-'));
   const env = { GIT_INDEX_FILE: path.join(directory, 'index') };
   try {
-    git(root, ['read-tree', 'HEAD'], env);
-    git(root, ['add', '-A'], env);
-    return git(root, ['write-tree'], env).trim();
+    gitStrict(root, ['read-tree', 'HEAD'], env);
+    gitStrict(root, ['add', '-A'], env);
+    return gitStrict(root, ['write-tree'], env).trim();
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
 }
 
 function stagedFiles(root) {
-  const output = git(root, ['diff', '--cached', '--name-only', '-z', '--no-renames']);
+  const output = gitStrict(root, ['diff', '--cached', '--name-only', '-z', '--no-renames']);
   return output.split('\0').filter((name) => name !== '');
 }
 
 function commitGroup(root, group) {
-  git(root, ['add', '-A', '--', ...group.files]);
+  gitStrict(root, ['add', '-A', '--', ...group.files]);
   const stray = stagedFiles(root).filter((file) => !group.files.includes(file));
   if (stray.length > 0) throw new SplitError(`group "${group.subject}" would also commit ${stray.join(', ')}`);
   const message = group.body ? ['-m', group.subject, '-m', group.body] : ['-m', group.subject];
-  git(root, ['commit', '-q', ...message]);
+  gitStrict(root, ['commit', '-q', ...message]);
 }
 
 export function applySplit(root, groups) {
   const expected = workingTreeHash(root);
-  git(root, ['reset', '-q']);
+  gitStrict(root, ['reset', '-q']);
   let made = 0;
   for (const group of groups) {
     try {
@@ -109,7 +109,7 @@ export function applySplit(root, groups) {
     }
     made += 1;
   }
-  const actual = git(root, ['rev-parse', 'HEAD^{tree}']).trim();
+  const actual = gitStrict(root, ['rev-parse', 'HEAD^{tree}']).trim();
   if (actual !== expected) throw new SplitError(`final tree ${actual} differs from the original ${expected}`);
   return { commits: made, tree: actual };
 }

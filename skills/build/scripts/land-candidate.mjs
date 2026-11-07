@@ -4,7 +4,8 @@ import { realpathSync } from 'node:fs';
 import { coversCompanion, decisionsPathOf, isCovered, planTaskTrailer } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError, OutsideFilesError } from './land-errors.mjs';
-import { git, headMessage, headSha, moveHead } from './land-git.mjs';
+import { headMessage, headSha, moveHead } from './land-git.mjs';
+import { gitText } from '#git';
 import { candidateTrailer } from './land-commit-block.mjs';
 import { nestedWorktrees } from './land-paths.mjs';
 import { runLandGate } from './land-gate.mjs';
@@ -29,12 +30,12 @@ export function commitCandidate(block, root, task, planId, reportText = null) {
   carryRaises(root, reportText);
   const candidate = headSha(root);
   if (!headMessage(root).split('\n').includes(trailer)) throw new LandingError(`the Commit: block of Task ${task.number} left no commit carrying "${trailer}"`);
-  if (git(root, 'rev-parse', `${candidate}~1`) !== base) throw new LandingError(`the Commit: block of Task ${task.number} did not make exactly one commit on ${base.slice(0, 7)}`);
+  if (gitText(root, ['rev-parse', `${candidate}~1`]) !== base) throw new LandingError(`the Commit: block of Task ${task.number} did not make exactly one commit on ${base.slice(0, 7)}`);
   return { base, candidate };
 }
 
 function authorEnvOf(root, candidate) {
-  const [name, email, date] = git(root, 'log', '-1', '--format=%an%x00%ae%x00%aI', candidate).split('\0');
+  const [name, email, date] = gitText(root, ['log', '-1', '--format=%an%x00%ae%x00%aI', candidate]).split('\0');
   return { ...process.env, GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_AUTHOR_DATE: date };
 }
 
@@ -74,7 +75,7 @@ function refuseOutsideTaskFiles(task, { root, planPath, base }) {
   const exempt = [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
   const worktrees = nestedWorktrees(root);
   const top = realpathSync(root);
-  const outside = git(root, 'diff', '--name-only', base, 'HEAD').split('\n')
+  const outside = gitText(root, ['diff', '--name-only', base, 'HEAD']).split('\n')
     .filter((changed) => changed !== '' && !changed.startsWith(`${SCRATCH_FOLDER}/`) && !exempt.includes(changed) && !worktrees.has(path.join(top, changed)))
     .filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed));
   if (outside.length > 0) throw new OutsideFilesError(`the commit of Task ${task.number} holds a path outside Files: ${outside.map((file) => `\`${file}\``).join(', ')}`);
@@ -87,7 +88,7 @@ export function committedSha(task, { root, planId, planPath, base }) {
   if (!body.includes(trailer)) throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
   const expectedSubject = task.commitSubject ?? task.title;
   if (subject !== expectedSubject) throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
-  if (git(root, 'rev-parse', 'HEAD~1') !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${base.slice(0, 7)}, the commit Task ${task.number} started from`);
+  if (gitText(root, ['rev-parse', 'HEAD~1']) !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${base.slice(0, 7)}, the commit Task ${task.number} started from`);
   refuseOutsideTaskFiles(task, { root, planPath, base });
   return sha;
 }

@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { git, headMessage } from './land-git.mjs';
+import { headMessage } from './land-git.mjs';
+import { gitText } from '#git';
 
 export const CHECKPOINT_TRAILER = /^(?:Plan-checkpoint|Checkpoint): /m;
 
@@ -19,7 +20,7 @@ function checkpointRun(root) {
 
 export function foldCheckpoints(root) {
   const count = checkpointRun(root);
-  if (count > 0) git(root, 'reset', '--soft', `HEAD~${count}`);
+  if (count > 0) gitText(root, ['reset', '--soft', `HEAD~${count}`]);
   return count;
 }
 
@@ -38,7 +39,7 @@ function handoffReportOf(root, number) {
 
 function checkpointReportOf(root) {
   if (!CHECKPOINT_TRAILER.test(headMessage(root))) return null;
-  return `Stopped worker, work taken from the checkpoint commit ${git(root, 'rev-parse', '--short', 'HEAD')}\n`;
+  return `Stopped worker, work taken from the checkpoint commit ${gitText(root, ['rev-parse', '--short', 'HEAD'])}\n`;
 }
 
 export function reportFlagOf(report) {

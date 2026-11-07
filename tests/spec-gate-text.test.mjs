@@ -27,7 +27,7 @@ const agents = fs.readdirSync(agentsRoot)
   .filter((fileName) => fileName.endsWith('.md'))
   .map(readAgent);
 
-const specSkill = fs.readFileSync(path.join(skillsRoot, 'spec/SKILL.md'), 'utf8');
+const specSkill = fs.readFileSync(path.join(skillsRoot, 'spec/references/map-locate.md'), 'utf8');
 
 test('spec dispatches locate-code and fetch-docs in one message, and find-open-points opens with its reads together', () => {
   const locate = specSkill.split('\n').find((line) => line.includes('`exo:locate-code`'));

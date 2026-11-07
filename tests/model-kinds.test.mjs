@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INHERIT, TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
-import { findInheritanceGaps } from '../verify/model-kinds.mjs';
+import { findInheritanceGaps, findUnusedKinds } from '../verify/model-kinds.mjs';
 import { tempDir } from './harness.mjs';
 
 const JOBS = [
@@ -57,7 +57,7 @@ test('labels on an entry outside agents is rejected', () => {
 
 test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
   const { kinds } = readKindTable(undefined, { provider: 'deepseek' });
-  for (const name of ['build-task', 'doc-task', 'coordinate', 'task-runner']) assert.equal(kinds[name].effort, 'low', name);
+  for (const name of ['build-task', 'doc-task', 'task-runner']) assert.equal(kinds[name].effort, 'low', name);
   for (const name of ['orchestrator', 'review', 'build', 'hardest', 'chore']) assert.equal(kinds[name].effort, 'high', name);
   for (const kind of Object.values(kinds)) assert.equal(kind.model, INHERIT, kind.model);
 });
@@ -112,6 +112,17 @@ test('a skills or agents line dispatching a claude agent with no kind is a gap',
 test('this repository has no hooks text or CLAUDE.md line dispatching a kindless general-purpose agent', () => {
   const root = fileURLToPath(new URL('..', import.meta.url));
   assert.deepEqual(findInheritanceGaps(root, readKindTable()).filter((gap) => /^(hooks|\.claude)\//.test(gap)), []);
+});
+
+test('a kind no table entry, exo-kind: line or kind lookup names is unused', () => {
+  const root = rootWith({ 'skills/a/SKILL.md': 'opens with `exo-kind: labelled`', 'skills/a/scripts/x.mjs': "pin({ kind: 'scripted' });" });
+  const table = { kinds: { mapped: {}, unnamed: {}, labelled: {}, scripted: {}, dead: {}, 'labelled-more': {} }, agents: { 'agents/x.md': { kind: 'mapped' } }, dispatches: [], unnamed: { kind: 'unnamed', jobs: {} } };
+  assert.deepEqual(findUnusedKinds(root, table).map((line) => line.split(' ')[2]), ['dead', 'labelled-more']);
+});
+
+test('this repository has no unused kind', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  assert.deepEqual(findUnusedKinds(root, readKindTable()), []);
 });
 
 test('kinds.orchestrator.on.effort is medium', () => {

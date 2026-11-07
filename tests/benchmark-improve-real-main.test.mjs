@@ -75,8 +75,12 @@ test('projection adds the arm cap, the train calls and the held-out runs', () =>
 });
 
 test('scorer session counts come from the data files', () => {
-  assert.deepEqual(scorerSessions(REPO, 'routing'), { train: 15, heldOut: 15 });
-  assert.deepEqual(scorerSessions(REPO, 'locate'), { train: 6, heldOut: 4 });
+  const fixture = path.join(REPO, 'tests/fixtures/scorer-sessions');
+  assert.deepEqual(scorerSessions(fixture, 'routing'), { train: 3, heldOut: 2 });
+  const real = scorerSessions(REPO, 'routing');
+  assert.ok(real.train > 0 && real.heldOut > 0);
+  const locate = scorerSessions(REPO, 'locate');
+  assert.ok(locate.train > 0 && locate.heldOut > 0);
   assert.ok(sessionUsd(REPO, 'routing') > 0);
 });
 

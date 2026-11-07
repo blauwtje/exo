@@ -367,5 +367,16 @@
   {"prompt":"Vat deze YouTube-lezing samen en geef de tijdstippen van de belangrijkste punten: https://www.youtube.com/watch?v=6Dh-RL__uN4","expect":"watch","split":"held-out"},
   {"prompt":"Summarise this Vimeo talk for me: https://vimeo.com/76979871","expect":null,"split":"train"},
   {"prompt":"How do I embed a YouTube video in my page so it keeps its aspect ratio?","expect":null,"split":"held-out"},
-  {"prompt":"Summarise the article at https://example.com/blog/caching-guide","expect":null,"split":"held-out"}
+  {"prompt":"Summarise the article at https://example.com/blog/caching-guide","expect":null,"split":"held-out"},
+  {"prompt":"Make the pricing page look less generic; the data and behavior are already fixed.","expect":"design-ui","shadows":"spec","split":"train"},
+  {"prompt":"Rewrite the description of my ship skill so it reads as clear prose and triggers less often.","expect":"edit-skills","shadows":"write-docs","split":"train"},
+  {"prompt":"The export job crashes on empty files and I cannot reproduce it with one command; find out why.","expect":"find-cause","shadows":"build","split":"train"},
+  {"prompt":"Every task of the plan is landed; run the checks and review the branch before the pull request.","expect":"gate","shadows":"ship","split":"train"},
+  {"prompt":"Rename the Invoice service to Billing across modules without changing behavior.","expect":"refactor","shadows":"build","split":"train"},
+  {"prompt":"Save this unfinished session for a fresh one to continue, as a short note and not a doc page.","expect":"save-session","shadows":"write-docs","split":"train"},
+  {"prompt":"Push the branch and open a pull request for it.","expect":"ship","shadows":"gate","split":"train"},
+  {"prompt":"I want audit logging and the change is decided in outline, but the data to store and the trade-off between designs are open.","expect":"spec","shadows":"build","split":"train"},
+  {"prompt":"Summarise this YouTube video into a changelog line: https://www.youtube.com/watch?v=abc123xyz00","expect":"watch","shadows":"write-docs","split":"train"},
+  {"prompt":"Write prose for the README section on how to create a skill.","expect":"write-docs","shadows":"edit-skills","split":"train"},
+  {"prompt":"Add the new column to the orders table, update the three services that read it and write the migration, test-first.","expect":"build","shadows":"spec","split":"train"}
 ]

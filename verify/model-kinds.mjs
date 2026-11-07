@@ -65,6 +65,34 @@ export function findInheritanceGaps(root, table) {
   return [...gaps, ...findKindlessDispatches(root)];
 }
 
+const KIND_USE_FOLDERS = ['agents', 'hooks', 'skills'];
+
+function sourceFiles(root, folder) {
+  const base = path.join(root, folder);
+  if (!fs.existsSync(base)) return [];
+  return fs.readdirSync(base, { recursive: true })
+    .filter((name) => /\.(md|mjs)$/.test(name))
+    .map((name) => path.join(folder, name));
+}
+
+function tableUses(table) {
+  const members = [...Object.values(table.agents ?? {}), ...(table.dispatches ?? []), table.unnamed ?? {}];
+  return [...members.flatMap((member) => [member.kind, ...(member.labels ?? [])]), ...Object.values(table.unnamed?.jobs ?? {})];
+}
+
+function namesKind(text, kind) {
+  const name = escapeRegExp(kind);
+  return new RegExp(`exo-kind: ${name}(?![\\w-])|kind: '${name}'|kinds\\['${name}'\\]`).test(text);
+}
+
+export function findUnusedKinds(root, table) {
+  const used = new Set(tableUses(table));
+  const texts = KIND_USE_FOLDERS.flatMap((folder) => sourceFiles(root, folder)).map((file) => fs.readFileSync(path.join(root, file), 'utf8'));
+  return Object.keys(table.kinds)
+    .filter((kind) => !used.has(kind) && !texts.some((text) => namesKind(text, kind)))
+    .map((kind) => `lib/model-kinds.json: kind ${kind} is named by no agents, dispatches or unnamed entry and by no exo-kind: line or kind lookup in agents, hooks or skills`);
+}
+
 function filePins(root, file) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
   return PINNED_FIELDS

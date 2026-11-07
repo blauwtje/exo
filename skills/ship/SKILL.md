@@ -14,11 +14,9 @@ Goal: ship only as the user says.
 2. **Overview**: `../route-skills/references/closing.md`, three lines, then the question.
    - `Changed`, `Verified` go only to run report.
    - From `gate`, its lines replace overview.
-   - Run `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" propose --count`; above 0 add `Lessons: <n> ready: /exo:remember`.
-   - A named follow-up adds `Follow-up: <what>, no issue filed; say so to file one`. No `gh issue create` before the yes.
+   - Then read `references/overview-extras.md`.
 3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.
-   - An `Unasked: push` line runs `--route push` unforced before the question, dropping the menu's Push.
-   - Plan `Land:` from `gate` sets the route, no question: `push-main` → `push`, `pr` → `open-pr`, `local` → no route.
+   - Read `references/ask-menu.md` for routes the menu skips.
    - A set `route: ` skips asking; explain an unapplied `ship=`.
    - `--land` → take the menu's (A) with no question.
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
@@ -39,6 +37,8 @@ Goal: ship only as the user says.
 | `../file-issues/references/fields.md` | 4 fields. |
 | `../route-skills/references/question.md` | 3, `DIRTY`. |
 | `references/pr-prep.md` | 4 body. |
+| `references/overview-extras.md` | 2. |
+| `references/ask-menu.md` | 3. |
 | `references/commit-split.md` | Dirty tree. |
 | `references/stack.md` | Stacked PRs. |
 | `references/fix-ci.md` | Failing check, watch. |

@@ -1,71 +1,19 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { briefedInput, isolationFields, resultToolsFields, sizeReason } from '../lib/brief-denials.mjs';
 import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
-import { BUDGETS, EFFORTS, INHERIT, readKindTable, TABLE_PATH } from '../lib/model-kinds.mjs';
+import { EFFORTS, INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { baseOf, budgetedReads, locatedReads, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
+import { defaulted, liftedEffort, resolvedKind, unknownKind } from '../lib/kind-resolution.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
-
-function raised(input, level) {
-  if (input.subagent_type !== 'exo:find-open-points' || !['xhigh', 'max'].includes(level) || [level, 'max'].includes(input.effort)) return input;
-  return { ...input, effort: level };
-}
-
-function isJobWord(word, job) {
-  return [job, `${job}s`, `${job}es`, `${job}d`, `${job}ed`, `${job.replace(/e$/, '')}ing`].includes(word);
-}
-
-function jobKind(jobs, description = '') {
-  const words = description.toLowerCase().match(/[a-z]+/g) ?? [];
-  return Object.entries(jobs).find(([job]) => words.some((word) => isJobWord(word, job)))?.[1];
-}
-
-function isUnnamed(table, input) {
-  return table.unnamed.types.includes(input.subagent_type ?? 'general-purpose') && input.model === undefined && input.effort === undefined;
-}
-
-function sessionProvider() {
-  const name = process.env.EXO_PROVIDER;
-  if (!name) return 'claude';
-  const { providers } = JSON.parse(readFileSync(TABLE_PATH, 'utf8'));
-  return Object.hasOwn(providers, name) ? name : 'claude';
-}
-
-function movesAgent(entry, input, label) {
-  return !entry || entry.labels?.includes(label) || input.model !== undefined || input.effort !== undefined;
-}
-
-const LABEL_LINE = /^exo-kind:\s*\S+/;
-
-function labelOf(table, input, entry) {
-  const label = /^exo-kind:\s*(\S+)/.exec(input.prompt ?? '')?.[1];
-  return table.kinds[label] && movesAgent(entry, input, label) ? label : undefined;
-}
-
-function unnamedTable(input, budget) {
-  if (!BUDGETS.includes(budget)) return null;
-  const table = readKindTable(undefined, { budget, provider: sessionProvider() });
-  return isUnnamed(table, input) && !jobKind(table.unnamed.jobs, input.description) ? table : null;
-}
-
-function unknownKind(input, budget) {
-  const table = unnamedTable(input, budget);
-  return Boolean(table) && LABEL_LINE.test(input.prompt ?? '') && !labelOf(table, input);
-}
-
-function defaulted(input, budget) {
-  if (!unnamedTable(input, budget) || LABEL_LINE.test(input.prompt ?? '')) return input;
-  return { ...input, prompt: `exo-kind: build\n${input.prompt ?? ''}` };
-}
 
 function budgetSetting() {
   return settingOrDefault('budget').value;
@@ -76,23 +24,12 @@ function unknownKindFields({ tool_name: tool, tool_input: input } = {}, budget =
   return { permissionDecision: 'deny', permissionDecisionReason: denyReason('unknown-kind') };
 }
 
-function resolvedKind(input, budget) {
-  if (!BUDGETS.includes(budget)) return null;
-  const retry = /^exo-retry$/m.test(input.prompt ?? '');
-  const table = readKindTable(undefined, { budget, provider: sessionProvider(), retry });
-  const agent = /^exo:(.+)$/.exec(input.subagent_type ?? '')?.[1];
-  const unnamed = isUnnamed(table, input);
-  const entry = table.agents[`agents/${agent}.md`];
-  const name = labelOf(table, input, entry) ?? entry?.kind ?? (unnamed ? jobKind(table.unnamed.jobs, input.description) ?? table.unnamed.kind : undefined);
-  return table.kinds[name] ? { table, agent, kind: table.kinds[name], label: labelOf(table, input, entry) } : null;
-}
-
-function filled(input, budget) {
+function filled(input, budget, level) {
   const kind = resolvedKind(input, budget)?.kind;
   if (!kind) return input;
   const { model: passedModel, ...rest } = input;
   const model = passedModel ?? (kind.model === INHERIT ? undefined : kind.model);
-  const effort = input.effort ?? kind.effort;
+  const effort = liftedEffort(input.effort ?? kind.effort, kind.ceiling, level);
   return { ...rest, ...(model && { model }), ...(effort && { effort }) };
 }
 
@@ -117,7 +54,7 @@ function readsRewrite(hookInput = {}) {
 export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = readsRewrite(hookInput)) {
   const { tool_name: tool, tool_input: input, effort, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
-  const updated = briefedInput(raised(filled(defaulted(rewrite.input, budget), budget), effort?.level), cwd);
+  const updated = briefedInput(filled(defaulted(rewrite.input, budget), budget, effort?.level), cwd);
   if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }

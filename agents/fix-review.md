@@ -27,8 +27,6 @@ Keep a new test file only when the plan names it. Otherwise move the test into a
 
 Add no file that the plan's Non-goals rule out.
 
-Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
-
 You have 40 turns, so mark every finding in the findings file by your thirtieth turn.
 
 Before returning, use TaskStop on each background shell or agent you started that still runs.

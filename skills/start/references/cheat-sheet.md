@@ -1,35 +1,30 @@
 # Cheat sheet
 
-Relay the two tables as the whole reply, rows unchanged; they line up only as written.
+Relay the table as the whole reply, rows unchanged. It is generated from each skill's frontmatter by `node skills/start/scripts/overview.mjs --write`.
 
-Ordered by how often people use each skill. **type it** marks a skill the model never runs on its own; typing the exact command is the only way in.
+**Just ask** skills start from your own words; **Type it** skills run only when you type the command. For what a skill does, give `/exo:start` a goal.
 
-| Skill | What it does | Just say instead |
-|---|---|---|
-| `start` **type it** | Shows this table, or picks the one skill for a stated goal | Type `/exo:start` when no skill name comes to mind |
-| `edit-skills` **type it** | Writes or improves a skill or agent | Type `/exo:edit-skills` |
-| `design-ui` | Designs or improves how a screen looks | "make this page nicer", "new component" |
-| `build` | Runs a plan file, with helpers and review, or with no plan file, builds a decided change test-first where it can | "run the plan at docs/...", or after `/clear`: "carry on", or "build X", "fix this bug, here's how to reproduce it" |
-| `gate` | Runs the scripted gate, reviews the branch and repairs its findings | "verify the plan at docs/...", "verify the branch for the plan at docs/..." |
-| `review` **type it** | Reviews a diff or pull request with no plan | Type `/exo:review` |
-| `ship` | Pushes, opens or merges a pull request, fixes its checks or review comments | "push this", "merge the PR", "fix the checks" |
-| `spec` | Decides what "done" means, when that is still open | "I want something for X but I'm not sure what exactly" |
-| `spec` then `build` | Writes the brief with its task list, then offers to build it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |
-| `write-docs` **type it** | Writes a README, docs page, PR or commit text | Type `/exo:write-docs` |
-| `find-cause` | Finds the real cause of a failure before fixing it | "this doesn't work", "why does X crash?" |
-| `refactor` | Restructures code without changing its behavior | "rename X", "move Y", "split this module" |
-| `save-session` **type it** | Saves where a session is, for a fresh one after `/clear` | Type `/exo:save-session`, then `/clear` |
-| `file-issues` **type it** | Files GitHub issues | Type `/exo:file-issues` |
-| `configure` **type it** | Shows or changes an exo setting | Type `/exo:configure` |
-| `prompt` **type it** | Rewrites a rough prompt for Claude, then runs it after you say yes | Type `/exo:prompt <rough prompt>` |
-| `watch` | Reads one or more YouTube videos through their captions and answers from them | "summarise this video: <url>", "what does the speaker say about X in <url>" |
-| `improve` **type it** | Loops on code against one fixed score command, keeps a commit only when the score gets better | Type `/exo:improve <goal>` |
-| `remember` **type it** | Books a correction about this repository, or approves a claim two sessions have booked | Type `/exo:remember` |
-
-## Rarely
-
-Skills for a case most sessions never hit.
-
-| Skill | What it does | Just say instead |
-|---|---|---|
-| `check-docs` **type it** | Checks how a pinned library, API or service actually behaves | Type `/exo:check-docs` |
+| Skill | How to start it |
+|---|---|
+| `build` | Just ask |
+| `check-docs` | Type `/exo:check-docs <library, version and question>` |
+| `configure` | Type `/exo:configure [nothing to walk every setting, or a key, a value and --scope project|local]` |
+| `design-ui` | Just ask |
+| `edit-skills` | Just ask |
+| `file-issues` | Type `/exo:file-issues <what the issue or issues should cover>` |
+| `find-cause` | Just ask |
+| `gate` | Just ask |
+| `ideate` | Type `/exo:ideate <design question> [fast]` |
+| `improve` | Type `/exo:improve <goal>` |
+| `prompt` | Type `/exo:prompt <rough prompt>` |
+| `refactor` | Just ask |
+| `remember` | Type `/exo:remember [the correction this session must not lose]` |
+| `research` | Type `/exo:research <question> [quick | standard | deep]` |
+| `review` | Type `/exo:review [base..head | commit | branch | pull request number]` |
+| `run-plan` | Type `/exo:run-plan <plan path> | setup | ci` |
+| `save-session` | Just ask |
+| `ship` | Just ask |
+| `spec` | Just ask |
+| `start` | Type `/exo:start [goal or spec-path]` |
+| `watch` | Just ask |
+| `write-docs` | Just ask |

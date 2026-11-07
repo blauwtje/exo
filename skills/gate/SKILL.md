@@ -18,8 +18,7 @@ The gate readies a branch for a pull request.
    - On `FAIL` or `UNPLANNED`, end the turn with its report; rerun no check. Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`.
 2. **Review the branch.** Reviewer `none`: skip only the dispatch, still merge.
    - Dispatch `exo:review-branch` per `DISPATCH Branch`, one message. Start with `exo-kind: review-deep` unless the line names no kind, add its fields, end each with `Read:` and changed files.
-   - Add 3-5 questions from Goal and each task's `Data:`, `Risk:` and Acceptance. When `OVERLAP` is not `none`, add `DISPATCH Overlap`.
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --base <base> --report <each report path>`, each `CODE-RULES` path included. Its first line is step 3's verdict, `FINDING` lines the `question`, `note` and `report` findings only, `UNREAD-FILE` unread files.
+   - Then read `references/review-dispatch.md`.
    - On a `CODEX offer` line, ask once for a `codex exec` review of plan and diff, adding them to findings path.
    - `--land` → skip.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:fix-review` agent, with no model override, filled dispatch line and `../build/review-fixer-prompt.md` by path.
@@ -37,6 +36,7 @@ The gate readies a branch for a pull request.
 | `references/review-rules.md` | Each `BLOCKED` return or resume; step 2 passes `review-rules=` unread. |
 | `references/triage.md` | Step 2. |
 | `references/repair.md` | Step 3. |
+| `references/review-dispatch.md` | Step 2. |
 | `references/lessons.md` | Step 4. |
 | `references/gate-lines.md` | Step 1. |
 | `references/plan-checks.md` | Never: reviewer reads it. |

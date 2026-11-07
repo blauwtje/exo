@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { execFileSync } from 'node:child_process';
+import { gitText } from './lib/git.mjs';
 import { releaseHeading, sectionBody } from './verify/changelog.mjs';
 
 const ORDER = ['Highlights', 'Added', 'Changed', 'Fixed', 'Removed'];
@@ -35,13 +35,9 @@ if (heading === undefined) {
   process.exit(1);
 }
 
-function git(args) {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-}
-
 function succeeds(args) {
   try {
-    git(args);
+    gitText(root, args);
     return true;
   } catch {
     return false;
@@ -50,7 +46,7 @@ function succeeds(args) {
 
 function previousTag(reference) {
   try {
-    return git(['describe', '--tags', '--abbrev=0', '--match', 'v*', `${reference}^`]);
+    return gitText(root, ['describe', '--tags', '--abbrev=0', '--match', 'v*', `${reference}^`]);
   } catch {
     return undefined;
   }
@@ -65,7 +61,7 @@ const repositoryUrl = String(packageJson.repository).replace(/\.git$/, '');
 
 function firstParentLine() {
   try {
-    return new Set(git(['rev-list', '--first-parent', range]).split('\n'));
+    return new Set(gitText(root, ['rev-list', '--first-parent', range]).split('\n'));
   } catch {
     return new Set();
   }
@@ -75,7 +71,7 @@ const mainLine = firstParentLine();
 /** The merges in the range that brought `sha` in through a side parent, those on the first-parent line of the reference first. */
 function mergesBringing(sha) {
   const merges = [];
-  for (const line of git(['log', '--merges', '--ancestry-path', '--format=%H%x09%P%x09%s', `${sha}..${reference}`]).split('\n')) {
+  for (const line of gitText(root, ['log', '--merges', '--ancestry-path', '--format=%H%x09%P%x09%s', `${sha}..${reference}`]).split('\n')) {
     if (line === '') continue;
     const [hash, parents, subject] = line.split('\t');
     const firstParent = parents.split(' ')[0];
@@ -88,7 +84,7 @@ function mergesBringing(sha) {
 function source(line) {
   let added;
   try {
-    added = git(['log', '--reverse', '--format=%H%x09%h%x09%s', `-S${line}`, range, '--', 'CHANGELOG.md']).split('\n')[0];
+    added = gitText(root, ['log', '--reverse', '--format=%H%x09%h%x09%s', `-S${line}`, range, '--', 'CHANGELOG.md']).split('\n')[0];
   } catch {
     return undefined;
   }

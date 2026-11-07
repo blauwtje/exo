@@ -1,27 +1,22 @@
 import fs from 'node:fs';
 import process from 'node:process';
-import { spawnSync } from 'node:child_process';
 import { Refusal, checkoutRoot } from './cli-refusal.mjs';
 import { readOps } from './run-state.mjs';
-
-const git = (root, args) => {
-  const done = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
-  return { ok: done.status === 0, text: (done.stdout ?? '').trim(), error: (done.stderr ?? '').trim() };
-};
+import { gitResult } from '#git';
 
 const shortSha = (sha) => (sha === null ? 'none' : sha.slice(0, 7));
 const refSha = (root, ref) => {
-  const found = git(root, ['rev-parse', '-q', '--verify', ref]);
+  const found = gitResult(root, ['rev-parse', '-q', '--verify', ref]);
   return found.ok ? found.text : null;
 };
 
 function checkedOutAt(root, ref) {
-  const listed = git(root, ['worktree', 'list', '--porcelain']).text.split('\n\n');
+  const listed = gitResult(root, ['worktree', 'list', '--porcelain']).text.split('\n\n');
   const entry = listed.find((block) => block.split('\n').includes(`branch ${ref}`));
   return entry === undefined ? null : entry.split('\n')[0].slice('worktree '.length);
 }
 
-const isDirty = (tree) => git(tree, ['status', '--porcelain']).text !== '';
+const isDirty = (tree) => gitResult(tree, ['status', '--porcelain']).text !== '';
 const refused = (text) => ({ status: 'refused', text });
 const settled = (text) => ({ status: 'already', text });
 
@@ -33,8 +28,8 @@ function reverseRef(root, id, op) {
   const holder = checkedOutAt(root, op.ref);
   const backup = `refs/exo/undo/${id}/${op.ref.replace(/^refs\//, '')}`;
   if (op.after === null) {
-    if (!git(root, ['cat-file', '-e', `${op.before}^{commit}`]).ok) return refused(`${label}: commit ${shortSha(op.before)} is gone`);
-    return { status: 'would', text: `${label}: recreate the deleted ref`, run: () => git(root, ['update-ref', op.ref, op.before, '']) };
+    if (!gitResult(root, ['cat-file', '-e', `${op.before}^{commit}`]).ok) return refused(`${label}: commit ${shortSha(op.before)} is gone`);
+    return { status: 'would', text: `${label}: recreate the deleted ref`, run: () => gitResult(root, ['update-ref', op.ref, op.before, '']) };
   }
   if (holder !== null && isDirty(holder)) return refused(`${label}: checked out in ${holder} with uncommitted work`);
   if (op.before === null) {
@@ -43,8 +38,8 @@ function reverseRef(root, id, op) {
       status: 'would',
       text: `${label}: remove the created ref, backup ${backup}`,
       run: () => {
-        git(root, ['update-ref', backup, op.after]);
-        return git(root, ['update-ref', '-d', op.ref, op.after]);
+        gitResult(root, ['update-ref', backup, op.after]);
+        return gitResult(root, ['update-ref', '-d', op.ref, op.after]);
       },
     };
   }
@@ -52,20 +47,20 @@ function reverseRef(root, id, op) {
     status: 'would',
     text: `${label}: move the ref back, backup ${backup}`,
     run: () => {
-      git(root, ['update-ref', backup, op.after]);
-      return holder === null ? git(root, ['update-ref', op.ref, op.before, op.after]) : git(holder, ['reset', '--hard', '-q', op.before]);
+      gitResult(root, ['update-ref', backup, op.after]);
+      return holder === null ? gitResult(root, ['update-ref', op.ref, op.before, op.after]) : gitResult(holder, ['reset', '--hard', '-q', op.before]);
     },
   };
 }
 
 function reverseHead(op) {
-  const now = git(op.root, ['symbolic-ref', '-q', 'HEAD']).text || null;
+  const now = gitResult(op.root, ['symbolic-ref', '-q', 'HEAD']).text || null;
   const label = `HEAD of ${op.root} ${op.after ?? 'detached'} -> ${op.before ?? 'detached'}`;
   if (now === op.before) return settled(`${label}: already undone`);
   if (now !== op.after) return refused(`${label}: HEAD is now ${now ?? 'detached'}`);
   if (op.before === null) return { status: 'manual', text: `${label}: left as is, the checkout was detached before the run` };
   if (isDirty(op.root)) return refused(`${label}: ${op.root} has uncommitted work`);
-  return { status: 'would', text: `${label}: switch back`, run: () => git(op.root, ['switch', op.before.replace(/^refs\/heads\//, '')]) };
+  return { status: 'would', text: `${label}: switch back`, run: () => gitResult(op.root, ['switch', op.before.replace(/^refs\/heads\//, '')]) };
 }
 
 function reverseWorktree(op) {

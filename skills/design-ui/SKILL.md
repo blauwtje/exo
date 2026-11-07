@@ -7,7 +7,7 @@ description: Use when a page or component's look or copy changes, or it looks em
 
 Build the page as a real product someone could ship tomorrow, designed from the world of the people who use it. The enemy is a style picked with no link to the subject, which gives one house look across unrelated briefs. The overcorrection is a page that passes every lint line, or paints one themed motif on every surface, yet nobody would choose it. The subject's own world makes a page specific, and a critique by fresh eyes makes it good.
 
-Plan on about 900 s at effort high. Spend it on the direction, the imagery and the critique round; a build that skips them looks finished and generic.
+Plan on about 900 s at effort high.
 
 ## Kind
 
@@ -33,22 +33,11 @@ A named direction wins: the request's own look, the repo's tokens, a plan's `## 
 
 Read `references/slop.md` while choosing; it names the generic looks and copy tells to steer away from. Ask only when the page cannot be built without the answer; else decide and report the decision.
 
-Steer away from the exo house look, since it is what this skill produced across unrelated briefs: pale ground, serif display with sans body and mono labels, hairline rules, small stamped props. The model's own defaults are listed in `references/slop.md`. Banning a look alone swaps it for another fixed look, or leaves the space empty, so put working detail where the banned detail stood:
+Steer away from the exo house look, since it is what this skill produced across unrelated briefs: pale ground, serif display with sans body and mono labels, hairline rules, small stamped props. Banning a look alone swaps it for another fixed look, or leaves the space empty, so put working detail where the banned detail stood:
 
 - Mono labels and stamped props: real labels set in the item's own color, counters, status chips, timestamps and progress.
 - Hairline rules: the world's own edges and dividers (a track line, a dock stripe, a tape edge), or a change of ground value.
 - Eyebrows and section numbers: annotations on the art that name what it shows (a callout on a chart point, a label on a map pin).
-
-## Craft
-
-Open each reference when you reach its part of the build; each holds the reasons and the depth this file leaves out.
-
-- Type: `references/typography.md`: a display face for titles and the primary object, a quiet text face for everything else, local font files allowed.
-- Color: `references/color.md`: one dominant color with a sharp accent, value range, materials and depth.
-- Layout: `references/layout.md`: app and document structure, filling the frame, hierarchy, spacing, density.
-- Marketing: `references/marketing.md`: product in the hero, an artifact per section, band rhythm.
-- Reference: `references/reference-input.md`: a supplied image, recording or URL, shown beside the result with numbered regions.
-- Motion: `references/motion.md`: one orchestrated load, state transitions, reduced motion.
 
 ## Imagery
 

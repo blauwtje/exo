@@ -1,10 +1,6 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { LandLockError, withLandLock } from '#land-lock';
 import { LockHeldError } from './land-errors.mjs';
-
-export function git(root, ...args) {
-  return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
-}
 
 export function headMessage(root) {
   const head = spawnSync('git', ['-C', root, 'log', '-1', '--format=%B'], { encoding: 'utf8' });

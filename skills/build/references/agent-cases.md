@@ -25,5 +25,20 @@ Task <n>: GREEN
 <each command under Proof>: pass
 Report: <report path>
 
+- Report layout:
+
+Landed: <change>
+Test first: yes, <category> | no
+Red: <test command>: fail | none, <why>
+  <assertion and observed value>
+Proof:
+<command>: pass or fail
+  <last output lines>
+Unresolved: none
+
 - When a service is down, run `node ${CLAUDE_PLUGIN_ROOT}/lib/services.mjs --root <checkout>` once and rerun. If it is still down, return `BLOCKED <n> ENV` and edit no code.
 - When `--check` fails, fix the failure inside `Files:` and rerun at most twice, then return `FAIL` with the last lines.
+- With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`, and return only:
+
+Task <n>: GREEN | diff: <diff path> | log: <log path>
+Task <n>: <BLOCKED, PLAN DRIFT or FAIL> <what stopped, one clause> | diff: <diff path> | log: <log path>

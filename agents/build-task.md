@@ -39,21 +39,9 @@ Build one plan task and report it.
 
 - Leave the folder of `Report to:` alone. Write at most 25 lines plus `Choice:` lines.
 - Done means proof on the real product, else `skipped`.
-- Layout:
-
-Landed: <change>
-Test first: yes, <category> | no
-Red: <test command>: fail | none, <why>
-  <assertion and observed value>
-Proof:
-<command>: pass or fail
-  <last output lines>
-Unresolved: none
+- Lay it out as in `agent-cases.md` `## build-task`: `Landed:`, `Test first:`, `Red:`, `Proof:`, `Unresolved:`.
 
 ## Return
 
 - Write the report, fix each rule your diff breaks, then run `node ${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs --check --plan <plan> --task <n> --root <checkout>` before GREEN, until it prints `Report OK`, without a proof rerun.
-- With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`, and return only:
-
-Task <n>: GREEN | diff: <diff path> | log: <log path>
-Task <n>: <BLOCKED, PLAN DRIFT or FAIL> <what stopped, one clause> | diff: <diff path> | log: <log path>
+- With `Return: one line`, write the diff and log files and return only the line `agent-cases.md` `## build-task` gives.

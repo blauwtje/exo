@@ -3,34 +3,30 @@
 // trailing-whitespace scan of untracked files, which git cannot see.
 
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { git } from '#git';
 
 const TRAILING_WHITESPACE = /[ \t]+$/;
 const BASE_REF = 'origin/main';
-
-function git(repository, args) {
-  return spawnSync('git', ['-C', repository.root, ...args], { encoding: 'utf8' });
-}
 
 function nonEmptyLines(text) {
   return (text ?? '').split('\n').filter((line) => line !== '');
 }
 
 function diffBase(repository) {
-  const mergeBase = git(repository, ['merge-base', 'HEAD', BASE_REF]);
+  const mergeBase = git(repository.root, ['merge-base', 'HEAD', BASE_REF]);
   if (mergeBase.status !== 0) return [];
   return [mergeBase.stdout.trim()];
 }
 
 export function checkGitWhitespace(report, repository) {
-  if (git(repository, ['rev-parse', '--git-dir']).status !== 0) {
+  if (git(repository.root, ['rev-parse', '--git-dir']).status !== 0) {
     report.result('UNRUN', 'git diff --check', 'repository root is not inside a git work tree');
     return;
   }
 
-  const diff = git(repository, ['diff', '--check', ...diffBase(repository), '--', '.']);
+  const diff = git(repository.root, ['diff', '--check', ...diffBase(repository), '--', '.']);
   const untrackedErrors = [];
-  for (const relativePath of nonEmptyLines(git(repository, ['ls-files', '--others', '--exclude-standard']).stdout)) {
+  for (const relativePath of nonEmptyLines(git(repository.root, ['ls-files', '--others', '--exclude-standard']).stdout)) {
     const file = repository.join(relativePath);
     if (!(fs.existsSync(file) && fs.statSync(file).isFile())) continue;
     repository.lines(file).forEach((line, index) => {

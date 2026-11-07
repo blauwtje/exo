@@ -27,6 +27,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INHERIT, readKindTable } from '../../lib/model-kinds.mjs';
+import { preambleWithBrief } from './brief.mjs';
 import { codexBody, codexMarkdown, codexOpenaiYaml, splitFrontmatter } from './rules.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -115,7 +116,6 @@ function addSkills(root, known, files, sources) {
 
 function addAgents(root, known, files, sources) {
   const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'), { provider: 'codex' });
-  const preamble = fs.readFileSync(path.join(root, 'harnesses', 'codex', 'agent-preamble.md'), 'utf8');
 
   for (const [file, entry] of Object.entries(table.agents)) {
     const name = `exo-${path.basename(file, '.md')}`;
@@ -127,7 +127,7 @@ function addAgents(root, known, files, sources) {
     files.set(generated, renderAgent({
       name,
       description: codexBody(file, entry.description ?? own.description, known),
-      instructions: `${preamble.trimEnd()}\n\n${codexBody(file, body.replace(/^\n+/, ''), known)}`,
+      instructions: `${preambleWithBrief(root, own)}${codexBody(file, body.replace(/^\n+/, ''), known)}`,
       model: resolved.model,
       effort: resolved.effort,
       sandbox: READ_ONLY.includes(file) ? 'read-only' : 'workspace-write'

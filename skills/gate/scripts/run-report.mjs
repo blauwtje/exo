@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { mainCheckout } from '#checkout';
@@ -7,13 +6,13 @@ import { answerOf, renderRunReport } from './gate-report.mjs';
 import { transcriptFolder } from '#confine-claude';
 import { agentContextTarget } from '#context-limits';
 import { contextPeaks } from '#context-decisions';
+import { gitText } from '#git';
 
 function contextSection(planPath, root) {
-  const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   try {
     let since;
     try {
-      since = Number(git('log', '--diff-filter=A', '--format=%ct', '--', planPath).split('\n').filter(Boolean).pop()) * 1000;
+      since = Number(gitText(root, ['log', '--diff-filter=A', '--format=%ct', '--', planPath]).split('\n').filter(Boolean).pop()) * 1000;
     } catch { }
     if (!Number.isFinite(since) || since <= 0) since = fs.statSync(planPath).mtimeMs;
     const main = mainCheckout(root);

@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { improveDefaults } from '../skills/improve/scripts/round.mjs';
-import { baselineNoise } from '../skills/improve/scripts/setup.mjs';
+import { baselineNoise } from '../skills/improve/scripts/baseline.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const SETUP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'improve', 'scripts', 'setup.mjs');

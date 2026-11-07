@@ -1,0 +1,9 @@
+[
+  {"prompt":"a","expect":"find-cause","split":"train"},
+  {"prompt":"b","expect":"find-cause","split":"train"},
+  {"prompt":"c","expect":"find-cause","split":"train"},
+  {"prompt":"d","expect":"find-cause","split":"held-out"},
+  {"prompt":"e","expect":"find-cause","split":"held-out"},
+  {"prompt":"f","expect":"build","split":"train"},
+  {"prompt":"g","expect":"build","split":"held-out"}
+]

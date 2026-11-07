@@ -7,16 +7,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { spawnSync } from 'node:child_process';
+import { git } from '#git';
 
 const BASE_REF = 'origin/main';
 const FOLDERS = ['skills', 'agents', 'rules', 'hooks'];
 const WORDS = ['only', 'not', 'no', 'never', 'every', 'each', 'all', 'full', 'except', 'unless'];
 const NAME = 'boundary words';
-
-function git(root, args) {
-  return spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-}
 
 export function countWords(text) {
   const counts = Object.fromEntries(WORDS.map((word) => [word, 0]));

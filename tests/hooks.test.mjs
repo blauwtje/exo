@@ -76,7 +76,7 @@ test('one Bash hook runs the dispatcher for the Bash guard', () => {
 });
 
 test('the session hook points at a memory file only where one exists', () => {
-  const hook = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-start.mjs'), 'utf8');
+  const hook = fs.readFileSync(path.join(REPOSITORY, 'lib', 'session-pointers.mjs'), 'utf8');
   assert.match(hook, /commonDir\(cwd\)/, 'the memory pointer does not resolve the common git directory');
   assert.match(hook, /fs\.existsSync\(memoryFile\)/, 'the memory pointer is added without testing for the file');
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');

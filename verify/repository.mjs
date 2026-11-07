@@ -60,6 +60,14 @@ export function createRepository(root) {
       .sort(comparePaths);
   }
 
+  const texts = new Map();
+  function readOnce(file) {
+    const stat = fs.statSync(file);
+    const key = `${file}\0${stat.mtimeMs}\0${stat.size}`;
+    if (!texts.has(key)) texts.set(key, fs.readFileSync(file, 'utf8'));
+    return texts.get(key);
+  }
+
   return {
     root: absoluteRoot,
     skillsRoot,
@@ -97,6 +105,6 @@ export function createRepository(root) {
       if (split.length > 0 && split[split.length - 1] === '') split.pop();
       return split;
     },
-    text: (file) => fs.readFileSync(file, 'utf8')
+    text: readOnce
   };
 }

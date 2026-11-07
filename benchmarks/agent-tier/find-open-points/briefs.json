@@ -1,0 +1,34 @@
+[
+  {
+    "id": "b1",
+    "brief": "# Add a --since flag to the `ledger export` command of the acme-ledger CLI\n\n**Goal:** `ledger export --since <date>` writes only entries newer than the date.\n**Decisions:**\n1. The flag filters on the entry `created` field.\n**Non-goals:** no change to the import command.\n**Acceptance:** `ledger export --since 2025-01-01` prints fewer rows than `ledger export` on the sample ledger.\n**Tasks:**\n1. Parse --since in src/cli/export.js and filter entries before they are written.\n2. Add a test in tests/export.test.js for the flag.\n"
+  },
+  {
+    "id": "b2",
+    "brief": "# Extract the retry logic from the HTTP client into a shared module\n\n**Goal:** the HTTP client and the queue worker use one retry helper in lib/retry.js, with unchanged behavior.\n**Decisions:**\n1. Exponential backoff with jitter stays as it is today.\n**Non-goals:** no new retry policies.\n**Acceptance:** existing tests in tests/http.test.js and tests/worker.test.js pass unchanged.\n**Tasks:**\n1. Move the loop from src/http/client.js into lib/retry.js.\n2. Make src/queue/worker.js call lib/retry.js and delete its own copy.\n"
+  },
+  {
+    "id": "b3",
+    "brief": "# Add GET /api/v1/orders/:id/invoice returning a PDF invoice\n\n**Goal:** a signed-in customer can download the invoice for their own order.\n**Decisions:**\n1. Use the existing PDF renderer.\n**Non-goals:** no email delivery.\n**Acceptance:** GET with a valid id returns 200 with application/pdf.\n**Tasks:**\n1. Add the route in src/api/orders.js.\n2. Render the invoice with the order data and stream it.\n3. Add an integration test.\n"
+  },
+  {
+    "id": "b4",
+    "brief": "# Migrate the users table from integer ids to UUIDs\n\n**Goal:** users.id becomes a UUID and every foreign key follows.\n**Decisions:**\n1. Use Postgres uuid type with gen_random_uuid().\n**Non-goals:** no change to the sessions table.\n**Acceptance:** the migration runs on the staging snapshot and the app test suite passes.\n**Tasks:**\n1. Write migration db/migrate/20251101_users_uuid.sql adding the new column, backfilling and swapping keys.\n2. Update the ORM models and fixtures.\n"
+  },
+  {
+    "id": "b5",
+    "brief": "# Add a dark mode toggle to the settings page\n\n**Goal:** the user can switch between light and dark theme from Settings.\n**Decisions:**\n1. A toggle in the Appearance section.\n**Non-goals:** no per-page themes.\n**Acceptance:** toggling changes the page colors immediately.\n**Tasks:**\n1. Add a ThemeToggle component to src/settings/Appearance.tsx.\n2. Define dark colors as CSS variables.\n"
+  },
+  {
+    "id": "b6",
+    "brief": "# Add a pre-commit hook that blocks commits containing TODO markers in staged files\n\n**Goal:** `git commit` fails when a staged added line contains TODO.\n**Decisions:**\n1. Implement in scripts/hooks/pre-commit.sh.\n**Non-goals:** no CI change.\n**Acceptance:** staging a file with a TODO line and committing exits non-zero.\n**Tasks:**\n1. Write the script scanning `git diff --cached`.\n2. Document installation in CONTRIBUTING.md.\n"
+  },
+  {
+    "id": "b7",
+    "brief": "# Speed up the dashboard summary query that takes 8 seconds\n\n**Goal:** the dashboard summary loads in under 1 second for the largest account.\n**Decisions:**\n1. Add a materialized view for the daily totals.\n**Non-goals:** no frontend changes.\n**Acceptance:** the summary endpoint p95 is under 1 second on the load-test dataset.\n**Tasks:**\n1. Create the materialized view in db/views/daily_totals.sql.\n2. Point src/dashboard/summary.js at the view.\n3. Add a refresh job.\n"
+  },
+  {
+    "id": "b8",
+    "brief": "# Generate the CLI reference page from the command definitions and publish it\n\n**Goal:** docs/cli.md is generated from the command definitions and kept in sync.\n**Decisions:**\n1. A script scripts/gen-cli-docs.js reads src/cli/commands.js.\n**Non-goals:** no hand-written guides.\n**Acceptance:** running the script rewrites docs/cli.md and the git diff is empty after a second run.\n**Tasks:**\n1. Write the generator.\n2. Add a CI step that fails when docs/cli.md is stale.\n3. Publish the page to the docs site.\n"
+  }
+]

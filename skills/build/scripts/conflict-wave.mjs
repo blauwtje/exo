@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,8 +12,7 @@ import { loadRunConfig } from './run-config.mjs';
 import { runLandGate } from './land-gate.mjs';
 import { LandingError } from './land-errors.mjs';
 import { scriptPath } from './next-task-paths.mjs';
-
-const git = (directory, args) => execFileSync('git', ['-C', directory, ...args], { encoding: 'utf8' }).trim();
+import { gitText } from '#git';
 
 export const branchOf = (number) => `exo-conflict-${number}`;
 
@@ -25,7 +24,7 @@ export function resolverOn(env = process.env) {
 }
 
 function landedSince(root, base, planId) {
-  const messages = git(root, ['log', `${base}..HEAD`, '--format=%B']);
+  const messages = gitText(root, ['log', `${base}..HEAD`, '--format=%B']);
   const pattern = new RegExp(`^Plan-task: ${planId}/(\\d+)$`, 'gm');
   return [...messages.matchAll(pattern)].map((match) => match[1]);
 }
@@ -56,14 +55,14 @@ export function keepConflict({ planPath, root, number, sha, base }) {
   const folder = folderOf(root, number);
   const tree = path.join(folder, 'tree');
   fs.mkdirSync(folder, { recursive: true });
-  git(root, ['worktree', 'add', '-q', '-b', branchOf(number), tree, 'HEAD']);
+  gitText(root, ['worktree', 'add', '-q', '-b', branchOf(number), tree, 'HEAD']);
   spawnSync('git', ['-C', tree, 'cherry-pick', sha], { encoding: 'utf8' });
   const files = unmergedPaths(tree);
-  git(tree, ['add', '-A']);
-  git(tree, ['commit', '-q', '-n', '-m', `wip: conflicted pick of ${sha}`]);
+  gitText(tree, ['add', '-A']);
+  gitText(tree, ['commit', '-q', '-n', '-m', `wip: conflicted pick of ${sha}`]);
   fs.writeFileSync(path.join(folder, 'pick.json'), JSON.stringify({ sha, base, files }));
-  fs.writeFileSync(path.join(folder, 'ours.diff'), git(root, ['diff', base, 'HEAD']));
-  fs.writeFileSync(path.join(folder, 'theirs.diff'), git(root, ['diff', base, sha]));
+  fs.writeFileSync(path.join(folder, 'ours.diff'), gitText(root, ['diff', base, 'HEAD']));
+  fs.writeFileSync(path.join(folder, 'theirs.diff'), gitText(root, ['diff', base, sha]));
   copyBriefs(root, folder, [number, ...landedSince(root, base, planIdOf(planPath))]);
   return resolverLines({ planPath, root, number, folder, tree, files });
 }
@@ -78,8 +77,8 @@ export function landResolved({ planPath, root, number }) {
   const { sha, files } = JSON.parse(fs.readFileSync(path.join(folder, 'pick.json'), 'utf8'));
   const markers = conflictMarkers(tree, files);
   if (markers.length > 0) return stop(number, `branch ${branch} still has conflict markers in ${markers.join(', ')}`);
-  git(tree, ['add', '-A']);
-  if (git(tree, ['status', '--porcelain']) !== '') git(tree, ['commit', '-q', '-n', '-m', `fix: resolve conflict of ${sha}`]);
+  gitText(tree, ['add', '-A']);
+  if (gitText(tree, ['status', '--porcelain']) !== '') gitText(tree, ['commit', '-q', '-n', '-m', `fix: resolve conflict of ${sha}`]);
   const frame = frameOf(parsePlan(fs.readFileSync(planPath, 'utf8')).frame);
   try {
     runLandGate(frame.landGate, tree);
@@ -89,11 +88,11 @@ export function landResolved({ planPath, root, number }) {
   }
   const block = squashBlock(root, branch);
   if (block !== null) return stop(number, `branch ${branch}: ${block.problem}; ${block.fix}`);
-  git(root, ['merge', '--squash', branch]);
-  git(root, ['commit', '-q', '-n', '--allow-empty', '-C', sha]);
-  git(root, ['worktree', 'remove', '--force', tree]);
-  git(root, ['branch', '-D', branch]);
-  return `LANDED ${number} ${git(root, ['rev-parse', 'HEAD'])}\nResolved branch ${branch} landed and removed; the slot folder of task ${number} is still kept.\n`;
+  gitText(root, ['merge', '--squash', branch]);
+  gitText(root, ['commit', '-q', '-n', '--allow-empty', '-C', sha]);
+  gitText(root, ['worktree', 'remove', '--force', tree]);
+  gitText(root, ['branch', '-D', branch]);
+  return `LANDED ${number} ${gitText(root, ['rev-parse', 'HEAD'])}\nResolved branch ${branch} landed and removed; the slot folder of task ${number} is still kept.\n`;
 }
 
 const USAGE = [

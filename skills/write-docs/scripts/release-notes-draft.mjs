@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { gitText } from '#git';
 
 const SECTIONS = ['Added', 'Changed', 'Fixed', 'Removed'];
 const SECTION_OF_TYPE = new Map([['feat', 'Added'], ['fix', 'Fixed'], ['perf', 'Changed'], ['revert', 'Removed']]);
@@ -15,13 +16,9 @@ const HASH = new RegExp(`\\s*\\(${HASH_CORE}\\)|\\b${HASH_CORE}\\b`, 'g');
 const RECORD = '\x1e';
 const FIELD = '\x1f';
 
-function git(repo, args) {
-  return execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-}
-
 export function lastReleaseTag(repo, to) {
   try {
-    return git(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]);
+    return gitText(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]);
   } catch {
     return null;
   }
@@ -66,7 +63,7 @@ export function parseEntry({ subject, body = '', files = [] }) {
 }
 
 export function readCommits(repo, spec) {
-  const log = git(repo, ['log', '--no-merges', '--name-only', `--format=${RECORD}%s${FIELD}%b${FIELD}`, spec]);
+  const log = gitText(repo, ['log', '--no-merges', '--name-only', `--format=${RECORD}%s${FIELD}%b${FIELD}`, spec]);
   return log
     .split(RECORD)
     .filter((record) => record !== '')
@@ -77,7 +74,7 @@ export function readCommits(repo, spec) {
 }
 
 function commitDate(repo, ref) {
-  return ref === null ? null : git(repo, ['log', '-1', '--format=%cI', ref]);
+  return ref === null ? null : gitText(repo, ['log', '-1', '--format=%cI', ref]);
 }
 
 function loadPulls(repo, file) {
