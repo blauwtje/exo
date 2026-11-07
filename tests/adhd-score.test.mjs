@@ -41,7 +41,7 @@ test('ratio uses visible reply length and the baseline replies, not billed token
 });
 
 test('visibleTokens counts words, numbers and punctuation marks, not whitespace', () => {
-  assert.equal(visibleTokens('Dat kan, maar 3 keer.'), 7);
+  assert.equal(visibleTokens('That works, but 3 times.'), 7);
   assert.equal(visibleTokens(''), 0);
 });
 

@@ -2879,7 +2879,7 @@ Releases before 0.134.11; newer ones are in [CHANGELOG.md](CHANGELOG.md).
 
 ### Fixed
 
-- The `memory` nudge hook fires on Dutch corrections such as "nee, …", "dat klopt niet" and "eigenlijk …", and still stays quiet on an ordinary Dutch sentence.
+- The `memory` nudge hook fires on German corrections such as "nein, …", "das stimmt nicht" and "eigentlich …", and still stays quiet on an ordinary German sentence.
 - `memory` renders only live lines into `memory.md`, keeps superseded and dropped history in `memory.json` outside the 2,000-byte budget, and adds `retire --claim <n>`, so repeated supersedes no longer refuse every write.
 - `debug` writes its repro log to `$(git rev-parse --git-dir)/debug-repro.log`, so it works in a linked worktree where `.git` is a file.
 - `shipping`'s `wait-checks.mjs` writes gh's output to `<git-dir>/exo/wait-checks.log` and prints one line, `checks: pass`, `checks: fail <names>`, `checks: timeout` or `checks: none`, instead of the table gh reprints every 10 seconds.

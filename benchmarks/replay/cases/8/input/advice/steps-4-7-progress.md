@@ -1,6 +1,6 @@
 # Steps 4-7 of `.exo/advice/review.md`: progress
 
-Request (2026-10-16): build steps 4-7 of `## Aanbevolen volgorde`. Steps 1-3 on main (4db12938, dbabb9d3, 700a162b). Keep planning small; a test only when it proves quality, performance, speed or efficiency and is truly valuable. Step fails → finish the rest, report what is missing.
+Request (2026-10-16): build steps 4-7 of `## Recommended order`. Steps 1-3 on main (4db12938, dbabb9d3, 700a162b). Keep planning small; a test only when it proves quality, performance, speed or efficiency and is truly valuable. Step fails → finish the rest, report what is missing.
 Done when: each built step on `main`; `npm run check` ends `FAIL=0 WARN=0 UNRUN=0`.
 
 ## Steps

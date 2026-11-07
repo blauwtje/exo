@@ -118,7 +118,6 @@ test('turn 2 is judged only when turn 1 listed the default as item 1 under the D
   const { listsDefaultFirst } = await import('../benchmarks/decided.mjs');
   const result = (text) => streamOf({ type: 'result', result: text });
   assert.equal(listsDefaultFirst(result('Done.\n\n**Decided for you**\n1. kept 0-based; reply `1` for 1-based')), true);
-  assert.equal(listsDefaultFirst(result('Klaar.\n\n**Voor je besloten**\n1. 0-based, omdat de rest zo telt; antwoord `1` voor 1-based')), true);
   assert.equal(listsDefaultFirst(result('Fertig.\n\n**Für dich entschieden**\n1. 0-basiert, weil der Rest so zählt; antworte `1` für 1-basiert')), true);
   assert.equal(listsDefaultFirst(result('Fini.\n\n**Décidé pour toi**\n1. base 0, car le reste compte ainsi ; réponds `1` pour base 1')), true);
   assert.equal(listsDefaultFirst(result('Done.\n\n**Note**\n1. kept 0-based, no reply number')), false);

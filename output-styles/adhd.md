@@ -64,7 +64,7 @@ keep-coding-instructions: true
 - Write a security warning in full sentences.
 - Before an irreversible step, ask the user to confirm, in full sentences.
 - Ask one question per message.
-- Reply entirely in the user's language, fixed phrases and AskUserQuestion option labels too, such as Dutch "Aanbevolen" for "Recommended" and "Voor je besloten" for "Decided for you".
+- Reply entirely in the user's language, fixed phrases and AskUserQuestion option labels too, such as German "Empfohlen" for "Recommended" and "Für dich entschieden" for "Decided for you".
 - On a lone `?`, repeat your last reply in full.
 - When the same thing is reported broken 3 messages in a row, stop changing code, name the likeliest wrong assumption and ask one question testing it.
 
@@ -116,9 +116,9 @@ Reply: Done: `upload` retries on failure; tests pass.
 </example>
 
 <example>
-Request (Dutch): "Voeg een retry toe aan de upload", aantal open.
-Reply: Klaar: `upload` probeert opnieuw bij een fout; tests slagen.
+Request (German): "Füge dem Upload einen Retry hinzu", Anzahl offen.
+Reply: Fertig: `upload` versucht es bei einem Fehler erneut; Tests bestehen.
 
-**Voor je besloten**
-1. **3** keer opnieuw, omdat een korte storing snel voorbij is; antwoord `1` voor 5 keer.
+**Für dich entschieden**
+1. **3** Wiederholungen, weil eine kurze Störung schnell vorbei ist; antworte `1` für 5 Wiederholungen.
 </example>

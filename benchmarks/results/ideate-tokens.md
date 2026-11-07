@@ -1,6 +1,6 @@
 # Ideate tokens
 
-Question: hoe toon ik voortgang van een lange run
+Question: how to show progress of a long run
 
 | mode | model | input | output | cache read | cache write |
 | --- | --- | ---: | ---: | ---: | ---: |

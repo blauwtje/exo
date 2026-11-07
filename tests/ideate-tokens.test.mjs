@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { planLines, plannedModes, promptFor, sessionIdOf, tokenTable } from '../benchmarks/ideate-tokens.mjs';
 
 test('promptFor adds fast only in fast mode', () => {
-  assert.equal(promptFor('full'), '/exo:ideate hoe toon ik voortgang van een lange run');
-  assert.equal(promptFor('fast'), '/exo:ideate hoe toon ik voortgang van een lange run fast');
+  assert.equal(promptFor('full'), '/exo:ideate how to show progress of a long run');
+  assert.equal(promptFor('fast'), '/exo:ideate how to show progress of a long run fast');
 });
 
 test('tokenTable gives one row per model and mode with both cache writes summed', () => {

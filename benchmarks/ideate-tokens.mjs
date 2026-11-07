@@ -13,7 +13,7 @@ import { writeCellUsage } from './cell-usage.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'benchmarks/results/ideate-tokens.md');
-const QUESTION = 'hoe toon ik voortgang van een lange run';
+const QUESTION = 'how to show progress of a long run';
 const MODES = ['full', 'fast'];
 const SESSION_MS = environmentMs('EXO_IDEATE_TOKENS_MS', 900_000);
 const BUDGET_USD = '5';
