@@ -127,8 +127,8 @@ test('the judge kind runs on the fast tier at low effort and the research agents
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');
 });
 
-test('the ideate kind runs on the standard tier at low effort and maps the ideate worker', () => {
+test('the ideate kind runs on the standard tier at medium effort and maps the ideate worker', () => {
   const { kinds, agents } = readKindTable();
-  assert.deepEqual(kinds.ideate, { model: 'sonnet', effort: 'low' });
+  assert.deepEqual(kinds.ideate, { model: 'sonnet', effort: 'medium' });
   assert.equal(agents['agents/ideate-worker.md'].kind, 'ideate');
 });
