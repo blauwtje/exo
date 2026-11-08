@@ -1,4 +1,4 @@
-import { NONE_VALUE, RESULT_VALUE, WORDING_PATH } from '../../lib/evidence-rules.mjs';
+import { badTrailer, WORDING_PATH } from '../../lib/evidence-rules.mjs';
 import { git } from '#git';
 
 const BASE_REF = 'origin/main';
@@ -6,13 +6,6 @@ const NAME = 'edit evidence';
 
 function lines(run) {
   return run.stdout.split('\n').filter((line) => line !== '');
-}
-
-function badTrailer(value, results) {
-  if (NONE_VALUE.test(value)) return '';
-  if (!RESULT_VALUE.test(value)) return 'names neither a benchmarks/results or benchmarks/pressure file nor `none (<reason>)`; a command result goes in a `Proof: <command> → <result>` line';
-  if (results === null) return '';
-  return results.has(value) ? '' : 'names a file not added or changed in this range';
 }
 
 function changesSince(root) {

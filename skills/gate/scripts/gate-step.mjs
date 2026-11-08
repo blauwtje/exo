@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { CHECK_LINE } from './gate-command.mjs';
 
 const USAGE = `Usage: node gate-step.mjs --plan <path> --root <checkout> --base <ref> [--after review|fix] [--report <file> ...]
        [--pre-fix-sha <sha> --findings <path> --findings-sha256 <hash>]
@@ -25,8 +26,13 @@ export function spawnScript(script, args) {
   return { status: result.status ?? 1, stdout: `${result.stdout ?? ''}${result.stderr ?? ''}` };
 }
 
+function checkLines(output) {
+  return output.split('\n').filter((line) => CHECK_LINE.test(line)).map((line) => line.trim());
+}
+
 function digest(output) {
-  return output.split('\n').filter((line) => FAILING.test(line)).slice(0, DIGEST_LINES).map((line) => line.trim()).join(' | ').slice(0, DIGEST_CHARS);
+  const failing = output.split('\n').filter((line) => FAILING.test(line)).slice(0, DIGEST_LINES).map((line) => line.trim()).join(' | ').slice(0, DIGEST_CHARS);
+  return [...checkLines(output), failing].filter((part) => part !== '').join(' | ');
 }
 
 function step(name, run, script, args) {
@@ -61,14 +67,28 @@ function startStage(flags, run) {
   return { lines, status: reviews.status || full.status };
 }
 
+const BLOCKED_CLEARS = [
+  [/^UNREAD-FILE\b/, 'rerun the reviewer that did not read the UNREAD-FILE files, then merge again'],
+  [/^BLOCKED: report missing/, 'rerun the reviewer whose report is missing, then merge again'],
+  [/^BLOCKED recurring\b/, 'end the turn with the recurring finding in the report; fixing code does not clear it']
+];
+
+function blockedNext(body) {
+  const actions = BLOCKED_CLEARS.filter(([pattern]) => body.some((line) => pattern.test(line))).map(([, action]) => action);
+  return `NEXT the merged review is blocked; dispatch nothing until it clears: ${actions.join('; ') || 'rerun the reviewers that did not finish, then merge again'}`;
+}
+
 function reviewStage(flags, run) {
   const reportArgs = flags.reports.flatMap((report) => ['--report', report]);
   const merged = step('merge', run, 'merge-reviews.mjs', ['--root', flags.root, '--base', flags.base, ...reportArgs]);
   const lines = [...merged.lines];
   const verdict = merged.body.find((line) => line.startsWith('verdict=')) ?? '';
   const count = (name) => Number(verdict.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
-  if (count('fix') > 0 || count('concern') > 0) lines.push('NEXT dispatch one exo:fix-review per CLUSTER line, in parallel, each with only its findings; record git rev-parse HEAD as pre-fix-sha first');
-  if (count('fix') > 0 || count('concern') > 0) lines.push('DECIDE repair dispatch');
+  const blocked = verdict.startsWith('verdict=BLOCKED');
+  if (blocked) lines.push(blockedNext(merged.body));
+  const repairable = !blocked && (count('fix') > 0 || count('concern') > 0);
+  if (repairable) lines.push('NEXT dispatch one exo:fix-review per CLUSTER line, in parallel, each with only its findings; record git rev-parse HEAD as pre-fix-sha first');
+  if (repairable) lines.push('DECIDE repair dispatch');
   if (merged.body.some((line) => line.startsWith('BLOCKED'))) lines.push('DECIDE BLOCKED');
   if (merged.body.some((line) => line.startsWith('FINDING') && /\bquestion\b/.test(line))) lines.push('DECIDE question findings');
   if (merged.body.some((line) => line === 'CODEX offer')) lines.push('DECIDE CODEX offer');

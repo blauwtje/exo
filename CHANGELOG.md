@@ -53,6 +53,9 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- `land-task.mjs` refuses a task or `--fix` commit whose `Evidence:` line is not a `benchmarks/results` or `benchmarks/pressure` path or `none (<reason>)`, by the rule the `edit evidence` check uses.
+- The gate step script names each `[FAIL]`, `[WARN]` and `[UNRUN]` check line of a red `npm run check` in its `LOG` line.
+- The gate step script says the merged review is blocked, and what clears it, instead of telling the lead to start repairs.
 - The Codex adapter skips a run-state `.exo/` folder inside a skill folder, and a saved long Bash command goes to the repository root's `.exo/`, not the folder the session is in.
 - The red-green check behind `land-task` no longer crashes with `EEXIST` when the worktree seed already copied `node_modules` into its temporary tree.
 - The land lock no longer throws `spawnSync /bin/ps EPERM` inside a macOS sandbox: when `ps` cannot run it checks the owner with `process.kill(pid, 0)`.

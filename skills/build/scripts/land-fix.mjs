@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
+import { evidenceProblem } from '#evidence-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
 import { LandingError, PinError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
@@ -16,11 +17,17 @@ export function refuseBadCommitText(subject, rest = '') {
   if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
 }
 
+export function refuseBadEvidence(text) {
+  const problem = evidenceProblem(text);
+  if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
+}
+
 export function fixLand({ root, subject, body = null, plan = null, pin = null }) {
   if (pin !== null) throw new PinError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
   refuseMismatchedToplevel(root);
   refuseUnfinishedMerge(root);
   refuseBadCommitText(subject, body ?? '');
+  refuseBadEvidence(body ?? '');
   return locked(root, () => fixLandLocked({ root, subject, body, plan }));
 }
 

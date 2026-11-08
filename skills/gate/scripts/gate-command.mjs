@@ -5,6 +5,7 @@ import { killTree } from '#process-tree';
 const PLAIN_SHELL_WORD = /^[\w@%+=:,./-]+$/;
 
 const FAIL_TAIL_LINES = 20;
+export const CHECK_LINE = /^\s*\[(?:FAIL|WARN|UNRUN)\]/;
 
 const FAIL_TAIL_LINE_LENGTH = 300;
 
@@ -65,7 +66,9 @@ export function outputTail(output) {
 }
 
 export function failLines(check, reason, output) {
-  return [`FAIL ${check} (${reason})`, ...outputTail(output)];
+  const tail = outputTail(output);
+  const named = output.split(/\r?\n/).filter((line) => CHECK_LINE.test(line)).map((line) => `  ${line.trim().slice(0, FAIL_TAIL_LINE_LENGTH)}`);
+  return [`FAIL ${check} (${reason})`, ...named.filter((line) => !tail.includes(line)), ...tail];
 }
 
 export async function mapLimited(items, limit, work) {

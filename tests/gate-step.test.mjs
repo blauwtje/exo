@@ -69,3 +69,19 @@ test('no NEXT line points at a reference path as a read instruction', () => {
   assert.ok(next.length > 0);
   assert.ok(next.every((line) => !/references\/|\.md\b/.test(line)));
 });
+
+test('a red check names every FAIL, WARN and UNRUN check line in the LOG line', () => {
+  const out = 'FAIL success-criterion (exit 1)\n  [PASS] a\n  [FAIL] lint-docs\n  [WARN] slow-suite\n  [UNRUN] browser\n  SUMMARY PASS=1 FAIL=1 WARN=1 UNRUN=1\n';
+  const { run } = stub({ 'gate.mjs:reviews': { stdout: '' }, 'gate.mjs': { status: 1, stdout: out } });
+  const log = runStage('start', base, run).lines.find((line) => line.startsWith('LOG gate '));
+  for (const name of ['[FAIL] lint-docs', '[WARN] slow-suite', '[UNRUN] browser']) assert.ok(log.includes(name), log);
+});
+
+test('a blocked merge names the blocked state and its clearing action, not repairs', () => {
+  const { run } = stub({ 'merge-reviews.mjs': { stdout: 'verdict=BLOCKED defect=1 concern=0 question=0 note=0 fix=1 report=r\nCOVERAGE 2/3\nUNREAD-FILE a.mjs\n' } });
+  const next = runStage('review', { ...base, reports: ['a.md'] }, run).lines.filter((line) => line.startsWith('NEXT '));
+  assert.equal(next.length, 1);
+  assert.match(next[0], /blocked/i);
+  assert.match(next[0], /rerun/i);
+  assert.ok(!/repair|fix-review/i.test(next[0]));
+});

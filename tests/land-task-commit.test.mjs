@@ -281,8 +281,17 @@ test('a test-first task whose change touches no test file is refused before anyt
   await assertRefused(root, planPath, [], /Task 1 is test-first, but its change adds or changes no test file/);
 });
 
+test('a compact task whose Evidence field is free text is refused before it lands', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    `${compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' })} | Evidence: see docs/x.md`
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await writeReport(root, PASS_REPORT);
+  assert.throws(() => landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT }), /commit text refused: Evidence:/);
+});
+
 test('a compact task with an Evidence field lands it as a trailer after Plan-task, quotes and substitutions inert', async () => {
-  const evidence = `see 'docs/x.md' $(touch pwned) \`id\` "q"`;
+  const evidence = `none (see 'docs/x.md' $(touch pwned) \`id\` "q")`;
   const plan = compactPlanFixture({ tasks: [
     `${compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' })} | Evidence: ${evidence}`
   ] });
@@ -290,7 +299,7 @@ test('a compact task with an Evidence field lands it as a trailer after Plan-tas
   await writeReport(root, PASS_REPORT);
   landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
   const body = git(root, 'log', '-1', '--format=%B');
-  assert.match(body, /^Plan-task: compact\/1\nEvidence: see 'docs\/x\.md' \$\(touch pwned\) `id` "q"$/m);
+  assert.match(body, /^Plan-task: compact\/1\nEvidence: none \(see 'docs\/x\.md' \$\(touch pwned\) `id` "q"\)$/m);
   await assert.rejects(fs.access(path.join(root, 'pwned')));
 });
 
@@ -340,4 +349,10 @@ test('--fix refuses a body that attributes the work to an AI and commits nothing
   const head = git(root, 'rev-parse', 'HEAD');
   assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Co-Authored-By: Claude <noreply@anthropic.com>' }), /commit text refused/);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+});
+
+test('a --fix commit body whose Evidence line is not a result path or none (<reason>) is refused', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Evidence: benchmarks/results/x.md, findings (a)' }), /commit text refused: Evidence:/);
 });

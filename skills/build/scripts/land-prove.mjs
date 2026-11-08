@@ -1,7 +1,7 @@
 import { UsageError } from '#script-flags';
 import { commitBlockOf } from './land-commit-block.mjs';
 import { refuseMcpProofUnderPin } from './land-pin.mjs';
-import { refuseBadCommitText } from './land-fix.mjs';
+import { refuseBadCommitText, refuseBadEvidence } from './land-fix.mjs';
 import { runProof, runNamedTests } from './land-proof.mjs';
 import { siblingWorkOf } from './land-paths.mjs';
 import { signatureChanges } from './land-signatures.mjs';
@@ -21,6 +21,7 @@ export function refuseBeforeProof(plan, task, { root, planPath, pin, planId }) {
   refuseMissingLiterals(task, root, planPath);
   const block = commitBlockOf(plan, task.number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
+  if (task.evidence != null) refuseBadEvidence(`Evidence: ${task.evidence}`);
   return block;
 }
 
