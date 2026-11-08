@@ -22,14 +22,14 @@ function git(root, ...args) {
   return execFileSync('git', ['-C', root, '-c', 'user.name=T', '-c', 'user.email=t@example.com', ...args], { encoding: 'utf8' }).trim();
 }
 
-function fixture({ candidateCosts, specOverride = '' }) {
+function fixture({ candidateCosts, specOverride = '', specPlan = (text) => text }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bench-'));
   git(root, 'init', '-q');
   fs.writeFileSync(path.join(root, 'base.md'), table([1, 1.01, 0.99, 1]));
   git(root, 'add', '.');
   git(root, 'commit', '-qm', 'base');
   const base = git(root, 'rev-parse', 'HEAD');
-  fs.writeFileSync(path.join(root, 'plan.md'), planText(specOverride).replace('BASE', base));
+  fs.writeFileSync(path.join(root, 'plan.md'), specPlan(planText(specOverride).replace('BASE', base)));
   git(root, 'add', '.');
   git(root, 'commit', '-qm', 'plan');
   fs.mkdirSync(path.join(root, 'benchmarks/results'), { recursive: true });
@@ -66,14 +66,32 @@ test('an override added after the spec commit is ignored and reported', () => {
 });
 
 test('a malformed Baseline line fails as unmeasured', () => {
-  const { root } = fixture({ candidateCosts: [1, 1, 1, 1] });
-  const text = planText('').replace('Baseline: base.md @ BASE', 'Baseline: nonsense');
+  const specPlan = (text) => text.replace(/Baseline: .*/, 'Baseline: nonsense');
+  const { root } = fixture({ candidateCosts: [1, 1, 1, 1], specPlan });
+  const text = specPlan(planText(''));
   const out = benchmarkLines(parsePlan(text), { root, planPath: 'plan.md' });
   assert.match(out[0], /^FAIL benchmark \(unmeasured: malformed Baseline line\)/);
 });
 
 test('an unreachable baseline commit fails as unmeasured instead of crashing', () => {
-  const { root } = fixture({ candidateCosts: [1, 1, 1, 1] });
+  const missing = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
+  const { root } = fixture({ candidateCosts: [1, 1, 1, 1], specPlan: (text) => text.replace(/@ \S+/, `@ ${missing}`) });
   const out = lines(root, 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', '');
   assert.match(out[0], /^FAIL benchmark \(unmeasured: /);
+});
+
+test('a Baseline line deleted from the working tree still compares against the spec commit', () => {
+  const { root } = fixture({ candidateCosts: [2, 2.01, 1.99, 2] });
+  const text = planText('').replace(/Baseline: .*\n/, '');
+  const out = benchmarkLines(parsePlan(text), { root, planPath: 'plan.md' });
+  assert.match(out[0], /^FAIL benchmark \(regression/);
+});
+
+test('a plan outside the repo falls back to the working-tree Baseline line', () => {
+  const { root, base } = fixture({ candidateCosts: [1, 1.01, 0.99, 1] });
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'bench-outside-'));
+  const planPath = path.join(outside, 'plan.md');
+  const text = planText('').replace('BASE', base);
+  fs.writeFileSync(planPath, text);
+  assert.deepEqual(benchmarkLines(parsePlan(text), { root, planPath }), ['PASS benchmark']);
 });

@@ -26,9 +26,23 @@ function specCommitPlan(planPath, root) {
   return gitText(root, ['show', `${added}:${relative}`], { trim: false });
 }
 
+function committedPlan(planPath, root) {
+  if (planPath === undefined) return null;
+  try {
+    return specCommitPlan(planPath, root);
+  } catch {
+    return null;
+  }
+}
+
+function specBaseline(plan, { root, planPath }) {
+  const atSpec = committedPlan(planPath, root);
+  return atSpec === null ? plan.successBaseline : (parsePlan(atSpec).successBaseline ?? plan.successBaseline);
+}
+
 export function benchmarkOverride(plan, { root, planPath }) {
   if (plan.benchmarkOverride === null) return NO_OVERRIDE;
-  const atSpec = planPath === undefined ? null : specCommitPlan(planPath, root);
+  const atSpec = committedPlan(planPath, root);
   const committed = atSpec === null ? null : parsePlan(atSpec).benchmarkOverride;
   if (committed === plan.benchmarkOverride) return { reason: committed, ignored: false };
   return { reason: null, ignored: true };
@@ -41,8 +55,7 @@ function verdictLine(compared) {
   return `FAIL benchmark (${kind}: ${bad.map((cell) => `${cell.cell} ${cell.status}`).join(', ')})`;
 }
 
-function compareResults(plan, root) {
-  const baseline = plan.successBaseline;
+function compareResults(plan, root, baseline) {
   const file = newestSweep(path.resolve(root, resultsFolder(plan)));
   if (file === null) return null;
   const baseMarkdown = gitText(root, ['show', `${baseline.commit}:${baseline.file}`], { trim: false });
@@ -52,19 +65,19 @@ function compareResults(plan, root) {
   });
 }
 
-function safeCompare(plan, root) {
+function safeCompare(plan, root, baseline) {
   try {
-    return compareResults(plan, root);
+    return compareResults(plan, root, baseline);
   } catch (error) {
     return String(error.message).split('\n')[0];
   }
 }
 
 export function benchmarkLines(plan, { root, planPath }) {
-  const baseline = plan.successBaseline;
+  const baseline = specBaseline(plan, { root, planPath });
   if (baseline === null) return ['PASS benchmark (baseline: none)'];
   if (baseline.malformed !== undefined) return ['FAIL benchmark (unmeasured: malformed Baseline line)'];
-  const compared = safeCompare(plan, root);
+  const compared = safeCompare(plan, root, baseline);
   if (typeof compared === 'string') return [`FAIL benchmark (unmeasured: ${compared})`];
   if (compared === null) return ['FAIL benchmark (unmeasured: no *-sweep.md results file)'];
   const override = benchmarkOverride(plan, { root, planPath });
