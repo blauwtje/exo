@@ -24,9 +24,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 - 23 benchmark result files that no other tracked file names are deleted; git history holds them.
 - The consolidate plan records its tasks and prune paths as landed.
 - The session rules tell the lead to wait for the next notice of an agent that still waits on background work instead of stopping it, since that agent now resumes on its own.
+- The adhd output style keeps replies short and plain: at most 3 one-sentence bullets, no greeting, preamble or recap, and no technical terms unless the user must type them.
 
 ### Fixed
 
+- The gate reads the plan's `Baseline:` line from the spec commit, like `Benchmark-override:`, and falls back to the working-tree line when that git read fails.
 - `harvest-cases.mjs` now reads its `--out` value, scrubs the case id and ignores a home shorter than two characters; `mapItems` throws on a non-finite `costUsd` instead of running past the cap; a `flow-large` sweep cell is scored against its six tasks; the nano variant check fails when the hook registry is gone without being declared.
 - Starting a run commits pre-existing work when the plan folder is gitignored.
 - The lead checks an agent's output file, log or `ps` before it tells the user the agent still runs, and a worker waits for its own background process in the foreground instead of ending its turn.
