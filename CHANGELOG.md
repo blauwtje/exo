@@ -27,6 +27,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Changed
 
+- gate: the branch reviewer's input file carries the diff, review rules, triage text and plan excerpt, and its allowed reads are named in one line.
+- gate: one step script (`gate-step.mjs`) runs the mandated gate steps and prints one line per step with a digest of a failing step, so the lead reads fewer references and logs and makes fewer script calls.
 - Translate all Dutch text in the repo to English, and name no example language in rules and docs.
 - `exo:prompt` reads its request-kind and model rules from references per request, and `validate:static` checks that skill selector pointers resolve and that no moved line stays duplicated.
 - The decided-for-you heading follows the user's language, and the decided benchmark parser accepts it.

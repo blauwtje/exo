@@ -10,7 +10,7 @@ The gate readies a branch for a pull request.
 
 ## The loop
 
-1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/gate.mjs" --plan <plan path> --root <checkout> --base <base> --reviews-only` first.
+1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/gate-step.mjs" --plan <plan path> --root <checkout> --base <base>` first. It prints `STEP`, `LOG` digest, `NEXT` and `DECIDE` lines; read only these, no log file.
    - Then in one message: the full run in the background, step 2's dispatch; end the turn, no ScheduleWakeup, Monitor or sleep.
    - Dispatched agent → full run in the foreground, timeout 600000.
    - No plan file → end the turn: ask for its path and name `build`'s no-plan route; never hand-run checks or `ship`.
@@ -18,7 +18,7 @@ The gate readies a branch for a pull request.
    - On `FAIL` or `UNPLANNED`, end the turn with its report; rerun no check. Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`.
 2. **Review the branch.** Reviewer `none`: skip only the dispatch, still merge.
    - Dispatch `exo:review-branch` per `DISPATCH Branch`, one message. Start with `exo-kind: review-deep` unless the line names no kind, add its fields, end each with `Read:` and changed files.
-   - Then read `references/review-dispatch.md`.
+   - Then run `gate-step.mjs --after review` with the same flags and one `--report <path>` per report; its `NEXT` lines replace `references/review-dispatch.md`.
    - On a `CODEX offer` line, ask once for a `codex exec` review of plan and diff, adding them to findings path.
    - `--land` → skip.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:fix-review` agent, with no model override, filled dispatch line and `../build/review-fixer-prompt.md` by path.
