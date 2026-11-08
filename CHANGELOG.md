@@ -32,6 +32,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The Reddit source script tries `www.reddit.com` after `old.reddit.com` and, when both are blocked, names a `site:reddit.com` web search as the next step.
 - The gate reads the plan's `Baseline:` line from the spec commit, like `Benchmark-override:`, and falls back to the working-tree line when that git read fails.
 - `harvest-cases.mjs` now reads its `--out` value, scrubs the case id and ignores a home shorter than two characters; `mapItems` throws on a non-finite `costUsd` instead of running past the cap; a `flow-large` sweep cell is scored against its six tasks; the nano variant check fails when the hook registry is gone without being declared.
 - Starting a run commits pre-existing work when the plan folder is gitignored.
@@ -44,6 +45,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- The context-limit hook refuses a web fetch of a Reddit host or mirror and a web search that names Reddit without `site:`, and its message points to the Reddit source script and the `site:reddit.com` fallback.
 - `benchmarks/baseline-compare.mjs` and `node benchmarks/sweep.mjs --baseline <file>@<sha>` compare a results file with a baseline, list each run that skipped the flow under `Excluded:` and give a `Verdict:` per metric.
 - The gate prints `FAIL benchmark` when a plan's success rate drops against its `Baseline:`, or when cost or wall time rises past both the noise bound and run.json `defaults.benchmarkMinRise` (0.10).
 - A `Benchmark-override: <reason>` line counts only when it was in the brief at its spec commit, and the squash commit body carries it.

@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || exit 0; input=$(cat); [[ -n $EXO_RUN_HANDOFF || $input =~ \\\"tool_name\\\"[[:space:]]*:[[:space:]]*\\\"(Read|Skill)\\\" ]] || { [[ $input =~ \\\"agent_id\\\"[[:space:]]*:[[:space:]]*\\\"([^\\\"]+)\\\" ]] && [ -e \"${TMPDIR:-/tmp}/exo-context-${BASH_REMATCH[1]//[^A-Za-z0-9_-]/_}\" ]; } || exit 0; exec <<<\"$input\"; node \"${CLAUDE_PLUGIN_ROOT}/hooks/context-limit.mjs\"",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; input=$(cat); [[ $input =~ \\\"tool_name\\\"[[:space:]]*:[[:space:]]*\\\"Web(Fetch|Search)\\\" && $input =~ [Rr][Ee][Dd]([Dd][Ii][Tt]|[Ll][Ii][Bb])|[Tt][Ee][Dd][Dd][Ii][Tt]|[\\\"[:space:]/]r/[A-Za-z0-9_] ]] || [[ -n $EXO_RUN_HANDOFF || $input =~ \\\"tool_name\\\"[[:space:]]*:[[:space:]]*\\\"(Read|Skill)\\\" ]] || { [[ $input =~ \\\"agent_id\\\"[[:space:]]*:[[:space:]]*\\\"([^\\\"]+)\\\" ]] && [ -e \"${TMPDIR:-/tmp}/exo-context-${BASH_REMATCH[1]//[^A-Za-z0-9_-]/_}\" ]; } || exit 0; exec <<<\"$input\"; node \"${CLAUDE_PLUGIN_ROOT}/hooks/context-limit.mjs\"",
             "shell": "bash",
             "timeout": 10
           }

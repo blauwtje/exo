@@ -3,6 +3,7 @@
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields, persistedReadDecision, readCapDecision, searchCapDecision } from '../lib/context-decisions.mjs';
+import { redditRouteDecision } from '../lib/reddit-route.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
@@ -54,7 +55,7 @@ function withTopicNudge(fields, input) {
 }
 
 export function contextHook(input, enabled) {
-  const decision = predispatchDecision(input) ?? persistedReadDecision(input) ?? readCapDecision(input) ?? searchCapDecision(input) ?? contextDecision(input);
+  const decision = redditRouteDecision(input) ?? predispatchDecision(input) ?? persistedReadDecision(input) ?? readCapDecision(input) ?? searchCapDecision(input) ?? contextDecision(input);
   if (!decision?.deny) recordPredispatchRead(input);
   const fields = withTopicNudge(contextFields(decision), input);
   const output = fields ? { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } } : null;

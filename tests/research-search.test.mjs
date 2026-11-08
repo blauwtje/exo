@@ -48,6 +48,39 @@ test('reddit html answer is a blocked route', async () => {
   await assert.rejects(searchSource(request, answering(fixture('reddit-blocked.html'))), BlockedRoute);
 });
 
+const REDDIT_LISTING = JSON.stringify({ data: { children: [{ data: { title: 't', permalink: '/r/x/1/', created_utc: 1704153600, score: 3, num_comments: 2 } }] } });
+
+function redditAnswering(statuses, calls) {
+  const context = answering('');
+  context.fetchImpl = async (url) => {
+    calls.push(url);
+    const status = statuses[calls.length - 1];
+    return new Response(status === 200 ? REDDIT_LISTING : 'blocked', { status });
+  };
+  return context;
+}
+
+test('reddit listing becomes a ledger row', async () => {
+  const calls = [];
+  const [row] = await searchSource({ source: 'reddit', query: 'x', limit: 1, runDir: runFolder() }, redditAnswering([200], calls));
+  assert.equal(row.url, 'https://reddit.com/r/x/1/');
+  assert.equal(calls.length, 1);
+});
+
+test('reddit falls back to the second official endpoint', async () => {
+  const calls = [];
+  const [row] = await searchSource({ source: 'reddit', query: 'x', limit: 1, runDir: runFolder() }, redditAnswering([403, 200], calls));
+  assert.equal(row.title, 't');
+  assert.match(calls[1], /^https:\/\/www\.reddit\.com\/search\.json/);
+});
+
+test('reddit blocked everywhere names the next step', async () => {
+  const calls = [];
+  const request = { source: 'reddit', query: 'x', limit: 1, runDir: runFolder() };
+  await assert.rejects(searchSource(request, redditAnswering([403, 429], calls)), /HTTP 403, HTTP 429; use web search with site:reddit\.com and never WebFetch/);
+  assert.equal(calls.length, 2);
+});
+
 test('github without a logged-in gh falls back to the REST search', async () => {
   const body = JSON.stringify({ items: [{ full_name: 'a/b', html_url: 'https://github.com/a/b', updated_at: '2025-01-01T00:00:00Z', stargazers_count: 7, description: 'does b' }] });
   const calls = [];

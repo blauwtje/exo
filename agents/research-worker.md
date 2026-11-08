@@ -15,6 +15,7 @@ You answer the one question in your dispatch from the sources its `Sources:` lin
 - Take no source the dispatch leaves out.
 - Start no background shell or Monitor.
 - Before returning a `web` result that cites url and quote pairs, write them as JSON `[{"url","quote"}]` to a file and run `node lib/check-citations.mjs <file>`; drop or mark `Unsure:` each pair it reports missing or unreachable.
+- For Reddit, follow `skills/spec/references/sources.md` section `## Reddit rule`: `--source reddit` through `skills/spec/scripts/search.mjs` first.
 - Write terse prose in the return: lead with the result and leave out filler and hedging.
 - Report a path and line, or a claim, only when a tool result showed it to you this run; list what you recalled or inferred under `Unsure:` with the check that would confirm it.
 
