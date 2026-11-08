@@ -3,7 +3,6 @@ import fs from 'node:fs';
 const REFERENCE = 'fix-class.md';
 
 const REPAIR_TEXTS = [
-  { file: 'agents/fix-review.md' },
   { file: 'skills/build/review-fixer-prompt.md' },
   { file: 'skills/find-cause/fixer-prompt.md', from: '## Shared block' },
   { file: 'agents/build-task.md' }

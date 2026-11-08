@@ -15,7 +15,7 @@ import { REFERENCE_CONTENTS_LINES, BYTES_PER_TOKEN, STAGE_BODY_TOKENS, REFERENCE
 const FENCE = /^\s*(`{3,}|~{3,})/;
 const REFERENCE_TOKEN_CEILING = 750;
 const STAGE_SKILLS = Object.keys(STAGE_BODY_TOKENS);
-const LEAN_REFERENCE = 'skills/route-skills/references/lean.md';
+const LEAN_REFERENCE = 'lib/references/lean.md';
 
 function referenceFiles(directory) {
   if (!fs.existsSync(directory)) return [];

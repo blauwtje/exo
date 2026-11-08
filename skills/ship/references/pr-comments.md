@@ -38,5 +38,5 @@ Goal: act on the comments worth acting on, and answer each one after its fix is 
 Reviewer line comments turn into the findings `gate` already repairs, with no second fix path.
 - Run `node "${CLAUDE_SKILL_DIR}/scripts/pr-comment-tasks.mjs" --pr <n> --root <checkout>`. It keeps a human top-level comment that has a path and line present at HEAD, writes `<checkout>/.exo/pr-comments/<n>-<id>.md` per comment in the review findings format, and prints one `TASK <id> <path>:<line> findings=<file>` line each.
 - It skips and names bot comments, replies, resolved threads, outdated threads, comments with no file and line, and lines absent at HEAD. Thread state comes from one GraphQL call.
-- Dispatch `exo:fix-review` once per `TASK` line with `../../build/review-fixer-prompt.md` and that findings file, with no model override.
+- Dispatch `exo:build-task` with `exo-kind: fix-review` once per `TASK` line with `../../build/review-fixer-prompt.md` and that findings file, with no model override.
 - After the last return, rerun the plan's `Land gate:`; with no plan, the project check. Push and reply only after it passes.

@@ -122,3 +122,11 @@ test('mergeJudgeRecords nulls findings when a judge cell left no record', async 
   assert.equal(merged.missingJudges, 1);
   assert.equal(merged.missingReports, 0);
 });
+
+test('--reviewer-bodies generated builds the bodies buildJudges makes from agents/review-branch.md', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const sweep = new URL('../benchmarks/sweep.mjs', import.meta.url).pathname;
+  const run = spawnSync(process.execPath, [sweep, '--set', 'review', '--reviewer-bodies', 'generated', '--dry-run'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /-judge-tests: /);
+});

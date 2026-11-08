@@ -54,6 +54,8 @@ test('--reviewer-bodies lists one judge cell per body and rejects a bad pair', (
   assert.match(run.stdout, /-judge-plan-fit: /);
   assert.match(run.stdout, /-judge-standard: /);
   assert.match(run.stdout, /-judge-tests: /);
+  const generated = dryRun('--set', 'review', '--reviewer-bodies', 'generated');
+  assert.match(generated.stdout, /-judge-plan-fit: /);
   const bad = dryRun('--set', 'review', '--reviewer-bodies', 'a');
   assert.notEqual(bad.status, 0);
   assert.match(bad.stderr, /name=file/);

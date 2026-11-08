@@ -22,7 +22,7 @@ test('an unknown command prints the usage line and exits non-zero', () => {
 });
 
 test('size with a skill prints its row', () => {
-  const result = run('size', 'prompt');
+  const result = run('size', 'edit-skills');
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /prompt/);
+  assert.match(result.stdout, /edit-skills/);
 });

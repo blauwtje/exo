@@ -19,7 +19,7 @@ A description tells the model when to load the skill, so write the moment it fir
 
 - Aim at 200 characters and stay within 250, so the sum across the corpus stays inside what the harness shows the model.
 - Leave out angle brackets and line breaks, because the harness rejects both.
-- Name the skill with an imperative verb phrase of one or two words that says what it does (`spec`, `check-docs`).
+- Name the skill with an imperative verb phrase of one or two words that says what it does (`spec`, `write-docs`).
 
 ## Judgment
 

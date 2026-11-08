@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const REFERENCE_PATH = 'skills/route-skills/references/user-read-format.md';
+export const REFERENCE_PATH = 'lib/references/user-read-format.md';
 export const MAX_JARGON_PER_100_WORDS = 2;
 export const ACRONYMS = new Set(['PR', 'CI', 'URL', 'API']);
 export const MIN_CODE_TOKENS = 2;

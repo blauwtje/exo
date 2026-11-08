@@ -1,6 +1,8 @@
 ---
 name: edit-skills
 description: Use when the user asks to create, edit or size a skill, agent, hook or skill script. Not for a rule or CLAUDE.md; read references/instruction-style.md.
+context: fork
+agent: exo:orchestrator
 argument-hint: <skill or agent to create, edit or size>
 ---
 
@@ -63,6 +65,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `references/instruction-style.md` | Step 3, before writing or editing any instruction file such as `CLAUDE.md`, a rule or an output style. |
 | `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |
 | `references/description.md` | Step 3 for the frontmatter; step 5 when a symptom joins the description. |
+| `references/prompt-rules.md` | Step 3, when writing a skill or agent body, a delegate prompt or a brief. |
 | `references/skill-shape.md` | Step 3 for a skill started from nothing, and not for a change to an existing skill. |
 | `references/agent-shape.md` | Step 3 for an agent started from nothing. |
 | `references/hook-shape.md` | Step 3 for a hook started from nothing. |
@@ -70,7 +73,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `../../docs/principles/README.md` | Step 3, when the edit designs a prompt, context, agent, tool, harness or eval. |
 | `references/plugging-holes.md` | Step 5, once a run with the skill loaded still produced a justification. |
 | `references/blind-eval.md` | Step 7, when step 4's `with`/`without` read is a close call. |
-| `../route-skills/references/closing.md` | Before the final message. |
+| `../../lib/references/closing.md` | Before the final message. |
 
 ## Judgment
 

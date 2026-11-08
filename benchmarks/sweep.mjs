@@ -34,6 +34,7 @@ import { commentStats, ledgerTranscripts } from './comment-count.mjs';
 import { buildPhases } from './build-phases.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
+import { JUDGE_NAMES, judgeBodies, parseReviewerBodies } from '../lib/review-judges.mjs';
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
 import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, providerCells, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/build/scripts/run-config.mjs';
@@ -103,14 +104,7 @@ export const QUICK_CELLS = [
   'review-sql-user-control-high'
 ];
 
-export const JUDGE_NAMES = ['plan-fit', 'standard', 'tests'];
-
-function parseReviewerBodies(value) {
-  const pairs = (value ?? '').split(',').map((pair) => pair.split('='));
-  if (pairs.some(([name, file, ...rest]) => !name || !file || rest.length > 0)) throw new Error('--reviewer-bodies needs name=file,name=file');
-  if (pairs.map(([name]) => name).sort().join(',') !== JUDGE_NAMES.join(',')) throw new Error(`--reviewer-bodies needs exactly ${JUDGE_NAMES.join(', ')}`);
-  return Object.fromEntries(pairs);
-}
+export { JUDGE_NAMES };
 
 function withTier(options) {
   if (options.sets !== null) return { ...options, tier: 'custom' };
@@ -495,8 +489,7 @@ async function main() {
   const options = parseArguments(process.argv.slice(2));
   const provider = sweepProvider(options);
   const replay = options.cases === null ? [] : replayCells(readJson(options.cases), options);
-  const judged = options.reviewerBodies === null ? allCells()
-    : judgeCells(allCells(), Object.fromEntries(Object.entries(options.reviewerBodies).map(([name, file]) => [name, fs.readFileSync(file, 'utf8').trim()])));
+  const judged = options.reviewerBodies === null ? allCells() : judgeCells(allCells(), judgeBodies(options.reviewerBodies));
   const chosen = keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells);
   const cells = repeatCells(provider === null ? chosen : providerCells(chosen, provider, provider.efforts), options.repeat);
   console.log(`${options.tier} tier, ${cells.length} claude -p calls planned, one per cell and repeat:`);

@@ -41,7 +41,7 @@ Each line is what to do, then what the user should see, in plain words a child f
 
 ## Open points step
 
-Dispatch the `exo:find-open-points` agent once on the brief, in the background like step 4.
+Dispatch `exo:research-worker` (`Sources: repo`) on the brief, in the background.
 
 - Skip it for a plan of at most 3 tasks whose Proofs are all static.
 - When it returns `Assumptions: <path>`, insert its `- ` bullets unread after the brief's `## Assumptions` line with the command below; with no such line, insert nothing.
@@ -54,5 +54,5 @@ node -e 'const f=require("fs"),[b,a]=process.argv.slice(1),s=f.readFileSync(b,"u
 - For a `Reuse:` or `Scope:` line, edit Tasks or Non-goals to drop it.
 - When `path:line` evidence answers a `user` point, add `- [code] <point> → <answer> (<path:line>)` under `## Assumptions`.
 - Ask any other `user` point, one per message.
-- Put each answer on the next numbered line under `## Decisions`, and store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
+- Put each answer on the next numbered line under `## Decisions`.
 - Put an unanswered `user` point under `## Open points` (the exact name), and omit that section when no point is left.

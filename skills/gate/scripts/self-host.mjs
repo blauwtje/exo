@@ -5,7 +5,7 @@ import { commonDir } from '#checkout';
 import { DEFAULT_BASE } from './gate-constants.mjs';
 import { gitOutput } from './gate-command.mjs';
 
-const SELF_HOSTED_SCRIPTS = ['skills/gate/', 'skills/build/review-fixer-prompt.md', 'skills/route-skills/references/code-standard.md'];
+const SELF_HOSTED_SCRIPTS = ['skills/gate/', 'skills/build/review-fixer-prompt.md', 'lib/references/code-standard.md'];
 
 const SELF_HOSTED_AGENTS = ['agents/'];
 

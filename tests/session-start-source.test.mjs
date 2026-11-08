@@ -23,8 +23,8 @@ test('startup, clear and compact inject the session rules', () => {
   for (const source of ['startup', 'clear', 'compact']) assert.ok(contextFor(source).includes(RULES), source);
 });
 
-test('resume keeps the settings line but not the rules its transcript already holds', () => {
+test('resume prints no settings line for an empty config and drops not the rules its transcript already holds', () => {
   const context = contextFor('resume');
   assert.ok(!context.includes(RULES));
-  assert.match(context, /exo settings/);
+  assert.doesNotMatch(context, /exo settings/);
 });

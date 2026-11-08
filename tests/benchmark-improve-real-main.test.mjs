@@ -33,7 +33,7 @@ test('every arm prompt carries the same goal text', () => {
     assert.ok(goal.includes('`node score.mjs`'));
     for (const arm of Object.keys(ARMS)) assert.ok(armPrompt(arm, target).includes(goal));
   }
-  assert.equal(armPrompt('improve-opus', 'routing'), `/exo:improve ${goalText('routing')}`);
+  assert.equal(armPrompt('improve-opus', 'routing'), `/exo:build ${goalText('routing')}`);
   assert.ok(goalText('routing').includes('skills/find-cause/SKILL.md'));
   assert.equal(armPrompt('goal-sonnet', 'locate'), `/goal ${goalText('locate')}; or stop when node score.mjs refuses`);
 });

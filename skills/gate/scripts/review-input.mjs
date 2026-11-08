@@ -8,7 +8,7 @@ import { branchFiles, shardBranch, shardDiffText, shardFileLines } from './revie
 
 const GATE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REVIEW_RULES = path.join(GATE_DIRECTORY, '..', 'references', 'review-rules.md');
-const DEFAULT_CODE_STANDARD = path.join(GATE_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
+const DEFAULT_CODE_STANDARD = path.join(GATE_DIRECTORY, '..', '..', '..', 'lib', 'references', 'code-standard.md');
 const STANDARD_FILES = ['CLAUDE.md', path.join('.claude', 'CLAUDE.md'), 'AGENTS.md'];
 const MARKDOWN_PATH = /`([^`\s]+\.md)`|\]\(([^)\s]+\.md)\)/g;
 

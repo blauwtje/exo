@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { tempDir } from './harness.mjs';
 
-const script = path.resolve('skills/design-ui/scripts/regions.mjs');
+const script = path.resolve('skills/build/scripts/regions.mjs');
 
 function fixtureTree() {
   const root = tempDir('regions-');

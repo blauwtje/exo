@@ -1,6 +1,8 @@
 ---
 name: watch
 description: Use when a video url (YouTube, TikTok, Instagram, Facebook, X or another site yt-dlp reads) or a YouTube id must be answered from, summarised or mined. Not for web pages or a video's pictures alone.
+context: fork
+agent: exo:orchestrator
 argument-hint: "<video, profile, channel or playlist url> [more urls] [question]"
 ---
 

@@ -7,6 +7,7 @@ import { evalDefaults, judgeIdea, meanCi, planningVariance, powerLine, tasksNeed
 import { parseRows } from './baseline-pool.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { mean, readJson } from './basics.mjs';
+import { countFixRounds } from './fix-round.mjs';
 import { NOT_SHOWN } from './speed-ledger.mjs';
 import { firstEditCalls, verifyFailure } from './transcript-reads.mjs';
 import { filesNamed } from './tree-files.mjs';
@@ -118,8 +119,7 @@ export function cellRow(directory) {
   const usage = fs.existsSync(usageFile) ? readJson(usageFile) : null;
   const measured = transcriptFailures(usage);
   const failures = [...recordFailures(record), ...measured.failures];
-  const fixRounds = (usage?.subagents ?? []).filter((type) => type === 'exo:fix-review').length;
-  return { cell: path.basename(directory), failures: [...new Set(failures)], aborted: record.exitCode !== 0 || record.timedOut === true, hiddenPass: record.hiddenPass, durationMs: record.wallMs, outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds, calls: measured.calls, pathCalls: measured.pathCalls, firstEditCalls: measured.firstEditCalls };
+  return { cell: path.basename(directory), failures: [...new Set(failures)], aborted: record.exitCode !== 0 || record.timedOut === true, hiddenPass: record.hiddenPass, durationMs: record.wallMs, outputTokens: record.outputTokens, cost: record.costUsd ?? undefined, fixRounds: countFixRounds(usage?.subagents), calls: measured.calls, pathCalls: measured.pathCalls, firstEditCalls: measured.firstEditCalls };
 }
 
 function measureSpread(rows, name) {

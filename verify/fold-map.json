@@ -1,0 +1,82 @@
+{
+  "skills": {
+    "research": {
+      "owner": "spec",
+      "state": "folded"
+    },
+    "ideate": {
+      "owner": "spec",
+      "state": "folded"
+    },
+    "check-docs": {
+      "owner": "none",
+      "state": "deleted"
+    },
+    "run-plan": {
+      "owner": "build",
+      "state": "folded"
+    },
+    "refactor": {
+      "owner": "build",
+      "state": "folded"
+    },
+    "improve": {
+      "owner": "build",
+      "state": "folded"
+    },
+    "design-ui": {
+      "owner": "build",
+      "state": "folded"
+    },
+    "review": {
+      "owner": "gate",
+      "state": "folded"
+    },
+    "file-issues": {
+      "owner": "none",
+      "state": "deleted"
+    },
+    "prompt": {
+      "owner": "edit-skills",
+      "state": "folded"
+    },
+    "remember": {
+      "owner": "none",
+      "state": "deleted"
+    },
+    "route-skills": {
+      "owner": "build",
+      "state": "folded"
+    }
+  },
+  "agents": {
+    "solve-hard": {
+      "owner": "build-task",
+      "state": "folded"
+    },
+    "fix-review": {
+      "owner": "build-task",
+      "state": "folded"
+    },
+    "claim-judge": {
+      "owner": "review-branch",
+      "state": "folded"
+    },
+    "ideate-worker": {
+      "owner": "research-worker",
+      "state": "folded"
+    },
+    "fetch-docs": {
+      "owner": "research-worker",
+      "state": "folded"
+    },
+    "locate-code": {
+      "owner": "research-worker",
+      "state": "folded"
+    },
+    "find-open-points": {
+      "owner": "research-worker",
+      "state": "folded"
+    }
+  }
+}

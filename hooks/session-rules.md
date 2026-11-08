@@ -3,12 +3,11 @@
 - Fix all diagnosed causes instead of cutting scope or asking, because a partial fix leaves the failure open.
 - Count all as each warning kind in the failing command's full output, not its tail, and each README rule for touched code.
 - Call work done only when the stated oracle holds on every row, since one example can hide a failing row.
-- Read the README and docs before choosing a fallback or skip for missing data, because they may name the intended behavior.
 - When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.
 - Ask the user only about the destructive step of that unblock, since the rest is yours to decide.
 - Default inline → work leaves the main session only when one of T1 to T5 below holds.
 - T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read) → inline.
-- T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `fetch-docs` or `locate-code`, verdict and file path back.
+- T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `exo:research-worker` with `Sources:`, verdict and file path back.
 - T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
 - T5 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.

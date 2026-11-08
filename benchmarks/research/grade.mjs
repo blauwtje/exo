@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { foldText } from '../../skills/research/scripts/claims.mjs';
+import { foldText } from '../../skills/spec/scripts/claims.mjs';
 
 export const QUESTIONS_PATH = new URL('./questions.json', import.meta.url);
 const ABSTAIN = ['i could not find', 'i cannot answer', 'not attempted', "i don't know"];

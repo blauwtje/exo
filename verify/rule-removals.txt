@@ -7,3 +7,161 @@ de30b68edd76 the cheat sheet is generated from skill frontmatter, so the hand-wr
 630b1d62703a the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
 eff91901a144 the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
 660ffa6d1b2a the cheat sheet is generated from skill frontmatter, so the hand-written row or sentence is replaced by a generated row
+c7e40d27c8ad the refactor description moved into the build skill, which routes mode refactor
+6345285903ec the behavior-pin row moved into the build reference table
+00426c1768ee the review description moved into the gate skill, which routes mode review
+01b6afb1e297 the rule moved with its file to lib/references, which the retention scan does not read
+01d13e2b06c2 the rule moved with its file to lib/references, which the retention scan does not read
+02d9666fbe69 the rule moved with its file to lib/references, which the retention scan does not read
+0488c1b065a9 the rule moved with its file to lib/references, which the retention scan does not read
+04a61af05897 the rule moved with its file to lib/references, which the retention scan does not read
+0c451cd2154f the rule moved with its file to lib/references, which the retention scan does not read
+116491d2010e the rule moved with its file to lib/references, which the retention scan does not read
+1a3d4b95460b the rule moved with its file to lib/references, which the retention scan does not read
+222d36578f1b the rule moved with its file to lib/references, which the retention scan does not read
+292906f77ee7 the rule moved with its file to lib/references, which the retention scan does not read
+2c66b0e050ca the rule moved with its file to lib/references, which the retention scan does not read
+2eb3bdf4bb6f the rule moved with its file to lib/references, which the retention scan does not read
+2f0a52a8b902 the rule moved with its file to lib/references, which the retention scan does not read
+30b156fd5b10 the rule moved with its file to lib/references, which the retention scan does not read
+33f7d5a8fbac the rule moved with its file to lib/references, which the retention scan does not read
+344bcb5ee475 the rule moved with its file to lib/references, which the retention scan does not read
+35356af283b4 the rule moved with its file to lib/references, which the retention scan does not read
+3c3fd0167935 the rule moved with its file to lib/references, which the retention scan does not read
+3c591fecbba8 the rule moved with its file to lib/references, which the retention scan does not read
+3d56104ff9fa the rule moved with its file to lib/references, which the retention scan does not read
+3ed65b9a5fa8 the rule moved with its file to lib/references, which the retention scan does not read
+3ed8b86ab4d6 the rule moved with its file to lib/references, which the retention scan does not read
+3eff162d9afa the rule moved with its file to lib/references, which the retention scan does not read
+3f699438f619 the rule moved with its file to lib/references, which the retention scan does not read
+45a865d46d96 the rule moved with its file to lib/references, which the retention scan does not read
+4aa9b334b6da the rule moved with its file to lib/references, which the retention scan does not read
+4d46630d5824 the rule moved with its file to lib/references, which the retention scan does not read
+54c3c4d67163 the rule moved with its file to lib/references, which the retention scan does not read
+57ffd326ad87 the rule moved with its file to lib/references, which the retention scan does not read
+5b68cd0bdada the rule moved with its file to lib/references, which the retention scan does not read
+5c3133399c29 the rule moved with its file to lib/references, which the retention scan does not read
+5cd79c37ee4e the rule moved with its file to lib/references, which the retention scan does not read
+60393696102d the rule moved with its file to lib/references, which the retention scan does not read
+609820649810 the rule moved with its file to lib/references, which the retention scan does not read
+62ab5602b207 the rule moved with its file to lib/references, which the retention scan does not read
+6a3aa6d7ee4f the rule moved with its file to lib/references, which the retention scan does not read
+6bf097c5a623 the rule moved with its file to lib/references, which the retention scan does not read
+6dfd6a42b411 the rule moved with its file to lib/references, which the retention scan does not read
+70d1608d75f5 the rule moved with its file to lib/references, which the retention scan does not read
+71fe9853e9e0 the rule moved with its file to lib/references, which the retention scan does not read
+73e9610e515d the rule moved with its file to lib/references, which the retention scan does not read
+74f1dbb9b12b the rule moved with its file to lib/references, which the retention scan does not read
+755dd9a1588e the rule moved with its file to lib/references, which the retention scan does not read
+75b7f3b924ae the rule moved with its file to lib/references, which the retention scan does not read
+80ca306ed8cf the rule moved with its file to lib/references, which the retention scan does not read
+87d3716e42f8 the rule moved with its file to lib/references, which the retention scan does not read
+8b7933d7e5bd the rule moved with its file to lib/references, which the retention scan does not read
+8ebca7ecfe9e the rule moved with its file to lib/references, which the retention scan does not read
+91f36396ba7e the rule moved with its file to lib/references, which the retention scan does not read
+94e69975316f the rule moved with its file to lib/references, which the retention scan does not read
+964a0a461702 the rule moved with its file to lib/references, which the retention scan does not read
+a96c1103b954 the rule moved with its file to lib/references, which the retention scan does not read
+ac2daab90ab2 the rule moved with its file to lib/references, which the retention scan does not read
+ae402de352ff the rule moved with its file to lib/references, which the retention scan does not read
+b063b890d860 the rule moved with its file to lib/references, which the retention scan does not read
+ba8fd925c145 the rule moved with its file to lib/references, which the retention scan does not read
+bf6a76f3a3e3 the rule moved with its file to lib/references, which the retention scan does not read
+c07808452a5a the rule moved with its file to lib/references, which the retention scan does not read
+c2bbf2b0904b the rule moved with its file to lib/references, which the retention scan does not read
+c504e6a16490 the rule moved with its file to lib/references, which the retention scan does not read
+cab9b3cddd40 the rule moved with its file to lib/references, which the retention scan does not read
+d4cf0c8dca5d the rule moved with its file to lib/references, which the retention scan does not read
+dbbede694607 the rule moved with its file to lib/references, which the retention scan does not read
+de5a3aa39026 the rule moved with its file to lib/references, which the retention scan does not read
+e08c73d0e044 the rule moved with its file to lib/references, which the retention scan does not read
+e429b9c2b362 the rule moved with its file to lib/references, which the retention scan does not read
+e5c7c9b475f7 the rule moved with its file to lib/references, which the retention scan does not read
+e8c8202c13c1 the rule moved with its file to lib/references, which the retention scan does not read
+ebc8e4a8fb29 the rule moved with its file to lib/references, which the retention scan does not read
+ee814437e21f the rule moved with its file to lib/references, which the retention scan does not read
+f6b2b95fe415 the rule moved with its file to lib/references, which the retention scan does not read
+f8a5d366f909 the rule moved with its file to lib/references, which the retention scan does not read
+059e116158f7 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+11cf44916787 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+1230b42d1b6e the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+18ad58ab0034 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+1c635bda61ac the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+222398e3979c the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+329f53788e9d the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+334c22e90a92 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+34aedddbf103 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+37b2ff17c8d3 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+38b5e06c3c2a the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+3a43626621bc the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+3e1e8b1f621f the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+4478fc599cef the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+4641d6e87b82 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+4659dc6d00e4 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+4d4604647334 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+57eb51fcb346 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+614185af6b38 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+61b7f2d8e6c7 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+628bd55295ec the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+660fecbdaa84 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+687a9e8b8101 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+6cbd5f55d9e2 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+7300cbf4e648 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+73f657b98f55 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+81f0017de57c the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+970858ba22a2 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+9af57217bcc8 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+9e4ee288cd2c the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+a226970f4f94 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+b0a2b149e78a the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+b3d5cf8befec the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+b489108387f8 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+b55e6c4670d7 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+ba413c60011e the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+c556556948dc the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+d5d2aeeff146 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+e37a1788aed3 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+e98c5a346e68 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+ea6da941a8ea the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+ebf5bc7176e7 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+ed9844bbce3f the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+f1fe706672eb the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+f244c50611ca the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
+726db38a1682 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
+b09530674a14 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
+cb8600a38fce gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
+1149011b7a12 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
+c2d0b05ff184 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
+eb3d22c76d8c remember skill deleted: its lesson store and booking rules are gone
+d15ea084a100 remember skill deleted: its lesson store and booking rules are gone
+05ae4f027ec5 remember skill deleted: its lesson store and booking rules are gone
+cf9c4a2fcaf8 remember skill deleted: its lesson store and booking rules are gone
+68ba6ca7065c remember skill deleted: its lesson store and booking rules are gone
+38762b0b9ae0 remember skill deleted: its lesson store and booking rules are gone
+457eda1d733d remember skill deleted: its lesson store and booking rules are gone
+eb9caecf56ae remember skill deleted: its lesson store and booking rules are gone
+8256a4cbe7db remember skill deleted: its lesson store and booking rules are gone
+5f81d90ab5c8 remember skill deleted: its lesson store and booking rules are gone
+ba6a58276088 remember skill deleted: its lesson store and booking rules are gone
+88d406d95df1 remember skill deleted: its lesson store and booking rules are gone
+4a5b9128928f remember skill deleted: its lesson store and booking rules are gone
+0e6068c58536 remember skill deleted: its lesson store and booking rules are gone
+cd361d4f1c81 remember skill deleted: its lesson store and booking rules are gone
+efe782a82c7e remember skill deleted: its lesson store and booking rules are gone
+b082861e0e0e check-docs mode deleted: it had no use in 30 days
+27c374878d96 check-docs mode deleted: it had no use in 30 days
+9feefa4145be check-docs mode deleted: it had no use in 30 days
+af4064392867 check-docs mode deleted: it had no use in 30 days
+31c25ba4e44d check-docs mode deleted: it had no use in 30 days
+fe0c4ac353e3 check-docs mode deleted: it had no use in 30 days
+d54c6af88e46 check-docs mode deleted: it had no use in 30 days
+2bf5316a6d23 file-issues mode deleted: it had no use in 30 days
+1cdcb44c0477 file-issues mode deleted: it had no use in 30 days
+205265ae4deb file-issues mode deleted: it had no use in 30 days
+9d4a2a32935d file-issues mode deleted: it had no use in 30 days
+ff1ecdabc820 file-issues mode deleted: it had no use in 30 days
+0ee61749f7c9 file-issues mode deleted: it had no use in 30 days
+0eca452344ab file-issues mode deleted: it had no use in 30 days
+cccd5f3ae347 file-issues mode deleted: it had no use in 30 days
+549622901c4c file-issues mode deleted: it had no use in 30 days
+732a3d7567af review-dispatch page deleted: gate-step.mjs prints the same NEXT lines

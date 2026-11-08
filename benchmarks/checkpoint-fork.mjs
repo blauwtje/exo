@@ -24,6 +24,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { sumCounts, usageCounts } from '#token-weights';
 import { writeCellUsage } from './cell-usage.mjs';
+import { subagentType } from './fix-round.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { readJsonl } from './lean-gates-metrics.mjs';
@@ -94,10 +95,6 @@ function subagentFiles(mainFile) {
   return fs.readdirSync(directory).filter((name) => name.endsWith('.jsonl')).sort().map((name) => path.join(directory, name));
 }
 
-function agentType(file) {
-  return readJsonOrNull(file.replace(/\.jsonl$/, '.meta.json'))?.agentType ?? 'unknown';
-}
-
 // What a session spent from its verify call on, priced at list price: the lead's
 // calls from the message that loaded exo:gate, plus every subagent that
 // started at or after it. A transcript with no verify call counts whole
@@ -113,7 +110,7 @@ export function verifyBlock(transcriptFile) {
     const part = callsFrom(file, null);
     if (atMs !== null && (part.first === null || part.first < atMs)) continue;
     calls.push(...part.calls);
-    subagents.push(agentType(file));
+    subagents.push(subagentType(file));
     if (part.last !== null) end = Math.max(end ?? 0, part.last);
   }
   const prices = calls.map((call) => countsCost(call.counts, call.model));

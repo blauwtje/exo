@@ -7,7 +7,7 @@ const questions = JSON.parse(fs.readFileSync('benchmarks/agent-tier/ideate/quest
 const agents = JSON.parse(fs.readFileSync('benchmarks/agent-tier/agents.json', 'utf8'));
 
 function planOutput() {
-  const run = spawnSync('node', ['skills/ideate/scripts/plan.mjs', '--seed', '1', '--agents', '4'], { encoding: 'utf8' });
+  const run = spawnSync('node', ['skills/spec/scripts/plan.mjs', '--seed', '1', '--agents', '4'], { encoding: 'utf8' });
   assert.equal(run.status, 0);
   return run.stdout;
 }
@@ -29,10 +29,10 @@ test('each question holds a digest and three banned and three held-back defaults
   }
 });
 
-test('the ideate-worker entry has no kind and its fixtures name questions', () => {
+test('the ideate-worker entry is a research kind and its fixtures name questions', () => {
   const entry = agents['ideate-worker'];
   const ids = questions.map((question) => question.id);
-  assert.equal('kind' in entry, false);
+  assert.equal(entry.kind, 'research');
   assert.deepEqual(entry.fixtures.full, ids);
   assert.deepEqual(entry.fixtures.quick, [ids[0]]);
   assert.ok(entry.profile.input > 0);

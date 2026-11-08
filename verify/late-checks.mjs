@@ -18,7 +18,6 @@ import { checkFixClassLoad } from './checks/fix-class-load.mjs';
 import { checkScriptHelp } from './checks/script-help.mjs';
 import { checkUserReadFormat } from './checks/user-read-format.mjs';
 import { checkRuleRetention } from './checks/rule-retention.mjs';
-import { checkReviewJudges } from './checks/review-judges.mjs';
 
 export function runLateChecks(report, repository, staticOnly) {
   checkGitWhitespace(report, repository);
@@ -41,5 +40,4 @@ export function runLateChecks(report, repository, staticOnly) {
   checkScriptHelp(report, repository);
   checkUserReadFormat(report, repository);
   checkRuleRetention(report, repository);
-  checkReviewJudges(report, repository);
 }

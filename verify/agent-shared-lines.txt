@@ -1,4 +1,0 @@
-Ask the user nothing and send no text between tool calls.
-Write terse prose in the return: lead with the result and leave out filler and hedging.
-Make each query or URL once, because a failed call still counts.
-Before returning, use TaskStop on each background shell or agent you started that still runs.

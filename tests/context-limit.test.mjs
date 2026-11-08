@@ -219,7 +219,7 @@ test('hookAgentType reads agent_type first, else the meta file beside the subage
   fs.writeFileSync(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'exo:build-task' }));
   fs.writeFileSync(path.join(subagents, 'agent-a2.meta.json'), '{broken');
   fs.writeFileSync(path.join(subagents, 'agent-a3.meta.json'), JSON.stringify({ agentType: '' }));
-  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'exo:fix-review', transcript_path }), 'fix-review');
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'exo:review-branch', transcript_path }), 'review-branch');
   assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'build-task', transcript_path }), 'build-task');
   assert.equal(hookAgentType({ agent_id: 'a1', transcript_path }), 'build-task');
   assert.equal(hookAgentType({ agent_id: 'a1', agent_transcript_path: path.join(subagents, 'agent-a1.jsonl') }), 'build-task');
@@ -285,7 +285,7 @@ test('readCapDecision runs a capped Read with the largest limit that fits instea
   const dir = tempDir('exo-cap-');
   const file = path.join(dir, 'big.txt');
   fs.writeFileSync(file, `${'x'.repeat(99)}\n`.repeat(100));
-  const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:locate-code', permission_mode: 'bypassPermissions', tool_input: { file_path: file } };
+  const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:research-worker', permission_mode: 'bypassPermissions', tool_input: { file_path: file } };
   const corrected = readCapDecision(capped);
   assert.equal(corrected.deny, undefined);
   assert.deepEqual(corrected.updatedInput, { file_path: file, offset: 1, limit: 40 });
@@ -301,7 +301,7 @@ test('a Read whose single line is over the cap is not told to retry with limit 1
   const file = path.join(os.tmpdir(), `exo-long-line-${process.pid}.log`);
   fs.writeFileSync(file, `${'x'.repeat(20000)}\n`);
   try {
-    const decision = readCapDecision({ tool_name: 'Read', agent_type: 'exo:locate-code', agent_id: 'a', tool_input: { file_path: file, offset: 1, limit: 1 } });
+    const decision = readCapDecision({ tool_name: 'Read', agent_type: 'exo:research-worker', agent_id: 'a', tool_input: { file_path: file, offset: 1, limit: 1 } });
     assert.ok(decision?.deny);
     assert.doesNotMatch(decision.deny, /limit 1/);
   } finally {

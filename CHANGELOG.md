@@ -5,9 +5,22 @@ skill's trigger, a skill or agent name, and the `exo:` namespace are the public
 surface: renaming or removing one is a breaking change, adding one is a minor
 release, and a body rewrite that keeps the trigger is a patch.
 
-Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
-
 ## Unreleased
+
+### Changed
+
+- exo has 10 skills (build, configure, edit-skills, find-cause, gate, save-session, ship, spec, watch, write-docs) and 5 agents (orchestrator, task-runner, build-task, research-worker, review-branch), with the routing rule "Unclear: spec. Clear: build. Broken: find-cause. Leaving the machine: ship."
+- build, gate, find-cause, ship, write-docs, edit-skills and watch run in `exo:orchestrator` through `context: fork`, so workers report to the orchestrator and only its verdict reaches the main session.
+- spec asks its questions in the main session and hands steps 4 to 8 to one orchestrator dispatch with per-hop context budgets.
+- research, ideate and check-docs run as spec modes; run-plan, refactor, improve and design-ui as build modes; review as a gate mode; prompt rules live in edit-skills.
+- Shared rule files and the handover template moved from `skills/route-skills/` to `lib/references/` and `lib/assets/`.
+- The session rules drop the line on reading the docs before choosing a fallback for missing data.
+- The context reference points to the session text for the T1 to T6 triggers instead of repeating them.
+- The session start prints the exo settings line only when a setting differs from its default.
+- README lists the skills, the agents and the routing rule; each owner page names its folded skills in a `## Modes` section.
+- The `check-docs` mode of `spec`, the `file-issues` mode of `ship`, its duplicate-search script and the gate's `review-dispatch` page are removed; none was used in 30 days or the gate step script prints the same lines.
+- `spec`, `ship` and `find-cause` each keep their short step pages in one reference page: `step-rules.md`, `pr-merge.md` and `loop.md`.
+- 23 benchmark result files that no other tracked file names are deleted; git history holds them.
 
 ### Added
 
@@ -53,6 +66,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Fixed
 
+- The brief guard sizes `Fetches:` on research-worker briefs with web or docs sources, and benchmark fix-round counts read the fix mode marker through `benchmarks/fix-round.mjs`.
+- A worker brief no longer names a result file with report, summary or findings in its name, which the harness Write guard refuses.
 - `land-task.mjs` refuses a task or `--fix` commit whose `Evidence:` line is not a `benchmarks/results` or `benchmarks/pressure` path or `none (<reason>)`, by the rule the `edit evidence` check uses.
 - The gate step script names each `[FAIL]`, `[WARN]` and `[UNRUN]` check line of a red `npm run check` in its `LOG` line.
 - The gate step script says the merged review is blocked, and what clears it, instead of telling the lead to start repairs.
@@ -226,6 +241,8 @@ Versions before 0.134.11 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - A worker brief's `Reads:` line treats text in parentheses as prose, so a note such as `(not hooks/agents)` no longer rejects the brief, while a wrong path outside parentheses is still refused.
 
 ### Removed
+- The `remember` skill and the `memory` setting, with the session-start memory note.
+- The start, route-skills, remember and prompt skills, the check-docs and file-issues modes, and the ideate-worker, fetch-docs, locate-code, find-open-points, claim-judge, solve-hard and fix-review agents; a check refuses their old names and paths.
 - Unused scripts `strip-comments.mjs`, `verify/phrase-overlap.mjs` with its `overlap` npm script, `lib/prose-density.mjs`, `lib/session-record-path.mjs`, `lib/page-chrome.mjs`, `benchmarks/map-spike.mjs`, `benchmarks/demo/setup.mjs` and `benchmarks/split.mjs`.
 - The `context-peaks.mjs` peak CLI, `lib/agent-launch.mjs` and the peak summary exports only their tests used.
 - The subagent-start check, which guarded a hook that no longer exists.

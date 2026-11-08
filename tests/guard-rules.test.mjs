@@ -110,10 +110,12 @@ const stallGuard = () => stallGuardInput({
 const dispatch = (input) => agentHook({ tool_name: 'Agent', tool_input: input }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
 const unknownKind = () => dispatch({ subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'exo-kind: nope\nx' });
 const isolated = () => dispatch({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' });
-const resultFile = () => dispatch({ subagent_type: 'exo:fetch-docs', prompt: 'Reads: none\nFetches: 1\nResult: .exo/x.md' });
+const resultFile = () => agentHook({ tool_name: 'Agent', cwd: sized, tool_input: { subagent_type: 'reader', prompt: 'Reads: none\nResult: .exo/x.md' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
 const orchestrator = (prompt, pair) => dispatch({ subagent_type: 'exo:orchestrator', prompt, ...pair });
 const sized = tempDir('guard-rules-size-');
 fs.writeFileSync(path.join(sized, 'big.txt'), 'x'.repeat(70000));
+fs.mkdirSync(path.join(sized, '.claude', 'agents'), { recursive: true });
+fs.writeFileSync(path.join(sized, '.claude', 'agents', 'reader.md'), '---\nname: reader\ntools: Read\n---\nReads.\n');
 const refuse = (prompt, subagent_type = 'general-purpose', base = sized) => agentHook({
   tool_name: 'Agent',
   agent_type: 'exo:orchestrator',
@@ -177,7 +179,7 @@ const cases = {
   'kind-mismatch': () => orchestrator('Workers: 1', { model: 'opus', effort: 'max' }),
   'kind-mismatch-label': () => orchestrator('Workers: 1', labelledPair()),
   'workers-line': () => orchestrator('do it', {}),
-  'brief-invalid': () => refuse('Reads: none\nFetches: many', 'exo:fetch-docs'),
+  'brief-invalid': () => refuse('Reads: none\nFetches: many\nSources: web', 'exo:research-worker'),
   'brief-unresolved': () => refuse('Reads: gone.md\nResult: .exo/r.md'),
   'brief-ambiguous-name': () => refuse('Reads: dup.txt\nResult: .exo/r.md', undefined, tracked),
   'brief-missing-path': () => refuse('Reads: gone.md\nResult: .exo/r.md'),
@@ -189,7 +191,7 @@ const cases = {
   'brief-range': () => refuse('Reads: ranged.txt\nResult: .exo/r.md', undefined, lined),
   'brief-lacks-reads': () => refuse('Result: .exo/r.md'),
   'brief-lacks-fields': () => refuse('Reads: none'),
-  'brief-over-fetches': () => refuse('Reads: none\nFetches: 19', 'exo:fetch-docs'),
+  'brief-over-fetches': () => refuse('Reads: none\nFetches: 19\nSources: web', 'exo:research-worker'),
   'brief-over-budget': () => refuse('Reads: big.txt\nResult: .exo/r.md'),
   'slice-spent': () => sliceSpent()
 };
@@ -264,7 +266,7 @@ test('the task-owner line renders only for an agent with TaskStop', () => {
 });
 
 test('the file-result refusal is the rule table reason', () => {
-  assert.equal(resultFile(), denyReason('result-tools', 'exo:fetch-docs has no Write tool'));
+  assert.equal(resultFile(), denyReason('result-tools', 'reader has no Write tool'));
 });
 
 test('denyReason builds rule, detail and allowed form', () => {
@@ -351,15 +353,15 @@ test('denyReason and the part helpers fill the placeholders of a row', () => {
 const dispatched = (subagent_type, prompt) => agentHook({ tool_name: 'Agent', cwd: sized, tool_input: { subagent_type, description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput?.updatedInput?.prompt ?? '';
 
 test('a dispatched brief carries the brief lines of the receiving agent tools up front', () => {
-  const original = 'Reads: none\nFetches: 1\nResult: reply';
+  const original = 'Reads: none\nResult: reply';
   const stash = rules.briefLines(['Bash']).find((line) => line.includes('git stash'));
   const noWrite = GUARD_RULES.find((row) => row.id === 'result-tools').brief;
   const noStop = GUARD_RULES.find((row) => row.id === 'no-task-stop').brief;
-  const docs = dispatched('exo:fetch-docs', original);
+  const docs = dispatched('reader', original);
   assert.ok(docs.endsWith(original) && docs.indexOf(noWrite) < docs.indexOf(original), docs);
   assert.ok(docs.includes(noWrite) && docs.includes(noStop), docs);
   assert.ok(!docs.includes(stash), docs);
   const builder = dispatched('exo:build-task', 'Reads: none\nResult: .exo/r.md');
-  assert.ok(builder.includes(stash) && builder.includes(noStop), builder);
+  assert.ok(builder.includes(stash) && !builder.includes(noStop), builder);
   assert.ok(!builder.includes(noWrite), builder);
 });

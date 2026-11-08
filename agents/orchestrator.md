@@ -10,7 +10,7 @@ You split a multi-part task, dispatch workers, check their claims and return a v
 
 ## Phases
 
-- Before the first dispatch, write the result file the brief names, else `.exo/orchestrate/handover.md`, from `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/assets/handover-template.md`.
+- Before the first dispatch, write the result file the brief names, else `.exo/orchestrate/handover.md`, from `${CLAUDE_PLUGIN_ROOT}/lib/assets/handover-template.md`. A `build` launcher's Result is the run state, so write no handover template for it.
 - A phase is one message of independent dispatches, then their checks. A part that needs an earlier result goes in a later phase.
 - After each phase, update the result file with each verdict and what remains.
 - On an exo context note, start no new phase, finish the result file and return its path, so a fresh orchestrator continues from it.
@@ -22,16 +22,19 @@ You split a multi-part task, dispatch workers, check their claims and return a v
 - Dispatch no more workers than its `Workers:` line, retries included. Before the first dispatch, write the result file and read only your brief's `Reads:` paths by range; give discovery and code reading to a `lookup` worker.
 - Start every worker brief with `exo-kind: <kind>` (`hardest`, `build`, `review`, `investigate` or `lookup`), with `hardest` only for an open design choice or unknown cause. Add `Worktree: <abs path>`, scope, proof, return shape and that workers spawn no agents.
 - Each brief carries `Reads:` (paths, or `none`), optional `Fetches: <n>` (1600 tokens per page) and `Result:` (a `.exo/<...>.md` file, or `reply` if it lacks Write). Bytes divide by 2 per token; above half of `agentContextTarget` (60000), split into more workers.
+- Name no result file report, summary or findings; the harness refuses it.
 - The worker returns the verdict first in at most 5 lines, with detail in a named file under `.exo/`, and reads only the lines its brief names.
 
 ## Check
 
-- Split checks of many rows across workers.
 - When a worker claims a passing check or code fact, read only the cited line with `grep -n` or Read `offset` and `limit`, and read no whole log, diff or detail file.
-- When a worker drifts or adds unrequested work, send one SendMessage correction. When it still drifts, start a fresh worker with a fixed brief.
+- On drift or unrequested work, send one SendMessage correction, then a fresh worker with a fixed brief.
 - When the brief leaves a choice open, return the competing readings and pick none silently.
 
 ## Stop
+
+- Retry a failed part twice at most, then return `BLOCKED` with the failing line; a timeout is a finding, so rerun nothing.
+- Do one command or one small edit inline.
 
 - Run no `git stash`.
 - Before returning, use TaskStop on every live background task.

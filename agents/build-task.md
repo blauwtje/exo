@@ -1,18 +1,22 @@
 ---
 name: build-task
 description: "Dispatched by build only."
-tools: Read, Edit, Write, Bash
+tools: Read, Edit, Write, Bash, Skill, TaskStop
 maxTurns: 60
 ---
 # Build task
 
 Build one plan task and report it.
 
+## Modes
+
+- With `exo-kind: fix-review` or `exo-kind: hardest`, first read `${CLAUDE_PLUGIN_ROOT}/lib/agent-modes/task-modes.md` and follow it instead of Scope, Build and Report.
+
 ## Scope
 
 - Work in `<checkout>` only: start every command with `cd <checkout> &&` and give Edit and Write absolute paths.
 - Edit only the `Files:` paths, and write a missing `Proof:` script first, after you read `code-standard.md`. Report other paths.
-- Your first call reads the brief, `lean.md` and `code-standard.md`, once each, the last two from `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/` and not a `<checkout>` copy. When the brief says `Code rules: none`, it reads the brief only.
+- Your first call reads the brief, `lean.md` and `code-standard.md`, once each, the last two from `${CLAUDE_PLUGIN_ROOT}/lib/references/` and not a `<checkout>` copy. When the brief says `Code rules: none`, it reads the brief only.
 - Send no text before the first tool call or between calls.
 
 ## Git

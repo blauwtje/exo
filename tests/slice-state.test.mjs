@@ -127,7 +127,7 @@ test('the pre-dispatch Read gate leaves the lead and other agent types alone', (
   cleanup(agent);
 });
 
-const template = path.resolve(import.meta.dirname, '../skills/route-skills/assets/handover-template.md');
+const template = path.resolve(import.meta.dirname, '../lib/assets/handover-template.md');
 
 test('before its first dispatch an orchestrator may read the handover template, and its cap grows by the Reads paths plus the template', () => {
   const agent = orchestrator(2, 'a.md, b.md, c.md');

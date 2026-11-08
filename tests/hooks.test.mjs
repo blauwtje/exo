@@ -75,14 +75,6 @@ test('one Bash hook runs the dispatcher for the Bash guard', () => {
   assert.ok(bash[0].hook.command.endsWith('hooks/dispatch-bash.mjs"'), bash[0].hook.command);
 });
 
-test('the session hook points at a memory file only where one exists', () => {
-  const hook = fs.readFileSync(path.join(REPOSITORY, 'lib', 'session-pointers.mjs'), 'utf8');
-  assert.match(hook, /commonDir\(cwd\)/, 'the memory pointer does not resolve the common git directory');
-  assert.match(hook, /fs\.existsSync\(memoryFile\)/, 'the memory pointer is added without testing for the file');
-  assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
-  assert.match(hook, /ask the user to type \\`\/exo:remember\\` to change it/, 'the memory pointer does not name the typed command');
-});
-
 test('the session hook prints no book command', () => {
   const configHome = tempDir('exo-book-');
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
@@ -258,11 +250,10 @@ test('the dispatch rules leave agent models to the kind table and send long comm
   assert.doesNotMatch(rules, /cheapest and low for lookups/);
 });
 
-test('the dispatch file rule names exo:fetch-docs as returning inline', () => {
+test('the dispatch file rule names no folded research agent', () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
-  assert.match(rules, /agent writes findings to a named file under `\.exo\/<topic>\/`[^\n]*`exo:fetch-docs` returns inline/);
-  const contributing = fs.readFileSync(path.join(REPOSITORY, 'CONTRIBUTING.md'), 'utf8');
-  assert.match(contributing, /\*\*Dispatch rules\*\*[^\n]*`exo:fetch-docs` returns inline/);
+  assert.match(rules, /agent writes findings to a named file under `\.exo\/<topic>\/` and returns the verdict and path/);
+  assert.doesNotMatch(rules, /fetch-docs|locate-code|ideate-worker|find-open-points/);
 });
 
 test('the dispatch rules send a brief with an open choice or unknown cause to the hardest kind and a decided fix to build', async () => {
@@ -580,4 +571,12 @@ test('the session hook makes an unmatched zsh glob pass through by one line in C
     assert.equal(result.stdout, '--include=*.exo-no-match\n', shell);
     assert.equal(result.stderr, '', shell);
   }
+});
+
+test('a result file named with report, summary or findings is not a result file, so the harness Write guard never refuses it', async () => {
+  const { briefResultKind } = await import('../lib/worker-size.mjs');
+  for (const name of ['report', 'summary', 'findings', 'Review-Findings', 'run-summary']) {
+    assert.equal(briefResultKind(`Result: .exo/x/${name}.md`), 'none', name);
+  }
+  assert.equal(briefResultKind('Result: .exo/consolidate/detail.md'), 'file');
 });

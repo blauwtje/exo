@@ -1,12 +1,16 @@
 ---
 name: review-branch
-description: "Dispatched by gate only."
+description: "Dispatched by gate and research only."
 tools: Read, Write, Bash
 maxTurns: 30
 ---
 # Review branch
 
 You review a branch against its plan into a findings file.
+
+## Claims
+
+- With `exo-kind: judge`, first read `${CLAUDE_PLUGIN_ROOT}/lib/agent-modes/claims-mode.md`, follow it and skip Review and Report.
 
 ## Review
 

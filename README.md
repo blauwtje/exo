@@ -68,33 +68,30 @@ Already have exo? Run the install command again; it updates the copy in `~/.exo`
 
 ## Use
 
-Describe what you want and Claude starts the skill that fits. A feature goes through four stages, and each asks which runs next. A bug goes to `find-cause` first. If you do not know a skill's name, type `/exo:start <goal>`.
+Describe what you want and Claude starts the skill that fits. The routing rule: Unclear: spec. Clear: build. Broken: find-cause. Leaving the machine: ship. About exo: save-session or configure. A feature goes through four stages, and each asks which runs next.
 
-| Stage | Skill | What it does |
+| Skill | What it does | Modes |
 |---|---|---|
-| 1 | `spec` | Decides what to build. |
-| 2 | `build` | Builds a plan or a decided change with subagents. |
-| 3 | `gate` | Checks the branch before a pull request. |
-| 4 | `ship` | Pushes, opens or merges the pull request. |
+| `spec` | Decides what to build. | research, ideate |
+| `build` | Builds a plan or a decided change with subagents. | run-plan, refactor, improve, design-ui |
+| `gate` | Checks the branch before a pull request. | review |
+| `ship` | Pushes, opens or merges the pull request. | |
+| `find-cause` | Finds why something broke before any code changes. | |
+| `edit-skills` | Edits exo's own skills and prompts. | prompt |
+| `save-session` | Saves unfinished work for a fresh session. | |
+| `configure` | Shows or changes exo's settings. | |
+| `watch` | Reads videos from YouTube, TikTok, Instagram, Facebook, X and other yt-dlp sites, through their captions or a local transcript, and answers, summarises or extracts from them. | |
+| `write-docs` | Writes READMEs, pull requests and commit messages. | |
 
-Other skills, written as you call them. Those with `/exo:` start only when you type them:
+The agents run behind the skills; you do not call them.
 
-- `find-cause`: finds why something broke before any code changes.
-- `refactor`: restructures code without changing what it does.
-- `design-ui`: builds the real page or component directly, asks only when it cannot build without the answer, and finishes motion, reduced motion and every state.
-- `watch`: reads videos from YouTube, TikTok, Instagram, Facebook, X and other yt-dlp sites, including 1-2 hour ones, through their captions or a local transcript of the audio, and answers, summarises or extracts from them.
-- `research`: answers a question with a short cited report from keyless web, Reddit, GitHub, Hacker News, Stack Overflow, YouTube, TikTok, podcast and paper sources; a script refuses any citation whose quote is not on the fetched page. Run it as `/exo:research <question>`.
-- `ideate`: answers a design question with the top 3 ideas, each with a source, a risk and a first step and a mark when a GitHub project already does it; persona agents generate and you rank pairwise. Run it as `/exo:ideate <design question> [fast]`.
-- `/exo:improve`: changes code in a loop against one fixed score command, keeps a commit only when the score gets better, and logs every round.
-- `/exo:review`: reviews a diff, commit, branch or pull request that has no plan with the gate reviewer, and changes nothing.
-- `/exo:check-docs`: looks up how the installed version of a library behaves.
-- `/exo:write-docs`: writes READMEs, pull requests and commit messages.
-- `/exo:file-issues`: writes GitHub issues and files them.
-- `/exo:prompt`: rewrites a rough prompt and runs it after you say yes.
-- `/exo:save-session`: saves unfinished work for a fresh session.
-- `/exo:remember`: keeps a repository correction after two sessions have booked it.
-- `/exo:run-plan`: builds a plan through `build`; `/exo:run-plan setup` installs `exo run <plan>` for your terminal.
-- `/exo:configure`: shows or changes exo's settings.
+| Agent | What it does |
+|---|---|
+| `orchestrator` | Runs a multi-part task with up to 4 workers. |
+| `build-task` | Builds one plan task, folding the hard-problem and review-fix work. |
+| `task-runner` | Runs the build loop for a plan session. |
+| `review-branch` | Reviews a branch for gate, folding the claim judge. |
+| `research-worker` | Answers one bounded question from named sources, folding the docs fetch, idea and open-point work. |
 
 [docs/skills/](docs/skills/) has a page for every skill. [docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
 

@@ -7,7 +7,6 @@ import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/gate/scripts/pick-reviewer.mjs';
-import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
@@ -43,9 +42,6 @@ const PINNED_SENTENCES = {
   'skills/build/reviewer-prompt.md': [
     ...BREADTH_LIMITS,
   ],
-  'skills/check-docs/SKILL.md': [
-    'Research pass ends the turn only when the question is standalone with no code to follow',
-  ],
   'skills/edit-skills/SKILL.md': [
     `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens and ${DESCRIPTION_CHARS.ceiling} characters.`,
     `A reference holds one topic and links to no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
@@ -54,14 +50,12 @@ const PINNED_SENTENCES = {
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
   'README.md': [
-    `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
   ],
   'CONTRIBUTING.md': [
     RISK_TRIGGER,
   ],
   'docs/skills/build.md': [RISK_TRIGGER],
   'skills/ship/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
-  'skills/remember/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
 };
 
 // A doc list that restates a data asset: every name the asset lists appears

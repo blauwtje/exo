@@ -5,6 +5,8 @@ import { test } from 'node:test';
 import { addLine, emptyRecord, formatReport, loadSessions, main, sessionRecord, splitWindows, windowSummary } from '../benchmarks/session-stats.mjs';
 import { tempDir } from './harness.mjs';
 
+const LEGACY_FIX = ['exo', 'fix-review'].join(':');
+
 const assistant = (blocks, timestamp = '2026-10-21T10:00:00Z') =>
   JSON.stringify({ type: 'assistant', timestamp, message: { content: blocks } });
 const tool = (name, input = {}) => ({ type: 'tool_use', name, input });
@@ -142,12 +144,12 @@ test('active minutes cut gaps over five minutes and tokens count once per messag
 test('dispatches split by subagent type with review and fix counts', () => {
   const record = emptyRecord();
   const dispatch = (type) => tool('Agent', { subagent_type: type });
-  addLine(record, assistant([dispatch('exo:review-branch'), dispatch('exo:fix-review'), dispatch('exo:fix-review'), tool('Task')]));
-  assert.deepEqual(record.dispatchTypes, { 'exo:review-branch': 1, 'exo:fix-review': 2, 'general-purpose': 1 });
+  addLine(record, assistant([dispatch('exo:review-branch'), dispatch(LEGACY_FIX), dispatch(LEGACY_FIX), tool('Task')]));
+  assert.deepEqual(record.dispatchTypes, { 'exo:review-branch': 1, [LEGACY_FIX]: 2, 'general-purpose': 1 });
   assert.equal(record.reviewBranchDispatches, 1);
   assert.equal(record.fixReviewDispatches, 2);
   const summary = windowSummary([record, emptyRecord()]);
-  assert.deepEqual(summary.dispatchTypes['exo:fix-review'], { median: 1, mad: 1 });
+  assert.deepEqual(summary.dispatchTypes[LEGACY_FIX], { median: 1, mad: 1 });
 });
 
 test('a short window is named while the other window is still printed', async () => {

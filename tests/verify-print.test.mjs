@@ -37,7 +37,7 @@ test('--reviews-only prints one DISPATCH line with the filled review fields', as
   assert.match(lines[0], /^REVIEW Branch main\.\.HEAD: review-branch/);
   const dispatch = lines.find((line) => line.startsWith('DISPATCH Branch: '));
   assert.ok(dispatch, output);
-  const standard = path.join(path.dirname(SCRIPTS), '..', 'route-skills', 'references', 'code-standard.md');
+  const standard = path.join(path.dirname(SCRIPTS), '..', '..', 'lib', 'references', 'code-standard.md');
   assert.ok(dispatch.includes(`code-standard=${path.resolve(standard)}`) || dispatch.includes(`code-standard=${standard}`), dispatch);
   assert.ok(dispatch.includes(`plan=${planPath}`));
   assert.ok(dispatch.includes(`checkout=${root}`));
@@ -59,7 +59,7 @@ test('the DISPATCH line leaves the REVIEW and OVERLAP lines the run tail parses 
 
 test('codeStandardPath names a file CLAUDE.md or AGENTS.md calls the code standard, else the plugin default', async () => {
   const { root } = await landingCheckout();
-  assert.match(codeStandardPath(root), /route-skills[\\/]references[\\/]code-standard\.md$/);
+  assert.match(codeStandardPath(root), /lib[\\/]references[\\/]code-standard\.md$/);
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
   await fs.writeFile(path.join(root, 'docs', 'style.md'), 'style\n');
   await fs.writeFile(path.join(root, 'AGENTS.md'), '- Code standard: `docs/style.md`\n');

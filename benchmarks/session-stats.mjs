@@ -5,6 +5,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { parseArgs } from 'node:util';
 import { mad, median } from '../lib/eval-stats.mjs';
+import { isFixDispatch } from './fix-round.mjs';
 import { isMain } from '#script-flags';
 
 const COUNTS = [
@@ -50,7 +51,7 @@ function countDispatch(record, block) {
   record.agentDispatches += 1;
   record.dispatchTypes[type] = (record.dispatchTypes[type] ?? 0) + 1;
   if (type.endsWith('review-branch')) record.reviewBranchDispatches += 1;
-  if (type.endsWith('fix-review')) record.fixReviewDispatches += 1;
+  if (isFixDispatch(type, block.input?.prompt)) record.fixReviewDispatches += 1;
 }
 
 function countToolUse(record, block) {
@@ -87,8 +88,8 @@ function isPrompt(entry) {
 }
 
 function countTools(record, entry) {
-  const blocks = Array.isArray(entry.message?.content) ? entry.message.content : [];
-  for (const block of blocks.filter((item) => item.type === 'tool_use')) countToolUse(record, block);
+  const content = entry.message?.content;
+  for (const block of Array.isArray(content) ? content : []) if (block.type === 'tool_use') countToolUse(record, block);
 }
 
 export function addLine(record, line, seen = new Set()) {
@@ -115,11 +116,8 @@ async function addFile(record, file, seen) {
 
 function finishRecord(record) {
   const stamps = record.stamps.filter(Number.isFinite).sort((a, b) => a - b);
-  let active = 0;
-  for (let index = 1; index < stamps.length; index += 1) {
-    const gap = stamps[index] - stamps[index - 1];
-    if (gap <= ACTIVE_GAP_MS) active += gap;
-  }
+  const gaps = stamps.slice(1).map((stamp, index) => stamp - stamps[index]);
+  const active = gaps.filter((gap) => gap <= ACTIVE_GAP_MS).reduce((sum, gap) => sum + gap, 0);
   record.activeMinutes = Math.round(active / 600) / 100;
   record.stamps = [];
   return record;
@@ -130,26 +128,18 @@ export async function sessionRecord(sessionFile) {
   const seen = new Set();
   await addFile(record, sessionFile, seen);
   const subagentDir = path.join(sessionFile.replace(/\.jsonl$/, ''), 'subagents');
-  if (!fs.existsSync(subagentDir)) return finishRecord(record);
-  for (const name of fs.readdirSync(subagentDir).filter((entry) => entry.endsWith('.jsonl'))) {
-    await addFile(record, path.join(subagentDir, name), seen);
-  }
+  const names = fs.existsSync(subagentDir) ? fs.readdirSync(subagentDir).filter((entry) => entry.endsWith('.jsonl')) : [];
+  for (const name of names) await addFile(record, path.join(subagentDir, name), seen);
   return finishRecord(record);
 }
 
 function projectDirs(projectsRoot, repo) {
   const own = new RegExp(`-${repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(-.*)?$`);
-  return fs
-    .readdirSync(projectsRoot)
-    .filter((name) => own.test(name))
-    .map((name) => path.join(projectsRoot, name));
+  return fs.readdirSync(projectsRoot).filter((name) => own.test(name)).map((name) => path.join(projectsRoot, name));
 }
 
 function sessionFiles(directory) {
-  return fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith('.jsonl'))
-    .map((name) => path.join(directory, name));
+  return fs.readdirSync(directory).filter((name) => name.endsWith('.jsonl')).map((name) => path.join(directory, name));
 }
 
 function belongsTo(record, repo) {
@@ -163,8 +153,8 @@ function skipReason(record) {
 }
 
 function tally(reason, record, result) {
-  if (reason) result.skipped[reason] += 1;
-  else result.records.push(record);
+  if (!reason) return result.records.push(record);
+  result.skipped[reason] += 1;
 }
 
 export async function loadSessions(projectsRoot, repo) {

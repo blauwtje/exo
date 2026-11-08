@@ -9,6 +9,8 @@ import { keepRepository } from '../benchmarks/sweep.mjs';
 import { countsCost } from '../benchmarks/pricing.mjs';
 import { git, tempDir } from './harness.mjs';
 
+const LEGACY_FIX = ['exo', 'fix-review'].join(':');
+
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'checkpoint-fork.mjs');
 const BRANCH = 'feat/text-helpers';
 const MODEL = 'claude-sonnet-5-5';
@@ -53,7 +55,7 @@ function writeTranscript(directory) {
   fs.writeFileSync(path.join(agents, 'agent-a.jsonl'), `${usageLine('a1', '00:14:00', 5)}\n`);
   fs.writeFileSync(path.join(agents, 'agent-a.meta.json'), '{"agentType":"exo:build-task"}');
   fs.writeFileSync(path.join(agents, 'agent-b.jsonl'), `${usageLine('b1', '00:17:00', 90)}\n${usageLine('b2', '00:18:00', 20)}\n`);
-  fs.writeFileSync(path.join(agents, 'agent-b.meta.json'), '{"agentType":"exo:fix-review"}');
+  fs.writeFileSync(path.join(agents, 'agent-b.meta.json'), `{"agentType":"${LEGACY_FIX}"}`);
   return main;
 }
 
@@ -92,7 +94,7 @@ test('verifyPoint finds the lead\'s first exo:gate call, and verifyBlock counts 
   const call = (output) => countsCost({ input: 100, cacheRead: 1000, cache5m: 0, cache1h: 0, output }, MODEL);
   // m2 (last line wins), m3 and agent-b's two calls; m1 and agent-a come before the call.
   assert.ok(Math.abs(block.costUsd - (call(60) + call(70) + call(90) + call(20))) < 1e-12);
-  assert.deepEqual(block.subagents, ['exo:fix-review']);
+  assert.deepEqual(block.subagents, [LEGACY_FIX]);
   assert.equal(block.fixLoop, true);
   assert.equal(block.wallMs, 3 * 60 * 1000);
   assert.equal(verifyPoint(path.join(base, 'session', 'subagents', 'agent-a.jsonl')), null);

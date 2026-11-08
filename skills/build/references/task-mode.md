@@ -29,7 +29,7 @@ Skip this when the prompt holds the brief.
 1. Run `git rev-parse --show-toplevel` alone, use the printed path as `<checkout>`.
 2. Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>`.
    - Expect `Next: Task <n>`, or a `Wave:` line whose first task is `<n>`; any other line → `BLOCKED` with that line as the reason.
-3. Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, then the task's `Brief:` file, then build it per `${CLAUDE_SKILL_DIR}/../../agents/build-task.md` `## Git`, `## Build`, `## Stop` and `## Report`, whose `Report to:` is `<checkout>/.exo/implementer-<n>.md`.
+3. Read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` once, then the task's `Brief:` file, then build it per `${CLAUDE_SKILL_DIR}/../../agents/build-task.md` `## Git`, `## Build`, `## Stop` and `## Report`, whose `Report to:` is `<checkout>/.exo/implementer-<n>.md`.
 
 ## Finish
 

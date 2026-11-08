@@ -53,11 +53,11 @@ Follow `references/setup-map.md` from its first step. Leave every answer to the 
 | File | Read it when |
 |---|---|
 | `references/setup-map.md` | The walk, before its first step. Not for one setting. |
-| `../route-skills/references/question.md` | Before a message that asks the user a question. |
+| `../../lib/references/question.md` | Before a message that asks the user a question. |
 
 ## Judgment
 
 - A project or local value outranks a global one.
 - When the user picks every project for a key that a project or local layer holds, the report names that layer, because the new value stays hidden there.
 - Scripts' output outranks any value in context, including the session's `exo settings:` line read at session start.
-- Every delegate that writes code reads `../route-skills/references/lean.md` itself. The session text carries no pointer to it and no switch exists, so a request to switch it off gets that answer and runs nothing.
+- Every delegate that writes code reads `../../lib/references/lean.md` itself. The session text carries no pointer to it and no switch exists, so a request to switch it off gets that answer and runs nothing.

@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { addClaim } from '../skills/research/scripts/claims.mjs';
-import { savePageText } from '../skills/research/scripts/fetch.mjs';
-import { verifyReport } from '../skills/research/scripts/verify.mjs';
+import { addClaim } from '../skills/spec/scripts/claims.mjs';
+import { savePageText } from '../skills/spec/scripts/fetch.mjs';
+import { verifyReport } from '../skills/spec/scripts/verify.mjs';
 
 async function runWithPages(pages) {
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'research-verify-'));

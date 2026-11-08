@@ -23,6 +23,10 @@ Not for writing or repairing a plan, or a change of two files or fewer.
 - A line inviting changes in the same session, above `ship`'s route question when it asks one.
 - A handoff to `gate`. It picks the deep reviewer when a landed task's `Risk:` field names a security boundary. A task that crosses a security boundary needs a `Risk:` field.
 
+## Modes
+
+This skill also runs the folded skills run-plan, refactor, improve and design-ui as modes.
+
 ## Source
 
 `skills/build/SKILL.md` and its `references/`.

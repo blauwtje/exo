@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { tempDir } from './harness.mjs';
 import { parseYaml } from './yaml-subset.mjs';
 
-const SCRIPTS = fileURLToPath(new URL('../skills/run-plan/scripts/', import.meta.url));
+const SCRIPTS = fileURLToPath(new URL('../skills/build/scripts/', import.meta.url));
 const RENDER = path.join(SCRIPTS, 'ci-render.mjs');
 const WORKFLOW = path.join('.github', 'workflows', 'exo-run.yml');
 

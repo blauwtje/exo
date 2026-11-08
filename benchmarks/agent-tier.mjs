@@ -17,6 +17,7 @@ import { installStub } from './agent-tier/task-runner/install-stub.mjs';
 import { taskRunnerChecks, taskRunnerFindings, taskRunnerPrompt } from './agent-tier/task-runner/transcript.mjs';
 import { copyPluginWithoutTasks, loadValueTasks, prepareValueRepo, scoreValueRepo } from './value.mjs';
 import { median, readJson } from './basics.mjs';
+import { dispatchAgent, dispatchPrompt, generalKind } from './agent-tier/dispatch.mjs';
 import { settingOfJob, estimateUsd, dryRunText, flaggedShare, Budget, sessionCost, apiKeySourceOf, wilson95, summarizeCells, candidateComparisons, comparisonLine, cellLine } from './agent-tier/estimate.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,10 +67,6 @@ export function candidatesFor({ model, effort }) {
   const lowerModel = MODEL_LADDER[MODEL_LADDER.indexOf(model) - 1];
   return [{ model, effort }, ...lowerEfforts, ...(lowerModel ? [{ model: lowerModel, effort }] : [])];
 }
-
-const generalKind = (agent) => readJson(CONFIG_FILE)[agent]?.kind;
-const dispatchPrompt = (agent, prompt) => (generalKind(agent) ? `exo-kind: ${generalKind(agent)}\n${prompt}` : prompt);
-const dispatchAgent = (agent) => (generalKind(agent) ? null : `exo:${agent}`);
 
 export function settingOf(agent, table) {
   const kind = generalKind(agent);

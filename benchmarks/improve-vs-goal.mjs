@@ -32,7 +32,7 @@ Quality: the frozen scorer's comparison count (lower is better) and a held-out j
 
 const GOAL = 'Lower the comparisons= count that node score.mjs prints; sort.mjs must keep sorting correctly, using only the compare function it is given';
 const PROMPTS = {
-  improve: `/exo:improve ${GOAL}`,
+  improve: `/exo:build ${GOAL}`,
   goal: `/goal ${GOAL}; score.mjs stays unchanged; or stop after 10 turns`
 };
 

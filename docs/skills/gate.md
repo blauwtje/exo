@@ -15,8 +15,11 @@ Not for a change without a plan; use `review`.
 - One review of the branch, picked by risk and asked three to five concrete questions, then a model-free list of files and names several tasks changed.
 - Review findings that cite the rule they break, grouped by category and sorted by usefulness score; uncited ones cannot block and low-score ones are counted, not listed.
 - Review findings fixed in one commit.
-- Each defect the review found booked as a candidate lesson, which `/exo:remember` asks you about once a second session repeats it.
 - A handoff to `ship`.
+
+## Modes
+
+This skill also runs the folded skills review as modes.
 
 ## Source
 

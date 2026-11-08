@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { outOfScope } from '../skills/improve/scripts/scope.mjs';
+import { outOfScope } from '../skills/build/scripts/scope.mjs';
 
 const cfg = (scope, readOnly = []) => ({ scope, readOnly });
 

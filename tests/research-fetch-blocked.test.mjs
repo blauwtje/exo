@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fetchPage } from '../skills/research/scripts/fetch.mjs';
-import { pagePath } from '../skills/research/scripts/ledger.mjs';
+import { fetchPage } from '../skills/spec/scripts/fetch.mjs';
+import { pagePath } from '../skills/spec/scripts/ledger.mjs';
 
 const gate = { dir: undefined, spacingMs: 0 };
 const CHALLENGE = '<html><head><title>Just a moment...</title></head><body>Enable JavaScript</body></html>';
@@ -120,7 +120,7 @@ test('a private Sheet is blocked as not-public', async () => {
 
 test('the CLI prints the blocked line, exits 1 and writes no page', () => {
   const runDir = runFolder();
-  const script = path.resolve('skills/research/scripts/fetch.mjs');
+  const script = path.resolve('skills/spec/scripts/fetch.mjs');
   const stub = path.join(runDir, 'stub.mjs');
   const body = JSON.stringify(CHALLENGE);
   fs.writeFileSync(stub, `globalThis.fetch = async () => new Response(${body}, { status: 403, headers: { server: 'cloudflare', 'content-type': 'text/html' } });\n`);

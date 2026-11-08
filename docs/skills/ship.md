@@ -13,7 +13,6 @@ Takes finished commits as far as you choose: keep local, push, open a pull reque
 - A merge only after every check passes. The wait stops after 20 minutes.
 - A failed check leaves the pull request open, with the reason.
 - A dirty tree is first proposed as ordered commits grouped by file and purpose, shown with their subjects, and committed only on your yes. The commits together equal the tree exactly.
-- A `Lessons: <n> ready` line in the summary when review lessons await your approval in `/exo:remember`.
 - A pull request body a reviewer can read: why, what changed by theme, read order, risks, the gate's own proof lines, and follow-ups. Empty sections are left out and the body stays within `defaults.prBodyBytes` (4096).
 - When the pull request closes an issue with checklist items, an acceptance table with one row per item: met, unmet or unverifiable, each with where the evidence is. ship never edits the issue.
 - No branch deletion, forced merge or release.

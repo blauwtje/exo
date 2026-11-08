@@ -9,8 +9,8 @@ const ALLOWED = new Set([
   'skills/build/scripts/land-run.mjs',
   'skills/build/scripts/run-tail.mjs',
   'skills/build/scripts/run-worktree.mjs',
-  'skills/improve/scripts/scope.mjs',
-  'skills/review/scripts/resolve-target.mjs'
+  'skills/build/scripts/scope.mjs',
+  'skills/gate/scripts/resolve-target.mjs'
 ]);
 
 function inScope(relativePath) {

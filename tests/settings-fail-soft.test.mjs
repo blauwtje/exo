@@ -6,7 +6,6 @@ import process from 'node:process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { receiptsOn } from '../hooks/context-limit.mjs';
-import { memoryOn } from '../lib/memory-store.mjs';
 import { SCHEMA, settingOrDefault } from '../lib/settings-store.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -37,11 +36,11 @@ function inProject(directory, work) {
 }
 
 const childEnv = (directory) => ({ ...process.env, CLAUDE_PROJECT_DIR: directory, CLAUDE_CONFIG_DIR: tempDir('exo-config-') });
+const malformed = () => project('{"budget": ');
 const bogus = (key) => project(JSON.stringify({ [key]: 'bogus' }));
-const malformed = () => project('{"memory": ');
 
 test('the resolver returns the schema default and a note for a bogus value', () => {
-  for (const key of ['memory', 'budget', 'receipts']) {
+  for (const key of ['budget', 'receipts']) {
     const result = settingOrDefault(key, bogus(key));
     assert.equal(result.value, SCHEMA[key].default, key);
     assert.match(result.note, new RegExp(`${key}=bogus is not one of`), key);
@@ -49,7 +48,7 @@ test('the resolver returns the schema default and a note for a bogus value', () 
 });
 
 test('the resolver returns the schema default and a note for a malformed file', () => {
-  for (const key of ['memory', 'budget', 'receipts']) {
+  for (const key of ['budget', 'receipts']) {
     const result = settingOrDefault(key, malformed());
     assert.equal(result.value, SCHEMA[key].default, key);
     assert.match(result.note, /is not valid JSON/, key);
@@ -57,14 +56,8 @@ test('the resolver returns the schema default and a note for a malformed file', 
 });
 
 test('the resolver has no note for a valid value and still refuses an unknown key', () => {
-  assert.deepEqual(settingOrDefault('memory', project('{"memory":"off"}')), { value: 'off', note: null });
+  assert.deepEqual(settingOrDefault('receipts', project('{"receipts":"off"}')), { value: 'off', note: null });
   assert.throws(() => settingOrDefault('nothing', project('{}')), /unknown setting nothing/);
-});
-
-test('memory takes the default for a bogus value or a malformed file and stays off for off', () => {
-  assert.equal(memoryOn(bogus('memory')), true);
-  assert.equal(memoryOn(malformed()), true);
-  assert.equal(memoryOn(project('{"memory":"off"}')), false);
 });
 
 test('receipts take the default for a bogus value or a malformed file and stay off for off', () => {

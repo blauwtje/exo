@@ -9,7 +9,6 @@ import { driftOf, INPUT_UNREADABLE, inputPaths, isInputDrift } from '#plan-input
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { regionRange } from '#plan-regions';
-import { lessonLines } from '#memory-store';
 import { SKILL_DIRECTORY } from './next-task-paths.mjs';
 import { handoffLines } from './next-task-handoff.mjs';
 import { headedLines, sectionLines, bulletLines } from './next-task-sections.mjs';
@@ -117,7 +116,6 @@ export function taskBrief(task, frame, root, { relative = false } = {}) {
     ...(hasRules ? [] : reportCapLines()),
     ...deferredLines(task),
     ...modifyRangeLines(task, root),
-    ...lessonLines(root, task.files.map((file) => file.path)),
     '',
     ...(hasRules ? [] : ['The task section:']),
     task.section,

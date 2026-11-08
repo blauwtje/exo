@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
-const QUESTION = 'skills/route-skills/references/question.md';
+const QUESTION = 'lib/references/question.md';
 const text = fs.readFileSync(path.join(root, QUESTION), 'utf8');
 
 test('question.md opens with a When to ask gate before the shape', () => {

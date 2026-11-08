@@ -6,7 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { tempDir } from './harness.mjs';
 
-const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'review', 'scripts', 'resolve-target.mjs');
+const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'gate', 'scripts', 'resolve-target.mjs');
 const GIT_ENV = { ...process.env, GIT_AUTHOR_NAME: 'Jane Doe', GIT_AUTHOR_EMAIL: 'user@example.com', GIT_COMMITTER_NAME: 'Jane Doe', GIT_COMMITTER_EMAIL: 'user@example.com' };
 
 function git(root, ...args) {
@@ -101,7 +101,5 @@ test('a pull request number fetches its head through gh and git without writing 
 
 test('the skill is registered where the corpus checks expect it', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-  assert.ok(fs.existsSync(path.join(root, 'skills', 'review', 'SKILL.md')));
-  assert.ok(fs.existsSync(path.join(root, 'docs', 'skills', 'review.md')));
-  assert.match(fs.readFileSync(path.join(root, 'skills', 'start', 'references', 'cheat-sheet.md'), 'utf8'), /^\| `review` /m);
+  assert.ok(fs.existsSync(path.join(root, 'skills', 'gate', 'references', 'review.md')));
 });

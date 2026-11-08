@@ -51,9 +51,9 @@ test('a skill that is not exo, and tools that are not skills, give no line', () 
 });
 
 test('an exo agent dispatch shows its name with the model and effort it will run with', () => {
-  const output = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code', prompt: 'x' } }, 'on', ON);
-  assert.match(output.systemMessage, /^exo › locate-code \(\w+, \w+\)$/);
-  assert.equal(output.hookSpecificOutput.updatedInput.subagent_type, 'exo:locate-code');
+  const output = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker', prompt: 'x' } }, 'on', ON);
+  assert.match(output.systemMessage, /^exo › research-worker \(\w+, \w+\)$/);
+  assert.equal(output.hookSpecificOutput.updatedInput.subagent_type, 'exo:research-worker');
 });
 
 test('an exo agent with a model and effort already set shows those', () => {
@@ -93,7 +93,7 @@ test('the receipt leaves the model context byte for byte as it was', async () =>
     [() => contextHook(refused('Read', { file_path: '/x' }), ON), () => contextHook(refused('Read', { file_path: '/x' }), OFF)],
     [() => agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', ON), () => agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', OFF)],
     [() => dispatchEdit(refusedEdit(), ON), () => dispatchEdit(refusedEdit(), OFF)],
-    [() => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code' } }, 'on', ON), () => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code' } }, 'on', OFF)]
+    [() => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', ON), () => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF)]
   ];
   for (const [on, off] of cases) {
     const shown = on();
@@ -109,7 +109,7 @@ test('the receipt leaves the model context byte for byte as it was', async () =>
 
 test('receipts off gives no systemMessage anywhere', async () => {
   assert.equal(contextHook(skill('exo:spec'), OFF), null);
-  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:locate-code' } }, 'on', OFF).systemMessage, undefined);
+  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF).systemMessage, undefined);
   assert.equal((await dispatchBash(refused('Bash'), undefined, OFF)).systemMessage, undefined);
   assert.equal(dispatchEdit(refusedEdit(), OFF).systemMessage, undefined);
 });

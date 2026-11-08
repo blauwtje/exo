@@ -7,7 +7,7 @@ Both live in the repository under version control, beside the plans `build` alre
 - `docs/plans/templates/<name>.md`: one template per file.
 - The file named definition-of-done in `docs/plans/`, the repo done-list. Each bullet of the form `` - `<command>` `` is a command every plan must pass; other lines are for readers and feed nothing.
 
-`remember` keeps corrections attested twice and `find-cause` keeps run commands, so neither holds a plan shape or a done-list.
+`find-cause` keeps run commands, so it holds no plan shape or done-list.
 
 ## Script
 

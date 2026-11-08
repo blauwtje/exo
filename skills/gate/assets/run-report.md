@@ -24,4 +24,4 @@ Only you can try these. Do each one and see if it works.
 
 {{manual}}
 
-<!-- Write this report in the user's language, in plain words, as skills/route-skills/references/user-read-format.md sets. -->
+<!-- Write this report in the user's language, in plain words, as lib/references/user-read-format.md sets. -->

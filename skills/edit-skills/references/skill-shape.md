@@ -46,7 +46,7 @@ Add "The overcorrection is <the mistake this must not create>." only when a reco
 - Leave out a war story about one fix ("last sprint the build broke because..."). Write the rule it taught, because a reader cannot generalize an anecdote.
 - Give one complete example in the language that matters most, not one example in several languages or a blank template posing as an example.
 - Use a domain word where one exists instead of a placeholder name (`step3`, `helper`, `data`).
-- Keep a single final-message shape. The report step names what `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/closing.md` carries.
+- Keep a single final-message shape. The report step names what `${CLAUDE_PLUGIN_ROOT}/lib/references/closing.md` carries.
 
 ## Judgment
 

@@ -27,9 +27,8 @@ function run(extra, input = { session_id: 's1', source: 'startup', cwd: os.tmpdi
 test('a Codex run injects the note after the existing context and writes under .codex/exo', () => {
   const { home, output } = run({ EXO_HOST: 'codex' });
   const context = output.hookSpecificOutput.additionalContext;
-  const settings = context.indexOf('exo settings:');
   const note = context.indexOf('# exo on Codex');
-  assert.ok(settings >= 0 && settings < note, `${settings} ${note}`);
+  assert.ok(note >= 0, 'the Codex note is missing');
   assert.ok(context.includes(`The exo root is \`${REPOSITORY}\``), 'root not filled');
   assert.ok(!context.includes('{root}'), 'a placeholder is left');
   assert.ok(context.includes(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8').trimEnd()), 'Codex lacks the dispatch rules');
@@ -59,7 +58,7 @@ test('a clear on Codex also leaves the Claude folder alone', () => {
 test('a Claude run gets the settings line, no Codex note and the "exo is on" line', () => {
   const { home, output } = run({ EXO_HOST: 'claude' });
   const context = output.hookSpecificOutput.additionalContext;
-  assert.ok(context.includes('exo settings:'));
+  assert.ok(!context.includes('exo settings:'), 'an empty config printed a settings line');
   assert.ok(!context.includes('# exo on Codex'));
   assert.equal(output.systemMessage, 'exo is on');
   assert.ok(fs.existsSync(path.join(home, '.claude', 'exo', 'plugin-root')));
@@ -68,7 +67,7 @@ test('a Claude run gets the settings line, no Codex note and the "exo is on" lin
 
 test('a headless run session gets no additionalContext, a plain session still does', () => {
   const { output: plain } = run({});
-  assert.ok(plain.hookSpecificOutput.additionalContext.includes('exo settings:'), 'plain session lost its context');
+  assert.ok(plain.hookSpecificOutput.additionalContext.length > 0, 'plain session lost its context');
   const home = tempDir('exo-run-home-');
   const env = { ...process.env, HOME: home, EXO_RUN_DIR: path.join(home, 'run'), CLAUDE_PLUGIN_ROOT: REPOSITORY };
   delete env.CLAUDE_CONFIG_DIR;

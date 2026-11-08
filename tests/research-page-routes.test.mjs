@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { pageRoute } from '../skills/research/scripts/sources/pages.mjs';
-import { BlockedRoute } from '../skills/research/scripts/sources/http.mjs';
+import { pageRoute } from '../skills/spec/scripts/sources/pages.mjs';
+import { BlockedRoute } from '../skills/spec/scripts/sources/http.mjs';
 
 const SHEET = 'https://docs.google.com/spreadsheets/d/abc123';
 

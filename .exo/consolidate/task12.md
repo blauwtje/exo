@@ -1,0 +1,1 @@
+Task 12 done. Spec steps 4 to 8 merged into one exo:orchestrator dispatch (Workers: 1); hand-off is step 5. Orchestrator Stop gains retry cap 2, timeout-is-finding and inline rule; body trimmed to stay at 750. Tests 3335 pass 0 fail; static 75 pass 0 fail.

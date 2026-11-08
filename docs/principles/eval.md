@@ -11,9 +11,9 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Compare to baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
 - **Compute task count before a paid run.** [3] exo: `lib/eval-stats.mjs` `powerLine`; `verify/checks/benchmark-entry-points.mjs`
 - **Treat gaps under 3 points as noise until configs match.** [4] exo: `verify/checks/benchmark-entry-points.mjs`
-- **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default.** [4][7] exo: `skills/improve/scripts/round.mjs` `timedOut`
-- **Fix the seed.** [6] exo: `skills/improve/scripts/round.mjs` `scoreEnv`
-- **Change one thing per round; at equal score keep simpler code.** [6][7] exo: `skills/improve/scripts/round.mjs` `not-one-commit`, `judgeKeep`
+- **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default.** [4][7] exo: `skills/build/scripts/round.mjs` `timedOut`
+- **Fix the seed.** [6] exo: `skills/build/scripts/round.mjs` `scoreEnv`
+- **Change one thing per round; at equal score keep simpler code.** [6][7] exo: `skills/build/scripts/round.mjs` `not-one-commit`, `judgeKeep`
 - **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: `tests/benchmark-value.test.mjs`
 - **Read transcripts and outputs before trusting a score change.** [1][5][6][7] exo: `benchmarks/README.md` `--transcripts`
 - **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/test-design.md`

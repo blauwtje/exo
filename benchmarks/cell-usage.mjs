@@ -9,6 +9,7 @@ import path from 'node:path';
 import { configDirectory } from '#config-directory';
 import { sumCounts, usageCounts } from '#token-weights';
 import { readJson } from './basics.mjs';
+import { subagentTypes } from './fix-round.mjs';
 import { countsCost } from './pricing.mjs';
 
 const SESSION_ID = /^[\w-]+$/;
@@ -81,18 +82,6 @@ export function transcriptCalls(transcriptPath) {
     }
   }
   return calls;
-}
-
-function subagentTypes(transcriptPath) {
-  const subagents = path.join(transcriptPath.replace(/\.jsonl$/, ''), 'subagents');
-  if (!fs.existsSync(subagents)) return [];
-  const types = [];
-  for (const name of fs.readdirSync(subagents).sort()) {
-    if (!name.endsWith('.meta.json')) continue;
-    const meta = readJson(path.join(subagents, name));
-    types.push(meta.agentType ?? 'unknown');
-  }
-  return types;
 }
 
 const CHARACTERS_PER_TOKEN = 4;

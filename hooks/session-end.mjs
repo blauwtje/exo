@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { gitLine } from '#git';
 import { inSidecall, readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
+import { newestProgressFile } from '../lib/session-pointers.mjs';
 import { handoffFile } from '../skills/save-session/scripts/handoff.mjs';
 
 const AUTO_MARK = 'Source: auto';
@@ -31,18 +32,6 @@ function handoffKept(file, startMs) {
   if (!stat?.isFile()) return false;
   if (stat.mtimeMs > startMs) return true;
   return !fs.readFileSync(file, 'utf8').split('\n').includes(AUTO_MARK);
-}
-
-function newestProgressFile(cwd) {
-  const folder = path.join(cwd, '.exo');
-  if (!fs.existsSync(folder)) return undefined;
-  const candidates = fs.readdirSync(folder, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => path.join(folder, entry.name, 'progress.md'))
-    .map((file) => ({ file, modified: fs.statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0 }))
-    .filter((candidate) => candidate.modified > 0);
-  candidates.sort((first, second) => second.modified - first.modified);
-  return candidates[0]?.file;
 }
 
 const SKILL_FILE = fileURLToPath(new URL('../skills/save-session/SKILL.md', import.meta.url));

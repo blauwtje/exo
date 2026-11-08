@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const SCRIPT = new URL('../skills/ideate/scripts/plan.mjs', import.meta.url).pathname;
+const SCRIPT = new URL('../skills/spec/scripts/plan.mjs', import.meta.url).pathname;
 
 function run(args, runJson) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ideate-plan-'));

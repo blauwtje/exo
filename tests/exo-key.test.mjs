@@ -83,3 +83,14 @@ test('a provider added in the user run.json can take a key', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.equal(text, `MINE_KEY=${SECRET}\n`);
 });
+
+test('every plugin.json userConfig option list and default equals skills/configure/schema.json', async () => {
+  const read = async (relative) => JSON.parse(await fs.readFile(fileURLToPath(new URL(relative, import.meta.url)), 'utf8'));
+  const schema = await read('../skills/configure/schema.json');
+  const { userConfig } = await read('../.claude-plugin/plugin.json');
+  for (const [name, entry] of Object.entries(userConfig)) {
+    if (entry.options === undefined) continue;
+    assert.deepEqual(entry.options, schema[name].options, `${name} options`);
+    assert.equal(entry.default, schema[name].default, `${name} default`);
+  }
+});

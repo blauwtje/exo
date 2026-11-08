@@ -8,7 +8,7 @@ import { createRepository } from '../verify/repository.mjs';
 import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const TEXTS = ['agents/fix-review.md', 'skills/build/review-fixer-prompt.md', 'skills/find-cause/fixer-prompt.md', 'agents/build-task.md'];
+const TEXTS = ['skills/build/review-fixer-prompt.md', 'skills/find-cause/fixer-prompt.md', 'agents/build-task.md'];
 
 function lines(edit) {
   const root = tempDir('fix-class-load-');
@@ -33,11 +33,11 @@ test('the shipped repair texts all pass', () => {
 
 test('each repair text missing the reference is its own FAIL line naming the file', () => {
   const results = lines((edit) => {
-    edit('agents/fix-review.md', withoutReference);
+    edit('skills/build/review-fixer-prompt.md', withoutReference);
     edit('agents/build-task.md', withoutReference);
   });
   assert.equal(results.length, 2);
-  assert.match(results[0], /^\[FAIL\] fix-class load: agents\/fix-review\.md /);
+  assert.match(results[0], /^\[FAIL\] fix-class load: skills\/build\/review-fixer-prompt\.md /);
   assert.match(results[1], /^\[FAIL\] fix-class load: agents\/build-task\.md /);
 });
 

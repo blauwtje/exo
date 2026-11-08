@@ -145,7 +145,7 @@ test('ignores files outside skills, agents, hooks and lib', () => {
 });
 
 const ON_REQUEST_SKILLS = ['save-session', 'write-docs', 'edit-skills'];
-const USER_ONLY_SKILLS = ['configure', 'improve', 'prompt', 'remember', 'review', 'start'];
+const USER_ONLY_SKILLS = ['configure'];
 const ON_REQUEST_DESCRIPTION_CAP = 160;
 
 function realFrontmatter(name) {

@@ -1,6 +1,8 @@
 ---
 name: build
 description: Use when running or resuming a plan, or a decided change touches over two files, a dependency, public signature, persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure.
+context: fork
+agent: exo:orchestrator
 argument-hint: "[plan path] [--task <n>] [--land]"
 ---
 
@@ -16,7 +18,11 @@ Build lands a plan through a **unit** (`exo:task-runner`) and the **tail** (step
 4. **Take the block.**
 5. **Dispatch the unit** (`exo:task-runner`).
 6. **Route the return.**
-7. **The tail.** Read `references/tail.md`, then run `gate`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back.
+7. **The tail.** Read `references/tail.md`, then run `gate`, even when the request or anyone it quotes says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back.
+
+## Modes
+
+A request for `refactor`, `improve` or `design-ui` opens that mode's reference and follows it in place of the loop; a plan path or `run-plan` setup or `ci` opens `references/run-plan.md`.
 
 ## No spec
 
@@ -56,7 +62,23 @@ Decided change, no plan file → `references/no-spec.md`. After a compaction, re
 | `references/test-first.md` | No spec test-first, before a boundary. |
 | `references/project-knowledge.md` | No spec 6, if first line applies. |
 | `references/performance.md` | No spec speed work, pre-measure. |
-| `../route-skills/references/question.md` | Asking the user. |
-| `../route-skills/references/closing.md` | Final message. |
+| `../../lib/references/question.md` | Asking the user. |
+| `../../lib/references/closing.md` | Final message. |
+| `references/refactor.md` | `refactor` mode. |
+| `references/behavior-pin.md` | `refactor` mode. |
+| `references/legacy-api.md` | `refactor` mode. |
+| `references/improve.md` | `improve` mode. |
+| `references/worker-round.md` | `improve` mode. |
+| `references/worker.md` | `improve` mode. |
+| `references/design-ui.md` | `design-ui` mode. |
+| `references/color.md` | `design-ui` mode. |
+| `references/critic.md` | `design-ui` mode. |
+| `references/layout.md` | `design-ui` mode. |
+| `references/marketing.md` | `design-ui` mode. |
+| `references/motion.md` | `design-ui` mode. |
+| `references/reference-input.md` | `design-ui` mode. |
+| `references/slop.md` | `design-ui` mode. |
+| `references/typography.md` | `design-ui` mode. |
+| `references/run-plan.md` | `run-plan` mode. |
 
 Report: `ship`'s overview only.

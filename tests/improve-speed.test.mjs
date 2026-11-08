@@ -9,6 +9,8 @@ import { NOT_SHOWN } from '../benchmarks/speed-ledger.mjs';
 import { routeOf, scoreOutDir, screenIdea, verdictRecord } from '../benchmarks/improve-speed.mjs';
 import { tempDir } from './harness.mjs';
 
+const LEGACY_FIX = ['exo', 'fix-review'].join(':');
+
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'improve-speed.mjs');
 const GOOD_RECORD = { exitCode: 0, timedOut: false, hiddenPass: true, defects: [], verifyRan: true, outputTokens: 100 };
 
@@ -84,7 +86,7 @@ test('a gate.mjs run is read as the gate run, passing or failing', () => {
 
 test('calls dedupe by message id across agents and outputTokens and fixRounds come from the saved files', () => {
   const out = fixture();
-  const { transcript } = makeCell(out, 'c', { types: ['exo:fix-review', 'exo:build-task', 'exo:fix-review'], record: { outputTokens: 7 } });
+  const { transcript } = makeCell(out, 'c', { types: [LEGACY_FIX, 'exo:review-branch', LEGACY_FIX], record: { outputTokens: 7 } });
   addChild(transcript, 'x', { parent: undefined, entries: [call('a', 5), call('b', 6)] });
   const [row] = scoreOutDir(out).rows;
   assert.equal(row.calls, 3);

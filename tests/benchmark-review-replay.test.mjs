@@ -39,7 +39,7 @@ function scriptedModel(calls, { costUsd, onCall, commits = false } = {}) {
     const findings = path.join(repository, '.exo', 'review-branch.md');
     fs.mkdirSync(path.dirname(findings), { recursive: true });
     const reviews = own.filter((call) => call.includes('exo:review-branch')).length;
-    if (prompt.includes('exo:fix-review')) {
+    if (prompt.includes('exo-kind: fix-review')) {
       const file = path.join(repository, 'uploads.js');
       const lines = fs.readFileSync(file, 'utf8').split('\n');
       lines[4] = `${lines[4]} `;
@@ -100,7 +100,7 @@ test('a replay with a stubbed model reaches CLEAN in two rounds and grades the f
   assert.equal(cell.roundsToClean.mean, 2);
   assert.equal(cell.fixedAfterOneRepair.mean, 1);
   assert.equal(cell.falseFixLines.mean, 0);
-  assert.equal(calls.filter((call) => call.includes('exo:fix-review')).length, 2);
+  assert.equal(calls.filter((call) => call.includes('exo-kind: fix-review')).length, 2);
   assert.match(calls[0], /DISPATCH Branch: .*scope=branch main\.\.HEAD/);
 });
 
@@ -112,7 +112,7 @@ test('a repair the fixer commits itself still grades as fixed', async () => {
 test('the fixer reads the merged branch review, where demotions land, not the raw review', async () => {
   const calls = [];
   await replayAll({ ...OPTIONS, repeat: 1 }, () => scriptedModel(calls));
-  const [fixCall] = calls.filter((call) => call.includes('exo:fix-review'));
+  const [fixCall] = calls.filter((call) => call.includes('exo-kind: fix-review'));
   assert.match(fixCall, /findings path \S*[\\/]\.exo[\\/]branch-review\.md\./);
 });
 
@@ -428,7 +428,7 @@ test('resume skips a run already kept and joins its stored result to the cell', 
   const [cell] = await replayAll({ ...OPTIONS, repeat: 2, jobs: 1, keepDir, resume: true }, () => scriptedModel(calls, { costUsd: 0.25 }));
   assert.equal(cell.runs, 2);
   assert.equal(cell.skipped, 0);
-  assert.equal(calls.filter((call) => call.includes('exo:fix-review')).length, 1);
+  assert.equal(calls.filter((call) => call.includes('exo-kind: fix-review')).length, 1);
   assert.equal(cell.costUsd, 1.25);
   assert.equal(cell.fixedAfterOneRepair.mean, 0.5);
   assert.deepEqual(fs.readdirSync(keepDir).sort(), [`${TASK.id}-r0`, `${TASK.id}-r1`]);

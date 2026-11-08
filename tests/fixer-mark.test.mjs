@@ -49,7 +49,7 @@ test('findingsDigest strips each mark the fixer prompt shows', () => {
 });
 
 test('the fixer agent sends a defect already absent to reported, not fixed', () => {
-  const agent = fs.readFileSync(new URL('../agents/fix-review.md', import.meta.url), 'utf8');
+  const agent = fs.readFileSync(new URL('../lib/agent-modes/task-modes.md', import.meta.url), 'utf8');
   assert.match(agent, /no longer has the finding's defect, make no edit and write `reported: already absent`, not `fixed`/);
 });
 

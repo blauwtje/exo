@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { readSources } from '../skills/research/scripts/ledger.mjs';
-import { searchSource } from '../skills/research/scripts/search.mjs';
-import { BlockedRoute } from '../skills/research/scripts/sources/http.mjs';
+import { readSources } from '../skills/spec/scripts/ledger.mjs';
+import { searchSource } from '../skills/spec/scripts/search.mjs';
+import { BlockedRoute } from '../skills/spec/scripts/sources/http.mjs';
 
 const FIXTURES = new URL('./fixtures/research/', import.meta.url);
 

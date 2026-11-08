@@ -2,6 +2,9 @@
 
 Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of the shipped briefs; edit a brief, not this file. A brief that holds a `Supersedes: <brief name>` line replaces that brief.
 
+## brief
+- Each launcher SKILL.md holds `context: fork` (Task 11).
+
 ## fast-task-gate
 - A two-file task's brief keeps a Decisions bullet naming its file by basename or by its directory, and leaves out one naming only a sibling file or a same-named file elsewhere (Task 1; seam: `tests/next-task.test.mjs`).
 - A Land gate and a Proof past their deadlines are refused with `timed out after <n>s`, nothing commits, and their grandchild writes no marker file afterwards (Task 4; seam: `tests/land-task.test.mjs`).

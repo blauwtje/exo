@@ -50,7 +50,7 @@ export function goalText(target) {
 
 export function armPrompt(arm, target) {
   const goal = goalText(target);
-  return ARMS[arm].kind === 'improve' ? `/exo:improve ${goal}` : `/goal ${goal}; or stop when node score.mjs refuses`;
+  return ARMS[arm].kind === 'improve' ? `/exo:build ${goal}` : `/goal ${goal}; or stop when node score.mjs refuses`;
 }
 
 export function armConfig({ arm, target, cap, scratch }) {

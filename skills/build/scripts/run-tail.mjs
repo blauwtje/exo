@@ -24,7 +24,7 @@ const SCRIPT = {
 const REVIEW_AGENT = path.join(PLUGIN_ROOT, 'agents', 'review-branch.md');
 const FIXER_PROMPT = path.join(PLUGIN_ROOT, 'skills', 'build', 'review-fixer-prompt.md');
 const REVIEW_RULES = path.join(PLUGIN_ROOT, 'skills', 'gate', 'references', 'review-rules.md');
-const CODE_STANDARD = path.join(PLUGIN_ROOT, 'skills', 'route-skills', 'references', 'code-standard.md');
+const CODE_STANDARD = path.join(PLUGIN_ROOT, 'lib', 'references', 'code-standard.md');
 
 const node = (script, args, root) => spawnSync(process.execPath, [script, ...args], {
   cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, EXO_RUN_TASK: undefined }

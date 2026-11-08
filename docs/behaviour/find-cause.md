@@ -11,5 +11,8 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `CHANGELOG.md` holds the line under `## Unreleased` `### Added`. Task 3.
 - `npm run check` ends `FAIL=0 WARN=0 UNRUN=0`. Success criterion.
 
+## brief
+- Each launcher SKILL.md holds `context: fork` (Task 11).
+
 ## short-reports-text-review
 - Task 5: no skill body or `CLAUDE.md` line asks for a user message longer than the rule's three lines plus one pointer.

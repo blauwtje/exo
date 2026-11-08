@@ -13,7 +13,7 @@ Not for a clear goal, a bug, or visual-only work.
 - One question at a time, with lettered options and a recommendation. Reply with a letter, or `ok` to take the recommendation.
 - Facts it can look up are looked up, not asked.
 - Before the brief, a `Verdict:` of go, clarify or stop and the strongest `Objection:` against the work. Clarify asks one question, and stop writes no brief and says why. A go brief keeps both lines under `## Verdict`.
-- After the draft brief, a read-only agent (`exo:find-open-points`, skipped for a plan of at most 3 tasks that all have static proofs) finds every point a wrong guess would change. Points the code settles and cheap-to-undo guesses go under `## Assumptions`. You are asked only the rest, usually 0-3, one at a time; your answers become numbered Decisions, remembered per project.
+- After the draft brief, a read-only agent (`exo:research-worker`, skipped for a plan of at most 3 tasks that all have static proofs) finds every point a wrong guess would change. Points the code settles and cheap-to-undo guesses go under `## Assumptions`. You are asked only the rest, usually 0-3, one at a time; your answers become numbered Decisions, remembered per project.
 - A question you leave unanswered stays under `## Open points`, and build refuses the brief until it is answered.
 - A brief with a task list, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both.
 - A saved plan template that fits the request is offered first; a repo done-list in `docs/plans/definition-of-done.md` is chained onto the Success criterion once. After a run, run-plan offers to save the plan as a template in `docs/plans/templates/`.
@@ -24,6 +24,10 @@ Not for a clear goal, a bug, or visual-only work.
 Asked only for options, spec lists them, recommends one, and writes nothing.
 
 For an area it changes, spec reads `docs/behaviour/<area>.md`, built by `skills/spec/scripts/behaviour.mjs` from the acceptance lines of the briefs git tracks; `npm run check` fails while a file is stale.
+
+## Modes
+
+This skill also runs the folded skills research and ideate as modes.
 
 ## Source
 

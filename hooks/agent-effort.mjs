@@ -6,11 +6,12 @@ import { briefedInput, isolationFields, resultToolsFields, sizeReason } from '..
 import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
-import { EFFORTS, INHERIT, readKindTable } from '../lib/model-kinds.mjs';
+import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
+import { kindLabels, pairText, runsPassed } from '../lib/kind-labels.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
-import { baseOf, budgetedReads, locatedReads, workerSize } from '#worker-size';
+import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
 import { defaulted, liftedEffort, resolvedKind, unknownKind } from '../lib/kind-resolution.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
@@ -37,8 +38,9 @@ function workerScope(hookInput) {
   const { tool_input: input } = hookInput;
   if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return null;
   const fromOrchestrator = hookAgentType(hookInput) === 'orchestrator';
-  const fetchDocs = input.subagent_type === 'exo:fetch-docs';
-  const sized = fetchDocs ? fromOrchestrator : readKindTable().unnamed.types.includes(input.subagent_type ?? 'general-purpose');
+  const table = readKindTable();
+  const fetchDocs = (table.fetchSized ?? []).includes(input.subagent_type) && webSources(input.prompt);
+  const sized = fetchDocs || table.unnamed.types.includes(input.subagent_type ?? 'general-purpose');
   return sized ? { fromOrchestrator, fetchDocs } : null;
 }
 
@@ -57,26 +59,6 @@ export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = 
   const updated = briefedInput(filled(defaulted(rewrite.input, budget), budget, effort?.level), cwd);
   if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
-}
-
-function pairText(model, effort) {
-  return `${model ?? 'the session model'}, ${effort ?? 'the session effort'}`;
-}
-
-function runsPassed(kind, passed) {
-  return Object.entries(passed).every(([key, value]) => kind[key] === value);
-}
-
-function kindLabels(kinds, passed) {
-  const entries = Object.entries(kinds);
-  const names = (list) => list.map(([name]) => name).join(', ');
-  const exact = entries.filter(([, kind]) => runsPassed(kind, passed));
-  if (exact.length) return `\`exo-kind:\` labels for ${pairText(passed.model, passed.effort)}: ${names(exact)}`;
-  const gap = ([, kind]) => Math.abs(EFFORTS.indexOf(kind.effort) - EFFORTS.indexOf(passed.effort));
-  const sameModel = entries.filter(([, kind]) => kind.model === passed.model);
-  const nearest = sameModel.filter((entry) => gap(entry) === Math.min(...sameModel.map(gap)));
-  if (!nearest.length) return `No kind runs ${pairText(passed.model, passed.effort)}, and none runs ${passed.model ?? 'that model'}`;
-  return `No kind runs ${pairText(passed.model, passed.effort)}; closest on ${passed.model}: ${names(nearest)}`;
 }
 
 function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
@@ -101,14 +83,20 @@ function workersFields(prompt) {
   return { permissionDecision: 'deny', permissionDecisionReason: denyReason('workers-line', `n from 1 to ${limit}`) };
 }
 
+function missingFields(size, { fromOrchestrator, fetchDocs }) {
+  if (fetchDocs) return [];
+  if (fromOrchestrator) return size.missing;
+  return size.sized ? [] : ['Reads'];
+}
+
 function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const { tool_name: tool, tool_input: input, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
   if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return workersFields(input.prompt);
   if (!rewrite.scope) return null;
   const { fromOrchestrator, fetchDocs } = rewrite.scope;
-  const size = workerSize({ prompt: rewrite.input.prompt, cwd, session: hookInput });
-  const missing = fromOrchestrator ? (fetchDocs ? [] : size.missing) : (size.sized ? [] : ['Reads']);
+  const size = workerSize({ prompt: rewrite.input.prompt, cwd, session: hookInput, requireFetches: fetchDocs });
+  const missing = missingFields(size, rewrite.scope);
   const refused = size.invalid.length > 0 || size.unresolved.length > 0 || missing.length > 0 || ((fromOrchestrator || size.sized) && size.tokens > size.budget);
   if (!refused) return null;
   return { permissionDecision: 'deny', permissionDecisionReason: sizeReason(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) }) };

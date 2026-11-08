@@ -53,9 +53,6 @@
     "investigate": {
       "on": { "tier": "standard", "effort": "high" }
     },
-    "open-points": {
-      "on": { "tier": "standard", "effort": "high", "ceiling": "max" }
-    },
     "orchestrator": {
       "on": { "tier": "strong", "effort": "medium" }
     },
@@ -63,10 +60,7 @@
       "on": { "tier": "standard", "effort": "medium" }
     },
     "research": {
-      "on": { "tier": "standard", "effort": "medium" }
-    },
-    "ideate": {
-      "on": { "tier": "standard", "effort": "medium" }
+      "on": { "tier": "standard", "effort": "medium", "ceiling": "high" }
     },
     "judge": {
       "on": { "tier": "fast", "effort": "low" }
@@ -97,22 +91,16 @@
       "rebase": "chore", "squash": "chore", "cleanup": "chore"
     }
   },
+  "fetchSized": ["exo:research-worker"],
   "agents": {
-    "agents/build-task.md": { "kind": "build-task" },
-    "agents/fetch-docs.md": { "kind": "research" },
-    "agents/find-open-points.md": { "kind": "open-points" },
-    "agents/claim-judge.md": { "kind": "judge" },
-    "agents/fix-review.md": { "kind": "fix-review" },
-    "agents/ideate-worker.md": { "kind": "ideate" },
-    "agents/locate-code.md": { "kind": "lookup" },
+    "agents/build-task.md": { "kind": "build-task", "labels": ["fix-review", "hardest"] },
     "agents/orchestrator.md": { "kind": "orchestrator" },
     "agents/research-worker.md": { "kind": "research" },
-    "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep"] },
-    "agents/task-runner.md": { "kind": "task-runner" },
-    "agents/solve-hard.md": { "kind": "hardest" }
+    "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep", "judge"] },
+    "agents/task-runner.md": { "kind": "task-runner" }
   },
   "dispatches": [
-    { "file": "skills/improve/references/worker-round.md", "match": "delegate whose prompt opens with `exo-kind: improve-round`", "kind": "improve-round" },
+    { "file": "skills/build/references/worker-round.md", "match": "delegate whose prompt opens with `exo-kind: improve-round`", "kind": "improve-round" },
     { "file": "skills/find-cause/SKILL.md", "match": "the prompt opening with `exo-kind: build`", "kind": "build" },
     { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: build` for phase (c)", "kind": "build" },
     { "file": "skills/build/reviewer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
@@ -120,6 +108,6 @@
     { "file": "skills/build/references/design-tasks.md", "match": "delegate whose prompt opens with `exo-kind: peer`", "kind": "peer" },
     { "file": "skills/edit-skills/references/blind-eval.md", "match": "delegate whose prompt opens with `exo-kind: review` as judge", "kind": "review" },
     { "file": "skills/watch/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: lookup`", "kind": "lookup" },
-    { "file": "skills/design-ui/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: review` as critic", "kind": "review" }
+    { "file": "skills/build/references/design-ui.md", "match": "delegate whose prompt opens with `exo-kind: review` as critic", "kind": "review" }
   ]
 }

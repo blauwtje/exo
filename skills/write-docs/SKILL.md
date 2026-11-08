@@ -1,6 +1,8 @@
 ---
 name: write-docs
 description: Use when the user asks to write or edit prose read later, such as a README, doc page, PR or changelog line. Not for chat replies or code comments.
+context: fork
+agent: exo:orchestrator
 argument-hint: <the document or text to write or edit>
 ---
 
@@ -40,6 +42,6 @@ Prose for a reader who was not in the session says who does what, by which mecha
 ## Judgment
 
 - The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
-- Fields that ship, file-issues or spec set outrank this skill's layout, and only the wording inside them follows it.
+- Fields that ship or spec set outrank this skill's layout, and only the wording inside them follows it.
 - The reader's ease outranks a rule. When following one hurts a sentence, mend it differently or keep it as written.
 - Product interface strings follow the product's copy rules, not this skill.

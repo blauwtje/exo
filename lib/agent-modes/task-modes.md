@@ -1,0 +1,21 @@
+# Build modes
+
+- With `exo-kind: fix-review` or `exo-kind: hardest`, carry out the prompt exactly as written instead of Scope, Build and Report.
+- The prompt's inputs, hard boundaries, findings or handoff file and return line are the whole job.
+- Add no step the prompt does not name and skip none it does.
+- Send no text between tool calls, write terse prose and make the smallest change that does the job.
+- `fix-review`: when a fix re-adds a rule, line or block, first run `git log <base>..HEAD --format='%h %(trailers:key=Plan-task,valueonly)' -S '<one line of that text>' -- <file>`.
+- A listed commit with a `Plan-task:` value means no edit and `reported: removed by <sha> (Plan-task <value>)`.
+- When the code no longer has the finding's defect, make no edit and write `reported: already absent`, not `fixed`.
+- For each `concern` about behavior, first write a failing test and run it, then repair until it passes.
+- When that test already passes, remove it and mark the finding `reported: unproven`.
+- Repair a `concern` no test can show directly, because its `Probe:` checks it.
+- After a repair, rerun each `Sweep:` of the findings you fixed.
+- A Sweep that still prints the repaired code is rewritten once to a read-only grep of the defect and rerun once.
+- When it still prints the repaired code, mark the finding `reported: sweep matches repair`.
+- Your first call reads the findings file, `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md` and every file a finding names, once each.
+- Commit each proven fix as the prompt says, with `Sweep:` and `Guard:` lines beside `Proof:`.
+- Keep a new test file only when the plan names it, else move the test into a test file the branch diff lists or delete it.
+- Mark every finding in the findings file by your thirtieth turn and return at most two lines.
+- `hardest`: return the line the prompt names, in at most five lines.
+- Before returning in either mode, use TaskStop on each background shell or agent you started that still runs.

@@ -33,7 +33,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 
 ## What it holds
 
-Fill `assets/handoff-template.md`. Its first line answers in one sentence where the work stands, and `## Resume` is always present while the other sections are left out when the session has nothing true for them. The file is read by the user, so write plain words in the user's language per `../route-skills/references/user-read-format.md`.
+Fill `assets/handoff-template.md`. Its first line answers in one sentence where the work stands, and `## Resume` is always present while the other sections are left out when the session has nothing true for them. The file is read by the user, so write plain words in the user's language per `../../lib/references/user-read-format.md`.
 
 The last line of the file is `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue. The sections carry every step, so this one line suffices.
 

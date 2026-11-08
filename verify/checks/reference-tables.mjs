@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { chainedReferences, inReferences } from './reference-chain.mjs';
 
 const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
@@ -69,7 +70,6 @@ const EXPECTED_CONTRACTS = {
   'skills/spec/SKILL.md': FIRST_LINE_CONTRACTS,
 };
 
-// Get-ReferenceTableEntries: the `path` | `read it when` rows of a skill's table.
 export function referenceTableEntries(content) {
   return [...content.matchAll(TABLE_ROW)]
     .map((match) => ({ path: match.groups.path, readWhen: match.groups.readWhen.trim() }));
@@ -158,21 +158,19 @@ export function checkReferenceTables(report, repository) {
     checkOwnerRows(errors, skillPath, rows);
     checkTimingContracts(errors, skillPath, entries);
     checkFirstLinePredicates(errors, skillFile, skillPath, entries);
-    for (const row of rows) {
-      const target = path.resolve(path.dirname(skillFile), row);
-      if (isFile(target)) referenced.add(target.toLowerCase());
-      else errors.push(`${skillPath}: table target '${row}' does not resolve`);
+    for (const row of rows.filter((r) => !isFile(path.resolve(path.dirname(skillFile), r)))) {
+      errors.push(`${skillPath}: table target '${row}' does not resolve`);
     }
+    for (const reached of chainedReferences(skillFile)) referenced.add(reached.toLowerCase());
   }
 
   const referenceFiles = repository.walk(repository.skillsRoot,
-    (file) => file.endsWith('.md') && path.basename(path.dirname(file)) === 'references');
+    (file) => inReferences(repository.skillsRoot, file));
   for (const referenceFile of [...referenceFiles, ...repository.promptFiles()]) {
     if (!referenced.has(referenceFile.toLowerCase())) {
       errors.push(`${repository.relative(referenceFile)}: no SKILL reference-table entry`);
     }
   }
-
 
   checkReviewRules(errors, repository);
 

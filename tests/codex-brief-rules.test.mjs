@@ -25,10 +25,3 @@ test('every generated Codex agent with Bash carries the brief rules for its tool
   }
   assert.ok(checked > 0);
 });
-
-test('a Codex agent without Bash carries no Bash-only brief row', () => {
-  const tree = generateTree(ROOT);
-  const text = tree.get('harnesses/codex/generated/agents/exo-claim-judge.toml');
-  const bashOnly = briefLines(['Bash']).filter((line) => !briefLines(['Read']).includes(line));
-  for (const line of bashOnly) assert.ok(!text.includes(line));
-});

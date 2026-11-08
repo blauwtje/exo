@@ -87,7 +87,7 @@ function reviewStage(flags, run) {
   const blocked = verdict.startsWith('verdict=BLOCKED');
   if (blocked) lines.push(blockedNext(merged.body));
   const repairable = !blocked && (count('fix') > 0 || count('concern') > 0);
-  if (repairable) lines.push('NEXT dispatch one exo:fix-review per CLUSTER line, in parallel, each with only its findings; record git rev-parse HEAD as pre-fix-sha first');
+  if (repairable) lines.push('NEXT dispatch one exo:build-task with exo-kind: fix-review per CLUSTER line, in parallel, each with only its findings; record git rev-parse HEAD as pre-fix-sha first');
   if (repairable) lines.push('DECIDE repair dispatch');
   if (merged.body.some((line) => line.startsWith('BLOCKED'))) lines.push('DECIDE BLOCKED');
   if (merged.body.some((line) => line.startsWith('FINDING') && /\bquestion\b/.test(line))) lines.push('DECIDE question findings');

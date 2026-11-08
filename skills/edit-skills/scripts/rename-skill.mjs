@@ -13,7 +13,7 @@ benchmarks/results/, .git/ and .worktrees/, which name the skill as it was.
 Prints one line per rewritten file as <path> <count>.`;
 const NAME_PATTERN =/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const SKIPPED_DIR_NAMES = new Set(['.git', '.worktrees']);
-const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md', 'CHANGELOG-archive.md']);
+const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md']);
 const SKIPPED_RELATIVE_PREFIXES = ['benchmarks/results/'];
 
 function assertSkillName(name, flag) {

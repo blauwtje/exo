@@ -27,13 +27,13 @@ const agents = fs.readdirSync(agentsRoot)
   .filter((fileName) => fileName.endsWith('.md'))
   .map(readAgent);
 
-const specSkill = fs.readFileSync(path.join(skillsRoot, 'spec/references/map-locate.md'), 'utf8');
+const specSkill = fs.readFileSync(path.join(skillsRoot, 'spec/references/step-rules.md'), 'utf8');
 
-test('spec dispatches locate-code and fetch-docs in one message, and find-open-points opens with its reads together', () => {
-  const locate = specSkill.split('\n').find((line) => line.includes('`exo:locate-code`'));
-  assert.match(locate, /`exo:fetch-docs`/, 'locate-code and fetch-docs share one step line');
+test('spec dispatches its research-worker lookups in one message, and the open-points mode opens with its reads together', () => {
+  const locate = specSkill.split('\n').find((line) => line.includes('`exo:research-worker`'));
+  assert.match(locate, /`Sources: repo`.*`Sources: docs`/, 'repo and docs lookups share one step line');
   assert.match(locate, /one (?:background )?message/, 'spec sends both lookups in one message');
-  const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
-  assert.match(finder.body, /^- First message: Read the brief and run `node [^\n]*memory\.mjs" decisions` together\.$/m);
-  assert.doesNotMatch(finder.body, /before anything else/, 'no second opening call is ordered first');
+  const modes = fs.readFileSync(path.join(skillsRoot, 'spec/references/worker-modes.md'), 'utf8');
+  assert.match(modes, /^- First message: Read the brief and run the memory script command `decisions` together\. Then read what the brief names/m);
+  assert.doesNotMatch(modes, /before anything else/, 'no second opening call is ordered first');
 });

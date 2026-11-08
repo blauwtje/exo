@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fetchPage, savePageText } from '../skills/research/scripts/fetch.mjs';
-import { canonicalUrl, readSources } from '../skills/research/scripts/ledger.mjs';
-import { htmlToText } from '../skills/research/scripts/page-text.mjs';
+import { fetchPage, savePageText } from '../skills/spec/scripts/fetch.mjs';
+import { canonicalUrl, readSources } from '../skills/spec/scripts/ledger.mjs';
+import { htmlToText } from '../skills/spec/scripts/page-text.mjs';
 
 function runFolder() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'research-fetch-'));
@@ -79,7 +79,7 @@ test('fetchPage treats an empty page as blocked and caches nothing', async () =>
 
 test('fetch.mjs --save stores transcript text from stdin as a page', () => {
   const runDir = runFolder();
-  const script = new URL('../skills/research/scripts/fetch.mjs', import.meta.url).pathname;
+  const script = new URL('../skills/spec/scripts/fetch.mjs', import.meta.url).pathname;
   const run = spawnSync('node', [script, '--save', runDir, 'https://example.com/v'], { input: 'spoken words', encoding: 'utf8' });
   assert.equal(run.status, 0);
   const [ref] = run.stdout.split('\t');

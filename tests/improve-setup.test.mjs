@@ -4,11 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { improveDefaults } from '../skills/improve/scripts/round.mjs';
-import { baselineNoise } from '../skills/improve/scripts/baseline.mjs';
+import { improveDefaults } from '../skills/build/scripts/round.mjs';
+import { baselineNoise } from '../skills/build/scripts/baseline.mjs';
 import { git, tempDir } from './harness.mjs';
 
-const SETUP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'improve', 'scripts', 'setup.mjs');
+const SETUP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'build', 'scripts', 'setup.mjs');
 
 function repo() {
   const root = tempDir('improve-setup-');

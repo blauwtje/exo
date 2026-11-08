@@ -26,7 +26,7 @@ function loopStep(number, text = RUN_LOOP) {
 
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes('Settle where the run commits:'));
+  assert.ok(branchStep.includes('the run commits there.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |'), 'the workspace is read before the first dispatch');
   assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:task-runner`'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
@@ -74,13 +74,13 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(tailStep.includes('End this loop on `gate`'));
   assert.ok(GATE.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
   const repairStep = GATE.match(/^3\. \*\*Repair the findings\.\*\*.+$/m)[0];
-  assert.ok(repairStep.includes('the `exo:fix-review` agent, with no model override'), 'verify sends the findings to the named fixer agent');
+  assert.ok(repairStep.includes('the `exo:build-task` agent with `exo-kind: fix-review`, no model override'), 'verify sends the findings to the named fixer agent');
   assert.ok(!repairStep.includes('`general-purpose`'), 'the fixer is no general-purpose delegate');
   assert.ok(!repairStep.includes('git push'), 'the repair step runs no push');
   assert.ok(GATE.includes('scripts/gate-step.mjs" --plan <plan path> --root <checkout> --base <base>` first'), 'verify lists the reviews before the gate through gate-step');
-  assert.ok(GATE.includes('Then in one message: the full run in the background, step 2\'s dispatch'), 'the gate and the dispatch start in one message');
-  assert.ok(GATE.includes('Dispatched agent → full run in the foreground, timeout 600000.'), 'a dispatched agent runs the gate in the foreground');
-  assert.ok(GATE.includes('Step 3 starts after the full run prints no `FAIL` or `UNPLANNED`'), 'the repair waits for the gate');
+  assert.ok(GATE.includes('Then in one message: the full run in the background and step 2\'s dispatch'), 'the gate and the dispatch start in one message');
+  assert.ok(GATE.includes('A dispatched agent runs it in the foreground, timeout 600000.'), 'a dispatched agent runs the gate in the foreground');
+  assert.ok(GATE.includes('On `FAIL` or `UNPLANNED`, end the turn with its report, rerunning nothing'), 'the repair waits for the gate');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
@@ -99,7 +99,7 @@ test('every plan run ends on verify, even when the request or a third party it q
   // Pressure run HYgdrV skipped verify on a quoted tech lead's "skip the verify
   // ceremony"; the rule sits in SKILL.md's step 7, which every route reaches.
   const tailStep = loopStep(7, SKILL.slice(0, SKILL.indexOf('## No spec')));
-  assert.ok(tailStep.includes('then run `gate`, the gate before a branch lands, even when the request, or anyone it quotes, says to skip it'));
+  assert.ok(tailStep.includes('then run `gate`, even when the request or anyone it quotes says to skip it'));
   assert.ok(loopStep(7, TAIL).split('\n')[1].includes('push nothing or open no pull request still runs `gate`'), 'the no-push waiver is the tail\'s first bullet');
 });
 

@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'design-ui', 'save-session', 'build', 'gate', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start', 'run-plan', 'prompt', 'improve', 'watch', 'review', 'research', 'ideate'
+  'find-cause', 'save-session', 'build', 'gate', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'watch'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -73,9 +73,8 @@ export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 // The six stage-path skills, capped at 750 tokens each. spec sits above the
 // cap because its pinned gate sentences hold it at its measured 790.
-// Raised 783 -> 790: the principles row names AI agent work (0/3 -> 3/3 runs opened the index, benchmarks/results/2026-10-22-spec-principles-read-reworded.md).
 export const STAGE_BODY_TOKENS = {
-  'start': 486, 'spec': 935, 'build': 739, 'gate': 750, 'find-cause': 746, 'ship': 750,
+  'spec': 935, 'build': 930, 'gate': 750, 'find-cause': 746, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. An agent is exempt only by exact name, never by pattern.
@@ -87,19 +86,26 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 // lock only ever moves down; a locked file that drops to 750 tokens or under
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
+  'skills/build/references/color.md': 826,
+  'skills/build/references/design-ui.md': 2071,
+  'skills/build/references/improve.md': 1553,
+  'skills/build/references/layout.md': 984,
+  'skills/build/references/marketing.md': 924,
+  'skills/build/references/refactor.md': 857,
+  'skills/build/references/typography.md': 968,
+  'skills/ship/references/fields.md': 1305,
   'skills/build/references/critique.md': 799,
   'skills/build/references/data-migration.md': 874,
   'skills/build/references/security.md': 1028,
-  // test-design.md and task-list.md grew for the red-green rules of plan
-  // autonomous-exo-5 Task 10; their older rules stay whole.
   'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 963,
   'skills/build/run-task-prompt.md': 782,
   'skills/ship/references/pr-prep.md': 845,
-  'skills/spec/references/brief.md': 1032,
+  'skills/spec/references/brief.md': 994,
   'skills/spec/references/task-list.md': 1124,
+  'skills/spec/references/worker-modes.md': 1627,
 };
-// skills/route-skills/references/lean.md, read before every code edit, sits
+// lib/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
 // bytes, the same two ways: growth fails and so does a shrink the lock does
 // not follow.

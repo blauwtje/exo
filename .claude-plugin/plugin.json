@@ -27,8 +27,8 @@
     "ship": {
       "type": "string",
       "title": "How ship finishes a run",
-      "description": "ask: ship puts the question. pr-merge: open a pull request and merge it once checks pass. open-pr: open a pull request and stop. push: push the branch. local: keep the commits on this machine. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
-      "options": ["ask", "pr-merge", "open-pr", "push", "local"],
+      "description": "ask: ship puts the question. pr-merge: open a pull request and merge it once checks pass. open-pr: open a pull request and stop. stack: one pull request per plan wave, left open. push: push the branch. local: keep the commits on this machine. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
+      "options": ["ask", "pr-merge", "open-pr", "stack", "push", "local"],
       "default": "ask"
     },
     "workspace": {
@@ -42,13 +42,6 @@
       "type": "string",
       "title": "Show a line when exo acts",
       "description": "on: a short line to you when exo starts, hands work to a helper or refuses a command; it costs the model no tokens. off: no such lines. A project overrides this in .claude/exo.json.",
-      "options": ["on", "off"],
-      "default": "on"
-    },
-    "memory": {
-      "type": "string",
-      "title": "Keep a project memory",
-      "description": "on: sessions read the project memory and book lessons and decisions into it. off: nothing is read or written; an existing memory file is never deleted. A project overrides this in .claude/exo.json.",
       "options": ["on", "off"],
       "default": "on"
     },

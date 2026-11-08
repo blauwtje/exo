@@ -3,9 +3,11 @@ import test from 'node:test';
 
 import { reviewStages } from '../benchmarks/sweep-score.mjs';
 
+const LEGACY_FIX = ['exo', 'fix-review'].join(':');
+
 test('reviewStages counts review dispatches and reads the first merged verdict', () => {
   const text = '{"content":"verdict=FINDINGS defect=0 concern=1 question=0 fix=0 report=/r.md\\nnone"}\n{"content":"verdict=FINDINGS defect=0 concern=2 question=0 fix=1 report=/r.md"}';
-  const subagents = ['exo:build-task', 'exo:review-branch', 'exo:fix-review', 'exo:review-branch'];
+  const subagents = ['exo:build-task', 'exo:review-branch', LEGACY_FIX, 'exo:review-branch'];
   assert.deepEqual(reviewStages(subagents, text), { reviewBranch: 2, fixReview: 1, fix: 0, concern: 1 });
 });
 

@@ -36,7 +36,7 @@ export function planLines(tier) {
 
 export function promptFor(mode) {
   const suffix = mode === 'fast' ? ' fast' : '';
-  return `/exo:ideate ${QUESTION}${suffix}`;
+  return `/exo:spec ideate ${QUESTION}${suffix}`;
 }
 
 function tokenRows(mode, byModel) {

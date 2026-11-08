@@ -1,6 +1,6 @@
 # spec: pass criteria for the `with` arm
 
-Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a multi-turn session resumed after every reply. The criteria come from the grading of the first spec pressure run and the user's decisions on the one-question shape in `skills/route-skills/references/question.md`; they hold for every message the assistant sends.
+Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a multi-turn session resumed after every reply. The criteria come from the grading of the first spec pressure run and the user's decisions on the one-question shape in `lib/references/question.md`; they hold for every message the assistant sends.
 
 ## Each question message
 

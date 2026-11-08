@@ -8,7 +8,6 @@ Turn a lesson learned this session into something the next session reads unpromp
 
 - Build a lint, type or check for a recurring correction before writing a text line, when the repository can hold one.
 - When proof reveals a build, test, or run command missing from root `AGENTS.md` (root `CLAUDE.md` when `AGENTS.md` is absent), append one line there.
-- A failure-causing gotcha tied to files is a lesson: book it with `memory.mjs book`, because `remember` scopes it by glob and briefs carry it only for those files.
 - When neither file exists, create nothing.
 
 ## Judgment

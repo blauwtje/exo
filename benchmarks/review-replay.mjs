@@ -148,7 +148,7 @@ function reviewPrompt(line) {
 
 function fixerPrompt(pluginDir, { repository, plan, findings }) {
   const prompt = path.join(pluginDir, 'skills', 'build', 'review-fixer-prompt.md');
-  return `Dispatch one exo:fix-review agent with no model override and the prompt file ${prompt} by path. Fill values: plan path ${plan}, root ${repository}, base main, findings path ${findings}. Reply with its return line only.`;
+  return `Dispatch one exo:build-task agent with exo-kind: fix-review and prompt file ${prompt} by path. Fill values: plan path ${plan}, root ${repository}, base main, findings path ${findings}. Reply with its return line only.`;
 }
 
 function commitRepair(repository, round) {

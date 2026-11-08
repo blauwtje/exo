@@ -1,10 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
-import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
 import { readKindTable } from '../lib/model-kinds.mjs';
-import { isMain } from '../lib/script-flags.mjs';
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
 const PINNED_FIELDS = ['model', 'effort'];
@@ -123,15 +119,3 @@ export function findKindDrift(root, table) {
   const kinds = table ?? readKindTable(path.join(root, 'lib', 'model-kinds.json'));
   return [...findFrontmatterPins(root), ...findDispatchPins(root, kinds)];
 }
-
-function main() {
-  parseArgs({ options: {} });
-  const root = fileURLToPath(new URL('..', import.meta.url));
-  const drift = findKindDrift(root);
-  for (const record of drift) {
-    console.log(`${record.file}: ${record.field} is ${record.actual}, the table says ${record.expected}`);
-  }
-  if (drift.length > 0) process.exitCode = 1;
-}
-
-if (isMain(import.meta.url)) main();

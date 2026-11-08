@@ -52,7 +52,7 @@ test('an agents entry whose labels names an unknown kind is rejected', () => {
 
 test('labels on an entry outside agents is rejected', () => {
   const file = tableWith((table) => { table.dispatches[0].labels = ['review']; });
-  assert.throws(() => readKindTable(file), /skills\/improve\/references\/worker-round\.md: labels belong on agents entries only/);
+  assert.throws(() => readKindTable(file), /skills\/build\/references\/worker-round\.md: labels belong on agents entries only/);
 });
 
 test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
@@ -133,13 +133,8 @@ test('kinds.orchestrator.on.effort is medium', () => {
 test('the judge kind runs on the fast tier at low effort and the research agents map to their kinds', () => {
   const { kinds, agents } = readKindTable();
   assert.equal(kinds.judge.effort, 'low');
-  assert.equal(agents['agents/claim-judge.md'].kind, 'judge');
+  assert.ok(agents['agents/review-branch.md'].labels.includes('judge'));
+  assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest']);
   assert.equal(agents['agents/research-worker.md'].kind, 'research');
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');
-});
-
-test('the ideate kind runs on the standard tier at medium effort and maps the ideate worker', () => {
-  const { kinds, agents } = readKindTable();
-  assert.deepEqual(kinds.ideate, { model: 'sonnet', effort: 'medium' });
-  assert.equal(agents['agents/ideate-worker.md'].kind, 'ideate');
 });

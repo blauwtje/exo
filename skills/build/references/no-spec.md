@@ -5,7 +5,7 @@ A decided change with no plan file runs these steps instead of the loop, so a sm
 1. **Orient.** A main session runs `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`.
    - Read the ranges that a plan task's `Files:` lines or the request name, and no others.
    - When `<scratch>/implement-next.md` exists, resume from it and delete it once edits land. `<scratch>` is what `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs"` prints.
-   - Otherwise, or after one failed direct search, dispatch `exo:locate-code` and read only its `Read next` ranges plus direct callers or callees.
+   - Otherwise, or after one failed direct search, dispatch `exo:research-worker` with `Sources: repo` and read only its `Read next` ranges plus direct callers or callees.
    - Upstream Decisions are settled.
 2. **Gate.**
    - An open product decision goes to `spec` first, because the earliest stage wins.

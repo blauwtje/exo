@@ -6,7 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { tempDir } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../lib/next-stage.mjs', import.meta.url));
 
 async function brief({ land, open = [] }) {
   const directory = tempDir('next-stage-');

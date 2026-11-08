@@ -46,7 +46,7 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(fs.existsSync(fixerPath), 'skills/build/review-fixer-prompt.md exists');
   const fixerPrompt = fs.readFileSync(fixerPath, 'utf8');
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
-  assert.ok(fixerPrompt.includes('hands the `exo:fix-review` agent when the branch review'));
+  assert.ok(fixerPrompt.includes('hands the `exo:build-task` agent with `exo-kind: fix-review` on `fix` or `concern` findings'));
   const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
   const verifying = fs.readFileSync(path.join(skillsRoot, 'gate', 'SKILL.md'), 'utf8');
   assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);
@@ -65,7 +65,7 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.match(repairAfter, /A `FAIL probe` line ends the turn/, 'a FAIL probe line ends the turn');
   assert.match(repairAfter, /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`/, 'a missing fix-review.md ends the turn BLOCKED');
   assert.doesNotMatch(repairAfter, /A `FAIL` or `UNPLANNED` line from `gate\.mjs`/, 'the prose exit the script replaces is gone');
-  assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'gate skips the fixer when the review holds no fix finding');
+  assert.match(repairStep, /`fix=0`[^\n]*no fixer dispatch/, 'gate skips the fixer when the review holds no fix finding');
   assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'gate points to the report rule and ends on one decision');
   assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
   assert.match(verifying, /^Report:[^\n]*`FAIL`, else `question`, else `ship`/m, 'gate orders the one decision');
@@ -74,13 +74,13 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
 });
 
 test('every skill that cites the report rule names closing.md, which defines it', () => {
-  const closing = fs.readFileSync(path.join(skillsRoot, 'route-skills/references/closing.md'), 'utf8');
+  const closing = fs.readFileSync(path.join(skillsRoot, '..', 'lib/references/closing.md'), 'utf8');
   assert.match(closing, /^## Report rule$/m, 'closing.md defines the report rule');
-  for (const file of ['check-docs/SKILL.md', 'edit-skills/references/skill-shape.md', 'gate/SKILL.md', 'ship/SKILL.md', 'refactor/SKILL.md', 'build/references/tail.md', 'find-cause/SKILL.md']) {
+  for (const file of ['edit-skills/references/skill-shape.md', 'gate/SKILL.md', 'ship/SKILL.md', 'build/references/tail.md', 'find-cause/SKILL.md']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /closing\.md/, `${file} cites closing.md`);
   }
-  for (const owner of ['edit-skills', 'gate', 'ship', 'refactor', 'build', 'find-cause']) {
-    assert.match(fs.readFileSync(path.join(skillsRoot, owner, 'SKILL.md'), 'utf8'), /^\| `\.\.\/route-skills\/references\/closing\.md` \|/m, `${owner} lists closing.md in its References table`);
+  for (const owner of ['edit-skills', 'gate', 'ship', 'build', 'find-cause']) {
+    assert.match(fs.readFileSync(path.join(skillsRoot, owner, 'SKILL.md'), 'utf8'), /^\| `\.\.\/\.\.\/lib\/references\/closing\.md` \|/m, `${owner} lists closing.md in its References table`);
   }
 });
 

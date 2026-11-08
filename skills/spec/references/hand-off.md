@@ -1,6 +1,6 @@
 # Handing off
 
-Handing off ends the shaping turn by asking the user whether to start the build. The question script is `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`, which prints a start-or-change question, or the open-points list.
+Handing off ends the shaping turn by asking the user whether to start the build. The question script is `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after spec --artifact <brief path or #<n>>`, which prints a start-or-change question, or the open-points list.
 
 First match wins:
 

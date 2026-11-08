@@ -15,6 +15,10 @@ Not for a rule or `CLAUDE.md`, a one-off fix, or a limit a script can check.
 - A green `node verify.mjs`.
 - A rename in one pass: folder, docs page and every mention.
 
+## Modes
+
+This skill also runs the folded skill prompt as a mode.
+
 ## Source
 
 `skills/edit-skills/SKILL.md` and its `references/`.

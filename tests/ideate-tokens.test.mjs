@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { planLines, plannedModes, promptFor, sessionIdOf, tokenTable } from '../benchmarks/ideate-tokens.mjs';
 
 test('promptFor adds fast only in fast mode', () => {
-  assert.equal(promptFor('full'), '/exo:ideate how to show progress of a long run');
-  assert.equal(promptFor('fast'), '/exo:ideate how to show progress of a long run fast');
+  assert.equal(promptFor('full'), '/exo:spec ideate how to show progress of a long run');
+  assert.equal(promptFor('fast'), '/exo:spec ideate how to show progress of a long run fast');
 });
 
 test('tokenTable gives one row per model and mode with both cache writes summed', () => {
@@ -30,6 +30,6 @@ test('quick tier plans one mode and full plans both', () => {
 test('--dry-run prints the planned runs and spends nothing', () => {
   const run = spawnSync(process.execPath, ['benchmarks/ideate-tokens.mjs', '--dry-run', '--tier', 'full'], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
-  assert.match(run.stdout, /run: \/exo:ideate .* fast/);
+  assert.match(run.stdout, /run: \/exo:spec ideate .* fast/);
   assert.match(run.stdout, /power:/);
 });
