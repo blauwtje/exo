@@ -13,8 +13,9 @@ All keyless. Each search prints one JSON line per hit, or `status: blocked <sour
 
 ## Reddit rule
 
-- Run `node "<plugin-root>/skills/spec/scripts/search.mjs" --source reddit --query <text> --run <run-dir>` first, where `<plugin-root>` is `$CLAUDE_PLUGIN_ROOT`; old.reddit.com and www.reddit.com block Node too.
-- When it is blocked, web search only with `site:reddit.com` or `site:reddit.com/r/<sub>` in the query, and never the bare word reddit or `r/<sub>`.
+- Reach Reddit only through `node "<plugin-root>/skills/spec/scripts/search.mjs" --source reddit --query <text> --run <run-dir>`, where `<plugin-root>` is `$CLAUDE_PLUGIN_ROOT`. It reads Reddit directly with no key and returns the top threads with post text and comments (author, score, depth).
+- Thread URLs from a `site:reddit.com` web search, passed with `--url <thread url>`, are an equal first route beside the RSS search; Reddit may end its RSS feeds.
+- When RSS fails, the script returns a `blocked` note asking for those thread URLs. Run the web search with `site:reddit.com` or `site:reddit.com/r/<sub>` in the query, never the bare word reddit or `r/<sub>`, and pass the URLs.
 - Never web-fetch reddit.com, old.reddit.com or a mirror such as redlib or libreddit.
 - After the first blocked-domain error for a domain, stop using that domain and record a gap.
 - The PreToolUse hook denies the calls this forbids.

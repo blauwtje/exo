@@ -6,20 +6,26 @@ import { SOURCES } from './sources/index.mjs';
 const DEFAULT_LIMIT = 5;
 
 export async function searchSource(request, context) {
-  const { source, query, limit = DEFAULT_LIMIT, runDir } = request;
+  const { source, query, limit = DEFAULT_LIMIT, runDir, subreddit, urls } = request;
   const adapter = SOURCES[source];
   if (!adapter) throw new Error(`unknown source ${source}; use ${Object.keys(SOURCES).join(', ')}`);
-  const hits = await adapter({ query, limit }, context);
+  const hits = await adapter({ query, limit, subreddit, urls }, context);
   return hits.map((hit) => {
     const { title, date, signals, description } = hit;
-    return recordSource(runDir, { url: hit.url, fields: { source, title, date, signals, description } });
+    const row = recordSource(runDir, { url: hit.url, fields: { source, title, date, signals, description } });
+    return { ...row, comments: hit.comments, blocked: hit.blocked };
   });
 }
 
 function parseArgs(argv) {
   const values = {};
   for (let index = 0; index < argv.length; index += 2) {
-    values[argv[index].replace(/^--/, '')] = argv[index + 1];
+    const name = argv[index].replace(/^--/, '');
+    if (name === 'url') {
+      (values.urls ??= []).push(argv[index + 1]);
+      continue;
+    }
+    values[name] = argv[index + 1];
   }
   return values;
 }
@@ -27,16 +33,17 @@ function parseArgs(argv) {
 async function main(argv) {
   excludeScratchIfGit(process.cwd());
   const args = parseArgs(argv);
-  if (!args.source || !args.query || !args.run) {
-    process.stderr.write('usage: search.mjs --source <name> --query <text> --run <dir> [--limit <n>]\n');
+  const hasInput = args.query || args.urls;
+  if (!args.source || !hasInput || !args.run) {
+    process.stderr.write('usage: search.mjs --source <name> (--query <text> | --url <thread url>...) --run <dir> [--limit <n>] [--subreddit <name>]\n');
     process.exitCode = 2;
     return;
   }
   try {
-    const request = { source: args.source, query: args.query, limit: Number(args.limit ?? DEFAULT_LIMIT), runDir: args.run };
+    const request = { source: args.source, query: args.query ?? '', limit: Number(args.limit ?? DEFAULT_LIMIT), runDir: args.run, subreddit: args.subreddit, urls: args.urls };
     for (const row of await searchSource(request, {})) {
-      const { ref, title, url, date, signals, description } = row;
-      process.stdout.write(`${JSON.stringify({ ref, title, url, date, signals, description })}\n`);
+      const { ref, title, url, date, signals, description, comments, blocked } = row;
+      process.stdout.write(`${JSON.stringify({ ref, title, url, date, signals, description, comments, blocked })}\n`);
     }
   } catch (error) {
     if (!(error instanceof BlockedRoute)) throw error;
