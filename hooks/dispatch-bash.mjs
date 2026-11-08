@@ -7,7 +7,7 @@ import { inSidecall, readHookText } from '#hook-input';
 import { scriptBytes } from '../lib/context-limits.mjs';
 import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType, intakeCutLine } from '../lib/context-decisions.mjs';
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
-import { commitAttributionReason } from '../lib/commit-messages.mjs';
+import { commitAttributionReason, commitEvidenceReason } from '../lib/commit-messages.mjs';
 import { saveLongCommand } from '../lib/long-command.mjs';
 import { sharedStateReason } from '../lib/git-deny.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
@@ -53,7 +53,8 @@ export const COMMIT_ATTRIBUTION_STEP = {
   run(hookInput) {
     const command = hookInput.tool_input?.command;
     if (typeof command !== 'string') return null;
-    const reason = commitAttributionReason(command, hookInput.cwd ?? process.cwd());
+    const cwd = hookInput.cwd ?? process.cwd();
+    const reason = commitAttributionReason(command, cwd) ?? commitEvidenceReason(command, cwd);
     return reason && deny(reason);
   }
 };

@@ -112,9 +112,10 @@ test('the session text leaves the dispatch-only rules out', () => {
   for (const line of readDispatchRules().split('\n')) assert.ok(!sessionText.includes(line.slice(2)), line);
 });
 
-test('the session text has one TaskStop bullet for the agent notice and one for the final report', () => {
+test('the session text has one wait bullet for the agent notice and one TaskStop bullet for the final report', () => {
   const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
-  assert.ok(lines.includes('- Stop an agent whose notice says it still waits on background work with TaskStop, since it holds the session open.'));
+  assert.ok(lines.includes('- Wait for the next notice of an agent whose notice says it still waits on background work, since it resumes when that work ends.'));
+  assert.ok(!lines.some((line) => line.includes('holds the session open')));
   assert.ok(lines.includes('- Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.'));
 });
 

@@ -22,6 +22,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `spec`, `ship` and `find-cause` each keep their short step pages in one reference page: `step-rules.md`, `pr-merge.md` and `loop.md`.
 - 23 benchmark result files that no other tracked file names are deleted; git history holds them.
 - The consolidate plan records its tasks and prune paths as landed.
+- The session rules tell the lead to wait for the next notice of an agent that still waits on background work instead of stopping it, since that agent now resumes on its own.
 
 ### Fixed
 
@@ -29,6 +30,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Bash commands that the harness moves to the background are now tracked as running shells.
 - The remember-removed test counts only skill directories, so a stray `.DS_Store` no longer fails it.
 - A benchmark command that times out now stops its whole process group, so leftover child processes no longer hold the run open.
+- The commit guard now refuses a commit message whose `Evidence:` line names neither a `benchmarks/results` or `benchmarks/pressure` file nor `none (<reason>)`, and shows both valid forms.
 
 ### Added
 

@@ -41,7 +41,7 @@ test('a clean commit message is allowed', async () => {
   const forms = [
     'git commit -m "fix(hooks): name the allowed form"',
     'git commit -am "docs: x" --amend',
-    `git commit -m "$(cat <<'EOF'\nfix: x\n\nEvidence: y\nEOF\n)"`
+    `git commit -m "$(cat <<'EOF'\nfix: x\n\nEvidence: none (docs only)\nEOF\n)"`
   ];
   for (const command of forms) assert.equal(await denies(command), false, command);
 });
@@ -66,4 +66,13 @@ test('the check applies to a subagent and to the lead alike', async () => {
   const command = `git commit -m "${TRAILER}"`;
   assert.ok(await denies(command, { agent_id: 'agent-1' }));
   assert.ok(await denies(command, { agent_id: undefined }));
+});
+
+test('a commit whose Evidence line is invalid is denied with the correct form, a valid one is allowed', async () => {
+  const bad = await decide(`git commit -m "fix: x\n\nEvidence: ran the tests"`);
+  assert.equal(bad.permissionDecision, 'deny');
+  assert.match(bad.permissionDecisionReason, /Evidence: benchmarks\/results\/<file>/);
+  assert.match(bad.permissionDecisionReason, /Evidence: none \(<reason>\)/);
+  assert.equal(await denies('git commit -m "fix: x\n\nEvidence: benchmarks/results/a.json"'), false);
+  assert.equal(await denies('git commit -m "fix: x\n\nEvidence: none (covered by unit test)"'), false);
 });
