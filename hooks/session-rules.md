@@ -12,7 +12,7 @@
 - T4 steps that each need the previous result → one worker, inline or one agent, never split.
 - T5 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
 - Keep a long task's plan and progress in `.exo/<topic>/progress.md`, so a fresh context can resume.
-- Wait for the next notice of an agent whose notice says it still waits on background work, since it resumes when that work ends.
+- Before saying an agent or task still runs, check it this turn (`tasks/<id>.output` mtime or tail, its log, or `ps`), and if its work ended with no notice, SendMessage it to resume, never claim it runs from a notice alone.
 - Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
 - Grep a large file's lines in the **lead** (the main session) instead of reading it whole, because a full read fills the context.
 - When an agent returns off-brief, send one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.

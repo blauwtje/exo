@@ -26,6 +26,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The lead checks an agent's output file, log or `ps` before it tells the user the agent still runs, and a worker waits for its own background process in the foreground instead of ending its turn.
 - The gate no longer tracks run notes and names `plugin.json` in the plan.
 - Bash commands that the harness moves to the background are now tracked as running shells.
 - The remember-removed test counts only skill directories, so a stray `.DS_Store` no longer fails it.

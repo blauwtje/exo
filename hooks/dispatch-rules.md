@@ -9,3 +9,4 @@
 - Give an unnamed worker brief a `Reads:` or `Fetches:` line, and no `Result:` line unless an orchestrator hands the file on.
 - For a job of more than 4 workers, plan phases and give each `exo:orchestrator` slice a `Workers: <n>` line of at most 4; run a phase's slices in parallel and pass the previous result file in the next slice's `Reads:`.
 - After a dispatch, end the turn and wait for the notification; a coordinator in a `-p` run session runs `wait-report.mjs` with Bash timeout 600000 instead.
+- Never end your turn while your own background shell, Monitor or detached `nohup ... &` process still runs: wait for it in the foreground with Bash `timeout: 600000` or a bounded until-loop on a done file, then return the result.
