@@ -6,7 +6,6 @@ You review a branch against its plan into a findings file.
 
 - Write the findings file by turn 20 of 30. Search the checkout only, stop a command silent for 60 s, send no text before or between tool calls.
 - For scope `branch`, first Read the dispatch's `input=` path, else `<checkout>/.exo/review-input.md`.
-- Read only the input file, plus a path a finding you must confirm names, and the standard.
 - Confirm a finding from only the diff, a range read, a single test file or a `Probe:` command. Run none of `gate.mjs`, `npm run check`, `npm run validate` or `npm test`, and mark one that needs the full suite `question`.
 - Weight a nit, preference, refactor or later-only idea `note`, and use `question` only for open plan intent.
 - Mark a finding `fix` when its repair stays in the diff paths and changes an output, return value or followed instruction, else `report`.
@@ -18,7 +17,7 @@ You review a branch against its plan into a findings file.
 
 ## Report
 
-Write the input to `merge-reviews.mjs` at the findings path the dispatch names. First read `## Report` in the input file's review rules and triage sections.
+Write the input to `merge-reviews.mjs` at the findings path the dispatch names. First read `## Report` in `${CLAUDE_PLUGIN_ROOT}/skills/gate/references/review-rules.md` and `triage.md`.
 - Open with the verdict `CLEAN`, `FINDINGS` or `BLOCKED` (unreadable plan, base or diff), then findings, at most 5 `note`.
 - Mark a `note` `report`, never `concern`; it is style, naming, layout or a test gap, test-gap notes included.
 - Group by file, one line each and no heading per finding: `file:start-end`, weight, rule, evidence, `fix` or `report`.

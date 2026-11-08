@@ -8,7 +8,6 @@ import { branchFiles, shardBranch, shardDiffText, shardFileLines } from './revie
 
 const GATE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REVIEW_RULES = path.join(GATE_DIRECTORY, '..', 'references', 'review-rules.md');
-const TRIAGE = path.join(GATE_DIRECTORY, '..', 'references', 'triage.md');
 const DEFAULT_CODE_STANDARD = path.join(GATE_DIRECTORY, '..', '..', 'route-skills', 'references', 'code-standard.md');
 const STANDARD_FILES = ['CLAUDE.md', path.join('.claude', 'CLAUDE.md'), 'AGENTS.md'];
 const MARKDOWN_PATH = /`([^`\s]+\.md)`|\]\(([^)\s]+\.md)\)/g;
@@ -105,27 +104,14 @@ function clearShardInputs(exo) {
   for (const name of fs.readdirSync(exo).filter((entry) => /^review-input(?:-\d+)?\.md$/.test(entry))) fs.rmSync(path.join(exo, name));
 }
 
-function referenceText(file) {
-  return fs.readFileSync(file, 'utf8').trim();
-}
-
-function instructionFiles(checkout) {
-  const found = STANDARD_FILES.map((name) => path.join(checkout, name)).filter((file) => fs.existsSync(file));
-  return found.length === 0 ? ['none'] : found.map((file) => `- ${file}`);
-}
-
 function shardInputText(frame, { shard, number, shards, redSection, boundaries, checkout, ledger }) {
   return [
     '## Goal', frame.goal, '',
     '## Non-goals', ...frame.nonGoals.map((goal) => `- ${goal}`), '',
-    '## Context', ...(frame.context ?? []).map((line) => `- ${line}`), '',
-    '## Instruction files', ...instructionFiles(checkout), '',
     '## Branch diff', ...shardDiffLines(shard, { number, shards }), '',
     '## Red lines', ...redSection, '',
     '## Boundaries', BOUNDARY_RULE, ...boundaries, '',
-    `code-standard=${codeStandardPath(checkout)}`, '',
-    '## Review rules', referenceText(REVIEW_RULES), '',
-    '## Triage', referenceText(TRIAGE),
+    `code-standard=${codeStandardPath(checkout)}`,
     ...(ledger.length === 0 ? [] : ['', '## Ledger', ...ledger]),
     ''
   ].join('\n');

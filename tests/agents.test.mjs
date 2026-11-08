@@ -233,11 +233,9 @@ test('build-task reads its brief, lean.md and code-standard.md in its first mess
   assert.match(implementer.body, /^- Send no text before the first tool call or between calls\.$/m);
 });
 
-test('review-branch reads its input file first, which holds the plan, diff, rules and triage', () => {
+test('review-branch reads its opening inputs together in its first message', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  assert.match(reviewer.body, /^- For scope `branch`, first Read the dispatch's `input=` path, else `<checkout>\/\.exo\/review-input\.md`\.$/m);
-  assert.match(reviewer.body, /^- Read only the input file, plus a path a finding you must confirm names, and the standard\.$/m);
-  assert.match(reviewer.body, /^- The input file holds the plan `## Goal`, `## Non-goals`, `## Context`, the diff, the review rules, the triage text and the instruction file paths\.$/m);
+  assert.match(reviewer.body, /^- Your first message Reads plan `## Goal`, `## Non-goals`, `## Context`, the standard, the diff and the nearest `CLAUDE\.md` or `AGENTS\.md` together, then the changed ranges\.$/m);
 });
 
 test('task-runner dispatches every build and repair in the foreground and waits by W1 in a session and W2 in a run session', () => {
@@ -268,12 +266,11 @@ test('only build-task and doc-task hold a retry cell, above their on cell', () =
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds.review, kindTable.kinds.review);
 });
 
-test('the branch reviewer takes its input path from the dispatch and finds the review rules and triage in that input file', () => {
+test('the branch reviewer takes its input path from the dispatch and reads the weights and closing lines in review-rules.md', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   const rules = fs.readFileSync(new URL('../skills/gate/references/review-rules.md', import.meta.url), 'utf8');
   assert.match(reviewer.body, /first Read the dispatch's `input=` path, else `<checkout>\/\.exo\/review-input\.md`/);
-  assert.match(reviewer.body, /First read `## Report` in the input file's review rules and triage sections/);
-  assert.doesNotMatch(reviewer.body, /review-rules\.md/);
+  assert.match(reviewer.body, /First read `## Report` in `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/gate\/references\/review-rules\.md`/);
   assert.match(rules, /^## Report$/m);
   assert.match(rules, /`out-of-scope` finding is an input class under a task's `Boundary:` `out`, marked `report`/);
   assert.match(rules, /`Read: <paths>` for every file read/);
