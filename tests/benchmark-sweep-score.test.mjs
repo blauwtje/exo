@@ -56,3 +56,29 @@ test('Fable against Opus paired over two plan tasks says crosses zero when the C
   const text = resultsMarkdown(META, pairedCells(1, 9));
   assert.match(text, /paired over 2 tasks\), crosses zero/);
 });
+
+const flowRow = (cost) => `| flow-c7 | opus | high | 0 | - | 100 | 10s | $${cost} | 3/3 tasks landed (3/3 Plan-task trailers), hidden check pass |`;
+const flowTable = (costs) => costs.map((cost) => flowRow(cost)).join('\n');
+const flowRecord = (costUsd) => record({ id: 'flow-c7', kind: 'flow', costUsd, tokens: 100, defectsFound: 0, falseAlarms: null, detail: '3/3 tasks landed (3/3 Plan-task trailers), hidden check pass' });
+
+test('a meta baseline appends the comparison section built from the named file', () => {
+  const baseline = `| Cell | M |\n|---|---|\n${flowTable(['1.000', '1.010', '0.990'])}`;
+  const records = [flowRecord(2), flowRecord(2.01), flowRecord(1.99)];
+  const text = resultsMarkdown({ ...META, baseline: 'old.md@abc' }, records, (label) => (label === 'old.md@abc' ? baseline : ''));
+  assert.match(text, /## Comparison with the baseline/);
+  assert.match(text, /Baseline: old\.md@abc/);
+  assert.match(text, /Excluded: none/);
+  assert.match(text, /Verdict: cost/);
+});
+
+test('no baseline in meta adds no comparison section', () => {
+  assert.doesNotMatch(resultsMarkdown(META, [flowRecord(1)]), /Comparison with the baseline/);
+});
+
+test('a bypassed candidate row is named in the comparison Excluded line', () => {
+  const baseline = `| Cell | M |\n|---|---|\n${flowTable(['1.000', '1.010', '0.990'])}`;
+  const bypass = flowRecord(2).detail === undefined ? flowRecord(2) : { ...flowRecord(2), detail: '0/3 Plan-task trailers, hidden check pass' };
+  const records = [bypass, flowRecord(2.01), flowRecord(1.99), flowRecord(2)];
+  const text = resultsMarkdown({ ...META, baseline: 'old.md@abc' }, records, () => baseline);
+  assert.match(text, /Excluded: candidate row 1/);
+});

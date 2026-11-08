@@ -2,6 +2,11 @@
 
 Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of the shipped briefs; edit a brief, not this file. A brief that holds a `Supersedes: <brief name>` line replaces that brief.
 
+## bench-honesty
+- A comparison of the Karpathy after-file against itself lists run 1 under Excluded and counts 2 flow runs (Task 1).
+- A cost rise above the noise bound but under `benchmarkMinRise` is not a regression, and a zero-spread run blocks only past 10% (Task 1).
+- A sweep run with `--baseline` writes the section with the excluded runs and a verdict per metric (Task 2).
+
 ## karpathy
 - Each of Tasks 1 to 11 has a test that its Proof runs.
 - The Success criterion runs the full check once.

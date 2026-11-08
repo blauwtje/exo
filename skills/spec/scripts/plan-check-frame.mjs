@@ -135,6 +135,8 @@ export function checkRedGreen(plan, landed) {
       problems.push(`Task ${task.number}: the Files are all tests and the task has no 'Red:' field, so its Proof passes before the change and land will refuse it with "no red proof": add a source file to Files, or add 'Red: none (<reason>)'`);
     }
   }
+  if (plan.successBaseline?.malformed !== undefined) problems.push("the plan's Success criterion 'Baseline:' is not '<results file> @ <commit>'");
+  if (plan.benchmarkOverride === '') problems.push("the plan's Success criterion 'Benchmark-override:' states no reason");
   const repeat = plan.successRepeat;
   if (repeat !== null && !(repeat.count >= 2 && repeat.count <= 5)) problems.push("the plan's Success criterion 'Repeat:' count is not 2 to 5: write 'Repeat: <2-5> (<reason>)'");
   else if (repeat !== null && repeat.reason === '') problems.push("the plan's Success criterion 'Repeat:' states no reason: write 'Repeat: <2-5> (<reason>)'");

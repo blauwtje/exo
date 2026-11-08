@@ -34,11 +34,16 @@ The whole-flow cell did not run.
 
 ## Comparison with the baseline
 
-Run 1 landed 0 of 4 Plan-task trailers, so it skipped the plan loop; all 3 runs passed the hidden check.
+Baseline: flow-unit at 5033ef24, 3 of 3 pass, $0.418 (sd 0.187) and 105.3 s (sd 45.1), recorded in docs/plans/karpathy.md
+Excluded: candidate row 1 of the table above (landed 0 of 4 Plan-task trailers, so it skipped the plan loop)
 
-| Mean | Cost / wall time | Against the baseline ($0.418 / 105.3 s) |
-|---|---|---|
-| All 3 runs | $0.373 / 92.3 s | below |
-| Runs 2 and 3 only (those that ran the plan loop) | $0.463 / 112.5 s | above |
+| Metric | Baseline mean | Flow runs, rows 2 and 3 (n=2) | Rise |
+|---|---|---|---|
+| Cost | $0.418 | $0.463 | 10.8% |
+| Wall time | 105.3 s | 112.5 s | 6.8% |
 
-The 3-run mean is below the baseline only because it includes the run that bypassed the flow. The runs that used the flow cost more and took longer than the baseline, so this sweep shows a regression, not an improvement.
+Verdict: cost within noise, the 2-run mean sits well inside the baseline's spread of $0.187
+Verdict: wall within noise, the 2-run mean sits well inside the baseline's spread of 45.1 s
+Verdict: tokens unmeasured, the baseline records no token mean
+
+All 3 runs passed the hidden check. The sweep shows neither an improvement nor a regression against the baseline; the earlier all-runs mean ($0.373 / 92.3 s) was lower only because it included row 1, which bypassed the flow.

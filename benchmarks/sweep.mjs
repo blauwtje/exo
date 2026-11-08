@@ -41,6 +41,7 @@ import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/b
 import { FLOW_BRANCH, flowWebCells, defectRange } from './sweep-fixtures.mjs';
 import { flowHelpers, prepareRepository } from './sweep-prepare.mjs';
 import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
+import { landedTasks } from './sweep-baseline.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
@@ -105,7 +106,7 @@ export const QUICK_CELLS = [
   'review-sql-user-control-high'
 ];
 
-export { JUDGE_NAMES, prepareRepository };
+export { JUDGE_NAMES, prepareRepository, landedTasks };
 
 function withTier(options) {
   if (options.sets !== null) return { ...options, tier: 'custom' };
@@ -115,7 +116,7 @@ function withTier(options) {
 }
 
 export function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null, provider: 'claude', efforts: null };
+  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null, provider: 'claude', efforts: null, baseline: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
@@ -130,6 +131,7 @@ export function parseArguments(argv) {
     else if (flag === '--models') options.models = argv[++index].split(',');
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else if (flag === '--keep-repo') options.keepRepo = argv[++index];
+    else if (flag === '--baseline') options.baseline = argv[++index];
     else if (flag === '--provider') options.provider = argv[++index];
     else if (flag === '--effort') options.efforts = argv[++index].split(',');
     else if (flag === '--reviewer-bodies') options.reviewerBodies = parseReviewerBodies(argv[++index]);
@@ -246,16 +248,6 @@ function measureReplay(cell, review) {
   return { defectsFound: hits, falseAlarms: extra, detail, hits, truth: truth.length, extra };
 }
 
-const PLAN_TASK_TRAILER = /^Plan-task: (?:[^/\s]+\/)?(\d+)$/gm;
-
-// Counted over every ref by trailer number, because a wave's commit reaches
-// the branch as a cherry-pick with the same message.
-export function landedTasks(repository) {
-  const messages = git(repository, ['log', '--all', '--format=%B']);
-  const numbers = [...messages.matchAll(PLAN_TASK_TRAILER)].map((match) => match[1]);
-  return new Set(numbers).size;
-}
-
 function flowTranscripts(repository, usage) {
   if (usage?.transcript) return [usage.transcript];
   return ledgerTranscripts(newestRunLedger(repository));
@@ -278,7 +270,8 @@ async function measureFlow(cell, repository, review, usage) {
   const stages = reviewStages(usage?.subagents, transcript);
   const phases = usage?.transcript ? buildPhases(usage.transcript) : null;
   const tokensExReview = phases === null ? null : Math.round(Object.entries(phases).reduce((sum, [name, value]) => (name === 'review' || name === 'fix' ? sum : sum + value), 0));
-  const detail = `${landed} tasks landed (${landedTasks(repository)}/${helpers.length} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}, review stages ${stages.reviewBranch} review-branch ${stages.fixReview} fix-review (fix=${stages.fix ?? '-'} concern=${stages.concern ?? '-'}), tokens excl. review and fix ${tokensExReview ?? '-'}`;
+  const trailers = landedTasks(repository);
+  const detail = `${landed} tasks landed (${trailers}/${helpers.length} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}, review stages ${stages.reviewBranch} review-branch ${stages.fixReview} fix-review (fix=${stages.fix ?? '-'} concern=${stages.concern ?? '-'}), tokens excl. review and fix ${tokensExReview ?? '-'}`;
   return {
     defectsFound: review.counts === null ? null : review.counts.defect,
     falseAlarms: null,
@@ -286,6 +279,7 @@ async function measureFlow(cell, repository, review, usage) {
     landed: check.landed,
     total: check.total,
     hiddenPass: check.pass,
+    trailers,
     defects: check.defects,
     verifyRan: gates?.verifyRan ?? null,
     reviewDispatched: gates?.reviewDispatched ?? null,
@@ -437,6 +431,7 @@ function readOrWriteMeta(runDirectory, options, cellCount) {
     pluginDirty: git(ROOT, ['status', '--porcelain']).trim() !== '',
     sets: options.sets,
     provider: options.provider,
+    baseline: options.baseline,
     cells: cellCount
   };
   fs.writeFileSync(file, `${JSON.stringify(meta, null, 2)}\n`);

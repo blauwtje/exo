@@ -18,6 +18,7 @@ import { recordRepairPasses } from './gate-repair.mjs';
 import { packageScripts, suiteGlobs, filesUnderGlobs } from './proof-globs.mjs';
 import { repoPathOf, findUnplannedPaths, splitFixOnlyPaths, commitsTouching } from './unplanned-paths.mjs';
 import { claimLines, codeRuleLines } from './code-rule-lines.mjs';
+import { benchmarkLines } from './benchmark-lines.mjs';
 import { unlandedBlame, taskStates, manualChecks } from './task-states.mjs';
 
 const DEFAULT_LAND_GATE = 'npm run check';
@@ -145,6 +146,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       }
     }
   }
+
+  const benchmark = benchmarkLines(plan, { root, planPath });
+  lines.push(...benchmark);
+  if (benchmark.some((line) => line.startsWith('FAIL '))) failed = true;
 
   const changed = changedPaths({ base });
   const planFile = repoPathOf(planPath, root);

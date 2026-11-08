@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The Karpathy flow-unit results compare only its 2 flow runs with the baseline and list run 1 as excluded.
 - exo has 10 skills (build, configure, edit-skills, find-cause, gate, save-session, ship, spec, watch, write-docs) and 5 agents (orchestrator, task-runner, build-task, research-worker, review-branch), with the routing rule "Unclear: spec. Clear: build. Broken: find-cause. Leaving the machine: ship."
 - build, gate, find-cause, ship, write-docs, edit-skills and watch run in `exo:orchestrator` through `context: fork`, so workers report to the orchestrator and only its verdict reaches the main session.
 - spec asks its questions in the main session and hands steps 4 to 8 to one orchestrator dispatch with per-hop context budgets.
@@ -37,6 +38,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `benchmarks/baseline-compare.mjs` and `node benchmarks/sweep.mjs --baseline <file>@<sha>` compare a results file with a baseline, list each run that skipped the flow under `Excluded:` and give a `Verdict:` per metric.
+- The gate prints `FAIL benchmark` when a plan's success rate drops against its `Baseline:`, or when cost or wall time rises past both the noise bound and run.json `defaults.benchmarkMinRise` (0.10).
+- A `Benchmark-override: <reason>` line counts only when it was in the brief at its spec commit, and the squash commit body carries it.
+- `npm run check` fails a results file whose baseline comparison counts a run that skipped the flow.
 - Benchmarks gain a flow-large cell, a nano variant, ablation variants, a frontier verdict, spoken routing prompts and a failed-run case harvest.
 - When the lead starts an exo skill whose topic differs from the session's (spec, build, gate, ship and find-cause count as one topic), the existing Skill hook suggests a fresh session; no hook runs on each prompt.
 - `lib/map.mjs` runs a list of items under a spend cap, and `lib/check-citations.mjs` checks quoted sources.

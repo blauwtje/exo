@@ -10,6 +10,7 @@ import { isCovered, isPlanDoc } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { recordPush, recordRefDiff, snapshotRefs } from './run-ops.mjs';
+import { benchmarkOverride } from '../../gate/scripts/benchmark-lines.mjs';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
 
 const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'remove-worktree.mjs');
@@ -90,13 +91,25 @@ function commitPlanDocs(root, runRoot, runDir) {
   return null;
 }
 
-function squashRun(runRoot, target, commit) {
+function overrideTrailer(root, runDir) {
+  const stateFile = path.join(runDir, 'state.json');
+  if (!fs.existsSync(stateFile)) return '';
+  const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  const planFile = path.resolve(root, state.plan);
+  if (!fs.existsSync(planFile)) return '';
+  const plan = parsePlan(fs.readFileSync(planFile, 'utf8'));
+  const { reason } = benchmarkOverride(plan, { root, planPath: state.plan });
+  return reason === null ? '' : `Benchmark-override: ${reason}`;
+}
+
+function squashRun({ runRoot, target, commit, override }) {
   const range = `${target}..HEAD`;
   const subjects = git(runRoot, 'log', '--reverse', '--format=%s', range).out.split('\n').filter(Boolean);
   if (subjects.length === 0 || (subjects.length === 1 && subjects[0] === commit)) return null;
   const trailers = git(runRoot, 'log', '--reverse', '--format=%B', range).out
     .split('\n').filter((line) => line.startsWith('Plan-task:'));
-  const body = [subjects.map((subject) => `- ${subject}`).join('\n'), trailers.join('\n')].filter(Boolean).join('\n\n');
+  const list = subjects.map((subject) => `- ${subject}`).join('\n');
+  const body = [list, [...trailers, override].filter(Boolean).join('\n')].filter(Boolean).join('\n\n');
   if (!git(runRoot, 'reset', '--soft', target).ok) return 'soft reset failed';
   const made = git(runRoot, 'commit', '-q', '-m', commit, '-m', body);
   return made.ok ? null : `squash commit failed: ${made.err.split('\n')[0]}`;
@@ -161,7 +174,7 @@ function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit =
   }
 
   if (mode !== 'pr') {
-    const squashed = squashRun(runRoot, target, commit);
+    const squashed = squashRun({ runRoot, target, commit, override: overrideTrailer(root, runDir) });
     if (squashed) return parked(`squash ${branch} onto ${target} yourself in ${runRoot}`, squashed);
   }
 

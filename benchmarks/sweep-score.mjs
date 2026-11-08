@@ -6,6 +6,7 @@
 
 import { meanCi, pairedDiff } from '../lib/eval-stats.mjs';
 import { REVIEW_EFFORTS, SWEEP_MODELS } from './sweep-cells.mjs';
+import { appendComparison, falseAlarmLines, gitShowBaseline, rateText } from './sweep-baseline.mjs';
 
 const PLAN_SECTIONS = ['## Goal', '## Plan basis', '## Non-goals', '## Context', '## Tasks', '## Final verification'];
 const PLACEHOLDER = /\b(TODO|TBD|FIXME)\b|similar to Task \d/i;
@@ -110,32 +111,6 @@ function tableRow(record) {
   return `| ${cells.join(' | ')} |`;
 }
 
-const points = (fraction) => `${Math.round(100 * fraction)}%`;
-
-function rateText(values) {
-  const { mean, se, lo, hi } = meanCi(values);
-  if (se === null) return `${points(mean)}, no SE (n=${values.length})`;
-  return `${points(mean)} (95% CI ${points(Math.max(0, lo))} to ${points(Math.min(1, hi))}, n=${values.length})`;
-}
-
-function falseAlarmLines(records) {
-  const controls = records.filter((record) => record.kind === 'review' && record.variant === 'control');
-  const measured = controls.filter((record) => record.falseAlarms !== null && !record.timedOut);
-  if (measured.length === 0) return ['No control review cell left a report, so the false-alarm rate is unmeasured and plan 5 (C2) has no gate yet.'];
-  const alarmed = measured.filter((record) => record.falseAlarms > 0).length;
-  const perEffort = REVIEW_EFFORTS.map((effort) => {
-    const cells = measured.filter((record) => record.effort === effort);
-    const hits = cells.filter((record) => record.falseAlarms > 0).length;
-    return `${effort} ${hits}/${cells.length}`;
-  });
-  const rate = rateText(measured.map((record) => Number(record.falseAlarms > 0)));
-  return [
-    `Reviewer false-alarm rate: ${alarmed}/${measured.length} control branches, ${rate}, drew at least one defect or concern finding (${perEffort.join(', ')}). Plan 5 (C2) is gated on this rate.`,
-    '',
-    `Unmeasured: ${controls.length - measured.length} control cells left no report or timed out, left out of the rate.`
-  ];
-}
-
 const replayFailed = (record) => record.timedOut || record.hits === null;
 
 function replayRow(model, replays) {
@@ -200,7 +175,14 @@ function flowLine(records) {
   return `Whole flow (C7) on ${flow.model} at ${flow.effort}: ${flow.detail}; ${shown(flow.defectsFound)} review defects, ${money(flow.costUsd)}, ${seconds(flow)}.`;
 }
 
-export function resultsMarkdown(meta, records) {
+export function resultsMarkdown(meta, records, readBaseline = gitShowBaseline) {
+  const body = resultsBody(meta, records);
+  if (!meta.baseline) return body;
+  const table = records.map(tableRow).join('\n');
+  return appendComparison({ body, label: meta.baseline, table, readBaseline });
+}
+
+function resultsBody(meta, records) {
   return [
     `# Model and effort sweep, ${meta.date}`,
     '',

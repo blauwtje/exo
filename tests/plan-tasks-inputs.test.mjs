@@ -105,3 +105,15 @@ test('frameOf reads dash and numbered lines as bullets and ignores the rest', ()
   assert.deepEqual(frame.assumptions, expected);
   assert.deepEqual(frame.nonGoals, expected);
 });
+
+test('the Success criterion yields its baseline and override', () => {
+  const plan = parsePlan('# P\n\n## Success criterion\n\n`npm run check`\nBaseline: a/b.md @ abc1234\nBenchmark-override: why\n\n### Task 1: feat(x): y\n\nFiles: `a.mjs`\n');
+  assert.deepEqual(plan.successBaseline, { file: 'a/b.md', commit: 'abc1234' });
+  assert.equal(plan.benchmarkOverride, 'why');
+});
+
+test('a plan without them yields null', () => {
+  const plan = parsePlan('# P\n\n## Success criterion\n\n`npm run check`\n\n### Task 1: feat(x): y\n\nFiles: `a.mjs`\n');
+  assert.equal(plan.successBaseline, null);
+  assert.equal(plan.benchmarkOverride, null);
+});

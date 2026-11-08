@@ -18,6 +18,7 @@ import { checkFixClassLoad } from './checks/fix-class-load.mjs';
 import { checkScriptHelp } from './checks/script-help.mjs';
 import { checkUserReadFormat } from './checks/user-read-format.mjs';
 import { checkRuleRetention } from './checks/rule-retention.mjs';
+import { checkBaselineHonestyReport } from './checks/baseline-honesty.mjs';
 
 export function runLateChecks(report, repository, staticOnly) {
   checkGitWhitespace(report, repository);
@@ -40,4 +41,5 @@ export function runLateChecks(report, repository, staticOnly) {
   checkScriptHelp(report, repository);
   checkUserReadFormat(report, repository);
   checkRuleRetention(report, repository);
+  checkBaselineHonestyReport(report, repository);
 }

@@ -396,3 +396,23 @@ test('a local or push-main run without a usable commit subject parks', () => {
     assert.equal(r.gate, reason);
   }
 });
+
+test('a committed Benchmark-override reason becomes a squash commit trailer; an uncommitted one does not', () => {
+  const planText = (reason) => `# P\n\n## Success criterion\n\n\`true\`\nBaseline: r.md @ abc1234\nBenchmark-override: ${reason}\n\n### Task 1: feat(x): y\n\nFiles: \`b.txt\`\n`;
+  const f = fixture();
+  write(f.root, 'plan.md', planText('slower on purpose'));
+  git(f.root, 'add', '.');
+  git(f.root, 'commit', '-qm', 'plan', '-m', 'Plan-task: 1');
+  fs.writeFileSync(path.join(f.runDir, 'state.json'), JSON.stringify({ plan: 'plan.md' }));
+  assert.equal(f.land().phase, 'landed');
+  assert.match(git(f.root, 'log', '-1', '--format=%b'), /^Benchmark-override: slower on purpose$/m);
+  const g = fixture();
+  write(g.root, 'plan.md', planText('x').replace(/Benchmark-override: x\n/, ''));
+  git(g.root, 'add', '.');
+  git(g.root, 'commit', '-qm', 'plan', '-m', 'Plan-task: 1');
+  write(g.root, 'plan.md', planText('sneaky'));
+  git(g.root, 'commit', '-qam', 'edit', '-m', 'Plan-task: 2');
+  fs.writeFileSync(path.join(g.runDir, 'state.json'), JSON.stringify({ plan: 'plan.md' }));
+  assert.equal(g.land().phase, 'landed');
+  assert.doesNotMatch(git(g.root, 'log', '-1', '--format=%b'), /Benchmark-override/);
+});
