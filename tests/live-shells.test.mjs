@@ -80,3 +80,17 @@ test('a Monitor event notice does not end the Monitor or a shell named after it'
   const file = transcript([watch('m1'), watching('m1', 'mon1'), start('t1'), started('t1', 'bg1'), { type: 'user', message: { content: `<task-notification>\n<task-id>mon1</task-id>\n<summary>Monitor event: "x"</summary>\n<event>ok</event>\n</task-notification>\n<task-notification>\n<task-id>bg1</task-id>\n<status>completed</status>\n</task-notification>` } }]);
   assert.deepEqual(liveShells(file), ['mon1']);
 });
+
+test('liveShells lists a foreground Bash command the harness moved to the background', () => {
+  const moved = (toolId, shellId, why) => ({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: toolId, content: `Command ${why.replace('ID', `ID: ${shellId}`)}. Output is being written to: /tmp/${shellId}.output.` }] } });
+  const file = transcript([
+    foreground,
+    moved('fg', 'bg1', 'was moved to the background (ID) after running for 180s'),
+    { ...foreground, message: { content: [{ ...foreground.message.content[0], id: 'fg2' }] } },
+    moved('fg2', 'bg2', 'did not complete within its 120s timeout and was moved to the background (ID)'),
+    { ...foreground, message: { content: [{ ...foreground.message.content[0], id: 'fg3' }] } },
+    moved('fg3', 'bg3', 'was moved to the background (ID) so that a message that arrived while it was running can reach you; it was not interrupted'),
+    finished('bg2', 'completed')
+  ]);
+  assert.deepEqual(liveShells(file), ['bg1', 'bg3']);
+});

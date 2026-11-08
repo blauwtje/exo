@@ -9,7 +9,8 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
 test('the remember skill and its memory script are gone', () => {
   assert.equal(fs.existsSync(path.join(ROOT, 'skills/remember')), false);
-  assert.equal(fs.readdirSync(path.join(ROOT, 'skills')).length, 10);
+  const skills = fs.readdirSync(path.join(ROOT, 'skills'), { withFileTypes: true }).filter((entry) => entry.isDirectory());
+  assert.equal(skills.length, 10);
 });
 
 test('no memory setting is defined or offered', () => {

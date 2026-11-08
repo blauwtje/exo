@@ -21,6 +21,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `check-docs` mode of `spec`, the `file-issues` mode of `ship`, its duplicate-search script and the gate's `review-dispatch` page are removed; none was used in 30 days or the gate step script prints the same lines.
 - `spec`, `ship` and `find-cause` each keep their short step pages in one reference page: `step-rules.md`, `pr-merge.md` and `loop.md`.
 - 23 benchmark result files that no other tracked file names are deleted; git history holds them.
+- The consolidate plan records its tasks and prune paths as landed.
+
+### Fixed
+
+- The gate no longer tracks run notes and names `plugin.json` in the plan.
+- Bash commands that the harness moves to the background are now tracked as running shells.
+- The remember-removed test counts only skill directories, so a stray `.DS_Store` no longer fails it.
+- A benchmark command that times out now stops its whole process group, so leftover child processes no longer hold the run open.
 
 ### Added
 

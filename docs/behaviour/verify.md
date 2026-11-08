@@ -3,9 +3,7 @@
 Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of the shipped briefs; edit a brief, not this file. A brief that holds a `Supersedes: <brief name>` line replaces that brief.
 
 ## brief
-- `ls skills/*/SKILL.md | wc -l` prints 9, `ls -d skills/*/ | wc -l` prints 9 and `ls agents | wc -l` prints 5 (Tasks 2 to 10).
 - Each launcher SKILL.md holds `context: fork` (Task 11).
-- Skill plus agent bytes always loaded shrink against main and `npm run check` holds (Success criterion).
 
 ## fast-task-gate
 - `killTree` with `platform: 'win32'` calls its `run` stub with `taskkill` and `['/pid', '<pid>', '/T', '/F']`; on POSIX a detached shell's grandchild is gone after `killTree`; a timed-out verify Proof and gate still fail with `timed out after <n>s` (Task 2; seam: `tests/process-tree.test.mjs`, `tests/verify-gate.test.mjs`).
