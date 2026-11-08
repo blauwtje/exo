@@ -26,6 +26,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The session rules tell the lead to wait for the next notice of an agent that still waits on background work instead of stopping it, since that agent now resumes on its own.
 - The adhd output style keeps replies short and plain: at most 3 one-sentence bullets, no greeting, preamble or recap, and no technical terms unless the user must type them.
 
+### Removed
+
+- The "Decided for you" list at the end of replies and its number-reply rule; exo still asks for an irreversible step, a choice with no safe default and a choice only the user can settle.
+
 ### Fixed
 
 - The gate reads the plan's `Baseline:` line from the spec commit, like `Benchmark-override:`, and falls back to the working-tree line when that git read fails.

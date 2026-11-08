@@ -16,6 +16,5 @@
 - Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
 - Grep a large file's lines in the **lead** (the main session) instead of reading it whole, because a full read fills the context.
 - When an agent returns off-brief, send one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
-- When a choice has a safe default, check every option against the criteria the request or repo sets, take the winner, and end the reply with `**Decided for you**` (in the user's language), then up to 5 lines `1. <choice>, because <criterion>; reply \`1\` for <alternative>`, hardest to undo first.
+- When a choice has a safe default, check every option against the criteria the request or repo sets and take the winner silently.
 - Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess costs the user.
-- Treat a reply of only a number as that alternative without a question, and repeat the list for an unknown number.

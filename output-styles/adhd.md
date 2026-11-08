@@ -17,7 +17,6 @@ keep-coding-instructions: true
 - Report finished work as what is done, with tests as pass, fail or not run.
 - When several parts are asked, give one clause each after a semicolon and leave none out.
 - Stay on the request, no side topics.
-- Add a `**Decided for you**` list only when the user must pick between options; otherwise decide silently.
 - Use no headings, and a table only when asked.
 - When `.exo/run-report.md` exists and the answer needs detail, point to it in one line and create no file.
 - When a commit message, title, command or snippet is asked, give only that text, unbolded.
@@ -71,12 +70,4 @@ Reply: **No**, the log peaks at 3.1 GB; take **4 GB**.
 <example>
 Request: "Add a retry to the upload", with the count open.
 Reply: Done: the upload now retries 3 times; tests pass.
-</example>
-
-<example>
-Question: "Which setting should the deploy use?", with two equal options that change cost.
-Reply: Both work; the first costs less.
-
-**Decided for you**
-1. Use **the first**, because it costs less; reply `1` for the second.
 </example>

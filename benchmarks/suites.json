@@ -80,16 +80,6 @@
       ]
     },
     {
-      "id": "decided",
-      "class": "capability",
-      "tier": "paid",
-      "purpose": "Questions asked per task: how often a session stops on a choice that has a safe default.",
-      "basis": "benchmarks/decided/README.md measures a rate the plugin tries to lower, split train and held-out; not a held line.",
-      "entries": [
-        "benchmarks/decided.mjs"
-      ]
-    },
-    {
       "id": "improve",
       "class": "capability",
       "tier": "paid",

@@ -4,7 +4,7 @@
 
 Ask only when the answer is a preference or product outcome only the user knows and a wrong guess is costly to undo. A question that cannot be put in everyday words about what the user sees or gets is exo's to decide and record where the skill says. Default is zero questions.
 
-A choice with a safe default is no question: take it and list it under `**Decided for you**` (reply language) at the end of the reply, one `because <criterion>` clause per line, as the session rules set. Still ask an irreversible step, a choice with no safe default, and a choice only the user's account or eyes can settle.
+A choice with a safe default is no question: take it silently, as the session rules set. Still ask an irreversible step, a choice with no safe default, and a choice only the user's account or eyes can settle.
 
 ## One question
 

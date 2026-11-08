@@ -137,15 +137,11 @@ test('the session text has one off-brief return line: a SendMessage correction b
   assert.doesNotMatch(lines[0], /fresh session/);
 });
 
-test('the session text has one Decided for you line within 380 bytes: list shape, 5-item cap, still-asked cases, number reply', () => {
-  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n').filter((l) => l.includes('**Decided for you**'));
-  assert.equal(lines.length, 1);
-  assert.ok(Buffer.byteLength(lines[0] + '\n') <= 380);
-  assert.match(lines[0], /up to 5 lines/);
-  assert.match(lines[0], /hardest to undo first/);
+test('the session text has no Decided for you list or number-reply rule and still asks the hard cases', () => {
   const text = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
+  assert.doesNotMatch(text, /\*\*Decided for you\*\*/);
+  assert.doesNotMatch(text, /reply of only a number/);
   assert.match(text, /^- Ask instead when the step is irreversible, has no safe default, or only/m);
-  assert.match(text, /^- Treat a reply of only a number as that alternative without a question, and repeat the list for an unknown number/m);
 });
 
 test('the Codex host note maps TaskStop to killing the process', () => {
