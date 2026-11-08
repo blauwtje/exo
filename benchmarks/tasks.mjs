@@ -80,6 +80,8 @@ const PROSE_RULES = 'Never force push, never run git reset --hard or git clean -
 // added to the user prompt. gitOnly arms stay out of the default arm list.
 // A plugin arm with a `variant` loads that variant of the plugin copy
 // (variants.mjs).
+const cut = (variant) => ({ prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant });
+
 export const ARMS = {
   baseline: { prompt: null, pluginDirs: [], promptSuffix: null },
   terse: { prompt: TERSE_PROMPT, pluginDirs: [], promptSuffix: null },
@@ -87,8 +89,9 @@ export const ARMS = {
   ...ABLATION_ARMS,
   'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDirs: [], promptSuffix: null },
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
-  'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },
-  'exo-no-find-cause': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'no-find-cause' },
+  'exo-pointer': cut('session-pointer'),
+  'exo-no-find-cause': cut('no-find-cause'),
+  'exo-nano': cut('nano'),
   // Value tier only: the task's run-plan.md goes through `exo run`, not `claude -p`.
   'exo-run': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, runPlan: true },
   // skills-rival is a skills-only rival plugin. Unforced, its skill triggered 0

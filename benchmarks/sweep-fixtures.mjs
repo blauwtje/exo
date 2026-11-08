@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { FIXTURE_NAME, generate } from './frontend-fixture/generate.mjs';
+import { exportedNames, planClosingSection, planContextSection, planScopeSection } from './sweep-plan-text.mjs';
 import { ROOT } from './tasks.mjs';
 
 const SAFE = path.join(ROOT, 'benchmarks', 'safe');
@@ -285,13 +286,13 @@ function compactTaskSection(helper, number) {
   return [`### Task ${number}: feat(text): ${helper.subject}`, '', fields.join(' | '), ''];
 }
 
-function planIntroSection(repository) {
+function planIntroSection(repository, helpers) {
   return [
     '# Text helpers',
     '',
     '## Goal',
     '',
-    'The library exports `titleCase`, `slugify`, `truncate` and `initials`, each from its own module under `src/` with a passing test beside it.',
+    `The library exports ${exportedNames(helpers)}, each from its own module under \`src/\` with a passing test beside it.`,
     '',
     '## Plan basis',
     '',
@@ -305,66 +306,24 @@ function planIntroSection(repository) {
   ];
 }
 
-function planScopeSection() {
-  const helperTests = FLOW_HELPERS.map((helper) => helper.test).join(' ');
-  return [
-    '## Success criterion',
-    '',
-    `\`node --test ${helperTests}\` passes.`,
-    '',
-    '## Non-goals',
-    '',
-    '- `src/words.js` and its test stay unchanged.',
-    '- No dependency is added.',
-    ''
-  ];
-}
-
-function planContextSection() {
-  return [
-    '## Context',
-    '',
-    '- Every module is an ES module with one named export; its test sits beside it and uses `node:test` and `node:assert/strict`, as `src/words.test.js` does.',
-    '- The four tasks are independent: no module imports another.',
-    '',
-    '## Checkpoint',
-    '',
-    '- Blocks first: none.',
-    '- Parallel: every task.',
-    '- Shared state: none.',
-    '- Smallest safe split: one task per helper, each with its own module and test.',
-    ''
-  ];
-}
-
-function planClosingSection() {
-  return [
-    '## Final verification',
-    '',
-    '- `npm test`: every test passes, `fail 0`.',
-    '- Walkthrough: none, the library has no user-visible surface.',
-    ''
-  ];
-}
-
-export function flowPlanText(repository, compact = false) {
+export function flowPlanText(repository, compact = false, helpers = FLOW_HELPERS) {
   const section = compact ? compactTaskSection : taskSection;
   return [
-    ...planIntroSection(repository),
-    ...planScopeSection(),
-    ...planContextSection(),
+    ...planIntroSection(repository, helpers),
+    ...planScopeSection(helpers),
+    ...planContextSection(helpers),
     '## Tasks',
     '',
-    ...FLOW_HELPERS.flatMap((helper, index) => section(helper, index + 1)),
+    ...helpers.flatMap((helper, index) => section(helper, index + 1)),
     ...planClosingSection()
   ].join('\n');
 }
 
 // The bare origin gives the repository `origin/main` and `origin/HEAD`, which
 // build reads for its default branch and its merge-base.
-export function prepareFlowRepository(repository, origin, withPlan) {
+export function prepareFlowRepository(repository, origin, { withPlan, helpers = FLOW_HELPERS }) {
   git(repository, ['init', '-q', '-b', 'main']);
-  const files = withPlan ? { ...FLOW_SEED, [FLOW_PLAN]: flowPlanText(repository, withPlan === 'compact') } : FLOW_SEED;
+  const files = withPlan ? { ...FLOW_SEED, [FLOW_PLAN]: flowPlanText(repository, withPlan !== true, helpers) } : FLOW_SEED;
   writeFiles(repository, files);
   commitAll(repository, withPlan ? 'chore: seed the library and its plan' : 'chore: seed the library');
   execFileSync('git', ['init', '-q', '--bare', '-b', 'main', origin], { stdio: ['ignore', 'pipe', 'pipe'] });

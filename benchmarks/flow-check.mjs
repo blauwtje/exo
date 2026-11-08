@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { FLOW_BRANCH, FLOW_HELPERS, FLOW_TASK_COUNT } from './sweep-fixtures.mjs';
+import { FLOW_BRANCH, FLOW_HELPERS } from './sweep-fixtures.mjs';
 
 const HIDDEN = fileURLToPath(new URL('./flow-hidden/', import.meta.url));
 const HIDDEN_IN_TREE = '.flow-hidden';
@@ -56,20 +56,20 @@ function failingTests(directory, files) {
   return [...names];
 }
 
-export function checkFlow(repoDir) {
-  if (!branchExists(repoDir)) return { total: FLOW_TASK_COUNT, landed: 0, pass: false, defects: ['branch missing'] };
+export function checkFlow(repoDir, helpers = FLOW_HELPERS) {
+  if (!branchExists(repoDir)) return { total: helpers.length, landed: 0, pass: false, defects: ['branch missing'] };
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'flow-check-'));
   try {
     exportBranch(repoDir, directory);
     const defects = [];
-    const present = FLOW_HELPERS.filter((helper) => {
+    const present = helpers.filter((helper) => {
       const landed = exportsFunction(directory, helper);
       if (!landed) defects.push(`${functionName(helper)} not landed`);
       return landed;
     });
     if (present.length > 0) {
       fs.mkdirSync(path.join(directory, HIDDEN_IN_TREE));
-      const files = present.map((helper) => {
+      const files = present.filter((helper) => fs.existsSync(path.join(HIDDEN, hiddenFile(helper)))).map((helper) => {
         const target = path.join(HIDDEN_IN_TREE, hiddenFile(helper));
         fs.copyFileSync(path.join(HIDDEN, hiddenFile(helper)), path.join(directory, target));
         return target;
@@ -77,7 +77,7 @@ export function checkFlow(repoDir) {
       defects.push(...failingTests(directory, files));
     }
     const landed = present.length;
-    return { total: FLOW_TASK_COUNT, landed, pass: landed === FLOW_TASK_COUNT && defects.length === 0, defects };
+    return { total: helpers.length, landed, pass: landed === helpers.length && defects.length === 0, defects };
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }

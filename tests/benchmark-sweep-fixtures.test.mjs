@@ -67,3 +67,12 @@ test('flow-web cells prepare a generated repository and match cell-steps.json', 
   prepareRepository({ ...cells[2], fixtureProfile: 'small' }, review, null);
   assert.deepEqual(git(review, 'diff', '--name-only', 'main...HEAD').split('\n').includes('TASK.md'), true);
 });
+
+test('flow-large prepares a repository whose plan holds six tasks', async () => {
+  const { allCells, prepareRepository } = await import('../benchmarks/sweep.mjs');
+  const large = allCells().find((cell) => cell.id === 'flow-large');
+  const repository = tempDir('flow-large-');
+  prepareRepository(large, repository, tempDir('flow-large-origin-'));
+  const plan = fs.readFileSync(path.join(repository, 'docs/plans/text-helpers.md'), 'utf8');
+  assert.equal(plan.match(/^### Task \d+:/gm).length, 6);
+});

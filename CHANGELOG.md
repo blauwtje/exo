@@ -26,6 +26,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `harvest-cases.mjs` now reads its `--out` value, scrubs the case id and ignores a home shorter than two characters; `mapItems` throws on a non-finite `costUsd` instead of running past the cap; a `flow-large` sweep cell is scored against its six tasks; the nano variant check fails when the hook registry is gone without being declared.
+- Starting a run commits pre-existing work when the plan folder is gitignored.
 - The lead checks an agent's output file, log or `ps` before it tells the user the agent still runs, and a worker waits for its own background process in the foreground instead of ending its turn.
 - The gate no longer tracks run notes and names `plugin.json` in the plan.
 - Bash commands that the harness moves to the background are now tracked as running shells.
@@ -35,6 +37,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- Benchmarks gain a flow-large cell, a nano variant, ablation variants, a frontier verdict, spoken routing prompts and a failed-run case harvest.
+- When the lead starts an exo skill whose topic differs from the session's (spec, build, gate, ship and find-cause count as one topic), the existing Skill hook suggests a fresh session; no hook runs on each prompt.
+- `lib/map.mjs` runs a list of items under a spend cap, and `lib/check-citations.mjs` checks quoted sources.
+- A worker report must give a source beside every figure, and the gate prints a changed-file tree for a large branch.
 - `improve-speed.mjs` scores `--measure firstEditCalls`, the mean build-task tool calls before the first edit per cell.
 - `benchmarks/usage-count.mjs` counts how often each skill, agent, hook and lib file is loaded, read or invoked across session transcripts, with `--all-projects` and `--sessions`.
 - The research page fetch reads public Google Sheets through their CSV export route.

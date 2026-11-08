@@ -135,6 +135,18 @@ test('start-run keeps the plan out of the pre-run commit when the checkout path 
   assert.deepEqual(git(f.repo, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter(Boolean), ['new.txt']);
 });
 
+test('start-run commits pre-existing work when the plan folder is gitignored', () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.repo, '.gitignore'), 'docs/plans\n');
+  git(f.repo, 'add', '.gitignore');
+  git(f.repo, 'commit', '-q', '-m', 'chore: ignore');
+  fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
+  fs.writeFileSync(f.plan, `${fs.readFileSync(f.plan, 'utf8')}\n`);
+  const stdout = runOutput(f);
+  assert.match(stdout, /run started/);
+  assert.deepEqual(git(f.repo, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter(Boolean), ['new.txt']);
+});
+
 test('start-run on a clean tree makes no commit', () => {
   const f = fixture();
   const before = git(f.repo, 'rev-parse', 'HEAD');

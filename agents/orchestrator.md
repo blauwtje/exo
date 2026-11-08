@@ -28,6 +28,7 @@ You split a multi-part task, dispatch workers, check their claims and return a v
 ## Check
 
 - When a worker claims a passing check or code fact, read only the cited line with `grep -n` or Read `offset` and `limit`, and read no whole log, diff or detail file.
+- Send back a report whose cost, count or wall figure lacks a path or command (`unsourcedFigures`).
 - On drift or unrequested work, send one SendMessage correction, then a fresh worker with a fixed brief.
 - When the brief leaves a choice open, return the competing readings and pick none silently.
 

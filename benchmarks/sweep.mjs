@@ -38,7 +38,8 @@ import { JUDGE_NAMES, judgeBodies, parseReviewerBodies } from '../lib/review-jud
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
 import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, providerCells, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/build/scripts/run-config.mjs';
-import { FLOW_BRANCH, flowWebCells, FLOW_TASK_COUNT, defectRange, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareFlowWebRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
+import { FLOW_BRANCH, flowWebCells, defectRange } from './sweep-fixtures.mjs';
+import { flowHelpers, prepareRepository } from './sweep-prepare.mjs';
 import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
@@ -104,7 +105,7 @@ export const QUICK_CELLS = [
   'review-sql-user-control-high'
 ];
 
-export { JUDGE_NAMES };
+export { JUDGE_NAMES, prepareRepository };
 
 function withTier(options) {
   if (options.sets !== null) return { ...options, tier: 'custom' };
@@ -262,23 +263,22 @@ function flowTranscripts(repository, usage) {
 
 // The hidden check reads the finished code, so it runs before the repository
 // is removed; a check that throws leaves the cell a record with no landed count.
-async function measureFlow(repository, review, usage) {
-  // A run arm has no one transcript, so its gate facts stay null.
+async function measureFlow(cell, repository, review, usage) {
+  const helpers = flowHelpers(cell);
   const transcript = usage?.transcript ? fs.readFileSync(usage.transcript, 'utf8') : '';
-  // Null when the transcript is gone, so a lost session never reads as a skipped gate.
   const calls = usage?.transcript ? toolCalls(readJsonl(usage.transcript)) : null;
   const gates = calls === null ? null : gateFacts(calls);
   let check;
   try {
-    check = await checkFlow(repository);
+    check = await checkFlow(repository, helpers);
   } catch (error) {
-    check = { total: FLOW_TASK_COUNT, landed: null, pass: false, defects: [`flow check failed: ${error.message}`] };
+    check = { total: helpers.length, landed: null, pass: false, defects: [`flow check failed: ${error.message}`] };
   }
   const landed = check.landed === null ? 'unknown' : `${check.landed}/${check.total}`;
   const stages = reviewStages(usage?.subagents, transcript);
   const phases = usage?.transcript ? buildPhases(usage.transcript) : null;
   const tokensExReview = phases === null ? null : Math.round(Object.entries(phases).reduce((sum, [name, value]) => (name === 'review' || name === 'fix' ? sum : sum + value), 0));
-  const detail = `${landed} tasks landed (${landedTasks(repository)}/${FLOW_TASK_COUNT} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}, review stages ${stages.reviewBranch} review-branch ${stages.fixReview} fix-review (fix=${stages.fix ?? '-'} concern=${stages.concern ?? '-'}), tokens excl. review and fix ${tokensExReview ?? '-'}`;
+  const detail = `${landed} tasks landed (${landedTasks(repository)}/${helpers.length} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}, review stages ${stages.reviewBranch} review-branch ${stages.fixReview} fix-review (fix=${stages.fix ?? '-'} concern=${stages.concern ?? '-'}), tokens excl. review and fix ${tokensExReview ?? '-'}`;
   return {
     defectsFound: review.counts === null ? null : review.counts.defect,
     falseAlarms: null,
@@ -312,7 +312,7 @@ async function measureCell(cell, repository, usage, cellDirectory) {
   if (cell.kind === 'replay') return measureReplay(cell, readReview(repository, cellDirectory, replayFindings(repository)));
   const review = readReview(repository, cellDirectory);
   if (cell.kind === 'review') return measureReview(cell, repository, review);
-  if (cell.kind === 'flow') return measureFlow(repository, review, usage);
+  if (cell.kind.startsWith('flow')) return measureFlow(cell, repository, review, usage);
   if (cell.kind === 'build') {
     const check = await runSafeCheck(cell.task.id, repository);
     return { defectsFound: check.pass ? 0 : 1, falseAlarms: null, detail: check.line };
@@ -347,14 +347,6 @@ export function allCells() {
   return [...cells, ...flowWebCells(shared, process.env.EXO_FLOW_WEB_PROFILE ?? 'full')];
 }
 
-export function prepareRepository(cell, repository, origin) {
-  if (cell.fixture === 'flow-web') prepareFlowWebRepository(repository, { profile: cell.fixtureProfile, reviewOnly: cell.reviewOnly });
-  else if (cell.variant === 'green-first') prepareGreenFirstBranch(repository);
-  else if (cell.kind === 'review') prepareReviewBranch(repository, cell.task, cell.source);
-  else if (cell.kind === 'build') prepareBuildRepository(repository, cell.task);
-  else if (cell.kind === 'fixer') prepareFixerBranch(repository, cell.task);
-  else prepareFlowRepository(repository, origin, cell.compactPlan ? 'compact' : cell.kind === 'flow');
-}
 
 // Copies a measured cell's repository, with its excluded .exo/ and its origin,
 // to <keep>/<name>/ before the cell root goes, so a later run can start from

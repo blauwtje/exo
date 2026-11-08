@@ -378,5 +378,9 @@
   {"prompt":"I want audit logging and the change is decided in outline, but the data to store and the trade-off between designs are open.","expect":"spec","shadows":"build","split":"train"},
   {"prompt":"Summarise this YouTube video into a changelog line: https://www.youtube.com/watch?v=abc123xyz00","expect":"watch","shadows":"write-docs","split":"train"},
   {"prompt":"Write prose for the README section on how to create a skill.","expect":"write-docs","shadows":"edit-skills","split":"train"},
-  {"prompt":"Add the new column to the orders table, update the three services that read it and write the migration, test-first.","expect":"build","shadows":"spec","split":"train"}
+  {"prompt":"Add the new column to the orders table, update the three services that read it and write the migration, test-first.","expect":"build","shadows":"spec","split":"train"},
+  {"prompt":"okay so uh run the plan in the billing doc and land whatever tasks are not landed yet","expect":"build","split":"train","spoken":true},
+  {"prompt":"hey can you like summarize this youtube video for me into one changelog line","expect":"watch","split":"train","spoken":true},
+  {"prompt":"um the bug is the login times out only on the second try can you find out why","expect":"find-cause","split":"train","spoken":true},
+  {"prompt":"so what is the capital of france and also like how many people live there","expect":null,"split":"train","spoken":true}
 ]

@@ -88,7 +88,7 @@ For a paid eval, run the quick tier first and the full tier only for an idea tha
 
 Two quick tiers screen a change for under $1.00 by running only the exo arm against a stored stock arm: `node benchmarks/run.mjs --tier value` runs 3 fixed value tasks against the stock rows stored by `node benchmarks/run.mjs --tier value --stock-baseline`, and `node benchmarks/improve-speed.mjs <checkout>` runs one `flow-unit` cell against the pooled base arm. `--dry-run` prints the projected cost first; `--full` on either restores the complete measurement. `benchmarks/README.md` has the tier table.
 
-The hand-run benchmarks `routing.mjs`, `locate-recall.mjs`, `agent-tier.mjs`, `ideas.mjs`, `ideate-worker-score.mjs`, `improve-all-score.mjs`, `sweep.mjs`, `checkpoint-fork.mjs`, `pressure/drive.mjs`, `replay/grade.mjs` and `skills/edit-skills/scripts/pressure.mjs` run a quick tier by default (a small fixed case set, one run, deterministic checks before any judge, a stored baseline) and spend nothing under `--dry-run`; `--full` runs the full case set and repeats, and `routing.mjs --full` alone writes the recorded `routing.json` the `routing` check reads. `lean-gates.mjs` runs a capped quick tier and `--full` lifts the cap; the tbench runner has no `--full`; `benchmarks/README.md` lists each command.
+The hand-run benchmarks `routing.mjs`, `locate-recall.mjs`, `agent-tier.mjs`, `ideas.mjs`, `ideate-worker-score.mjs`, `improve-all-score.mjs`, `sweep.mjs`, `checkpoint-fork.mjs`, `pressure/drive.mjs`, `replay/grade.mjs` and `skills/edit-skills/scripts/pressure.mjs` run a quick tier by default (a small fixed case set, one run, deterministic checks before any judge, a stored baseline) and spend nothing under `--dry-run`; `routing.mjs` prompt entries may carry `"spoken":true` for a dictated prompt, and its stats print accuracy split into spoken and typed; `--full` runs the full case set and repeats, and `routing.mjs --full` alone writes the recorded `routing.json` the `routing` check reads. `lean-gates.mjs` runs a capped quick tier and `--full` lifts the cap; the tbench runner has no `--full`; `benchmarks/README.md` lists each command.
 
 The build-speed idea ledger is `benchmarks/speed-ledger.jsonl`, one JSON line per idea sorted by `id` with every key of `KEYS` in `benchmarks/speed-ledger.mjs`. `benchmarks/speed-ledger.md` is generated from it: add or change a line, then run `node benchmarks/speed-ledger.mjs --render`; `node verify.mjs` runs the same check, static mode too, one FAIL per problem; `node benchmarks/speed-ledger.mjs --index` prints only the `## Index` section; `node benchmarks/speed-ledger.mjs --check` exits 1 and lists each problem (md differs from the render, repeated `id` or `fingerprint`, bad `verdict`, unknown `related` id, missing `results` path, line missing a key).
 
@@ -104,6 +104,14 @@ A seeded review cell's measured record carries `hits` (the seeded range overlapp
 
 node benchmarks/sweep.mjs --set review --reviewer-bodies generated|plan-fit=<file>,standard=<file>,tests=<file>   # generated builds the three bodies from agents/review-branch.md; each review cell becomes one cell per judge, id `<cell id>-judge-<name>`, the file body as its system prompt
 
+`benchmarks/frontier-verdict.mjs` judges a speed idea from two cells of cost and wall pairs: `frontierVerdict` compares the cheapest and fastest points of each cell and returns `promote`, `hold` or `worse`, and `replayFlips` counts stored promote verdicts that no longer promote, at no cost.
+
+`benchmarks/tasks.mjs` has an `exo-nano` arm, left out of the default arms, that loads the `nano` variant of `benchmarks/variants.mjs`: the plugin without `hooks/hooks.json` and `agents/orchestrator.md`, so no session text or orchestrator loads.
+
+`node benchmarks/harvest-cases.mjs <graded run dir> --out <cases dir> [--dry-run]` writes one replay case folder per cell graded fail, with paths, emails, tokens, addresses, the user name and the case id scrubbed.
+
+The `flow-large` cell of `benchmarks/sweep-cells.mjs` runs the flow fixture with six helpers (`benchmarks/sweep-large.mjs`); only the full tier selects it, and `checkFlow` scores it against its own six tasks.
+
 ## How a skill dispatches work
 
 - Nine roles are plugin agents under `agents/`, because an agent file fixes a tool list and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. A role becomes an agent only when one effort, one tool list and one turn limit fit every dispatch. Each agent's description says what it does. `agents/orchestrator.md` is the general orchestrator, added after a `general-purpose` orchestrator was refused twice by `hooks/agent-effort.mjs` for worker briefs with no `exo-kind:`, was refused a report file Write, and hit the 60k context note while waiting on workers; `task-runner` is build-tuned (`omitClaudeMd`, no Write, the build loop) and cannot serve. It runs on the `orchestrator` kind, Opus at `medium`, lowered from `high`.
@@ -112,6 +120,8 @@ node benchmarks/sweep.mjs --set review --reviewer-bodies generated|plan-fit=<fil
 - The `budget` setting turns the per-kind table on or off. Under `on`, `agent-effort` sets each dispatch's model and effort from the kind's `on` cell and denies an `exo:` call whose passed pair differs; under `off` every agent inherits the session. A refused `land-task` ends with `exo-retry`, which gives the dispatch the kind's `retry` cell (`lib/refusal-handlers.mjs` holds each `Then:` line, `land-task.mjs` the refusals that skip it). `lib/settings-store.mjs` holds the `budget` schema and its old-name aliases.
 - `next-task.mjs` prints the `input unreachable` handler, not the `plan drift` handler, when a drift item is an input path this machine cannot read, because no repair session can supply it; the run stops `BLOCKED` with that path. `lib/refusal-handlers.mjs` holds the handler and `skills/build/references/run-loop-direct.md` the routing.
 - `unnamed.jobs` in `lib/model-kinds.json` maps a job word to a kind for an unnamed dispatch; the **Unnamed job words** bullet under Hooks states how a description word matches.
+- `lib/check-citations.mjs` takes a JSON list of url and quote pairs and prints `verified`, `missing` or `unreachable` for each; `research-worker` runs it on a web result before returning.
+- `lib/map.mjs` `mapItems({ items, run, capUsd })` runs a bulk item list through `run` one by one and stops once the summed `costUsd` reaches `capUsd`, returning the results, the spend and the items left.
 - Every other delegate is the harness's `general-purpose` agent; the dispatching skill passes its model and effort from `lib/model-kinds.json` through a `dispatches` entry and hands it the role text from a `<role>-prompt.md` beside the skill.
 - `skills/build/references/worker-round.md` dispatches each round worker as a `general-purpose` delegate on the `improve-round` kind (`strong`, `high`), with `skills/build/references/worker.md` as the template of the per-run brief `setup.mjs` and `round.mjs` write to `.exo/improve/<tag>.brief.md`; the delegate's prompt only points at that brief. The worker runs `skills/build/scripts/fast-check.mjs` once per candidate, which runs the fast check and the tests covering the touched files, and returns `IDEA <hash>`.
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
@@ -203,6 +213,10 @@ Rules for writing a hook live in `skills/edit-skills/references/hook-shape.md`.
 Each hook entry pins `"shell": "bash"`, else a Windows host without Git Bash falls back to PowerShell; the hook command stays in shell form, not `args`, so Claude Code resolves the shell, not `bash` on `PATH`. The session hook stays Node (`hooks/session-start.mjs`), with no `jq`. `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
 
 The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
+
+The `Skill` path of `hooks/context-limit.mjs` maps each lead `exo:` skill call to a topic with `lib/topic-switch.mjs` (spec, build, gate, ship and find-cause share one), keeps the session topic in a temp file and adds a context line suggesting a fresh session when the two differ; it adds no hook entry and makes no model call.
+
+- **Figure sources** (`unsourcedFigures` in `lib/evidence-rules.mjs`): returns each report line holding a cost, count or wall figure with no path or command beside it; the orchestrator sends such a report back.
 
 ## Codex
 

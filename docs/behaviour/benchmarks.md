@@ -2,6 +2,11 @@
 
 Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of the shipped briefs; edit a brief, not this file. A brief that holds a `Supersedes: <brief name>` line replaces that brief.
 
+## karpathy
+- Each of Tasks 1 to 11 has a test that its Proof runs.
+- The Success criterion runs the full check once.
+- Task 12 writes the after-sweep to `.exo/karpathy/sweep-results-after` and compares it to the baseline numbers.
+
 ## design-ui-fast-preview
 - Task 1: sketch-tab.md holds `## The direction round`.
 - Task 1: phase-direction `## Rung 3` deals, sketches, waits, then fills, checks and selects the picked contract only.

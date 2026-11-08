@@ -13,10 +13,10 @@ import { usageCounts } from '#token-weights';
 import { UsageError, parseFlags, isMain, environmentMs } from '#script-flags';
 import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
-import { armComparison, comparisonLine, routingStats, statsLines } from './routing-stats.mjs';
 import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { countsCost } from './pricing.mjs';
 import { readJson } from './basics.mjs';
+import { printStats } from './routing-spoken.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_MS = environmentMs('EXO_ROUTING_SESSION_MS', 120_000);
@@ -213,7 +213,7 @@ export function summarize(sessions, skills) {
 
 function sessionRecord({ cell, arm, run, mode, entry }, outcome) {
   const { pick = null, error, cost_usd = null, durationMs = null } = outcome !== null && typeof outcome === 'object' ? outcome : { pick: outcome };
-  const base = { cell, arm, run, mode, prompt: entry.prompt, expect: entry.expect, split: entry.split, cost_usd, durationMs };
+  const base = { cell, arm, run, mode, prompt: entry.prompt, expect: entry.expect, split: entry.split, spoken: Boolean(entry.spoken), cost_usd, durationMs };
   return error === undefined ? { ...base, pick } : { ...base, pick: null, error };
 }
 
@@ -326,13 +326,6 @@ function dryRun(flags) {
   process.stdout.write(`${dryRunLine(sessionCount, recorded)}\n`);
   const scores = scoresByTask(recorded, { task: (session) => session.prompt, score: (session) => (typeof session.expect === 'string' ? Number(session.pick === session.expect) : undefined) });
   process.stdout.write(`${plannedPowerLine({ tasks: plan.prompts.length, samples: flags.runs, arms: flags.cells.length * plan.arms.length, recorded: scores })}\n`);
-}
-
-function printStats(result, cells) {
-  for (const cell of cells) {
-    process.stdout.write(`${cell} hook\n${statsLines(routingStats(result.sessions, { cell })).join('\n')}\n`);
-    process.stdout.write(`${comparisonLine(armComparison(result.sessions, { cell })) ?? 'no hook against no-hook pairs'}\n`);
-  }
 }
 
 async function main() {

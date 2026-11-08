@@ -6,6 +6,7 @@ import { contextDecision, contextFields, persistedReadDecision, readCapDecision,
 import { isMain } from '../lib/script-flags.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
+import { topicNudge } from '../lib/topic-switch.mjs';
 
 const REASON_MAX = 140;
 
@@ -44,10 +45,18 @@ export function withReceipt(output, hookInput, fields, input, enabled = receipts
   return { ...output, systemMessage: line };
 }
 
+function withTopicNudge(fields, input) {
+  if (fields?.permissionDecision === 'deny') return fields;
+  const nudge = topicNudge(input);
+  if (!nudge) return fields;
+  const context = [fields?.additionalContext, nudge].filter(Boolean).join('\n');
+  return { ...fields, additionalContext: context };
+}
+
 export function contextHook(input, enabled) {
   const decision = predispatchDecision(input) ?? persistedReadDecision(input) ?? readCapDecision(input) ?? searchCapDecision(input) ?? contextDecision(input);
   if (!decision?.deny) recordPredispatchRead(input);
-  const fields = contextFields(decision);
+  const fields = withTopicNudge(contextFields(decision), input);
   const output = fields ? { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } } : null;
   return withReceipt(output, input, fields, undefined, enabled);
 }

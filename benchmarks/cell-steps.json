@@ -1,5 +1,6 @@
 {
   "flow-unit": { "build-task": 4, "gate": 1, "suite-run": 4 },
+  "flow-large": { "build-task": 6, "gate": 1, "suite-run": 6 },
   "flow-web": { "build-task": 1, "gate": 1, "suite-run": 6, "build-app": 2, "flaky-test": 1, "review": 3, "fix-round": 3, "dispatch": 6 },
   "flow-web-build": { "build-task": 1, "suite-run": 6, "build-app": 2, "flaky-test": 1, "dispatch": 3 },
   "flow-web-review": { "gate": 1, "review": 3, "fix-round": 3, "dispatch": 3 }

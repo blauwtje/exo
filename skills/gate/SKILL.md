@@ -19,6 +19,7 @@ The gate readies a branch for a pull request.
    - On `FAIL` or `UNPLANNED`, end the turn with its report, rerunning nothing.
 2. **Review the branch.** Reviewer `none`: skip the dispatch, still merge.
    - Dispatch `exo:review-branch` per `DISPATCH Branch` in one message, starting `exo-kind: review-deep` unless the line has none, its fields and `Read:` changed files.
+   - For a branch with many changed files, print the tree from `changedFileTree` in `lib/draw.mjs` first, so the reviewer sees the shape before reading.
    - Then run `gate-step.mjs --after review` with those flags and a `--report <path>` per report; follow its `NEXT` lines.
    - On a `CODEX offer` line, ask once for a `codex exec` review of plan and diff, into findings.
    - `--land` → skip.

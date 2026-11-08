@@ -51,7 +51,8 @@ export const VARIANTS = {
   'session-pointer': { edits: [POINTER_EDIT], remove: [], swap: [] },
   'no-find-cause': { edits: [FIND_CAUSE_EDIT], remove: ['skills/find-cause'], swap: [] },
   'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] },
-  'fold-unit': { edits: [FOLD_UNIT_EDIT], remove: [], swap: [] }
+  'fold-unit': { edits: [FOLD_UNIT_EDIT], remove: [], swap: [] },
+  nano: { edits: [], remove: ['hooks/hooks.json', 'agents/orchestrator.md'], swap: [] }
 };
 
 // Applies one variant to the plugin copy at `copy`; `source` is the checkout
@@ -76,6 +77,8 @@ export function applyVariant(name, copy, source = ROOT) {
   }
   return copy;
 }
+
+const HOOK_REGISTRY = 'hooks/hooks.json';
 
 // The session hook's additionalContext as a copy prints it, or throws.
 function sessionContext(copy, scratch) {
@@ -103,10 +106,12 @@ export function checkVariant(name) {
   try {
     const copy = copyPluginWithoutTasks(ROOT, path.join(scratch, 'plugin'));
     applyVariant(name, copy);
-    const context = sessionContext(copy, scratch);
-    const expectedStart = name === 'session-pointer' ? '# Using exo' : 'exo settings:';
-    if (!context.includes(expectedStart)) problems.push(`session text no longer holds \`${expectedStart}\``);
     const variant = VARIANTS[name];
+    const registered = fs.existsSync(path.join(copy, HOOK_REGISTRY));
+    const context = registered ? sessionContext(copy, scratch) : '';
+    const expectedStart = name === 'session-pointer' ? '# Using exo' : 'Skill description matches';
+    if (registered && !context.includes(expectedStart)) problems.push(`session text no longer holds \`${expectedStart}\``);
+    if (!registered && !variant.remove.includes(HOOK_REGISTRY)) problems.push(`${HOOK_REGISTRY} is missing, so no session text loads`);
     for (const { file } of variant.edits.filter((edit) => edit.file.endsWith('.mjs'))) {
       const check = spawnSync(process.execPath, ['--check', path.join(copy, file)], { encoding: 'utf8' });
       if (check.status !== 0) problems.push(`${file} no longer parses: ${check.stderr.trim()}`);

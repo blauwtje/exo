@@ -34,6 +34,7 @@ const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta
 
 export const NO_ANSWER = 'Nobody can answer a question during this run.';
 const MINUTE_MS = 60 * 1000;
+const PLAN_END = `${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
 
 // The reviewer runs as the cell's own session, not as a dispatched agent,
 // because the agent's frontmatter effort would override the effort under test.
@@ -207,18 +208,19 @@ function flowCells() {
     budgetUsd: '25',
     timeoutMs: 120 * MINUTE_MS
   };
-  const buildPrompt = `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
+  const prompt = `Load the exo:build skill and run the plan ${PLAN_END}`;
   return [
-    { ...shared, id: 'flow-c7', prompt: buildPrompt },
-    { ...shared, id: 'flow-unit', compactPlan: true, prompt: buildPrompt },
-    { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt: buildPrompt },
-    { ...shared, id: 'flow-fold', compactPlan: true, pluginVariant: 'fold-unit', prompt: buildPrompt },
+    { ...shared, id: 'flow-c7', prompt },
+    { ...shared, id: 'flow-unit', compactPlan: true, prompt },
+    { ...shared, id: 'flow-large', kind: 'flow-large', prompt },
+    { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt },
+    { ...shared, id: 'flow-fold', compactPlan: true, pluginVariant: 'fold-unit', prompt },
     {
       ...shared,
       id: 'flow-base',
       plugin: false,
       budgetUsd: '1',
-      prompt: `Implement every task in ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
+      prompt: `Implement every task in ${PLAN_END}`
     },
     { ...shared, id: 'flow-run', runSession: 'plan', budgetUsd: '1', prompt: null }
   ];

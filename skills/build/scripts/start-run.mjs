@@ -116,15 +116,16 @@ function excludedFromPreRunCommit(checkout, planPath) {
   const top = realpathSync(checkout);
   const listed = gitLine(checkout, ['worktree', 'list', '--porcelain']).split('\n')
     .filter((line) => line.startsWith('worktree ')).map((line) => line.slice('worktree '.length));
-  const canonical = (file) => path.join(realpathSync(path.dirname(path.resolve(file))), path.basename(file));
-  return [canonical(planPath), canonical(decisionsPathOf(planPath)), ...listed]
+  const real = (file) => path.join(realpathSync(path.dirname(path.resolve(file))), path.basename(file));
+  return [real(planPath), real(decisionsPathOf(planPath)), ...listed]
     .map((file) => path.relative(top, path.resolve(file)))
-    .filter((relative) => relative !== '' && !relative.startsWith('..'));
+    .filter((rel) => rel !== '' && !rel.startsWith('..'));
 }
 
 function commitPreexistingWork(checkout, planPath) {
-  const excludes = excludedFromPreRunCommit(checkout, planPath).map((relative) => `:(exclude)${relative}`);
-  gitLine(checkout, ['add', '-A', '--', '.', ...excludes]);
+  gitLine(checkout, ['add', '-A', '--', '.']);
+  const excluded = excludedFromPreRunCommit(checkout, planPath);
+  if (excluded.length > 0) gitLine(checkout, ['reset', '-q', '--', ...excluded]);
   if (gitLine(checkout, ['diff', '--cached', '--name-only']) === '') return;
   gitLine(checkout, ['commit', '-q', '-m', PRE_RUN_COMMIT]);
   process.stdout.write(`start-run: committed pre-existing work as ${gitLine(checkout, ['rev-parse', '--short', 'HEAD'])} (${PRE_RUN_COMMIT}).\n`);
