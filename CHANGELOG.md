@@ -74,6 +74,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- Skill scripts that fetch, spawn or poll now stop at a deadline or when their caller exits, so no orphan process runs on for days.
 - A web research brief sent from the main session to `general-purpose` or `claude` is refused toward `exo:research-worker` or one `exo:orchestrator`, and a second web research dispatch within `EXO_RESEARCH_FANOUT_MS` (30000) is refused toward one orchestrator.
 - A research-worker brief with no `Fetches:` line is sized by its distinct URLs, and with none it is refused as missing the line, not invalid.
 - A Reddit thread whose live comment read fails on a wait cap, 429, 5xx, open breaker or blocked status falls back to the Arctic Shift archive, and the Reddit refusal and research-worker name the absolute search script path.

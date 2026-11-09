@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
+import { limitLifetime } from '#lifetime';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { SPEC, USAGE, readListOptions } from './list-options.mjs';
 import { listProfile } from './listing.mjs';
 
 async function main(argv) {
+  limitLifetime('watch-list', 1800000);
   const options = readListOptions(parseFlags(argv, SPEC, { usage: USAGE }));
   const result = await listProfile(options);
   if (result.failure) {

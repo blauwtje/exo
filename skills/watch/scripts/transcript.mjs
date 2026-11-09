@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
+import { limitLifetime } from '#lifetime';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { SPEC, USAGE, readOptions } from './options.mjs';
 import { readListed } from './url-list.mjs';
@@ -12,6 +13,7 @@ function report(outcome) {
 }
 
 async function main(argv) {
+  limitLifetime('watch-transcript', 1800000);
   const flags = parseFlags(argv, SPEC, { usage: USAGE });
   const options = readOptions(flags, await readListed(flags.from ?? []));
   const outcomes = await watchBatch(options, report);

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { limitLifetime } from '#lifetime';
 import { excludeScratchIfGit, recordSource } from './ledger.mjs';
 import { BlockedRoute } from './sources/http.mjs';
 import { SOURCES } from './sources/index.mjs';
@@ -73,6 +74,7 @@ function parseArgs(argv) {
 }
 
 async function main(argv) {
+  limitLifetime('spec-search', 300000);
   excludeScratchIfGit(process.cwd());
   const args = parseArgs(argv);
   const hasInput = args.query || args.urls;

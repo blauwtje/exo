@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
+import { exitWithParent } from '#lifetime';
 import { parseFlags, UsageError, isMain, environmentMs } from '#script-flags';
 
 const DEFAULT_TIMEOUT_MS = 540000;
@@ -56,6 +57,7 @@ function timeoutMsFrom(timeout) {
 }
 
 async function main(argv) {
+  exitWithParent('wait-report');
   const flags = parseFlags(argv, { since: 'list', report: 'list', stamp: 'list', any: 'boolean', timeout: 'value' }, { usage: USAGE });
   if (flags.since === undefined || !flags.since.every((text) => /^\d+$/.test(text))) {
     throw new UsageError("flag '--since' needs epoch seconds");

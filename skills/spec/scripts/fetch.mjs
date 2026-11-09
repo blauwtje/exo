@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { limitLifetime } from '#lifetime';
 import { gateRequest } from '../../watch/scripts/request-gate.mjs';
 import { cookieHeader, confirmStep } from './age-gate.mjs';
 import { waybackSnapshot } from './archive.mjs';
@@ -141,6 +142,7 @@ async function saveFromStdin(runDir, url) {
 }
 
 async function main(argv) {
+  limitLifetime('spec-fetch', 600000);
   excludeScratchIfGit(process.cwd());
   if (argv[0] === '--save' && argv.length === 3) return saveFromStdin(argv[1], argv[2]);
   const [runDir, ...urls] = argv;

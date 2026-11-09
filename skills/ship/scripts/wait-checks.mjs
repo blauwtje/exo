@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { exitWithParent } from '#lifetime';
 import { sleep } from '#basics';
 
 export const DEFAULT_MINUTES = 20;
@@ -68,6 +69,7 @@ function watchChecks(pr, track, log) {
 }
 
 async function main() {
+  exitWithParent('wait-checks');
   let flags;
   try {
     flags = readFlags(process.argv.slice(2));

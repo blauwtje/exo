@@ -56,6 +56,7 @@
     "#scratch-exclude": "./lib/scratch-exclude.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-extensions": "./lib/script-extensions.mjs",
+    "#lifetime": "./lib/lifetime.mjs",
     "#script-flags": "./lib/script-flags.mjs",
     "#shipped-briefs": "./lib/shipped-briefs.mjs",
     "#script-output": "./lib/script-output.mjs",
