@@ -17,7 +17,7 @@
       "models": ["deepseek-flash"],
       "tiers": { "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
-      "kindEfforts": { "build-task": "low", "doc-task": "low", "build": "high", "orchestrator": "high", "task-runner": "low" }
+      "kindEfforts": { "build-task": "low", "doc-task": "low", "build": "low", "orchestrator": "low", "task-runner": "low", "judge": "low", "lookup": "low", "chore": "low", "fix-review": "high" }
     }
   },
   "kinds": {

@@ -210,7 +210,7 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
     process.env.EXO_PROVIDER = 'deepseek';
     assert.deepEqual(outputs(), [
       { subagent_type: 'exo:build-task', prompt: 'x', effort: 'low' },
-      { subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x', effort: 'high' }
+      { subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x', effort: 'low' }
     ]);
     assert.deepEqual(call({ subagent_type: 'exo:research-worker', prompt: 'x' }), { subagent_type: 'exo:research-worker', prompt: 'x', effort: 'high' });
   } finally {

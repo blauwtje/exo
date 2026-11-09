@@ -9,6 +9,11 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
 
+## plan
+- A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
+- `exo claude --provider deepseek` at a peak time prints the off-peak notice (Task 5).
+- A sweep record on deepseek carries cache hit and miss tokens and a `costUsd` within 20% of the balance delta (Task 6).
+
 ## fast-task-gate
 - A two-file task's brief keeps a Decisions bullet naming its file by basename or by its directory, and leaves out one naming only a sibling file or a same-named file elsewhere (Task 1; seam: `tests/next-task.test.mjs`).
 - A Land gate and a Proof past their deadlines are refused with `timed out after <n>s`, nothing commits, and their grandchild writes no marker file afterwards (Task 4; seam: `tests/land-task.test.mjs`).
