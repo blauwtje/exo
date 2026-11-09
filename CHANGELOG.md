@@ -77,6 +77,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A research-worker brief with no `Fetches:` line is sized by its distinct URLs, and with none it is refused as missing the line, not invalid.
 - A Reddit thread whose live comment read fails on a wait cap, 429, 5xx, open breaker or blocked status falls back to the Arctic Shift archive, and the Reddit refusal and research-worker name the absolute search script path.
 - Tests that asserted a wall-clock limit failed under full-suite load; they now assert the result, and `npm run check` fails a test that bounds a measured elapsed time.
+- The behavior check and the guard-rules test run with their own temp dir, so refusal files left in TMPDIR by earlier sessions no longer fail tests.
 
 - The Reddit token bucket no longer sleeps past `EXO_REDDIT_WAIT_MS`; a longer wait returns the blocked note at once.
 - A 5xx on one Reddit thread reads only that thread from the archive, and the host breaker trips only after three consecutive failures.

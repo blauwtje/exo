@@ -6,6 +6,8 @@ import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
 import { tempDir } from './harness.mjs';
 
+process.env.TMPDIR = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-guard-rules-'));
+
 const rules = await import('../lib/guard-rules.mjs');
 const { GUARD_RULES, denyReason } = rules;
 const denyReasons = await import('../verify/checks/deny-reasons.mjs');

@@ -4,6 +4,7 @@
 // failed.
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
@@ -24,9 +25,9 @@ function tallyFrom(lines, key) {
   return value;
 }
 
-function runNode(args) {
+function runNode(args, env) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, args);
+    const child = spawn(process.execPath, args, { env });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk; });
@@ -66,5 +67,8 @@ export function startSkillScriptBehavior(repository) {
   // why: the check can run inside `exo run`, whose variables would make the tests park gates in the live run.
   const stripFile = repository.join('tests', 'clean-run-env.mjs');
   const strip = fs.existsSync(stripFile) ? ['--import', pathToFileURL(stripFile).href] : [];
-  return runNode([...strip, '--test', '--test-reporter=tap', ...testFiles]).then(outcomeOf);
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-behavior-'));
+  const cleanup = () => fs.rmSync(scratch, { recursive: true, force: true });
+  return runNode([...strip, '--test', '--test-reporter=tap', ...testFiles], { ...process.env, TMPDIR: scratch })
+    .then((run) => { cleanup(); return outcomeOf(run); });
 }
