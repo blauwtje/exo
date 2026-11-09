@@ -7,8 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `harnesses/capabilities.json` holds each harness's subagents, hooks, efforts and worker count, and a static check fails when an adapter, its hook events or its effort column disagree with it.
+- exo installs into OpenCode with `node install.mjs --harness opencode`, generating `exo-<agent>` subagents and skills from the Claude sources.
+- The Karpathy coding reading (think before coding, simplicity first, surgical changes, goal-driven execution) is a section in `docs/principles/prompt.md`.
+
 ### Changed
 
+- Codex and OpenCode agents open with one shared outcome-first preamble holding the goal, the done-check, assumptions or BLOCKED, named files only and evidence as command output or `path:line`.
+- Generated Codex agent files no longer write `sandbox_mode`, so each agent inherits the session sandbox.
 - The quality workflow runs its check job on Node 22 and Node 24, so CI proves the Node 22 floor in `package.json`.
 - The Reddit source reads posts and comments through Reddit's shreddit comments partial with no API key, after one search RSS call or from thread urls passed with `--url`, with a token bucket, bounded concurrency, one 429 retry and a `blocked` note naming the `site:reddit.com` web search fallback.
 - The Karpathy flow-unit results compare only its 2 flow runs with the baseline and list run 1 as excluded.

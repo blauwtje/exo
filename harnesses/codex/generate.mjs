@@ -15,9 +15,7 @@
 //   node harnesses/codex/generate.mjs           write the tree locally, for inspection
 //   node harnesses/codex/generate.mjs --check   list override problems and exit 1 when any
 //
-// The agent sandbox approximates the tool allowlist: `read-only` for the agents in
-// READ_ONLY, whose tools hold no Edit or Write, `workspace-write` for the rest
-// (task-runner has neither tool but lands commits through Bash, so it writes).
+// An agent file cannot override the session sandbox, so none writes `sandbox_mode`.
 // `maxTurns` and `omitClaudeMd` have no Codex field and are dropped.
 
 import crypto from 'node:crypto';
@@ -34,7 +32,6 @@ const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const GENERATED = path.posix.join('harnesses', 'codex', 'generated');
 const OVERRIDES = path.posix.join('harnesses', 'codex', 'overrides');
 const IGNORED_FILES = ['.DS_Store', '.exo'];
-const READ_ONLY = [];
 const OVERRIDE_HEADER = /^<!-- exo:override source-sha256=([0-9a-f]{64}) -->\n/;
 
 const hashOf = (text) => crypto.createHash('sha256').update(text).digest('hex');
@@ -54,14 +51,13 @@ function tomlLiteralBlock(text) {
   return `'''\n${text}'''`;
 }
 
-function renderAgent({ name, description, instructions, model, effort, sandbox }) {
+function renderAgent({ name, description, instructions, model, effort }) {
   const lines = [
     `name = ${tomlString(name)}`,
     `description = ${tomlString(description)}`
   ];
   if (model !== INHERIT) lines.push(`model = ${tomlString(model)}`);
   if (effort !== null) lines.push(`model_reasoning_effort = ${tomlString(effort)}`);
-  lines.push(`sandbox_mode = ${tomlString(sandbox)}`);
   lines.push(`developer_instructions = ${tomlLiteralBlock(instructions)}`);
   return `${lines.join('\n')}\n`;
 }
@@ -129,8 +125,7 @@ function addAgents(root, known, files, sources) {
       description: codexBody(file, entry.description ?? own.description, known),
       instructions: `${preambleWithBrief(root, own)}${codexBody(file, body.replace(/^\n+/, ''), known)}`,
       model: resolved.model,
-      effort: resolved.effort,
-      sandbox: READ_ONLY.includes(file) ? 'read-only' : 'workspace-write'
+      effort: resolved.effort
     }));
     sources.set(generated, entry.generatedFrom ?? file);
   }

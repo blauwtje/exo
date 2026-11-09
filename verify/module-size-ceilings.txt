@@ -52,7 +52,7 @@
 13283 benchmarks/value/export-mismatch/gen/generate.mjs
 12330 benchmarks/value/rename-propagation/check.mjs
 29771 harnesses/codex/adapter.mjs
-9372 harnesses/codex/generate.mjs
+9052 harnesses/codex/generate.mjs
 8742 harnesses/codex/rules.mjs
 11607 install.mjs
 8841 lib/check-cache.mjs

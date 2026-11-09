@@ -25,3 +25,13 @@ test('every generated Codex agent with Bash carries the brief rules for its tool
   }
   assert.ok(checked > 0);
 });
+
+test('the shared preamble opens every Codex and OpenCode agent with the done-check rules and no absolutes', async () => {
+  const { generateOpenCodeTree } = await import('../harnesses/opencode/generate.mjs');
+  const preamble = fs.readFileSync(`${ROOT}harnesses/codex/agent-preamble.md`, 'utf8').trimEnd();
+  assert.doesNotMatch(preamble, /\b(always|never|exactly)\b/i);
+  const codex = [...generateTree(ROOT)].filter(([file]) => /agents\/exo-.+\.toml$/.test(file));
+  const opencode = [...generateOpenCodeTree(ROOT, { config: {} })].filter(([file]) => file.startsWith('agents/'));
+  assert.ok(codex.length > 0 && opencode.length > 0);
+  for (const [file, text] of [...codex, ...opencode]) assert.ok(text.includes(preamble.split('\n')[2]), file);
+});

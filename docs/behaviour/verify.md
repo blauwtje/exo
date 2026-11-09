@@ -10,6 +10,7 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
+- `node --test tests/harness-capabilities.test.mjs` passes and fails when a matrix row and an adapter disagree (Task 1).
 
 ## fast-task-gate
 - `killTree` with `platform: 'win32'` calls its `run` stub with `taskkill` and `['/pid', '<pid>', '/T', '/F']`; on POSIX a detached shell's grandchild is gone after `killTree`; a timed-out verify Proof and gate still fail with `timed out after <n>s` (Task 2; seam: `tests/process-tree.test.mjs`, `tests/verify-gate.test.mjs`).

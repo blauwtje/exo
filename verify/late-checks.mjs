@@ -2,6 +2,7 @@ import { checkGitWhitespace } from './checks/git-whitespace.mjs';
 import { checkPluginVersion } from './checks/plugin-version.mjs';
 import { checkModelKinds } from './checks/model-kinds.mjs';
 import { checkCodexOverrides } from './checks/codex-overrides.mjs';
+import { checkHarnessCapabilities } from './checks/harness-capabilities.mjs';
 import { checkQuestionOptions } from './checks/question-options.mjs';
 import { checkPaidRuns } from './checks/paid-runs.mjs';
 import { checkPrinciples } from './checks/principles.mjs';
@@ -25,6 +26,7 @@ export function runLateChecks(report, repository, staticOnly) {
   if (!staticOnly) checkPluginVersion(report, repository);
   checkModelKinds(report, repository);
   checkCodexOverrides(report, repository);
+  checkHarnessCapabilities(report, repository);
   checkQuestionOptions(report, repository);
   checkPaidRuns(report, repository);
   checkBenchmarkEntryPoints(report, repository);

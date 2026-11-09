@@ -47,3 +47,9 @@ test('a delegate prompt drops its repository-only front matter', () => {
   const text = '---\nforbidden-steps: 6-7\n---\n# Fixer prompt\n';
   assert.equal(codexMarkdown('skills/find-cause/fixer-prompt.md', text, new Set()), '# Fixer prompt\n');
 });
+
+test('no generated agent file sets a sandbox mode', () => {
+  const agents = [...generateTree(SOURCE_ROOT)].filter(([file]) => file.endsWith('.toml'));
+  assert.notEqual(agents.length, 0);
+  for (const [file, text] of agents) assert.doesNotMatch(text, /^sandbox_mode/m, file);
+});

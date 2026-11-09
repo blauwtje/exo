@@ -424,3 +424,59 @@ test('the shipped Codex adapter refuses a record whose created list leaves the f
   assert.match(err.text() + out.text(), /not an exo install record/);
   assert.deepEqual(snapshot(), before);
 });
+
+function opencodeSandbox(name) {
+  const home = folder(`${name}-home`);
+  const bin = folder(`${name}-bin`);
+  fs.writeFileSync(path.join(bin, 'opencode'), '#!/bin/sh\n', { mode: 0o755 });
+  const env = { HOME: home, PATH: bin };
+  const out = sink();
+  const err = sink();
+  const options = { cwd: base, root: REPO, env, input: new PassThrough(), stdout: out.stream, stderr: err.stream, interactive: false };
+  return { home, options, out, err };
+}
+
+test('the shipped OpenCode adapter installs, updates and removes at user scope', async () => {
+  const real = saved.find((adapter) => adapter.name === 'opencode');
+  assert.ok(real);
+  register(real);
+  const { home, options, out, err } = opencodeSandbox('opencode-user');
+  assert.equal(await run(['--harness', 'opencode', '--scope', 'user'], options), 0, err.text() + out.text());
+  const configHome = path.join(home, '.config', 'opencode');
+  assert.equal(fs.existsSync(path.join(configHome, 'skills', 'build', 'SKILL.md')), true);
+  assert.equal(fs.readdirSync(path.join(configHome, 'agents')).every((file) => file.startsWith('exo-')), true);
+  const record = JSON.parse(fs.readFileSync(path.join(configHome, 'exo', 'installed.json'), 'utf8'));
+  assert.equal(record.version, 2);
+  assert.equal(record.installs[0].scope, 'user');
+  assert.equal(await real.recorded(options.env), 1);
+  real.update({ root: REPO, env: options.env });
+  assert.equal(await real.recorded(options.env), 1);
+  assert.equal(await run(['--harness', 'opencode', '--remove', '--scope', 'user'], options), 0, err.text());
+  assert.equal(fs.existsSync(configHome) && fs.readdirSync(configHome).length > 0, false);
+});
+
+test('the shipped OpenCode adapter keeps a file it did not write and aborts', async () => {
+  const real = saved.find((adapter) => adapter.name === 'opencode');
+  assert.ok(real);
+  register(real);
+  const { home, options, err } = opencodeSandbox('opencode-conflict');
+  const agents = path.join(home, '.config', 'opencode', 'agents');
+  fs.mkdirSync(agents, { recursive: true });
+  const first = fs.readdirSync(path.join(REPO, 'agents'))[0];
+  fs.writeFileSync(path.join(agents, `exo-${first}`), 'mine');
+  assert.equal(await run(['--harness', 'opencode', '--scope', 'user'], options), 1);
+  assert.match(err.text(), /did not write it/);
+  assert.equal(fs.readFileSync(path.join(agents, `exo-${first}`), 'utf8'), 'mine');
+});
+
+test('the shipped OpenCode adapter installs per project into .opencode', async () => {
+  const real = saved.find((adapter) => adapter.name === 'opencode');
+  assert.ok(real);
+  register(real);
+  const { options, out, err } = opencodeSandbox('opencode-project');
+  const project = folder('opencode-project-dir');
+  assert.equal(await run(['--harness', 'opencode', '--scope', 'project', '--project', project], options), 0, err.text() + out.text());
+  assert.equal(fs.existsSync(path.join(project, '.opencode', 'skills', 'build', 'SKILL.md')), true);
+  assert.equal(await run(['--harness', 'opencode', '--remove', '--scope', 'project', '--project', project], options), 0, err.text());
+  assert.equal(fs.existsSync(path.join(project, '.opencode')), false);
+});

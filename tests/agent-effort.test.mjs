@@ -372,3 +372,8 @@ test('an Agent call without isolation, or with a Worktree line, is not denied fo
   const routed = hookOutput({ subagent_type: 'general-purpose', prompt: `Worktree: ${process.cwd()}\nReads: none\nResult: reply` });
   assert.notEqual(routed?.permissionDecision, 'deny');
 });
+
+test('the OpenCode host note sets EXO_HOST for exo scripts', () => {
+  const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'opencode', 'host-note.md'), 'utf8');
+  assert.match(note, /EXO_HOST=opencode/);
+});

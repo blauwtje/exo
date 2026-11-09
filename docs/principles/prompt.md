@@ -4,16 +4,20 @@ Checked: 2026-10-28
 
 Read it when: you write or change a prompt, skill, agent brief or delegation text.
 
-- **Start minimal, then refine against observed failures.** A short prompt shows what the model gets wrong before you add rules. [1] exo: `skills/edit-skills/references/plugging-holes.md`
-- **Say exactly what output you want.** The model does not infer a format or scope you left unstated. [2] exo: `agents/research-worker.md`, `skills/edit-skills/references/skill-shape.md`
-- **Say what to do, not what to avoid, and give the reason.** A stated reason lets the model apply a constraint to cases you did not list. [2] exo: gap, `skills/edit-skills/references/instruction-style.md` makes phrasing positive, but the same file cuts a reason unless it sets a boundary
-- **Use a few diverse, canonical examples, not lists of edge-case rules.** Examples carry the pattern in fewer tokens. [1] exo: `skills/edit-skills/references/instruction-style.md`
-- **Turn subjective judgments into concrete grading criteria.** Calibrate evaluators with examples so scores stay stable. [3] exo: `skills/edit-skills/references/blind-eval.md`
-- **Write names and descriptions for the trigger decision.** A description that singles out one skill or subagent routes correctly. [4][7] exo: `skills/edit-skills/references/description.md`
-- **State needed context in the delegation prompt.** A subagent starts blank and sees no conversation history. [5] exo: `lib/references/context.md`, `skills/build/implementer-prompt.md`
-- **Ask for every finding, then filter in a second pass.** Opus 5.5 follows "only report high-severity" literally. [6] exo: gap, no review prompt names the filter pass
-- **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers on them. [6][8] exo: gap, `skills/edit-skills/references/instruction-style.md` bans CAPS and `MUST` but holds no "if in doubt" rule
+- **Start minimal, then refine against observed failures.** A short prompt shows what the model gets wrong. [1] exo: `skills/edit-skills/references/plugging-holes.md`
+- **Say exactly what output you want.** The model does not infer an unstated format or scope. [2] exo: `agents/research-worker.md`, `skills/edit-skills/references/skill-shape.md`
+- **Say what to do, not what to avoid, and give the reason.** A reason lets the model apply a constraint to unlisted cases. [2] exo: gap, `skills/edit-skills/references/instruction-style.md` cuts reasons
+- **Use a few canonical examples, not edge-case rules.** Examples carry the pattern cheaply. [1] exo: `skills/edit-skills/references/instruction-style.md`
+- **Turn subjective judgments into concrete grading criteria.** Calibrate evaluators with examples. [3] exo: `skills/edit-skills/references/blind-eval.md`
+- **Write names and descriptions for the trigger decision.** A description that singles out one skill routes correctly. [4][7] exo: `skills/edit-skills/references/description.md`
+- **State needed context in the delegation prompt.** A subagent starts blank. [5] exo: `lib/references/context.md`, `skills/build/implementer-prompt.md`
+- **Ask for every finding, then filter in a second pass.** Opus 5.5 reads "only high-severity" literally. [6] exo: gap, no review prompt filters in a second pass
+- **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: gap, `skills/edit-skills/references/instruction-style.md` holds no "if in doubt" rule
 - **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: gap, no check flags these phrases
+- **Think before coding.** [9] exo: `skills/spec/SKILL.md`
+- **Simplicity first.** [9] exo: `lib/references/lean.md`
+- **Surgical changes.** [9] exo: `skills/build/implementer-prompt.md`
+- **Goal-driven execution.** [9] exo: `harnesses/codex/agent-preamble.md`
 
 ## Sources
 
@@ -25,3 +29,4 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 6. [Prompting Claude Opus 5.5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5), undated
 7. [Agent Skills specification](https://agentskills.io/specification), undated
 8. [Agent Skills best practices](https://github.com/agentskills/agentskills/blob/main/docs/skill-creation/best-practices.mdx), undated
+9. [Karpathy coding guidelines](https://github.com/forrestchang/andrej-karpathy-skills), undated

@@ -1,0 +1,43 @@
+{
+  "claude": {
+    "subagents": true,
+    "hooks": [
+      "SessionStart",
+      "PreToolUse",
+      "SessionEnd",
+      "Stop"
+    ],
+    "efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "maxWorkers": 4,
+    "promptStyle": "claude"
+  },
+  "codex": {
+    "subagents": true,
+    "hooks": [
+      "SessionStart",
+      "PreToolUse"
+    ],
+    "efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "maxWorkers": 4,
+    "promptStyle": "outcome"
+  },
+  "opencode": {
+    "subagents": true,
+    "hooks": [],
+    "efforts": [],
+    "maxWorkers": 2,
+    "promptStyle": "outcome"
+  }
+}

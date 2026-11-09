@@ -33,7 +33,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | Command | What it runs |
 |---|---|
 | `npm run generate` | Writes the gitignored `harnesses/codex/generated/` from the sources, for inspection only (see [Codex](#codex)). |
-| `node install.mjs [--harness claude,codex] [--scope user\|project\|local] [--project <dir>] [--yes] [--update] [--remove]` | Installs exo into every detected harness from this clone, or updates or removes what it recorded. It generates in memory, so an install always uses a fresh tree. |
+| `node install.mjs [--harness claude,codex,opencode] [--scope user\|project\|local] [--project <dir>] [--yes] [--update] [--remove]` | Installs exo into every detected harness from this clone, or updates or removes what it recorded. It generates in memory, so an install always uses a fresh tree. |
 | `node verify/skill-graph.mjs <command> [args]` | A read-only index over skills, agents, hooks, root docs, `verify/` and `tests/`: `size`, `range`, `inbound`, `pins`, `refs`, `overlap` and `json`, each printing a compact answer instead of a whole file. |
 
 CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every pull request.
@@ -219,13 +219,17 @@ The `Skill` path of `hooks/context-limit.mjs` maps each lead `exo:` skill call t
 
 ## Codex
 
-`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/generate.mjs` applies `harnesses/codex/rules.mjs` to the Claude sources and builds the Codex tree in memory: each skill rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` per agent. The Codex installer builds it fresh on every install, so the tree stays uncommitted; `npm run generate` writes it to the gitignored `harnesses/codex/generated/` for inspection only, and nothing reads that copy. `npm run check` fails when the sources cannot generate the tree.
+`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/generate.mjs` applies `harnesses/codex/rules.mjs` to the Claude sources and builds the Codex tree in memory: each skill rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` per agent, which names no `sandbox_mode` so the agent inherits the session sandbox. The Codex installer builds it fresh on every install, so the tree stays uncommitted; `npm run generate` writes it to the gitignored `harnesses/codex/generated/` for inspection only, and nothing reads that copy. `npm run check` fails when the sources cannot generate the tree.
 
 `harnesses/codex/overrides/<path under generated>` replaces one generated file and opens with `<!-- exo:override source-sha256=<hash> -->`. Add one only after a skill reads wrong in a real Codex run; a changed source hash fails `npm run check`.
 
 `install.mjs` runs one adapter per harness, listed in `harnesses/registry.mjs`. An adapter is `harnesses/<name>/adapter.mjs` exporting `name`, `label`, `detect(env)`, `install(plan)`, `update(record)`, `remove(record)` and `recorded(env)`; a new harness is one adapter folder plus one registry line. The Claude adapter runs `claude plugin install exo@blauwtje -s <scope>`; the Codex adapter copies the generated skills and agents and merges the allowlisted hook entries from `harnesses/codex/hooks.mjs`. Each records its installs in `installed.json` under its config home.
 
 Codex hooks and generated script commands run through `harnesses/codex/hook-entry.mjs` and `harnesses/codex/run.mjs`, which set `EXO_HOST=codex`; `lib/host.mjs` treats a missing or unknown value as Claude Code. Try an install against a scratch folder with `HOME=<dir> CODEX_HOME=<dir>/.codex node install.mjs --harness codex --yes`.
+
+## OpenCode
+
+`harnesses/opencode/generate.mjs` reuses the Codex rewrite helpers and builds the OpenCode skills and `exo-<agent>` subagent files in memory; agent files name no `model`, and effort maps to a `#variant` only when `opencode.model` and `opencode.variants` are set in `~/.config/exo/run.json`. Codex and OpenCode agents share the preamble in `harnesses/codex/agent-preamble.md`. `harnesses/capabilities.json` holds each harness's subagents, hooks, efforts and worker count, and a static check fails when an adapter, its hook events or its effort column disagree with it. OpenAI models run through the OpenCode harness with the user's own provider key.
 
 ## Releasing
 
