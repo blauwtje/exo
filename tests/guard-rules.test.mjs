@@ -213,6 +213,7 @@ const cases = {
   'brief-lacks-reads': () => refuse('Result: .exo/r.md'),
   'brief-lacks-fields': () => refuse('Reads: none'),
   'brief-over-fetches': () => refuse('Reads: none\nFetches: 19\nSources: web', 'exo:research-worker'),
+  'brief-cuts-page': () => refuse('Reads: none\nSources: web\ngh api x | head -c 4000', 'exo:research-worker'),
   'brief-over-budget': () => refuse('Reads: big.txt\nResult: .exo/r.md'),
   'slice-spent': () => sliceSpent()
 };
@@ -356,7 +357,7 @@ test('the rule table is the only exception to the deny reason check', () => {
 const BRIEF_DENIAL_ROWS = [
   'brief-invalid', 'brief-unresolved', 'brief-ambiguous-name', 'brief-missing-path', 'brief-worktree', 'brief-reads-label',
   'brief-reads-none', 'brief-reads-named', 'brief-reads-any', 'brief-range', 'brief-lacks-reads', 'brief-lacks-fields',
-  'brief-over-fetches', 'brief-over-budget'
+  'brief-over-fetches', 'brief-cuts-page', 'brief-over-budget'
 ];
 
 test('every worker brief denial text is a row of the rule table', () => {

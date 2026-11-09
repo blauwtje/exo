@@ -34,6 +34,9 @@ Fetches: <n>
 Return the claim ids you stored and the gaps, at most 1,500 tokens, no page text.
 ```
 
+- Send videos to `watch` as one batch in one call, not one call per video.
+- `search.mjs --url` takes several thread URLs.
+
 ## Output
 
 The answer first in 3-8 sentences with footnotes, then the key claims with label and source count, then the coverage gaps, with the report path.

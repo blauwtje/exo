@@ -116,5 +116,7 @@ export function createClient(context, settings) {
   const limits = createLimits(context, settings);
   const get = (url, options) => request({ limits, fetchImpl }, url, options);
   const hasBudget = (path = 'rss') => hasBudgetFor(limits, path);
-  return { get, hasBudget, pauseFor: limits.pauseFor, capMs: limits.capMs };
+  const budgetWaitMs = (path = 'rss') => limits.hostState?.budgetWaitMs(`${HOST}/${path}`) ?? 0;
+  const isOpen = (path = 'rss') => limits.hostState?.isOpen(`${HOST}/${path}`) ?? false;
+  return { get, hasBudget, budgetWaitMs, isOpen, pauseFor: limits.pauseFor, capMs: limits.capMs };
 }

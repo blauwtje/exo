@@ -105,7 +105,7 @@ export async function fetchPage(url, options) {
   const found = route ? await routed(route, { ...row, url }, context, runDir) : await direct(row, context, runDir);
   if (found.text === '') throw blockedPage('empty', runDir, row.url);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${found.text}\n`);
+  fs.writeFileSync(file, found.text.endsWith('\n') ? found.text : `${found.text}\n`);
   return { ...row, file, cached: false, via: found.via };
 }
 
@@ -122,7 +122,8 @@ async function fetchOne(url, options) {
   try {
     const page = await fetchPage(url, options);
     appendMetric(options.runDir, { tool: 'fetch', url, ms: Date.now() - started, ok: true });
-    return `${page.ref}\t${page.url}\t${page.cached ? 'cached' : page.via}`;
+    const line = `${page.ref}\t${page.url}\t${page.cached ? 'cached' : page.via}`;
+    return pageRoute(page.url)?.name === 'github-readme' ? `${line}\t${page.file}\t${fs.statSync(page.file).size}` : line;
   } catch (error) {
     appendMetric(options.runDir, { tool: 'fetch', url, ms: Date.now() - started, ok: false, error: error.message });
     return { failure: `${url}\t${error.message}` };

@@ -2,7 +2,7 @@
 
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { briefedInput, isolationFields, resultToolsFields, sizeReason, workersFields } from '../lib/brief-denials.mjs';
+import { briefedInput, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
@@ -12,6 +12,7 @@ import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { recordResearchDispatch, researchFields } from '../lib/research-route.mjs';
+import { sizeDenial } from '../lib/size-denial.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
 import { defaulted, liftedEffort, resolvedKind, unknownKind } from '../lib/kind-resolution.mjs';
@@ -94,7 +95,7 @@ function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const missing = missingFields(size, rewrite.scope);
   const refused = size.invalid.length > 0 || size.unresolved.length > 0 || missing.length > 0 || ((fromOrchestrator || size.sized) && size.tokens > size.budget);
   if (!refused) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: sizeReason(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) }) };
+  return { permissionDecision: 'deny', permissionDecisionReason: sizeDenial(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) }) };
 }
 
 function isSliceCall(hookInput) {

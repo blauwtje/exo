@@ -80,6 +80,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- A second Reddit `--query` in one run waits for the RSS reset under the wait cap, and the archive fallback sends a one-year window, so the search returns rows instead of `HTTP 422`; a blocked line now carries the reason from the response.
+- `search.mjs` keeps every URL after `--url` and exits on an argument no flag owns, so five thread URLs in one call give five rows instead of one.
+- A size denial on a worker brief keeps the asked `Fetches:` total and names the worker split that fits, so the orchestrator no longer lowers the count.
+- `fetch.mjs` saves a GitHub README whole and prints its byte count, and a research worker reads a cited page in ranges instead of cutting it with `head -c`, `cut` or `grep`.
+- A forked skill reads its own `.exo/<skill>/` run folder before its first dispatch, so `watch` started from a subagent answers from the transcript instead of returning BLOCKED.
+- A brief that tells `exo:research-worker` to shorten a fetched page with `head -c` or `cut -c` is denied, so the worker saves the page whole and reads it in ranges.
 - The orchestrator lists the `Skill` tool, so it can run `gate` as the build tail instead of skipping it with "No such tool: Skill".
 - Inside a forked skill, the orchestrator dispatches workers in the foreground and keeps its turn open, so a background task-runner no longer ends the build before `gate`.
 - `build` references tell the forked orchestrator to dispatch the task-runner in the foreground and keep its turn open, so the `gate` tail runs after it returns.

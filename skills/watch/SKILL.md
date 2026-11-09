@@ -39,6 +39,7 @@ Given a TikTok, YouTube, Instagram or X profile, a YouTube channel or a playlist
    - When the line ends `rate-limited, retry later`, wait a few minutes and rerun only that url; `private/removed` needs no rerun.
 4. When the line shows `frames=<dir> (6 files)`, read those images, or pass the folder to the lookup delegates, for what is on screen.
 5. When the line shows `tokens` under 10000 and one video, read `transcript` yourself and answer.
+   - When you cannot dispatch a delegate, read a longer transcript yourself in ranges to its end; do not return BLOCKED for that.
 6. Else give each video, or each file under its `chunks=` folder, to one `general-purpose` delegate whose prompt opens with `exo-kind: lookup`.
    - Start them all in one message, at most 8 per message; more files → the next message after the first returns.
    - Brief after the label: the user's question, `Reads: <file path>` and `Worktree: <abs path>` on lines of their own, and "return at most 15 lines of notes, each opening with its `[mm:ss]` stamp, plus a one-line gist".

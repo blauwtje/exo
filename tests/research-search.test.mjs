@@ -276,16 +276,16 @@ test('an answer without its result list is a blocked route', async () => {
   }
 });
 
-function exhaustedBudget(context) {
+function exhaustedBudget(context, resetAt = 10_000) {
   const stateDir = runFolder();
-  createHostState({ dir: stateDir, now: context.now }).recordBudget('reddit.com/rss', { remaining: 0, resetAt: 10_000 });
+  createHostState({ dir: stateDir, now: context.now }).recordBudget('reddit.com/rss', { remaining: 0, resetAt });
   return { ...context, stateDir };
 }
 
 test('reddit rss search is skipped when host state shows no budget', async () => {
   const calls = [];
-  const context = exhaustedBudget(redditContext({ calls }));
-  await assert.rejects(searchSource(redditRequest(), context), /no reddit budget.*search\.mjs --url/i);
+  const context = exhaustedBudget(redditContext({ calls }), 120_000);
+  await assert.rejects(searchSource(redditRequest(), context), /reddit rss budget resets.*search\.mjs --url|no reddit budget.*search\.mjs --url/i);
   assert.equal(calls.filter((call) => call.url.startsWith('https://www.reddit.com')).length, 0);
 });
 

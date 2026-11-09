@@ -8,7 +8,7 @@ All keyless. Each search prints one JSON line per hit, or one line `status: bloc
 |---|---|
 | Web pages | web search, then `node "${CLAUDE_SKILL_DIR}/scripts/fetch.mjs" <run-dir> <url>...` |
 | Hacker News, Stack Overflow, Wikipedia, arXiv, podcasts | `node "${CLAUDE_SKILL_DIR}/scripts/search.mjs" --source hn\|stackoverflow\|wikipedia\|arxiv\|podcast[,<more>] --query <text> --run <run-dir> [--limit <n>]` |
-| GitHub | `--source github`: uses `gh search` when `gh auth status` passes, else the unauthenticated REST search; a rate limit is a gap |
+| GitHub | `--source github`: uses `gh search` when `gh auth status` passes, else the unauthenticated REST search; a rate limit is a gap. A README: `fetch.mjs <run-dir> https://github.com/<owner>/<repo>` prints the saved path and byte count |
 | Reddit | `--source reddit` first; see Reddit rule |
 | YouTube topic search | `node "${CLAUDE_SKILL_DIR}/../watch/scripts/search.mjs" --query <text>` |
 | Video or short transcripts (YouTube, TikTok, Instagram, X) | find the URL by site-limited web search, then the `watch` skill's `transcript.mjs`; save the transcript text with `fetch.mjs --save <run-dir> <url>` (text on stdin) so the quote check sees it |

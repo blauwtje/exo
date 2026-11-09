@@ -3,6 +3,7 @@ import { attributeOf, parseSearch } from './reddit-text.mjs';
 import { archiveSignals, captureDate } from './reddit-archive.mjs';
 
 const POSTS_URL = 'https://arctic-shift.photon-reddit.com/api/posts/search';
+const DEFAULT_WINDOW = 'year';
 const WINDOW_MS = { hour: 3_600_000, day: 86_400_000, week: 604_800_000, month: 2_592_000_000, year: 31_536_000_000 };
 
 export function searchUrl(text, limit, scope = {}) {
@@ -53,7 +54,9 @@ export async function listingHits(client, scope, limit) {
 }
 
 export async function rssHits(client, scope, { text, limit }) {
-  if (!client.hasBudget()) throw new BlockedRoute('no Reddit budget for the RSS search');
+  if (client.isOpen()) throw new BlockedRoute('no Reddit budget for the RSS search');
+  const waitMs = client.budgetWaitMs();
+  if (waitMs > client.capMs) throw new BlockedRoute(`Reddit RSS budget resets in ${waitMs} ms, over the ${client.capMs} ms wait cap`);
   const atom = await client.get(searchUrl(text, limit, scope));
   if (!atom.includes('<feed')) throw new BlockedRoute('answer was not an Atom feed');
   return parseSearch(atom);
@@ -64,13 +67,38 @@ function archiveCounts(post) {
   return known ? `score ${post.score}, comments ${post.num_comments}` : 'score and comment count unavailable';
 }
 
+function reasonOf(text) {
+  try {
+    return JSON.parse(text).error ?? text;
+  } catch {
+    return text;
+  }
+}
+
+function capturingFetch(fetchImpl = fetch, seen) {
+  return async (url, options) => {
+    const response = await fetchImpl(url, options);
+    if (!response.ok) seen.body = await response.clone().text();
+    return response;
+  };
+}
+
 export async function archiveHits(scope, { text, limit, reason }, context) {
   const params = new URLSearchParams({ sort: 'desc', limit: String(limit), query: text });
   if (scope.subreddit) params.set('subreddit', scope.subreddit);
-  const windowMs = WINDOW_MS[scope.time];
   const now = context.now ?? Date.now;
-  if (windowMs) params.set('after', new Date(now() - windowMs).toISOString().slice(0, 10));
-  const body = await getJson(`${POSTS_URL}?${params}`, { fetchImpl: context.fetchImpl, gate: context.gate, stateDir: context.stateDir });
+  const windowMs = WINDOW_MS[scope.time] ?? WINDOW_MS[DEFAULT_WINDOW];
+  params.set('after', new Date(now() - windowMs).toISOString().slice(0, 10));
+  params.set('before', new Date(now() + WINDOW_MS.day).toISOString().slice(0, 10));
+  const seen = {};
+  const fetchImpl = capturingFetch(context.fetchImpl, seen);
+  let body;
+  try {
+    body = await getJson(`${POSTS_URL}?${params}`, { fetchImpl, gate: context.gate, stateDir: context.stateDir });
+  } catch (error) {
+    if (!(error instanceof BlockedRoute) || !seen.body) throw error;
+    throw new BlockedRoute(`${error.message}: ${reasonOf(seen.body).slice(0, 200)}`);
+  }
   return (body.data ?? []).map((post) => ({
     title: post.title,
     url: `https://www.reddit.com${post.permalink}`,

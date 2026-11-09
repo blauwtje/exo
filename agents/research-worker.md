@@ -27,4 +27,6 @@ The `Sources:` line picks the mode. Without it, take `web`.
 - `repo`: read the same file, section `## Repo`.
 - `brief`: read the same file, section `## Brief`.
 
+Read a cited page whole, and shorten none with `head -c`, `cut` or `grep`. Fetch one GitHub README per `fetch.mjs` call, save it whole and read it in ranges. Count it read in full only when the bytes read equal the saved byte count.
+
 Stay inside each call budget the dispatch names, and write the return by your twentieth turn, because a cut at the turn limit returns nothing usable. Return at most 40 lines, and do not pad them, unless the mode names a smaller cap, and leave out page text.

@@ -60,15 +60,23 @@ export async function searchMany(request, context) {
   return { lines, failed: settled.every((outcome) => outcome.status === 'rejected') };
 }
 
-function parseArgs(argv) {
+const SINGLE_FLAGS = ['source', 'query', 'run', 'limit', 'subreddit', 'sort', 'time'];
+
+export function parseArgs(argv) {
   const values = {};
-  for (let index = 0; index < argv.length; index += 2) {
-    const name = argv[index].replace(/^--/, '');
-    if (name === 'url') {
-      (values.urls ??= []).push(argv[index + 1]);
+  let owner = null;
+  for (const token of argv) {
+    if (token.startsWith('--')) {
+      owner = token.slice(2);
+      if (owner !== 'url' && !SINGLE_FLAGS.includes(owner)) throw new Error(`unknown flag ${token}`);
       continue;
     }
-    values[name] = argv[index + 1];
+    if (owner === 'url') {
+      (values.urls ??= []).push(token);
+      continue;
+    }
+    if (!owner || values[owner] !== undefined) throw new Error(`value ${token} belongs to no flag`);
+    values[owner] = token;
   }
   return values;
 }
@@ -76,7 +84,14 @@ function parseArgs(argv) {
 async function main(argv) {
   limitLifetime('spec-search', SPEC_SEARCH_LIFETIME_MS);
   excludeScratchIfGit(process.cwd());
-  const args = parseArgs(argv);
+  let args;
+  try {
+    args = parseArgs(argv);
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    process.exitCode = 2;
+    return;
+  }
   const hasInput = args.query || args.urls;
   if (!args.source || !hasInput || !args.run) {
     process.stderr.write('usage: search.mjs --source <name>[,<name>...] (--query <text> | --url <thread url>...) --run <dir> [--limit <n>] [--subreddit <name>] [--sort <order>] [--time <window>]\n');
