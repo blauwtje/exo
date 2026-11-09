@@ -74,10 +74,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- The advice to search Reddit with a `site:reddit.com` WebSearch, which the WebSearch tool refuses.
 - The "Decided for you" list at the end of replies and its number-reply rule; exo still asks for an irreversible step, a choice with no safe default and a choice only the user can settle.
 
 ### Fixed
 
+- Reddit research reads live data by default: `search.rss` finds threads with real ids and the shreddit comment endpoint returns full comment trees; Arctic Shift is only a fallback, labelled with its capture date and the live failure reason.
+- The Arctic Shift fallback search is sorted, time-windowed and scoped to the subreddit, and a mirror URL yields its thread id.
+- Reddit rate waits are kept per endpoint and honoured (`EXO_REDDIT_WAIT_MS`, default 65000) within the `EXO_SPEC_SEARCH_MS` lifetime, instead of falling back to the archive after 15 s.
+- Every briefed agent follows one wait rule: start a long command in the background and end the turn; a write to the brief's Result file is refused while the agent's own background shell runs, and `sleep` is refused for research workers too.
+- A fetch on the Reddit route counts as one `search.mjs` call that returns several threads, so a brief asking for 15 threads fits its budget, and the dispatching orchestrator can raise the budget.
+- The Reddit route hook lets a `search.mjs` query that mentions reddit pass, points a Reddit WebFetch or curl to `search.mjs`, and refuses a fetch wrapped in `bash -c`, `sh -c`, `nice`, `nohup`, `xargs` or `command`.
 - Review merge keeps a `fix` finding whose Sweep also hits a sibling defect site, so incomplete-fix went from 0 of 2 to 2 of 2 repaired in the review replay.
 - A subagent's foreground Bash call in bypass or auto mode runs under `timeout`, ending 5 s before Claude Code's Bash limit instead of moving to the background and leaving the agent open; the margin is `EXO_BASH_CAP_MARGIN_MS`.
 - Skill scripts that fetch, spawn or poll now stop at a deadline or when their caller exits, so no orphan process runs on for days.

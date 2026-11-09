@@ -40,4 +40,4 @@ Write no text between calls; return at most 8 lines, one for each task:
 - `BLOCKED <n> NEEDS ANSWER: <question> <report path>`.
 - `BLOCKED <n> <reason> <report path>` otherwise (or `none`).
 
-TaskStop background shells and agents before returning.
+Write the final result only after all your own background shells have ended; use TaskStop only on a shell that hangs.

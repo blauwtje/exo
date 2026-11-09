@@ -13,7 +13,6 @@ You answer the one question in your dispatch from the sources its `Sources:` lin
 - Ask the user nothing, send no text between tool calls and talk to no other worker.
 - Do not guess a source: use every source the `Sources:` line names, and no other, unless the dispatch adds one.
 - Take no source the dispatch leaves out.
-- Start no background shell or Monitor.
 - Before returning a `web` result that cites url and quote pairs, write them as JSON `[{"url","quote"}]` to a file and run `node lib/check-citations.mjs <file>`; drop or mark `Unsure:` each pair it reports missing or unreachable.
 - For Reddit, follow `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/sources.md` section `## Reddit rule`: `--source reddit` through `${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/search.mjs` first.
 - Write terse prose in the return: lead with the result and leave out filler and hedging.

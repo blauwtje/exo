@@ -40,7 +40,7 @@ export function parseSearch(atom) {
   });
 }
 
-function attribute(opening, name) {
+export function attributeOf(opening, name) {
   const match = opening.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`));
   return match ? decodeEntities(match[1]) : '';
 }
@@ -50,9 +50,9 @@ function commentOf(chunk) {
   const body = chunk.match(/slot="comment">([\s\S]*?)(?=<div data-hl|<faceplate-loader|<div[^>]*slot="actionRow"|$)/);
   if (!body) return [];
   return [{
-    author: attribute(opening, 'author'),
-    score: Number(attribute(opening, 'score')),
-    depth: Number(attribute(opening, 'depth')),
+    author: attributeOf(opening, 'author'),
+    score: Number(attributeOf(opening, 'score')),
+    depth: Number(attributeOf(opening, 'depth')),
     text: htmlToText(body[1]),
   }];
 }
@@ -60,6 +60,11 @@ function commentOf(chunk) {
 export function parseComments(html) {
   const chunks = html.split('<shreddit-comment ').slice(1);
   return chunks.flatMap(commentOf);
+}
+
+export function parseMoreLinks(html) {
+  const links = [...html.matchAll(/<faceplate-partial[^>]*\ssrc="(\/svc\/shreddit\/more-comments\/[^"]*)"/g)];
+  return [...new Set(links.map(([, src]) => decodeEntities(src)))];
 }
 
 export function commentsAsText(comments) {

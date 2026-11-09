@@ -55,6 +55,8 @@ const SEARCH_ATOM = `<feed><entry><title>First &amp; post</title><content type="
 
 const COMMENTS_HTML = `<shreddit-comment author="alice_example" depth="0" score="12" permalink="/r/sub_one/comments/abc123/comment/c1/"><div slot="comment"><div><p>Top &amp; level</p></div></div><div data-hl="x"></div></shreddit-comment><shreddit-comment author="bob_example" depth="1" score="-2" permalink="/r/sub_one/comments/abc123/comment/c2/"><div slot="comment"><p>Reply<br>two lines</p></div><faceplate-loader></faceplate-loader></shreddit-comment><shreddit-comment author="gone" depth="0" score="1"></shreddit-comment>`;
 
+const isThreadPage = (url) => /reddit\.com\/r\/\w+\/comments\//.test(url) && !url.includes('.rss');
+
 function redditContext({ plan = [], calls = [], env = {}, defaults = { threads: 5, concurrency: 3, capacity: 100, refillMs: 1 } }) {
   const clock = { time: 0 };
   const flight = { now: 0, max: 0 };
@@ -69,6 +71,7 @@ function redditContext({ plan = [], calls = [], env = {}, defaults = { threads: 
       clock.time = Math.max(clock.time, wake);
     },
     fetchImpl: async (url, init) => {
+      if (isThreadPage(url)) return new Response('<html>challenge</html>');
       const step = plan[calls.length] ?? {};
       calls.push({ url, init, at: clock.time });
       flight.now += 1;
@@ -81,7 +84,7 @@ function redditContext({ plan = [], calls = [], env = {}, defaults = { threads: 
   };
 }
 
-const redditRequest = (extra = {}) => ({ source: 'reddit', query: 'r/sub_one caching', limit: 2, runDir: runFolder(), ...extra });
+const redditRequest = (extra = {}) => ({ source: 'reddit', query: 'caching', limit: 2, runDir: runFolder(), ...extra });
 const oneThread = { threads: 1, concurrency: 1, capacity: 100, refillMs: 1 };
 
 test('atom search entries become hits with title, date and decoded text', () => {
@@ -102,10 +105,11 @@ test('shreddit comments become author, score, depth and plain text', () => {
 
 test('reddit search reads one subreddit feed and strips r/sub from the query', async () => {
   const calls = [];
-  const rows = await searchSource(redditRequest(), redditContext({ calls }));
-  assert.match(calls[0].url, /^https:\/\/www\.reddit\.com\/r\/sub_one\/search\.rss\?q=caching&restrict_sr=1&limit=2/);
-  assert.equal(calls.filter((call) => call.url.includes('search.rss')).length, 1);
-  assert.match(calls[1].url, /^https:\/\/www\.reddit\.com\/svc\/shreddit\/comments\/r\/sub_one\/t3_(abc123|def456)$/);
+  const rows = await searchSource(redditRequest({ query: 'r/sub_one caching' }), redditContext({ calls }));
+  const feeds = calls.filter((call) => call.url.includes('search.rss'));
+  assert.equal(feeds.length, 1);
+  assert.match(feeds[0].url, /^https:\/\/www\.reddit\.com\/r\/sub_one\/search\.rss\?q=caching&restrict_sr=1&sort=new&t=all&limit=2/);
+  assert.match(calls.at(-1).url, /^https:\/\/www\.reddit\.com\/svc\/shreddit\/comments\/r\/sub_one\/t3_(abc123|def456)$/);
   assert.equal(rows[0].title, 'First & post');
   assert.equal(rows[0].description, 'Body & more');
   assert.match(rows[0].comments, /alice_example \(score 12, depth 0\): Top & level/);
@@ -113,11 +117,11 @@ test('reddit search reads one subreddit feed and strips r/sub from the query', a
 
 test('reddit search without a subreddit goes site-wide and the flag scopes it', async () => {
   const calls = [];
-  await searchSource(redditRequest({ query: 'caching' }), redditContext({ calls }));
-  assert.match(calls[0].url, /^https:\/\/www\.reddit\.com\/search\.rss\?q=caching&limit=2/);
+  await searchSource(redditRequest(), redditContext({ calls }));
+  assert.match(calls[0].url, /^https:\/\/www\.reddit\.com\/search\.rss\?q=caching&sort=new&t=all&limit=2/);
   const scoped = [];
-  await searchSource(redditRequest({ query: 'caching', subreddit: 'other' }), redditContext({ calls: scoped }));
-  assert.match(scoped[0].url, /^https:\/\/www\.reddit\.com\/r\/other\/search\.rss\?q=caching&restrict_sr=1/);
+  await searchSource(redditRequest({ subreddit: 'other' }), redditContext({ calls: scoped }));
+  assert.match(scoped.find((call) => call.url.includes('.rss')).url, /^https:\/\/www\.reddit\.com\/r\/other\/search\.rss\?q=caching&restrict_sr=1/);
 });
 
 test('thread urls skip the search call', async () => {
@@ -134,7 +138,7 @@ test('thread urls skip the search call', async () => {
 
 test('a refused post feed keeps the slug title and still reads comments', async () => {
   const urls = ['https://www.reddit.com/r/sub_one/comments/abc123/first_post/'];
-  const [row] = await searchSource(redditRequest({ urls }), redditContext({ plan: [{ status: 429, headers: { 'x-ratelimit-reset': '55' } }] }));
+  const [row] = await searchSource(redditRequest({ urls }), redditContext({ plan: [{ status: 429, headers: { 'x-ratelimit-reset': '90' } }] }));
   assert.equal(row.title, 'first post');
   assert.match(row.comments, /alice_example/);
 });
@@ -149,7 +153,7 @@ test('thread fetches never exceed the concurrency default', async () => {
 
 test('only the top threads default are fetched', async () => {
   const calls = [];
-  const rows = await searchSource(redditRequest(), redditContext({ calls, defaults: oneThread }));
+  const rows = await searchSource(redditRequest({ limit: 1 }), redditContext({ calls, defaults: oneThread }));
   assert.equal(calls.length, 2);
   assert.equal(rows[1].comments, undefined);
 });
@@ -157,8 +161,8 @@ test('only the top threads default are fetched', async () => {
 test('thread fetches wait for the token bucket after a burst', async () => {
   const calls = [];
   const urls = ['a1', 'b2', 'c3'].map((id) => `https://www.reddit.com/r/sub_one/comments/${id}/slug/`);
-  await searchSource(redditRequest({ urls }), redditContext({ calls, defaults: { threads: 3, concurrency: 3, capacity: 2, refillMs: 500 } }));
-  assert.deepEqual(calls.map((call) => call.at), [0, 0, 500, 1000]);
+  await searchSource(redditRequest({ urls, limit: 3 }), redditContext({ calls, defaults: { threads: 3, concurrency: 3, capacity: 2, refillMs: 500 } }));
+  assert.deepEqual(calls.map((call) => call.at), [0, 0, 0, 500]);
 });
 
 test('a burst above bucket capacity waits for refill', async () => {
@@ -178,7 +182,7 @@ test('a burst above bucket capacity waits for refill', async () => {
 test('a 429 waits for x-ratelimit-reset and retries once', async () => {
   const calls = [];
   const plan = [{}, { status: 429, headers: { 'x-ratelimit-reset': '7' } }];
-  const [row] = await searchSource(redditRequest(), redditContext({ plan, calls, defaults: oneThread }));
+  const [row] = await searchSource(redditRequest({ limit: 1 }), redditContext({ plan, calls, defaults: oneThread }));
   assert.equal(calls.length, 3);
   assert.ok(calls[2].at - calls[1].at >= 7000);
   assert.match(row.comments, /alice_example/);
@@ -209,10 +213,10 @@ test('a 429 past the wait cap reads only that thread from the archive and names 
   assert.match(archived.comments, /carol_example \(score 4, depth 0\): Archived top/);
   assert.match(archived.comments, /dave_example \(score 1, depth 1\)/);
   assert.match(archived.comments, /finn_example \(score 3, depth 1\): Listing child/);
-  assert.match(archived.signals, /Arctic Shift.*24-48 h/);
+  assert.match(archived.signals, /Arctic Shift archive; retrieved_on/);
   assert.equal(archived.blocked, undefined);
   assert.match(live.comments, /alice_example/);
-  assert.equal(live.signals, 'live Reddit');
+  assert.equal(live.signals, 'live Reddit; score and comment count unavailable; 2 comments read');
 });
 
 test('a 503 on one thread reads only that thread from the archive', async () => {
@@ -221,7 +225,7 @@ test('a 503 on one thread reads only that thread from the archive', async () => 
   const archived = rows.find((row) => row.url.includes('abc123'));
   const live = rows.find((row) => row.url.includes('def456'));
   assert.match(archived.signals, /Arctic Shift/);
-  assert.equal(live.signals, 'live Reddit');
+  assert.equal(live.signals, 'live Reddit; score and comment count unavailable; 2 comments read');
   assert.equal(live.blocked, undefined);
 });
 
@@ -237,12 +241,12 @@ test('a 403 on a thread returns the hits with a blocked note naming the web sear
   const plan = [{}, { status: 403 }];
   const rows = await searchSource(redditRequest(), redditContext({ plan, defaults: oneThread }));
   assert.equal(rows.length, 2);
-  assert.match(rows[0].blocked, /HTTP 403.*site:reddit\.com/);
+  assert.match(rows[0].blocked, /HTTP 403.*search\.mjs --url/);
 });
 
 test('a failing search feed is blocked and asks for thread urls', async () => {
   const request = redditRequest();
-  await assert.rejects(searchSource(request, redditContext({ plan: [{ status: 500 }] })), /HTTP 500.*thread urls.*site:reddit\.com/);
+  await assert.rejects(searchSource(request, redditContext({ plan: [{ status: 500 }] })), /HTTP 500.*thread urls.*search\.mjs --url/);
   await assert.rejects(searchSource(request, redditContext({ plan: [{ body: 'nope' }] })), /not an Atom feed.*thread urls/);
 });
 
@@ -274,15 +278,15 @@ test('an answer without its result list is a blocked route', async () => {
 
 function exhaustedBudget(context) {
   const stateDir = runFolder();
-  createHostState({ dir: stateDir, now: context.now }).recordBudget('www.reddit.com', { remaining: 0, resetAt: 10_000 });
+  createHostState({ dir: stateDir, now: context.now }).recordBudget('reddit.com/rss', { remaining: 0, resetAt: 10_000 });
   return { ...context, stateDir };
 }
 
 test('reddit rss search is skipped when host state shows no budget', async () => {
   const calls = [];
   const context = exhaustedBudget(redditContext({ calls }));
-  await assert.rejects(searchSource(redditRequest(), context), /no reddit budget.*site:reddit\.com/i);
-  assert.equal(calls.length, 0);
+  await assert.rejects(searchSource(redditRequest(), context), /no reddit budget.*search\.mjs --url/i);
+  assert.equal(calls.filter((call) => call.url.startsWith('https://www.reddit.com')).length, 0);
 });
 
 test('thread urls skip the rss post feed when host state shows no budget', async () => {
@@ -327,7 +331,7 @@ test('a 429 on thread 2 of 3 returns all three threads and the other two keep co
     if (url.includes('t3_def456')) return new Response('', { status: 429, headers: { 'x-ratelimit-reset': '90' } });
     return base.fetchImpl(url, init);
   };
-  const rows = await searchSource(redditRequest({ urls }), { ...base, fetchImpl });
+  const rows = await searchSource(redditRequest({ urls, limit: 3 }), { ...base, fetchImpl });
   assert.equal(rows.length, 3);
   assert.match(rows[0].comments, /alice_example/);
   assert.ok(rows[1].blocked);
@@ -349,19 +353,19 @@ test('reddit rate limit headers are recorded as the shared budget', async () => 
   const plan = [{}, { headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '30' } }];
   const context = { ...redditContext({ plan, defaults: oneThread }), stateDir };
   await searchSource(redditRequest(), context);
-  assert.equal(createHostState({ dir: stateDir, now: () => 0 }).budgetWaitMs('www.reddit.com'), 30000);
+  assert.equal(createHostState({ dir: stateDir, now: () => 0 }).budgetWaitMs('reddit.com/shreddit'), 30000);
 });
 
 test('an open breaker sends a thread read to the archive without a live call', async () => {
   const stateDir = runFolder();
   const hostState = createHostState({ dir: stateDir, now: () => 0 });
-  for (let attempt = 0; attempt < 3; attempt += 1) hostState.recordStatus('www.reddit.com', 500);
+  for (let attempt = 0; attempt < 3; attempt += 1) hostState.recordStatus('reddit.com/shreddit', 500);
   const calls = [];
   const base = redditContext({ calls, defaults: oneThread });
   const fetchImpl = async (url, init) => (url.includes('arctic-shift') ? new Response(ARCHIVE_TREE) : base.fetchImpl(url, init));
   const urls = ['https://www.reddit.com/r/sub_one/comments/abc123/slug/'];
   const [row] = await searchSource(redditRequest({ urls }), { ...base, fetchImpl, stateDir });
-  assert.equal(calls.length, 0);
+  assert.equal(calls.filter((call) => call.url.includes('svc/shreddit')).length, 0);
   assert.match(row.comments, /carol_example/);
 });
 
@@ -391,4 +395,16 @@ test('a bucket wait over the cap reads that thread from the archive', async () =
   assert.match(archived.comments, /carol_example/);
   assert.match(archived.signals, /Arctic Shift/);
   assert.equal(archived.blocked, undefined);
+});
+
+test('reddit search passes the sort and time window to the feed', async () => {
+  const calls = [];
+  await searchSource(redditRequest({ sort: 'top', time: 'week' }), redditContext({ calls }));
+  assert.match(calls[0].url, /sort=top&t=week/);
+});
+
+test('the search CLI forwards --sort and --time into the request', () => {
+  const source = fs.readFileSync(new URL('../skills/spec/scripts/search.mjs', import.meta.url), 'utf8');
+  assert.match(source, /sort: args\.sort/);
+  assert.match(source, /time: args\.time/);
 });

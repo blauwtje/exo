@@ -60,11 +60,11 @@
 14734 lib/code-rules.mjs
 15985 lib/context-decisions.mjs
 10552 lib/eval-stats.mjs
-12209 lib/guard-rules.mjs
+10127 lib/guard-rules.mjs
 8624 lib/plan-tasks.mjs
 9945 lib/red-green.mjs
 9701 lib/statusline.mjs
-14874 lib/worker-size.mjs
+14892 lib/worker-size.mjs
 12827 skills/build/scripts/land-run.mjs
 8562 skills/build/scripts/remove-worktree.mjs
 25454 skills/build/scripts/run-plan.mjs

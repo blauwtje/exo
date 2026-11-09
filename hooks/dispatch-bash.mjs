@@ -7,17 +7,18 @@ import { inSidecall, readHookText } from '#hook-input';
 import { scriptBytes } from '../lib/context-limits.mjs';
 import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
-import { commitAttributionReason, commitEvidenceReason } from '../lib/commit-messages.mjs';
 import { saveLongCommand } from '../lib/long-command.mjs';
-import { sharedStateReason } from '../lib/git-deny.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { cappedCommand, cappedInput, resultCapped } from '../lib/bash-cap.mjs';
+import { redditBashDecision } from '../lib/reddit-route.mjs';
 import { fixShellFor } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
-import { suiteDecision } from '../lib/suite-step.mjs';
 import { withReceipt } from './context-limit.mjs';
+import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, deny } from '../lib/lazy-steps.mjs';
+
+export { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP };
 
 const contextStep = (name, decide) => ({
   name,
@@ -31,8 +32,6 @@ export const CONTEXT_STEP = contextStep('context-limit', contextDecision);
 
 const WIDE_FIND = /(?:^|[;&|(]|&&|\|\|)\s*find\s+(?:-[HLP]\s+)*["']?(?:\/|~\/?|\$HOME|\$\{HOME\}|(?:\.\.\/?)+)["']?(?=\s|$)/;
 
-const deny = (reason) => ({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: reason } });
-
 export const FIND_STEP = {
   name: 'wide-find',
   run(hookInput) {
@@ -41,24 +40,11 @@ export const FIND_STEP = {
   }
 };
 
-export const SHARED_STATE_STEP = {
-  name: 'shared-state-git',
+export const REDDIT_STEP = {
+  name: 'reddit-route',
   run(hookInput) {
-    const command = hookInput.tool_input?.command;
-    if (!hookInput.agent_id || typeof command !== 'string') return null;
-    const reason = sharedStateReason(command);
-    return reason && deny(reason);
-  }
-};
-
-export const COMMIT_ATTRIBUTION_STEP = {
-  name: 'commit-attribution',
-  run(hookInput) {
-    const command = hookInput.tool_input?.command;
-    if (typeof command !== 'string') return null;
-    const cwd = hookInput.cwd ?? process.cwd();
-    const reason = commitAttributionReason(command, cwd) ?? commitEvidenceReason(command, cwd);
-    return reason && deny(reason);
+    const decision = redditBashDecision(hookInput.tool_input?.command);
+    return decision && deny(decision.deny);
   }
 };
 
@@ -88,16 +74,7 @@ export const SLEEP_STEP = {
     const command = hookInput.tool_input?.command;
     if (!hookInput.agent_id || typeof command !== 'string') return null;
     if (SLEEP_COMMAND.test(command)) return deny(denyReason('sleep'));
-    return WATCH_COMMAND.test(command) ? deny(denyReason('sleep', 'a subagent does not watch checks')) : null;
-  }
-};
-
-export const SUITE_STEP = {
-  name: 'suite-unchanged',
-  run(hookInput) {
-    const decision = suiteDecision(hookInput);
-    if (decision?.deny) return deny(denyReason('suite-passed', decision.deny));
-    return decision && { hookSpecificOutput: { additionalContext: decision.context } };
+    return WATCH_COMMAND.test(command) ? deny(denyReason('watch')) : null;
   }
 };
 
@@ -144,7 +121,7 @@ function firstRewrite(outputs) {
   return (rewrites.find((output) => output.capped) ?? rewrites[0])?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, REDDIT_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SHELL_STOP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

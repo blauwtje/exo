@@ -177,6 +177,7 @@ const cases = {
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
   'script-size': () => bash(LONG, { ...agent, cwd: '/nonexistent/deep' }),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
+  watch: () => bash(['gh pr checks 1 --wat', 'ch'].join(''), { ...agent, agent_type: 'exo:task-runner' }),
   'suite-passed': () => denyReason('suite-passed', 'This tree already passed a suite'),
   'code-rules': () => edit(),
   'result-line': () => subagent(10_000, 'Read', { file_path: longLine }),
@@ -269,7 +270,7 @@ test('the agent-effort denies are the rule table reasons', () => {
   assert.equal(isolated(), denyReason('agent-isolation'));
 });
 
-for (const [id, tool] of [['result-tools', 'Write'], ['no-task-stop', 'TaskStop']]) {
+for (const [id, tool] of [['result-tools', 'Write']]) {
   const brief = GUARD_RULES.find((row) => row.id === id)?.brief;
   test(`the ${id} line renders only for an agent without ${tool}`, () => {
     assert.ok(brief);
@@ -376,13 +377,12 @@ test('a dispatched brief carries the brief lines of the receiving agent tools up
   const original = 'Reads: none\nResult: reply';
   const stash = rules.briefLines(['Bash']).find((line) => line.includes('git stash'));
   const noWrite = GUARD_RULES.find((row) => row.id === 'result-tools').brief;
-  const noStop = GUARD_RULES.find((row) => row.id === 'no-task-stop').brief;
   const docs = dispatched('reader', original);
   assert.ok(docs.endsWith(original) && docs.indexOf(noWrite) < docs.indexOf(original), docs);
-  assert.ok(docs.includes(noWrite) && docs.includes(noStop), docs);
+  assert.ok(docs.includes(noWrite), docs);
   assert.ok(!docs.includes(stash), docs);
   const builder = dispatched('exo:build-task', 'Reads: none\nResult: .exo/r.md');
-  assert.ok(builder.includes(stash) && !builder.includes(noStop), builder);
+  assert.ok(builder.includes(stash) && true, builder);
   assert.ok(!builder.includes(noWrite), builder);
 });
 

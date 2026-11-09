@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { limitLifetime } from '#lifetime';
+import { limitLifetime, SPEC_SEARCH_LIFETIME_MS } from '#lifetime';
 import { excludeScratchIfGit, recordSource } from './ledger.mjs';
 import { BlockedRoute } from './sources/http.mjs';
 import { SOURCES } from './sources/index.mjs';
@@ -9,10 +9,10 @@ import { SOURCES } from './sources/index.mjs';
 const DEFAULT_LIMIT = 5;
 
 export async function searchSource(request, context) {
-  const { source, query, limit = DEFAULT_LIMIT, runDir, subreddit, urls } = request;
+  const { source, query, limit = DEFAULT_LIMIT, runDir, subreddit, sort, time, urls } = request;
   const adapter = SOURCES[source];
   if (!adapter) throw new Error(`unknown source ${source}; use ${Object.keys(SOURCES).join(', ')}`);
-  const hits = await adapter({ query, limit, subreddit, urls }, { stateDir: runDir, ...context });
+  const hits = await adapter({ query, limit, subreddit, sort, time, urls }, { stateDir: runDir, ...context });
   return hits.map((hit) => {
     const { title, date, signals, description } = hit;
     const row = recordSource(runDir, { url: hit.url, fields: { source, title, date, signals, description } });
@@ -74,16 +74,16 @@ function parseArgs(argv) {
 }
 
 async function main(argv) {
-  limitLifetime('spec-search', 300000);
+  limitLifetime('spec-search', SPEC_SEARCH_LIFETIME_MS);
   excludeScratchIfGit(process.cwd());
   const args = parseArgs(argv);
   const hasInput = args.query || args.urls;
   if (!args.source || !hasInput || !args.run) {
-    process.stderr.write('usage: search.mjs --source <name>[,<name>...] (--query <text> | --url <thread url>...) --run <dir> [--limit <n>] [--subreddit <name>]\n');
+    process.stderr.write('usage: search.mjs --source <name>[,<name>...] (--query <text> | --url <thread url>...) --run <dir> [--limit <n>] [--subreddit <name>] [--sort <order>] [--time <window>]\n');
     process.exitCode = 2;
     return;
   }
-  const request = { sources: args.source.split(','), query: args.query ?? '', limit: Number(args.limit ?? DEFAULT_LIMIT), runDir: args.run, subreddit: args.subreddit, urls: args.urls };
+  const request = { sources: args.source.split(','), query: args.query ?? '', limit: Number(args.limit ?? DEFAULT_LIMIT), runDir: args.run, subreddit: args.subreddit, sort: args.sort, time: args.time, urls: args.urls };
   const { lines, failed } = await searchMany(request, {});
   for (const line of lines) process.stdout.write(`${line}\n`);
   if (failed) process.exitCode = 1;

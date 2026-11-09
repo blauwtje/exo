@@ -1,3 +1,4 @@
+import { FETCH_UNIT } from '../lib/brief-fetches.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -15,10 +16,10 @@ function folder() {
   return cwd;
 }
 
-test('tokens sum folder and file bytes at 2 bytes per token plus 1600 per fetch', () => {
+test('tokens sum folder and file bytes at 2 bytes per token plus one search.mjs call per fetch', () => {
   const cwd = folder();
   const size = workerSize({ prompt: 'Reads: dir, b.txt\nFetches: 2\nResult: .exo/r.md', cwd });
-  assert.equal(size.tokens, 1500 + 3200);
+  assert.equal(size.tokens, 1500 + 2 * 1600);
   assert.equal(size.budget, 30000);
   assert.deepEqual(size.missing, []);
 });
@@ -184,7 +185,7 @@ test('a single file over budget with no range is denied, alone or beside small r
 test('fields sharing one line are each read, split at the next label', () => {
   const cwd = folder();
   const size = workerSize({ prompt: 'Reads: dir. Fetches: 2. Result: .exo/r.md', cwd });
-  assert.equal(size.tokens, 1000 + 3200);
+  assert.equal(size.tokens, 1000 + 2 * 1600);
   assert.deepEqual(size.missing, []);
   assert.equal(workerSize({ prompt: 'Workers: 3; Reads: b.txt\nResult: .exo/r.md', cwd }).workers, 3);
 });
@@ -202,7 +203,7 @@ test('a list marker, bold or indentation around a label is accepted and another 
 test('Fetches and Workers take their leading whole number and reject a value with none', () => {
   const cwd = folder();
   const size = workerSize({ prompt: 'Reads: none\nFetches: 2 (hard cap 3)\nWorkers: 4 (one per part)\nResult: .exo/r.md', cwd });
-  assert.equal(size.tokens, 3200);
+  assert.equal(size.tokens, 2 * 1600);
   assert.deepEqual(size.invalid, []);
   assert.equal(size.workers, 4);
   assert.deepEqual(workerSize({ prompt: 'Reads: none\nFetches: many (2)\nResult: .exo/r.md', cwd }).invalid, ['Fetches']);
@@ -230,7 +231,7 @@ test('a web research brief with no Fetches line is sized by its distinct URLs, a
   const size = workerSize({ prompt: listed, cwd, requireFetches: true });
   assert.deepEqual(size.invalid, []);
   assert.deepEqual(size.missing.filter((field) => field === 'Fetches'), []);
-  assert.equal(size.tokens, 3200);
+  assert.equal(size.tokens, 2 * 1600);
   const bare = workerSize({ prompt: 'Sources: web\nResult: .exo/r.md', cwd, requireFetches: true });
   assert.deepEqual(bare.invalid, []);
   assert.ok(bare.missing.includes('Fetches'));
@@ -242,4 +243,20 @@ test('a Reads path that does not exist yet is accepted when a Files line names i
   assert.deepEqual(named.unresolved, []);
   const unnamed = workerSize({ prompt: 'Files: lib/other.mjs\nReads: lib/new-thing.mjs\nResult: .exo/r.md', cwd });
   assert.deepEqual(unnamed.unresolved, ['lib/new-thing.mjs']);
+});
+
+test('a page url is sized as one fetch and Fetches counts search.mjs calls only', () => {
+  const cwd = folder();
+  const page = workerSize({ prompt: 'Sources: web\nSee https://example.com/a\nResult: .exo/r.md', cwd, requireFetches: true });
+  assert.equal(page.tokens, 1600);
+  const thread = workerSize({ prompt: 'Sources: web\nSee https://www.reddit.com/r/a/comments/1\nResult: .exo/r.md', cwd, requireFetches: true });
+  assert.equal(thread.tokens, FETCH_UNIT * 1600);
+});
+
+test('a stated Fetches count is one page each on a web brief and one search.mjs call each on a reddit brief', () => {
+  const cwd = folder();
+  const web = workerSize({ prompt: 'Sources: web\nReads: none\nFetches: 4\nResult: .exo/r.md', cwd });
+  assert.equal(web.tokens, 4 * 1600);
+  const reddit = workerSize({ prompt: 'Run node search.mjs --source reddit.\nReads: none\nFetches: 4\nResult: .exo/r.md', cwd });
+  assert.equal(reddit.tokens, 4 * FETCH_UNIT * 1600);
 });

@@ -30,7 +30,7 @@ Build one plan task and report it.
 - After 5 read-only calls in a row (named references aside), edit a `Files:` path next. A brief too thin gets `BLOCKED <missing>`.
 - Read `agent-cases.md` first for `Deferred:` or `Run:` steps, a missing `Proof:` or `Return: one line`, a down service or a failed `--check`.
 - Pick test-first by `test-design.md` `## Risky or routine`.
-- Run only the brief's `Proof:`, `Run:` or `--check`, in the foreground with `timeout: 600000`, logged to `.exo/logs/<name>.log`. Read the summary and failing lines only; no `Monitor` or `sleep`.
+- Run only the brief's `Proof:`, `Run:` or `--check`, in the background, logged to `.exo/logs/<name>.log`, end the turn, and write the result after your own shells have ended. Read the summary and failing lines only; no `Monitor` or `sleep`.
 - A red `Proof:`: read `fix-class.md`, rerun at most once per edit. A timeout or hang is a finding: rerun nothing.
 
 ## Stop

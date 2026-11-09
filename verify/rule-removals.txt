@@ -165,3 +165,4 @@ ff1ecdabc820 file-issues mode deleted: it had no use in 30 days
 cccd5f3ae347 file-issues mode deleted: it had no use in 30 days
 549622901c4c file-issues mode deleted: it had no use in 30 days
 732a3d7567af review-dispatch page deleted: gate-step.mjs prints the same NEXT lines
+577daf447c61 site:reddit.com web search guidance removed: Anthropic web search refuses reddit.com, search.mjs --source reddit replaces it

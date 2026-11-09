@@ -363,7 +363,7 @@ test('imageTokenCap, pdfPageTokens and binaryReadTokens read the catalog and hon
 });
 
 test('a Reddit call refused three times gets three different refusals', () => {
-  const call = { session_id: `reddit-${process.pid}`, tool_name: 'WebSearch', tool_input: { query: 'best editor reddit' } };
+  const call = { session_id: `reddit-${process.pid}`, tool_name: 'WebFetch', tool_input: { url: 'https://www.reddit.com/r/neovim/' } };
   const text = (input) => contextHook(input).hookSpecificOutput.permissionDecisionReason;
   assert.match(text(call), /Reddit blocks this call/);
   assert.match(text(call), /refused once already/);

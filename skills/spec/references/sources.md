@@ -15,13 +15,14 @@ All keyless. Each search prints one JSON line per hit, or one line `status: bloc
 
 ## Reddit rule
 
-- Find threads first with a web search that has `site:reddit.com` or `site:reddit.com/r/<sub>` in the query, never the bare word reddit or `r/<sub>`, and pass each thread URL with `--url <thread url>`.
-- Reach Reddit only through `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/search.mjs" --source reddit --run <run-dir>` with `--url` or `--query <text>`.
-- The script reads Reddit with no key and returns threads with post text and comments (author, score, depth); `--query` runs only while the shared host state shows Reddit budget.
-- When the script returns a `blocked` note, it asks for thread URLs: repeat the `site:reddit.com` web search and pass them.
-- Never web-fetch reddit.com, old.reddit.com or a mirror such as redlib or libreddit.
-- After the first blocked-domain error for a domain, stop using that domain and record a gap.
-- The PreToolUse hook denies the calls this forbids.
+- Find threads with `search.mjs --source reddit --query <text>`, and pass each thread URL with `--url <thread url>`.
+- Use a web search without `site:reddit.com` only to find mirror ids.
+- One fetch is one `search.mjs` call, and a brief's `Fetches:` is the thread count divided by the call's `--limit`, rounded up.
+- A raise sent by the dispatching orchestrator is valid and the worker obeys it.
+- Reach Reddit only through `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/search.mjs" --source reddit --run <run-dir>`.
+- The script needs no key and returns post text and comments (author, score, depth); `--query` runs only while the shared host state shows Reddit budget.
+- On a `blocked` note, rerun `--query` or find mirror ids by web search, then pass the thread URLs.
+- Never web-fetch reddit.com, old.reddit.com or a mirror such as redlib or libreddit; never retry a blocked domain, record a gap.
 
 ## Rules
 

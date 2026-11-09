@@ -35,13 +35,13 @@ test('liveShells is empty for a missing transcript, a foreground-only transcript
   assert.deepEqual(liveShells(transcript([start('t1'), started('t1', 'bg1'), start('t2'), started('t2', 'bg2'), finished('bg1', 'failed'), finished('bg2', 'killed')])), []);
 });
 
-const write = (file, extra) => ({ session_id: 's', agent_id: `shells-${process.pid}-${Math.random().toString(36).slice(2)}`, agent_transcript_path: file, tool_name: 'Write', tool_input: { file_path: '/repo/.exo/run/result.md', content: 'x' }, ...extra });
+const write = (file, extra) => ({ session_id: `s-${process.pid}-${Math.random()}`, agent_id: `shells-${process.pid}-${Math.random().toString(36).slice(2)}`, agent_transcript_path: file, tool_name: 'Write', tool_input: { file_path: '/repo/.exo/run/result.md', content: 'x' }, ...extra });
 
 test('a result-file Write with a live background shell is refused once, naming the shell, then passes', () => {
   const file = transcript([start('t1'), started('t1', 'bg1')]);
   const input = write(file);
   const first = shellStopDecision(input);
-  assert.match(first.deny, /TaskStop/);
+  assert.match(first.deny, /Background shells/);
   assert.match(first.deny, /bg1/);
   assert.equal(shellStopDecision(input), null);
 });
@@ -62,7 +62,7 @@ test('the edit dispatcher runs the shell-stop check and denies the result-file W
   const file = transcript([start('t1'), started('t1', 'bg1')]);
   const output = dispatchEdit(write(file), () => false);
   assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(output.hookSpecificOutput.permissionDecisionReason, /TaskStop/);
+  assert.match(output.hookSpecificOutput.permissionDecisionReason, /Background shells/);
 });
 
 test('shell-stop adds no hook entry', () => {
@@ -93,4 +93,53 @@ test('liveShells lists a foreground Bash command the harness moved to the backgr
     finished('bg2', 'completed')
   ]);
   assert.deepEqual(liveShells(file), ['bg1', 'bg3']);
+});
+
+test('a Bash redirect or tee to the result file is refused once while a shell runs', () => {
+  const file = transcript([start('t1'), started('t1', 'bg1')]);
+  const input = write(file, { tool_name: 'Bash', tool_input: { command: "cat > /repo/.exo/run/result.md <<'EOF'\nx\nEOF" } });
+  assert.match(shellStopDecision(input).deny, /bg1/);
+  assert.equal(shellStopDecision(input), null);
+  const tee = write(file, { tool_name: 'Bash', tool_input: { command: 'echo x | tee -a /repo/.exo/run/result.md' } });
+  assert.ok(shellStopDecision(tee));
+});
+
+test('the Bash dispatcher refuses a redirect to the result file while a shell runs', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const file = transcript([start('t1'), started('t1', 'bg1')]);
+  const input = write(file, { tool_name: 'Bash', cwd: process.cwd(), tool_input: { command: 'cat > /repo/.exo/run/result.md <<EOF\nx\nEOF' } });
+  const output = await dispatchBash(input);
+  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(output.hookSpecificOutput.permissionDecisionReason, /bg1/);
+});
+
+test('a Bash command writing no result file passes while a shell runs', () => {
+  const file = transcript([start('t1'), started('t1', 'bg1')]);
+  assert.equal(shellStopDecision(write(file, { tool_name: 'Bash', tool_input: { command: 'echo x > /tmp/a.txt' } })), null);
+});
+
+test('a scratch .exo write does not spend the refusal before the brief Result path', () => {
+  const brief = { type: 'user', message: { content: 'Task\nResult: .exo/run/result.md' } };
+  const file = transcript([brief, start('t1'), started('t1', 'bg1')]);
+  const scratch = write(file, { tool_input: { file_path: '/repo/.exo/notes.md', content: 'x' } });
+  assert.equal(shellStopDecision(scratch), null);
+  const result = { ...scratch, tool_input: { file_path: '/repo/.exo/run/result.md', content: 'x' } };
+  assert.match(shellStopDecision(result).deny, /bg1/);
+});
+
+test('the shell-stop step spends no refusal under an earlier deny', async () => {
+  const { SHELL_STOP_STEP } = await import('../lib/lazy-steps.mjs');
+  const file = transcript([start('t1'), started('t1', 'bg1')]);
+  const input = write(file, { tool_name: 'Bash', tool_input: { command: 'echo x > /repo/.exo/run/result.md' } });
+  assert.equal(await SHELL_STOP_STEP.run(input, [{ permissionDecision: 'deny' }]), null);
+  const refused = await SHELL_STOP_STEP.run(input, []);
+  assert.match(refused.hookSpecificOutput.permissionDecisionReason, /bg1/);
+});
+
+test('a Result path named only by a tool result is not the brief Result path', () => {
+  const brief = { type: 'user', message: { content: 'Task\nResult: the path above' } };
+  const read = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'r1', content: 'Result: .exo/other-task.md' }] } };
+  const file = transcript([brief, read, start('t1'), started('t1', 'bg1')]);
+  const result = write(file, { tool_input: { file_path: '/repo/.exo/run/answer.md', content: 'x' } });
+  assert.match(shellStopDecision(result).deny, /bg1/);
 });

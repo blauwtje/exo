@@ -54,7 +54,7 @@ test('run-stall-guard escalates three identical land-task calls', async () => {
 });
 
 test('context-limit still escalates a repeated Reddit call', async () => {
-  const input = { session_id: session('reddit'), tool_name: 'WebSearch', tool_input: { query: 'best editor reddit' } };
+  const input = { session_id: session('reddit'), tool_name: 'WebFetch', tool_input: { url: 'https://www.reddit.com/r/neovim/' } };
   const [guard, reminder, stop] = await threeReasons(() => contextHook(input, off));
   assert.match(guard, /Reddit blocks this call/);
   assert.match(reminder, /refused once already/);

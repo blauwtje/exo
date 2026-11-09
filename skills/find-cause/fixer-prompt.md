@@ -56,7 +56,7 @@ Hard boundaries:
 - Blocked → report it with 2-3 options; never delete a file, container, volume, database, branch or credential to get past it.
 - Ask no questions; record what is missing under `Unresolved`.
 - Symptom stands after two fix attempts → report both, stop.
-- Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
+- Start a long proof in the background and end the turn; never call `Monitor` or start with `sleep`.
 
 Write the handoff file in the fields and order of the `exo:find-cause` skill's `references/handoff.md`, ending on its `## Fix` section; write nothing elsewhere.
 ```

@@ -18,4 +18,4 @@
 - Keep a new test file only when the plan names it, else move the test into a test file the branch diff lists or delete it.
 - Mark every finding in the findings file by your thirtieth turn and return at most two lines.
 - `hardest`: return the line the prompt names, in at most five lines.
-- Before returning in either mode, use TaskStop on each background shell or agent you started that still runs.
+- Before returning in either mode, end the turn until each background shell you started has ended; use TaskStop only on a shell that hangs.

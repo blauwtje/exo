@@ -25,22 +25,13 @@ test('the shipped agents all pass', () => {
   assert.equal(outcome(Object.fromEntries(Object.entries(shipped).map(([file, text]) => [file.replace(/\.md$/, ''), text]))).ok, true);
 });
 
-test('an agent with Bash and neither TaskStop nor a ban fails and is named', () => {
-  const result = outcome({ leaky: agent('Read, Bash', '- Run the proof.') });
-  assert.equal(result.ok, false);
-  assert.match(result.detail, /agents\/leaky\.md/);
+test('an agent with Bash and no Monitor passes, as the wait rule is injected into its brief', () => {
+  assert.equal(outcome({ shell: agent('Read, Bash', '- Run the proof.') }).ok, true);
 });
 
-test('an agent with Bash passes when it starts no background shell', () => {
-  assert.equal(outcome({ quiet: agent('Read, Bash', '- Start no background shell or Monitor.') }).ok, true);
-});
-
-test('an agent with Bash and TaskStop passes only when the body tells it to use TaskStop', () => {
-  assert.equal(outcome({ stops: agent('Read, Bash, TaskStop', 'Before returning, use TaskStop on each shell that runs.') }).ok, true);
-  assert.equal(outcome({ silent: agent('Read, Bash, TaskStop', '- Run the proof.') }).ok, false);
-});
-
-test('an agent with Monitor fails without TaskStop even when it says start no background', () => {
+test('an agent with Monitor passes only when it holds TaskStop and its body tells it to use TaskStop', () => {
+  assert.equal(outcome({ stops: agent('Read, Monitor, TaskStop', 'Before returning, use TaskStop on each Monitor.') }).ok, true);
+  assert.equal(outcome({ silent: agent('Read, Monitor, TaskStop', '- Run the proof.') }).ok, false);
   assert.equal(outcome({ watcher: agent('Read, Bash, Monitor', '- Start no background shell.') }).ok, false);
 });
 
