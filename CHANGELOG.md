@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The adhd output style lists each change of a report as its own short bullet with its figures, drops the 3-bullet cap, and no longer names exo files or commands.
 - Codex and OpenCode agents open with one shared outcome-first preamble holding the goal, the done-check, assumptions or BLOCKED, named files only and evidence as command output or `path:line`.
 - Generated Codex agent files no longer write `sandbox_mode`, so each agent inherits the session sandbox.
 - The quality workflow runs its check job on Node 22 and Node 24, so CI proves the Node 22 floor in `package.json`.

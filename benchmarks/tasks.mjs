@@ -41,7 +41,7 @@ export const BREVITY_LINES = {
   'lean-reads': '- Read only what the task needs; filter command output, such as `| tail -n 30` or `| grep`.',
   'small-edit': '- Make the smallest edit, then run each check once to confirm.',
   'lean-args': '- Pass tool calls only needed arguments: no restated file content, comment or description.',
-  'one-sentence': '- Final reply → one sentence of at most 15 words, then stop.',
+  'one-sentence': '- One point → one sentence of at most 15 words, then stop.',
   'no-why': '- Give the what, not the why or an example, except under Show.',
   'leave-out': '- Leave out what the diff or output shows, and caveats the user cannot act on.',
   'on-request': '- Stay on the request, no side topics.'

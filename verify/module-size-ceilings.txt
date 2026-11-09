@@ -45,7 +45,7 @@
 17315 benchmarks/sweep-fixtures.mjs
 11136 benchmarks/sweep-score.mjs
 29219 benchmarks/sweep.mjs
-10561 benchmarks/tasks.mjs
+10559 benchmarks/tasks.mjs
 9790 benchmarks/tbench/readouts.mjs
 15702 benchmarks/value.mjs
 10205 benchmarks/value/add-field-migration/check.mjs
