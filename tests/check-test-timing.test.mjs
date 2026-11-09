@@ -26,6 +26,9 @@ const OFFENDERS = {
   'hrtime clock': asserted('process.hrtime.bigint() - begin < 1_000n'),
   'literal on the left': asserted('4000 > Date.now() - started'),
   'strict assert call': asserted('Date.now() - started < 4000, "slow"', 'assert'),
+  'a named elapsed against a multiple': asserted('elapsed < SLEEP_MS * 4, `took ${elapsed}`'),
+  'a result ms property': asserted('result.ms < 5000, `after ${result.ms}`'),
+  'a bare ms': asserted('ms < 3500'),
   'elapsed held in a variable': `const took = Date.now() - started;\n${asserted('took < 3000')}`
 };
 
@@ -42,6 +45,7 @@ const PASSING = {
   'a clock minus a literal, as a timestamp': asserted('record.updatedAt > Date.now() - 5000'),
   'a comparison with no assert': 'if (Date.now() - started < 5000) retry();',
   'an exempt message': asserted('Date.now() - started < 5000, `timing-ok: the hook has its own hard deadline`'),
+  'a ms count above zero': asserted('lock.ms > 0'),
   'a count compared to a literal': asserted('calls.length < 5000')
 };
 

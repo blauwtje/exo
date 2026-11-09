@@ -4,12 +4,17 @@ import { environmentMs } from '#script-flags';
 import { runDefaults } from '../../../build/scripts/run-config.mjs';
 import { createBucket } from './reddit-bucket.mjs';
 import { BlockedRoute } from './http.mjs';
+import { createHostState } from './host-state.mjs';
+import { ARCHIVE_LABEL, LIVE_LABEL, readArchiveComments } from './reddit-archive.mjs';
 import { commentsAsText, parseComments, parseSearch } from './reddit-text.mjs';
 
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 const WAIT_CAP_MS = 15_000;
 const FALLBACK_RESET_S = 10;
 const FALLBACK = 'pass thread urls from a site:reddit.com web search and never WebFetch reddit.com or a mirror';
+const HOST = 'www.reddit.com';
+class ThreadRateLimited extends BlockedRoute {}
+
 const THREAD_PATH = /\/r\/(\w+)\/comments\/(\w+)/;
 
 const sleepFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,27 +27,42 @@ function settingsOf(context) {
 function createClient(context, settings) {
   const { fetchImpl = fetch, sleep = sleepFor, now = Date.now, env = process.env } = context;
   const capMs = environmentMs('EXO_REDDIT_WAIT_MS', WAIT_CAP_MS, env);
-  const bucket = createBucket({ capacity: settings.capacity, refillMs: settings.refillMs, now, sleep });
+  const hostState = context.stateDir ? createHostState({ dir: context.stateDir, now, env }) : null;
+  const bucket = createBucket({ capacity: settings.capacity, refillMs: settings.refillMs, now, sleep, hostState, host: HOST, maxWaitMs: capMs });
 
   async function waitForReset(response) {
     const seconds = Number.parseFloat(response.headers.get('x-ratelimit-reset'));
     const waitMs = (Number.isFinite(seconds) ? seconds : FALLBACK_RESET_S) * 1000;
-    if (waitMs > capMs) throw new BlockedRoute(`rate limited for ${waitMs} ms, over EXO_REDDIT_WAIT_MS=${capMs}`);
+    if (waitMs > capMs) throw new ThreadRateLimited(`rate limited for ${waitMs} ms, over EXO_REDDIT_WAIT_MS=${capMs}`);
     await sleep(waitMs);
   }
 
+  function recordBudget(response) {
+    const remaining = Number.parseFloat(response.headers.get('x-ratelimit-remaining'));
+    const seconds = Number.parseFloat(response.headers.get('x-ratelimit-reset'));
+    if (!hostState || !Number.isFinite(remaining) || !Number.isFinite(seconds)) return;
+    hostState.recordBudget(HOST, { remaining, resetAt: now() + seconds * 1000 });
+  }
+
   async function get(url, canRetry = true) {
+    if (hostState?.isOpen(HOST)) throw new ThreadRateLimited('host breaker is open after repeated 429 or 5xx');
     await bucket.take();
     const response = await fetchImpl(url, { headers: { 'user-agent': USER_AGENT, accept: 'text/html' }, redirect: 'follow' });
+    hostState?.recordStatus(HOST, response.status);
+    recordBudget(response);
     if (response.status === 429 && canRetry) {
       await waitForReset(response);
       return get(url, false);
     }
+    if (response.status === 429) throw new ThreadRateLimited('HTTP 429');
+    if (response.status >= 500) throw new ThreadRateLimited(`HTTP ${response.status}`);
     if (!response.ok) throw new BlockedRoute(`HTTP ${response.status}`);
     return response.text();
   }
 
-  return { get };
+  const hasBudget = () => !hostState || (hostState.budgetWaitMs(HOST) === 0 && !hostState.isOpen(HOST));
+
+  return { get, hasBudget };
 }
 
 export function searchUrl(text, limit, subreddit) {
@@ -60,6 +80,7 @@ export function splitSubreddit(query, subreddit) {
 
 async function searchHits(client, { query, limit, subreddit }) {
   const target = splitSubreddit(query, subreddit);
+  if (!client.hasBudget()) throw new BlockedRoute(`no Reddit budget for the RSS search; ${FALLBACK}`);
   try {
     const atom = await client.get(searchUrl(target.text, limit, target.subreddit));
     if (!atom.includes('<feed')) throw new BlockedRoute('answer was not an Atom feed');
@@ -77,7 +98,7 @@ function threadFeedUrl(url) {
 
 async function withPost(client, hit) {
   const feedUrl = threadFeedUrl(hit.url);
-  if (!feedUrl) return hit;
+  if (!feedUrl || !client.hasBudget()) return hit;
   try {
     const [post] = parseSearch(await client.get(feedUrl));
     return post ? { ...hit, title: post.title, date: post.date, text: post.text } : hit;
@@ -97,31 +118,52 @@ async function hitsFromUrls(client, urls) {
   return [await withPost(client, first), ...rest];
 }
 
-async function withComments(client, hit) {
-  const match = hit.url.match(THREAD_PATH);
-  if (!match) return hit;
-  const html = await client.get(`https://www.reddit.com/svc/shreddit/comments/r/${match[1]}/t3_${match[2]}`);
-  return { ...hit, comments: commentsAsText(parseComments(html)) };
+async function withArchive(hit, threadId, { context, reason }) {
+  try {
+    const comments = await readArchiveComments(threadId, context);
+    return { ...hit, comments: commentsAsText(comments), signals: ARCHIVE_LABEL };
+  } catch (error) {
+    if (!(error instanceof BlockedRoute)) throw error;
+    return { ...hit, blocked: `${reason}; ${error.message}; ${FALLBACK}`, signals: LIVE_LABEL };
+  }
 }
 
-async function readThreads(client, hits, settings) {
-  const rows = [...hits];
+async function withComments(client, hit, context) {
+  const match = hit.url.match(THREAD_PATH);
+  if (!match) return hit;
+  try {
+    const html = await client.get(`https://www.reddit.com/svc/shreddit/comments/r/${match[1]}/t3_${match[2]}`);
+    return { ...hit, comments: commentsAsText(parseComments(html)), signals: LIVE_LABEL };
+  } catch (error) {
+    if (!(error instanceof ThreadRateLimited)) throw error;
+    return withArchive(hit, match[2], { context, reason: error.message });
+  }
+}
+
+function createWorkQueue(readOne, limit) {
   const state = { next: 0, blocked: '' };
-  const limit = Math.min(settings.threads, hits.length);
 
   async function work() {
     while (state.next < limit && !state.blocked) {
       const index = state.next;
       state.next += 1;
-      try {
-        rows[index] = await withComments(client, hits[index]);
-      } catch (error) {
+      await readOne(index).catch((error) => {
         if (!(error instanceof BlockedRoute)) throw error;
         state.blocked = error.message;
-      }
+      });
     }
   }
 
+  return { state, work };
+}
+
+async function readThreads({ client, context }, hits, settings) {
+  const rows = [...hits];
+  const limit = Math.min(settings.threads, hits.length);
+  const readOne = async (index) => {
+    rows[index] = await withComments(client, hits[index], context);
+  };
+  const { state, work } = createWorkQueue(readOne, limit);
   await Promise.all(Array.from({ length: settings.concurrency }, work));
   if (!state.blocked) return rows;
   const note = `${state.blocked}; ${FALLBACK}`;
@@ -132,6 +174,6 @@ export async function search({ query, limit, subreddit, urls = [] }, context) {
   const settings = settingsOf(context);
   const client = createClient(context, settings);
   const hits = urls.length > 0 ? await hitsFromUrls(client, urls) : await searchHits(client, { query, limit, subreddit });
-  const rows = await readThreads(client, hits, settings);
+  const rows = await readThreads({ client, context }, hits, settings);
   return rows.map(({ text, ...row }) => ({ ...row, description: text }));
 }

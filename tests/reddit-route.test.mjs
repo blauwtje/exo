@@ -34,18 +34,44 @@ test('the context hook emits the deny', () => {
   assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
 });
 
-test('the deny names the script under CLAUDE_PLUGIN_ROOT and the WebSearch fallback', () => {
-  const saved = process.env.CLAUDE_PLUGIN_ROOT;
-  process.env.CLAUDE_PLUGIN_ROOT = '/opt/exo';
-  try {
-    const { deny } = redditRouteDecision(fetchUrl('https://old.reddit.com/r/a'));
-    assert.ok(deny.includes('node "/opt/exo/skills/spec/scripts/search.mjs" --source reddit'));
-    assert.match(deny, /site:reddit\.com/);
-    assert.doesNotMatch(deny, /CLAUDE_SKILL_DIR/);
-    delete process.env.CLAUDE_PLUGIN_ROOT;
-    assert.ok(redditRouteDecision(fetchUrl('https://old.reddit.com/r/a')).deny.includes('node "skills/spec/scripts/search.mjs"'));
-  } finally {
-    if (saved === undefined) delete process.env.CLAUDE_PLUGIN_ROOT;
-    else process.env.CLAUDE_PLUGIN_ROOT = saved;
+test('the deny names the script, its --run argument and the WebSearch fallback', () => {
+  const { deny } = redditRouteDecision(fetchUrl('https://old.reddit.com/r/a'));
+  assert.match(deny, /search\.mjs --source reddit --query <text> --run <run-dir>/);
+  assert.match(deny, /site:reddit\.com/);
+});
+
+test('searches about Reddit as a subject pass', () => {
+  for (const query of ['reddit ipo price', 'reddit api pricing changes', 'what is reddit', 'reddit layoffs news']) {
+    assert.equal(redditRouteDecision(search(query)), null, query);
   }
+});
+
+test('thread-seeking searches are routed', () => {
+  for (const query of ['best editor on reddit', 'neovim reddit', 'reddit thread about vim', 'r/neovim plugins']) {
+    assert.ok(redditRouteDecision(search(query)), query);
+  }
+});
+
+test('every refusal is one line of at most 160 characters', () => {
+  const decisions = [fetchUrl('https://old.reddit.com/r/a'), search('best editor reddit')].map(redditRouteDecision);
+  for (const { deny } of decisions) {
+    assert.ok(deny.length <= 160, String(deny.length));
+    assert.doesNotMatch(deny, /\n/);
+  }
+});
+
+test('a long plugin root leaves the refusal within 160 characters and keeps --run', () => {
+  const saved = process.env.CLAUDE_PLUGIN_ROOT;
+  process.env.CLAUDE_PLUGIN_ROOT = `/home/jane/.claude/plugins/cache/${'x'.repeat(80)}`;
+  const { deny } = redditRouteDecision(search('best editor reddit'));
+  if (saved === undefined) delete process.env.CLAUDE_PLUGIN_ROOT;
+  else process.env.CLAUDE_PLUGIN_ROOT = saved;
+  assert.ok(deny.length <= 160, String(deny.length));
+  assert.match(deny, /--run <run-dir>/);
+});
+
+test('the deny carries a Do instead clause within 160 characters', () => {
+  const { deny } = redditRouteDecision(fetchUrl('https://old.reddit.com/r/a'));
+  assert.match(deny, /Do instead: .*--run <run-dir>/);
+  assert.ok(deny.length <= 160);
 });

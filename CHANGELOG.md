@@ -9,6 +9,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- Research hosts share rate-limit, breaker and blocked-URL state across processes, and a Reddit block stays on its thread, which is read from the Arctic Shift archive.
+- Reddit threads are found by web search first, with RSS only when budget allows.
+- `search.mjs` searches several sources in one call and fetches URLs in a batch, and one orchestrator fans research out to the workers.
+- YouTube search and TikTok captions use exo's own keyless readers.
+- A refused tool call is taught to the session after the first hit, and every hook escalates a repeated refusal through one shared path.
 - `harnesses/capabilities.json` holds each harness's subagents, hooks, efforts and worker count, and a static check fails when an adapter, its hook events or its effort column disagree with it.
 - exo installs into OpenCode with `node install.mjs --harness opencode`, generating `exo-<agent>` subagents and skills from the Claude sources.
 - The Karpathy coding reading (think before coding, simplicity first, surgical changes, goal-driven execution) is a section in `docs/principles/prompt.md`.
@@ -18,7 +23,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The orchestrator hook adds a line that makes a `Workers: 1` part run inline on DeepSeek, so a single-worker part spawns no Agent.
 - The SessionStart context puts the static rule text before the pointers and settings, so the cached prefix stays stable.
 - `exo claude --provider deepseek` prints a notice on stderr when the run starts in peak hours, with the next off-peak time; the peak windows are `deepseekPeak` in run.json `defaults`.
-
+- Every hook refusal passes through `lib/hook-refusal.mjs`, so a repeated identical refused call gets the guard text, then a reminder naming the route, then the stop text; the context and lead hard limits and `run-no-wait` keep one fixed text, and a static check fails when a hook refuses past the shared path.
+- The research orchestrator check drives `hooks/agent-effort.mjs` with dispatch inputs and fails when the worker cap or slice routing breaks, keeping a wording check only for the steps no code decides.
+- The research and source-route docs agree that the lead sends one orchestrator per wave and the orchestrator dispatches the research workers.
+- A repeated refused Reddit call gets the guard text first, a short reminder second and the stop text that records the gap third.
 - The adhd output style lists each change of a report as its own short bullet with its figures, drops the 3-bullet cap, and no longer names exo files or commands.
 - DeepSeek Flash efforts: build (measured, 15/15 pass at low and high, low is cheaper and faster), plus unmeasured lookup, chore, orchestrator, judge at low and fix-review at high, in `kindEfforts`.
 - Codex and OpenCode agents open with one shared outcome-first preamble holding the goal, the done-check, assumptions or BLOCKED, named files only and evidence as command output or `path:line`.
@@ -57,10 +65,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- Tests that asserted a wall-clock limit failed under full-suite load; they now assert the result, and `npm run check` fails a test that bounds a measured elapsed time.
+
+- The Reddit token bucket no longer sleeps past `EXO_REDDIT_WAIT_MS`; a longer wait returns the blocked note at once.
+- A 5xx on one Reddit thread reads only that thread from the archive, and the host breaker trips only after three consecutive failures.
+- `gate.mjs --repair` no longer reports `stale-findings` when a review fixer writes its `fixed` or `reported:` mark in place of the finding's `fix` or `report` word.
+- `run-probes.mjs` fails a fixed finding's `Sweep:` only on a printed line that still ends in its `Quote:`, so a sweep that matches the repaired line or prints unrelated text is no longer a leftover.
 - Sweep records on DeepSeek are priced from usage at the Flash list price with a peak factor, and carry `cacheHitTokens` and `cacheMissTokens`; the replay of 40 kept runs drops from $24.27 to $0.999, matching the sweep's $0.999 at the peak rate.
 - `lib/check-citations.mjs` verifies a Reddit quote from the saved page beside the cites file and fetches only when none is saved.
 - The end-of-run Cost line logs `cacheHitTokens` and `cacheMissTokens` for the run.
-
+- The Reddit refusal stays at most 160 characters for any plugin root and keeps `--run <run-dir>`.
+- Research sources record blocked URLs and the Reddit rate-limit budget, lock the shared host state, and take the breaker cooldown from `EXO_HOST_COOLDOWN_MS`.
+- Search and fetch exit 0 when only some URLs or sources fail, and fetch prints one stdout line and one metrics row per call.
+- The Reddit archive reader handles `more` nodes and a Listing or empty `replies` field.
+- `npm run check` runs the research orchestrator check once instead of twice.
+- A TikTok video with no captions goes to yt-dlp when it is already on PATH, else a gap line says what was not done.
+- YouTube search reports a bad or failed answer as a failure line and is paced by the request gate.
+- The gate review merge counts the `Read:` lines of every report except the overlap one, so a rerun review no longer leaves its files marked unread.
 - The Reddit source script tries `www.reddit.com` after `old.reddit.com` and, when both are blocked, names a `site:reddit.com` web search as the next step.
 - The gate reads the plan's `Baseline:` line from the spec commit, like `Benchmark-override:`, and falls back to the working-tree line when that git read fails.
 - `harvest-cases.mjs` now reads its `--out` value, scrubs the case id and ignores a home shorter than two characters; `mapItems` throws on a non-finite `costUsd` instead of running past the cap; a `flow-large` sweep cell is scored against its six tasks; the nano variant check fails when the hook registry is gone without being declared.

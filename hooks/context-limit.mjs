@@ -5,6 +5,7 @@ import { inSidecall, readHookText } from '#hook-input';
 import { contextDecision, contextFields, persistedReadDecision, readCapDecision, searchCapDecision } from '../lib/context-decisions.mjs';
 import { redditRouteDecision } from '../lib/reddit-route.mjs';
 import { isMain } from '../lib/script-flags.mjs';
+import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { topicNudge } from '../lib/topic-switch.mjs';
@@ -59,13 +60,13 @@ export function contextHook(input, enabled) {
   if (!decision?.deny) recordPredispatchRead(input);
   const fields = withTopicNudge(contextFields(decision), input);
   const output = fields ? { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } } : null;
-  return withReceipt(output, input, fields, undefined, enabled);
+  return rememberRefusal(input, withReceipt(output, input, fields, undefined, enabled), { guard: 'context-limit' });
 }
 
 if (isMain(import.meta.url) && !inSidecall()) {
   try {
-    const output = contextHook(JSON.parse(await readHookText()));
-    if (output) process.stdout.write(`${JSON.stringify(output)}\n`);
+    const input = JSON.parse(await readHookText());
+    writeHookOutput(input, contextHook(input), 'context-limit');
   } catch {
   }
 }

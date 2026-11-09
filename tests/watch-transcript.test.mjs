@@ -697,7 +697,7 @@ test('usage errors exit 2 and --help exits 0 without naming an install line', ()
 test('a non-YouTube url goes to yt-dlp and lands in an extractor-id folder', async () => {
   const info = { ...YT_INFO, id: 'a.b', extractor_key: 'TikTok' };
   await withFakeYtDlp(info, async ({ options }) => {
-    const result = await watchOne('https://www.tiktok.com/@u/video/1', options, async () => { throw new Error('network'); });
+    const result = await watchOne('https://clips.example.com/v/1', options, async () => { throw new Error('network'); });
     assert.equal(result.failure, undefined);
     assert.match(result.line, /^id=tiktok-a-b /);
     assert.equal(readText(path.join(options.out, 'tiktok-a-b', 'transcript.txt')), MANUAL_TEXT);
@@ -720,6 +720,49 @@ test('a non-YouTube url without yt-dlp on PATH names the install line', async ()
   const { options } = scratch();
   const saved = process.env.PATH;
   process.env.PATH = '';
-  const result = await watchOne('https://www.tiktok.com/@u/video/1', options).finally(() => { process.env.PATH = saved; });
-  assert.match(result.failure, /: missing tool: reading www\.tiktok\.com videos needs yt-dlp on PATH \(fetching the release binary failed: network blocked in tests\); install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
+  const result = await watchOne('https://clips.example.com/v/1', options).finally(() => { process.env.PATH = saved; });
+  assert.match(result.failure, /: missing tool: reading clips\.example\.com videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
+});
+
+function sequencedFetch(answers, files = {}) {
+  const clients = [];
+  const inner = fakeFetch({ files }).fn;
+  const fn = async (url, init = {}) => {
+    if (!String(url).includes('/youtubei/v1/player')) return inner(url, init);
+    clients.push(JSON.parse(init.body).context.client.clientName);
+    const answer = answers[Math.min(clients.length, answers.length) - 1];
+    return new Response(JSON.stringify(answer.player ?? {}), { status: answer.status ?? 200 });
+  };
+  return { fn, clients };
+}
+
+const BOT = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
+
+test('a bot check or a 429 is retried once with a second client identity and then read', async () => {
+  for (const first of [{ player: BOT }, { status: 429 }]) {
+    await withoutYtDlp(async ({ options }) => {
+      const manual = track('en');
+      const { fn, clients } = sequencedFetch([first, { player: playerOf({ tracks: [manual] }) }], { [manual.baseUrl]: MANUAL_XML });
+      assert.equal((await watchOne(ID, options, fn)).failure, undefined);
+      assert.equal(clients.length, 2);
+      assert.notEqual(clients[0], clients[1]);
+    });
+  }
+});
+
+test('a block that survives the retry records a gap after exactly two requests', async () => {
+  await withoutYtDlp(async ({ options }) => {
+    const { fn, clients } = sequencedFetch([{ player: BOT }]);
+    const result = await watchOne(ID, options, fn);
+    assert.match(result.failure, /^abc12345678: no transcript: YouTube asks this network to sign in/);
+    assert.equal(clients.length, 2);
+  });
+});
+
+test('an unavailable video is not retried', async () => {
+  await withoutYtDlp(async ({ options }) => {
+    const { fn, clients } = sequencedFetch([{ player: playerOf({ status: 'ERROR', reason: 'This video is unavailable' }) }]);
+    await watchOne(ID, options, fn);
+    assert.equal(clients.length, 1);
+  });
 });

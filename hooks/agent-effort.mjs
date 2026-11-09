@@ -2,13 +2,13 @@
 
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { briefedInput, isolationFields, resultToolsFields, sizeReason } from '../lib/brief-denials.mjs';
-import { orchestratorWorkers } from '../lib/context-limits.mjs';
+import { briefedInput, isolationFields, resultToolsFields, sizeReason, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { kindLabels, pairText, runsPassed } from '../lib/kind-labels.mjs';
 import { isMain } from '../lib/script-flags.mjs';
+import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
@@ -77,13 +77,6 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = bu
   return { permissionDecision: 'deny', permissionDecisionReason: denyReason(rule, detail) };
 }
 
-function workersFields(prompt) {
-  const { workers } = workerSize({ prompt });
-  const limit = orchestratorWorkers();
-  if (workers !== undefined && workers <= limit) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('workers-line', `n from 1 to ${limit}`) };
-}
-
 function missingFields(size, { fromOrchestrator, fetchDocs }) {
   if (fetchDocs) return [];
   if (fromOrchestrator) return size.missing;
@@ -123,8 +116,8 @@ export function agentHook(hookInput, budget, enabled) {
   const output = agentEffort(hookInput, budget, rewrite);
   const fields = mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
-  const receipt = (message, receiptFields) => withReceipt(message, hookInput, receiptFields, ran, enabled);
-  if (fields?.permissionDecision) return receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
+  const receipt = (message, noted) => withReceipt(message, hookInput, noted, ran, enabled);
+  if (fields?.permissionDecision) return rememberRefusal(hookInput, receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields), { guard: 'agent-effort' });
   recordDispatch(hookInput);
   const context = [dispatchRules(hookInput), fields?.additionalContext].filter(Boolean).join('\n\n');
   if (!context) return receipt(output, null);
@@ -134,8 +127,8 @@ export function agentHook(hookInput, budget, enabled) {
 
 if (isMain(import.meta.url) && !inSidecall()) {
   try {
-    const output = agentHook(JSON.parse(await readHookText()));
-    if (output) process.stdout.write(`${JSON.stringify(output)}\n`);
+    const input = JSON.parse(await readHookText());
+    writeHookOutput(input, agentHook(input), 'agent-effort');
   } catch {
   }
 }

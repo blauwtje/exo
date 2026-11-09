@@ -3,23 +3,24 @@
 import process from 'node:process';
 import { UsageError, environmentMs, parseFlags, isMain } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
-import { entryLine } from './listing.mjs';
-import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, YTDLP_INSTALL } from './ytdlp.mjs';
+import { formatDuration } from './format.mjs';
+import { gateRequest } from './request-gate.mjs';
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
-const DAY_MS = 86400000;
-const YOUTUBE = 'https://www.youtube.com/';
+const SEARCH_URL = 'https://www.youtube.com/youtubei/v1/search?prettyPrint=false';
+const WATCH_URL = 'https://www.youtube.com/watch?v=';
+const WEB_CLIENT = { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'en' };
+const UPLOAD_DATE_SORT = 'CAI=';
+const SEARCH_LIMIT = 10;
 
 const SPEC = { query: 'string', limit: 'string', newest: 'boolean', help: 'boolean' };
 const USAGE = [
   'usage: node search.mjs --query <text> [--limit <n>] [--newest]',
-  'Searches YouTube through yt-dlp from metadata alone: nothing is downloaded or written to disk.',
-  'Prints one line per video: id, url, title, upload date, duration, views and views per day, each only when known. --newest sorts by upload date instead of relevance.',
-  'Defaults: --limit 10. EXO_WATCH_YTDLP_MS sets the wait for yt-dlp (default 120000).',
-  'Exit codes: 0 listed; 1 yt-dlp failed, found nothing or is missing (`missing tool`, with its install command); 2 bad usage.',
+  'Searches YouTube through its keyless InnerTube search: nothing is downloaded or written to disk.',
+  'Prints one line per video: id, url, title, channel, duration, and views and upload date when YouTube sends them. --newest sorts by upload date instead of relevance.',
+  'Defaults: --limit 10. EXO_WATCH_FETCH_MS sets the wait for the request (default 30000).',
+  'Exit codes: 0 listed; 1 YouTube refused, answered badly or found nothing; 2 bad usage.',
 ].join('\n');
-
-const SEARCH_LIMIT = 10;
 
 function readOptions(flags) {
   if (flags.query === undefined || flags.query.trim() === '') throw new UsageError('give a --query <text>');
@@ -28,46 +29,56 @@ function readOptions(flags) {
     query: flags.query.trim(),
     limit: flags.limit === undefined ? SEARCH_LIMIT : Number(flags.limit),
     newest: Boolean(flags.newest),
-    ytDlpMs: environmentMs('EXO_WATCH_YTDLP_MS', DEFAULTS.ytDlpMs),
+    fetchMs: environmentMs('EXO_WATCH_FETCH_MS', DEFAULTS.fetchMs),
   };
 }
 
-function searchArgs({ query, limit, newest }) {
-  const prefix = newest ? 'ytsearchdate' : 'ytsearch';
-  return ['--dump-json', '--skip-download', '--no-warnings', '--', `${prefix}${limit}:${query}`];
+function requestBody({ query, newest }) {
+  const body = { context: { client: WEB_CLIENT }, query };
+  if (newest) body.params = UPLOAD_DATE_SORT;
+  return JSON.stringify(body);
 }
 
-function uploadedAt(entry) {
-  const compact = /^(\d{4})(\d{2})(\d{2})$/.exec(String(entry.upload_date ?? ''));
-  if (compact) return Date.UTC(Number(compact[1]), Number(compact[2]) - 1, Number(compact[3]));
-  return Number.isFinite(entry.timestamp) ? entry.timestamp * 1000 : null;
+function videosOf(answer) {
+  const sections = answer?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents ?? [];
+  return sections
+    .flatMap((section) => section.itemSectionRenderer?.contents ?? [])
+    .map((item) => item.videoRenderer)
+    .filter(Boolean);
 }
 
-export function viewsPerDay(entry, now) {
-  const uploaded = uploadedAt(entry);
-  if (uploaded === null || !Number.isFinite(entry.view_count)) return null;
-  const days = Math.max(1, Math.floor((now - uploaded) / DAY_MS));
-  return Math.round(entry.view_count / days);
+function textOf(field) {
+  return field?.simpleText ?? field?.runs?.map((run) => run.text).join('') ?? '';
 }
 
-function rowLine(entry, now) {
-  const rate = viewsPerDay(entry, now);
-  const fields = [entry.id, entryLine(entry, YOUTUBE)];
-  if (rate !== null) fields.push(`${rate} views/day`);
+function durationOf(renderer) {
+  const parts = textOf(renderer.lengthText).split(':').map(Number);
+  if (parts.length === 0 || parts.some(Number.isNaN)) return '';
+  return formatDuration(parts.reduce((total, part) => total * 60 + part, 0));
+}
+
+function rowLine(renderer) {
+  const fields = [renderer.videoId, `${WATCH_URL}${renderer.videoId}`, textOf(renderer.title), textOf(renderer.ownerText), durationOf(renderer), textOf(renderer.viewCountText), textOf(renderer.publishedTimeText)];
   return fields.filter(Boolean).join(' | ');
 }
 
-function entriesOf(stdout) {
-  return stdout.split('\n').filter(Boolean).map((line) => JSON.parse(line));
-}
-
-export async function searchVideos(options, now = Date.now()) {
-  if (!(await ytDlpAvailable(options.ytDlpMs))) return { failure: `missing tool: searching needs yt-dlp on PATH; install it with ${YTDLP_INSTALL}, then rerun` };
-  const run = await runYtDlpWithRuntime(searchArgs(options), options.ytDlpMs);
-  if (run.error && !run.stdout) return { failure: `search failed: ${ytDlpReason(run, options)}` };
-  const entries = entriesOf(run.stdout);
-  if (entries.length === 0) return { failure: `no videos: yt-dlp found none for '${options.query}'` };
-  return { lines: entries.map((entry) => rowLine(entry, now)) };
+export async function searchVideos(options, fetchFn = globalThis.fetch) {
+  const init = {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: requestBody(options),
+    signal: AbortSignal.timeout(options.fetchMs),
+  };
+  await gateRequest(SEARCH_URL);
+  const response = await fetchFn(SEARCH_URL, init).catch((error) => ({ failed: error }));
+  if (response.failed) return { failure: `search failed: ${response.failed.message}` };
+  if (response.status === 429) return { failure: 'search failed: YouTube answered 429, this network is rate limited' };
+  if (!response.ok) return { failure: `search failed: YouTube answered HTTP ${response.status}` };
+  const answer = await response.json().catch(() => null);
+  if (!answer) return { failure: 'search failed: YouTube answered with data that is not JSON' };
+  const renderers = videosOf(answer).slice(0, options.limit);
+  if (renderers.length === 0) return { failure: `no videos: YouTube found none for '${options.query}'` };
+  return { lines: renderers.map(rowLine) };
 }
 
 async function main(argv) {

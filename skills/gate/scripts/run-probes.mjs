@@ -3,17 +3,17 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { fixerMark } from '#fixer-mark';
-import { appendLedger, latestRound, parseFinding } from './merge-reviews.mjs';
+import { appendLedger, collapsed, latestRound, parseFinding } from './merge-reviews.mjs';
 
-const FIELD_LINE = /^\s*(Probe|Class|Sweep|Guard|Before):\s*(.*)$/;
+const FIELD_LINE = /^\s*(Probe|Class|Sweep|Guard|Before|Quote):\s*(.*)$/;
 const TRIAGE_LINE = /^\s*(Cite|Score|Category):/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
 const TURN_CAP = 'turn cap';
 const PREPASS_REASON = 'probe passed before fix';
 const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
-Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails. Prints PASS or FAIL per finding. A fixed finding with Before: pass (its Probe already passed before the fix) whose Probe also passes now prints DEMOTED-PREPASS and appends a declined row. Appends a fixed row to <root>/.exo/review-ledger.jsonl for each passing finding and a declined row, with the reason, for each finding marked reported: <reason> other than turn cap.
-A finding line starts with <file>:<line>; the Probe:, Class:, Sweep:, Guard: and Before: lines under it belong to it, in any order. Any other line ends the finding, so a field line under prose belongs to no finding.
+Reruns the Probe: command and the Sweep: command under each finding marked fixed; a Sweep that prints anything fails, or with a Quote: line under the finding only a printed line ending in that quote fails. Prints PASS or FAIL per finding. A fixed finding with Before: pass (its Probe already passed before the fix) whose Probe also passes now prints DEMOTED-PREPASS and appends a declined row. Appends a fixed row to <root>/.exo/review-ledger.jsonl for each passing finding and a declined row, with the reason, for each finding marked reported: <reason> other than turn cap.
+A finding line starts with <file>:<line>; the Probe:, Class:, Sweep:, Guard:, Before: and Quote: lines under it belong to it, in any order. Any other line ends the finding, so a field line under prose belongs to no finding.
 A finding with a Probe: line under it marked neither fixed nor reported: <reason> prints FAIL probe (unmarked finding); a fixed finding with no Probe: line under it prints FAIL probe (no Probe line). Exits 1 on any FAIL.`;
 
 function findingBlocks(report) {
@@ -34,16 +34,22 @@ function findingBlocks(report) {
 
 export function fixedProbes(report) {
   return findingBlocks(report).flatMap(({ finding, mark, fields }) => {
-    if (mark?.state === 'fixed') return [{ finding, command: fields.Probe || null, sweep: fields.Sweep || null, prepass: fields.Before === 'pass' }];
+    if (mark?.state === 'fixed') return [{ finding, command: fields.Probe || null, sweep: fields.Sweep || null, quote: fields.Quote || null, prepass: fields.Before === 'pass' }];
     if (fields.Probe !== undefined && mark === null) return [{ finding, command: null, unmarked: true }];
     return [];
   });
 }
 
-function runProbe(command, root, { sweep = false } = {}) {
+function leftovers(output, quote) {
+  if (quote === null) return output;
+  const defect = collapsed(quote.replace(/^`(.*)`$/, '$1'));
+  return output.split('\n').filter((hit) => collapsed(hit).endsWith(defect)).join('\n');
+}
+
+function runProbe(command, root, { sweep = false, quote = null } = {}) {
   const result = spawnSync('bash', ['-c', command], { cwd: root, encoding: 'utf8', timeout: PROBE_TIMEOUT_MS });
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim().split('\n').slice(-TAIL_LINES).join('\n');
-  const passed = sweep ? output === '' && !result.error : result.status === 0;
+  const passed = sweep ? leftovers(output, quote) === '' && !result.error : result.status === 0;
   return { passed, output: result.error ? `${result.error.message}\n${output}` : output };
 }
 
@@ -64,7 +70,7 @@ export function runProbes(report, root) {
   let allPassed = true;
   const declined = declinedRows(report);
   if (declined.length > 0) appendLedger(root, declined, latestRound(root));
-  for (const { finding, command, sweep, unmarked, prepass } of fixedProbes(report)) {
+  for (const { finding, command, sweep, quote, unmarked, prepass } of fixedProbes(report)) {
     if (command === null) {
       lines.push(`FAIL probe (${unmarked ? 'unmarked finding: append fixed or reported: <reason>' : 'no Probe line under a fixed finding: add its Probe: line, or mark reported: <reason> when no commit repaired it'}): ${finding}`);
       allPassed = false;
@@ -77,7 +83,7 @@ export function runProbes(report, root) {
       continue;
     }
     lines.push(`${probe.passed ? 'PASS' : 'FAIL'} probe (${command}): ${finding}`);
-    const swept = probe.passed && sweep !== null ? runProbe(sweep, root, { sweep: true }) : null;
+    const swept = probe.passed && sweep !== null ? runProbe(sweep, root, { sweep: true, quote }) : null;
     if (swept !== null) lines.push(`${swept.passed ? 'PASS' : 'FAIL'} probe (sweep ${sweep}): ${finding}`);
     const failed = [probe, swept].filter((result) => result !== null && !result.passed);
     if (failed.length === 0) ledgerState(finding, root, { state: 'fixed' });

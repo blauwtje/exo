@@ -32,7 +32,7 @@ Given a TikTok, YouTube, Instagram or X profile, a YouTube channel or a playlist
    - For a list too long for one call, run it through `lib/map.mjs` `mapItems` with a spend cap.
    - Add `--lang <code>` only when the user names a language, because it picks a listed track, not a machine translation, and names the spoken language on the speech route.
    - Add `--model <ggml file>` only when the user names a whisper model.
-2. The script fetches yt-dlp, and for a video with no captions whisper.node, a ggml model and a decoder, itself. When a line says `missing tool` for yt-dlp after a failed fetch, relay its install command and ask the user before installing anything; relay any other failure line as it is.
+2. The script reads captions itself, runs yt-dlp only when it is already on PATH and does not download it, and transcribes a video with no captions by speech through yt-dlp, fetching whisper.node, a ggml model and a decoder itself. When a line says `missing tool` for yt-dlp, relay its install command and ask the user before installing anything; relay any other failure line as it is.
 3. Exit 1 means every video failed; a partly failed batch exits 0 and ends `batch done=N skipped=N failed=N | <failure> (<ids>)`.
    - When a line says `no transcript`, tell the user that video has no transcript and why, as the line says; offer no other route for it.
    - When a line lists `available:`, ask which language and rerun with `--lang`.

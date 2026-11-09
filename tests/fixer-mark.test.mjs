@@ -67,6 +67,7 @@ test('fixedProbes reads fixed and reported marks from a fixer-written file', () 
     finding: FIXER_WRITTEN.split('\n')[0],
     command: 'grep -c "manager subagent" lib/context-limits.mjs',
     sweep: 'grep -L "manager subagent" lib/context-limits.mjs',
+    quote: null,
     prepass: false
   }]);
 });
@@ -81,4 +82,9 @@ test('unprovenRisks names a reported-unproven concern without its mark', () => {
 test('the fixer prompt shows each Guard form as its own line, not alternatives joined by a bar', () => {
   const forms = [...PROMPT.matchAll(/`(Guard: [^`]*)`/g)].map((match) => match[1]);
   assert.deepEqual(forms, ['Guard: <file>', 'Guard: none (<reason>)']);
+});
+
+test('findingsDigest is unchanged when a mark replaces the action word', () => {
+  const replaced = FIXER_WRITTEN.replaceAll('; fix | fixed', '; fixed').replaceAll('; report | reported:', '; reported:');
+  assert.equal(findingsDigest(replaced), findingsDigest(MERGED));
 });

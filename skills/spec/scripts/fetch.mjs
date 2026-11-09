@@ -7,7 +7,9 @@ import { waybackSnapshot } from './archive.mjs';
 import { BlockedPage, blockReason } from './block-detect.mjs';
 import { renderWithBrowser } from './browser-render.mjs';
 import { khorosFeedText } from './khoros-feed.mjs';
+import { appendMetric } from './search.mjs';
 import { BlockedRoute } from './sources/http.mjs';
+import { createHostState } from './sources/host-state.mjs';
 import { pageRoute } from './sources/pages.mjs';
 import { pageText } from './page-text.mjs';
 import { excludeScratchIfGit, pagePath, recordSource } from './ledger.mjs';
@@ -62,13 +64,18 @@ async function recover(url, context) {
   return null;
 }
 
+function blockedPage(reason, runDir, url) {
+  createHostState({ dir: runDir }).recordBlocked(url);
+  return new BlockedPage(reason, runDir, url);
+}
+
 async function routed(route, row, context, runDir) {
   try {
     return { text: await route.fetchText(row.url, context), via: route.name };
   } catch (error) {
     if (!(error instanceof BlockedRoute)) throw error;
     const reason = /not public/.test(error.message) ? 'not-public' : error.message;
-    throw new BlockedPage(reason, runDir, row.url);
+    throw blockedPage(reason, runDir, row.url);
   }
 }
 
@@ -84,7 +91,7 @@ async function direct(row, context, runDir) {
   if (!reason) return { text: page.text, via: 'fetched' };
   const found = await recover(row.url, context);
   if (found) return found;
-  throw new BlockedPage(reason, runDir, row.url);
+  throw blockedPage(reason, runDir, row.url);
 }
 
 export async function fetchPage(url, options) {
@@ -92,10 +99,10 @@ export async function fetchPage(url, options) {
   const row = recordSource(runDir, { url, fields: {} });
   const file = pagePath(runDir, row.ref);
   if (fs.existsSync(file)) return { ...row, file, cached: true };
-  const context = { fetchImpl, gate, render };
+  const context = { fetchImpl, gate, render, stateDir: runDir };
   const route = pageRoute(url);
   const found = route ? await routed(route, { ...row, url }, context, runDir) : await direct(row, context, runDir);
-  if (found.text === '') throw new BlockedPage('empty', runDir, row.url);
+  if (found.text === '') throw blockedPage('empty', runDir, row.url);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${found.text}\n`);
   return { ...row, file, cached: false, via: found.via };
@@ -107,6 +114,25 @@ export async function savePageText(url, text, options) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${text.trim()}\n`);
   return { ...row, file, cached: false };
+}
+
+async function fetchOne(url, options) {
+  const started = Date.now();
+  try {
+    const page = await fetchPage(url, options);
+    appendMetric(options.runDir, { tool: 'fetch', url, ms: Date.now() - started, ok: true });
+    return `${page.ref}\t${page.url}\t${page.cached ? 'cached' : page.via}`;
+  } catch (error) {
+    appendMetric(options.runDir, { tool: 'fetch', url, ms: Date.now() - started, ok: false, error: error.message });
+    return { failure: `${url}\t${error.message}` };
+  }
+}
+
+export async function fetchMany(urls, options) {
+  const outcomes = await Promise.all(urls.map((url) => fetchOne(url, options)));
+  const lines = outcomes.map((outcome) => outcome.failure ?? outcome);
+  const failures = outcomes.flatMap((outcome) => outcome.failure ?? []);
+  return { lines, failures, failed: failures.length === urls.length };
 }
 
 async function saveFromStdin(runDir, url) {
@@ -123,15 +149,9 @@ async function main(argv) {
     process.exitCode = 2;
     return;
   }
-  for (const url of urls) {
-    try {
-      const page = await fetchPage(url, { runDir });
-      process.stdout.write(`${page.ref}\t${page.url}\t${page.cached ? 'cached' : page.via}\n`);
-    } catch (error) {
-      process.stderr.write(`${url}\t${error.message}\n`);
-      process.exitCode = 1;
-    }
-  }
+  const { lines, failed } = await fetchMany(urls, { runDir });
+  for (const line of lines) process.stdout.write(`${line}\n`);
+  if (failed) process.exitCode = 1;
 }
 
 if (import.meta.url === new URL(process.argv[1] ?? '', 'file:').href) await main(process.argv.slice(2));

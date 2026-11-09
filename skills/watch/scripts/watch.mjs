@@ -7,8 +7,9 @@ import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './y
 import { pickCaptions, availableLanguages, chaptersOf, folderOf } from './ytdlp-info.mjs';
 import { sourceOf } from './video-url.mjs';
 import { withKeyframes } from './keyframes.mjs';
+import { readTikTok, isTikTokUrl, tiktokIdOf } from './tiktok.mjs';
 import { chaptersFromHtml } from './youtube-chapters.mjs';
-import { Unreadable, WATCH_URL, fetchPlayer, fetchWatchPage, checkPlayable, tracksOf, defaultLanguage, pickTrack, languagesOf, readCaptions } from './youtube.mjs';
+import { Unreadable, WATCH_URL, fetchPlayable, fetchWatchPage, tracksOf, defaultLanguage, pickTrack, languagesOf, readCaptions } from './youtube.mjs';
 
 function languageFailure(id, lang, available) {
   return { failure: `${id}: no captions in language '${lang}'; available: ${available.join(', ')}. Rerun with --lang <code> set to one of them.` };
@@ -34,8 +35,7 @@ async function watchBySpeech({ label, url, dir, head, details, why }, options) {
 }
 
 async function watchDirect(id, options, fetchFn) {
-  const [player, page] = await Promise.all([fetchPlayer(id, fetchFn, options), fetchWatchPage(id, fetchFn, options)]);
-  checkPlayable(player);
+  const [player, page] = await Promise.all([fetchPlayable(id, fetchFn, options), fetchWatchPage(id, fetchFn, options)]);
   const tracks = tracksOf(player);
   const head = headOf(id, player.videoDetails?.title);
   const lengthSeconds = Number(player.videoDetails?.lengthSeconds);
@@ -86,6 +86,18 @@ async function watchWithYtDlp({ id, url }, options, why) {
   return writeOutputs({ dir, cues, duration, chapters: chaptersOf(info), head: headOf(folder, info.title), captions: `${picked.source}:${picked.key}` }, options);
 }
 
+async function watchTikTok({ url }, options, fetchFn) {
+  const id = tiktokIdOf(url);
+  const read = await readTikTok(url, options, fetchFn);
+  if (read.gap && (await ytDlpAvailable(options.ytDlpMs))) return watchWithYtDlp({ url }, options);
+  if (read.silent) return noTranscript(id, `${read.gap}; speech-to-text and keyframes were not done: yt-dlp is not on PATH`);
+  if (read.gap) return noTranscript(id, read.gap);
+  const duration = read.duration > 0 ? read.duration : Math.ceil(read.cues.at(-1)?.start ?? 0);
+  const dir = path.join(options.out, id);
+  fs.mkdirSync(dir, { recursive: true });
+  return writeOutputs({ dir, cues: read.cues, duration, chapters: [], head: headOf(id, read.title), captions: 'tiktok:eng' }, options);
+}
+
 async function watchSite({ url, host }, options) {
   const need = await ytDlpNeed();
   if (need) return missingTool(url, `reading ${host} videos needs ${need}, then rerun`);
@@ -93,6 +105,7 @@ async function watchSite({ url, host }, options) {
 }
 
 async function watchSource(source, options, fetchFn) {
+  if (source.url && isTikTokUrl(source.url)) return watchTikTok(source, options, fetchFn);
   if (!source.id) return watchSite(source, options);
   const { id } = source;
   try {

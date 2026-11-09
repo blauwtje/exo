@@ -1,12 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { inRun } from '#run-decision';
 import { codexVerdict } from './pick-reviewer.mjs';
-import { withoutFixerMark } from '#fixer-mark';
+import { findingsDigest } from '#fixer-mark';
+
+export { findingsDigest };
 
 const DEFAULT_BASE = 'main';
 const LEDGER_FILE = '.exo/review-ledger.jsonl';
@@ -30,13 +31,13 @@ const UNREAD = /\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\
 const LOCATION = /^\s*(?:[-*]\s*)?(\S+?):(\d+)(?:-(\d+))?\b(.*)$/;
 const WEIGHT = /\b(defect|concern|question|note|out-of-scope)\b/;
 const READ_LINE = /^\s*Read:\s*(.*)$/;
-const BRANCH_REPORT = /^review-branch/;
+const OVERLAP = /^review-overlap/;
 const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\W*$/;
 
 const USAGE = `Usage: node merge-reviews.mjs --root <checkout> [--base <ref>] --report <file> [--report <file> ...]
 Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line,
-then COVERAGE <read>/<total> and one UNREAD-FILE line per file changed since --base (default main) that no review-branch report lists on a Read: line,
-then each question, note and report finding as a FINDING line, then FINDINGS-SHA <digest> (the findings lines without fixer marks, indented detail and FAIL lines), then a CODEX offer or CODEX none line.
+then COVERAGE <read>/<total> and one UNREAD-FILE line per file changed since --base (default main) that no non-overlap report lists on a Read: line,
+then each question, note and report finding as a FINDING line, then FINDINGS-SHA <digest> (the findings lines without fixer marks, action words, indented detail and FAIL lines), then a CODEX offer or CODEX none line.
 Inside an exo run the CODEX line is none and records no decision.`;
 
 export function minScoreOf(flag, env = process.env) {
@@ -68,11 +69,6 @@ function grouped(entries) {
   for (const { category, score } of entries) best.set(category, Math.max(best.get(category) ?? 0, score));
   const rank = (category) => (category === UNCITED_CATEGORY ? -1 : best.get(category));
   return [...entries].sort((a, b) => rank(b.category) - rank(a.category) || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0) || b.score - a.score || a.order - b.order);
-}
-
-export function findingsDigest(text) {
-  const lines = text.split('\n').filter((line) => line.trim() !== '' && !/^\s/.test(line) && !line.startsWith('FAIL '));
-  return createHash('sha256').update(lines.map(withoutFixerMark).join('\n')).digest('hex');
 }
 
 export function parseFinding(line) {
@@ -167,7 +163,7 @@ function readPaths(text, root) {
 }
 
 function coverageOf(reports, changed, root) {
-  const branch = reports.filter(({ name }) => BRANCH_REPORT.test(name));
+  const branch = reports.filter(({ name }) => !OVERLAP.test(name));
   if (changed === null || branch.length === 0) return null;
   const read = new Set(branch.flatMap(({ text }) => readPaths(text, root)));
   const unread = changed.filter((file) => !read.has(file));
@@ -194,7 +190,7 @@ function hasFixDetails(lines, index, name) {
   return CLASS_LINE.test(lines[index + 2] ?? '') && SWEEP_LINE.test(lines[index + 3] ?? '');
 }
 
-const collapsed = (text) => text.replace(/\s+/g, ' ').trim();
+export const collapsed = (text) => text.replace(/\s+/g, ' ').trim();
 
 function quoteAbsent(quoteLine, file, root) {
   const quote = QUOTE_LINE.exec(quoteLine ?? '')?.[1];

@@ -4,65 +4,98 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import './watch-gate-env.mjs';
-import { tempDir } from './harness.mjs';
-import { viewsPerDay } from '../skills/watch/scripts/search.mjs';
+import { searchVideos } from '../skills/watch/scripts/search.mjs';
 
 const script = path.resolve('skills/watch/scripts/search.mjs');
 
-const FAKE_YT_DLP = `#!${process.execPath}
-const fs = require('node:fs');
-const args = process.argv.slice(2);
-fs.appendFileSync(process.env.FAKE_LOG, JSON.stringify(args) + '\\n');
-if (args.includes('--version')) { console.log('2025.01.01'); process.exit(0); }
-const reply = JSON.parse(fs.readFileSync(process.env.FAKE_REPLY, 'utf8'));
-if (reply.error) { console.error(reply.error); process.exit(1); }
-for (const entry of reply.entries) console.log(JSON.stringify(entry));
-`;
+const RENDERER = {
+  videoRenderer: {
+    videoId: 'abcdefghijk',
+    title: { runs: [{ text: 'Skills tour' }] },
+    ownerText: { runs: [{ text: 'Exo Channel' }] },
+    lengthText: { simpleText: '1:05' },
+  },
+};
 
-const VIDEO = { id: 'abc', webpage_url: 'https://www.youtube.com/watch?v=abc', title: 'Skills tour', timestamp: 1735689600, duration: 65, view_count: 1200 };
-
-function site(reply) {
-  const dir = tempDir('exo-search-');
-  const bin = path.join(dir, 'bin');
-  fs.mkdirSync(bin);
-  fs.writeFileSync(path.join(bin, 'yt-dlp'), FAKE_YT_DLP, { mode: 0o755 });
-  fs.writeFileSync(path.join(dir, 'reply.json'), JSON.stringify(reply));
-  const env = { PATH: bin, CLAUDE_PLUGIN_DATA: process.env.CLAUDE_PLUGIN_DATA, EXO_WATCH_GATE_MS: '0', EXO_WATCH_BACKOFF_MS: '0', FAKE_LOG: path.join(dir, 'calls.log'), FAKE_REPLY: path.join(dir, 'reply.json') };
-  const run = (args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', env });
-  const searchCall = () => fs.readFileSync(env.FAKE_LOG, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)).find((call) => call.includes('--dump-json'));
-  return { run, searchCall };
+function answer(renderers) {
+  return {
+    contents: { twoColumnSearchResultsRenderer: { primaryContents: { sectionListRenderer: { contents: [{ itemSectionRenderer: { contents: renderers } }] } } } },
+  };
 }
 
-test('prints id, url, title, date, duration, views and views per day', () => {
-  const { run } = site({ entries: [VIDEO] });
-  const result = run(['--query', 'skills']);
-  assert.equal(result.status, 0);
-  const line = result.stdout.trimEnd();
-  assert.match(line, /^abc \| https:\/\/www\.youtube\.com\/watch\?v=abc \| Skills tour \| 2025-01-01 \| 0:01:05 \| 1200 views \| \d+ views\/day$/);
+function reply(status, body) {
+  return async (url, init) => {
+    reply.calls.push({ url, init });
+    return { ok: status === 200, status, json: async () => body };
+  };
+}
+reply.calls = [];
+
+const OPTIONS = { query: 'skills', limit: 10, newest: false, fetchMs: 1000 };
+
+test('lists id, url, title, channel and duration from an InnerTube answer', async () => {
+  const result = await searchVideos(OPTIONS, reply(200, answer([{ adSlotRenderer: {} }, RENDERER])));
+  assert.deepEqual(result.lines, ['abcdefghijk | https://www.youtube.com/watch?v=abcdefghijk | Skills tour | Exo Channel | 0:01:05']);
 });
 
-test('asks for ytsearchN, or ytsearchdateN with --newest', () => {
-  const first = site({ entries: [VIDEO] });
-  first.run(['--query', 'skills', '--limit', '3']);
-  assert.equal(first.searchCall().at(-1), 'ytsearch3:skills');
-  const second = site({ entries: [VIDEO] });
-  second.run(['--query', 'skills', '--limit', '2', '--newest']);
-  assert.equal(second.searchCall().at(-1), 'ytsearchdate2:skills');
+test('posts the query keylessly and sorts by upload date with newest', async () => {
+  reply.calls.length = 0;
+  await searchVideos({ ...OPTIONS, newest: true }, reply(200, answer([RENDERER])));
+  const [{ url, init }] = reply.calls;
+  assert.match(url, /youtubei\/v1\/search/);
+  assert.doesNotMatch(url, /key=/);
+  assert.equal(init.method, 'POST');
+  const body = JSON.parse(init.body);
+  assert.equal(body.query, 'skills');
+  assert.equal(body.params, 'CAI=');
 });
 
-test('views per day divides views by whole days since upload, at least one day', () => {
-  const day = 86400;
-  assert.equal(viewsPerDay({ timestamp: 0, view_count: 1000 }, 10 * day * 1000), 100);
-  assert.equal(viewsPerDay({ timestamp: 0, view_count: 50 }, 1000), 50);
-  assert.equal(viewsPerDay({ view_count: 50 }, 1000), null);
+test('stops at the limit', async () => {
+  const many = Array.from({ length: 5 }, () => RENDERER);
+  const result = await searchVideos({ ...OPTIONS, limit: 2 }, reply(200, answer(many)));
+  assert.equal(result.lines.length, 2);
 });
 
-test('reports a search with no videos as a failure', () => {
-  const result = site({ entries: [] }).run(['--query', 'nothing']);
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /no videos/);
+test('reports no videos and a 429 as failures', async () => {
+  const empty = await searchVideos(OPTIONS, reply(200, answer([])));
+  assert.match(empty.failure, /no videos/);
+  const limited = await searchVideos(OPTIONS, reply(429, {}));
+  assert.match(limited.failure, /429/);
 });
 
 test('a missing query is a usage error', () => {
-  assert.equal(site({ entries: [] }).run([]).status, 2);
+  const result = spawnSync(process.execPath, [script], { encoding: 'utf8' });
+  assert.equal(result.status, 2);
+});
+
+test('adds views and upload date when the renderer carries them and omits them otherwise', async () => {
+  const counted = { videoRenderer: { ...RENDERER.videoRenderer, viewCountText: { simpleText: '1,234 views' }, publishedTimeText: { simpleText: '2 days ago' } } };
+  const result = await searchVideos(OPTIONS, reply(200, answer([counted, RENDERER])));
+  assert.deepEqual(result.lines, [
+    'abcdefghijk | https://www.youtube.com/watch?v=abcdefghijk | Skills tour | Exo Channel | 0:01:05 | 1,234 views | 2 days ago',
+    'abcdefghijk | https://www.youtube.com/watch?v=abcdefghijk | Skills tour | Exo Channel | 0:01:05',
+  ]);
+});
+
+test('a non-JSON answer and a network error are failure lines, not throws', async () => {
+  const html = async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError('Unexpected token <'); } });
+  const down = async () => { throw new TypeError('fetch failed'); };
+  assert.match((await searchVideos(OPTIONS, html)).failure, /^search failed: .*not JSON/);
+  assert.match((await searchVideos(OPTIONS, down)).failure, /^search failed: .*fetch failed/);
+});
+
+test('the search POST is paced through the request gate', async () => {
+  await searchVideos(OPTIONS, reply(200, answer([RENDERER])));
+  assert.ok(fs.readdirSync(process.env.CLAUDE_PLUGIN_DATA, { recursive: true }).some((name) => name.endsWith('youtube.com.last')));
+});
+
+test('search with an empty PATH spawns nothing', async () => {
+  const saved = process.env.PATH;
+  process.env.PATH = '';
+  try {
+    const result = await searchVideos(OPTIONS, reply(200, answer([RENDERER])));
+    assert.equal(result.lines.length, 1);
+  } finally {
+    process.env.PATH = saved;
+  }
 });

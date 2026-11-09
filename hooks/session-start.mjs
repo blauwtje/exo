@@ -13,6 +13,7 @@ import { removeSavedOutputs } from '../lib/saved-outputs.mjs';
 import { passUnmatchedGlobs } from '../lib/shell-fixes.mjs';
 import { pointersFor } from '../lib/session-pointers.mjs';
 import { dispatchMarker, readDispatchRules } from './dispatch-rules.mjs';
+import { writeHookOutput } from '../lib/hook-refusal.mjs';
 
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
 const onCodex = currentHost() === 'codex';
@@ -81,4 +82,4 @@ const nodeWarning = Number(process.versions.node.split('.')[0]) < neededNode
 const receiptsRun = onCodex ? undefined : spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'get', 'receipts'], { encoding: 'utf8', cwd: sessionDirectory });
 const receiptsOff = onCodex || (receiptsRun.status === 0 && receiptsRun.stdout.trim() === 'off');
 const systemMessage = `${receiptsOff ? '' : 'exo is on'}${nodeWarning}`.trim();
-process.stdout.write(`${JSON.stringify({ ...(systemMessage && { systemMessage }), hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);
+writeHookOutput(input, { ...(systemMessage && { systemMessage }), hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } }, 'session-start');

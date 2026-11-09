@@ -3,13 +3,16 @@ import { urlOf, YOUTUBE_HOST } from './video-url.mjs';
 
 export const WATCH_URL = 'https://www.youtube.com/watch?v=';
 const PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false';
-const ANDROID_CLIENT = { clientName: 'ANDROID', clientVersion: '20.10.38' };
-const ANDROID_AGENT = `com.google.android.youtube/${ANDROID_CLIENT.clientVersion} (Linux; U; Android 14)`;
+const IDENTITIES = [
+  { client: { clientName: 'ANDROID', clientVersion: '20.10.38' }, agent: 'com.google.android.youtube/20.10.38 (Linux; U; Android 14)' },
+  { client: { clientName: 'IOS', clientVersion: '20.10.4', deviceModel: 'iPhone16,2' }, agent: 'com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3 like Mac OS X)' },
+];
 
 export class Unreadable extends Error {
-  constructor(message, { retryable = false } = {}) {
+  constructor(message, { retryable = false, blocked = false } = {}) {
     super(message);
     this.retryable = retryable;
+    this.blocked = blocked;
   }
 }
 
@@ -21,19 +24,34 @@ function unanswered(url) {
 
 async function request(fetchFn, url, init, options) {
   const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(options.fetchMs) }).catch(unanswered(url));
-  if (response.status === 429) throw new Unreadable('YouTube answered 429, this network is rate limited', { retryable: true });
+  if (response.status === 429) throw new Unreadable('YouTube answered 429, this network is rate limited', { retryable: true, blocked: true });
   if (!response.ok) throw new Unreadable(`YouTube answered HTTP ${response.status}`, { retryable: true });
   return response.text().catch(unanswered(url));
 }
 
-export async function fetchPlayer(id, fetchFn, options) {
-  const body = JSON.stringify({ context: { client: ANDROID_CLIENT }, videoId: id });
-  const headers = { 'content-type': 'application/json', 'user-agent': ANDROID_AGENT };
+export async function fetchPlayer(id, fetchFn, options, identity = IDENTITIES[0]) {
+  const body = JSON.stringify({ context: { client: identity.client }, videoId: id });
+  const headers = { 'content-type': 'application/json', 'user-agent': identity.agent };
   const text = await request(fetchFn, PLAYER_URL, { method: 'POST', headers, body }, options);
   try {
     return JSON.parse(text);
   } catch {
     throw new Unreadable('YouTube sent no player data', { retryable: true });
+  }
+}
+
+async function playableWith(id, fetchFn, options, identity) {
+  const player = await fetchPlayer(id, fetchFn, options, identity);
+  checkPlayable(player);
+  return player;
+}
+
+export async function fetchPlayable(id, fetchFn, options) {
+  try {
+    return await playableWith(id, fetchFn, options, IDENTITIES[0]);
+  } catch (error) {
+    if (!error.blocked) throw error;
+    return playableWith(id, fetchFn, options, IDENTITIES[1]);
   }
 }
 
@@ -44,7 +62,7 @@ export async function fetchWatchPage(id, fetchFn, options) {
 export function checkPlayable(player) {
   const { status, reason = '' } = player.playabilityStatus ?? {};
   if (status === 'OK') return;
-  if (status === 'LOGIN_REQUIRED' && /bot/i.test(reason)) throw new Unreadable('YouTube asks this network to sign in and prove it is not a bot', { retryable: true });
+  if (status === 'LOGIN_REQUIRED' && /bot/i.test(reason)) throw new Unreadable('YouTube asks this network to sign in and prove it is not a bot', { retryable: true, blocked: true });
   const cannotPlay = `the video cannot be played (${status ?? 'no status'}${reason ? `: ${reason}` : ''})`;
   throw new Unreadable(cannotPlay, { retryable: status === 'UNPLAYABLE' });
 }

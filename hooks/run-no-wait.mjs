@@ -9,6 +9,7 @@ import { inSidecall, readHookText } from '#hook-input';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { inRun } from '../lib/run-decision.mjs';
 import { isMain } from '../lib/script-flags.mjs';
+import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 
 export const BLOCK_LIMIT = 2;
 
@@ -63,13 +64,13 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
   }
   const record = `record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to ${path.join(dir, 'decisions.md')}`;
   const why = denyReason(count + 1 >= BLOCK_LIMIT ? 'run-no-wait-final' : 'run-no-wait', record);
-  if (asking) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } };
-  return atLimit ? null : { decision: 'block', reason: why };
+  if (asking) return rememberRefusal(input, { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } }, { guard: 'run-no-wait' });
+  return atLimit ? null : rememberRefusal(input, { decision: 'block', reason: why }, { guard: 'run-no-wait' });
 }
 
 if (isMain(import.meta.url) && !inSidecall()) {
   try {
-    const output = runNoWait(JSON.parse(await readHookText()));
-    if (output) process.stdout.write(`${JSON.stringify(output)}\n`);
+    const input = JSON.parse(await readHookText());
+    writeHookOutput(input, runNoWait(input), 'run-no-wait');
   } catch { }
 }

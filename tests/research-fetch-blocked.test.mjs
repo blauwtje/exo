@@ -118,7 +118,7 @@ test('a private Sheet is blocked as not-public', async () => {
   );
 });
 
-test('the CLI prints the blocked line, exits 1 and writes no page', () => {
+test('the CLI prints the blocked line on stdout, exits 1 when every url failed and writes no page', () => {
   const runDir = runFolder();
   const script = path.resolve('skills/spec/scripts/fetch.mjs');
   const stub = path.join(runDir, 'stub.mjs');
@@ -126,6 +126,40 @@ test('the CLI prints the blocked line, exits 1 and writes no page', () => {
   fs.writeFileSync(stub, `globalThis.fetch = async () => new Response(${body}, { status: 403, headers: { server: 'cloudflare', 'content-type': 'text/html' } });\n`);
   const result = spawnSync(process.execPath, ['--import', stub, script, runDir, 'https://example.com/a'], { encoding: 'utf8', timeout: 50000 });
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /^https:\/\/example\.com\/a\tstatus: blocked challenge; open it in your browser and save the text with: node fetch\.mjs --save .+ https:\/\/example\.com\/a < text/m);
+  assert.match(result.stdout, /^https:\/\/example\.com\/a\tstatus: blocked challenge; open it in your browser and save the text with: node fetch\.mjs --save .+ https:\/\/example\.com\/a < text/m);
   assert.equal(fs.existsSync(pagePath(runDir, 'S1')), false);
+});
+
+test('getText refuses a url already memoed as blocked without a network call', async () => {
+  const { getText, BlockedRoute } = await import('../skills/spec/scripts/sources/http.mjs');
+  const { createHostState } = await import('../skills/spec/scripts/sources/host-state.mjs');
+  const stateDir = runFolder();
+  createHostState({ dir: stateDir }).recordBlocked('https://example.com/a');
+  const calls = [];
+  const fetchImpl = router([['example.com', 200, REAL]], calls);
+  await assert.rejects(getText('https://example.com/a', { fetchImpl, gate, stateDir }), BlockedRoute);
+  assert.equal(calls.length, 0);
+});
+
+test('a blocked page is memoed so the run dir remembers it', async () => {
+  const { createHostState } = await import('../skills/spec/scripts/sources/host-state.mjs');
+  const runDir = runFolder();
+  const fetchImpl = router([['example.com', 403, CHALLENGE, { ...html, server: 'cloudflare' }]]);
+  await assert.rejects(attempt('https://example.com/a', fetchImpl, { runDir }), (error) => error.reason === 'challenge');
+  assert.equal(createHostState({ dir: runDir }).isBlocked('https://example.com/a'), true);
+});
+
+test('the CLI fetching 3 urls with 1 blocked prints 3 stdout lines and exits 0', () => {
+  const runDir = runFolder();
+  const script = path.resolve('skills/spec/scripts/fetch.mjs');
+  const stub = path.join(runDir, 'stub.mjs');
+  const body = JSON.stringify(CHALLENGE);
+  const real = JSON.stringify(REAL);
+  fs.writeFileSync(stub, `globalThis.fetch = async (url) => String(url).endsWith('/b') ? new Response(${body}, { status: 403, headers: { server: 'cloudflare', 'content-type': 'text/html' } }) : new Response(${real}, { headers: { 'content-type': 'text/html' } });\n`);
+  const urls = ['https://one.example.com/a', 'https://two.example.com/b', 'https://three.example.com/c'];
+  const result = spawnSync(process.execPath, ['--import', stub, script, runDir, ...urls], { encoding: 'utf8', timeout: 50000 });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.trim().split('\n').length, 3);
+  assert.match(result.stdout, /two\.example\.com\/b\tstatus: blocked challenge/);
+  assert.equal(result.stderr, '');
 });

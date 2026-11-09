@@ -78,7 +78,7 @@
 9031 skills/ship/scripts/repo-fields.mjs
 9987 skills/find-cause/scripts/bisect.mjs
 9263 skills/gate/scripts/gate-run.mjs
-17743 skills/gate/scripts/merge-reviews.mjs
+17481 skills/gate/scripts/merge-reviews.mjs
 19607 skills/build/scripts/round.mjs
 12270 skills/build/scripts/setup.mjs
 8567 skills/ship/scripts/pr-body.mjs

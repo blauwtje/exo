@@ -6,6 +6,7 @@ import test from 'node:test';
 import { readSources } from '../skills/spec/scripts/ledger.mjs';
 import { searchSource } from '../skills/spec/scripts/search.mjs';
 import { BlockedRoute } from '../skills/spec/scripts/sources/http.mjs';
+import { createHostState } from '../skills/spec/scripts/sources/host-state.mjs';
 import { createBucket } from '../skills/spec/scripts/sources/reddit-bucket.mjs';
 import { parseComments, parseSearch } from '../skills/spec/scripts/sources/reddit-text.mjs';
 
@@ -184,12 +185,52 @@ test('a 429 waits for x-ratelimit-reset and retries once', async () => {
   assert.equal(row.blocked, undefined);
 });
 
-test('a 429 past the wait cap returns what it has with a blocked note', async () => {
-  const plan = [{}, { status: 429, headers: { 'x-ratelimit-reset': '90' } }];
+const ARCHIVE_TREE = JSON.stringify({ data: [{ kind: 't1', data: { author: 'carol_example', score: 4, body: 'Archived top', replies: [{ kind: 't1', data: { author: 'dave_example', score: 1, body: 'Archived reply' } }] } }, { kind: 'more', data: { children: ['x1'], count: 1 } }, { kind: 't1', data: { author: 'erin_example', score: 2, body: 'Listing parent', replies: { kind: 'Listing', data: { children: [{ kind: 't1', data: { author: 'finn_example', score: 3, body: 'Listing child', replies: '' } }, { kind: 'more', data: { children: ['x2'] } }] } } } }] });
+const TWO_THREADS = ['abc123', 'def456'].map((id) => `https://www.reddit.com/r/sub_one/comments/${id}/slug/`);
+const twoThreadDefaults = { threads: 2, concurrency: 1, capacity: 100, refillMs: 1 };
+
+function limitedFirstThread(env, answer = { status: 429, headers: { 'x-ratelimit-reset': '90' } }) {
+  const base = redditContext({ env, defaults: twoThreadDefaults });
+  const state = { limited: false };
+  const fetchImpl = async (url, init) => {
+    if (url.includes('arctic-shift')) return new Response(ARCHIVE_TREE);
+    if (!url.includes('t3_abc123') || state.limited) return base.fetchImpl(url, init);
+    state.limited = true;
+    return new Response('', answer);
+  };
+  return { ...base, fetchImpl };
+}
+
+test('a 429 past the wait cap reads only that thread from the archive and names it', async () => {
+  const context = limitedFirstThread({ EXO_REDDIT_WAIT_MS: '5000' });
+  const rows = await searchSource(redditRequest({ urls: TWO_THREADS }), context);
+  const archived = rows.find((row) => row.url.includes('abc123'));
+  const live = rows.find((row) => row.url.includes('def456'));
+  assert.match(archived.comments, /carol_example \(score 4, depth 0\): Archived top/);
+  assert.match(archived.comments, /dave_example \(score 1, depth 1\)/);
+  assert.match(archived.comments, /finn_example \(score 3, depth 1\): Listing child/);
+  assert.match(archived.signals, /Arctic Shift.*24-48 h/);
+  assert.equal(archived.blocked, undefined);
+  assert.match(live.comments, /alice_example/);
+  assert.equal(live.signals, 'live Reddit');
+});
+
+test('a 503 on one thread reads only that thread from the archive', async () => {
+  const context = limitedFirstThread({}, { status: 503 });
+  const rows = await searchSource(redditRequest({ urls: TWO_THREADS }), context);
+  const archived = rows.find((row) => row.url.includes('abc123'));
+  const live = rows.find((row) => row.url.includes('def456'));
+  assert.match(archived.signals, /Arctic Shift/);
+  assert.equal(live.signals, 'live Reddit');
+  assert.equal(live.blocked, undefined);
+});
+
+test('a 429 with an unreadable archive keeps the hit with a blocked note', async () => {
+  const plan = [{}, { status: 429, headers: { 'x-ratelimit-reset': '90' } }, { body: 'nope' }];
   const context = redditContext({ plan, env: { EXO_REDDIT_WAIT_MS: '5000' }, defaults: oneThread });
   const [row] = await searchSource(redditRequest(), context);
   assert.equal(row.title, 'First & post');
-  assert.match(row.blocked, /EXO_REDDIT_WAIT_MS/);
+  assert.match(row.blocked, /EXO_REDDIT_WAIT_MS.*Arctic Shift.*not JSON/);
 });
 
 test('a 403 on a thread returns the hits with a blocked note naming the web search fallback', async () => {
@@ -229,4 +270,115 @@ test('an answer without its result list is a blocked route', async () => {
     const request = { source, query: 'x', limit: 1, runDir: runFolder() };
     await assert.rejects(searchSource(request, answering('{"error":{}}')), BlockedRoute, source);
   }
+});
+
+function exhaustedBudget(context) {
+  const stateDir = runFolder();
+  createHostState({ dir: stateDir, now: context.now }).recordBudget('www.reddit.com', { remaining: 0, resetAt: 10_000 });
+  return { ...context, stateDir };
+}
+
+test('reddit rss search is skipped when host state shows no budget', async () => {
+  const calls = [];
+  const context = exhaustedBudget(redditContext({ calls }));
+  await assert.rejects(searchSource(redditRequest(), context), /no reddit budget.*site:reddit\.com/i);
+  assert.equal(calls.length, 0);
+});
+
+test('thread urls skip the rss post feed when host state shows no budget', async () => {
+  const calls = [];
+  const urls = ['https://www.reddit.com/r/sub_one/comments/abc123/first_post/'];
+  const context = exhaustedBudget(redditContext({ calls, defaults: oneThread }));
+  const [row] = await searchSource(redditRequest({ urls }), context);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /svc\/shreddit\/comments\/r\/sub_one\/t3_abc123$/);
+  assert.match(row.comments, /bob_example/);
+});
+
+test('searchMany runs sources together, prints a line per failure and logs one metric per call', async () => {
+  const { searchMany } = await import('../skills/spec/scripts/search.mjs');
+  const runDir = runFolder();
+  const request = { query: 'agents', limit: 1, runDir };
+  const context = answering(fixture('arxiv.xml'));
+  const { lines, failed } = await searchMany({ ...request, sources: ['arxiv', 'nope'] }, context);
+  assert.equal(failed, false);
+  assert.equal(JSON.parse(lines[0]).title, 'A survey of agents');
+  assert.match(lines[1], /^status: failed nope unknown source nope/);
+  const metrics = fs.readFileSync(path.join(runDir, 'metrics.jsonl'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  assert.deepEqual(metrics.map((row) => [row.tool, row.source, row.ok]).sort(), [['search', 'arxiv', true], ['search', 'nope', false]]);
+});
+
+test('reddit failures in separate searches open the breaker through the run state file', async () => {
+  const runDir = runFolder();
+  const failing = { plan: Array.from({ length: 3 }, () => ({ status: 500 })) };
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await assert.rejects(searchSource(redditRequest({ runDir }), redditContext({ ...failing, calls: [] })), BlockedRoute);
+  }
+  const calls = [];
+  await assert.rejects(searchSource(redditRequest({ runDir }), redditContext({ calls })), /no Reddit budget/);
+  assert.equal(calls.length, 0);
+});
+
+test('a 429 on thread 2 of 3 returns all three threads and the other two keep comments', async () => {
+  const urls = ['abc123', 'def456', 'ghi789'].map((id) => `https://www.reddit.com/r/sub_one/comments/${id}/slug/`);
+  const base = redditContext({ env: { EXO_REDDIT_WAIT_MS: '5000' }, defaults: { threads: 3, concurrency: 1, capacity: 100, refillMs: 1 } });
+  const fetchImpl = async (url, init) => {
+    if (url.includes('arctic-shift')) return new Response('nope');
+    if (url.includes('t3_def456')) return new Response('', { status: 429, headers: { 'x-ratelimit-reset': '90' } });
+    return base.fetchImpl(url, init);
+  };
+  const rows = await searchSource(redditRequest({ urls }), { ...base, fetchImpl });
+  assert.equal(rows.length, 3);
+  assert.match(rows[0].comments, /alice_example/);
+  assert.ok(rows[1].blocked);
+  assert.match(rows[2].comments, /alice_example/);
+});
+
+test('three back-to-back reddit searches in one run dir all return threads', async () => {
+  const runDir = runFolder();
+  const defaults = { threads: 2, concurrency: 1, capacity: 100, refillMs: 1 };
+  for (let round = 0; round < 3; round += 1) {
+    const rows = await searchSource(redditRequest({ runDir }), redditContext({ defaults }));
+    assert.equal(rows.length, 2);
+    assert.match(rows[0].comments, /alice_example/);
+  }
+});
+
+test('reddit rate limit headers are recorded as the shared budget', async () => {
+  const stateDir = runFolder();
+  const plan = [{}, { headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '30' } }];
+  const context = { ...redditContext({ plan, defaults: oneThread }), stateDir };
+  await searchSource(redditRequest(), context);
+  assert.equal(createHostState({ dir: stateDir, now: () => 0 }).budgetWaitMs('www.reddit.com'), 30000);
+});
+
+test('an open breaker sends a thread read to the archive without a live call', async () => {
+  const stateDir = runFolder();
+  const hostState = createHostState({ dir: stateDir, now: () => 0 });
+  for (let attempt = 0; attempt < 3; attempt += 1) hostState.recordStatus('www.reddit.com', 500);
+  const calls = [];
+  const base = redditContext({ calls, defaults: oneThread });
+  const fetchImpl = async (url, init) => (url.includes('arctic-shift') ? new Response(ARCHIVE_TREE) : base.fetchImpl(url, init));
+  const urls = ['https://www.reddit.com/r/sub_one/comments/abc123/slug/'];
+  const [row] = await searchSource(redditRequest({ urls }), { ...base, fetchImpl, stateDir });
+  assert.equal(calls.length, 0);
+  assert.match(row.comments, /carol_example/);
+});
+
+test('archive nodes of kind more and replies as a Listing or empty text do not crash', async () => {
+  const { readArchiveComments } = await import('../skills/spec/scripts/sources/reddit-archive.mjs');
+  const comments = await readArchiveComments('abc123', { fetchImpl: async () => new Response(ARCHIVE_TREE) });
+  assert.deepEqual(comments.map((comment) => comment.author), ['carol_example', 'dave_example', 'erin_example', 'finn_example']);
+});
+
+test('the archive read records a 5xx in the shared host state', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createHostState } = await import('../skills/spec/scripts/sources/host-state.mjs');
+  const { readArchiveComments } = await import('../skills/spec/scripts/sources/reddit-archive.mjs');
+  const stateDir = mkdtempSync(join(tmpdir(), 'archive-state-'));
+  const fetchImpl = async () => new Response('x', { status: 500 });
+  for (let i = 0; i < 3; i++) await readArchiveComments('abc123', { fetchImpl, stateDir }).catch(() => {});
+  assert.equal(createHostState({ dir: stateDir }).isOpen('arctic-shift.photon-reddit.com'), true);
 });

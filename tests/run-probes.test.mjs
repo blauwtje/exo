@@ -157,3 +157,15 @@ test('a Before line after the Cite, Score and Category lines still demotes', asy
   assert.equal(result.code, 0);
   assert.match(result.stdout, /^DEMOTED-PREPASS: a\.mjs:1/m);
 });
+
+test('a fixed finding whose sweep prints only changed code, not its Quote, passes', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: true\n  Class: broken\n  Sweep: echo "1:  call(url, { a, b, c })"\n  Quote: call(url, { a, b })\n');
+  assert.equal(result.code, 0, result.stdout);
+  assert.match(result.stdout, /^PASS probe \(sweep [^\n]*\): a\.mjs:1/m);
+});
+
+test('a fixed finding whose sweep still prints its Quote fails', async () => {
+  const result = await probes('a.mjs:1; fix; broken; fix; fixed\n  Probe: true\n  Class: broken\n  Sweep: echo "9:  call(url, { a, b })"\n  Quote: call(url, { a, b })\n');
+  assert.equal(result.code, 1);
+  assert.match(result.stdout, /^FAIL probe \(sweep [^\n]*\): a\.mjs:1/m);
+});

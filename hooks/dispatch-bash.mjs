@@ -14,6 +14,7 @@ import { denyReason } from '../lib/guard-rules.mjs';
 import { fixShellFor } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
+import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
 
 const contextStep = (name, decide) => ({
@@ -140,7 +141,7 @@ export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, 
     }
   }
   const { verdict, output } = mergeOutputs(outputs);
-  return withReceipt(output, hookInput, verdict, undefined, enabled);
+  return rememberRefusal(hookInput, withReceipt(output, hookInput, verdict, undefined, enabled), { guard: 'dispatch-bash' });
 }
 
 function mergeOutputs(outputs) {
@@ -158,8 +159,8 @@ function mergeOutputs(outputs) {
 if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const text = await readHookText();
-    const output = text.trim() === '' ? null : await dispatchBash(JSON.parse(text));
-    if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
+    const input = text.trim() === '' ? null : JSON.parse(text);
+    writeHookOutput(input, input && await dispatchBash(input), 'dispatch-bash');
   } catch {
   }
 }

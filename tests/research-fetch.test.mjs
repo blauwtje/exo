@@ -85,3 +85,16 @@ test('fetch.mjs --save stores transcript text from stdin as a page', () => {
   const [ref] = run.stdout.split('\t');
   assert.equal(fs.readFileSync(path.join(runDir, 'pages', `${ref}.txt`), 'utf8'), 'spoken words\n');
 });
+
+test('fetchMany fetches urls together, reports each failure and logs one metric per call', async () => {
+  const { fetchMany } = await import('../skills/spec/scripts/fetch.mjs');
+  const runDir = runFolder();
+  const fetchImpl = async (url) => new Response('<p>ok</p>', { status: url.endsWith('/bad') ? 404 : 200, headers: { 'content-type': 'text/html' } });
+  const urls = ['https://example.com/good', 'https://example.com/bad'];
+  const { lines, failed } = await fetchMany(urls, { runDir, fetchImpl, gate: { ...gate, dir: runFolder() } });
+  assert.equal(failed, false);
+  assert.match(lines[0], /^\S+\thttps:\/\/example\.com\/good\tfetched$/);
+  assert.match(lines[1], /^https:\/\/example\.com\/bad\tHTTP 404/);
+  const metrics = fs.readFileSync(path.join(runDir, 'metrics.jsonl'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  assert.deepEqual(metrics.map((row) => [row.tool, row.ok]).sort(), [['fetch', false], ['fetch', true]]);
+});

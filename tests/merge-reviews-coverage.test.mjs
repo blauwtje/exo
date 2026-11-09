@@ -24,6 +24,19 @@ test('Read: lines of several branch shards add up to full coverage', () => {
   assert.deepEqual(merged.coverage, { read: 4, total: 4, unread: [] });
 });
 
+test('a rerun report under its own name covers the files the branch review left unread', () => {
+  const rerun = { name: 'review-unread', text: 'CLEAN\n\nRead: .exo/review-input.md (Goal, Red lines), c.js, d.js\nUnread: none\n' };
+  const merged = mergeReviews([report('review-branch', 'a.js', 'b.js'), rerun], new Map(), FILES);
+  assert.deepEqual(merged.coverage, { read: 4, total: 4, unread: [] });
+  assert.equal(merged.verdict, 'CLEAN');
+});
+
+test('a lens report that skipped a changed file still leaves it unread', () => {
+  const merged = mergeReviews([report('review-branch', 'a.js', 'b.js'), report('review-principles', 'c.js')], new Map(), FILES);
+  assert.deepEqual(merged.coverage, { read: 3, total: 4, unread: ['d.js'] });
+  assert.equal(merged.verdict, 'BLOCKED');
+});
+
 test('a branch report with no Read: line leaves every changed file unread', () => {
   const merged = mergeReviews([{ name: 'review-branch', text: 'CLEAN\n' }], new Map(), FILES);
   assert.equal(merged.verdict, 'BLOCKED');

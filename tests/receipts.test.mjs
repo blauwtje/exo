@@ -27,7 +27,8 @@ function transcript(tokens) {
 }
 
 // A subagent over the hard limit is denied by the context hook for every tool but Write and Edit; the edit hook denies a result-file Write while a background shell runs.
-const refused = (tool, toolInput = {}) => ({ session_id: 'receipts', agent_id: 'a1', agent_transcript_path: transcript(10_000_000), tool_name: tool, tool_input: toolInput });
+let refusedCalls = 0;
+const refused = (tool, toolInput = {}) => ({ session_id: `receipts-${process.pid}-${Date.now()}-${refusedCalls++}`, agent_id: 'a1', agent_transcript_path: transcript(10_000_000), tool_name: tool, tool_input: toolInput });
 const shellEntries = [
   { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'ls', run_in_background: true } }] } },
   { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: 'Command running in background with ID: bg1. Output is being written to: /tmp/bg1.output.' }] } }
@@ -35,7 +36,7 @@ const shellEntries = [
 const shellTranscript = path.join(WORK, 'shells.jsonl');
 fs.writeFileSync(shellTranscript, shellEntries.map((entry) => JSON.stringify(entry)).join('\n'));
 let editCalls = 0;
-const refusedEdit = () => ({ session_id: 'receipts', agent_id: `receipts-edit-${process.pid}-${Date.now()}-${editCalls++}`, agent_transcript_path: shellTranscript, tool_name: 'Write', tool_input: { file_path: '/x/.exo/r.md' } });
+const refusedEdit = () => ({ session_id: `receipts-edit-${process.pid}-${Date.now()}-${editCalls}`, agent_id: `receipts-edit-${process.pid}-${Date.now()}-${editCalls++}`, agent_transcript_path: shellTranscript, tool_name: 'Write', tool_input: { file_path: '/x/.exo/r.md' } });
 const skill = (name) => ({ tool_name: 'Skill', tool_input: { skill: name } });
 
 test('an exo skill start gives one user-only line and no model context', () => {

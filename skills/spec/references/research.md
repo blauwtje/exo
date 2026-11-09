@@ -13,10 +13,10 @@ Answer a question from many sources with a report a reader can check. Produce a 
 2. **Follow up** in the same folder when the user names the slug or the newest folder fits. Read the report there and search only its open gaps; a folder gone after a week means a fresh start, so say so.
 3. **Pick the effort** before any fan-out, from the question or the user's word.
    - quick: you alone, 3-10 tool calls, no workers.
-   - standard: 2-4 workers, 10-15 calls each.
-   - deep: at most 6 workers in at most 2 waves, the second only for gaps.
+   - standard: 2-4 workers in one orchestrator, 10-15 calls each.
+   - deep: 4 workers in a first orchestrator, then at most 4 more in a second, only for gaps.
 4. **Plan** one sub-question per worker with the source routes.
-5. **Dispatch** the `exo:research-worker` agent per sub-question, all in one message, with the brief below. Workers spawn no agents.
+5. **Dispatch** exactly one `exo:orchestrator` per wave from the lead, with `Workers: 4` or fewer and the brief below; the orchestrator dispatches the `exo:research-worker` agents, one per sub-question, all in one message. The lead sends no worker itself, and workers spawn no agents.
 6. **Collect** the indexes. Read the claims and sources files in the folder, not page text.
 7. **Write** the report in the report shape.
 8. **Verify** with `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/verify.mjs" .exo/research/<slug>`, then dispatch the `exo:review-branch` agent with `exo-kind: judge` as the verification rules say. Each output line names a failing footnote; repair only those sentences, one round.

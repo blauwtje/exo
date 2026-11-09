@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
+import { contextHook } from '../hooks/context-limit.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
@@ -359,4 +360,12 @@ test('imageTokenCap, pdfPageTokens and binaryReadTokens read the catalog and hon
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { imageTokenCap: 900, pdfPageTokens: 2000, binaryReadTokens: 100 } }));
   assert.deepEqual([imageTokenCap(home), pdfPageTokens(home), binaryReadTokens(home)], [900, 2000, 100]);
+});
+
+test('a Reddit call refused three times gets three different refusals', () => {
+  const call = { session_id: `reddit-${process.pid}`, tool_name: 'WebSearch', tool_input: { query: 'best editor reddit' } };
+  const text = (input) => contextHook(input).hookSpecificOutput.permissionDecisionReason;
+  assert.match(text(call), /Reddit blocks this call/);
+  assert.match(text(call), /refused once already/);
+  assert.match(text(call), /record the gap/);
 });

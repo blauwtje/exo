@@ -5,6 +5,7 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { fixShell } from '../lib/shell-fixes.mjs';
 import { environmentMs, isMain } from '../lib/script-flags.mjs';
+import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { shellQuote } from '#basics';
 import { denyReason } from '../lib/guard-rules.mjs';
 
@@ -28,7 +29,7 @@ export function stallGuardInput(input) {
   const toolInput = fixShell(input.tool_input) ?? input.tool_input;
   const command = toolInput.command;
   const refused = refusal(command);
-  if (refused) return refused;
+  if (refused) return rememberRefusal(input, refused, { guard: 'run-stall-guard' });
   const cap = environmentMs('BASH_MAX_TIMEOUT_MS', 600_000);
   const asked = Number(toolInput.timeout);
   const timeout = Number.isFinite(asked) && asked > 0 ? Math.min(asked, cap) : cap;
@@ -40,15 +41,15 @@ export function stallGuardInput(input) {
   };
 }
 
-async function hookOutput() {
+async function hookInput() {
   try {
-    return stallGuardInput(JSON.parse(await readHookText()));
+    return JSON.parse(await readHookText());
   } catch {
     return null;
   }
 }
 
 if (isMain(import.meta.url)) {
-  const output = await hookOutput();
-  if (output) process.stdout.write(`${JSON.stringify(output)}\n`);
+  const input = await hookInput();
+  writeHookOutput(input, input && stallGuardInput(input), 'run-stall-guard');
 }

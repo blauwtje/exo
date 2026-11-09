@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const CLOCK = String.raw`(?:Date\.now\(\)|performance\.now\(\)|process\.hrtime\.bigint\(\))\s*-\s*[A-Za-z_][\w.]*`;
 const LITERAL = String.raw`\d[\d_]*(?:\.\d+)?n?(?![\w.]|\s*[*/+-]\s*\w)`;
+const NAMED = String.raw`(?:[A-Za-z_][\w.]*\.)?(?:ms|elapsed|took|duration)\b`;
 const COMPARE = String.raw`(?:<=|>=|<|>)`;
 const ASSERT_CALL = /\bassert(?:\.\w+)?\(/;
 const EXEMPT = /,\s*['"`]timing-ok:/;
@@ -13,7 +14,8 @@ function elapsedNames(text) {
 
 function boundPattern(text) {
   const elapsed = [CLOCK, ...elapsedNames(text).map((name) => String.raw`\b${name}\b`)].join('|');
-  return new RegExp(String.raw`(?:(?:${elapsed})\s*${COMPARE}\s*${LITERAL})|(?:${LITERAL}\s*${COMPARE}\s*(?:${elapsed}))`);
+  const named = String.raw`${NAMED}\s*(?:<=|<)\s*[\w.(]+`;
+  return new RegExp(String.raw`(?:${named})|(?:(?:${elapsed})\s*${COMPARE}\s*${LITERAL})|(?:${LITERAL}\s*${COMPARE}\s*(?:${elapsed}))`);
 }
 
 export function elapsedBounds(text) {

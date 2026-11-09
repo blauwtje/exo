@@ -1,11 +1,13 @@
 # Source routes
 
-All keyless. Each search prints one JSON line per hit, or `status: blocked <source> <reason>`; a blocked route becomes a coverage gap.
+`--source a,b,c` and many URLs per `fetch.mjs` run together.
+
+All keyless. Each search prints one JSON line per hit, or one line `status: blocked <source> <reason>` and exit code 1; a blocked route becomes a coverage gap.
 
 | Need | Route |
 |---|---|
 | Web pages | web search, then `node "${CLAUDE_SKILL_DIR}/scripts/fetch.mjs" <run-dir> <url>...` |
-| Hacker News, Stack Overflow, Wikipedia, arXiv, podcasts | `node "${CLAUDE_SKILL_DIR}/scripts/search.mjs" --source hn\|stackoverflow\|wikipedia\|arxiv\|podcast --query <text> --run <run-dir> [--limit <n>]` |
+| Hacker News, Stack Overflow, Wikipedia, arXiv, podcasts | `node "${CLAUDE_SKILL_DIR}/scripts/search.mjs" --source hn\|stackoverflow\|wikipedia\|arxiv\|podcast[,<more>] --query <text> --run <run-dir> [--limit <n>]` |
 | GitHub | `--source github`: uses `gh search` when `gh auth status` passes, else the unauthenticated REST search; a rate limit is a gap |
 | Reddit | `--source reddit` first; see Reddit rule |
 | YouTube topic search | `node "${CLAUDE_SKILL_DIR}/../watch/scripts/search.mjs" --query <text>` |
@@ -13,9 +15,10 @@ All keyless. Each search prints one JSON line per hit, or `status: blocked <sour
 
 ## Reddit rule
 
-- Reach Reddit only through `node "<plugin-root>/skills/spec/scripts/search.mjs" --source reddit --query <text> --run <run-dir>`, where `<plugin-root>` is `$CLAUDE_PLUGIN_ROOT`. It reads Reddit directly with no key and returns the top threads with post text and comments (author, score, depth).
-- Thread URLs from a `site:reddit.com` web search, passed with `--url <thread url>`, are an equal first route beside the RSS search; Reddit may end its RSS feeds.
-- When RSS fails, the script returns a `blocked` note asking for those thread URLs. Run the web search with `site:reddit.com` or `site:reddit.com/r/<sub>` in the query, never the bare word reddit or `r/<sub>`, and pass the URLs.
+- Find threads first with a web search that has `site:reddit.com` or `site:reddit.com/r/<sub>` in the query, never the bare word reddit or `r/<sub>`, and pass each thread URL with `--url <thread url>`.
+- Reach Reddit only through `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/search.mjs" --source reddit --run <run-dir>` with `--url` or `--query <text>`.
+- The script reads Reddit with no key and returns threads with post text and comments (author, score, depth); `--query` runs only while the shared host state shows Reddit budget.
+- When the script returns a `blocked` note, it asks for thread URLs: repeat the `site:reddit.com` web search and pass them.
 - Never web-fetch reddit.com, old.reddit.com or a mirror such as redlib or libreddit.
 - After the first blocked-domain error for a domain, stop using that domain and record a gap.
 - The PreToolUse hook denies the calls this forbids.
