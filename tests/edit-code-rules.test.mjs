@@ -81,3 +81,44 @@ test('addedLineNumbers numbers the lines that are new, ignoring moved and repeat
   assert.deepEqual([...addedLineNumbers('a\nb\nc\nd', 'a\nc\nb\nd')], []);
   assert.deepEqual([...addedLineNumbers('a\nb', 'a\nb')], []);
 });
+
+test('a Write whose only break is added comment lines lands with them stripped', () => {
+  const { dir, file } = project('w.mjs');
+  const content = 'export const a = 1;\n// the answer\nexport const b = 2; // two\n';
+  const output = run('Write', dir, { file_path: file, content });
+  assert.equal(output.hookSpecificOutput.updatedInput.content, 'export const a = 1;\nexport const b = 2;\n');
+  assert.equal(output.hookSpecificOutput.updatedInput.file_path, file);
+});
+
+test('a Write with too deep nesting and a comment is still refused', () => {
+  const { dir, file } = project('t.mjs');
+  const content = `// note\n${DEEP}`;
+  assert.match(denial(run('Write', dir, { file_path: file, content })), /max-depth/);
+});
+
+test('a Write keeps a shebang', () => {
+  const { dir, file } = project('s.mjs');
+  const content = '#!/usr/bin/env node\nconsole.log(1);\n';
+  assert.equal(run('Write', dir, { file_path: file, content }), null);
+});
+
+test('a Write strip leaves untouched lines byte-identical', () => {
+  const { dir, file } = project('b.mjs');
+  const content = 'export const a = `x  \n  y`;   \n// note\nexport const b = 2;\n';
+  const output = run('Write', dir, { file_path: file, content });
+  assert.equal(output.hookSpecificOutput.updatedInput.content, 'export const a = `x  \n  y`;   \nexport const b = 2;\n');
+});
+
+test('a Write strip keeps a shellcheck directive', () => {
+  const { dir, file } = project('d.sh');
+  const content = '#!/bin/sh\n# shellcheck disable=SC2086\necho $1\n# a note\n';
+  const output = run('Write', dir, { file_path: file, content });
+  assert.equal(output.hookSpecificOutput.updatedInput.content, '#!/bin/sh\n# shellcheck disable=SC2086\necho $1\n');
+});
+
+test('a Write strip returns updatedInput without a permission decision', () => {
+  const { dir, file } = project('p.mjs');
+  const output = run('Write', dir, { file_path: file, content: '// note\nexport const a = 1;\n' });
+  assert.equal(decision(output), undefined);
+  assert.equal(output.hookSpecificOutput.updatedInput.content, 'export const a = 1;\n');
+});

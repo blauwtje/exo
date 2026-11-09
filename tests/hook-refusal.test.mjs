@@ -34,9 +34,9 @@ test('dispatch-bash escalates three identical wide finds', async () => {
   assertEscalates(reasons, 'run `find .`');
 });
 
-test('dispatch-edit escalates three identical comment writes', async () => {
+test('dispatch-edit escalates three identical too-deep writes', async () => {
   const file = path.join(tempDir('hook-refusal-'), 'tool.mjs');
-  const input = { session_id: session('edit'), tool_name: 'Write', tool_input: { file_path: file, content: '// note\nexport const a = 1;\n' } };
+  const input = { session_id: session('edit'), tool_name: 'Write', tool_input: { file_path: file, content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' } };
   const reasons = await threeReasons(() => dispatchEdit(input, off));
   assertEscalates(reasons, 'instead, ');
 });

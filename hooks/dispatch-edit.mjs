@@ -27,13 +27,16 @@ function runStep(step, hookInput) {
 
 export function dispatchEdit(hookInput, enabled) {
   const contexts = [];
+  let rewrite = null;
   for (const step of STEPS) {
     const fields = runStep(step, hookInput);
     if (fields?.permissionDecision === 'deny') return rememberRefusal(hookInput, withReceipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, hookInput, fields, undefined, enabled), { guard: 'dispatch-edit' });
+    if (fields?.updatedInput) rewrite = fields;
     if (fields?.additionalContext) contexts.push(fields.additionalContext);
   }
-  if (contexts.length === 0) return null;
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: contexts.join('\n') } };
+  if (contexts.length === 0 && !rewrite) return null;
+  const context = contexts.length > 0 ? { additionalContext: contexts.join('\n') } : {};
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', ...rewrite, ...context } };
 }
 
 if (isMain(import.meta.url) && !inSidecall()) {

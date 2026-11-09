@@ -18,6 +18,7 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
 - A sweep record on deepseek carries cache hit and miss tokens and a `costUsd` within 20% of the balance delta (Task 6).
 - The whole check passes (Success criterion).
+- Task 1: `benchmarks/guard-replay.mjs` prints per family the unique refused inputs and the base and candidate deny, rewrite and pass counts.
 
 ## design-ui-fast-preview
 - Task 1: sketch-tab.md holds `## The direction round`.

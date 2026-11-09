@@ -36,7 +36,7 @@ const bash = async (command, extra = {}) => {
 const edit = () => dispatchEdit({
   tool_name: 'Write',
   cwd,
-  tool_input: { file_path: path.join(cwd, 'a.mjs'), content: '// note\nexport const a = 1;\n' }
+  tool_input: { file_path: path.join(cwd, 'a.mjs'), content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' }
 })?.hookSpecificOutput?.permissionDecisionReason ?? '';
 
 const agent = { agent_id: 'a' };

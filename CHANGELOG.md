@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `benchmarks/guard-replay.mjs` replays each guard's recorded refused inputs through a base and a candidate hook and counts denied, rewritten and allowed results.
 - Research hosts share rate-limit, breaker and blocked-URL state across processes, and a Reddit block stays on its thread, which is read from the Arctic Shift archive.
 - Reddit threads are found by web search first, with RSS only when budget allows.
 - `search.mjs` searches several sources in one call and fetches URLs in a batch, and one orchestrator fans research out to the workers.
@@ -20,6 +21,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- A Write whose only rule break is added comment lines has those lines stripped instead of being refused, which turned 17 of 88 replayed refusals into rewrites.
+- A subagent may run read-only `git stash list` and `git stash show`, which took replayed stash denials from 95 to 19.
 - An over-limit Bash command is rewritten to a saved script instead of denied, which took byte-limit refusals from 643 to 0 in a replay of 724 recorded commands.
 - The worker prelude carries the round contract: narrow proof per round, whole suites only in the final tier, no waiting in a subagent.
 - `sleep` and `--watch` are denied for every subagent, and the lead waits on CI with a background `wait-checks` call.
