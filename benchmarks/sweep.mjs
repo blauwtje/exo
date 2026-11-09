@@ -48,6 +48,7 @@ import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks, newestRunLedger } from './value.mjs';
 import { applyVariant } from './variants.mjs';
 import { readJson, readJsonOrNull } from './basics.mjs';
+import { recordCostFields } from './pricing.mjs';
 
 const RUNS = path.join(ROOT, 'benchmarks', 'runs');
 const RESULTS = path.join(ROOT, 'benchmarks', 'results');
@@ -383,7 +384,7 @@ async function runCell(cell, runDirectory, copies, keep = null, providerEnv = nu
       exitCode: outcome.exitCode,
       timedOut: outcome.timedOut,
       wallMs: outcome.wallMs,
-      costUsd: cell.runSession ? usage?.costUsd ?? null : typeof result?.total_cost_usd === 'number' ? result.total_cost_usd : null,
+      ...recordCostFields(cell, result, usage, outcome.wallMs),
       tokens: usage?.counts == null ? null : Math.round(usage.counts.weightedInput + usage.counts.output),
       outputTokens: usage?.counts == null ? null : usage.counts.output,
       ...measured

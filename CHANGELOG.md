@@ -15,6 +15,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The orchestrator hook adds a line that makes a `Workers: 1` part run inline on DeepSeek, so a single-worker part spawns no Agent.
+- The SessionStart context puts the static rule text before the pointers and settings, so the cached prefix stays stable.
+- `exo claude --provider deepseek` prints a notice on stderr when the run starts in peak hours, with the next off-peak time; the peak windows are `deepseekPeak` in run.json `defaults`.
+
 - The adhd output style lists each change of a report as its own short bullet with its figures, drops the 3-bullet cap, and no longer names exo files or commands.
 - DeepSeek Flash efforts: build (measured, 15/15 pass at low and high, low is cheaper and faster), plus unmeasured lookup, chore, orchestrator, judge at low and fix-review at high, in `kindEfforts`.
 - Codex and OpenCode agents open with one shared outcome-first preamble holding the goal, the done-check, assumptions or BLOCKED, named files only and evidence as command output or `path:line`.
@@ -43,6 +47,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The "Decided for you" list at the end of replies and its number-reply rule; exo still asks for an irreversible step, a choice with no safe default and a choice only the user can settle.
 
 ### Fixed
+
+- Sweep records on DeepSeek are priced from usage at the Flash list price with a peak factor, and carry `cacheHitTokens` and `cacheMissTokens`; the replay of 40 kept runs drops from $24.27 to $0.999, matching the sweep's $0.999 at the peak rate.
+- `lib/check-citations.mjs` verifies a Reddit quote from the saved page beside the cites file and fetches only when none is saved.
+- The end-of-run Cost line logs `cacheHitTokens` and `cacheMissTokens` for the run.
 
 - The Reddit source script tries `www.reddit.com` after `old.reddit.com` and, when both are blocked, names a `site:reddit.com` web search as the next step.
 - The gate reads the plan's `Baseline:` line from the spec commit, like `Benchmark-override:`, and falls back to the working-tree line when that git read fails.

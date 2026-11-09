@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { appendLog } from './run-session.mjs';
-import { averageLines, receiptLines, cacheLines, deniedLines, detailLines, summaryLines } from './run-report.mjs';
+import { averageLines, receiptLines, deniedLines, detailLines, summaryLines } from './run-report.mjs';
+import { cacheLines } from './run-cache-tokens.mjs';
 import { stopDevServer } from '../../../lib/dev-server.mjs';
 import { stopRun } from './run-plan-stops.mjs';
 

@@ -55,6 +55,7 @@ export function parseStream(text) {
     weightedTokens,
     cacheRead: sumField('cache_read_input_tokens'),
     cacheWrite: sumField('cache_creation_input_tokens'),
+    inputTokens: sumField('input_tokens'),
     firstCacheWrite: typeof firstCreation === 'number' ? firstCreation : null,
     sessionId: init?.session_id ?? final?.session_id ?? null,
     hooks: events.filter((event) => event.type === 'system' && event.subtype === 'hook_started').length,

@@ -44,7 +44,7 @@
 11977 benchmarks/sweep-cells.mjs
 17315 benchmarks/sweep-fixtures.mjs
 11136 benchmarks/sweep-score.mjs
-29219 benchmarks/sweep.mjs
+29200 benchmarks/sweep.mjs
 10559 benchmarks/tasks.mjs
 9790 benchmarks/tbench/readouts.mjs
 15702 benchmarks/value.mjs
@@ -67,8 +67,8 @@
 14974 lib/worker-size.mjs
 12827 skills/build/scripts/land-run.mjs
 8562 skills/build/scripts/remove-worktree.mjs
-25554 skills/build/scripts/run-plan.mjs
-10168 skills/build/scripts/run-report.mjs
+25454 skills/build/scripts/run-plan.mjs
+9723 skills/build/scripts/run-report.mjs
 10627 skills/build/scripts/run-state.mjs
 20574 skills/build/scripts/run-tail.mjs
 9707 skills/build/scripts/start-run.mjs

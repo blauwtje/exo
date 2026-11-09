@@ -6,6 +6,7 @@
 // tokens cost on the API.
 export default {
   source: 'platform.claude.com/docs/en/about-claude/pricing, read 2026-10-18',
+  peak: { days: [1, 2, 3, 4, 5], hoursUtc: [[1, 4], [6, 10]] },
   models: {
     'claude-fable-5-1': { input: 10, output: 50, cacheRead: 0.25, cache5m: 12.5, cache1h: 20 },
     'claude-fable-5': { input: 10, output: 50, cacheRead: 1, cache5m: 12.5, cache1h: 20 },
@@ -19,6 +20,7 @@ export default {
     'claude-sonnet-5': { input: 2, output: 10, cacheRead: 0.2, cache5m: 2.5, cache1h: 4 },
     'claude-sonnet-4-6': { input: 3, output: 15, cacheRead: 0.3, cache5m: 3.75, cache1h: 6 },
     'claude-sonnet-4-5': { input: 3, output: 15, cacheRead: 0.3, cache5m: 3.75, cache1h: 6 },
+    'deepseek-flash': { input: 0.15, output: 0.6, cacheRead: 0.003, cache5m: 0.15, cache1h: 0.15, peakFactor: 2 },
     'claude-haiku-4-5': { input: 1, output: 5, cacheRead: 0.1, cache5m: 1.25, cache1h: 2 }
   }
 };

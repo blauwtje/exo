@@ -377,3 +377,23 @@ test('the OpenCode host note sets EXO_HOST for exo scripts', () => {
   const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'opencode', 'host-note.md'), 'utf8');
   assert.match(note, /EXO_HOST=opencode/);
 });
+
+test('on deepseek an orchestrator part with one worker is told to run its unit itself', () => {
+  const input = { subagent_type: 'exo:orchestrator', prompt: 'exo-kind: orchestrator\nWorkers: 1\nReads: none\ndo it' };
+  const hook = { tool_name: 'Agent', tool_input: input };
+  const run = (provider, tool) => {
+    if (provider) process.env.EXO_PROVIDER = provider;
+    else delete process.env.EXO_PROVIDER;
+    try {
+      return agentEffort(tool, 'on')?.hookSpecificOutput.updatedInput.prompt ?? tool.tool_input.prompt;
+    } finally {
+      delete process.env.EXO_PROVIDER;
+    }
+  };
+  assert.match(run('deepseek', hook), /run your single unit yourself and spawn no worker/i);
+  assert.doesNotMatch(run(undefined, hook), /spawn no worker/i);
+  const three = { ...hook, tool_input: { ...input, prompt: input.prompt.replace('Workers: 1', 'Workers: 3') } };
+  assert.doesNotMatch(run('deepseek', three), /spawn no worker/i);
+  const twice = { ...hook, tool_input: { ...input, prompt: run('deepseek', hook) } };
+  assert.equal(run('deepseek', twice).match(/spawn no worker/gi).length, 1);
+});

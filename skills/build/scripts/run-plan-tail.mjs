@@ -1,3 +1,4 @@
+import { cacheFields } from './run-cache-tokens.mjs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
@@ -22,7 +23,7 @@ export async function runTailSession(ctx, { kind, task = null, model: asked = nu
   const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
   const { before, outcome, parsed } = await spawnOne(ctx, { prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel, limitMs: kind === 'review' ? environmentMs('EXO_REVIEW_TIMEOUT_MS', timeoutMs) : timeoutMs });
   const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
-  run.records.push({ iteration: number, task: null, kind, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, denied: [], refused: [] });
+  run.records.push({ iteration: number, task: null, kind, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, denied: [], refused: [] });
   const breach = planBreach(ctx) ?? breachOf(root, before, { tail: true });
   const parked = breach === null ? takeParked('tail') : null;
   const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;

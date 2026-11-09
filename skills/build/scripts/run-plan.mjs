@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { cacheFields } from './run-cache-tokens.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -169,7 +170,7 @@ async function main(argv) {
       const { before, outcome, parsed } = await spawnOne(ctx, { prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first, taskCount: order.length });
       sayIdle(ctx, startedPlan);
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-      const record = { iteration: ctx.iteration, task: first, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
+      const record = { iteration: ctx.iteration, task: first, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, ...deniedFields(parsed) };
       run.records.push(record);
       lastTask = first;
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
@@ -236,7 +237,7 @@ async function main(argv) {
     sayIdle(ctx, startedTask);
     writeReplyReport(ctx, n, outcome.timedOut ? '' : parsed.resultText);
     const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-    const record = { iteration: ctx.iteration, task: n, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, cacheRead: parsed.cacheRead, cacheWrite: parsed.cacheWrite, firstCacheWrite: parsed.firstCacheWrite, last, ...deniedFields(parsed) };
+    const record = { iteration: ctx.iteration, task: n, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, ...deniedFields(parsed) };
     run.records.push(record);
     lastTask = n;
 

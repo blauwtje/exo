@@ -102,3 +102,28 @@ test('a missing claude binary refuses without echoing the key', async () => {
   assert.match(result.stderr, /no claude on PATH/);
   assert.doesNotMatch(result.stdout + result.stderr, new RegExp(SECRET));
 });
+
+const ALWAYS_PEAK = { deepseekPeak: { days: [0, 1, 2, 3, 4, 5, 6], hoursUtc: [[0, 23]] } };
+const NEVER_PEAK = { deepseekPeak: { days: [], hoursUtc: [] } };
+
+async function launchWithPeak(args, peak) {
+  const home = await fixture();
+  const tools = await fixture();
+  const directory = path.join(home, '.config', 'exo');
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(path.join(directory, 'keys.env'), `DEEPSEEK_API_KEY=${SECRET}\n`);
+  await fs.writeFile(path.join(directory, 'run.json'), JSON.stringify({ defaults: peak }));
+  await fs.writeFile(path.join(tools, 'claude'), STUB, { mode: 0o755 });
+  return run(CLI, ['claude', ...args], { env: { HOME: home, PATH: tools, CLAUDECODE: '', STUB_RECORD: path.join(tools, 'record.json') } });
+}
+
+test('a deepseek start inside a peak window prints the off-peak notice on stderr', async () => {
+  const result = await launchWithPeak(['--provider', 'deepseek'], ALWAYS_PEAK);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stderr, /DeepSeek peak hours bill double; off-peak starts at /);
+});
+
+test('a deepseek start outside every peak window and a claude start print no notice', async () => {
+  assert.doesNotMatch((await launchWithPeak(['--provider', 'deepseek'], NEVER_PEAK)).stderr, /peak hours/);
+  assert.doesNotMatch((await launchWithPeak([], ALWAYS_PEAK)).stderr, /peak hours/);
+});

@@ -58,17 +58,17 @@ const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor
 const sessionDirectory = typeof input.cwd === 'string' && fs.existsSync(input.cwd) && fs.statSync(input.cwd).isDirectory() ? input.cwd : undefined;
 const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8', cwd: sessionDirectory });
 const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
-const parts = [`${pointers}${settings}`];
-if (onCodex) parts.push(fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd());
 const rulesKeptByTranscript = !onCodex && input.source === 'resume';
 const staticFiles = rulesKeptByTranscript ? [] : ['session-routing.md', 'session-rules.md'];
+const parts = [];
 for (const name of staticFiles) {
   const file = path.join(root, 'hooks', name);
   if (fs.existsSync(file)) parts.push(fs.readFileSync(file, 'utf8').trimEnd());
 }
-// why: Codex serves no Agent hook, so its session text keeps the dispatch rules; on Claude Code a clear or compaction drops them, so the next Agent call delivers them again.
+if (onCodex) parts.push(fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd());
 if (onCodex) parts.push(readDispatchRules());
 else if (typeof input.session_id === 'string' && input.session_id !== '') fs.rmSync(dispatchMarker(input.session_id), { force: true });
+if (`${pointers}${settings}` !== '') parts.push(`${pointers}${settings}`);
 const additionalContext = parts.join('\n\n');
 // why: systemMessage shows to the user only, so the line costs no model tokens. The `receipts` setting turns "exo is on" off, and Codex never shows it; a Node warning still shows.
 let neededNode = 0;

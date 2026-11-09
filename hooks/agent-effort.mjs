@@ -14,6 +14,7 @@ import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
 import { defaulted, liftedEffort, resolvedKind, unknownKind } from '../lib/kind-resolution.mjs';
+import { inlineSingleWorker } from '../lib/inline-single-worker.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
 
 function budgetSetting() {
@@ -56,7 +57,7 @@ function readsRewrite(hookInput = {}) {
 export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = readsRewrite(hookInput)) {
   const { tool_name: tool, tool_input: input, effort, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
-  const updated = briefedInput(filled(defaulted(rewrite.input, budget), budget, effort?.level), cwd);
+  const updated = inlineSingleWorker(briefedInput(filled(defaulted(rewrite.input, budget), budget, effort?.level), cwd));
   if (![...Object.keys(updated), ...Object.keys(input)].some((key) => updated[key] !== input[key])) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }

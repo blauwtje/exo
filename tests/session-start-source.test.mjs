@@ -28,3 +28,12 @@ test('resume prints no settings line for an empty config and drops not the rules
   assert.ok(!context.includes(RULES));
   assert.doesNotMatch(context, /exo settings/);
 });
+
+const ROUTING = fs.readFileSync(path.join(path.dirname(HOOK), 'session-routing.md'), 'utf8').trimEnd();
+
+test('the static routing and rule text open the context and the dynamic pointers and settings follow', () => {
+  for (const source of ['startup', 'clear', 'compact']) {
+    const context = contextFor(source);
+    assert.ok(context.startsWith(`${ROUTING}\n\n${RULES}`), source);
+  }
+});

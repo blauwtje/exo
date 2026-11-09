@@ -3,6 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { readDecisions } from '#run-decision';
+import { cacheTokenText } from './run-cache-tokens.mjs';
 import { isFileOnDisk } from './run-session-claude.mjs';
 
 function reportLines(root, number) {
@@ -30,13 +31,6 @@ export function clock(ms) {
 export function wallClock(date) {
   const two = (value) => String(value).padStart(2, '0');
   return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
-}
-
-export function cacheLines({ cacheRead, cacheWrite, firstCacheWrite }, bar) {
-  const lines = [];
-  if (cacheRead !== null && cacheWrite !== null && cacheRead + cacheWrite > 0) lines.push(`cache read ${Math.round((cacheRead / (cacheRead + cacheWrite)) * 100)}% (${thousands(cacheRead)}k read, ${thousands(cacheWrite)}k written)`);
-  if (firstCacheWrite !== null && firstCacheWrite > bar) lines.push(`warning: turn 1 wrote ${thousands(firstCacheWrite)}k tokens to the cache, over the ${thousands(bar)}k bar`);
-  return lines;
 }
 
 export function idleLine(wallMs, monotonicMs, barMs) {
@@ -128,7 +122,7 @@ export function summaryLines(run, stop) {
   const decisions = process.env.EXO_RUN_DIR ? readDecisions(process.env.EXO_RUN_DIR) : [];
   if (decisions.length > 0) lines.push(`Decisions: ${decisions.length}, in ${path.join(process.env.EXO_RUN_DIR, 'decisions.md')}`);
   lines.push(`Next: ${stop.next}`);
-  lines.push(`Cost ${money(records.reduce((sum, record) => sum + record.cost, 0))}, time ${duration(run.elapsed())}.`);
+  lines.push(`Cost ${money(records.reduce((sum, record) => sum + record.cost, 0))}, time ${duration(run.elapsed())}${cacheTokenText(records)}.`);
   lines.push(`Details: ${path.join(logDir, 'summary.txt')}`);
   return lines;
 }
