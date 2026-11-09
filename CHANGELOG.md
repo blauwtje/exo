@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The orchestrator handover counts `Round: n/3` across dispatches, and at the cap runs the final tier, reports what still fails and stops.
 - A Read of a file a task is about to create is accepted.
 - Gate repair runs the covering tests each round and the Land gate on the last pass only.
+- The adhd output style caps a reply at 5 bullets with one count line for the rest, bolds the one figure to watch per bullet, and sends no status text while background agents run.
 - The orchestrator hook adds a line that makes a `Workers: 1` part run inline on DeepSeek, so a single-worker part spawns no Agent.
 - The SessionStart context puts the static rule text before the pointers and settings, so the cached prefix stays stable.
 - `exo claude --provider deepseek` prints a notice on stderr when the run starts in peak hours, with the next off-peak time; the peak windows are `deepseekPeak` in run.json `defaults`.

@@ -37,7 +37,7 @@ const ADHD_STYLE = fs.readFileSync(new URL('../output-styles/adhd.md', import.me
 
 export const BREVITY_LINES = {
   'least': '- Give the least that fully answers.',
-  'no-narration': '- Direction change or step past one minute → one short line; else no text between tool calls.',
+  'no-narration': '- Write no half sentence before a tool call.',
   'lean-reads': '- Read only what the task needs; filter command output, such as `| tail -n 30` or `| grep`.',
   'small-edit': '- Make the smallest edit, then run each check once to confirm.',
   'lean-args': '- Pass tool calls only needed arguments: no restated file content, comment or description.',
