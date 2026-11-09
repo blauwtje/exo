@@ -20,6 +20,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The worker prelude carries the round contract: narrow proof per round, whole suites only in the final tier, no waiting in a subagent.
+- `sleep` and `--watch` are denied for every subagent, and the lead waits on CI with a background `wait-checks` call.
+- A whole-suite rerun on a tree that already passed is refused, and a whole suite in a `Checks: proof` worker warns with the narrowed command.
+- The orchestrator brief shape gains `Proof:` and `Checks: proof|final` lines and points to the spec or handover by path and range.
+- The orchestrator dispatches a part when its dependencies finish, runs no standalone plan worker before a single executor, and runs the final checks as one worker beside the last review.
+- The orchestrator handover counts `Round: n/3` across dispatches, and at the cap runs the final tier, reports what still fails and stops.
+- A Read of a file a task is about to create is accepted.
+- Gate repair runs the covering tests each round and the Land gate on the last pass only.
 - The orchestrator hook adds a line that makes a `Workers: 1` part run inline on DeepSeek, so a single-worker part spawns no Agent.
 - The SessionStart context puts the static rule text before the pointers and settings, so the cached prefix stays stable.
 - `exo claude --provider deepseek` prints a notice on stderr when the run starts in peak hours, with the next off-peak time; the peak windows are `deepseekPeak` in run.json `defaults`.

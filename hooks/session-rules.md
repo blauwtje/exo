@@ -14,6 +14,7 @@
 - Keep a long task's plan and progress in `.exo/<topic>/progress.md`, so a fresh context can resume.
 - Before saying an agent or task still runs, check it this turn (`tasks/<id>.output` mtime or tail, its log, or `ps`), and if its work ended with no notice, SendMessage it to resume, never claim it runs from a notice alone.
 - Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
+- A round brief carries no final checks (whole suites, lint, type-check, screenshots), and the lead waits on CI with a background `wait-checks` call and no subagent runs `--watch` or `sleep`.
 - Grep a large file's lines in the **lead** (the main session) instead of reading it whole, because a full read fills the context.
 - When an agent returns off-brief, send one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
 - When a choice has a safe default, check every option against the criteria the request or repo sets and take the winner silently.

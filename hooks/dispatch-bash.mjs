@@ -15,6 +15,7 @@ import { fixShellFor } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
+import { suiteDecision } from '../lib/suite-step.mjs';
 import { withReceipt } from './context-limit.mjs';
 
 const contextStep = (name, decide) => ({
@@ -77,13 +78,24 @@ export const SCRIPT_SIZE_STEP = {
 export const PREDISPATCH_STEP = contextStep('predispatch', predispatchBashDecision);
 
 const SLEEP_COMMAND = /(?:^|[;&|({\n]|\b(?:do|then|else)\b)\s*sleep(?=\s|$)/;
-const SLEEP_AGENTS = new Set(['orchestrator', 'task-runner']);
+const WATCH_COMMAND = /\bgh\s+(?:pr\s+checks\b.*--watch|run\s+watch\b)/;
 
 export const SLEEP_STEP = {
   name: 'sleep',
   run(hookInput) {
     const command = hookInput.tool_input?.command;
-    return typeof command === 'string' && SLEEP_AGENTS.has(hookAgentType(hookInput)) && SLEEP_COMMAND.test(command) ? deny(denyReason('sleep')) : null;
+    if (!hookInput.agent_id || typeof command !== 'string') return null;
+    if (SLEEP_COMMAND.test(command)) return deny(denyReason('sleep'));
+    return WATCH_COMMAND.test(command) ? deny(denyReason('sleep', 'a subagent does not watch checks')) : null;
+  }
+};
+
+export const SUITE_STEP = {
+  name: 'suite-unchanged',
+  run(hookInput) {
+    const decision = suiteDecision(hookInput);
+    if (decision?.deny) return deny(denyReason('suite-passed', decision.deny));
+    return decision && { hookSpecificOutput: { additionalContext: decision.context } };
   }
 };
 
@@ -130,7 +142,7 @@ function firstRewrite(outputs) {
   return outputs.find((output) => output.updatedInput && output.permissionDecision === undefined)?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

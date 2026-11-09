@@ -176,6 +176,7 @@ const cases = {
   'script-size': () => bash(LONG, { ...agent, cwd: '/nonexistent/deep' }),
   'script-saved': () => bash(LONG, agent),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
+  'suite-passed': () => denyReason('suite-passed', 'This tree already passed a suite'),
   'code-rules': () => edit(),
   'result-line': () => subagent(10_000, 'Read', { file_path: longLine }),
   'context-lead': () => leadOverLimit(),
@@ -382,4 +383,15 @@ test('a dispatched brief carries the brief lines of the receiving agent tools up
   const builder = dispatched('exo:build-task', 'Reads: none\nResult: .exo/r.md');
   assert.ok(builder.includes(stash) && !builder.includes(noStop), builder);
   assert.ok(!builder.includes(noWrite), builder);
+});
+
+test('the Bash brief carries the speed contract C1 to C4 and the byte budget holds', () => {
+  const lines = rules.briefLines(['Bash']).join('\n');
+  assert.match(lines, /Round: n\/3/);
+  assert.match(lines, /whole suite/);
+  assert.match(lines, /gh pr checks --watch/);
+  assert.match(lines, /Files:.*Proof:.*Checks:.*Reads:.*Result:/);
+  assert.ok(GUARD_RULES.some((row) => row.id === 'suite' && row.brief));
+  assert.ok(GUARD_RULES.some((row) => row.id === 'watch' && row.brief));
+  assert.ok(Buffer.byteLength(lines) < 4000, `prelude ${Buffer.byteLength(lines)} bytes`);
 });

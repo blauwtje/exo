@@ -293,20 +293,20 @@ test('orchestrator holds Agent, Write and TaskStop, loads the project CLAUDE.md 
 test('orchestrator works in phases, keeps worker detail in files and hands over at the exo context note', () => {
   const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   assert.match(body, /Before the first dispatch, write the result file/);
-  assert.match(body, /After each phase, update the result file/);
-  assert.match(body, /in at most 5 lines, with detail in a named file/);
-  assert.match(body, /read no whole log, diff or detail file/);
-  assert.match(body, /exo context note, start no new phase[^\n]*return its path/);
-  assert.match(body, /a fresh orchestrator continues from it/);
+  assert.match(body, /After each check, update the result file/);
+  assert.match(body, /return the verdict first in at most 5 lines, detail in a named `\.exo\/` file/);
+  assert.match(body, /no whole log, diff or detail file/);
+  assert.match(body, /exo context note, dispatch nothing new[^\n]*return its path/);
+  assert.match(body, /for a fresh orchestrator/);
 });
 
 test('orchestrator dispatches async within its Workers line, reads by range and sends discovery to lookup', () => {
   const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   assert.doesNotMatch(body, /one foreground dispatch each/);
-  assert.match(body, /end your turn and wait for the notification/);
+  assert.match(body, /end your turn for the notifications/);
   assert.match(body, /names `-p`[^\n]*wait-report\.mjs[^\n]*timeout 600000/);
   assert.match(body, /no more workers than its `Workers:` line, retries included/);
-  assert.match(body, /Before the first dispatch[^\n]*Reads:[^\n]*by range/);
+  assert.match(body, /Read only your brief's `Reads:` paths by range/);
   assert.match(body, /discovery and code reading to a `lookup` worker/);
 });
 

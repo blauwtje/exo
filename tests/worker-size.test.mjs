@@ -235,3 +235,11 @@ test('a web research brief with no Fetches line is sized by its distinct URLs, a
   assert.deepEqual(bare.invalid, []);
   assert.ok(bare.missing.includes('Fetches'));
 });
+
+test('a Reads path that does not exist yet is accepted when a Files line names it', () => {
+  const cwd = folder();
+  const named = workerSize({ prompt: 'Files: lib/new-thing.mjs\nReads: lib/new-thing.mjs\nResult: .exo/r.md', cwd });
+  assert.deepEqual(named.unresolved, []);
+  const unnamed = workerSize({ prompt: 'Files: lib/other.mjs\nReads: lib/new-thing.mjs\nResult: .exo/r.md', cwd });
+  assert.deepEqual(unnamed.unresolved, ['lib/new-thing.mjs']);
+});

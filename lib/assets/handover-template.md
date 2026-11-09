@@ -1,5 +1,7 @@
 <One line: how many parts are done and how many are stuck, such as "3 of 5 parts done, 1 blocked".>
 
+Round: <n>/3
+
 ## Parts
 
 | Part | Phase | Result | Files changed |

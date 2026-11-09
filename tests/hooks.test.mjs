@@ -456,7 +456,7 @@ test('an orchestrator Bash command runs within the pre-dispatch read cap and is 
   for (const kind of ['slice', 'predispatch']) fs.rmSync(path.join(os.tmpdir(), `exo-${kind}-${agentId}`), { force: true });
 });
 
-test('the sleep step denies sleep in command position for an orchestrator or task-runner', async () => {
+test('the sleep step denies sleep in command position for every subagent', async () => {
   const { SLEEP_STEP } = await import('../hooks/dispatch-bash.mjs');
   const run = (agentType, command) => SLEEP_STEP.run({ agent_id: 'a', agent_type: agentType, tool_input: { command } });
   for (const command of ['sleep 30', 'ls && sleep 5', 'node x.mjs; sleep 1']) {
@@ -467,7 +467,7 @@ test('the sleep step denies sleep in command position for an orchestrator or tas
   assert.equal(run('exo:orchestrator', 'sleep 2').hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(run('exo:task-runner', 'grep sleep file.txt'), null);
   assert.equal(run('exo:task-runner', 'node sleep.test.mjs'), null);
-  assert.equal(run('exo:build-task', 'sleep 5'), null);
+  assert.equal(run('exo:build-task', 'sleep 5').hookSpecificOutput.permissionDecision, 'deny');
 });
 
 async function cappedRun(command, extra = {}) {

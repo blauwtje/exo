@@ -8,7 +8,7 @@ Goal: carry one pull request to merge-ready in rounds, then hand it back.
 - A delegate that opened the pull request does not watch it and hands back to the dispatching session.
 - Before triaging, fetch full state: `gh pr view <number> --json number,title,state,mergeable,reviewDecision,statusCheckRollup,mergeStateStatus,comments,reviews`.
 - Push a round's known fixes together as one wave. When a conflict blocks, do not work a check to look busy.
-- While a check runs, pace the recheck with `gh pr checks --watch`. With nothing left to wait on, hand back and do not poll.
+- While a check runs, pace the recheck with `gh pr checks --watch` only in the dispatching session; a delegate runs no `--watch`. With nothing left to wait on, hand back and do not poll.
 
 ## The triage order
 

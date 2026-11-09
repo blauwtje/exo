@@ -187,3 +187,12 @@ test('--reviews-only prints HEAD and no FINDINGS-SHA, which merge-reviews owns',
   assert.ok(!lines.some((line) => line.startsWith('FINDINGS-SHA')), lines.join('\n'));
   assert.ok(lines.includes(`HEAD ${git(root, 'rev-parse', 'HEAD').trim()}`), lines.join('\n'));
 });
+
+test('--repair defers a whole-suite Land gate to the last pass', async () => {
+  const checkout = await repairCheckout(FINDINGS, 'npm test');
+  await commitFix(checkout.root);
+  const first = verifyRepair(checkout);
+  assert.ok(!first.lines.some((line) => line.startsWith('FAIL repair-static')), first.lines.join('\n'));
+  const second = verifyRepair(checkout);
+  assert.ok(second.lines.some((line) => line.startsWith('FAIL repair-static npm test')), second.lines.join('\n'));
+});

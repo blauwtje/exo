@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs } from '#script-flags';
+import { wholeSuiteKeys } from '#suite-command';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
@@ -64,10 +65,10 @@ async function repairTestLines(files) {
   return lines;
 }
 
-async function recheckLines({ root, planText, diffFiles, commits }) {
+async function recheckLines({ root, planText, diffFiles, commits, last }) {
   const landGate = frameOf(parsePlan(planText).frame).landGate;
   const lines = [];
-  if (landGate !== null && landGate !== 'none') {
+  if (landGate !== null && landGate !== 'none' && (last || wholeSuiteKeys(landGate).length === 0)) {
     const run = await runCommand(landGate, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS), process.env);
     if (!run.ok) lines.push(...failLines(`repair-static ${landGate}`, failReason(run), run.output));
   }
@@ -122,7 +123,7 @@ export async function repairLines({ root, planText, planPath, preFixSha, finding
   const { lines: problems, commits, diffFiles } = handbackLines({ root, preFixSha, findings, findingsSha256 });
   const lines = problems.length === 0 ? ['PASS fixer-committed'] : problems;
   if (problems.length === 0 && commits.length > 0) {
-    lines.push(...await recheckLines({ root, planText, diffFiles, commits }));
+    lines.push(...await recheckLines({ root, planText, diffFiles, commits, last: passes + 1 >= REPAIR_BOUND }));
     if (!lines.some((line) => line.startsWith('FAIL '))) lines.push(fixDiffDispatch({ root, planPath, preFixSha }));
   }
   recordRepairPasses(root, passes + 1);
