@@ -20,6 +20,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- An over-limit Bash command is rewritten to a saved script instead of denied, which took byte-limit refusals from 643 to 0 in a replay of 724 recorded commands.
 - The worker prelude carries the round contract: narrow proof per round, whole suites only in the final tier, no waiting in a subagent.
 - `sleep` and `--watch` are denied for every subagent, and the lead waits on CI with a background `wait-checks` call.
 - A whole-suite rerun on a tree that already passed is refused, and a whole suite in a `Checks: proof` worker warns with the narrowed command.

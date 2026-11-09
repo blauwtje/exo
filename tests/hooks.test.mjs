@@ -303,13 +303,13 @@ test('the git deny list is not a sandbox: git code fed to a shell through here-s
   for (const command of outOfScope) assert.notEqual(await decide(command), 'deny', command);
 });
 
-test('a subagent Bash command over 4 KB is denied with a pointer to .exo/, the lead and small commands are not', async () => {
+test('a subagent Bash command over 4 KB is rewritten to its saved .exo/ copy, the lead and small commands are not', async () => {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
   const run = (command, agentId) => dispatchBash({ hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: agentId, tool_input: { command } }, undefined, () => false);
   const big = `echo ${'a'.repeat(4100)}`;
-  const denied = await run(big, 'agent-1');
-  assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(denied.hookSpecificOutput.permissionDecisionReason, /\.exo\//);
+  const rewritten = await run(big, 'agent-1');
+  assert.notEqual(rewritten.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(rewritten.hookSpecificOutput.updatedInput.command, /^bash .*\.exo\//);
   assert.notEqual((await run(big, undefined))?.hookSpecificOutput?.permissionDecision, 'deny');
   assert.notEqual((await run('echo hi', 'agent-1'))?.hookSpecificOutput?.permissionDecision, 'deny');
 });
@@ -435,9 +435,10 @@ test('the script-size step reads its cap from defaults.scriptBytes', async () =>
   const limit = scriptBytes();
   const run = (size) => SCRIPT_SIZE_STEP.run({ agent_id: 'a', tool_input: { command: 'x'.repeat(size) } });
   assert.equal(run(limit), null);
-  const denied = run(limit + 1);
-  assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(denied.hookSpecificOutput.permissionDecisionReason, new RegExp(`over ${limit} bytes`));
+  const rewritten = run(limit + 1);
+  assert.equal(rewritten.hookSpecificOutput.permissionDecision, undefined);
+  assert.match(rewritten.hookSpecificOutput.updatedInput.command, /^bash .*long-command-/);
+  assert.match(rewritten.hookSpecificOutput.additionalContext, new RegExp(`over ${limit} bytes`));
 });
 
 test('an orchestrator Bash command runs within the pre-dispatch read cap and is denied past it until its first dispatch', async () => {

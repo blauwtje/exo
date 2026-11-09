@@ -52,13 +52,13 @@ test('a sleep deny names the notification wait and wait-report.mjs', async () =>
   assert.match(reason, /wait-report\.mjs/);
 });
 
-test('a long command is saved verbatim under .exo/ and the deny names the one line that runs it', async () => {
+test('a long command is saved verbatim under .exo/ and the command is rewritten to run it', async () => {
   const cwd = tempDir('exo-long-');
   const command = `echo ${longText()}`;
-  const reason = await reasonOf(command, { cwd });
+  const output = await decide(command, { cwd });
   const hash = createHash('sha256').update(command).digest('hex').slice(0, 12);
   const relative = `.exo/long-command-${hash}.sh`;
-  assert.ok(reason.includes(`bash ${relative}`), reason);
+  assert.equal(output.updatedInput.command, `bash ${relative}`);
   assert.equal(fs.readFileSync(path.join(cwd, relative), 'utf8'), command);
 });
 

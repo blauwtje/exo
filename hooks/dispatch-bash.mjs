@@ -70,8 +70,9 @@ export const SCRIPT_SIZE_STEP = {
     if (Buffer.byteLength(command) <= limit) return null;
     if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
     const saved = saveLongCommand(command, hookInput.cwd ?? process.cwd());
-    const detail = `this command is over ${limit} bytes`;
-    return deny(saved ? denyReason('script-saved', `${detail} and is saved as ${saved}`).replace('<saved path>', saved) : denyReason('script-size', detail));
+    if (!saved) return deny(denyReason('script-size', `this command is over ${limit} bytes`));
+    const updatedInput = { ...hookInput.tool_input, command: `bash ${saved}` };
+    return { hookSpecificOutput: { updatedInput, additionalContext: `the command was over ${limit} bytes, so it runs from its saved copy ${saved}` } };
   }
 };
 

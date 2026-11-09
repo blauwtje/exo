@@ -11,6 +11,7 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
 - `exo claude --provider deepseek` at a peak time prints the off-peak notice (Task 5).
 - A Reddit quote saved by the source script verifies offline (Task 7).
+- Over-limit commands are rewritten, not denied: Task 1. Per-call ms: Task 2.
 
 ## fast-task-gate
 - `killTree` with `platform: 'win32'` calls its `run` stub with `taskkill` and `['/pid', '<pid>', '/T', '/F']`; on POSIX a detached shell's grandchild is gone after `killTree`; a timed-out verify Proof and gate still fail with `timed out after <n>s` (Task 2; seam: `tests/process-tree.test.mjs`, `tests/verify-gate.test.mjs`).

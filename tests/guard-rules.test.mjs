@@ -176,7 +176,6 @@ const cases = {
   'wide-find': () => bash('find / -name x'),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
   'script-size': () => bash(LONG, { ...agent, cwd: '/nonexistent/deep' }),
-  'script-saved': () => bash(LONG, agent),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
   'suite-passed': () => denyReason('suite-passed', 'This tree already passed a suite'),
   'code-rules': () => edit(),
@@ -245,7 +244,7 @@ for (const row of GUARD_RULES) {
     assert.equal(typeof cases[row.id], 'function', 'no deny-proving case');
     const reason = await cases[row.id]();
     if (proofs[row.id]) return proofs[row.id](reason);
-    const allowed = row.id === 'script-saved' ? 'run the saved copy with `bash ' : row.allowed;
+    const allowed = row.allowed;
     const segments = allowed.split(/\{\w+\}/);
     const expected = segments.length === 1 ? [`Do instead: ${allowed}`] : ['Do instead: ', ...segments];
     for (const segment of expected) assert.ok(reason.includes(segment), reason);

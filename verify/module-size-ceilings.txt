@@ -60,7 +60,7 @@
 14734 lib/code-rules.mjs
 15985 lib/context-decisions.mjs
 10552 lib/eval-stats.mjs
-12393 lib/guard-rules.mjs
+12209 lib/guard-rules.mjs
 8624 lib/plan-tasks.mjs
 9945 lib/red-green.mjs
 9701 lib/statusline.mjs
