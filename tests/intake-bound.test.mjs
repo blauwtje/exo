@@ -70,7 +70,9 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
   assert.ok(logRead.updatedInput.limit > 0 && logRead.updatedInput.limit < 2696);
   assert.match(logRead.additionalContext, new RegExp(`lines 1-${logRead.updatedInput.limit} .*offset ${logRead.updatedInput.limit + 1}.*grep -n`));
   assert.equal(denied(read({ file_path: testLog, offset: 2690, limit: 7 })), false, 'tail range of the log');
-  assert.equal((await bash(`cat '${testLog}'`))?.updatedInput, undefined, 'Bash with room left is not rewritten');
+  const roomy = (await bash(`cat '${testLog}'`))?.updatedInput?.command ?? '';
+  assert.doesNotMatch(roomy, /head -c|grep -n|exo-bash/, 'Bash with room left is not cut to a grep or line range');
+  assert.match(roomy, /timeout \d+ "\$\{SHELL:-\/bin\/sh\}" -c /, 'only the subagent timeout cap wraps it');
 
   growTo(40_000);
   assert.equal(denied(read({ file_path: smallFile })), false, 'small read at 40k');

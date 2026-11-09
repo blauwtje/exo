@@ -5,12 +5,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { scriptBytes } from '../lib/context-limits.mjs';
-import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType, intakeCutLine } from '../lib/context-decisions.mjs';
+import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
 import { commitAttributionReason, commitEvidenceReason } from '../lib/commit-messages.mjs';
 import { saveLongCommand } from '../lib/long-command.mjs';
 import { sharedStateReason } from '../lib/git-deny.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
+import { cappedCommand, cappedInput, resultCapped } from '../lib/bash-cap.mjs';
 import { fixShellFor } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -100,18 +101,6 @@ export const SUITE_STEP = {
   }
 };
 
-function cappedCommand(command, bound, log) {
-  const quoted = `'${log}'`;
-  return [
-    `( ${command}`,
-    `) > ${quoted} 2>&1`,
-    'rc=$?',
-    `head -c ${bound.bytes} ${quoted}`,
-    `[ "$(wc -c < ${quoted})" -gt ${bound.bytes} ] && echo "${intakeCutLine(bound, log)}"`,
-    'exit $rc'
-  ].join('\n');
-}
-
 export const RESULT_CAP_STEP = {
   name: 'result-cap',
   run(hookInput) {
@@ -123,8 +112,9 @@ export const RESULT_CAP_STEP = {
     const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShellFor(hookInput, hookAgentType);
     fs.mkdirSync(savedOutputDirectory(), { recursive: true });
     const log = path.join(savedOutputDirectory(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
-    const command = cappedCommand((fixed ?? toolInput).command, bound, log);
-    return { hookSpecificOutput: { updatedInput: { ...toolInput, command } } };
+    const inner = (fixed ?? toolInput).command;
+    const command = resultCapped(cappedCommand(hookInput, inner) ?? inner, bound, log);
+    return { hookSpecificOutput: { updatedInput: { ...toolInput, command }, timed: true } };
   }
 };
 
@@ -138,12 +128,23 @@ export const SHELL_STEP = {
   }
 };
 
+export const BASH_CAP_STEP = {
+  name: 'bash-cap',
+  run(hookInput, earlier = []) {
+    if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
+    if (earlier.some((output) => output.timed)) return null;
+    const updatedInput = cappedInput(hookInput, firstRewrite(earlier));
+    return updatedInput && { hookSpecificOutput: { updatedInput, capped: true } };
+  }
+};
+
 function firstRewrite(outputs) {
   if (outputs.some((output) => output.permissionDecision === 'deny')) return undefined;
-  return outputs.find((output) => output.updatedInput && output.permissionDecision === undefined)?.updatedInput;
+  const rewrites = outputs.filter((output) => output.updatedInput && output.permissionDecision === undefined);
+  return (rewrites.find((output) => output.capped) ?? rewrites[0])?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {
