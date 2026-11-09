@@ -122,6 +122,21 @@ const refuse = (prompt, subagent_type = 'general-purpose', base = sized) => agen
   cwd: base,
   tool_input: { subagent_type, description: 'work', prompt }
 }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+const mainResearch = (type, session) => agentHook({
+  tool_name: 'Agent',
+  session_id: session,
+  cwd: sized,
+  tool_input: { subagent_type: type, description: 'work', prompt: 'Sources: web\nFetches: 1\nResult: .exo/r.md' }
+}, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+function fannedOut() {
+  const session = `guard-rules-fanout-${process.pid}`;
+  const marker = path.join(os.tmpdir(), `exo-research-${session}`);
+  fs.rmSync(marker, { force: true });
+  mainResearch('exo:research-worker', session);
+  const reason = mainResearch('exo:research-worker', session);
+  fs.rmSync(marker, { force: true });
+  return reason;
+}
 const lined = tempDir('guard-rules-lined-');
 fs.writeFileSync(path.join(lined, 'ranged.txt'), `${'x'.repeat(69)}\n`.repeat(1000));
 fs.writeFileSync(path.join(sized, 'small.md'), 'hello\n'.repeat(10));
@@ -179,6 +194,9 @@ const cases = {
   'kind-mismatch': () => orchestrator('Workers: 1', { model: 'opus', effort: 'max' }),
   'kind-mismatch-label': () => orchestrator('Workers: 1', labelledPair()),
   'workers-line': () => orchestrator('do it', {}),
+  'research-unnamed': () => mainResearch('general-purpose', `guard-rules-unnamed-${process.pid}`),
+  'research-fanout': () => fannedOut(),
+  'brief-lacks-fetches': () => refuse('Sources: web\nResult: .exo/r.md', 'exo:research-worker'),
   'brief-invalid': () => refuse('Reads: none\nFetches: many\nSources: web', 'exo:research-worker'),
   'brief-unresolved': () => refuse('Reads: gone.md\nResult: .exo/r.md'),
   'brief-ambiguous-name': () => refuse('Reads: dup.txt\nResult: .exo/r.md', undefined, tracked),

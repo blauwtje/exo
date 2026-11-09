@@ -223,3 +223,15 @@ test('a label named inside parentheses or backticks in a Reads item does not spl
   assert.deepEqual(size.missing, []);
   assert.deepEqual(size.unresolved, []);
 });
+
+test('a web research brief with no Fetches line is sized by its distinct URLs, and refused as missing with none', () => {
+  const cwd = folder();
+  const listed = 'Sources: web\nSee https://example.com/a, https://example.com/b. and https://example.com/a\nResult: .exo/r.md';
+  const size = workerSize({ prompt: listed, cwd, requireFetches: true });
+  assert.deepEqual(size.invalid, []);
+  assert.deepEqual(size.missing.filter((field) => field === 'Fetches'), []);
+  assert.equal(size.tokens, 3200);
+  const bare = workerSize({ prompt: 'Sources: web\nResult: .exo/r.md', cwd, requireFetches: true });
+  assert.deepEqual(bare.invalid, []);
+  assert.ok(bare.missing.includes('Fetches'));
+});

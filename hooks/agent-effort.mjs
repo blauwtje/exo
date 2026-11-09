@@ -11,6 +11,7 @@ import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
+import { recordResearchDispatch, researchFields } from '../lib/research-route.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
 import { defaulted, liftedEffort, resolvedKind, unknownKind } from '../lib/kind-resolution.mjs';
@@ -78,7 +79,7 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = bu
 }
 
 function missingFields(size, { fromOrchestrator, fetchDocs }) {
-  if (fetchDocs) return [];
+  if (fetchDocs) return size.missing.filter((field) => field === 'Fetches');
   if (fromOrchestrator) return size.missing;
   return size.sized ? [] : ['Reads'];
 }
@@ -109,12 +110,13 @@ function sliceFields(hookInput) {
 
 function recordDispatch(hookInput) {
   if (isSliceCall(hookInput)) recordSlice(hookInput.agent_id);
+  recordResearchDispatch(hookInput);
 }
 
 export function agentHook(hookInput, budget, enabled) {
   const rewrite = readsRewrite(hookInput);
   const output = agentEffort(hookInput, budget, rewrite);
-  const fields = mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
+  const fields = researchFields(hookInput) ?? mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
   const receipt = (message, noted) => withReceipt(message, hookInput, noted, ran, enabled);
   if (fields?.permissionDecision) return rememberRefusal(hookInput, receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields), { guard: 'agent-effort' });

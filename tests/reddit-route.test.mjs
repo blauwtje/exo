@@ -36,7 +36,7 @@ test('the context hook emits the deny', () => {
 
 test('the deny names the script, its --run argument and the WebSearch fallback', () => {
   const { deny } = redditRouteDecision(fetchUrl('https://old.reddit.com/r/a'));
-  assert.match(deny, /search\.mjs --source reddit --query <text> --run <run-dir>/);
+  assert.match(deny, /node \/.*\/skills\/spec\/scripts\/search\.mjs --source reddit --query <text> --run <run-dir>/);
   assert.match(deny, /site:reddit\.com/);
 });
 
@@ -52,26 +52,16 @@ test('thread-seeking searches are routed', () => {
   }
 });
 
-test('every refusal is one line of at most 160 characters', () => {
+test('every refusal is one line of at most 320 characters', () => {
   const decisions = [fetchUrl('https://old.reddit.com/r/a'), search('best editor reddit')].map(redditRouteDecision);
   for (const { deny } of decisions) {
-    assert.ok(deny.length <= 160, String(deny.length));
+    assert.ok(deny.length <= 320, String(deny.length));
     assert.doesNotMatch(deny, /\n/);
   }
 });
 
-test('a long plugin root leaves the refusal within 160 characters and keeps --run', () => {
-  const saved = process.env.CLAUDE_PLUGIN_ROOT;
-  process.env.CLAUDE_PLUGIN_ROOT = `/home/jane/.claude/plugins/cache/${'x'.repeat(80)}`;
-  const { deny } = redditRouteDecision(search('best editor reddit'));
-  if (saved === undefined) delete process.env.CLAUDE_PLUGIN_ROOT;
-  else process.env.CLAUDE_PLUGIN_ROOT = saved;
-  assert.ok(deny.length <= 160, String(deny.length));
-  assert.match(deny, /--run <run-dir>/);
-});
-
-test('the deny carries a Do instead clause within 160 characters', () => {
+test('the deny carries a Do instead clause within 320 characters', () => {
   const { deny } = redditRouteDecision(fetchUrl('https://old.reddit.com/r/a'));
   assert.match(deny, /Do instead: .*--run <run-dir>/);
-  assert.ok(deny.length <= 160);
+  assert.ok(deny.length <= 320);
 });

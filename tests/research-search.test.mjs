@@ -382,3 +382,13 @@ test('the archive read records a 5xx in the shared host state', async () => {
   for (let i = 0; i < 3; i++) await readArchiveComments('abc123', { fetchImpl, stateDir }).catch(() => {});
   assert.equal(createHostState({ dir: stateDir }).isOpen('arctic-shift.photon-reddit.com'), true);
 });
+
+test('a bucket wait over the cap reads that thread from the archive', async () => {
+  const base = redditContext({ env: { EXO_REDDIT_WAIT_MS: '5000' }, defaults: { threads: 2, concurrency: 1, capacity: 1, refillMs: 40_000 } });
+  const fetchImpl = async (url, init) => (url.includes('arctic-shift') ? new Response(ARCHIVE_TREE) : base.fetchImpl(url, init));
+  const rows = await searchSource(redditRequest({ urls: TWO_THREADS }), { ...base, fetchImpl });
+  const archived = rows.find((row) => row.url.includes('def456'));
+  assert.match(archived.comments, /carol_example/);
+  assert.match(archived.signals, /Arctic Shift/);
+  assert.equal(archived.blocked, undefined);
+});

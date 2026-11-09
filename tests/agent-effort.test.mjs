@@ -392,3 +392,27 @@ test('on deepseek an orchestrator part with one worker is told to run its unit i
   const twice = { ...hook, tool_input: { ...input, prompt: run('deepseek', hook) } };
   assert.equal(run('deepseek', twice).match(/spawn no worker/gi).length, 1);
 });
+
+test('a main-session web research brief to an unnamed agent is denied toward the research route', () => {
+  const unnamed = (type, agentId) => agentHook({ tool_name: 'Agent', session_id: `route-unnamed-${process.pid}`, ...(agentId && { agent_id: agentId, agent_type: 'orchestrator' }), tool_input: { subagent_type: type, prompt: `Sources: web\nFetches: 1\nResult: .exo/r.md\n${type}` } }, 'on', () => false)?.hookSpecificOutput;
+  for (const type of ['general-purpose', 'claude']) {
+    const denied = unnamed(type);
+    assert.equal(denied.permissionDecision, 'deny');
+    assert.match(denied.permissionDecisionReason, /Do instead: use `exo:research-worker` for one part, or one `exo:orchestrator` with `Workers: <n>`/);
+  }
+  assert.doesNotMatch(unnamed('general-purpose', 'sub1')?.permissionDecisionReason ?? '', /research route|exo:research-worker/);
+});
+
+test('a second main-session web research dispatch inside the window is sent to one orchestrator', () => {
+  const session = `route-fanout-${process.pid}`;
+  const research = (id, agentId) => agentHook({ tool_name: 'Agent', session_id: id, ...(agentId && { agent_id: agentId }), tool_input: { subagent_type: 'exo:research-worker', prompt: 'Sources: web\nFetches: 1\nResult: .exo/r.md\nx' } }, 'on', () => false)?.hookSpecificOutput;
+  fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}`), { force: true });
+  assert.notEqual(research(session)?.permissionDecision, 'deny');
+  const second = research(session);
+  assert.equal(second.permissionDecision, 'deny');
+  assert.match(second.permissionDecisionReason, /Do instead: send the remaining research parts to one `exo:orchestrator`/);
+  assert.notEqual(research(session, 'sub1')?.permissionDecision, 'deny');
+  assert.notEqual(research(`${session}-other`)?.permissionDecision, 'deny');
+  fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}`), { force: true });
+  fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}-other`), { force: true });
+});
