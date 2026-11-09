@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The quality workflow runs its check job on Node 22 and Node 24, so CI proves the Node 22 floor in `package.json`.
 - The Reddit source reads posts and comments through Reddit's shreddit comments partial with no API key, after one search RSS call or from thread urls passed with `--url`, with a token bucket, bounded concurrency, one 429 retry and a `blocked` note naming the `site:reddit.com` web search fallback.
 - The Karpathy flow-unit results compare only its 2 flow runs with the baseline and list run 1 as excluded.
 - exo has 10 skills (build, configure, edit-skills, find-cause, gate, save-session, ship, spec, watch, write-docs) and 5 agents (orchestrator, task-runner, build-task, research-worker, review-branch), with the routing rule "Unclear: spec. Clear: build. Broken: find-cause. Leaving the machine: ship."
@@ -46,6 +47,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `tests/run-watch-final-phases.test.mjs` fails when the `FINAL_PHASES` copy in `hooks/run-watch.mjs` drifts from the original in `skills/build/scripts/run-state.mjs`.
 - The context-limit hook refuses a web fetch of a Reddit host or mirror and a web search that names Reddit without `site:`, and its message points to the Reddit source script and the `site:reddit.com` fallback.
 - `benchmarks/baseline-compare.mjs` and `node benchmarks/sweep.mjs --baseline <file>@<sha>` compare a results file with a baseline, list each run that skipped the flow under `Excluded:` and give a `Verdict:` per metric.
 - The gate prints `FAIL benchmark` when a plan's success rate drops against its `Baseline:`, or when cost or wall time rises past both the noise bound and run.json `defaults.benchmarkMinRise` (0.10).
