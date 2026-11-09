@@ -16,7 +16,7 @@
 4. **Take the block from the `Block:` line.**
    - A `Design:` line routes its task per the design tasks reference, then repeat step 3.
    - An open choice the user would miss stops the run with a question. Rule on any other and record it in the commit.
-5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently, then end the turn; its notification resumes it.
+5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently with `run_in_background: false`, keeping the turn open.
    - Name plan path, branch, checkout and exactly the `Block:` tasks.
    - The tail (`gate`) stays here, in no runner brief.
    - Build no task here and call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.

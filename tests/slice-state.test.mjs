@@ -150,3 +150,22 @@ test('an orchestrator with Reads none may still read the handover template, and 
   assert.equal(PREDISPATCH_STEP.run({ ...agent, tool_input: { command: 'ls' } }).hookSpecificOutput.permissionDecision, 'deny');
   cleanup(agent);
 });
+
+const skillsDir = path.resolve(import.meta.dirname, '../skills');
+
+function forkedSkill(name) {
+  const dir = tempDir('slice-skill-');
+  const transcript = path.join(dir, 'agent.jsonl');
+  const body = fs.readFileSync(path.join(skillsDir, name, 'SKILL.md'), 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '');
+  const text = `Base directory for this skill: ${path.join(skillsDir, name)}\n\n${body}\n\nARGUMENTS: plan.md`;
+  fs.writeFileSync(transcript, `${JSON.stringify({ message: { content: [{ type: 'text', text }] } })}\n{}\n`);
+  return { agent_id: `slice-test-${path.basename(dir)}`, agent_type: 'exo:orchestrator', agent_transcript_path: transcript, cwd: dir };
+}
+
+test('before its first dispatch a forked skill orchestrator reads the references its skill body names, and nothing else', () => {
+  const agent = forkedSkill('build');
+  assert.equal(readFile(agent, path.join(skillsDir, 'build/references/run-loop.md')), null);
+  assert.equal(readFile(agent, path.join(skillsDir, 'build/references/workspace.md')), null);
+  assert.equal(readFile(agent, path.resolve(skillsDir, '../lib/slice-state.mjs')).permissionDecision, 'deny');
+  cleanup(agent);
+});

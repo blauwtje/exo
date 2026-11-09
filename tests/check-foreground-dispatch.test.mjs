@@ -19,7 +19,7 @@ function scan(files) {
 }
 
 test('the shipped lead-run text tells no Agent call to run in the foreground', () => {
-  assert.deepEqual(scanForegroundDispatches(createRepository(ROOT)), { flagged: [], stale: [] });
+  assert.deepEqual(scanForegroundDispatches(createRepository(ROOT)), { flagged: [] });
 });
 
 test('a skill line that sends agents in the foreground is flagged with its line', () => {
@@ -40,8 +40,13 @@ test('a Bash foreground line is not an Agent call', () => {
   assert.deepEqual(result.flagged, []);
 });
 
-test('an allowed subagent-thread line passes and its absence is reported as stale', () => {
-  const allowed = scan({ 'skills/build/references/rolling-window.md': '- Send every `Prompt:` in one message; each foreground call returns after its report.\n' });
-  assert.deepEqual(allowed.flagged, []);
-  assert.equal(allowed.stale.length, 2);
+test('a foreground dispatch line under a forked skill passes and the same line under a plain skill is flagged', () => {
+  const line = '- Send the tasks to the runner with `run_in_background: false`.\n';
+  const result = scan({
+    'skills/forked/SKILL.md': '---\nname: forked\ncontext: fork\n---\nBody\n',
+    'skills/forked/references/loop.md': line,
+    'skills/plain/SKILL.md': '---\nname: plain\n---\nBody\n',
+    'skills/plain/references/loop.md': line,
+  });
+  assert.deepEqual(result.flagged, ['skills/plain/references/loop.md:1']);
 });
