@@ -18,7 +18,6 @@
 // An agent file cannot override the session sandbox, so none writes `sandbox_mode`.
 // `maxTurns` and `omitClaudeMd` have no Codex field and are dropped.
 
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -26,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INHERIT, readKindTable } from '../../lib/model-kinds.mjs';
 import { preambleWithBrief } from './brief.mjs';
+import { hashOf } from '../install-files.mjs';
 import { codexBody, codexMarkdown, codexOpenaiYaml, splitFrontmatter } from './rules.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -34,8 +34,7 @@ const OVERRIDES = path.posix.join('harnesses', 'codex', 'overrides');
 const IGNORED_FILES = ['.DS_Store', '.exo'];
 const OVERRIDE_HEADER = /^<!-- exo:override source-sha256=([0-9a-f]{64}) -->\n/;
 
-const hashOf = (text) => crypto.createHash('sha256').update(text).digest('hex');
-const posix = (file) => file.split(path.sep).join('/');
+export const posix = (file) => file.split(path.sep).join('/');
 
 // A JSON string is a valid TOML basic string.
 function tomlString(text) {
@@ -62,7 +61,7 @@ function renderAgent({ name, description, instructions, model, effort }) {
   return `${lines.join('\n')}\n`;
 }
 
-function listFiles(directory) {
+export function listFiles(directory) {
   if (!fs.existsSync(directory)) return [];
   const found = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {

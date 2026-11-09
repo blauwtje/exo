@@ -1,28 +1,14 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeAtomic } from '../../lib/basics.mjs';
-
-const hashOf = (content) => crypto.createHash('sha256').update(content).digest('hex');
-const statOf = (file) => fs.lstatSync(file, { throwIfNoEntry: false });
-
-function plainChain(base, relative) {
-  let current = base;
-  for (const part of relative.split('/').slice(0, -1)) {
-    current = path.join(current, part);
-    const stat = statOf(current);
-    if (stat === undefined) return true;
-    if (!stat.isDirectory()) return false;
-  }
-  return true;
-}
+import { hashOf, plainChain, statOf } from '../install-files.mjs';
 
 export function planFile({ target, relative, text, recorded, plan }) {
   const file = path.join(target, ...relative.split('/'));
   const sha256 = hashOf(text);
   const stat = statOf(file);
   const currentHash = stat?.isFile() ? hashOf(fs.readFileSync(file)) : undefined;
-  if (!plainChain(target, relative) || (stat !== undefined && currentHash === undefined)) {
+  if (!plainChain(target, relative.split('/')) || (stat !== undefined && currentHash === undefined)) {
     plan.conflicts.push(`${file} exists and exo did not write it`);
     return undefined;
   }
@@ -50,7 +36,7 @@ export function releaseFiles({ target, entries, plan }) {
     for (let folder = path.dirname(file); folder !== target; folder = path.dirname(folder)) folders.add(folder);
     const stat = statOf(file);
     if (stat === undefined) continue;
-    const unchanged = plainChain(target, entry.path) && stat.isFile() && hashOf(fs.readFileSync(file)) === entry.sha256;
+    const unchanged = plainChain(target, entry.path.split('/')) && stat.isFile() && hashOf(fs.readFileSync(file)) === entry.sha256;
     if (unchanged) plan.writes.push(() => fs.unlinkSync(file));
     else plan.notes.push(`kept ${file}: it is not the file exo wrote`);
   }

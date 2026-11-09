@@ -23,6 +23,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 - DeepSeek Flash efforts: build (measured, 15/15 pass at low and high, low is cheaper and faster), plus unmeasured lookup, chore, orchestrator, judge at low and fix-review at high, in `kindEfforts`.
 - Codex and OpenCode agents open with one shared outcome-first preamble holding the goal, the done-check, assumptions or BLOCKED, named files only and evidence as command output or `path:line`.
 - Generated Codex agent files no longer write `sandbox_mode`, so each agent inherits the session sandbox.
+- The Codex, OpenCode and Claude install adapters share their file helpers (`isPlain`, `hashOf`, `statOf`, `plainChain`, `readRecord`) from `harnesses/install-files.mjs`.
+- The OpenCode install record no longer writes `links`, `hooks`, `excludes` or `created`; an older record that holds them still reads.
+- The OpenCode generator reuses the Codex `listFiles` and `posix` instead of its own copies.
+- A test proves the OpenCode `model#variant` agent line for each kind effort.
+- Removed the unloaded OpenCode host note and its test.
+- Removed the unread `subagents`, `maxWorkers` and `promptStyle` keys from `harnesses/capabilities.json`.
+- Codex agents name the Codex tools again (shell reads, `view_image`, `apply_patch`) and the shared preamble holds the turn budget.
+- `docs/principles/prompt.md` restores its lost meanings and marks a citation with no matching rule as `gap`.
+- The DeepSeek results mark every kind without records `unmeasured` and state that the low build records are absent.
 - The quality workflow runs its check job on Node 22 and Node 24, so CI proves the Node 22 floor in `package.json`.
 - The Reddit source reads posts and comments through Reddit's shreddit comments partial with no API key, after one search RSS call or from thread urls passed with `--url`, with a token bucket, bounded concurrency, one 429 retry and a `blocked` note naming the `site:reddit.com` web search fallback.
 - The Karpathy flow-unit results compare only its 2 flow runs with the baseline and list run 1 as excluded.

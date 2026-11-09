@@ -231,7 +231,7 @@ Codex hooks and generated script commands run through `harnesses/codex/hook-entr
 
 ## OpenCode
 
-`harnesses/opencode/generate.mjs` reuses the Codex rewrite helpers and builds the OpenCode skills and `exo-<agent>` subagent files in memory; agent files name no `model`, and effort maps to a `#variant` only when `opencode.model` and `opencode.variants` are set in `~/.config/exo/run.json`. Codex and OpenCode agents share the preamble in `harnesses/codex/agent-preamble.md`. `harnesses/capabilities.json` holds each harness's subagents, hooks, efforts and worker count, and a static check fails when an adapter, its hook events or its effort column disagree with it. OpenAI models run through the OpenCode harness with the user's own provider key.
+`harnesses/opencode/generate.mjs` reuses the Codex rewrite helpers and file listing (`listFiles`, `posix`) and builds the OpenCode skills and `exo-<agent>` subagent files in memory; agent files name no `model`, and effort maps to a `#variant` only when `opencode.model` and `opencode.variants` are set in `~/.config/exo/run.json`. Codex and OpenCode agents share the preamble in `harnesses/codex/agent-preamble.md`; each host passes its own tool line. `harnesses/capabilities.json` holds each harness's hooks and efforts, and a static check fails when an adapter, its hook events or its effort column disagree with it. OpenAI models run through the OpenCode harness with the user's own provider key.
 
 ## Releasing
 

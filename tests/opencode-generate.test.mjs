@@ -38,3 +38,16 @@ test('opencode.model with a variant per effort writes model: <model>#<variant>',
   for (const line of lines) assert.match(line, /^model: provider\/model(#\w+)?$/);
   assert.ok(lines.some((line) => line.includes('#')));
 });
+
+function modelOf(tree, file) {
+  const header = tree.get(`agents/exo-${file}`).split('\n---\n')[0];
+  return header.split('\n').find((line) => line.startsWith('model:'));
+}
+
+test('each agent file carries the variant of its kind effort', () => {
+  const variants = { low: 'min', medium: 'mid', high: 'top', xhigh: 'top', max: 'top' };
+  const config = { opencode: { model: 'provider/model', variants } };
+  const tree = generateOpenCodeTree(ROOT, { exoRoot: EXO_ROOT, config });
+  assert.equal(modelOf(tree, 'build-task.md'), 'model: provider/model#min');
+  assert.equal(modelOf(tree, 'orchestrator.md'), 'model: provider/model#mid');
+});

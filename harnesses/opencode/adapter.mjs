@@ -2,18 +2,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { writeAtomic } from '../../lib/basics.mjs';
+import { statOf } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 import { agentEntries, planFile, planSkill, releaseFiles, skillEntries, tryRmdir } from './files.mjs';
 import { generateOpenCodeTree } from './generate.mjs';
-import { readInstalls } from './record.mjs';
+import { PLAIN_PATH, SCOPES, readInstalls } from './record.mjs';
 
 export const name = 'opencode';
 export const label = 'OpenCode';
 
-const SCOPES = ['user', 'project'];
-const PLAIN_PATH = /^[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)*$/i;
-
-const statOf = (file) => fs.lstatSync(file, { throwIfNoEntry: false });
 const jsonText = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const sameInstall = (left, right) => left.scope === right.scope && left.project === right.project;
 const matches = (install, selector) => (selector.scope === undefined || install.scope === selector.scope)
@@ -50,7 +47,7 @@ function checkProject(scope, project) {
   if (typeof project !== 'string' || !path.isAbsolute(project)) throw new Error(`OpenCode project scope needs an absolute project folder, got ${JSON.stringify(project)}`);
   if (!statOf(project)?.isDirectory()) throw new Error(`project folder ${project} is not a folder`);
   const folder = path.join(project, '.opencode');
-  if (statOf(folder)?.isSymbolicLink()) throw new Error(`${folder} is a link; exo does not write through links in a project`);
+  if (statOf(folder)?.isSymbolicLink()) throw new Error(`${folder} is a link; exo does not write through a symlink in a project`);
 }
 
 function planInstall({ root, env, scope, project }, verb = 'installed') {
@@ -60,7 +57,7 @@ function planInstall({ root, env, scope, project }, verb = 'installed') {
   const installs = readInstalls(where.recordFile);
   const old = installs.find((entry) => sameInstall(entry, { scope, project }));
   const { skills, agents } = generated(root);
-  const next = { scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [], created: [] };
+  const next = { scope, ...(project === undefined ? {} : { project }), skills: [], agents: [] };
   const plan = { conflicts: [], notes: [], writes: [] };
   const { target } = where;
 

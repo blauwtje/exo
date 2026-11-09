@@ -25,13 +25,13 @@
 // untrusted data. The record `codex/install.mjs` wrote (skill links, no hashes)
 // reads as one user install and is rewritten in the new shape on the next write.
 
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
 import { shellQuote, writeAtomic } from '../../lib/basics.mjs';
+import { hashOf, isPlain, plainChain, readRecord, statOf } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 import { generateTree } from './generate.mjs';
 import { codexHookEntries } from './hooks.mjs';
@@ -47,9 +47,6 @@ const EXCLUDE_LINE = /^\/\.agents\/skills\/[a-z0-9][a-z0-9-]*\/$|^\/\.codex\/age
 const SKILL_PREFIX = 'harnesses/codex/generated/skills/';
 const AGENT_PREFIX = 'harnesses/codex/generated/agents/';
 
-const isPlain = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
-const hashOf = (content) => crypto.createHash('sha256').update(content).digest('hex');
-const statOf = (file) => fs.lstatSync(file, { throwIfNoEntry: false });
 const jsonText = (value) => `${JSON.stringify(value, null, 2)}\n`;
 
 function safeName(value, pattern, what) {
@@ -63,21 +60,6 @@ function safeParts(relative) {
   const parts = relative.split('/');
   for (const part of parts) safeName(part, PATH_PART, 'path');
   return parts;
-}
-
-function readJson(file) {
-  let text;
-  try {
-    text = fs.readFileSync(file, 'utf8');
-  } catch (error) {
-    if (error.code === 'ENOENT') return undefined;
-    throw error;
-  }
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new Error(`${file} does not parse (${error.message}); fix or move it, nothing was written`);
-  }
 }
 
 const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [], created: [] });
@@ -104,7 +86,7 @@ function validInstall(entry) {
 
 // Returns the installs the record file lists; the old single-target shape is one user install.
 function readInstalls(file) {
-  const record = readJson(file);
+  const record = readRecord(file, 'written');
   if (record === undefined) return [];
   const notRecord = new Error(`${file} is not an exo install record; fix or move it, nothing was written`);
   if (!isPlain(record)) throw notRecord;
@@ -181,19 +163,6 @@ function removeLink(link) {
     // Ceiling: Windows may refuse unlink on a junction; lift it once a Windows run shows otherwise.
     fs.rmdirSync(link);
   }
-}
-
-// True when each folder from `base` down to the file's parent is a real folder or missing,
-// so no link on the way can lead a write or delete outside the skill folder.
-function plainChain(base, parts) {
-  let current = base;
-  for (const part of parts.slice(0, -1)) {
-    current = path.join(current, part);
-    const stat = statOf(current);
-    if (stat === undefined) return true;
-    if (!stat.isDirectory()) return false;
-  }
-  return true;
 }
 
 // macOS Finder drops a `.DS_Store` into any folder it opens. It is not exo's and not
@@ -320,7 +289,7 @@ function writeExclude(file, lines) {
 }
 
 function planHooks(hooksFile, removed, additions, writes, dropEmpty = false) {
-  const current = readJson(hooksFile);
+  const current = readRecord(hooksFile, 'written');
   if (current === undefined && Object.keys(additions).length === 0) return [];
   const { config, added } = mergeHooks(current ?? {}, removed, additions);
   const empty = isDeepStrictEqual(config, {}) || isDeepStrictEqual(config, { hooks: {} });

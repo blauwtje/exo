@@ -33,5 +33,20 @@ test('the shared preamble opens every Codex and OpenCode agent with the done-che
   const codex = [...generateTree(ROOT)].filter(([file]) => /agents\/exo-.+\.toml$/.test(file));
   const opencode = [...generateOpenCodeTree(ROOT, { config: {} })].filter(([file]) => file.startsWith('agents/'));
   assert.ok(codex.length > 0 && opencode.length > 0);
-  for (const [file, text] of [...codex, ...opencode]) assert.ok(text.includes(preamble.split('\n')[2]), file);
+  const lines = preamble.split('\n').filter((line) => line && line !== '{tools}');
+  for (const [file, text] of [...codex, ...opencode]) {
+    for (const line of lines) assert.ok(text.includes(line), `${file}: ${line}`);
+  }
+});
+
+test('Codex agents name Codex tools and both hosts keep the turn-budget line', async () => {
+  const { generateOpenCodeTree } = await import('../harnesses/opencode/generate.mjs');
+  const codex = [...generateTree(ROOT)].filter(([file]) => /agents\/exo-.+\.toml$/.test(file));
+  const opencode = [...generateOpenCodeTree(ROOT, { config: {} })].filter(([file]) => file.startsWith('agents/'));
+  for (const [file, text] of codex) {
+    assert.ok(text.includes('`view_image`') && text.includes('`apply_patch`'), file);
+    assert.ok(!text.includes('with your own file tools'), file);
+  }
+  for (const [file, text] of opencode) assert.ok(text.includes('with your own file tools'), file);
+  for (const [file, text] of [...codex, ...opencode]) assert.ok(text.includes('A turn budget the instructions state'), file);
 });

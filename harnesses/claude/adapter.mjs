@@ -17,6 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { writeAtomic } from '../../lib/basics.mjs';
+import { isPlain, readRecord } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 
 export const name = 'claude';
@@ -25,8 +26,6 @@ export const label = 'Claude Code';
 const SCOPES = ['user', 'project', 'local'];
 const MARKETPLACE_SOURCE = 'blauwtje/exo';
 const PLUGIN = 'exo@blauwtje';
-
-const isPlain = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 function configDirectory(env) {
   const home = env.HOME || env.USERPROFILE || os.homedir();
@@ -40,20 +39,9 @@ const validInstall = (entry) => isPlain(entry)
   && (entry.scope === 'user' ? entry.project === undefined : typeof entry.project === 'string' && path.isAbsolute(entry.project));
 
 function readInstalls(file) {
-  let text;
-  try {
-    text = fs.readFileSync(file, 'utf8');
-  } catch (error) {
-    if (error.code === 'ENOENT') return [];
-    throw error;
-  }
+  const record = readRecord(file, 'run');
+  if (record === undefined) return [];
   const notRecord = new Error(`${file} is not an exo install record; fix or move it, nothing was run`);
-  let record;
-  try {
-    record = JSON.parse(text);
-  } catch (error) {
-    throw new Error(`${file} does not parse (${error.message}); fix or move it, nothing was run`);
-  }
   if (!isPlain(record) || !Array.isArray(record.installs) || !record.installs.every(validInstall)) throw notRecord;
   return record.installs;
 }

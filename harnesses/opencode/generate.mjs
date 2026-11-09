@@ -5,27 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { INHERIT, readKindTable } from '../../lib/model-kinds.mjs';
 import { splitFrontmatter } from '../codex/rules.mjs';
 import { preambleWithBrief } from '../codex/brief.mjs';
+import { listFiles, posix } from '../codex/generate.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
-const IGNORED_FILES = ['.DS_Store', '.exo'];
-
-const posix = (file) => file.split(path.sep).join('/');
 
 export function readOpenCodeConfig(home = os.homedir()) {
   const file = path.join(home, '.config', 'exo', 'run.json');
   if (!fs.existsSync(file)) return {};
   return JSON.parse(fs.readFileSync(file, 'utf8'));
-}
-
-function listFiles(directory) {
-  const found = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (IGNORED_FILES.includes(entry.name)) continue;
-    const location = path.join(directory, entry.name);
-    if (entry.isDirectory()) found.push(...listFiles(location));
-    else found.push(location);
-  }
-  return found.sort();
 }
 
 function withRoots(text, exoRoot, skillDir) {
@@ -67,7 +54,7 @@ function addAgents(root, exoRoot, config, files) {
       `description: ${JSON.stringify(entry.description ?? own.description)}`,
       ...modelLine(config, effort === INHERIT ? null : effort)
     ];
-    const text = `---\n${header.join('\n')}\n---\n${preambleWithBrief(root, own)}${withRoots(body.replace(/^\n+/, ''), exoRoot, '(the skill folder path the dispatch passes)')}`;
+    const text = `---\n${header.join('\n')}\n---\n${preambleWithBrief(root, own, 'opencode')}${withRoots(body.replace(/^\n+/, ''), exoRoot, '(the skill folder path the dispatch passes)')}`;
     files.set(`agents/exo-${path.basename(file)}`, text);
   }
 }

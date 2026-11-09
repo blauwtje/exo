@@ -13,9 +13,13 @@ Pass rates tie, so the cheaper effort wins: build runs at low. Cost is priced fr
 
 ## Other kinds
 
-Measured: build, build-task, review, review-branch, review-deep, hardest.
-Unmeasured (research proposal, `.exo/research/deepseek-flash/answer.md`): lookup low, chore low, orchestrator low, fix-review high, doc-task low, task-runner low, judge low. Medium is not a DeepSeek level and maps to high.
+Measured: build only. No record exists for build-task, review, review-branch, review-deep or hardest, so those kinds are unmeasured too.
+Unmeasured kinds (research proposal, `.exo/research/deepseek-flash/answer.md`): lookup low, chore low, orchestrator low, fix-review high, doc-task low, task-runner low, judge low. Medium is not a DeepSeek level and maps to high.
 
 ## Sweep spend
 
 40 cells cost $0.999 at peak rate by `.exo/deepseek-flash/spend2.mjs`. The DeepSeek dashboard read $0.44 for the earlier part of the day. The sweep was stopped early for the deadline and flow-low is partial.
+
+## Missing records
+
+The low build records under `.exo/deepseek-flash/sweep/build-low/` are absent from the repository, so the low row above is not reproducible here and is not reconstructed. Every kind without records is `unmeasured`.

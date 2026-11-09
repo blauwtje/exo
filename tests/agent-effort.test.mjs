@@ -373,11 +373,6 @@ test('an Agent call without isolation, or with a Worktree line, is not denied fo
   assert.notEqual(routed?.permissionDecision, 'deny');
 });
 
-test('the OpenCode host note sets EXO_HOST for exo scripts', () => {
-  const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'opencode', 'host-note.md'), 'utf8');
-  assert.match(note, /EXO_HOST=opencode/);
-});
-
 test('on deepseek an orchestrator part with one worker is told to run its unit itself', () => {
   const input = { subagent_type: 'exo:orchestrator', prompt: 'exo-kind: orchestrator\nWorkers: 1\nReads: none\ndo it' };
   const hook = { tool_name: 'Agent', tool_input: input };
