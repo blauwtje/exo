@@ -282,10 +282,10 @@ test('the branch reviewer keeps the question, nit and note weights', () => {
   assert.match(reviewer.body, /Mark a `note` `report`, never `concern`; it is style, naming, layout or a test gap, test-gap notes included\./);
 });
 
-test('orchestrator holds Agent, Write and TaskStop, loads the project CLAUDE.md and runs on orchestrator', () => {
+test('orchestrator holds Agent, Skill, Write and TaskStop, loads the project CLAUDE.md and runs on orchestrator', () => {
   const orchestrator = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   const tools = orchestrator.frontmatter.tools.split(', ');
-  for (const tool of ['Agent', 'Write', 'TaskStop', 'Monitor']) assert.ok(tools.includes(tool), `orchestrator lists ${tool}`);
+  for (const tool of ['Agent', 'Skill', 'Write', 'TaskStop', 'Monitor']) assert.ok(tools.includes(tool), `orchestrator lists ${tool}`);
   assert.equal(orchestrator.frontmatter.omitClaudeMd, undefined);
   assert.equal(kindTable.agents['agents/orchestrator.md'].kind, 'orchestrator');
 });

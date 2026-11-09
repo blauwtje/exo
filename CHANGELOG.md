@@ -80,6 +80,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The orchestrator lists the `Skill` tool, so it can run `gate` as the build tail instead of skipping it with "No such tool: Skill".
+- Inside a forked skill, the orchestrator dispatches workers in the foreground and keeps its turn open, so a background task-runner no longer ends the build before `gate`.
 - `sweep.mjs --results` refuses a value ending in `.md` and names the folder it publishes into.
 - Reddit research reads live data by default: `search.rss` finds threads with real ids and the shreddit comment endpoint returns full comment trees; Arctic Shift is only a fallback, labelled with its capture date and the live failure reason.
 - The Arctic Shift fallback search is sorted, time-windowed and scoped to the subreddit, and a mirror URL yields its thread id.
