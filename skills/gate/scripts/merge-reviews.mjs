@@ -210,7 +210,7 @@ function sweepInvalid(sweepLine, quoteLine, root) {
   const ran = spawnSync('bash', ['-c', command], { cwd: root, encoding: 'utf8', timeout: SWEEP_TIMEOUT_MS });
   const hits = (ran.stdout ?? '').split('\n').filter(Boolean);
   const defect = collapsed(quote.replace(/^`(.*)`$/, '$1'));
-  return hits.length === 0 || !hits.every((hit) => collapsed(hit).endsWith(defect));
+  return !hits.some((hit) => collapsed(hit).endsWith(defect));
 }
 
 function recurringOf(findings, prior) {

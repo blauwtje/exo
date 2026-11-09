@@ -1,0 +1,18 @@
+{
+  "good": [
+    {
+      "path": "paths.js",
+      "range": "6-6"
+    },
+    {
+      "path": "paths.js",
+      "range": "10-10"
+    }
+  ],
+  "bad": [
+    {
+      "path": "paths.js",
+      "range": "14-14"
+    }
+  ]
+}

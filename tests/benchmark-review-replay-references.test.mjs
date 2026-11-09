@@ -37,7 +37,7 @@ test('every replay task ships a good and a bad reference repair', () => {
   assert.ok(FIXTURES.length > 0);
   for (const fixture of FIXTURES) {
     const { good, bad } = references(fixture);
-    assert.ok(good.length > 0, `${fixture.id} good`);
+    assert.equal(good.length > 0, fixture.plants.length > 0, `${fixture.id} good`);
     assert.ok(bad.length > 0, `${fixture.id} bad`);
   }
 });
@@ -51,7 +51,8 @@ for (const fixture of FIXTURES) {
 
   test(`${fixture.id}: the bad reference misses a plant and fixes outside every plant`, () => {
     const grading = grade(fixture, references(fixture).bad);
-    assert.ok(grading.fixed < grading.planted);
+    assert.ok(grading.fixed <= grading.planted);
+    assert.ok(grading.planted === 0 || grading.fixed < grading.planted);
     assert.ok(grading.falseFix > 0);
   });
 }

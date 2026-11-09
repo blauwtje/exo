@@ -1,0 +1,17 @@
+const TTL_MS = 60000;
+const entries = new Map();
+
+export function remember(key, value, now = Date.now()) {
+  entries.set(key, { value, expires: now + TTL_MS });
+}
+
+export function recall(key, now = Date.now()) {
+  const entry = entries.get(key);
+  if (!entry) return undefined;
+  if (entry.expires <= now) return undefined;
+  return entry.value;
+}
+
+export function size() {
+  return entries.size;
+}

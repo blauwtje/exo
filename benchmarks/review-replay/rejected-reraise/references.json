@@ -1,0 +1,14 @@
+{
+  "good": [
+    {
+      "path": "cache.js",
+      "range": "12-12"
+    }
+  ],
+  "bad": [
+    {
+      "path": "cache.js",
+      "range": "16-18"
+    }
+  ]
+}

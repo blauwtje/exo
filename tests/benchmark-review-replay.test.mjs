@@ -261,11 +261,12 @@ test('loadFixtures strips the .seed suffix from the planted source and reads its
   assert.throws(() => loadFixtures(root), /exactly one \.seed source/);
 });
 
+const EXTRA_FIXTURES = ['clean', 'incomplete-fix', 'rejected-reraise', 'two-rounds'];
 const CLASS_FIXTURES = ['copied-block', 'dead-code', 'duplicate-truth-source', 'narrating-comment', 'swallowed-failure', 'untested-branch'];
 
 test('benchmarks/review-replay holds one fixture per repeat class with 2-3 plants, plus a two-round fixture', () => {
   const fixtures = loadFixtures();
-  assert.deepEqual(fixtures.map((fixture) => fixture.id).sort(), [...CLASS_FIXTURES, 'two-rounds'].sort());
+  assert.deepEqual(fixtures.map((fixture) => fixture.id).sort(), [...CLASS_FIXTURES, ...EXTRA_FIXTURES].sort());
   for (const fixture of fixtures.filter((candidate) => CLASS_FIXTURES.includes(candidate.id))) {
     assert.ok(fixture.plants.length >= 2 && fixture.plants.length <= 3, `${fixture.id} plants ${fixture.plants.length}`);
     assert.equal(new Set(fixture.plants.map((plant) => plant.class)).size, 1, fixture.id);
@@ -274,10 +275,17 @@ test('benchmarks/review-replay holds one fixture per repeat class with 2-3 plant
   assert.deepEqual(rounds, [1, 2]);
 });
 
+test('the ledger fixtures load with their planned plants', () => {
+  const plants = Object.fromEntries(loadFixtures().map((fixture) => [fixture.id, fixture.plants]));
+  assert.deepEqual(plants.clean, []);
+  assert.deepEqual(plants['rejected-reraise'].map((plant) => plant.round), [1]);
+  assert.equal(plants['incomplete-fix'].length, 2);
+});
+
 test('every benchmarks/review-replay/<class>/ fixture plants ranges inside its stripped source', () => {
   for (const fixture of loadFixtures()) {
     const lines = fs.readFileSync(path.join(fixture.dir, `${fixture.file}.seed`), 'utf8').trimEnd().split('\n').length;
-    assert.ok(fixture.plants.length > 0, fixture.id);
+    assert.ok(fixture.plants.length > 0 || fixture.id === 'clean', fixture.id);
     for (const plant of fixture.plants) {
       const [start, end = start] = plant.range.split('-').map(Number);
       assert.equal(plant.path, fixture.file, fixture.id);
@@ -328,8 +336,8 @@ test('dry-run --full projects every fixture times three repeats with no budget',
   const { status, projection } = dryRun('--full');
   assert.equal(status, 0);
   assert.equal(projection.mode, 'full');
-  assert.equal(projection.cells.length, 21);
-  assert.equal(projection.projectedUsd, 9.11);
+  assert.equal(projection.cells.length, 30);
+  assert.equal(projection.projectedUsd, 13.01);
   assert.equal(projection.budgetUsd, null);
 });
 

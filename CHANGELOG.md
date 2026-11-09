@@ -75,6 +75,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- Review merge keeps a `fix` finding whose Sweep also hits a sibling defect site, so incomplete-fix went from 0 of 2 to 2 of 2 repaired in the review replay.
 - A subagent's foreground Bash call in bypass or auto mode runs under `timeout`, ending 5 s before Claude Code's Bash limit instead of moving to the background and leaving the agent open; the margin is `EXO_BASH_CAP_MARGIN_MS`.
 - Skill scripts that fetch, spawn or poll now stop at a deadline or when their caller exits, so no orphan process runs on for days.
 - A web research brief sent from the main session to `general-purpose` or `claude` is refused toward `exo:research-worker` or one `exo:orchestrator`, and a second web research dispatch within `EXO_RESEARCH_FANOUT_MS` (30000) is refused toward one orchestrator.
