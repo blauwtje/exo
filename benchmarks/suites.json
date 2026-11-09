@@ -21,6 +21,7 @@
       "entries": [
         "benchmarks/sweep.mjs",
         "benchmarks/sweep-score.mjs",
+        "benchmarks/sweep-paired-report.mjs",
         "benchmarks/flow-report.mjs",
         "benchmarks/checkpoint-fork.mjs"
       ]

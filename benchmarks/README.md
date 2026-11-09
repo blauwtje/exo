@@ -127,6 +127,7 @@ node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three
 node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
 node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # writes the results file under <dir> instead of results/
 node benchmarks/sweep.mjs --set flow --repeat 3          # --repeat applies to every set: n calls per cell, result dirs `<id>-<k>`, records keep the cell id and add `repeat: k`
+node benchmarks/sweep.mjs --set flow --repeat 3 --base <checkout> --confirm   # runs each cell and repeat as a base and a candidate arm started together (`<cell>-<n>-base`, `<cell>-<n>-cand`, `arm` in the record); --concurrency counts runs, so a pair is never split; the results file gains a `## Paired` section of candidate minus base with 95% CIs for tokens, cost, hidden-check pass and wall time; refused with a plugin-variant cell; --results names a folder, not a .md file
 node benchmarks/sweep.mjs --set flow --cells flow-unit --confirm --keep-repo <dir>   # copies each measured cell's repo, .exo/ and origin.git to <dir>/<cell dir>/ as a checkpoint; refused with the replay set
 node benchmarks/sweep.mjs --set build --provider deepseek --effort low,high,max   # each chosen cell once per effort on that provider of run.json, with its model and key; ids end in -<provider>-<effort>
 node benchmarks/flow-report.mjs <outDir>...            # exo (flow-c7) against the baseline (flow-base) over the flow records of one out dir per run

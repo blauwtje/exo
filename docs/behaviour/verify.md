@@ -15,6 +15,8 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## plan
 - SessionStart output opens with the static rule text (Task 3).
 - A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
+- Task 1: meta.json holds the base commit and `baseDirty` only when a base checkout is given, and is unchanged without it.
+- Task 4: `--results x.md` is refused, `--dry-run --base` lists both arms per pair with a projection over both, and the existing sweep tests pass unchanged.
 - Over-limit commands are rewritten, not denied: Task 1. Per-call ms: Task 2.
 - Task 2: a subagent's `git stash` runs as a saved patch and never reaches the shared stash list; `git stash pop` is still denied.
 - Task 3: a Write whose only break is added comment lines lands with those lines stripped; a nested ternary is still refused.

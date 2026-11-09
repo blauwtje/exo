@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `node benchmarks/sweep.mjs --base <checkout>` runs every cell and repeat as a base and candidate pair that start together, and the report adds a `## Paired` section with the mean difference and 95% CI per metric, so machine load hits both arms equally.
 - `benchmarks/guard-replay.mjs` replays each guard's recorded refused inputs through a base and a candidate hook and counts denied, rewritten and allowed results.
 - Research hosts share rate-limit, breaker and blocked-URL state across processes, and a Reddit block stays on its thread, which is read from the Arctic Shift archive.
 - Reddit threads are found by web search first, with RSS only when budget allows.
@@ -79,6 +80,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `sweep.mjs --results` refuses a value ending in `.md` and names the folder it publishes into.
 - Reddit research reads live data by default: `search.rss` finds threads with real ids and the shreddit comment endpoint returns full comment trees; Arctic Shift is only a fallback, labelled with its capture date and the live failure reason.
 - The Arctic Shift fallback search is sorted, time-windowed and scoped to the subreddit, and a mirror URL yields its thread id.
 - Reddit rate waits are kept per endpoint and honoured (`EXO_REDDIT_WAIT_MS`, default 65000) within the `EXO_SPEC_SEARCH_MS` lifetime, instead of falling back to the archive after 15 s.

@@ -30,23 +30,23 @@ import { createWorktree } from '#checkout';
 import { confinedClaude } from '#confine-claude';
 import { killTree } from '#process-tree';
 import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
-import { commentStats, ledgerTranscripts } from './comment-count.mjs';
-import { buildPhases } from './build-phases.mjs';
-import { checkFlow } from './flow-check.mjs';
-import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { JUDGE_NAMES, judgeBodies, parseReviewerBodies } from '../lib/review-judges.mjs';
 import { reviewPrompt } from '../skills/build/scripts/run-tail.mjs';
 import { cellEnvironment, claudeArguments, judgeCells, pluginVariants, providerCells, replayCells, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from '../skills/build/scripts/run-config.mjs';
-import { FLOW_BRANCH, flowWebCells, defectRange } from './sweep-fixtures.mjs';
-import { flowHelpers, prepareRepository } from './sweep-prepare.mjs';
-import { countDriftReports, lintPlan, reviewStages, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
+import { flowWebCells, defectRange } from './sweep-fixtures.mjs';
+import { prepareRepository } from './sweep-prepare.mjs';
+import { lintPlan, overlaps, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { landedTasks } from './sweep-baseline.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { projectSweep, sweepProjectionLine } from './sweep-projection.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks, newestRunLedger } from './value.mjs';
 import { applyVariant } from './variants.mjs';
+import { readOrWriteMeta } from './sweep-meta.mjs';
+import { measureFlow } from './sweep-flow-measure.mjs';
+import { existingBase, pairCells, rejectBaseVariants, runPairs } from './sweep-paired.mjs';
+import { pairedSection } from './sweep-paired-report.mjs';
 import { readJson, readJsonOrNull } from './basics.mjs';
 import { recordCostFields } from './pricing.mjs';
 
@@ -117,7 +117,7 @@ function withTier(options) {
 }
 
 export function parseArguments(argv) {
-  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null, provider: 'claude', efforts: null, baseline: null };
+  const options = { sets: null, cells: null, confirm: false, dryRun: false, full: false, concurrency: 2, out: null, results: RESULTS, cases: null, models: ['opus'], repeat: 1, keepRepo: null, reviewerBodies: null, provider: 'claude', efforts: null, baseline: null, base: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
@@ -133,12 +133,14 @@ export function parseArguments(argv) {
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else if (flag === '--keep-repo') options.keepRepo = argv[++index];
     else if (flag === '--baseline') options.baseline = argv[++index];
+    else if (flag === '--base') options.base = existingBase(argv[++index]);
     else if (flag === '--provider') options.provider = argv[++index];
     else if (flag === '--effort') options.efforts = argv[++index].split(',');
     else if (flag === '--reviewer-bodies') options.reviewerBodies = parseReviewerBodies(argv[++index]);
     else throw new Error(`unknown flag ${flag}`);
   }
   if (!Number.isInteger(options.repeat) || options.repeat < 1) throw new Error('--repeat must be a positive integer');
+  if (options.results.endsWith('.md')) throw new Error(`--results names a folder, not a file: the sweep publishes <date>-sweep.md into it, so pass the folder of ${options.results}`);
   const tiered = withTier(options);
   if (tiered.keepRepo === undefined) throw new Error('--keep-repo needs a folder');
   if (tiered.keepRepo !== null && tiered.sets.includes('replay')) throw new Error('--keep-repo does not apply to the replay set: a replay cell is a worktree of this clone');
@@ -158,7 +160,7 @@ export function runClaude(cell, workdir, cellRoot, cellDirectory, copies, provid
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
     const startedAt = Date.now();
-    const pluginDir = cell.pluginVariant ? copies[cell.pluginVariant] : ROOT;
+    const pluginDir = cell.pluginDir ?? (cell.pluginVariant ? copies[cell.pluginVariant] : ROOT);
     const tmp = path.join(cellRoot, 'tmp');
     fs.mkdirSync(tmp, { recursive: true });
     // A run arm starts exo run unconfined, as a user would; its sessions confine
@@ -249,50 +251,6 @@ function measureReplay(cell, review) {
   return { defectsFound: hits, falseAlarms: extra, detail, hits, truth: truth.length, extra };
 }
 
-function flowTranscripts(repository, usage) {
-  if (usage?.transcript) return [usage.transcript];
-  return ledgerTranscripts(newestRunLedger(repository));
-}
-
-// The hidden check reads the finished code, so it runs before the repository
-// is removed; a check that throws leaves the cell a record with no landed count.
-async function measureFlow(cell, repository, review, usage) {
-  const helpers = flowHelpers(cell);
-  const transcript = usage?.transcript ? fs.readFileSync(usage.transcript, 'utf8') : '';
-  const calls = usage?.transcript ? toolCalls(readJsonl(usage.transcript)) : null;
-  const gates = calls === null ? null : gateFacts(calls);
-  let check;
-  try {
-    check = await checkFlow(repository, helpers);
-  } catch (error) {
-    check = { total: helpers.length, landed: null, pass: false, defects: [`flow check failed: ${error.message}`] };
-  }
-  const landed = check.landed === null ? 'unknown' : `${check.landed}/${check.total}`;
-  const stages = reviewStages(usage?.subagents, transcript);
-  const phases = usage?.transcript ? buildPhases(usage.transcript) : null;
-  const tokensExReview = phases === null ? null : Math.round(Object.entries(phases).reduce((sum, [name, value]) => (name === 'review' || name === 'fix' ? sum : sum + value), 0));
-  const trailers = landedTasks(repository);
-  const detail = `${landed} tasks landed (${trailers}/${helpers.length} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}, review stages ${stages.reviewBranch} review-branch ${stages.fixReview} fix-review (fix=${stages.fix ?? '-'} concern=${stages.concern ?? '-'}), tokens excl. review and fix ${tokensExReview ?? '-'}`;
-  return {
-    defectsFound: review.counts === null ? null : review.counts.defect,
-    falseAlarms: null,
-    detail,
-    landed: check.landed,
-    total: check.total,
-    hiddenPass: check.pass,
-    trailers,
-    defects: check.defects,
-    verifyRan: gates?.verifyRan ?? null,
-    reviewDispatched: gates?.reviewDispatched ?? null,
-    routes: gates?.routes ?? null,
-    reviewBookings: calls === null ? null : reviewBookings(calls),
-    leadPeakTokens: usage?.leadPeakTokens ?? null,
-    reviewStages: stages,
-    tokensExReview,
-    commentStats: commentStats({ repository, branch: FLOW_BRANCH, transcripts: flowTranscripts(repository, usage), hiddenPass: check.pass })
-  };
-}
-
 // A plan cell starts without docs/plans/, so the newest file there is its plan.
 function newestPlan(repository) {
   const directory = path.join(repository, 'docs', 'plans');
@@ -307,7 +265,7 @@ async function measureCell(cell, repository, usage, cellDirectory) {
   if (cell.kind === 'replay') return measureReplay(cell, readReview(repository, cellDirectory, replayFindings(repository)));
   const review = readReview(repository, cellDirectory);
   if (cell.kind === 'review') return measureReview(cell, repository, review);
-  if (cell.kind.startsWith('flow')) return measureFlow(cell, repository, review, usage);
+  if (cell.kind.startsWith('flow')) return measureFlow({ cell, repository, review, usage });
   if (cell.kind === 'build') {
     const check = await runSafeCheck(cell.task.id, repository);
     return { defectsFound: check.pass ? 0 : 1, falseAlarms: null, detail: check.line };
@@ -376,6 +334,7 @@ async function runCell(cell, runDirectory, copies, keep = null, providerEnv = nu
     const measured = await measureCell(cell, repository, usage, cellDirectory);
     const record = {
       id: cell.id,
+      ...(cell.arm === undefined ? {} : { arm: cell.arm }),
       ...(cell.repeat === undefined ? {} : { repeat: cell.repeat }),
       kind: cell.kind,
       variant: cell.variant,
@@ -411,32 +370,6 @@ async function runPool(cells, limit, worker) {
     }
   });
   await Promise.all(lanes);
-}
-
-// Every cell loads this clone, or a copy of it for a plugin variant, so the
-// clone's HEAD is the plugin commit; same shape as benchmarks/run.mjs.
-function pluginCommits() {
-  return { [ROOT]: git(ROOT, ['rev-parse', 'HEAD']).trim() };
-}
-
-// A resumed run keeps the date, versions and plugin commit of its first start,
-// so its results file keeps one name.
-function readOrWriteMeta(runDirectory, options, cellCount) {
-  const file = path.join(runDirectory, 'meta.json');
-  if (fs.existsSync(file)) return readJson(file);
-  const meta = {
-    date: new Date().toISOString().slice(0, 10),
-    claudeVersion: execFileSync('claude', ['--version'], { encoding: 'utf8' }).trim(),
-    node: process.version,
-    pluginCommits: pluginCommits(),
-    pluginDirty: git(ROOT, ['status', '--porcelain']).trim() !== '',
-    sets: options.sets,
-    provider: options.provider,
-    baseline: options.baseline,
-    cells: cellCount
-  };
-  fs.writeFileSync(file, `${JSON.stringify(meta, null, 2)}\n`);
-  return meta;
 }
 
 // A cell id outside the chosen sets is refused, so a typo never runs fewer
@@ -479,7 +412,10 @@ async function main() {
   const replay = options.cases === null ? [] : replayCells(readJson(options.cases), options);
   const judged = options.reviewerBodies === null ? allCells() : judgeCells(allCells(), judgeBodies(options.reviewerBodies));
   const chosen = keepNamedCells(selectCells([...judged, ...replay], options.sets), options.cells);
-  const cells = repeatCells(provider === null ? chosen : providerCells(chosen, provider, provider.efforts), options.repeat);
+  const repeated = repeatCells(provider === null ? chosen : providerCells(chosen, provider, provider.efforts), options.repeat);
+  rejectBaseVariants(options.base, pluginVariants(repeated));
+  const pairs = options.base === null ? null : pairCells(repeated, { base: options.base, candidate: ROOT });
+  const cells = pairs === null ? repeated : pairs.flat();
   console.log(`${options.tier} tier, ${cells.length} claude -p calls planned, one per cell and repeat:`);
   for (const cell of cells) console.log(`  ${cell.directory ?? cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (options.keepRepo !== null) console.log(`keeps each cell repository under ${options.keepRepo}`);
@@ -487,8 +423,9 @@ async function main() {
     const projection = projectSweep(cells.map((cell) => cell.id), RUNS);
     console.log(sweepProjectionLine(projection, cells.length));
     if (options.dryRun) {
-      const tasks = new Set(cells.map((cell) => cell.id)).size;
-      console.log(plannedPowerLine({ tasks, samples: Math.round(cells.length / Math.max(1, tasks)) }));
+      const arms = pairs === null ? 1 : 2;
+      const tasks = new Set(repeated.map((cell) => cell.id)).size;
+      console.log(plannedPowerLine({ tasks, samples: Math.round(repeated.length / Math.max(1, tasks)), arms }));
       return;
     }
     console.log('Every call is billed. Re-run with --confirm to start them.');
@@ -511,7 +448,7 @@ async function main() {
       copies[name] = copyPluginWithoutTasks(ROOT, fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sweep-plugin-')));
       applyVariant(name, copies[name]);
     }
-    await runPool(cells, options.concurrency, async (cell, index) => {
+    const runOne = async (cell, index) => {
       const recordFile = path.join(runDirectory, cell.directory ?? cell.id, 'record.json');
       if (fs.existsSync(recordFile)) {
         records[index] = readJson(recordFile);
@@ -525,7 +462,9 @@ async function main() {
       done += 1;
       const record = records[index];
       console.log(`[${done}/${cells.length}] ${cell.directory ?? cell.id} ${Math.round(record.wallMs / 1000)}s defects=${record.defectsFound ?? '-'} falseAlarms=${record.falseAlarms ?? '-'}${record.timedOut ? ' TIMED OUT' : ''}`);
-    });
+    };
+    if (pairs === null) await runPool(cells, options.concurrency, runOne);
+    else await runPairs(pairs, options.concurrency, (cell) => (stopping ? null : runOne(cell, cells.indexOf(cell))));
   } finally {
     clearInterval(heartbeat);
     for (const copy of Object.values(copies)) fs.rmSync(copy, { recursive: true, force: true });
@@ -533,7 +472,8 @@ async function main() {
   const resultsDirectory = path.resolve(options.results);
   const resultsFile = path.join(resultsDirectory, `${meta.date}-sweep.md`);
   fs.mkdirSync(resultsDirectory, { recursive: true });
-  fs.writeFileSync(resultsFile, resultsMarkdown(meta, records));
+  const paired = options.base === null ? '' : pairedSection(records.filter(Boolean));
+  fs.writeFileSync(resultsFile, resultsMarkdown(meta, records) + (paired === '' ? '' : `\n${paired}`));
   console.log(`published ${path.relative(ROOT, resultsFile)}`);
 }
 
