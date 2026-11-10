@@ -143,3 +143,6 @@ d038badf2bb14b630491c9d1a273e9b2899e8e5d the build run references state each rul
 86faefc8a608 the slowdown hypothesis families are generic advice with no recorded failure, so the family list is cut
 290bfcb26970 no script implements diarization, so the speaker-model bullet is cut
 73e25b01c7a2 the empty-region rule stands only in layout.md Fill the frame, so the critic question points there
+
+428e083cb14d the unit route is now stated once as step 2 and the intro bullets of the skill body
+bada6542e885 the request-names-the-workspace case is folded into the first rare-branch bullet of run-loop.md

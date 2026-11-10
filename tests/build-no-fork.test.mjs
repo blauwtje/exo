@@ -10,9 +10,9 @@ test('the build skill holds no context or agent line', () => {
   assert.doesNotMatch(skill, /^(context|agent):/m);
 });
 
-test('step 5 of the run loop still dispatches the task runner', () => {
-  const loop = fs.readFileSync(`${ROOT}skills/build/references/run-loop.md`, 'utf8');
-  assert.ok(loop.includes('exo:task-runner'));
+test('step 5 of the build skill still dispatches the task runner', () => {
+  const skill = fs.readFileSync(`${ROOT}skills/build/SKILL.md`, 'utf8');
+  assert.ok(skill.includes('exo:task-runner'));
 });
 
 test('the task runner agent stays', () => {

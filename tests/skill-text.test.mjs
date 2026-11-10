@@ -85,7 +85,7 @@ test('every skill that cites the report rule names closing.md, which defines it'
 });
 
 test('every lead wait on a background dispatch bans a wakeup, since a pending one keeps claude -p alive', () => {
-  for (const file of ['build/references/run-loop.md', 'build/references/design-tasks.md', 'gate/SKILL.md', 'gate/references/repair.md', 'spec/references/watching.md']) {
+  for (const file of ['build/SKILL.md', 'build/references/design-tasks.md', 'gate/SKILL.md', 'gate/references/repair.md', 'spec/references/watching.md']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /ScheduleWakeup[^\n]*Monitor or sleep/, `${file} bans ScheduleWakeup while it waits`);
   }
 });

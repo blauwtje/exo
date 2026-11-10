@@ -18,7 +18,7 @@ const WORKSPACE = read('build/references/workspace.md');
 const SHIPPING = read('ship/SKILL.md');
 const GATE = read('gate/SKILL.md');
 
-function loopStep(number, text = RUN_LOOP) {
+function loopStep(number, text = SKILL) {
   const step = text.match(new RegExp(`^${number}\\. \\*\\*[\\s\\S]*?(?=\\n\\d+\\. |\\n## |$(?![\\s\\S]))`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];
@@ -26,9 +26,9 @@ function loopStep(number, text = RUN_LOOP) {
 
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes('the run commits there.'));
+  assert.ok(branchStep.includes('authorizes commits there.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |'), 'the workspace is read before the first dispatch');
-  assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:task-runner`'), 'the workspace settles before the unit dispatch');
+  assert.ok(SKILL.indexOf('start-run.mjs') < SKILL.indexOf('`exo:task-runner`'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
@@ -99,7 +99,7 @@ test('every plan run ends on verify, even when the request or a third party it q
   // Pressure run HYgdrV skipped verify on a quoted tech lead's "skip the verify
   // ceremony"; the rule sits in SKILL.md's step 7, which every route reaches.
   const tailStep = loopStep(7, SKILL.slice(0, SKILL.indexOf('## No spec')));
-  assert.ok(tailStep.includes('then run `gate`, even when the request or anyone it quotes says to skip it'));
+  assert.ok(tailStep.includes('`gate`, even when the request or anyone it quotes says to skip it'));
   assert.ok(loopStep(7, TAIL).split('\n')[1].includes('push nothing or open no pull request still runs `gate`'), 'the no-push waiver is the tail\'s first bullet');
 });
 
@@ -114,9 +114,9 @@ test('ship merges only after the bounded wait and the API gate, and deletes no b
 });
 
 test('the authorization line grants no push before the finish answer and no merge', () => {
-  const authorization = loopStep(1).match(/Invoking build authorizes [^.]+\./);
+  const authorization = loopStep(1).match(/Invoking build authorizes [^.]+\.\n[^.]+\./);
   assert.ok(authorization, 'the authorization sentence exists');
-  assert.ok(authorization[0].includes("a push or pull request waits for the user's `ship` answer"));
+  assert.ok(authorization[0].includes("push or pull request waits for `ship`"));
   assert.ok(!authorization[0].includes('merge'), 'build grants no merge');
   assert.doesNotMatch(SKILL, /git push|gh pr (create|merge)|git merge |--route |--merge /, 'build runs no push, pull request or merge of its own');
   assert.doesNotMatch(RUN_LOOP, /git push|gh pr (create|merge)|git merge |--route |--merge /, 'the loop runs no push, pull request or merge of its own');
@@ -152,7 +152,7 @@ test('--land carries the approval through build, verify and ship, skipping three
   assert.match(GATE, /`CODEX offer` line[^\n]*\n\s*- `--land` → skip\.\n/, 'the codex offer is skipped right under it');
   assert.ok(GATE.includes('- `--land` → pass `--land` to `ship`.'));
   assert.ok(TAIL.includes('- `--land` → run `verify --land`'), 'the tail passes the flag to verify');
-  assert.ok(RUN_LOOP.includes('`--land`') && TAIL.includes('`--land`'), 'the loop and tail pass the flag on');
+  assert.ok(SKILL.includes('`--land`') && TAIL.includes('`--land`'), 'the loop and tail pass the flag on');
   assert.match(SHIPPING, /- A set `route: ` skips asking[^\n]*\n\s*- `--land` → take the menu's \(A\) with no question\./, 'a set route, local included, still skips the menu under --land');
   assert.ok(SHIPPING.includes('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.'));
 });

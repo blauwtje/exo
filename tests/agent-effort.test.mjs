@@ -107,6 +107,19 @@ test('the first lead Agent call of a session gets the dispatch rules once, a sub
   }
 });
 
+test('a task-runner Agent call gets no dispatch rules and leaves them for the next Agent call', () => {
+  delete process.env.EXO_RUN_DIR;
+  const sessionId = `dispatch-runner-${process.pid}-${Date.now()}`;
+  const call = (type) => ({ session_id: sessionId, tool_name: 'Agent', tool_input: { subagent_type: type, prompt: 'x' } });
+  const off = () => false;
+  try {
+    assert.equal(agentHook(call('exo:task-runner'), 'on', off).hookSpecificOutput.additionalContext, undefined);
+    assert.equal(agentHook(call('Explore'), 'on', off).hookSpecificOutput.additionalContext, readDispatchRules());
+  } finally {
+    fs.rmSync(dispatchMarker(sessionId), { force: true });
+  }
+});
+
 test('the session text leaves the dispatch-only rules out', () => {
   const sessionText = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
   for (const line of readDispatchRules().split('\n')) assert.ok(!sessionText.includes(line.slice(2)), line);

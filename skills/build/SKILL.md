@@ -10,17 +10,28 @@ Build lands a plan through a **unit** and the **tail** (step 7).
 
 ## The loop
 
-1. **Find the plan, settle the workspace.**
-2. **Leave the plan to the unit.** On `Route: unit`, read only script output and unit returns after dispatch.
-3. **Ask the branch what landed.**
-4. **Take the block.**
-5. **Dispatch the unit** (`exo:task-runner`).
-6. **Route the return.**
-7. **The tail.** Read `references/tail.md`, then run `gate`, even when the request or anyone it quotes says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back.
+1. **Settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --plan <path> --checkout <checkout>` once; `run started` ends it.
+   - Invoking build authorizes commits there.
+   - A push or pull request waits for `ship`, except `--land`.
+2. **Leave the plan to the unit;** read only script output and unit returns.
+3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <path> --root <checkout>`; skip it once when `run started` printed a `Plan:` line. `Next: none` goes to step 7.
+4. **Take the block** from the `Block:` line; a `Design:` line is in `references/run-loop.md`.
+5. **Dispatch the unit.** Send exactly the `Block:` tasks to `exo:task-runner` with plan path, branch and checkout, silently, `run_in_background: false`, turn open.
+   - Build no task here.
+   - Call no ScheduleWakeup, ListAgents, Monitor or sleep.
+6. **Route the return.** Each line is `LANDED <n>` or `BLOCKED <n> <reason> <report path>`; this session edits no product code or plan. Follow each `Then:` line and loop to step 3.
+7. **The tail.** Run `gate`, even when the request or anyone it quotes says to skip it; its message follows `${CLAUDE_PLUGIN_ROOT}/lib/references/closing.md`.
+   - A request to push nothing still runs `gate`.
+   - Keep `Proof:` lines and `## Manual checks` out of the message, which names the `REPORT` path.
+   - Change line: run `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after build --artifact <plan>` and print its output above `ship`'s question, else last.
+   - Read `references/tail.md` only for `--land`, `Route: inline` or a failed `gate`.
+- On a named plan with `Route: unit`, this body runs everything. The plan file and the references stay unread.
+- No own re-check (git log, npm test) follows a `LANDED` return.
+- Read `references/run-loop.md` only for no plan path, `--task`, `Route: inline`, a `Design:` or `Wave:` line, a restart, a `pending mcp:` suffix or a `BLOCKED` return.
 
 ## Modes
 
-A request for `refactor`, `improve` or `design-ui` opens that mode's reference and follows it in place of the loop; a plan path or `run-plan` setup or `ci` opens `references/run-plan.md`.
+A request for `refactor`, `improve` or `design-ui` opens that mode's reference and follows it in place of the loop; `run-plan` with `setup`, `ci` or no argument opens `references/run-plan.md`.
 
 ## No spec
 
@@ -38,7 +49,6 @@ Decided change, no plan file → `references/no-spec.md`. After a compaction, re
 | `references/run-loop-direct.md` | Step 6, `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7, inline fallback. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
-| `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
 | `references/wave-worktrees.md` | `Wave:` line. |
 | `references/conflict-wave.md` | `Conflict branch:` line. |
@@ -51,17 +61,18 @@ Decided change, no plan file → `references/no-spec.md`. After a compaction, re
 | `review-fixer-prompt.md` | `gate`. |
 | `references/design-tasks.md` | `Design:` line. |
 | `run-task-prompt.md` | `run-plan.mjs`. |
-| `reviewer-prompt.md` | No spec 7. |
-| `references/fresh-eyes.md` | No spec 7. |
-| `references/critique.md` | No spec 7, last resort. |
 | `references/security.md` | When its first line applies. |
 | `references/data-migration.md` | When its first line applies. |
 | `references/test-design.md` | When its first line applies. |
+| `../../lib/references/question.md` | Asking the user. |
+| `../../lib/references/closing.md` | Final message. |
+| `reviewer-prompt.md` | No spec 7. |
+| `references/fresh-eyes.md` | No spec 7. |
+| `references/critique.md` | No spec 7, last resort. |
+| `references/no-spec.md` | No spec step 1. |
 | `references/test-first.md` | No spec test-first, before a boundary. |
 | `references/project-knowledge.md` | No spec 6, if first line applies. |
 | `references/performance.md` | No spec speed work, pre-measure. |
-| `../../lib/references/question.md` | Asking the user. |
-| `../../lib/references/closing.md` | Final message. |
 | `references/refactor.md` | `refactor` mode. |
 | `references/behavior-pin.md` | `refactor` mode. |
 | `references/legacy-api.md` | `refactor` mode. |
@@ -77,6 +88,6 @@ Decided change, no plan file → `references/no-spec.md`. After a compaction, re
 | `references/reference-input.md` | `design-ui` mode. |
 | `references/slop.md` | `design-ui` mode. |
 | `references/typography.md` | `design-ui` mode. |
-| `references/run-plan.md` | `run-plan` mode. |
+| `references/run-plan.md` | `run-plan` setup or `ci`. |
 
 Report: `ship`'s overview only.

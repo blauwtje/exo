@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- A plan build keeps the main session smaller, a median peak of 25870 tokens against 31709: the build skill body carries the loop steps, the dispatch rules skip an `exo:task-runner` call, and `next-task.mjs --block` prints no `Proof:` lines once every task has landed.
+
 ## 0.140.0 - 2026-11-10
 
 ### Added

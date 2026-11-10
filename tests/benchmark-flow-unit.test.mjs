@@ -30,9 +30,9 @@ test('flow-fold cell matches flow-unit except for its id and the fold-unit plugi
 test('fold-unit replaces the whole of step 5, bullets included, and keeps the build-task dispatch', () => {
   const root = path.join(import.meta.dirname, '..');
   const copy = tempDir('fold-unit-');
-  fs.cpSync(path.join(root, 'skills/build/references'), path.join(copy, 'skills/build/references'), { recursive: true });
+  fs.cpSync(path.join(root, 'skills/build'), path.join(copy, 'skills/build'), { recursive: true });
   applyVariant('fold-unit', copy);
-  const loop = fs.readFileSync(path.join(copy, 'skills/build/references/run-loop.md'), 'utf8');
+  const loop = fs.readFileSync(path.join(copy, 'skills/build/SKILL.md'), 'utf8');
   const step = loop.slice(loop.indexOf('5. **'), loop.indexOf('6. **'));
   assert.ok(!step.includes('Name plan path'));
   assert.ok(!step.includes('do not apply'));

@@ -303,6 +303,20 @@ test('--only limits a Wave to the named tasks', async () => {
   assert.match((await next('--only', '4')).stdout, /^Next: none, block landed$/m);
 });
 
+test('--block on a fully landed plan prints no per-task proof lines', async () => {
+  const { root, next } = await afterTaskOne('none');
+  const before = await next('--block');
+  assert.match(before.stdout, /^Proof: /m);
+  for (const [number, name] of [[2, 'left'], [3, 'right'], [4, 'both']]) {
+    await fs.writeFile(path.join(root, 'src', `${name}.js`), `export const ${name} = 1;\n`);
+    git(root, 'add', '.');
+    git(root, 'commit', '-q', '-m', `feat(app): ${name}`, '-m', `Plan-task: fixture/${number}`);
+  }
+  const result = await next('--block');
+  assert.match(result.stdout, /^Next: none, every task landed$/m);
+  assert.doesNotMatch(result.stdout, /^(Proof|Red): /m);
+});
+
 test('a refill with --only starts only named tasks and none once they are all running', async () => {
   const { root, next } = await afterTaskOne('none');
   await next('--open-slots', '--only', '2,3');

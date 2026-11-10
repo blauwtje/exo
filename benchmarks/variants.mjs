@@ -16,7 +16,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { copyPluginWithoutTasks } from './value.mjs';
-import { RUN_LOOP, UNIT_DISPATCH_TEXT } from './variants-depth.mjs';
+import { BUILD_SKILL, UNIT_DISPATCH_TEXT } from './variants-depth.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -34,7 +34,7 @@ const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: '- Cause unknown, a request to
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
 const UNIT_AGENT = 'agents/task-runner.md';
 const FOLD_UNIT_EDIT = {
-  file: RUN_LOOP,
+  file: BUILD_SKILL,
   from: UNIT_DISPATCH_TEXT,
   to: [
     '5. **Run the unit here.** Dispatch no task-runner agent: read `${CLAUDE_PLUGIN_ROOT}/' + UNIT_AGENT + '`, take `<skill>` = `${CLAUDE_SKILL_DIR}`, and follow its `## Loop` and `## Stop` yourself for the `Block:` tasks.',
@@ -87,7 +87,7 @@ function sessionContext(copy, scratch) {
 }
 
 function foldUnitProblems(copy) {
-  const loop = fs.readFileSync(path.join(copy, RUN_LOOP), 'utf8');
+  const loop = fs.readFileSync(path.join(copy, BUILD_SKILL), 'utf8');
   const problems = [];
   if (loop.includes('exo:task-runner')) problems.push('the run loop still dispatches exo:task-runner');
   if (!loop.includes(UNIT_AGENT)) problems.push(`the run loop does not name ${UNIT_AGENT}`);
