@@ -1,0 +1,173 @@
+{
+  "claude": {
+    "main": {
+      "maxDepth": 0,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 30000
+    },
+    "fork-coordinator": {
+      "maxDepth": 1,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 45000
+    },
+    "subagent-coordinator": {
+      "maxDepth": 1,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 45000
+    },
+    "worker": {
+      "maxDepth": 2,
+      "mayDispatch": false,
+      "wait": "none",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 5
+      },
+      "contextBudget": 2000
+    },
+    "run-session": {
+      "maxDepth": 0,
+      "mayDispatch": true,
+      "wait": "wait-report",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 30000
+    }
+  },
+  "codex": {
+    "main": {
+      "maxDepth": 0,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 30000
+    },
+    "fork-coordinator": {
+      "maxDepth": 1,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 45000
+    },
+    "subagent-coordinator": {
+      "maxDepth": 1,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 45000
+    },
+    "worker": {
+      "maxDepth": 2,
+      "mayDispatch": false,
+      "wait": "none",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 5
+      },
+      "contextBudget": 2000
+    },
+    "run-session": {
+      "maxDepth": 0,
+      "mayDispatch": true,
+      "wait": "wait-report",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 30000
+    }
+  },
+  "opencode": {
+    "main": {
+      "maxDepth": 0,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 30000
+    },
+    "fork-coordinator": {
+      "maxDepth": 1,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 45000
+    },
+    "subagent-coordinator": {
+      "maxDepth": 1,
+      "mayDispatch": true,
+      "wait": "notification",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 45000
+    },
+    "worker": {
+      "maxDepth": 2,
+      "mayDispatch": false,
+      "wait": "none",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 5
+      },
+      "contextBudget": 2000
+    },
+    "run-session": {
+      "maxDepth": 0,
+      "mayDispatch": true,
+      "wait": "wait-report",
+      "return": {
+        "verdictLine": true,
+        "resultPath": true,
+        "maxLines": 8
+      },
+      "contextBudget": 30000
+    }
+  }
+}
