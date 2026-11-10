@@ -9,6 +9,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `harnesses/coordination-contract.json` holds the coordination contract as data, with a reader the hooks and checks share.
+- A verify check fails a skill or agent chain deeper than the contract allows and a rule stated twice across the chain.
+- A dispatch from a role whose contract entry has `mayDispatch` false is refused, so a worker can no longer start an `Agent`.
+- A worker return completes on its verdict line and result path alone, with no stamp.
+- The flow report lists peak context per hop.
+- The depth sweep driver runs capped cells with a direct arm and a no-fork arm.
+- The benchmark compare blocks a per-hop token regression against the baseline.
 - `node benchmarks/sweep.mjs --base <checkout>` runs every cell and repeat as a base and candidate pair that start together, and the report adds a `## Paired` section with the mean difference and 95% CI per metric, so machine load hits both arms equally.
 - `benchmarks/guard-replay.mjs` replays each guard's recorded refused inputs through a base and a candidate hook and counts denied, rewritten and allowed results.
 - Research hosts share rate-limit, breaker and blocked-URL state across processes, and a Reddit block stays on its thread, which is read from the Arctic Shift archive.
