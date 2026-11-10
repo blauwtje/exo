@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `npm run check` locks each registered hook by the modules it loads and the files it reads (`HOOK_WORK_LOCK`, one row per script) instead of timing a `dispatch-bash.mjs` spawn, so the result no longer moves with machine load; `benchmarks/hook-timing.mjs` keeps the timing under `EXO_HOOK_EXTRA_MS`.
 - The `deep` setting (`opus` default, `fable`) picks the model of the `review-deep`, `orchestrator` and `hardest` kinds; build repairs stay on `strong` as the new `build-repair` kind.
 - A Write whose only rule break is added comment lines has those lines stripped instead of being refused, which turned 17 of 88 replayed refusals into rewrites.
 - A subagent may run read-only `git stash list` and `git stash show`, which took replayed stash denials from 95 to 19.

@@ -10,7 +10,7 @@ Hook text and code run on every matching event, so each hook pays for itself in 
 - Start each command path with `${CLAUDE_PLUGIN_ROOT}`.
 - Write hook code in Node without `jq`. `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
 - `verify/checks/hook-budgets.mjs` locks hook code size (`HOOK_LINES_LOCK` in `verify/budgets.mjs`). Growth fails, and a raise is a hand edit in the commit that pays for it.
-- `verify/checks/hook-budgets.mjs` locks spawn time (`HOOK_SPAWN_MS_LOCK`). It fails when the median of seven `dispatch-bash.mjs` spawns runs above it, so keep imports lazy and avoid reads on the hook path.
+- `verify/checks/hook-budgets.mjs` locks each registered hook's modules loaded and files read (`HOOK_WORK_LOCK`); a hook over its row or without one fails, so keep imports lazy and avoid reads.
 
 ## Output
 

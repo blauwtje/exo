@@ -6,11 +6,14 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { HOOK_SPAWN_MS_LOCK } from '../verify/budgets.mjs';
+import { environmentMs } from '../lib/script-flags.mjs';
 import { readJson } from './basics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = 100;
+const EXTRA_MS_LIMIT = 30;
+
+export const extraLimitMs = () => environmentMs('EXO_HOOK_EXTRA_MS', EXTRA_MS_LIMIT);
 
 const BASH_BASE = { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git status' }, session_id: 'hook-timing' };
 const AGENT_BASE = {
@@ -50,7 +53,7 @@ export function extraMilliseconds(withStep, withoutStep) {
   return median(withStep) - median(withoutStep);
 }
 
-export function verdictFor(extras, limit = HOOK_SPAWN_MS_LOCK.ms) {
+export function verdictFor(extras, limit = extraLimitMs()) {
   return extras.every((extra) => extra < limit) ? 'KEEP' : 'DISCARD';
 }
 
@@ -154,5 +157,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv.includes(
 } else if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const extras = CASES.map((timing) => timeCase(timing));
   CASES.forEach((timing, index) => console.log(`${timing.name}: ${extras[index].toFixed(1)} ms median extra over ${COMMANDS} commands`));
-  console.log(`${verdictFor(extras)} (limit ${HOOK_SPAWN_MS_LOCK.ms} ms)`);
+  console.log(`${verdictFor(extras)} (limit ${extraLimitMs()} ms)`);
 }

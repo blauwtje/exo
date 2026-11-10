@@ -28,7 +28,18 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 4009, measured: '2026-11-10' };
 export const HOOK_LINES_LOCK = { lines: 958, measured: '2026-11-10' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
 export const HOOK_TEXT_BYTES_LOCK = { bytes: 5891, measured: '2026-11-10' };
-export const HOOK_SPAWN_MS_LOCK = { ms: 30, measured: '2026-11-06' };
+export const HOOK_WORK_LOCK = {
+  measured: '2026-11-10',
+  scripts: {
+    'session-start.mjs': { modules: 27, reads: 7 },
+    'dispatch-bash.mjs': { modules: 42, reads: 3 },
+    'agent-effort.mjs': { modules: 43, reads: 39 },
+    'dispatch-edit.mjs': { modules: 49, reads: 3 },
+    'context-limit.mjs': { modules: 33, reads: 3 },
+    'run-no-wait.mjs': { modules: 17, reads: 1 },
+    'session-end.mjs': { modules: 13, reads: 1 }
+  }
+};
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
 // large test file is split before it lands.
 export const TEST_FILE_CAP = { bytes: 40 * 1024 };

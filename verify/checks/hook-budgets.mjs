@@ -1,17 +1,15 @@
 import { Buffer } from 'node:buffer';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import {
   HOOK_ENTRIES_LOCK,
   HOOK_LINES_LOCK,
-  HOOK_SPAWN_MS_LOCK,
+  HOOK_WORK_LOCK,
   HOOK_TEXT_BYTES_LOCK,
   INJECTED_CONTEXT_LOCK
 } from '../budgets.mjs';
 import { checkSessionLoad } from './session-load.mjs';
 import { checkHookMatchers } from './hook-matchers.mjs';
-import { spawnOverhead, timedSpawn } from '../machine-baseline.mjs';
+import { countHookWork } from '../hook-work.mjs';
 
 function lineCount(file) {
   const text = fs.readFileSync(file, 'utf8');
@@ -64,43 +62,39 @@ export function checkHookCost(report, repository, locks = { entries: HOOK_ENTRIE
   report.result('FAIL', NAME, `${detail}; every entry spawns a process on its event and every byte rides each turn, so merge or gate the hook and cut the text, or raise the lock in verify/budgets.mjs in the commit that pays for it`);
 }
 
-const SCRUBBED_VARIABLES = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'EXO_HOST', 'EXO_RUN', 'EXO_RUN_DIR', 'EXO_RUN_SESSION'];
+const HOOK_SCRIPT = /hooks\/([\w-]+\.mjs)/;
 
-function scratchEnv(scratch) {
-  const env = { ...process.env, HOME: scratch, USERPROFILE: scratch };
-  for (const name of SCRUBBED_VARIABLES) delete env[name];
-  return env;
+function registeredScripts(repository) {
+  const config = JSON.parse(fs.readFileSync(repository.join('hooks/hooks.json'), 'utf8'));
+  const commands = Object.values(config.hooks).flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command)));
+  return [...new Set(commands.map((command) => HOOK_SCRIPT.exec(command)?.[1]).filter(Boolean))];
 }
 
-function measureOverhead(script, spawn) {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-hook-latency-'));
-  const input = JSON.stringify({
-    hook_event_name: 'PreToolUse',
-    tool_name: 'Bash',
-    tool_input: { command: 'git status' },
-    session_id: 'hook-latency',
-    cwd: scratch
-  });
-  try {
-    return spawnOverhead(script, { spawn, env: scratchEnv(scratch), input, cwd: scratch });
-  } finally {
-    fs.rmSync(scratch, { recursive: true, force: true });
+function workFailure(name, work, lock) {
+  if (work === null) return `${name} exited non-zero or is missing`;
+  if (work.modules > lock.modules || work.reads > lock.reads) {
+    return `${name} loads ${work.modules} modules and reads ${work.reads} files against ${lock.modules} and ${lock.reads}`;
   }
+  return null;
 }
 
-export function checkHookLatency(report, repository, spawn = timedSpawn) {
-  const script = repository.join('hooks', 'dispatch-bash.mjs');
-  const measured = fs.existsSync(script) ? measureOverhead(script, spawn) : null;
-  if (measured === null) {
-    report.result('FAIL', 'hook latency', 'hooks/dispatch-bash.mjs is missing or exited non-zero on a Bash input');
+export function checkHookWork(report, repository, count = countHookWork) {
+  const failures = [];
+  const scripts = registeredScripts(repository);
+  for (const name of scripts) {
+    const lock = HOOK_WORK_LOCK.scripts[name];
+    if (lock === undefined) {
+      failures.push(`${name} has no row in HOOK_WORK_LOCK`);
+      continue;
+    }
+    const failure = workFailure(name, count(repository.join('hooks', name), name), lock);
+    if (failure !== null) failures.push(failure);
+  }
+  if (failures.length > 0) {
+    report.result('FAIL', 'hook work', `${failures.join('; ')}, locked on ${HOOK_WORK_LOCK.measured}; cut work on the hook path (eager imports, file reads), or raise the row in verify/budgets.mjs in the commit that pays for it`);
     return;
   }
-  const detail = `${measured.overhead.toFixed(1)} ms median overhead per Bash hook spawn (${measured.hook.toFixed(1)} ms against ${measured.bare.toFixed(1)} ms for a bare node, interleaved over ${measured.rounds} rounds) against the ${HOOK_SPAWN_MS_LOCK.ms} ms locked on ${HOOK_SPAWN_MS_LOCK.measured}`;
-  if (measured.overhead > HOOK_SPAWN_MS_LOCK.ms) {
-    report.result('FAIL', 'hook latency', `${detail}; cut work on the hook path (eager imports, file reads), or raise the lock in verify/budgets.mjs in the commit that pays for it`);
-    return;
-  }
-  report.result('PASS', 'hook latency', detail);
+  report.result('PASS', 'hook work', `${scripts.length} hook scripts within their module and file-read locks of ${HOOK_WORK_LOCK.measured}`);
 }
 
 const CONTEXT_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md'];
@@ -120,7 +114,7 @@ export function checkHookBudgets(report, repository) {
   checkInjectedContext(report, repository);
   checkHookSize(report, repository);
   checkHookCost(report, repository);
-  checkHookLatency(report, repository);
+  checkHookWork(report, repository);
   checkHookMatchers(report, repository);
   checkSessionLoad(report, repository);
 }
