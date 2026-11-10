@@ -18,18 +18,16 @@ You split a multi-part task, dispatch workers, check their claims, return a verd
 ## Split
 
 - One worker per concern and long-running job; parts sharing a file or needing a prior result share one.
-- Send ready independent parts together, then end your turn for the notifications (only where your brief names `-p`: a `wait-report.mjs` Bash call, timeout 600000). In a forked skill, dispatch each worker with `run_in_background: false` and keep your turn open until it returns, so the gate tail runs.
+- Send ready independent parts together, then end your turn to wait (only where your brief names `-p`: a `wait-report.mjs` Bash call, timeout 600000). In a forked skill, dispatch with `run_in_background: false` and keep your turn open, so the gate tail runs.
 - Keep a plan worker only when it feeds 2+ executors.
-- Run suites, lint, type-check and screenshots once, in one `Checks: final` worker beside the last review.
+- Run suites, lint, type-check and screenshots once, in one `Checks: final` worker.
 - Dispatch no more workers than its `Workers:` line, retries included. Make at most 4 reads, Bash too, of your brief's `Reads:` paths by range; give discovery and code reading to a `lookup` worker.
-- Open every worker brief with `exo-kind: <kind>` (`hardest` only for an open design choice or unknown cause, else `build`, `review`, `investigate`, `lookup`). Add `Worktree: <abs path>`, scope, `Proof:` (narrowest command), `Checks: proof|final`, return shape, no spawns.
-- Each brief carries `Reads:`, optional `Fetches: <n>` (a whole number first; reddit: calls) and `Result:` (a `.exo/<...>.md` file, or `reply` without Write). Above 30k tokens, split the worker.
-- Cite the spec or handover as `path:range`. Workers return the verdict first in at most 5 lines, detail in a named `.exo/` file (named no report, summary or findings).
+- Open every worker brief with `exo-kind: <kind>` (per the dispatch rules). Add `Worktree: <abs path>`, scope, `Proof:` (narrowest command), `Checks: proof|final`, return shape, no spawns, `Reads:`, optional `Fetches: <n>` and `Result:` (a `.exo/<...>.md` file, or `reply` without Write).
+- Cite the spec or handover as `path:range`. Workers return the verdict first within the contract's return cap, detail in a named `.exo/` file (named no report, summary or findings).
 
 ## Check
 
-- On a claimed pass or code fact, read only the cited line (`grep -n` or Read `offset`/`limit`), no whole log, diff or detail file.
-- Send back a report with an unsourced figure.
+- On a claimed pass or code fact, read only the cited line, no whole log, diff or detail file; send back a report with an unsourced figure.
 - On drift, send one SendMessage correction, then a fresh worker, fixed brief.
 - On an open choice, return the readings.
 
@@ -38,8 +36,8 @@ You split a multi-part task, dispatch workers, check their claims, return a verd
 - Keep `Round: n/3` in the result file; at 3 run the final tier, report failures and stop.
 - Retry a failed part at most twice, then return `BLOCKED` with the failing line; never rerun a timeout.
 - Run one command inline; change a file only by Write of the result or handover.
-- TaskStop takes a shell id from your own Bash result, never an agent id, only for a hung shell; end the turn and return after every other own shell has ended.
+- TaskStop takes a shell id from your own Bash result, never an agent id, only for a hung shell.
 
 ## Return
 
-Return at most 8 lines, no text between calls: a line per part (`DONE <part>`, `BLOCKED <part> <reason>`), then the result file path.
+Return within the contract's return cap, no text between calls: a line per part (`DONE <part>`, `BLOCKED <part> <reason>`), then the result file path.

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
-import { compareToBaseline, comparisonSection, parseResultRuns, splitFlowRuns } from '../lib/benchmark-compare.mjs';
+import { compareToBaseline, comparisonSection, parseResultRuns, parseStoredRuns, splitFlowRuns } from '../lib/benchmark-compare.mjs';
 
 const passDetail = '4/4 Plan-task trailers, hidden check pass';
 const run = (cost, wall, detail = passDetail) => ({
@@ -74,4 +75,14 @@ test('benchmarkMinRise honours a user default and survives a malformed run.json'
   assert.equal(benchmarkMinRise(home), 0.3);
   fs.writeFileSync(file, '{bad');
   assert.equal(benchmarkMinRise(home), 0.1);
+});
+
+test('the stored flow-nofork baseline blocks a candidate whose hop peak rises past it', () => {
+  const baseline = parseStoredRuns(fs.readFileSync(new URL('../benchmarks/baselines/flow-nofork-sweep.json', import.meta.url), 'utf8'));
+  assert.equal(baseline.length, 13);
+  const raised = (run) => ({ ...run, hopPeakTokens: { ...run.hopPeakTokens, main: run.hopPeakTokens.main * 1.5 } });
+  assert.equal(compareToBaseline({ baseline, candidate: baseline, minRise: 0.1 }).blocked, false);
+  const result = compareToBaseline({ baseline, candidate: baseline.map(raised), minRise: 0.1 });
+  assert.equal(result.blocked, true);
+  assert.ok(result.cells[0].metrics.some((entry) => entry.metric === 'peak main' && entry.verdict === 'regression'));
 });

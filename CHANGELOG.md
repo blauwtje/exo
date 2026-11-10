@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/depth-sweep.mjs --arms <list>` runs a single arm of the depth sweep, and `benchmarks/lead-context.mjs` lists the extra main-session reads of the `nofork` route.
+- `benchmarks/baselines/flow-nofork-sweep.json` stores the per-hop peak baseline that `benchmarks/baseline-compare.mjs` takes as `--baseline`.
+- `npm run check` runs the coordination contract check, which fails on a dispatch chain of depth 3, a duplicated rule or a byte total above the baseline.
+
+### Changed
+
+- The build skill runs in the main session without the fork: the main session dispatches `exo:task-runner`, which dispatches `exo:build-task`.
+- The `main` `contextBudget` in `harnesses/coordination-contract.json` is 31709, the re-measured main peak of the `nofork` route.
+- The hook prose, the agent prose and the model-kinds docs state each contract rule once, as a pointer line to its data file.
+
+### Removed
+
+- The `flow-direct` benchmark arm and the leftovers of the build fork layer.
+
 ## 0.139.1 - 2026-11-10
 
 ### Fixed

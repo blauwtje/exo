@@ -9,16 +9,20 @@ import { ARMS, NEW_ARMS, resultsText } from './depth-sweep-results.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 export function parseDepthArguments(argv) {
-  const options = { pilot: false, repeat: null, capUsd: null, results: null, concurrency: ARMS.length };
+  const options = { pilot: false, repeat: null, capUsd: null, results: null, arms: ARMS, concurrency: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--pilot') options.pilot = true;
     else if (flag === '--repeat') options.repeat = Number(argv[++index]);
     else if (flag === '--cap-usd') options.capUsd = Number(argv[++index]);
     else if (flag === '--results') options.results = argv[++index];
+    else if (flag === '--arms') options.arms = argv[++index].split(',');
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else throw new Error(`unknown flag ${flag}`);
   }
+  const unknownArm = options.arms.find((arm) => !ARMS.includes(arm));
+  if (unknownArm !== undefined) throw new Error(`--arms names unknown arm ${unknownArm}`);
+  options.concurrency ??= options.arms.length;
   if (!Number.isInteger(options.repeat) || options.repeat < 1) throw new Error('--repeat must be a positive integer');
   if (!Number.isFinite(options.capUsd) || options.capUsd <= 0) throw new Error('--cap-usd must be a positive number');
   if (options.results === null) throw new Error('--results needs a path');
@@ -32,9 +36,9 @@ function readRecords(file) {
   return lines.map((line) => JSON.parse(line));
 }
 
-export function projectedCostUsd({ pilots, repeat }) {
+export function projectedCostUsd({ pilots, repeat, arms }) {
   const perRun = pilots.reduce((sum, run) => sum + run.costUsd, 0) / pilots.length;
-  return perRun * repeat * ARMS.length;
+  return perRun * repeat * arms.length;
 }
 
 const runName = (run) => `${run.arm}-${run.index}`;
@@ -73,18 +77,20 @@ async function runMissing({ arms, count, options, state, runRound }) {
 
 export async function depthSweep({ options, runRound }) {
   fs.mkdirSync(path.dirname(path.resolve(options.results)), { recursive: true });
+  const { arms = ARMS } = options;
+  const pilotArms = NEW_ARMS.filter((arm) => arms.includes(arm));
   const state = { records: readRecords(`${options.results}.runs.jsonl`), stopReason: null };
-  if (options.pilot) {
-    await runMissing({ arms: NEW_ARMS, count: 1, options, state, runRound });
-    const pilots = state.records.filter((run) => run.index === 1 && NEW_ARMS.includes(run.arm));
+  if (options.pilot && pilotArms.length > 0) {
+    await runMissing({ arms: pilotArms, count: 1, options, state, runRound });
+    const pilots = state.records.filter((run) => run.index === 1 && pilotArms.includes(run.arm));
     const unknown = unknownCostRun(pilots);
     if (unknown !== undefined) return { refused: true, reason: `pilot run ${runName(unknown)} has no finite costUsd` };
-    const projected = projectedCostUsd({ pilots, repeat: options.repeat });
+    const projected = projectedCostUsd({ pilots, repeat: options.repeat, arms });
     if (projected > options.capUsd) return { refused: true, reason: `projected $${projected.toFixed(2)} is over the $${options.capUsd} cap` };
   }
-  await runMissing({ arms: ARMS, count: options.repeat, options, state, runRound });
+  await runMissing({ arms, count: options.repeat, options, state, runRound });
   state.stopReason ??= stopReason(state.records, options.capUsd);
-  fs.writeFileSync(options.results, resultsText(state));
+  fs.writeFileSync(options.results, resultsText({ ...state, arms }));
   return { refused: false, records: state.records, stopReason: state.stopReason };
 }
 

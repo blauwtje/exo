@@ -294,7 +294,7 @@ test('orchestrator works in phases, keeps worker detail in files and hands over 
   const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   assert.match(body, /Before the first dispatch, write the result file/);
   assert.match(body, /After each check, update the result file/);
-  assert.match(body, /return the verdict first in at most 5 lines, detail in a named `\.exo\/` file/);
+  assert.match(body, /return the verdict first within the contract's return cap, detail in a named `\.exo\/` file/);
   assert.match(body, /no whole log, diff or detail file/);
   assert.match(body, /exo context note, dispatch nothing new[^\n]*return its path/);
   assert.match(body, /for a fresh orchestrator/);
@@ -303,8 +303,9 @@ test('orchestrator works in phases, keeps worker detail in files and hands over 
 test('orchestrator dispatches async within its Workers line, reads by range and sends discovery to lookup', () => {
   const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   assert.doesNotMatch(body, /one foreground dispatch each/);
-  assert.match(body, /end your turn for the notifications/);
-  assert.match(body, /names `-p`[^\n]*wait-report\.mjs[^\n]*timeout 600000/);
+  assert.match(body, /only where your brief names `-p`: a `wait-report\.mjs` Bash call, timeout 600000/);
+  assert.match(body, /In a forked skill, dispatch with `run_in_background: false` and keep your turn open, so the gate tail runs/);
+  assert.doesNotMatch(body, /at most 8 lines|at most 5 lines/);
   assert.match(body, /no more workers than its `Workers:` line, retries included/);
   assert.match(body, /at most 4 reads, Bash too, of your brief's `Reads:` paths by range/);
   assert.match(body, /change a file only by Write of the result or handover/);

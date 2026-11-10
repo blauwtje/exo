@@ -30,9 +30,9 @@ test('a skill line that sends agents in the foreground is flagged with its line'
 test('run_in_background false is flagged in a hook string and a script string', () => {
   const result = scan({
     'hooks/rules.md': '- Dispatch each agent with `run_in_background: false`.\n',
-    'skills/build/scripts/next.mjs': "const line = 'Dispatch agents with run_in_background=false';\n",
+    'skills/spec/scripts/next.mjs': "const line = 'Dispatch agents with run_in_background=false';\n",
   });
-  assert.deepEqual(result.flagged, ['skills/build/scripts/next.mjs:1', 'hooks/rules.md:1']);
+  assert.deepEqual(result.flagged, ['skills/spec/scripts/next.mjs:1', 'hooks/rules.md:1']);
 });
 
 test('a Bash foreground line is not an Agent call', () => {
@@ -49,4 +49,15 @@ test('a foreground dispatch line under a forked skill passes and the same line u
     'skills/plain/references/loop.md': line,
   });
   assert.deepEqual(result.flagged, ['skills/plain/references/loop.md:1']);
+});
+
+test('the build skill folder is skipped by name without a fork and another unforked skill is flagged', () => {
+  const line = '- Send the tasks to the runner with `run_in_background: false`.\n';
+  const result = scan({
+    'skills/build/SKILL.md': '---\nname: build\n---\nBody\n',
+    'skills/build/references/run-loop.md': line,
+    'skills/other/SKILL.md': '---\nname: other\n---\nBody\n',
+    'skills/other/references/loop.md': line,
+  });
+  assert.deepEqual(result.flagged, ['skills/other/references/loop.md:1']);
 });

@@ -138,3 +138,11 @@ test('the judge kind runs on the fast tier at low effort and the research agents
   assert.equal(agents['agents/research-worker.md'].kind, 'research');
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');
 });
+
+test('CONTRIBUTING.md points at the provider columns of the data file and repeats none of their values', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const guide = fs.readFileSync(path.join(root, 'CONTRIBUTING.md'), 'utf8');
+  assert.ok(guide.includes('`kindEfforts` values of each provider live in `providers` of `lib/model-kinds.json`'));
+  assert.equal(guide.includes('maps every tier to `inherit`'), false);
+  assert.equal(guide.includes('puts the `on` column of'), false);
+});

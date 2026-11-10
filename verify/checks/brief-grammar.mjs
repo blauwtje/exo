@@ -87,14 +87,24 @@ function stated(repository, { file, needle, label }) {
   return repository.text(path).includes(needle) ? [] : [`${file} does not state ${label} (${needle})`];
 }
 
+const RULES_POINTER = 'the dispatch rules';
+
+function statedOrPointed(repository, spec) {
+  const found = stated(repository, spec);
+  if (found.length === 0) return found;
+  const text = fs.existsSync(repository.join(spec.file)) ? repository.text(repository.join(spec.file)) : '';
+  if (!text.includes(RULES_POINTER)) return found;
+  return stated(repository, { ...spec, file: RULES });
+}
+
 export function limitFailures(repository) {
   const budget = `${agentContextTarget(CATALOG_HOME) / 2000}k tokens`;
   const fetches = 'whole number first';
   return [
     ...stated(repository, { file: 'agents/orchestrator.md', needle: `at most ${orchestratorPredispatchReads(CATALOG_HOME)} reads`, label: 'the reads count' }),
-    ...stated(repository, { file: 'agents/orchestrator.md', needle: budget, label: 'the context budget' }),
+    ...statedOrPointed(repository, { file: 'agents/orchestrator.md', needle: budget, label: 'the context budget' }),
     ...stated(repository, { file: 'hooks/dispatch-rules.md', needle: budget, label: 'the context budget' }),
-    ...stated(repository, { file: 'agents/orchestrator.md', needle: fetches, label: 'the Fetches: rule' }),
+    ...statedOrPointed(repository, { file: 'agents/orchestrator.md', needle: fetches, label: 'the Fetches: rule' }),
     ...stated(repository, { file: 'hooks/dispatch-rules.md', needle: fetches, label: 'the Fetches: rule' })
   ];
 }

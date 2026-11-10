@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { findCoordinationProblems, gatherCoordinationState } from '../verify/checks/coordination-contract.mjs';
@@ -13,9 +15,21 @@ function state(overrides) {
   return { agents: [], skills: [], prose: [], contract: {}, ...overrides };
 }
 
-test('today the problem list names task-runner', () => {
-  const problems = findCoordinationProblems(gatherCoordinationState(ROOT));
-  assert.match(problems.join('\n'), /task-runner/);
+test('the tree passes the coordination check', () => {
+  assert.deepEqual(findCoordinationProblems(gatherCoordinationState(ROOT)), []);
+});
+
+test('the pointer prose is smaller than the 26994 byte baseline', () => {
+  const files = [
+    ...['session-rules.md', 'dispatch-rules.md', 'session-routing.md'].map((name) => `hooks/${name}`),
+    ...fs.readdirSync(path.join(ROOT, 'agents')).map((name) => `agents/${name}`),
+    ...fs
+      .readdirSync(path.join(ROOT, 'skills/build/references'))
+      .filter((name) => name.startsWith('run-loop'))
+      .map((name) => `skills/build/references/${name}`)
+  ];
+  const bytes = files.reduce((total, file) => total + fs.statSync(path.join(ROOT, file)).size, 0);
+  assert.ok(bytes < 26994, `${bytes} bytes, baseline 26994`);
 });
 
 test('a chain of two layers passes', () => {
@@ -67,4 +81,11 @@ test('a chain of three layers rooted at a subagent with no fork skill fails', ()
     })
   );
   assert.match(problems.join('\n'), /boss -> middle -> worker/);
+});
+
+test('runLateChecks runs the coordination check right after the harness capabilities check', () => {
+  const body = fs.readFileSync(path.join(ROOT, 'verify/late-checks.mjs'), 'utf8').split('export function runLateChecks')[1];
+  const calls = [...body.matchAll(/^\s*(?:if \([^)]*\) )?(check\w+)\(report/gm)].map((match) => match[1]);
+  const at = calls.indexOf('checkHarnessCapabilities');
+  assert.equal(calls[at + 1], 'checkCoordinationContract');
 });

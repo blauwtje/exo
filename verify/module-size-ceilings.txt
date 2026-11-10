@@ -41,7 +41,7 @@
 33232 benchmarks/score.mjs
 8978 benchmarks/session-stats.mjs
 9268 benchmarks/speed-ledger.mjs
-12170 benchmarks/sweep-cells.mjs
+12074 benchmarks/sweep-cells.mjs
 17315 benchmarks/sweep-fixtures.mjs
 11136 benchmarks/sweep-score.mjs
 26653 benchmarks/sweep.mjs

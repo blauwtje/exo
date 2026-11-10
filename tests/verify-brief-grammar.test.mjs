@@ -56,3 +56,16 @@ test('a repository without agents/orchestrator.md fails by naming the file', () 
   const found = limitFailures(repositoryWith({ 'hooks/dispatch-rules.md': 'Fetches: <n>\n' }));
   assert.ok(found.includes('agents/orchestrator.md is missing'));
 });
+
+test('an orchestrator pointer to the dispatch rules passes when the rules state the budget and Fetches: rule', () => {
+  const rules = 'Fetches: <n> whole number first, within 30k tokens.\n';
+  const files = { 'agents/orchestrator.md': 'at most 4 reads; see the dispatch rules\n', 'hooks/dispatch-rules.md': rules };
+  assert.deepEqual(limitFailures(repositoryWith(files)), []);
+});
+
+test('an orchestrator pointer to the dispatch rules fails when the rules lack the value', () => {
+  const files = { 'agents/orchestrator.md': 'at most 4 reads; see the dispatch rules\n', 'hooks/dispatch-rules.md': 'Nothing here.\n' };
+  const found = limitFailures(repositoryWith(files));
+  assert.ok(found.some((line) => /does not state the context budget/.test(line)));
+  assert.ok(found.some((line) => /does not state the Fetches: rule/.test(line)));
+});

@@ -1,12 +1,11 @@
 - The **lead**, the main session, keeps decisions and the user dialogue and does itself only a lone small edit or single-fact lookup.
 - Brief an agent with the goal, pointers instead of pasted content and a stop condition.
 - The lead reads no file the brief points to.
-- The agent writes findings to a named file under `.exo/<topic>/` and returns the verdict and path in a few lines with no findings pasted, which keeps the lead's context small.
+- The agent writes findings to a named file under `.exo/<topic>/` and returns the verdict and path within the contract's return cap with no findings pasted, which keeps the lead's context small.
 - Send long command output to a log under `.exo/` and read only the failing lines and the summary.
 - On an `exo:` agent call, pass no `model` or `effort` because the kind table decides, and name a model in text only when you pass that model.
 - Give an unnamed delegate the first brief line `exo-kind: hardest` when its brief leaves a design, architecture or solution choice open or asks for an unknown cause, and `exo-kind: build` when the brief is a fully decided fix.
 - Size each worker brief before dispatch: a `Reads:` line of paths or `none`, an optional `Fetches: <n>` line (a whole number first, one page each, one search.mjs call on the reddit route); keep the reads within 30k tokens and split into more agents when over.
 - Give an unnamed worker brief a `Reads:` or `Fetches:` line, and no `Result:` line unless an orchestrator hands the file on.
 - For a job of more than 4 workers, plan phases and give each `exo:orchestrator` slice a `Workers: <n>` line of at most 4; run a phase's slices in parallel and pass the previous result file in the next slice's `Reads:`.
-- After a dispatch, end the turn and wait for the notification; a coordinator in a `-p` run session runs `wait-report.mjs` with Bash timeout 600000 instead.
-- Start a long command in the background and end the turn; never write the final result while one of your own background shells runs, because a Write or Bash redirect of the Result file is refused then.
+- Wait, return cap and depth per role are in `harnesses/coordination-contract.json`; after a dispatch, end the turn and wait for the notification, and never write the final result while your own background shell runs.

@@ -143,3 +143,12 @@ test('subagentPeak reads the peak of the session subagent files', async () => {
   assert.equal(subagentPeak(folder, 's1'), 30_000);
   assert.equal(subagentPeak(folder, 'none'), 0);
 });
+
+test('--reads prints one Read line per tool call with its token growth', async () => {
+  const folder = await fixture();
+  const entries = [turn(10_000, bash('ls')), turn(16_000)];
+  await fs.writeFile(path.join(folder, 's.jsonl'), `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
+  const result = await run(TOOL, ['--folder', folder, '--reads']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout.trim(), 'Read: Bash ls 6000');
+});

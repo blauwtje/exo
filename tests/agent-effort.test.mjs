@@ -116,7 +116,7 @@ test('the session text has one wait bullet for the agent notice and one TaskStop
   const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
   assert.ok(lines.includes('- Before saying an agent or task still runs, check it this turn (`tasks/<id>.output` mtime or tail, its log, or `ps`), and if its work ended with no notice, SendMessage it to resume, never claim it runs from a notice alone.'));
   for (const file of ['session-rules.md', 'dispatch-rules.md']) assert.ok(!fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', file), 'utf8').includes('resumes when'));
-  assert.ok(readDispatchRules().split('\n').includes('- Start a long command in the background and end the turn; never write the final result while one of your own background shells runs, because a Write or Bash redirect of the Result file is refused then.'));
+  assert.ok(readDispatchRules().split('\n').includes('- Wait, return cap and depth per role are in `harnesses/coordination-contract.json`; after a dispatch, end the turn and wait for the notification, and never write the final result while your own background shell runs.'));
   assert.ok(!lines.some((line) => line.includes('holds the session open')));
   assert.ok(lines.includes('- Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.'));
 });

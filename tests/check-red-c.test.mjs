@@ -49,6 +49,24 @@ test('return caps fails on an agent that states no line cap', () => {
   assert.match(failure.detail, /agents\/a\.md/);
 });
 
+test('return caps accepts the contract pointer when the contract holds a line cap', () => {
+  const root = tree({
+    'agents/a.md': "---\nname: a\n---\nReturn within the contract's return cap.\n",
+    'harnesses/coordination-contract.json': '{"return":{"maxLines": 8}}\n',
+    'skills/.keep': ''
+  });
+  assert.deepEqual(failures(checkReturnCaps, root), []);
+});
+
+test('return caps fails on the contract pointer when the contract holds no line cap', () => {
+  const root = tree({
+    'agents/a.md': "---\nname: a\n---\nReturn within the contract's return cap.\n",
+    'harnesses/coordination-contract.json': '{}\n',
+    'skills/.keep': ''
+  });
+  assert.match(failures(checkReturnCaps, root)[0].detail, /agents\/a\.md/);
+});
+
 test('script output fails on a runner script that skips the script-output import', () => {
   const root = tree({
     'agents/task-runner.md': 'Run land-task.mjs.\n',

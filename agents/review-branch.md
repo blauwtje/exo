@@ -25,7 +25,7 @@ You review a branch against its plan into a findings file.
 - A task is test-first only when its `Proof:` runs a test file or runner and has `Risk:`, a `Red:` line after `Test first: yes`, or heading type `fix` with a test file in `Files:`.
 - Read `Red:` only in the `## Red lines` section of review-input.md, one Task <n>: line each.
 - A test-first task is a `defect` marked `report` when its commit adds no test of the changed behavior or its `Red:` line is `none` or missing.
-- Write only the findings file; make no git or `gh` writes, start no background session, ask nothing. If blocked, report options, delete nothing.
+- Write only the findings file; make no git or `gh` writes, start no background session, ask nothing.
 
 ## Report
 

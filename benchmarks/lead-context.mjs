@@ -5,6 +5,7 @@ import { transcriptFolder } from '#confine-claude';
 import { contextLimit, softLimit } from '#context-limits';
 import { contextSeries } from '#context-series';
 import { UsageError, isMain, parseFlags } from '#script-flags';
+import { callsOf, readLines } from './lead-reads.mjs';
 
 const USAGE = `usage: node benchmarks/lead-context.mjs [--folder <transcript folder>] [--all]
 
@@ -13,6 +14,7 @@ Default folder: the Claude Code transcript folder of the current directory.
 Each listed session shows its peak tokens, assistant turns at or above the soft and hard limit, the compaction
 points (compactMetadata.preTokens of each compact_boundary entry) and the share of added context tokens per stage.
 The default lists only sessions whose peak reaches the soft limit; --all lists every session.
+--reads instead prints one 'Read: <label> <tokens>' line per file or tool result a session loads.
 Exit codes: 0 done, 2 bad flag or missing transcript folder.`;
 
 const STAGES = ['spec', 'next-task', 'unit', 'merge-reviews', 'other'];
@@ -28,8 +30,6 @@ function stageOfCall(call) {
   if (MERGE_REVIEWS.test(call.input?.command ?? '')) return 'merge-reviews';
   return 'other';
 }
-
-const callsOf = (entry) => (entry.message?.content ?? []).filter((block) => block.type === 'tool_use');
 
 function stageOfCalls(calls) {
   return calls.map(stageOfCall).find((stage) => stage !== 'other') ?? 'other';
@@ -115,9 +115,13 @@ export function report({ folder, all }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { folder: 'string', all: 'boolean' }, { usage: USAGE });
+  const flags = parseFlags(argv, { folder: 'string', all: 'boolean', reads: 'boolean' }, { usage: USAGE });
   const folder = resolveFolder(flags);
   if (!fs.existsSync(folder)) throw new UsageError(`no transcript folder at '${folder}'; pass --folder`);
+  if (flags.reads === true) {
+    console.log(readLines(folder).join('\n'));
+    return;
+  }
   console.log(report({ folder, all: flags.all === true }).join('\n'));
 }
 

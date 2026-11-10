@@ -426,7 +426,8 @@ test('the dispatch rules add the Workers line, the slice plan, the worker Reads 
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
   assert.match(rules, /unnamed worker brief a `Reads:` or `Fetches:` line/);
   assert.match(rules, /more than 4 workers[^\n]*`Workers: <n>` line of at most 4[^\n]*in parallel[^\n]*next slice's `Reads:`/);
-  assert.match(rules, /end the turn and wait for the notification/);
+  assert.match(rules, /harnesses\/coordination-contract\.json[^\n]*end the turn and wait for the notification/);
+  assert.equal(rules.split('wait-report').length - 1, 0);
 });
 
 test('the script-size step reads its cap from defaults.scriptBytes', async () => {
