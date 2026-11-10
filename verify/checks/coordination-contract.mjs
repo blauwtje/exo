@@ -72,10 +72,9 @@ function longestChain(name, edges, trail = []) {
 
 function depthProblems(state) {
   const edges = dispatchEdges(state);
-  const forkAgents = new Set(state.skills.map((skill) => skill.agent).filter(Boolean));
   const problems = [];
-  for (const forkAgent of forkAgents) {
-    const chain = longestChain(forkAgent, edges);
+  for (const root of edges.keys()) {
+    const chain = longestChain(root, edges);
     if (chain.length > MAX_LAYERS) {
       problems.push(`dispatch chain of ${chain.length} layers below main, above ${MAX_LAYERS}: ${chain.join(' -> ')}`);
     }

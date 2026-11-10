@@ -3,7 +3,7 @@
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
 import { briefedInput, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
-import { contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
+import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { kindLabels, pairText, runsPassed } from '../lib/kind-labels.mjs';
@@ -106,7 +106,7 @@ function sliceFields(hookInput) {
   if (!isSliceCall(hookInput)) return null;
   const workers = sliceWorkers(hookInput);
   if (workers === undefined || sliceCount(hookInput.agent_id) < workers) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('slice-spent', `sized at ${workers} workers, it has made ${workers} dispatches, retries included`) };
+  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('slice-spent', `sized at ${workers} workers, retries included`) };
 }
 
 function recordDispatch(hookInput) {
@@ -117,7 +117,7 @@ function recordDispatch(hookInput) {
 export function agentHook(hookInput, budget, enabled) {
   const rewrite = readsRewrite(hookInput);
   const output = agentEffort(hookInput, budget, rewrite);
-  const fields = researchFields(hookInput) ?? mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
+  const fields = roleFields(hookInput) ?? researchFields(hookInput) ?? mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
   const receipt = (message, noted) => withReceipt(message, hookInput, noted, ran, enabled);
   if (fields?.permissionDecision) return rememberRefusal(hookInput, receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields), { guard: 'agent-effort' });

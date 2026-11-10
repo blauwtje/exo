@@ -171,6 +171,7 @@ const labelledPair = () => {
   return { model, effort };
 };
 const cases = {
+  'role-no-dispatch': () => agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:research-worker', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '',
   stash: () => bash('git stash', agent),
   'shared-state': () => bash('git worktree remove x', agent),
   'wide-find': () => bash('find / -name x'),

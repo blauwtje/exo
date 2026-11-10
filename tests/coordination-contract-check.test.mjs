@@ -55,3 +55,16 @@ test('a contract value restated in two prose files fails', () => {
   );
   assert.match(problems.join('\n'), /wait command wait-report is restated in 2 prose files/);
 });
+
+test('a chain of three layers rooted at a subagent with no fork skill fails', () => {
+  const problems = findCoordinationProblems(
+    state({
+      agents: [
+        agent('boss', ['Agent', 'SendMessage'], 'exo:middle'),
+        agent('middle', ['Agent', 'SendMessage'], 'exo:worker'),
+        agent('worker', ['Read'])
+      ]
+    })
+  );
+  assert.match(problems.join('\n'), /boss -> middle -> worker/);
+});

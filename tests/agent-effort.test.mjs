@@ -416,3 +416,11 @@ test('a second main-session web research dispatch inside the window is sent to o
   fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}`), { force: true });
   fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}-other`), { force: true });
 });
+
+test('an Agent dispatch from a worker role is denied and one from a coordinator is not', () => {
+  const dispatch = (agentType) => agentHook({ tool_name: 'Agent', session_id: `role-${process.pid}-${agentType}`, agent_id: 'sub1', agent_type: agentType, tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput;
+  const worker = dispatch('exo:research-worker');
+  assert.equal(worker.permissionDecision, 'deny');
+  assert.match(worker.permissionDecisionReason, /worker row has mayDispatch false/);
+  assert.doesNotMatch(dispatch('exo:orchestrator')?.permissionDecisionReason ?? '', /mayDispatch false/);
+});
