@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.140.0 - 2026-11-10
+
 ### Added
 
 - `benchmarks/depth-sweep.mjs --arms <list>` runs a single arm of the depth sweep, and `benchmarks/lead-context.mjs` lists the extra main-session reads of the `nofork` route.
