@@ -91,7 +91,7 @@ test('a refused landing prints Land: for the rebuild into the same slot and reco
   await editApp(slot);
   await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
   const before = Math.floor(Date.now() / 1000);
-  const result = await land();
+  const result = await land(undefined, { EXO_RUN_SESSION: '1' });
   assert.match(result.stdout, /^REFUSED 1\b/);
   assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --any .*--report ".+implementer-1\.md".*--report ".+implementer-3\.md"/m);
   assert.match(result.stdout, new RegExp(`^Land 1: node ".+land-slot\\.mjs" .*--task 1 .*--slot "${slot}" --base ${base} .*--in-flight 3$`, 'm'));

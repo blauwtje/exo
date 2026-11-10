@@ -3,6 +3,14 @@ import { baselineFile, openSlots, slotEnvLine, slotOf } from './open-slots.mjs';
 import { driftOf, relativeInputPaths } from '#plan-inputs';
 import { scriptPath } from './next-task-paths.mjs';
 import { taskLines } from './next-task-brief.mjs';
+import { sessionWait } from '../../../harnesses/coordination-contract.mjs';
+
+const WAIT_NOTE = '   (tool timeout 600000; exit 2 reruns at most three times, then BLOCKED <n> no report)';
+
+function waitLine(command, suffix = '') {
+  if (sessionWait() !== 'wait-report') return 'Wait: end your turn for the notification';
+  return `Wait: ${command}${suffix}`;
+}
 
 function promptLines(task, frame, planPath, checkout, briefPath) {
   return [
@@ -22,8 +30,7 @@ function dispatchable(task, frame, root) {
 export function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
   const report = path.join(checkout, '.exo', `implementer-${task.number}.md`);
-  const stamp = path.join(checkout, '.exo', `checked-${task.number}`);
-  return [`Dispatch: exo:build-task`, `Since: ${since}`, `Wait: node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}" --stamp "${stamp}"   (tool timeout 600000; exit 2 reruns at most three times, then BLOCKED <n> no report)`, ...promptLines(task, frame, planPath, checkout, briefPath)];
+  return [`Dispatch: exo:build-task`, `Since: ${since}`, waitLine(`node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}"`, WAIT_NOTE), ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
 // why: with every unlanded task running no landing can start a refill, so one chained land replaces the per-slot lands.
@@ -31,12 +38,12 @@ export function windowLines({ planPath, root, records, running, unlanded = null,
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];
   const waitAll = open.length > 1 && unlanded !== null && unlanded.every((number) => open.includes(number));
-  const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}" --stamp "${path.join(records[number].slot, '.exo', `checked-${number}`)}"`);
+  const waits = open.map((number) => `--since ${records[number].since} --report "${path.join(records[number].slot, '.exo', `implementer-${number}.md`)}"`);
   const onlyFlag = only === null ? '' : ` --only ${only.join(',')}`;
   const land = (number) => `node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}"${open.length > 1 ? ` --in-flight ${open.filter((other) => other !== number).join(',')}` : ''}${onlyFlag}`;
   const order = [...open].sort((left, right) => left - right);
   return [
-    `Wait: node "${scriptPath('wait-report.mjs')}"${waitAll ? '' : ' --any'} ${waits.join(' ')}   (tool timeout 600000; exit 2 reruns at most three times, then BLOCKED <n> no report)`,
+    waitLine(`node "${scriptPath('wait-report.mjs')}"${waitAll ? '' : ' --any'} ${waits.join(' ')}`, WAIT_NOTE),
     ...open.map((number) => `Land ${number}: ${land(number)}`),
     ...(waitAll ? [`Land all: ${order.map((number, index) => `${land(number)}${index < order.length - 1 ? ' --chained' : ''}`).join(' ; ')}`] : [])
   ];

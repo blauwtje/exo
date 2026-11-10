@@ -97,6 +97,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `wait-report.mjs` refuses with exit 1 outside a run session (`EXO_RUN_SESSION=1`), and `next-task` and `land-slot` print `Wait: end your turn for the notification` there instead of the script command, so the Bash hook no longer matches the command text.
 - A second Reddit `--query` in one run waits for the RSS reset under the wait cap, and the archive fallback sends a one-year window, so the search returns rows instead of `HTTP 422`; a blocked line now carries the reason from the response.
 - `search.mjs` keeps every URL after `--url` and exits on an argument no flag owns, so five thread URLs in one call give five rows instead of one.
 - A size denial on a worker brief keeps the asked `Fetches:` total and names the worker split that fits, so the orchestrator no longer lowers the count.

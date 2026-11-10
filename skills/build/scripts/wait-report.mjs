@@ -1,16 +1,17 @@
 import fs from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { exitWithParent } from '#lifetime';
+import { sessionWait } from '../../../harnesses/coordination-contract.mjs';
 import { parseFlags, UsageError, isMain, environmentMs } from '#script-flags';
 
 const DEFAULT_TIMEOUT_MS = 540000;
 const POLL_INTERVAL_MS = 5000;
 const USAGE = [
-  'usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--stamp <path>] [--report <path> [--stamp <path>]...] [--any] [--timeout <seconds>]',
+  'usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--report <path>...] [--any] [--timeout <seconds>]',
   '--since is given once for all reports or once per --report, paired in order;',
-  '--stamp is given once per --report or never: a report counts once its stamp is fresh too, or when it reports anything but GREEN;',
+  'a report counts once it is fresh and holds a verdict line (GREEN, BLOCKED, PLAN DRIFT, FAIL or Unresolved:), with no stamp file;',
   '--any returns as soon as one report is fresh and prints only the fresh paths.',
-  'Exit 0 prints each report path; exit 2 prints `waiting <paths>` at the EXO_WAIT_REPORT_MS deadline (default 540000); exit 1 is a bad argument, also a --since later than now.',
+  'Exit 0 prints each report path, then a `final` line: do not wait again; exit 2 prints `waiting <paths>` at the EXO_WAIT_REPORT_MS deadline (default 540000); exit 1 is a bad argument, also a --since later than now.',
 ].join('\n');
 
 function isFresh(reportPath, sinceMs) {
@@ -22,21 +23,20 @@ function isFresh(reportPath, sinceMs) {
 const BLOCKING_LINE = /^\s*(?:[-*]\s+)?(?:Task \d+:\s*)?(?:BLOCKED|PLAN DRIFT|FAIL)\b/;
 const UNRESOLVED_LINE = /^\s*(?:[-*]\s+)?Unresolved:\s*(.*?)\s*$/;
 
-function isGreen(reportPath) {
+const VERDICT_LINE = /^\s*(?:[-*]\s+)?(?:Task \d+:\s*)?GREEN\b/;
+
+function hasVerdict(reportPath) {
   const lines = fs.readFileSync(reportPath, 'utf8').split('\n');
-  const open = lines.some((line) => BLOCKING_LINE.test(line) || !['', 'none'].includes(line.match(UNRESOLVED_LINE)?.[1].toLowerCase() ?? ''));
-  return !open;
+  return lines.some((line) => VERDICT_LINE.test(line) || BLOCKING_LINE.test(line) || UNRESOLVED_LINE.test(line));
 }
 
-function isDone(reportPath, stampPath, sinceMs) {
-  if (!isFresh(reportPath, sinceMs)) return false;
-  if (stampPath === undefined || isFresh(stampPath, sinceMs)) return true;
-  return !isGreen(reportPath);
+function isDone(reportPath, sinceMs) {
+  return isFresh(reportPath, sinceMs) && hasVerdict(reportPath);
 }
 
-export async function waitForReports({ reports, stamps = [], sinceSeconds, timeoutMs, any = false }) {
+export async function waitForReports({ reports, sinceSeconds, timeoutMs, any = false }) {
   const sinceMs = reports.map((_, index) => 1000 * (Array.isArray(sinceSeconds) ? sinceSeconds[index] : sinceSeconds));
-  const pendingNow = () => reports.filter((reportPath, index) => !isDone(reportPath, stamps[index], sinceMs[index]));
+  const pendingNow = () => reports.filter((reportPath, index) => !isDone(reportPath, sinceMs[index]));
   const deadline = Date.now() + timeoutMs;
   const done = (pending) => (any ? pending.length < reports.length : pending.length === 0);
   let pending = pendingNow();
@@ -58,16 +58,14 @@ function timeoutMsFrom(timeout) {
 
 async function main(argv) {
   exitWithParent('wait-report');
-  const flags = parseFlags(argv, { since: 'list', report: 'list', stamp: 'list', any: 'boolean', timeout: 'value' }, { usage: USAGE });
+  if (sessionWait() !== 'wait-report') throw new UsageError('runs only in a run session (EXO_RUN_SESSION=1); end your turn for the notification');
+  const flags = parseFlags(argv, { since: 'list', report: 'list', any: 'boolean', timeout: 'value' }, { usage: USAGE });
   if (flags.since === undefined || !flags.since.every((text) => /^\d+$/.test(text))) {
     throw new UsageError("flag '--since' needs epoch seconds");
   }
   if (flags.report === undefined) throw new UsageError("flag '--report' names a report path");
   if (flags.since.length !== 1 && flags.since.length !== flags.report.length) {
     throw new UsageError("flag '--since' is given once or once per '--report'");
-  }
-  if (flags.stamp !== undefined && flags.stamp.length !== flags.report.length) {
-    throw new UsageError("flag '--stamp' is given once per '--report' or not at all");
   }
   const sinceSeconds = flags.since.map(Number);
   const nowSeconds = Math.floor(Date.now() / 1000);
@@ -77,7 +75,6 @@ async function main(argv) {
   }
   const pending = await waitForReports({
     reports: flags.report,
-    stamps: flags.stamp ?? [],
     sinceSeconds: sinceSeconds.length === 1 ? sinceSeconds[0] : sinceSeconds,
     timeoutMs: timeoutMsFrom(flags.timeout),
     any: flags.any === true,
@@ -88,7 +85,7 @@ async function main(argv) {
     process.exitCode = 2;
     return;
   }
-  process.stdout.write(`${fresh.join('\n')}\n`);
+  process.stdout.write(`${fresh.join('\n')}\nfinal\n`);
 }
 
 async function runCli() {

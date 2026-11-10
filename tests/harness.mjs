@@ -36,6 +36,7 @@ const SETTINGS_VARIABLE = /^(CLAUDE_PROJECT_DIR|CLAUDE_PLUGIN_OPTION_.*)$/;
 // The task pin run-plan.mjs sets for each task session; inherited by a test run inside
 // one, it would make every spawned land-task refuse all but that task.
 const RUN_PIN_VARIABLE = 'EXO_RUN_TASK';
+const RUN_SESSION_VARIABLE = 'EXO_RUN_SESSION';
 // The marker Claude Code sets in every Bash call; inherited by a test run inside a session,
 // it would make every spawned exo-cli or run-plan refuse as started from a session.
 const SESSION_VARIABLE = 'CLAUDECODE';
@@ -54,7 +55,7 @@ function emptyConfig() {
 /** The inherited environment without the developer's own exo settings or run pin, then `overrides`, so a test that names one on purpose still wins. */
 async function isolatedEnv(overrides) {
   const inherited = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name) && name !== RUN_PIN_VARIABLE && name !== SESSION_VARIABLE)
+    Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name) && name !== RUN_PIN_VARIABLE && name !== RUN_SESSION_VARIABLE && name !== SESSION_VARIABLE)
   );
   return { ...inherited, ...GIT_IDENTITY, CLAUDE_CONFIG_DIR: await emptyConfig(), ...overrides };
 }
