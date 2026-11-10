@@ -215,7 +215,6 @@ function flowCells() {
     { ...shared, id: 'flow-large', kind: 'flow-large', prompt },
     { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt },
     { ...shared, id: 'flow-fold', compactPlan: true, pluginVariant: 'fold-unit', prompt },
-    { ...shared, id: 'flow-nofork', compactPlan: true, pluginVariant: 'no-fork-build', prompt },
     {
       ...shared,
       id: 'flow-base',

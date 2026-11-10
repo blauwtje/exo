@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readJsonOrNull } from './basics.mjs';
-import { ARMS, NEW_ARMS, resultsText } from './depth-sweep-results.mjs';
+import { ARMS, resultsText } from './depth-sweep-results.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -78,11 +78,10 @@ async function runMissing({ arms, count, options, state, runRound }) {
 export async function depthSweep({ options, runRound }) {
   fs.mkdirSync(path.dirname(path.resolve(options.results)), { recursive: true });
   const { arms = ARMS } = options;
-  const pilotArms = NEW_ARMS.filter((arm) => arms.includes(arm));
   const state = { records: readRecords(`${options.results}.runs.jsonl`), stopReason: null };
-  if (options.pilot && pilotArms.length > 0) {
-    await runMissing({ arms: pilotArms, count: 1, options, state, runRound });
-    const pilots = state.records.filter((run) => run.index === 1 && pilotArms.includes(run.arm));
+  if (options.pilot) {
+    await runMissing({ arms, count: 1, options, state, runRound });
+    const pilots = state.records.filter((run) => run.index === 1 && arms.includes(run.arm));
     const unknown = unknownCostRun(pilots);
     if (unknown !== undefined) return { refused: true, reason: `pilot run ${runName(unknown)} has no finite costUsd` };
     const projected = projectedCostUsd({ pilots, repeat: options.repeat, arms });

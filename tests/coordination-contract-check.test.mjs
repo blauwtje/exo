@@ -89,3 +89,12 @@ test('runLateChecks runs the coordination check right after the harness capabili
   const at = calls.indexOf('checkHarnessCapabilities');
   assert.equal(calls[at + 1], 'checkCoordinationContract');
 });
+
+test('a fork-coordinator wait that disagrees with the orchestrator prose fails', () => {
+  const orchestrator = { name: 'orchestrator', tools: [], text: 'dispatch with `run_in_background: false`' };
+  const contract = { claude: { 'fork-coordinator': { wait: 'notification', return: { maxLines: 8 }, contextBudget: 1 } } };
+  const problems = findCoordinationProblems(state({ agents: [orchestrator], contract }));
+  assert.match(problems.join('\n'), /fork-coordinator wait is notification/);
+  contract.claude['fork-coordinator'].wait = 'foreground';
+  assert.deepEqual(findCoordinationProblems(state({ agents: [orchestrator], contract })), []);
+});

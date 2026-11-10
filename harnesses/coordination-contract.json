@@ -14,7 +14,7 @@
     "fork-coordinator": {
       "maxDepth": 1,
       "mayDispatch": true,
-      "wait": "notification",
+      "wait": "foreground",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -71,7 +71,7 @@
     "fork-coordinator": {
       "maxDepth": 1,
       "mayDispatch": true,
-      "wait": "notification",
+      "wait": "foreground",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -128,7 +128,7 @@
     "fork-coordinator": {
       "maxDepth": 1,
       "mayDispatch": true,
-      "wait": "notification",
+      "wait": "foreground",
       "return": {
         "verdictLine": true,
         "resultPath": true,

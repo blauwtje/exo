@@ -5,7 +5,7 @@ import { transcriptFolder } from '#confine-claude';
 import { contextLimit, softLimit } from '#context-limits';
 import { contextSeries } from '#context-series';
 import { UsageError, isMain, parseFlags } from '#script-flags';
-import { callsOf, readLines } from './lead-reads.mjs';
+import { carriedCalls, readLines } from './lead-reads.mjs';
 
 const USAGE = `usage: node benchmarks/lead-context.mjs [--folder <transcript folder>] [--all]
 
@@ -66,7 +66,7 @@ export function profileSession(file) {
     const { stage, added } = growthOf(tokens, previous, typedSpec);
     if (added > 0) stages[stage] += added;
     typedSpec = false;
-    previous = { tokens, id, calls: sameTurn ? [...previous.calls, ...callsOf(entry)] : callsOf(entry) };
+    previous = { tokens, id, calls: carriedCalls(previous, entry, sameTurn) };
   }
   return profile;
 }

@@ -24,9 +24,9 @@ test('no role goes deeper than two layers below main', () => {
   }
 });
 
-test('a worker dispatches nothing and an interactive coordinator waits for the notification', () => {
+test('a worker dispatches nothing and a forked coordinator waits in the foreground', () => {
   assert.equal(contractRow('claude', 'worker').mayDispatch, false);
-  assert.equal(contractRow('claude', 'fork-coordinator').wait, 'notification');
+  assert.equal(contractRow('claude', 'fork-coordinator').wait, 'foreground');
   assert.equal(contractRow('claude', 'run-session').wait, 'wait-report');
 });
 

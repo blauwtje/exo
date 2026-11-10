@@ -16,7 +16,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { copyPluginWithoutTasks } from './value.mjs';
-import { RUN_LOOP, UNIT_DISPATCH_TEXT, noForkProblems } from './variants-depth.mjs';
+import { RUN_LOOP, UNIT_DISPATCH_TEXT } from './variants-depth.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -43,7 +43,6 @@ const FOLD_UNIT_EDIT = {
   ].join('\n')
 };
 export const VARIANTS = {
-  'no-fork-build': { edits: [], remove: [], swap: [] },
   'session-pointer': { edits: [POINTER_EDIT], remove: [], swap: [] },
   'no-find-cause': { edits: [FIND_CAUSE_EDIT], remove: ['skills/find-cause'], swap: [] },
   'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] },
@@ -115,7 +114,6 @@ export function checkVariant(name) {
     for (const entry of variant.remove) if (fs.existsSync(path.join(copy, entry))) problems.push(`${entry} is still there`);
     if (name === 'session-pointer' && context.length > 600) problems.push(`session text is ${context.length} characters, not a pointer`);
     if (name === 'no-find-cause' && fs.readFileSync(path.join(copy, ROUTE_FILE), 'utf8').includes('find-cause')) problems.push('the route still names find-cause');
-    if (name === 'no-fork-build') problems.push(...noForkProblems(copy));
     if (name === 'fold-unit') problems.push(...foldUnitProblems(copy));
     if (name.startsWith('session-build')) {
       const swapped = fs.readFileSync(path.join(copy, DIRECT_LOOP), 'utf8') === fs.readFileSync(path.join(ROOT, BUILD_SWAP.source), 'utf8');

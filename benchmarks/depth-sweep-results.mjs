@@ -1,8 +1,7 @@
 import { median } from '../lib/eval-stats.mjs';
 
 const BASELINE_ARM = 'flow-unit';
-export const NEW_ARMS = ['flow-nofork'];
-export const ARMS = [BASELINE_ARM, ...NEW_ARMS];
+export const ARMS = [BASELINE_ARM];
 const HOPS = ['main', 'coordinator', 'workers'];
 const RESAMPLES = 2000;
 
@@ -57,8 +56,9 @@ function pairedLine({ arm, metric, records }) {
 
 export function resultsText({ records, stopReason, arms: shown = ARMS }) {
   const arms = shown.map((arm) => `- ${arm}: ${armSummary(records.filter((run) => run.arm === arm))}`);
-  const pairedArms = shown.includes(BASELINE_ARM) ? NEW_ARMS.filter((arm) => shown.includes(arm)) : [];
+  const pairedArms = shown.includes(BASELINE_ARM) ? shown.filter((arm) => arm !== BASELINE_ARM) : [];
   const paired = pairedArms.flatMap((arm) => ['wallMs', 'costUsd'].map((metric) => pairedLine({ arm, metric, records })));
   const spent = finite(records.map((run) => run.costUsd)).reduce((sum, cost) => sum + cost, 0);
-  return ['# Depth sweep', '', stopReason ?? 'Finished.', `Spent $${spent.toFixed(2)}.`, '', '## Arms', '', ...arms, '', '## Paired', '', ...paired, ''].join('\n');
+  const pairedSection = paired.length === 0 ? [] : ['## Paired', '', ...paired, ''];
+  return ['# Depth sweep', '', stopReason ?? 'Finished.', `Spent $${spent.toFixed(2)}.`, '', '## Arms', '', ...arms, '', ...pairedSection].join('\n');
 }

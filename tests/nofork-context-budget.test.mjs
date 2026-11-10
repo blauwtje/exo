@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import { readContract } from '../harnesses/coordination-contract.mjs';
 
-const BASELINE = JSON.parse(fs.readFileSync('benchmarks/baselines/flow-nofork-sweep.json', 'utf8'));
+const BASELINE = JSON.parse(fs.readFileSync('benchmarks/baselines/flow-unit-sweep.json', 'utf8'));
 const MAIN_BUDGET_FLOOR = 30_000;
 
 function median(values) {
@@ -11,9 +11,9 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-test('the baseline holds the 13 flow-nofork records', () => {
+test('the baseline holds the 13 flow-unit records', () => {
   assert.equal(BASELINE.length, 13);
-  assert.ok(BASELINE.every((run) => run.cell === 'flow-nofork' && run.hopPeakTokens.main > 0));
+  assert.ok(BASELINE.every((run) => run.cell === 'flow-unit' && run.hopPeakTokens.main > 0));
 });
 
 test('each main contextBudget is the larger of 30000 and the baseline main peak', () => {

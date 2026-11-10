@@ -110,8 +110,17 @@ function restatementProblems({ prose, contract }) {
   return problems;
 }
 
+function forkWaitProblems({ agents, contract }) {
+  const orchestrator = agents.find((agent) => agent.name === 'orchestrator');
+  const row = contract.claude?.['fork-coordinator'];
+  if (!orchestrator || !row) return [];
+  const foreground = orchestrator.text.includes('run_in_background: false');
+  if (foreground === (row.wait === 'foreground')) return [];
+  return [`fork-coordinator wait is ${row.wait} but the orchestrator prose ${foreground ? 'dispatches in the foreground' : 'does not'}`];
+}
+
 export function findCoordinationProblems(state) {
-  return [...depthProblems(state), ...dispatchToolProblems(state), ...restatementProblems(state)];
+  return [...depthProblems(state), ...dispatchToolProblems(state), ...forkWaitProblems(state), ...restatementProblems(state)];
 }
 
 export function gatherCoordinationState(root) {

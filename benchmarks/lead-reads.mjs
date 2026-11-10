@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { contextSeries } from '#context-series';
 
+export function carriedCalls(previous, entry, sameTurn) {
+  return sameTurn ? [...previous.calls, ...callsOf(entry)] : callsOf(entry);
+}
+
 export const callsOf = (entry) => (entry.message?.content ?? []).filter((block) => block.type === 'tool_use');
 
 const TEMP_ROOT = /\/(?:private\/)?var\/folders\/[^\s"'/]+\/[^\s"'/]+\/T\/exo-sweep-[^\s"'/]+/g;
@@ -38,7 +42,7 @@ export function sessionReads(file) {
     if (tokens === null) continue;
     const id = entry.message?.id;
     const sameTurn = id !== undefined && id === previous?.id;
-    const calls = sameTurn ? [...previous.calls, ...callsOf(entry)] : callsOf(entry);
+    const calls = carriedCalls(previous, entry, sameTurn);
     if (!sameTurn && previous) reads.push(...apportion(previous, tokens, sizes));
     previous = { tokens, id, calls };
   }

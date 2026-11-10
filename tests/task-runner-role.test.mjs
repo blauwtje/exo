@@ -9,11 +9,13 @@ test('task-runner is a coordinator type', () => {
   assert.ok(COORDINATOR_TYPES.has('task-runner'));
 });
 
-test('the subagent-coordinator row allows one dispatch level', () => {
+test('the subagent-coordinator row allows one dispatch level in every harness', () => {
   const contract = readJson('../harnesses/coordination-contract.json');
-  const row = contract.claude['subagent-coordinator'];
-  assert.equal(row.mayDispatch, true);
-  assert.equal(row.maxDepth, 1);
+  for (const harness of ['claude', 'codex', 'opencode']) {
+    const row = contract[harness]['subagent-coordinator'];
+    assert.equal(row.mayDispatch, true, harness);
+    assert.equal(row.maxDepth, 1, harness);
+  }
 });
 
 test('the agent tier still holds the task-runner agent', () => {

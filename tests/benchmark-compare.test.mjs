@@ -77,8 +77,8 @@ test('benchmarkMinRise honours a user default and survives a malformed run.json'
   assert.equal(benchmarkMinRise(home), 0.1);
 });
 
-test('the stored flow-nofork baseline blocks a candidate whose hop peak rises past it', () => {
-  const baseline = parseStoredRuns(fs.readFileSync(new URL('../benchmarks/baselines/flow-nofork-sweep.json', import.meta.url), 'utf8'));
+test('the stored flow-unit baseline blocks a candidate whose hop peak rises past it', () => {
+  const baseline = parseStoredRuns(fs.readFileSync(new URL('../benchmarks/baselines/flow-unit-sweep.json', import.meta.url), 'utf8'));
   assert.equal(baseline.length, 13);
   const raised = (run) => ({ ...run, hopPeakTokens: { ...run.hopPeakTokens, main: run.hopPeakTokens.main * 1.5 } });
   assert.equal(compareToBaseline({ baseline, candidate: baseline, minRise: 0.1 }).blocked, false);

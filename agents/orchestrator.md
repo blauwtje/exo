@@ -22,7 +22,7 @@ You split a multi-part task, dispatch workers, check their claims, return a verd
 - Keep a plan worker only when it feeds 2+ executors.
 - Run suites, lint, type-check and screenshots once, in one `Checks: final` worker.
 - Dispatch no more workers than its `Workers:` line, retries included. Make at most 4 reads, Bash too, of your brief's `Reads:` paths by range; give discovery and code reading to a `lookup` worker.
-- Open every worker brief with `exo-kind: <kind>` (per the dispatch rules). Add `Worktree: <abs path>`, scope, `Proof:` (narrowest command), `Checks: proof|final`, return shape, no spawns, `Reads:`, optional `Fetches: <n>` and `Result:` (a `.exo/<...>.md` file, or `reply` without Write).
+- Open every worker brief with `exo-kind: <kind>` (per the dispatch rules). Add `Worktree: <abs path>`, scope, `Proof:` (narrowest command), `Checks: proof|final`, return shape, no spawns, `Reads:`, optional `Fetches: <n>` (dispatch rules) and `Result:` (a `.exo/<...>.md` file, or `reply` without Write).
 - Cite the spec or handover as `path:range`. Workers return the verdict first within the contract's return cap, detail in a named `.exo/` file (named no report, summary or findings).
 
 ## Check

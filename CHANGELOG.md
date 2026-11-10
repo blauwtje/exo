@@ -10,7 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - `benchmarks/depth-sweep.mjs --arms <list>` runs a single arm of the depth sweep, and `benchmarks/lead-context.mjs` lists the extra main-session reads of the `nofork` route.
-- `benchmarks/baselines/flow-nofork-sweep.json` stores the per-hop peak baseline that `benchmarks/baseline-compare.mjs` takes as `--baseline`.
+- `benchmarks/baselines/flow-unit-sweep.json` stores the per-hop peak baseline that `benchmarks/baseline-compare.mjs` takes as `--baseline`.
 - `npm run check` runs the coordination contract check, which fails on a dispatch chain of depth 3, a duplicated rule or a byte total above the baseline.
 
 ### Changed
@@ -22,6 +22,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Removed
 
 - The `flow-direct` benchmark arm and the leftovers of the build fork layer.
+- The `flow-nofork` benchmark arm and its `no-fork-build` variant, which measured the same tree as `flow-unit`.
+
+### Fixed
+
+- The `fork-coordinator` rows in `harnesses/coordination-contract.json` say `wait: foreground`, as the orchestrator prose does, and the coordination contract check fails when the two disagree.
+- `benchmarks/depth-sweep.mjs --pilot` runs the pilot and its projected-cost refusal for every chosen arm, and the results file prints `## Paired` only when a pair exists.
 
 ## 0.139.1 - 2026-11-10
 
