@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.139.0 - 2026-11-10
+
 ### Added
 
 - `harnesses/coordination-contract.json` holds the coordination contract as data, with a reader the hooks and checks share.
