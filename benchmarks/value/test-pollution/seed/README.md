@@ -27,5 +27,5 @@ A tenant has an `id`, a `currency`, a tax `region`, a `rounding` mode (`half-up`
 
 ## Tests
 
-`npm test` runs every test file in one process with `node --test --test-isolation=none`, which
+`npm test` runs every test file in one process with `node --test --experimental-test-isolation=none`, which
 keeps the run fast. Prices are integers in minor units (cents).

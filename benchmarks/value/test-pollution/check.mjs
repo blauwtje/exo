@@ -1,6 +1,6 @@
 // Hidden check for value-test-pollution. Restores the original test files over
 // tests/, runs them in several fixed file orders, each in a fresh process the way
-// `node --test --test-isolation=none` runs them, then runs hidden unit tests that
+// `node --test --experimental-test-isolation=none` runs them, then runs hidden unit tests that
 // hit each state leak with several tenants in one process.
 // Usage: node check.mjs <repoDir>
 import { spawnSync } from 'node:child_process';
@@ -36,7 +36,7 @@ const ORDERS = {
 function run(args) {
   const budget = Math.min(15_000, deadline - Date.now());
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('NODE_TEST_')));
-  return spawnSync(process.execPath, ['--test', '--test-isolation=none', '--test-reporter=tap', ...args], { cwd: repo, env, encoding: 'utf8', timeout: budget, maxBuffer: 64 * 1024 * 1024 });
+  return spawnSync(process.execPath, ['--test', '--experimental-test-isolation=none', '--test-reporter=tap', ...args], { cwd: repo, env, encoding: 'utf8', timeout: budget, maxBuffer: 64 * 1024 * 1024 });
 }
 
 const summary = (out, key) => Number(new RegExp(`^# ${key} (\\d+)`, 'm').exec(out)?.[1] ?? NaN);

@@ -8,6 +8,6 @@
     "node": ">=22.8"
   },
   "scripts": {
-    "test": "node --test --test-isolation=none tests/*.test.mjs"
+    "test": "node --test --experimental-test-isolation=none tests/*.test.mjs"
   }
 }

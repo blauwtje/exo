@@ -458,9 +458,15 @@ test('LOGIN_REQUIRED, an unavailable video, a 429 and an unreachable network rep
   });
 });
 
+function holdLoopUntilAbort(signal) {
+  const keepAlive = setInterval(() => {}, 1000);
+  signal.addEventListener('abort', () => clearInterval(keepAlive), { once: true });
+}
+
 test('a body that stalls past the wait reports no transcript instead of an abort error', async () => {
   await withoutYtDlp(async ({ options }) => {
     const stalling = async (url, init) => {
+      holdLoopUntilAbort(init.signal);
       const body = new ReadableStream({ start(controller) { init.signal.addEventListener('abort', () => controller.error(init.signal.reason)); } });
       return new Response(body, { status: 200 });
     };
@@ -486,7 +492,10 @@ test('an empty caption file, an exp=xpe track and a file with no text report no 
 
 test('a fetch that never answers is cut off after the wait and reports no transcript', async () => {
   await withoutYtDlp(async ({ options }) => {
-    const waiting = (url, init) => new Promise((resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason)));
+    const waiting = (url, init) => new Promise((resolve, reject) => {
+      holdLoopUntilAbort(init.signal);
+      init.signal.addEventListener('abort', () => reject(init.signal.reason));
+    });
     const result = await watchOne(ID, { ...options, fetchMs: 50 }, waiting);
     assert.match(result.failure, NO_TRANSCRIPT);
     assert.match(result.failure, /youtubei\/v1\/player did not answer: .*timeout/);

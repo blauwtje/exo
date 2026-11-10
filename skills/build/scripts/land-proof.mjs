@@ -100,7 +100,7 @@ function testRunFailure(file, testRun, deadlineMs) {
 function testFileFailure(task, file, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
-  const testRun = runTreeSync(`node --test ${file}`, { cwd: root, timeoutMs: deadlineMs, env });
+  const testRun = runTreeSync(`node --test --test-reporter=spec ${file}`, { cwd: root, timeoutMs: deadlineMs, env });
   return testRunFailure(file, testRun, deadlineMs);
 }
 

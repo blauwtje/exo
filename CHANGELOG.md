@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- A covering test run and the `test-pollution` benchmark behave the same on Node 22 as on Node 24: the test run asks for the `spec` reporter and the benchmark uses `--experimental-test-isolation=none`.
+
 ## 0.139.0 - 2026-11-10
 
 ### Added

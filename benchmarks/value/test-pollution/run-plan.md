@@ -15,11 +15,11 @@ Allow: none
 Worktree setup: none
 Land gate: node --check src/index.mjs
 
-Planned against the seed commit. `npm test` runs `node --test --test-isolation=none tests/*.test.mjs`, so every test file shares one process and one module cache. Executor loads the `build` skill on this plan before the first task.
+Planned against the seed commit. `npm test` runs `node --test --experimental-test-isolation=none tests/*.test.mjs`, so every test file shares one process and one module cache. Executor loads the `build` skill on this plan before the first task.
 
 ## Success criterion
 
-`node --test --test-isolation=none tests/tax.test.mjs tests/router.test.mjs tests/quotes.test.mjs tests/pricing.test.mjs tests/options.test.mjs tests/invoices.test.mjs tests/fx.test.mjs tests/discounts.test.mjs tests/credit-notes.test.mjs tests/catalog.test.mjs tests/audit.test.mjs && node --test --test-isolation=none tests/options.test.mjs tests/pricing.test.mjs tests/quotes.test.mjs tests/router.test.mjs tests/tax.test.mjs tests/audit.test.mjs tests/catalog.test.mjs tests/credit-notes.test.mjs tests/discounts.test.mjs tests/fx.test.mjs tests/invoices.test.mjs`
+`node --test --experimental-test-isolation=none tests/tax.test.mjs tests/router.test.mjs tests/quotes.test.mjs tests/pricing.test.mjs tests/options.test.mjs tests/invoices.test.mjs tests/fx.test.mjs tests/discounts.test.mjs tests/credit-notes.test.mjs tests/catalog.test.mjs tests/audit.test.mjs && node --test --experimental-test-isolation=none tests/options.test.mjs tests/pricing.test.mjs tests/quotes.test.mjs tests/router.test.mjs tests/tax.test.mjs tests/audit.test.mjs tests/catalog.test.mjs tests/credit-notes.test.mjs tests/discounts.test.mjs tests/fx.test.mjs tests/invoices.test.mjs`
 Repeat: 3 (order-dependent state)
 
 ## Non-goals
@@ -41,7 +41,7 @@ Repeat: 3 (order-dependent state)
 ## Tasks
 
 ### Task 1: fix(src): remove the order-dependent state
-Depends on: none | Files: `src/`, `tests/` | Data: every module-level cache or setting that one tenant's call leaves for the next becomes per-tenant or per-call state; no test file changes | Proof: node --test --test-isolation=none tests/tax.test.mjs tests/router.test.mjs tests/quotes.test.mjs tests/pricing.test.mjs tests/options.test.mjs tests/invoices.test.mjs tests/fx.test.mjs tests/discounts.test.mjs tests/credit-notes.test.mjs tests/catalog.test.mjs tests/audit.test.mjs && node --test --test-isolation=none tests/options.test.mjs tests/pricing.test.mjs tests/quotes.test.mjs tests/router.test.mjs tests/tax.test.mjs tests/audit.test.mjs tests/catalog.test.mjs tests/credit-notes.test.mjs tests/discounts.test.mjs tests/fx.test.mjs tests/invoices.test.mjs
+Depends on: none | Files: `src/`, `tests/` | Data: every module-level cache or setting that one tenant's call leaves for the next becomes per-tenant or per-call state; no test file changes | Proof: node --test --experimental-test-isolation=none tests/tax.test.mjs tests/router.test.mjs tests/quotes.test.mjs tests/pricing.test.mjs tests/options.test.mjs tests/invoices.test.mjs tests/fx.test.mjs tests/discounts.test.mjs tests/credit-notes.test.mjs tests/catalog.test.mjs tests/audit.test.mjs && node --test --experimental-test-isolation=none tests/options.test.mjs tests/pricing.test.mjs tests/quotes.test.mjs tests/router.test.mjs tests/tax.test.mjs tests/audit.test.mjs tests/catalog.test.mjs tests/credit-notes.test.mjs tests/discounts.test.mjs tests/fx.test.mjs tests/invoices.test.mjs
 
 ## Final verification
 

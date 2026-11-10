@@ -10,7 +10,7 @@ test('failedTestFiles lists the failing file of a real node --test run, once', (
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flaky-run-'));
   fs.writeFileSync(path.join(dir, 'a.test.mjs'), "import t from 'node:test'; t('ok', () => {});");
   fs.writeFileSync(path.join(dir, 'b.test.mjs'), "import t from 'node:test'; t('bad', () => { throw new Error('no'); }); t('bad2', () => { throw new Error('no'); });");
-  const run = spawnSync(process.execPath, ['--test', 'a.test.mjs', 'b.test.mjs'], { cwd: dir, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
+  const run = spawnSync(process.execPath, ['--test', '--test-reporter=spec', 'a.test.mjs', 'b.test.mjs'], { cwd: dir, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
   assert.deepEqual(failedTestFiles(run.stdout + run.stderr), ['b.test.mjs']);
 });
 
