@@ -115,6 +115,8 @@ node benchmarks/sweep.mjs --set review --reviewer-bodies generated|plan-fit=<fil
 
 The `flow-large` cell of `benchmarks/sweep-cells.mjs` runs the flow fixture with six helpers (`benchmarks/sweep-large.mjs`); only the full tier selects it, and `checkFlow` scores it against its own six tasks.
 
+`node benchmarks/depth-sweep.mjs [--pilot] --repeat <n> --cap-usd <usd> --results <path> [--concurrency <n>]` compares the `flow-unit`, `flow-direct` (`direct-build`: the fork dispatches `exo:build-task` itself) and `flow-nofork` (`no-fork-build`: `skills/build/SKILL.md` without `context: fork`) cells: `--pilot` runs one of each new arm and exits non-zero when the projected cost is over the cap or a pilot has no finite `costUsd`, each round starts one `sweep.mjs` for the arms of one index that have no record yet, `--concurrency` (default 3) at a time, so the arms of a pair share the machine load, the cap and a run with no finite `costUsd` stop the sweep between rounds and name that run, each finished run is kept in `<path>.runs.jsonl` so a rerun resumes and the cap counts every invocation, and `<path>` gets n, median wall and cost with a paired bootstrap interval, pass rate and peak tokens per hop. Paid; run it by hand from a terminal.
+
 `benchmarks/sweep-meta.mjs` writes a sweep run's `meta.json`: date, versions, `pluginCommits` and `pluginDirty`, and with a base checkout also its commit under its path and `baseDirty`.
 
 ## How a skill dispatches work

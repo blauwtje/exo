@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `depth-sweep.mjs` runs the missing arms of one index as one `sweep.mjs` call with `--concurrency` (default 3) and checks the cap between rounds, instead of one `sweep.mjs` per run.
 - `npm run check` locks each registered hook by the modules it loads and the files it reads (`HOOK_WORK_LOCK`, one row per script) instead of timing a `dispatch-bash.mjs` spawn, so the result no longer moves with machine load; `benchmarks/hook-timing.mjs` keeps the timing under `EXO_HOOK_EXTRA_MS`.
 - The `deep` setting (`opus` default, `fable`) picks the model of the `review-deep`, `orchestrator` and `hardest` kinds; build repairs stay on `strong` as the new `build-repair` kind.
 - A Write whose only rule break is added comment lines has those lines stripped instead of being refused, which turned 17 of 88 replayed refusals into rewrites.
@@ -97,6 +98,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `depth-sweep.mjs` stops when a run has no finite `costUsd` and refuses when a pilot has none, naming that run, instead of letting the `$25` cap pass silently.
 - `wait-report.mjs` refuses with exit 1 outside a run session (`EXO_RUN_SESSION=1`), and `next-task` and `land-slot` print `Wait: end your turn for the notification` there instead of the script command, so the Bash hook no longer matches the command text.
 - A second Reddit `--query` in one run waits for the RSS reset under the wait cap, and the archive fallback sends a one-year window, so the search returns rows instead of `HTTP 422`; a blocked line now carries the reason from the response.
 - `search.mjs` keeps every URL after `--url` and exits on an argument no flag owns, so five thread URLs in one call give five rows instead of one.

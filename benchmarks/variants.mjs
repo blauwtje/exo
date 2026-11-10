@@ -16,6 +16,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { copyPluginWithoutTasks } from './value.mjs';
+import { DIRECT_BUILD_EDIT, NO_FORK_EDIT, RUN_LOOP, UNIT_DISPATCH_TEXT, directBuildProblems, noForkProblems } from './variants-depth.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -31,16 +32,10 @@ const POINTER_EDIT = {
 };
 const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: '- Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `find-cause`.\n', to: '' };
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
-const RUN_LOOP = 'skills/build/references/run-loop.md';
 const UNIT_AGENT = 'agents/task-runner.md';
 const FOLD_UNIT_EDIT = {
   file: RUN_LOOP,
-  from: [
-    '5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently with `run_in_background: false`, keeping the turn open.',
-    '   - Name plan path, branch, checkout and exactly the `Block:` tasks.',
-    '   - The tail (`gate`) stays here, in no runner brief.',
-    '   - Build no task here and call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.'
-  ].join('\n'),
+  from: UNIT_DISPATCH_TEXT,
   to: [
     '5. **Run the unit here.** Dispatch no task-runner agent: read `${CLAUDE_PLUGIN_ROOT}/' + UNIT_AGENT + '`, take `<skill>` = `${CLAUDE_SKILL_DIR}`, and follow its `## Loop` and `## Stop` yourself for the `Block:` tasks.',
     '   - Its step 3 dispatch to `exo:build-task` stays; never build a task here.',
@@ -48,6 +43,8 @@ const FOLD_UNIT_EDIT = {
   ].join('\n')
 };
 export const VARIANTS = {
+  'direct-build': { edits: [DIRECT_BUILD_EDIT], remove: [], swap: [] },
+  'no-fork-build': { edits: [NO_FORK_EDIT], remove: [], swap: [] },
   'session-pointer': { edits: [POINTER_EDIT], remove: [], swap: [] },
   'no-find-cause': { edits: [FIND_CAUSE_EDIT], remove: ['skills/find-cause'], swap: [] },
   'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] },
@@ -119,6 +116,8 @@ export function checkVariant(name) {
     for (const entry of variant.remove) if (fs.existsSync(path.join(copy, entry))) problems.push(`${entry} is still there`);
     if (name === 'session-pointer' && context.length > 600) problems.push(`session text is ${context.length} characters, not a pointer`);
     if (name === 'no-find-cause' && fs.readFileSync(path.join(copy, ROUTE_FILE), 'utf8').includes('find-cause')) problems.push('the route still names find-cause');
+    if (name === 'direct-build') problems.push(...directBuildProblems(copy));
+    if (name === 'no-fork-build') problems.push(...noForkProblems(copy));
     if (name === 'fold-unit') problems.push(...foldUnitProblems(copy));
     if (name.startsWith('session-build')) {
       const swapped = fs.readFileSync(path.join(copy, DIRECT_LOOP), 'utf8') === fs.readFileSync(path.join(ROOT, BUILD_SWAP.source), 'utf8');
