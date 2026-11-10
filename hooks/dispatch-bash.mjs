@@ -12,7 +12,7 @@ import { denyReason } from '../lib/guard-rules.mjs';
 import { stripDataHeredocs } from '../lib/git-deny.mjs';
 import { cappedCommand, cappedInput, resultCapped } from '../lib/bash-cap.mjs';
 import { redditBashDecision } from '../lib/reddit-route.mjs';
-import { fixShellFor } from '../lib/shell-fixes.mjs';
+import { fixShellFor, pollsUnbounded } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
@@ -71,8 +71,10 @@ export const SLEEP_STEP = {
   name: 'sleep',
   run(hookInput) {
     const command = hookInput.tool_input?.command;
-    if (!hookInput.agent_id || typeof command !== 'string') return null;
+    if (typeof command !== 'string') return null;
     const scanned = stripDataHeredocs(command);
+    if (pollsUnbounded(scanned)) return deny(denyReason('sleep'));
+    if (!hookInput.agent_id) return null;
     if (SLEEP_COMMAND.test(scanned)) return deny(denyReason('sleep'));
     return WATCH_COMMAND.test(scanned) ? deny(denyReason('watch')) : null;
   }

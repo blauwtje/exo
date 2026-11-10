@@ -28,6 +28,7 @@ test('a worker dispatches nothing and a forked coordinator waits in the foregrou
   assert.equal(contractRow('claude', 'worker').mayDispatch, false);
   assert.equal(contractRow('claude', 'fork-coordinator').wait, 'foreground');
   assert.equal(contractRow('claude', 'run-session').wait, 'wait-report');
+  assert.equal(contractRow('claude', 'main').wait, 'wait-report');
 });
 
 test('a return is a verdict line plus a result path', () => {

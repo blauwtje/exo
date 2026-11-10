@@ -6,15 +6,16 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { CHECK_LINE } from './gate-command.mjs';
+import { FULL_NEXT, gateArgs, logProgress } from './gate-progress.mjs';
 
-const USAGE = `Usage: node gate-step.mjs --plan <path> --root <checkout> --base <ref> [--after review|fix] [--report <file> ...]
+const USAGE = `Usage: node gate-step.mjs --plan <path> --root <checkout> --base <ref> [--full] [--after review|fix] [--report <file> ...]
        [--pre-fix-sha <sha> --findings <path> --findings-sha256 <hash>]
-Without --after: runs gate.mjs --reviews-only, then the full gate run.
+Without --after: runs gate.mjs --reviews-only and names the --full call to background.
+--full: runs the full gate run and appends timestamped lines to .exo/gate-progress.log.
 --after review: runs merge-reviews.mjs on each --report.
 --after fix: runs gate.mjs --repair and run-probes.mjs.
-Prints one STEP <name> ok|fail line per step, the step output lines, a LOG <step> digest of the first failing lines,
-NEXT lines with the handling a reference page would give, and DECIDE <reason> where the model decides.
-It decides no repair or retry. Exits 1 when a step fails.`;
+Prints one STEP <name> ok|fail line per step, its output lines, a LOG <step> digest of the failing lines,
+NEXT lines for the handling and DECIDE <reason> where the model decides. Exits 1 when a step fails.`;
 
 const SCRIPTS = path.dirname(fileURLToPath(import.meta.url));
 const FAILING = /^(?:FAIL|UNPLANNED|BLOCKED|STOP)\b|^\s*not ok\b|Error\b/;
@@ -56,15 +57,22 @@ function nextLines(body) {
 }
 
 function startStage(flags, run) {
-  const common = ['--plan', flags.plan, '--root', flags.root, '--base', flags.base];
-  const reviews = step('reviews-only', run, 'gate.mjs', [...common, '--reviews-only']);
-  const full = step('gate', run, 'gate.mjs', common);
-  const lines = [...reviews.lines, ...full.lines, ...nextLines([...reviews.body, ...full.body])];
+  const reviews = step('reviews-only', run, 'gate.mjs', [...gateArgs(flags), '--reviews-only']);
+  const lines = [...reviews.lines, ...nextLines(reviews.body), FULL_NEXT];
   if (reviews.body.some((line) => line.startsWith('DISPATCH'))) lines.push('DECIDE dispatch the reviews');
-  if (full.body.some((line) => line.startsWith('UNPLANNED'))) lines.push('DECIDE UNPLANNED ends the turn with the report');
-  if (full.status !== 0 && !full.body.some((line) => line.startsWith('UNPLANNED'))) lines.push('DECIDE FAIL ends the turn with the report');
+  return { lines, status: reviews.status };
+}
+
+function fullStage(flags, run) {
+  logProgress(flags.root, 'gate start');
+  const full = step('gate', run, 'gate.mjs', gateArgs(flags));
+  logProgress(flags.root, full.lines.filter((line) => line.startsWith('STEP ')).join(' '));
+  const lines = [...full.lines, ...nextLines(full.body)];
+  const unplanned = full.body.some((line) => line.startsWith('UNPLANNED'));
+  if (unplanned) lines.push('DECIDE UNPLANNED ends the turn with the report');
+  if (full.status !== 0 && !unplanned) lines.push('DECIDE FAIL ends the turn with the report');
   if (full.body.some((line) => line.startsWith('SESSION'))) lines.push('DECIDE session check');
-  return { lines, status: reviews.status || full.status };
+  return { lines, status: full.status };
 }
 
 const BLOCKED_CLEARS = [
@@ -104,19 +112,19 @@ function fixStage(flags, run) {
   return { lines, status: repair.status || probes.status };
 }
 
-const STAGES = { start: startStage, review: reviewStage, fix: fixStage };
+const STAGES = { start: startStage, full: fullStage, review: reviewStage, fix: fixStage };
 
 export function runStage(stage, flags, run = spawnScript) {
-  return STAGES[stage](flags, run);
+  return STAGES[flags.full ? 'full' : stage](flags, run);
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', after: 'value', report: 'list', 'pre-fix-sha': 'value', findings: 'value', 'findings-sha256': 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { full: 'boolean', plan: 'value', root: 'value', base: 'value', after: 'value', report: 'list', 'pre-fix-sha': 'value', findings: 'value', 'findings-sha256': 'value' }, { usage: USAGE });
   for (const name of ['plan', 'root', 'base']) {
     if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required`);
   }
   const stage = flags.after ?? 'start';
-  if (!(stage in STAGES)) throw new UsageError("flag '--after' takes review or fix");
+  if (!['start', 'review', 'fix'].includes(stage)) throw new UsageError("flag '--after' takes review or fix");
   if (stage === 'review' && !flags.report?.length) throw new UsageError("flag '--report' is required with --after review");
   for (const name of ['pre-fix-sha', 'findings', 'findings-sha256']) {
     if (stage === 'fix' && flags[name] === undefined) throw new UsageError(`flag '--${name}' is required with --after fix`);

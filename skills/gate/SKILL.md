@@ -12,8 +12,9 @@ The gate readies a branch for a pull request.
 
 ## The loop
 
-1. **Run the gate.** `node "${CLAUDE_SKILL_DIR}/scripts/gate-step.mjs" --plan <plan path> --root <checkout> --base <base>` first. Read only its `STEP`, `LOG`, `NEXT`, `DECIDE` lines, no log file.
+1. **Run the gate.** `node "${CLAUDE_SKILL_DIR}/scripts/gate-step.mjs" --plan <plan path> --root <checkout> --base <base>` first; it returns the reviews-only lines. Read only its `STEP`, `LOG`, `NEXT`, `DECIDE` lines, no log file.
    - Then in one message: the full run in the background and step 2's dispatch; end the turn, no ScheduleWakeup, Monitor or sleep. A dispatched agent backgrounds the full run, ends its turn, and writes its result after its own shells have ended.
+   - The full run is the same command with `--full`, its progress in `.exo/gate-progress.log` read with a plain `tail`.
    - No plan file → end the turn: ask for its path and name `build`'s no-plan route; hand-run no check or `ship`.
    - `SKIP`, `WARN`, `FIX-ONLY`, `SESSION`, `SELF-HOSTED` → `references/gate-lines.md`.
    - On `FAIL` or `UNPLANNED`, end the turn with its report, rerunning nothing.

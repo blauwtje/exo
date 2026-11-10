@@ -4,7 +4,7 @@ import { environmentMs } from '#script-flags';
 import { criterionCommand, frameOf } from '#plan-frame';
 import { isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
-import { cachedPass, recordPass, successCriterionPasses, summaryLine } from '#check-cache';
+import { cachedPass, recordPass, successCriterionPasses } from '#check-cache';
 import { failedTestFiles, isNodeTest, recordFlaky } from '../../../lib/flaky-record.mjs';
 import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -12,14 +12,15 @@ import { packageHasEntryPoint } from '#package-entry-point';
 import { runnableProof } from '#red-green';
 import { boundaryLines, dispatchLines, redLines, writeReviewInput } from './review-input.mjs';
 import { DEFAULT_BASE, PROOF_TIMEOUT_MS } from './gate-constants.mjs';
-import { unmarkedMcpTool, commandLine, runCommand, failReason, outputTail, failLines, mapLimited } from './gate-command.mjs';
+import { unmarkedMcpTool, commandLine, runCommand, failReason, failLines, mapLimited } from './gate-command.mjs';
 import { reviewedState, reviewLines, taskOwners } from './review-lines.mjs';
 import { recordRepairPasses } from './gate-repair.mjs';
 import { packageScripts, suiteGlobs, filesUnderGlobs } from './proof-globs.mjs';
 import { repoPathOf, findUnplannedPaths, splitFixOnlyPaths, commitsTouching } from './unplanned-paths.mjs';
 import { claimLines, codeRuleLines } from './code-rule-lines.mjs';
+import { failedCriterionLines } from './gate-criterion.mjs';
 import { benchmarkLines } from './benchmark-lines.mjs';
-import { unlandedBlame, taskStates, manualChecks } from './task-states.mjs';
+import { taskStates, manualChecks } from './task-states.mjs';
 
 const DEFAULT_LAND_GATE = 'npm run check';
 
@@ -31,7 +32,7 @@ const TEST_SUITE_PROOF = /^npm test( |$)/;
 
 const PROOF_CONCURRENCY = 3;
 
-const GATE_TIMEOUT_MS = 1_800_000;
+const GATE_TIMEOUT_MS = 900_000;
 
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
   const plan = parsePlan(planText);
@@ -136,14 +137,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     } else if (successCriterionPasses(gateRun)) {
       lines.push('PASS success-criterion');
     } else {
-      const reason = gateRun.ok ? summaryLine(gateRun.output) : failReason(gateRun);
-      const blamed = unlandedBlame(plan.tasks, landed, gateRun.output);
-      if (blamed.length > 0) {
-        lines.push(`SKIP success-criterion (out of scope: ${reason} names only files of unlanded Task ${blamed.join(', ')})`, ...outputTail(gateRun.output));
-      } else {
-        lines.push(...failLines('success-criterion', reason, gateRun.output));
-        failed = true;
-      }
+      const outcome = await failedCriterionLines(gateRun, { plan, landed, root, base });
+      lines.push(...outcome.lines);
+      failed = failed || outcome.failed;
     }
   }
 

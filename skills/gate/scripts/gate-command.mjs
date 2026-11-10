@@ -1,6 +1,6 @@
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import process from 'node:process';
-import { killTree } from '#process-tree';
+import { runBounded } from '../../../lib/bounded-command.mjs';
 
 const PLAIN_SHELL_WORD = /^[\w@%+=:,./-]+$/;
 
@@ -31,29 +31,7 @@ export function commandLine(argv) {
   return ['node', quoted(argv[1]), ...args].join(' ');
 }
 
-export function runCommand(command, timeoutMs, env = process.env) {
-  return new Promise((resolve) => {
-    const started = Date.now();
-    // why: a detached child leads its own process group, which Windows does not support.
-    const child = spawn(command, { shell: true, env, detached: process.platform !== 'win32' });
-    let output = '';
-    let done = false;
-    const finish = (result) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      resolve(result);
-    };
-    const timer = setTimeout(() => {
-      killTree(child.pid);
-      finish({ ok: false, code: null, signal: null, timedOutMs: timeoutMs, output, ms: Date.now() - started });
-    }, timeoutMs);
-    child.stdout.on('data', (chunk) => { output += chunk; });
-    child.stderr.on('data', (chunk) => { output += chunk; });
-    child.on('error', (error) => finish({ ok: false, code: error.code ?? error.message, signal: null, output }));
-    child.on('close', (code, signal) => finish({ ok: code === 0, code, signal, output, ms: Date.now() - started }));
-  });
-}
+export const runCommand = runBounded;
 
 export function failReason({ code, signal, timedOutMs }) {
   if (timedOutMs !== undefined) return `timed out after ${timedOutMs / 1000}s`;

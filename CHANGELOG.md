@@ -7,9 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The gate reruns only the failed specs of a failing Success criterion on the base branch and prints `SKIP success-criterion (also fails on base: ...)`, so a failure the branch did not cause starts no repair round.
+- `plan-check.mjs` flags a `Proof:` command that cannot start from the checkout root and a path a `Data:` line names that `Files:` omits.
+- A build runs the environment setup an end-to-end `Proof:` needs once, before the first block, and ends a stalled setup command at its deadline with its whole process group.
+
 ### Changed
 
 - A plan build keeps the main session smaller, a median peak of 25870 tokens against 31709: the build skill body carries the loop steps, the dispatch rules skip an `exo:task-runner` call, and `next-task.mjs --block` prints no `Proof:` lines once every task has landed.
+
+### Fixed
+
+- A hung gate criterion command ends at its deadline (default 900000 ms, `EXO_GATE_TIMEOUT_MS`), its process group is killed and the timeout is reported as a failure; the base comparison has one total deadline (`EXO_BASE_COMPARE_TIMEOUT_MS`).
+- The first gate call returns the review lines, and the full run goes only through a backgrounded `--full` call that writes a progress file.
+- An interactive build runner gets the `wait-report.mjs` command as its `Wait:` line, so a lost notification no longer leaves it idle.
+- A background `until ... sleep` or `while ... sleep` polling loop is refused with the `Wait:` route named, also inside `bash -c` and `eval` text; a loop wrapped by `timeout` and a counted retry pass.
 
 ## 0.140.0 - 2026-11-10
 

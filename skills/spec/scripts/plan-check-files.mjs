@@ -105,3 +105,30 @@ export function checkSharedFiles(tasks) {
   }
   return problems;
 }
+
+const DATA_PATH = /`([\w@-][\w./@-]*\/[\w./@-]*)`/g;
+
+function listedPathsOf(task, byNumber) {
+  return [task.number, ...dependencyChainOf(byNumber, task.number)].flatMap((number) => byNumber.get(number).files.map((file) => file.path));
+}
+
+function proofStartWarning(task, root, listed) {
+  if (task.proof === null) return [];
+  const first = task.proof.trim().split(/\s+/)[0].replace(/^\.\//, '');
+  if (!/^[\w@-][\w./@-]*\/[\w./@-]+$/.test(first)) return [];
+  if (isCovered(listed, first) || fs.existsSync(path.join(root, first))) return [];
+  return [`warning: Task ${task.number}: Proof starts with \`${first}\`, which is not in the checkout root and not in Files:`];
+}
+
+function dataPathWarnings(task, listed) {
+  const paths = [...(task.data ?? '').matchAll(DATA_PATH)].map((match) => match[1].replace(/^\.\//, ''));
+  return [...new Set(paths)]
+    .filter((dataPath) => !isCovered(listed, dataPath))
+    .map((dataPath) => `warning: Task ${task.number}: Data: names \`${dataPath}\`, which Files: omits`);
+}
+
+export function warnProofAndData(task, root, byNumber) {
+  if (root === undefined || root === null) return [];
+  const listed = listedPathsOf(task, byNumber);
+  return [...proofStartWarning(task, root, listed), ...dataPathWarnings(task, listed)];
+}

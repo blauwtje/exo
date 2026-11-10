@@ -7,7 +7,7 @@ import { frameOf, openPoints } from '#plan-frame';
 import { taskSize } from '#plan-waves';
 import { checkCommit, checkCompactFields, checkDataLiterals, checkDerivedNames, checkEvidence, checkGitAdd, checkPlaceholders, checkSize, checkSteps } from './plan-check-text.mjs';
 import { checkContextSize, forkPointOf, sizeLines, warnNearCap, warnTinyTasks } from './plan-check-size.mjs';
-import { checkFilesExist, checkProofTestsListed, checkSharedFiles, checkUnlistedTests } from './plan-check-files.mjs';
+import { checkFilesExist, checkProofTestsListed, checkSharedFiles, checkUnlistedTests, warnProofAndData } from './plan-check-files.mjs';
 import { checkAcceptanceCitations, checkFrame, checkLandGate, checkParallelDisjoint, checkParallelForm, checkPlanBasis, checkProductRun, checkRedGreen, checkWorktreeSetup } from './plan-check-frame.mjs';
 import { checkLoop, checkNestedClaude, checkRunCommands, realPath } from './plan-check-loop.mjs';
 
@@ -57,7 +57,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     ...checkRunCommands(plan),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
-  const warnings = [...warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed }), ...warnNearCap(plan.tasks, resolvedRoot, landed)];
+  const warnings = [...plan.tasks.filter((task) => !landed.includes(task.number)).flatMap((task) => warnProofAndData(task, resolvedRoot, byNumber)), ...warnTinyTasks(plan.tasks, { root: resolvedRoot, forkPoint, landed }), ...warnNearCap(plan.tasks, resolvedRoot, landed)];
   if (problems.length > 0) return { ok: false, lines: [...problems, ...warnings] };
   const largest = plan.tasks.reduce((best, task) => {
     const size = taskSize(task);

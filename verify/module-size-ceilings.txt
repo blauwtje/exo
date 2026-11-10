@@ -71,13 +71,13 @@
 9723 skills/build/scripts/run-report.mjs
 10490 skills/build/scripts/run-state.mjs
 20574 skills/build/scripts/run-tail.mjs
-9611 skills/build/scripts/start-run.mjs
+8656 skills/build/scripts/start-run.mjs
 10866 skills/configure/scripts/settings.mjs
 13062 skills/build/scripts/look.mjs
 12698 skills/edit-skills/scripts/pressure-grade.mjs
 9031 skills/ship/scripts/repo-fields.mjs
 9987 skills/find-cause/scripts/bisect.mjs
-9263 skills/gate/scripts/gate-run.mjs
+8977 skills/gate/scripts/gate-run.mjs
 17459 skills/gate/scripts/merge-reviews.mjs
 19442 skills/build/scripts/round.mjs
 12270 skills/build/scripts/setup.mjs

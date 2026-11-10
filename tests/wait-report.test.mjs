@@ -72,11 +72,10 @@ test('a GREEN report with a verdict line ends the wait with no stamp file', asyn
   assert.equal(result.stdout, `${reportPath}\nfinal\n`);
 });
 
-test('outside a run session the script refuses and names the notification', async () => {
+test('outside a run session the script waits and finds a fresh report', async () => {
   const report = path.join(await fixture(), 'implementer-1.md');
   await fs.writeFile(report, 'GREEN\n');
   const result = await run(SCRIPT, ['--any', '--since', String(nowSeconds() - 60), '--report', report], { env: { EXO_WAIT_REPORT_MS: '1500' } });
-  assert.equal(result.code, 1);
-  assert.equal(result.stdout, '');
-  assert.match(result.stderr.trim(), /^ERROR wait-report: runs only in a run session \(EXO_RUN_SESSION=1\); end your turn for the notification$/);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, `${report}\nfinal\n`);
 });

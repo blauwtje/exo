@@ -46,9 +46,8 @@ test('a wide find deny names find . and git ls-files', async () => {
   }
 });
 
-test('a sleep deny names the notification wait and wait-report.mjs', async () => {
+test('a sleep deny names the wait-report.mjs route', async () => {
   const reason = await reasonOf('sleep 30', { agent_type: 'exo:task-runner' });
-  assert.match(reason, /end your turn and wait for the notification/);
   assert.match(reason, /wait-report\.mjs/);
 });
 

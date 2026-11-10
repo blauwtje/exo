@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { scratchPath } from '#scratch-path';
+import { environmentMs } from '#script-flags';
+import { frameOf } from '#plan-frame';
+import { parsePlan, PlanError } from '#plan-tasks';
+import { runBounded } from '../../../lib/bounded-command.mjs';
 import { Refusal } from './cli-refusal.mjs';
 import { configDir, loadRunConfig } from './run-config.mjs';
 import { readKeyInput, writeKey } from './run-keys.mjs';
@@ -66,4 +71,45 @@ export async function keyCommand(args) {
     throw new Refusal(`refused: ${error.message}`);
   }
   process.stdout.write(`exo: ${variable} stored in ${file}\n`);
+}
+
+const SETUP_TIMEOUT_MS = 600_000;
+
+const SETUP_BY_RUNNER = [
+  { runner: /\bplaywright\b/, command: 'npx -y playwright install chromium' },
+  { runner: /\bcypress\b/, command: 'npx -y cypress install' },
+];
+
+export function setupCommands(frame, tasks) {
+  const text = [frame.app?.start ?? '', ...tasks.map((task) => task.proof ?? '')].join('\n');
+  return SETUP_BY_RUNNER.filter(({ runner }) => runner.test(text)).map(({ command }) => command);
+}
+
+export async function runSetupCommands(commands, checkout) {
+  if (commands.length === 0) return null;
+  const logFile = scratchPath(checkout, 'logs/env-preflight.log');
+  fs.mkdirSync(scratchPath(checkout, 'logs'), { recursive: true });
+  for (const command of commands) {
+    const run = await runBounded(`cd '${checkout.replaceAll("'", "'\\''")}' && ${command}`, environmentMs('EXO_SETUP_TIMEOUT_MS', SETUP_TIMEOUT_MS));
+    fs.appendFileSync(logFile, `$ ${command}\n${run.output}\n`);
+    if (!run.ok) return { command, logFile };
+  }
+  return null;
+}
+
+function parsedPlan(planPath) {
+  try {
+    return parsePlan(fs.readFileSync(planPath, 'utf8'));
+  } catch (error) {
+    if (error instanceof PlanError) return null;
+    throw error;
+  }
+}
+
+export async function setupRefusal(planPath, checkout) {
+  const plan = parsedPlan(planPath);
+  if (plan === null || frameOf(plan.frame) === null) return null;
+  const failure = await runSetupCommands(setupCommands(frameOf(plan.frame), plan.tasks), checkout);
+  if (failure === null) return null;
+  return `setup command \`${failure.command}\` failed, log ${failure.logFile}. Next: fix the environment, then rerun start-run.`;
 }

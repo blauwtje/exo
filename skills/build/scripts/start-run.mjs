@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs, { realpathSync } from 'node:fs';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -10,18 +10,19 @@ import { scratchPath } from '#scratch-path';
 import { blockReport } from './next-task-block.mjs';
 import { runRules } from './next-task-brief.mjs';
 import { planCheckReport } from '../../spec/scripts/plan-check.mjs';
-import { decisionsPathOf, landedTasks, planIdOf } from '#plan-landed';
+import { landedTasks, planIdOf } from '#plan-landed';
 import { frameOf, openPoints } from '#plan-frame';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { gitText } from '../../../lib/git.mjs';
+import { commitPreexistingWork } from './pre-run-commit.mjs';
+import { setupRefusal } from './setup-commands.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
 const PLAN_CHECK = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
-const PRE_RUN_COMMIT = 'fix(run): keep work present before the run';
 const USAGE = 'usage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]';
 const HELP = [
   'usage: node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]',
@@ -76,7 +77,7 @@ function resolvePlan(root) {
   return picked[0].file;
 }
 
-function main(argv) {
+async function main(argv) {
   const flags = parseFlags(argv, { root: 'value', checkout: 'value', plan: 'value', 'find-only': 'boolean' }, { usage: HELP });
   const root = flags.root ?? process.cwd();
   const planPath = flags.plan ? path.resolve(flags.plan) : resolvePlan(root);
@@ -93,6 +94,8 @@ function main(argv) {
   const branch = checkoutBranch(checkout);
   if (planFrame(planPath) !== null) requirePlanCheck(planPath, checkout);
   requireServices(checkout);
+  const setupMessage = await setupRefusal(planPath, checkout);
+  if (setupMessage !== null) throw new RefusalError(setupMessage);
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   const frame = planFrame(planPath);
   if (frame !== null) fs.writeFileSync(scratchPath(checkout, 'run-rules.md'), runRules(frame));
@@ -107,25 +110,6 @@ function main(argv) {
     return;
   }
   if (frame !== null) process.stdout.write(firstBlock(planPath, checkout));
-}
-
-function excludedFromPreRunCommit(checkout, planPath) {
-  const top = realpathSync(checkout);
-  const listed = gitText(checkout, ['worktree', 'list', '--porcelain']).split('\n')
-    .filter((line) => line.startsWith('worktree ')).map((line) => line.slice('worktree '.length));
-  const real = (file) => path.join(realpathSync(path.dirname(path.resolve(file))), path.basename(file));
-  return [real(planPath), real(decisionsPathOf(planPath)), ...listed]
-    .map((file) => path.relative(top, path.resolve(file)))
-    .filter((rel) => rel !== '' && !rel.startsWith('..'));
-}
-
-function commitPreexistingWork(checkout, planPath) {
-  gitText(checkout, ['add', '-A', '--', '.']);
-  const excluded = excludedFromPreRunCommit(checkout, planPath);
-  if (excluded.length > 0) gitText(checkout, ['reset', '-q', '--', ...excluded]);
-  if (gitText(checkout, ['diff', '--cached', '--name-only']) === '') return;
-  gitText(checkout, ['commit', '-q', '-m', PRE_RUN_COMMIT]);
-  process.stdout.write(`start-run: committed pre-existing work as ${gitText(checkout, ['rev-parse', '--short', 'HEAD'])} (${PRE_RUN_COMMIT}).\n`);
 }
 
 // why: the status line reads this record; a failure here must never fail the run start.
@@ -182,7 +166,7 @@ function branchExists(checkout, branch) {
 
 if (isMain(import.meta.url)) {
   try {
-    main(process.argv.slice(2));
+    await main(process.argv.slice(2));
   } catch (error) {
     if (error instanceof UsageError) {
       process.stderr.write(`start-run: ${error.message}\n${USAGE}\n`);
