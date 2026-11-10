@@ -133,3 +133,13 @@ test('a missing folder exits 2 naming --folder', async () => {
   assert.equal(result.code, 2);
   assert.match(result.stderr, /--folder/);
 });
+
+test('subagentPeak reads the peak of the session subagent files', async () => {
+  const { subagentPeak } = await import('../benchmarks/lead-context.mjs');
+  const folder = tempDir('exo-lead-sub-');
+  const directory = path.join(folder, 's1', 'subagents');
+  nodeFs.mkdirSync(directory, { recursive: true });
+  nodeFs.writeFileSync(path.join(directory, 'a.jsonl'), `${JSON.stringify(turn(30_000))}\n`);
+  assert.equal(subagentPeak(folder, 's1'), 30_000);
+  assert.equal(subagentPeak(folder, 'none'), 0);
+});

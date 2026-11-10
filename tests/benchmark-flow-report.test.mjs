@@ -88,3 +88,9 @@ test('a record without repeat names its position and a stand-in without suffix r
   fs.mkdirSync(path.join(dir, 'flow-c7-2'));
   assert.deepEqual(readFlowRecords(dir).map((r) => r.repeat), [1, 2]);
 });
+
+test('the report prints a peak column per hop', () => {
+  const hopPeakTokens = { main: 1000, coordinator: 2000, workers: 3000 };
+  const text = flowReport([record('flow-fold', { hopPeakTokens })]);
+  assert.match(text, /peak tokens per hop main 1000, coordinator 2000, workers 3000/);
+});

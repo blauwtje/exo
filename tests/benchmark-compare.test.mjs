@@ -41,6 +41,17 @@ test('a rise within the noise bound does not block', () => {
   assert.equal(compareToBaseline({ baseline, candidate, minRise: 0.1 }).blocked, false);
 });
 
+const withPeak = (coordinator) => ({ ...run(1, 100), hopPeakTokens: { main: 1000, coordinator, workers: 500 } });
+
+test('a rise in one hop peak blocks and a flat peak does not', () => {
+  const baseline = [withPeak(2000), withPeak(2000)];
+  const risen = compareToBaseline({ baseline, candidate: [withPeak(3000), withPeak(3000)], minRise: 0.1 });
+  assert.equal(risen.blocked, true);
+  const verdicts = risen.cells[0].metrics.filter((entry) => entry.verdict === 'regression');
+  assert.deepEqual(verdicts.map((entry) => entry.metric), ['peak coordinator']);
+  assert.equal(compareToBaseline({ baseline, candidate: [withPeak(2000), withPeak(2000)], minRise: 0.1 }).blocked, false);
+});
+
 test('a pass-rate drop blocks and fewer than 2 flow runs is unmeasured', () => {
   const failing = run(1, 100, '4/4 Plan-task trailers, hidden check fail');
   const drop = compareToBaseline({ baseline: [run(1, 100), run(1, 100)], candidate: [failing, run(1, 100)], minRise: 0.1 });

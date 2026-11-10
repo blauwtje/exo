@@ -85,3 +85,23 @@ test('backfill adds byRole to a single-session usage.json', () => {
   assert.equal(usage.leadPeakTokens, 7);
   assert.deepEqual(Object.keys(usage.byRole).sort(), ['implementer', 'main']);
 });
+
+test('usage.json keeps a context peak per hop, a coordinator file apart from worker files', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-usage-'));
+  const previous = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = root;
+  try {
+    writeTranscripts(root);
+    const subagents = path.join(root, 'projects', 'slug', 'session1', 'subagents');
+    fs.writeFileSync(path.join(subagents, 'agent-b.jsonl'), `${assistantLine({ id: 'm3', input: 500, output: 5 })}\n`);
+    fs.writeFileSync(path.join(subagents, 'agent-b.meta.json'), JSON.stringify({ agentType: 'exo:orchestrator' }));
+    const cell = path.join(root, 'cell');
+    fs.mkdirSync(cell);
+    const usage = writeCellUsage(cell, 'session1');
+    assert.deepEqual(usage.hopPeakTokens, { main: 100, coordinator: 500, workers: 200 });
+    assert.equal(usage.leadPeakTokens, 100);
+  } finally {
+    if (previous === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = previous;
+  }
+});

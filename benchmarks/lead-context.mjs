@@ -76,9 +76,16 @@ function shares(stages) {
   return STAGES.map((stage) => `${stage} ${total === 0 ? 0 : Math.round((stages[stage] / total) * 100)}%`).join(' ');
 }
 
-function sessionLine(id, profile) {
+export function subagentPeak(folder, id) {
+  const directory = path.join(folder, id, 'subagents');
+  if (!fs.existsSync(directory)) return 0;
+  const files = fs.readdirSync(directory).filter((name) => name.endsWith('.jsonl'));
+  return Math.max(0, ...files.map((name) => profileSession(path.join(directory, name)).peak));
+}
+
+function sessionLine(id, profile, subagents) {
   const compactions = profile.compactions.length === 0 ? 'none' : profile.compactions.join(',');
-  return `session ${id} peak ${profile.peak} turns>=${softLimit(contextLimit()) / 1000}k ${profile.pastSoft} turns>=${contextLimit() / 1000}k ${profile.pastHard} compactions ${compactions} ${shares(profile.stages)}`;
+  return `session ${id} peak ${profile.peak} subagent peak ${subagents} turns>=${softLimit(contextLimit()) / 1000}k ${profile.pastSoft} turns>=${contextLimit() / 1000}k ${profile.pastHard} compactions ${compactions} ${shares(profile.stages)}`;
 }
 
 function resolveFolder(flags) {
@@ -101,7 +108,7 @@ export function report({ folder, all }) {
   const added = Object.fromEntries(STAGES.map((stage) => [stage, profiles.reduce((sum, [, profile]) => sum + profile.stages[stage], 0)]));
   const compactions = profiles.reduce((sum, [, profile]) => sum + profile.compactions.length, 0);
   return [
-    ...listed.map(([id, profile]) => sessionLine(id, profile)),
+    ...listed.map(([id, profile]) => sessionLine(id, profile, subagentPeak(folder, id))),
     `totals sessions ${profiles.length} listed ${listed.length} compactions ${compactions}`,
     `shares ${shares(added)}`
   ];

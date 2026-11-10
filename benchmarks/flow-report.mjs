@@ -39,10 +39,13 @@ export function readFlowRecords(outDir) {
     // A record from before the sweep copied leadPeakTokens takes it from the cell's usage.json.
     const usageFile = path.join(outDir, name, 'usage.json');
     if (record.leadPeakTokens === undefined && fs.existsSync(usageFile)) record.leadPeakTokens = readJson(usageFile).leadPeakTokens ?? null;
+    if (record.hopPeakTokens === undefined && fs.existsSync(usageFile)) record.hopPeakTokens = readJson(usageFile).hopPeakTokens ?? null;
     if (record.kind === 'flow') records.push(record);
   }
   return records;
 }
+
+const HOPS = ['main', 'coordinator', 'workers'];
 
 const isNumber = (value) => typeof value === 'number';
 
@@ -128,6 +131,7 @@ export function aggregateFlow(records) {
       routed: routed.length,
       routes,
       leadPeak: stat(runs, (run) => run.leadPeakTokens),
+      hopPeaks: Object.fromEntries(HOPS.map((hop) => [hop, stat(runs, (run) => run.hopPeakTokens?.[hop])])),
       leadPeakMax: runs.some((run) => isNumber(run.leadPeakTokens)) ? Math.max(...runs.map((run) => run.leadPeakTokens).filter(isNumber)) : null,
       verifiedTokens: stat(verified, (run) => run.tokens),
       verifiedCost: stat(verified, (run) => run.costUsd),
@@ -198,6 +202,7 @@ function armLines(arm, baseline) {
     `  verify ran ${arm.verifyRan}/${arm.gated}, review dispatched ${arm.reviewDispatched}/${arm.gated}`,
     `  route ${Object.entries(arm.routes).map(([label, count]) => `${label} ${count}`).join(', ') || '-'} (of ${arm.routed})`,
     `  lead peak tokens mean ${withError(arm.leadPeak)}, max ${arm.leadPeakMax ?? '-'}`,
+    `  peak tokens per hop ${HOPS.map((hop) => `${hop} ${fixed(arm.hopPeaks[hop].mean, 0)}`).join(', ')}`,
     `  verify-ran cells: weighted tokens mean ${withError(arm.verifiedTokens)}, cost mean ${withError(arm.verifiedCost, DOLLARS)}, wall time mean ${withError(arm.verifiedWall, MINUTES)}`
   ];
 }

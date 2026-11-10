@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { configDirectory } from '#config-directory';
 import { sumCounts, usageCounts } from '#token-weights';
+import { COORDINATOR_TYPES } from '../lib/context-decisions.mjs';
 import { readJson } from './basics.mjs';
 import { subagentTypes } from './fix-round.mjs';
 import { countsCost } from './pricing.mjs';
@@ -168,19 +169,9 @@ function countsByModel(calls) {
   return Object.fromEntries(Object.entries(grouped).map(([model, list]) => [model, sumCounts(list)]));
 }
 
-// The largest context one main-thread message read or wrote: input plus cache
-// read plus both cache writes, output left out. Subagents sit in their own
-// files, so the main transcript alone is the lead.
-function leadPeakTokens(transcriptPath) {
+function filePeakTokens(file) {
   let peak = 0;
-  for (const line of fs.readFileSync(transcriptPath, 'utf8').split('\n')) {
-    if (!line.includes('"assistant"')) continue;
-    let entry;
-    try {
-      entry = JSON.parse(line);
-    } catch {
-      continue;
-    }
+  for (const entry of parsedLines(file)) {
     if (entry?.type !== 'assistant' || !entry.message?.usage) continue;
     const counts = usageCounts(entry.message.usage);
     peak = Math.max(peak, counts.input + counts.cacheRead + counts.cache5m + counts.cache1h);
@@ -188,11 +179,26 @@ function leadPeakTokens(transcriptPath) {
   return peak;
 }
 
+function hopOf(role) {
+  if (role === 'main') return 'main';
+  return [...COORDINATOR_TYPES].some((type) => role.endsWith(type)) ? 'coordinator' : 'workers';
+}
+
+function hopPeakTokens(transcriptPath) {
+  const peaks = { main: 0, coordinator: 0, workers: 0 };
+  for (const { file, role } of transcriptFiles(transcriptPath)) {
+    const hop = hopOf(role);
+    peaks[hop] = Math.max(peaks[hop], filePeakTokens(file));
+  }
+  return peaks;
+}
+
 // Returns the written usage, or null when the session's transcript is gone.
 export function writeCellUsage(cellDirectory, sessionId) {
   const transcript = findTranscript(sessionId);
   if (transcript === null) return null;
   const calls = transcriptCalls(transcript);
+  const hopPeaks = hopPeakTokens(transcript);
   // sweep.mjs reads the transcript back for its flow checks, so its path rides along.
   const usage = {
     transcript,
@@ -200,7 +206,8 @@ export function writeCellUsage(cellDirectory, sessionId) {
     byModel: countsByModel(calls),
     byRole: byRoleUsage(calls, readResultTokens(transcript)),
     subagents: subagentTypes(transcript),
-    leadPeakTokens: leadPeakTokens(transcript)
+    leadPeakTokens: hopPeaks.main,
+    hopPeakTokens: hopPeaks
   };
   fs.writeFileSync(path.join(cellDirectory, 'usage.json'), `${JSON.stringify(usage, null, 2)}\n`);
   return usage;
@@ -249,6 +256,7 @@ export function writeRunUsage(cellDirectory, ledgerFile) {
     byRole: missingTranscripts > 0 ? null : byRoleUsage(calls, readTokens),
     subagents,
     leadPeakTokens: null,
+    hopPeakTokens: null,
     costUsd: sessions.reduce((total, session) => total + (session.costUsd ?? 0), 0),
     sessions: sessions.length,
     missingTranscripts,

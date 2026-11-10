@@ -8,10 +8,10 @@
 8975 benchmarks/bisect/lib/pool.mjs
 8588 benchmarks/bisect/validate.mjs
 8364 benchmarks/build-phases.mjs
-9768 benchmarks/cell-usage.mjs
+9967 benchmarks/cell-usage.mjs
 20040 benchmarks/checkpoint-fork.mjs
 10863 benchmarks/delegation-readout.mjs
-11833 benchmarks/flow-report.mjs
+12237 benchmarks/flow-report.mjs
 16857 benchmarks/ideas-score.mjs
 15505 benchmarks/ideas.mjs
 15721 benchmarks/ideate-worker-score.mjs
@@ -58,7 +58,7 @@
 8554 lib/check-cache.mjs
 11006 lib/code-comments.mjs
 14727 lib/code-rules.mjs
-16307 lib/context-decisions.mjs
+16314 lib/context-decisions.mjs
 10545 lib/eval-stats.mjs
 10335 lib/guard-rules.mjs
 8624 lib/plan-tasks.mjs

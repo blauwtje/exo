@@ -56,6 +56,7 @@ export async function measureFlow({ cell, repository, review, usage }) {
     routes: gates?.routes ?? null,
     reviewBookings: calls === null ? null : reviewBookings(calls),
     leadPeakTokens: usage?.leadPeakTokens ?? null,
+    hopPeakTokens: usage?.hopPeakTokens ?? null,
     reviewStages: stages,
     tokensExReview,
     commentStats: commentStats({ repository, branch: FLOW_BRANCH, transcripts: flowTranscripts(repository, usage), hiddenPass: check.pass })
