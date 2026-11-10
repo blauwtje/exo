@@ -3,7 +3,7 @@ forbidden-steps: 6-7
 ---
 # Fixer prompt
 
-`find-cause` gives a `general-purpose` delegate whose prompt opens with `exo-kind: build` for phase (c), and `build` gives `exo:build-task` `exo-kind: hardest` for a failed `Run:` naming no cause: caller opening, shared block.
+`find-cause` gives a `general-purpose` delegate whose prompt opens with `exo-kind: build` for phase (c), and `build` gives `exo:build-task` `exo-kind: build-repair` for a failed `Run:` naming no cause: caller opening, shared block.
 
 ## find-cause opening
 

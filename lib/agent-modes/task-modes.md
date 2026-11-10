@@ -1,6 +1,6 @@
 # Build modes
 
-- With `exo-kind: fix-review` or `exo-kind: hardest`, carry out the prompt exactly as written instead of Scope, Build and Report.
+- With `exo-kind: fix-review`, `exo-kind: hardest` or `exo-kind: build-repair`, carry out the prompt exactly as written instead of Scope, Build and Report.
 - The prompt's inputs, hard boundaries, findings or handoff file and return line are the whole job.
 - Add no step the prompt does not name and skip none it does.
 - Send no text between tool calls, write terse prose and make the smallest change that does the job.
@@ -17,5 +17,5 @@
 - Commit each proven fix as the prompt says, with `Sweep:` and `Guard:` lines beside `Proof:`.
 - Keep a new test file only when the plan names it, else move the test into a test file the branch diff lists or delete it.
 - Mark every finding in the findings file by your thirtieth turn and return at most two lines.
-- `hardest`: return the line the prompt names, in at most five lines.
+- `hardest` and `build-repair`: return the line the prompt names, in at most five lines.
 - Before returning in either mode, end the turn until each background shell you started has ended; use TaskStop only on a shell that hangs.

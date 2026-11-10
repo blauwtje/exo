@@ -3,19 +3,19 @@
   "providers": {
     "claude": {
       "models": ["fable", "opus", "sonnet", "haiku"],
-      "tiers": { "strong": "opus", "standard": "sonnet", "fast": "haiku" },
+      "tiers": { "deep": "opus", "strong": "opus", "standard": "sonnet", "fast": "haiku" },
       "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" }
     },
     "codex": {
       "models": ["gpt-6.1-sol", "gpt-6-luna"],
-      "tiers": { "strong": "gpt-6.1-sol", "standard": "gpt-6.1-sol", "fast": "gpt-6-luna" },
+      "tiers": { "deep": "gpt-6.1-sol", "strong": "gpt-6.1-sol", "standard": "gpt-6.1-sol", "fast": "gpt-6-luna" },
       "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" },
-      "effortShift": { "strong": 1 },
+      "effortShift": { "deep": 1, "strong": 1 },
       "nullEffort": "medium"
     },
     "deepseek": {
       "models": ["deepseek-flash"],
-      "tiers": { "strong": "inherit", "standard": "inherit", "fast": "inherit" },
+      "tiers": { "deep": "inherit", "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
       "kindEfforts": { "build-task": "low", "doc-task": "low", "build": "low", "orchestrator": "low", "task-runner": "low", "judge": "low", "lookup": "low", "chore": "low", "fix-review": "high" }
     }
@@ -33,6 +33,9 @@
       "on": { "tier": "standard", "effort": "low" }
     },
     "hardest": {
+      "on": { "tier": "deep", "effort": "high" }
+    },
+    "build-repair": {
       "on": { "tier": "strong", "effort": "high" }
     },
     "improve-round": {
@@ -42,7 +45,7 @@
       "on": { "tier": "strong", "effort": "medium" }
     },
     "review-deep": {
-      "on": { "tier": "strong", "effort": "high" }
+      "on": { "tier": "deep", "effort": "high" }
     },
     "review-branch": {
       "on": { "tier": "strong", "effort": "medium" }
@@ -54,7 +57,7 @@
       "on": { "tier": "standard", "effort": "high" }
     },
     "orchestrator": {
-      "on": { "tier": "strong", "effort": "medium" }
+      "on": { "tier": "deep", "effort": "medium" }
     },
     "task-runner": {
       "on": { "tier": "standard", "effort": "medium" }
@@ -93,7 +96,7 @@
   },
   "fetchSized": ["exo:research-worker"],
   "agents": {
-    "agents/build-task.md": { "kind": "build-task", "labels": ["fix-review", "hardest"] },
+    "agents/build-task.md": { "kind": "build-task", "labels": ["fix-review", "hardest", "build-repair"] },
     "agents/orchestrator.md": { "kind": "orchestrator" },
     "agents/research-worker.md": { "kind": "research" },
     "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep", "judge"] },

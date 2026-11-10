@@ -24,6 +24,13 @@
       "options": ["off", "on"],
       "default": "on"
     },
+    "deep": {
+      "type": "string",
+      "title": "Deep thinking model",
+      "description": "opus: deep reviews, orchestration and the hardest tasks run on Opus. fable: they run on Fable. Not sure? Keep opus. A project overrides this in .claude/exo.json.",
+      "options": ["opus", "fable"],
+      "default": "opus"
+    },
     "ship": {
       "type": "string",
       "title": "How ship finishes a run",

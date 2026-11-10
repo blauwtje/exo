@@ -134,7 +134,7 @@ test('the judge kind runs on the fast tier at low effort and the research agents
   const { kinds, agents } = readKindTable();
   assert.equal(kinds.judge.effort, 'low');
   assert.ok(agents['agents/review-branch.md'].labels.includes('judge'));
-  assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest']);
+  assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest', 'build-repair']);
   assert.equal(agents['agents/research-worker.md'].kind, 'research');
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');
 });

@@ -7,7 +7,9 @@
 // why: points TMPDIR at one run root that every child inherits, and removes that root on exit. Fourth, a test
 // why: must not read the developer's git setup, so HOME is a fresh folder, the global and system git config
 // why: are empty, init.defaultBranch is main and user.useConfigOnly is true, and the git identity, GIT_DIR and
-// why: index variables are dropped; a test that commits names its own identity.
+// why: index variables are dropped; a test that commits names its own identity. Fifth, a test must not read the
+// why: developer's exo settings, so every CLAUDE_PLUGIN_OPTION_* variable is dropped and CLAUDE_PROJECT_DIR
+// why: names an empty folder, which also stops the git-toplevel fallback from reaching this checkout.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -40,6 +42,16 @@ function isolateGit(home) {
   process.env.GIT_CONFIG_COUNT = String(GIT_TEST_CONFIG.length);
 }
 
+function isolateSettings(root) {
+  for (const name of Object.keys(process.env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete process.env[name];
+  const project = path.join(root, 'project');
+  fs.mkdirSync(project);
+  process.env.CLAUDE_PROJECT_DIR = project;
+  const config = path.join(root, 'claude-config');
+  fs.mkdirSync(config);
+  process.env.CLAUDE_CONFIG_DIR = config;
+}
+
 function createRunRoot() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-test-'));
   process.env.EXO_TEST_TMP_ROOT = root;
@@ -59,4 +71,5 @@ if (!process.env.EXO_TEST_TMP_ROOT) {
   const home = path.join(root, 'home');
   fs.mkdirSync(home);
   isolateGit(home);
+  isolateSettings(root);
 }

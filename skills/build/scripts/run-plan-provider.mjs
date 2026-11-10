@@ -18,10 +18,11 @@ export function fallbackModel(model, env = process.env) {
   if (chosen !== undefined && chosen !== '') return chosen === model ? null : chosen;
   if (model === null) return null;
   const { providers } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
-  const tiers = Object.values(providers).map((provider) => provider.tiers).find((candidate) => Object.values(candidate).includes(model));
-  if (tiers === undefined) return null;
+  const owner = Object.values(providers).find((provider) => Object.values(provider.tiers).includes(model) || provider.models.includes(model));
+  if (owner === undefined) return null;
+  const tiers = owner.tiers;
   const next = model === tiers.strong ? tiers.standard : tiers.strong;
-  return next === model ? null : next;
+  return next === model || next === INHERIT ? null : next;
 }
 
 export const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;

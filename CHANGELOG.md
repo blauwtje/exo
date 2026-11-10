@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The `deep` setting (`opus` default, `fable`) picks the model of the `review-deep`, `orchestrator` and `hardest` kinds; build repairs stay on `strong` as the new `build-repair` kind.
 - A Write whose only rule break is added comment lines has those lines stripped instead of being refused, which turned 17 of 88 replayed refusals into rewrites.
 - A subagent may run read-only `git stash list` and `git stash show`, which took replayed stash denials from 95 to 19.
 - An over-limit Bash command is rewritten to a saved script instead of denied, which took byte-limit refusals from 643 to 0 in a replay of 724 recorded commands.

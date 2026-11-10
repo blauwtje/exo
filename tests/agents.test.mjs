@@ -327,6 +327,7 @@ test('build-task carries the fix-review and hardest modes and review-branch the 
   assert.match(builder.body, /## Modes/);
   assert.match(builder.body, /exo-kind: fix-review/);
   assert.match(builder.body, /exo-kind: hardest/);
+  assert.match(builder.body, /exo-kind: build-repair/);
   assert.match(builder.body, /agent-modes\/task-modes\.md/);
   assert.match(reviewer.body, /exo-kind: judge/);
   assert.match(reviewer.body, /agent-modes\/claims-mode\.md/);

@@ -27,3 +27,11 @@ test('a stop kind is not retryable', () => {
   for (const kind of ['refused', 'landed', 'pin', 'lock', 'unfinished merge', 'env', 'code rule', 'input unreachable']) assert.equal(isRetryable(kind), false, kind);
   for (const kind of ['proof failed', 'outside Files', 'report missing', 'plan drift']) assert.equal(isRetryable(kind), true, kind);
 });
+
+test('repair handoffs name build-repair and not hardest', () => {
+  for (const kind of ['plan drift', 'proof failed']) {
+    const line = refusalHandler(kind);
+    assert.match(line, /exo-kind: build-repair/, kind);
+    assert.doesNotMatch(line, /hardest/, kind);
+  }
+});

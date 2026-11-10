@@ -10,7 +10,7 @@ Build one plan task and report it.
 
 ## Modes
 
-- With `exo-kind: fix-review` or `exo-kind: hardest`, first read `${CLAUDE_PLUGIN_ROOT}/lib/agent-modes/task-modes.md` and follow it instead of Scope, Build and Report.
+- With `exo-kind: fix-review`, `exo-kind: hardest` or `exo-kind: build-repair`, first read `${CLAUDE_PLUGIN_ROOT}/lib/agent-modes/task-modes.md` and follow it instead of Scope, Build and Report.
 
 ## Scope
 

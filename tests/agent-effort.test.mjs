@@ -174,7 +174,7 @@ test('an exo call whose passed model or effort differs from the table is denied 
   const reason = output.permissionDecisionReason;
   assert.match(reason, new RegExp(`runs on ${model}, ${effort} by the kind table`));
   assert.match(reason, /passed opus, xhigh/);
-  assert.match(reason, /No kind runs opus, xhigh; closest on opus: hardest, review-deep\./);
+  assert.match(reason, /No kind runs opus, xhigh; closest on opus: hardest, build-repair, review-deep\./);
   assert.match(reason, /Do instead: drop `model` and `effort`\.$/);
   assert.doesNotMatch(reason, /No user request/);
   const buildTask = readKindTable(undefined, { budget: 'on' }).kinds['build-task'];
@@ -185,7 +185,7 @@ test('an exo call whose passed model or effort differs from the table is denied 
 });
 
 test('a denied pair that no kind runs names the closest kinds on that model, or none', () => {
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: hardest, review-deep\./);
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: hardest, build-repair, review-deep\./);
   assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'fable', effort: 'high' }).permissionDecisionReason, /No kind runs fable, high, and none runs fable\./);
 });
 
