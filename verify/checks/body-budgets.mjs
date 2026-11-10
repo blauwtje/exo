@@ -5,7 +5,7 @@
 // agent body, stripped of its own frontmatter, stays within
 // AGENT_BODY_TOKENS.ceiling unless it is named in AGENT_BODY_TOKENS.exempt.
 
-import { SKILL_BODY_TOKENS } from '../budgets.mjs';
+import { SKILL_BODY_TOKENS, LOADED_PROSE_LOCK, LOADED_PROSE_ROOTS } from '../budgets.mjs';
 import { bodySizes } from '../body-size.mjs';
 
 export function checkBodyBudgets(report, repository) {
@@ -21,5 +21,24 @@ export function checkBodyBudgets(report, repository) {
     'skill body budgets',
     `every skill body is within its ceiling; the largest is ${largest.skill} at ${largest.tokens} tokens; above the ${SKILL_BODY_TOKENS.realistic}-token aim: ${aboveRealistic.join(', ') || 'none'}; headroom of the capped skills: ${headroom.join(', ') || 'none'}`,
     `${failures.join('; ')}; move bulk into references/ and name in the body the step that opens it`
+  );
+  checkLoadedProse(report, repository);
+}
+
+export function loadedProseBytes(repository) {
+  return repository.trackedFiles()
+    .map((file) => repository.relative(file))
+    .filter((file) => file.endsWith('.md'))
+    .filter((file) => LOADED_PROSE_ROOTS.some((root) => file.startsWith(`${root}/`)))
+    .reduce((sum, file) => sum + Buffer.byteLength(repository.text(repository.join(file))), 0);
+}
+
+export function checkLoadedProse(report, repository) {
+  const bytes = loadedProseBytes(repository);
+  report.assert(
+    bytes <= LOADED_PROSE_LOCK.bytes,
+    'loaded prose bytes',
+    `loaded prose is ${bytes} bytes, within the ${LOADED_PROSE_LOCK.bytes}-byte lock`,
+    `loaded prose is ${bytes} bytes, over the ${LOADED_PROSE_LOCK.bytes}-byte lock; remove a line for each line added`
   );
 }

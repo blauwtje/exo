@@ -1,0 +1,4 @@
+[
+  { "rule": "live-shells", "hook": "dispatch-edit.mjs", "tool": "Write", "input": { "file_path": "/repo/.exo/run/result.md", "content": "x" }, "transcript": "subagent", "expect": "allow", "says": "", "result": "grep hit: Command was moved to the background (ID: quoted1)" },
+  { "rule": "live-shells", "hook": "dispatch-edit.mjs", "tool": "Write", "input": { "file_path": "/repo/.exo/run/result.md", "content": "x" }, "transcript": "subagent", "expect": "deny", "says": "bg9", "live": true, "result": "Command running in background with ID: bg9. Output is being written to: /tmp/bg9.output" }
+]

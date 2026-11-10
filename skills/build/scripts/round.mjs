@@ -8,7 +8,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { runTreeSync } from '../../../lib/process-tree.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
-import { decideKeep, pooledSd } from '../../../lib/eval-stats.mjs';
+import { decideKeep, mean, pooledSd } from '../../../lib/eval-stats.mjs';
 import { clearlyWorse, heldOutDiff, itemsMean, splitItems } from '../../../lib/holdout.mjs';
 import { loadRunConfig } from '../../build/scripts/run-config.mjs';
 import { matchScope, outOfScope, ScopeError } from './scope.mjs';
@@ -46,7 +46,7 @@ export const readRows = (file) => fs.readFileSync(file, 'utf8').split('\n').slic
   return { commit, score: Number(score), status, description: description.join('\t') };
 });
 
-export const scoreText = (score) => (Number.isFinite(score) ? String(score) : '-');
+const scoreText = (score) => (Number.isFinite(score) ? String(score) : '-');
 
 export const lastKeep = (rows) => rows.filter((row) => row.status === 'keep').at(-1);
 
@@ -80,7 +80,7 @@ export function readRun(output, cfg) {
   return { score: mean === null ? null : round4(mean), items: tune, held };
 }
 
-export function visibleOutput(output, cfg) {
+function visibleOutput(output, cfg) {
   const held = new Set(heldIds(cfg));
   if (held.size === 0) return output;
   const score = new RegExp(cfg.regex);
@@ -90,19 +90,19 @@ export function visibleOutput(output, cfg) {
 
 const samplesFile = (dir, tag) => path.join(dir, `${tag}.samples.jsonl`);
 
-export const appendSamples = (dir, tag, entry) => fs.appendFileSync(samplesFile(dir, tag), `${JSON.stringify(entry)}\n`);
+const appendSamples = (dir, tag, entry) => fs.appendFileSync(samplesFile(dir, tag), `${JSON.stringify(entry)}\n`);
 
 function sampleLines(dir, tag) {
   const file = samplesFile(dir, tag);
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)) : [];
 }
 
-export function keptSamples(lines, kept) {
+function keptSamples(lines, kept) {
   const entry = lines.findLast((line) => line.commit === kept.commit && line.runs?.length > 0);
   return entry ? { runs: entry.runs, items: entry.items ?? {}, held: entry.held ?? {} } : { runs: [kept.score], items: {}, held: {} };
 }
 
-export const scorerNoise = (lines, cfg) => pooledSd(lines.map((line) => line.runs ?? []).filter((runs) => runs.length > 1), cfg.noiseSd ?? null);
+const scorerNoise = (lines, cfg) => pooledSd(lines.map((line) => line.runs ?? []).filter((runs) => runs.length > 1), cfg.noiseSd ?? null);
 
 export const improveDefaults = (home = os.homedir()) => loadRunConfig({ home }).defaults.improve;
 
@@ -139,7 +139,7 @@ function scopedTree(cwd, cfg, base) {
 
 export const editableBytes = ({ cwd, cfg, base }) => scopedTree(cwd, cfg, base).editable.reduce((sum, entry) => sum + entry.bytes, 0);
 
-export function filesAtBase({ cwd, cfg, base, capBytes }) {
+function filesAtBase({ cwd, cfg, base, capBytes }) {
   const { editable, frozen, readOnly } = scopedTree(cwd, cfg, base);
   const wanted = [...editable, ...frozen];
   let left = capBytes;
@@ -205,15 +205,15 @@ function sampleRuns({ cfg, cwd, logs, judge }) {
   return { samples, verdict: judge(samples, samples.runs.length), output };
 }
 
-export function outputTail(output, count = improveDefaults().outputLines) {
+function outputTail(output, count = improveDefaults().outputLines) {
   const frame = /^\s+at \S|^Node\.js v\d/;
   return output.split('\n').map((line) => line.trimEnd()).filter((line) => line.trim() && !frame.test(line)).slice(-count);
 }
 
-export const diffLines = (cwd, from, to) => (gitLine(cwd, ['diff', '--numstat', from, to]) ?? '').split('\n').filter(Boolean)
+const diffLines = (cwd, from, to) => (gitLine(cwd, ['diff', '--numstat', from, to]) ?? '').split('\n').filter(Boolean)
   .reduce((sum, row) => { const [add, del] = row.split('\t'); return { added: sum.added + (Number(add) || 0), removed: sum.removed + (Number(del) || 0) }; }, { added: 0, removed: 0 });
 
-export function keepSettings(defaults = improveDefaults()) {
+function keepSettings(defaults = improveDefaults()) {
   return { maxRuns: defaults.maxRuns, z: defaults.keepZ, floor: defaults.keepFloor };
 }
 
@@ -242,7 +242,7 @@ function statsNote(verdict, samples) {
   return `n=${verdict.n} se=${shown(verdict.se)} lo=${shown(verdict.lo)} hi=${shown(verdict.hi)} aborted=${samples.aborted}`;
 }
 
-export function commitsOnKept(cwd, kept, commit) {
+function commitsOnKept(cwd, kept, commit) {
   if (gitLine(cwd, ['merge-base', '--is-ancestor', kept, commit]) === null) return `not on ${kept}`;
   const count = Number(gitLine(cwd, ['rev-list', '--count', `${kept}..${commit}`]));
   return count === 1 ? null : `${count} commits on ${kept}`;
@@ -252,7 +252,7 @@ const sign = (cfg) => (cfg.direction === 'higher' ? 1 : -1);
 
 const heldOutFails = (cfg, best, samples) => heldIds(cfg).length > 0 && clearlyWorse(heldOutDiff(best.held, samples.held, { z: keepSettings().z, sign: sign(cfg) }));
 
-export function holdoutReport(cfg, rows, stored) {
+function holdoutReport(cfg, rows, stored) {
   if (heldIds(cfg).length === 0) return 'HOLDOUT none';
   const base = keptSamples(stored, rows[0]).held;
   const best = keptSamples(stored, lastKeep(rows)).held;
@@ -292,12 +292,11 @@ function record({ dir, tag, commit, outcome, cwd }) {
   fs.appendFileSync(path.join(dir, `${tag}.tsv`), `${commit}\t${scoreText(outcome.score)}\t${outcome.status}\t${note ? `${note}; ` : ''}${subject}\n`);
 }
 
-const meanOf = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
 export function caseMovers(best, candidate, count = improveDefaults().caseMovers) {
   const ids = Object.keys(candidate?.items ?? {}).filter((id) => best?.items?.[id]?.length > 0 && candidate.items[id].length > 0);
   if (ids.length === 0) return null;
-  const moves = ids.map((id) => ({ id, from: round4(meanOf(best.items[id])), to: round4(meanOf(candidate.items[id])) }))
+  const moves = ids.map((id) => ({ id, from: round4(mean(best.items[id])), to: round4(mean(candidate.items[id])) }))
     .filter((move) => move.from !== move.to)
     .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from) || a.id.localeCompare(b.id));
   if (moves.length === 0) return 'CASES none moved';

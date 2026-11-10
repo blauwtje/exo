@@ -29,14 +29,15 @@ Prose for a reader who was not in the session says who does what, by which mecha
    - Prefer the period to the dash or semicolon.
    - One thought per sentence; split past 25 words.
    - In a one-sentence slot (Highlights line, summary), write only the change that matters most. Two joined with "and" bury both.
-6. **Scan the draft against `references/ai-tics.md` and rewrite every hit before handing it over.**
+6. **Change only what the request names.** Run the doc's link or reference check when one exists.
+7. **Scan the draft against `references/ai-tics.md` and rewrite every hit before handing it over.**
    - When reviewing someone else's text, cite each hit by its id.
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `references/ai-tics.md` | Step 6, on every draft, and when reviewing a text for machine-written tone. |
+| `references/ai-tics.md` | Step 7, on every draft, and when reviewing a text for machine-written tone. |
 | `references/release-notes.md` | The user asks for release notes or the missing `## Unreleased` lines from a ref range. |
 
 ## Judgment

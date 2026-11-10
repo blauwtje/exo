@@ -134,8 +134,8 @@ test('the planning tunables come from defaults.eval and a user run.json override
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { eval: { targetEffect: 0.05, alpha: 0.1, power: 0.9, pairedCorrelation: 0.25 } } }));
   assert.equal(evalDefaults(home).graduationRuns, 20);
-  const script = "import('./lib/eval-stats.mjs').then((m) => console.log(JSON.stringify([m.TARGET_EFFECT, m.ALPHA, m.POWER, m.PAIRED_CORRELATION])))";
+  const script = "import('./lib/eval-stats.mjs').then((m) => console.log(JSON.stringify([m.TARGET_EFFECT, m.ALPHA, m.POWER, m.rateVariance({ rate: 0.5, paired: true }).omega2])))";
   const run = spawnSync(process.execPath, ['-e', script], { cwd: path.join(import.meta.dirname, '..'), encoding: 'utf8', env: { ...process.env, HOME: home } });
   assert.equal(run.status, 0, run.stderr);
-  assert.deepEqual(JSON.parse(run.stdout), [0.05, 0.1, 0.9, 0.25]);
+  assert.deepEqual(JSON.parse(run.stdout), [0.05, 0.1, 0.9, 0.375]);
 });

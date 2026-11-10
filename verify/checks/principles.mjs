@@ -58,6 +58,8 @@ function lineCiteProblems(name, line, repository) {
   return problems;
 }
 
+const CHECK_MODULE = /`verify\/checks\/[\w-]+\.mjs`/;
+
 function pageProblems({ name, text, isIndex, pages, repository }) {
   const problems = [];
   const tokens = Math.round(Buffer.byteLength(text, 'utf8') / BYTES_PER_TOKEN);
@@ -71,6 +73,7 @@ function pageProblems({ name, text, isIndex, pages, repository }) {
   if (sources === undefined || !/https?:\/\/\S+/.test(sources)) problems.push(`${name} has no URL under ## Sources`);
   for (const line of body.split('\n')) {
     if (line.startsWith('- ') && !line.includes('exo:')) problems.push(`${name} has a bullet without exo: ${line.slice(2, 50)}`);
+    if (line.startsWith('- ') && name === 'prompt.md' && line.includes('[9]') && !CHECK_MODULE.test(line)) problems.push(`${name} has a [9] bullet without a check module: ${line.slice(2, 50)}`);
     if (line.startsWith('- ')) problems.push(...lineCiteProblems(name, line, repository));
   }
   return problems;

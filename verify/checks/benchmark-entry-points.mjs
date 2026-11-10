@@ -16,7 +16,7 @@ const QUICK_DEFAULTS = [
   new RegExp(String.raw`(?:${ASSIGN}|\(\s*['"][\w-]+['"]\s*,\s*)QUICK_[A-Z_]+`)
 ];
 const VARIANCE_MODULES = new Set(['benchmarks/statistics.mjs', 'lib/eval-stats.mjs']);
-export const FOLLOWED_FOLDERS = ['benchmarks/', 'lib/'];
+const FOLLOWED_FOLDERS = ['benchmarks/', 'lib/'];
 const SCORER_NAME = /^score\.mjs$|-(?:score|stats|report|readout|metrics|summary)\.mjs$/;
 const SPECIFIER = /\b(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|\bimport\s*['"]([^'"]+)['"]/g;
 const POWER_MODULE = 'lib/eval-stats.mjs';
@@ -61,7 +61,7 @@ export function readScript(repository, file) {
   return fs.existsSync(absolute) ? withoutComments(file, fs.readFileSync(absolute, 'utf8')) : '';
 }
 
-export function aliasTargets(repository) {
+function aliasTargets(repository) {
   const manifest = repository.join('package.json');
   if (!fs.existsSync(manifest)) return {};
   return JSON.parse(fs.readFileSync(manifest, 'utf8')).imports ?? {};
@@ -80,7 +80,7 @@ function resolveSpecifier(repository, aliases, from, specifier) {
   return target === null ? null : repository.relative(repository.join(target));
 }
 
-export function importedModules(repository, aliases, file) {
+function importedModules(repository, aliases, file) {
   const code = readScript(repository, file);
   return [...code.matchAll(SPECIFIER)]
     .map((match) => resolveSpecifier(repository, aliases, file, match[1] ?? match[2]))
@@ -120,7 +120,7 @@ function isExempt(repository, file, exemptions) {
   return exemption.callers.every((caller) => hasBothGuards(readScript(repository, caller)));
 }
 
-export function scanBenchmarks(repository) {
+function scanBenchmarks(repository) {
   return {
     aliases: aliasTargets(repository),
     scripts: benchmarkScripts(repository).map((file) => ({ file, code: readScript(repository, file) }))

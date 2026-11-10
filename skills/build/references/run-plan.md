@@ -9,9 +9,7 @@ Build the plan the user invokes run-plan on through `exo:build`, each task lande
    - Otherwise the argument is one plan path; with none, ask for it and run nothing.
 2. With a plan path, invoke `exo:build <plan>` with the flags the user typed that build takes.
 3. Report one line: the headless loop, each task in its own process, runs only from a terminal, as the user's `exo run <plan> --detach`.
-4. When the build reports every task landed, offer once to save the plan as a template per the spec templates reference, `## Saving`, and save nothing before a yes.
 
 ## Judgment
 
 - When a run is already live, touch no task, branch or file it owns.
-- When an in-session loop is wanted, the official `/ralph-loop` plugin runs beside exo, because exo registers no Stop hook.

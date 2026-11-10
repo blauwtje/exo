@@ -8,7 +8,6 @@ const LOCKS_AND_REGISTRIES = [
   'verify/model-kinds.mjs',
   'lib/model-kinds.json',
   'verify/checks/reference-tables.mjs',
-  'verify/instruction-density-allowlist.txt',
   'CONTRIBUTING.md'
 ];
 const REPO_PATH_ORIGIN = /import\.meta\.(?:url|dirname)/;
@@ -69,7 +68,18 @@ export function lockProblems(task, root, sources, later) {
     return sources
       .filter((source) => (lock === 'CONTRIBUTING.md' ? mentions(text, source.path) : namesEntry(text, source.path, source.others)))
       .map((source) => `Task ${task.number}: \`${lock}\` names Files: \`${source.path}\` and Files: does not list \`${lock}\``);
-  }).concat(lockConstantProblems(task, root, listed));
+  }).concat(lockConstantProblems(task, root, listed), ceilingProblems(task, root, listed));
+}
+
+const CEILING_LIST = 'verify/module-size-ceilings.txt';
+
+function ceilingProblems(task, root, listed) {
+  const listPath = path.join(root, CEILING_LIST);
+  if (isCovered(listed, CEILING_LIST) || !fs.existsSync(listPath)) return [];
+  const held = new Set(fs.readFileSync(listPath, 'utf8').split('\n').map((line) => line.trim().split(/\s+/)[1]));
+  return task.files
+    .filter((file) => held.has(file.path))
+    .map((file) => `Task ${task.number}: \`${CEILING_LIST}\` holds Files: \`${file.path}\` and Files: does not list \`${CEILING_LIST}\``);
 }
 
 function lockConstantProblems(task, root, listed) {

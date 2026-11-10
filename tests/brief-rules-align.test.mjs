@@ -7,3 +7,9 @@ test('the over-fetches denial does not tell the orchestrator to lower the count'
   assert.doesNotMatch(row.allowed, /lower the/i);
   assert.match(row.allowed, /split/);
 });
+
+test('the unresolved denial states the note forms and the existing-files limit', () => {
+  const row = BRIEF_RULES.find((entry) => entry.id === 'brief-unresolved');
+  assert.match(row.allowed, /\[note\]/);
+  assert.match(row.allowed, /name only files that exist now/);
+});

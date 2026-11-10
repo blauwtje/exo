@@ -143,3 +143,13 @@ test('a Result path named only by a tool result is not the brief Result path', (
   const result = write(file, { tool_input: { file_path: '/repo/.exo/run/answer.md', content: 'x' } });
   assert.match(shellStopDecision(result).deny, /bg1/);
 });
+
+test('a background start counts only in the first line of a Bash result', () => {
+  const rows = JSON.parse(fs.readFileSync(new URL('./fixtures/refusals/live-shells.json', import.meta.url), 'utf8'));
+  for (const row of rows) {
+    const result = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: row.result }] } };
+    const quoted = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: `ls output\n${row.result}` }] } };
+    assert.equal(liveShells(transcript([start('t1'), result])).length, row.live ? 1 : 0, row.result);
+    assert.deepEqual(liveShells(transcript([start('t1'), quoted])), []);
+  }
+});

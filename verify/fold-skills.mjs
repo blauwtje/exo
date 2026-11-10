@@ -1,16 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { escapeRegExp } from '#basics';
 import { listFiles, loadFoldMap } from './checks/folded-names.mjs';
 
 const MAP_FILE = 'verify/fold-map.json';
 const ROWS_FILE = 'verify/reference-owner-rows.txt';
 const PLUGIN_ROOT = '${CLAUDE_PLUGIN_ROOT}';
 const SKILL_DIR = '${CLAUDE_SKILL_DIR}';
-
-function escaped(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -72,13 +69,13 @@ function scope(job, file) {
 function replacements(job, file) {
   const { name, owner } = job;
   const pair = (pattern, text) => [new RegExp(pattern, 'g'), text];
-  const n = escaped(name);
+  const n = escapeRegExp(name);
   const names = [pair(`exo:${n}(?![\\w-])`, `exo:${owner}`)];
   if (job.kind === 'agents') return [...names, pair(`agents/${n}\\.md`, `agents/${owner}.md`)];
   const here = scope(job, file);
   return [
-    pair(`${escaped(SKILL_DIR)}/\\.\\./${n}/`, `${PLUGIN_ROOT}/skills/${owner}/`),
-    pair(`skills/${escaped(owner)}/${n}/MODE\\.md`, `skills/${owner}/references/${name}.md`),
+    pair(`${escapeRegExp(SKILL_DIR)}/\\.\\./${n}/`, `${PLUGIN_ROOT}/skills/${owner}/`),
+    pair(`skills/${escapeRegExp(owner)}/${n}/MODE\\.md`, `skills/${owner}/references/${name}.md`),
     pair(`\\.\\./${n}/MODE\\.md`, `${here.sibling}${name}.md`),
     pair(`skills/${n}/`, `skills/${owner}/`),
     pair(`\\.\\./${n}/references/`, here.sibling),
@@ -131,7 +128,7 @@ function flip(job, map) {
 }
 
 function unmatched(job) {
-  const pattern = new RegExp(`\`${escaped(job.name)}\``);
+  const pattern = new RegExp(`\`${escapeRegExp(job.name)}\``);
   return listFiles(job.root).flatMap((file) => {
     const lines = fs.readFileSync(path.join(job.root, file), 'utf8').split('\n');
     return lines.flatMap((line, index) => (pattern.test(line) ? [`${file}:${index + 1}: ${line.trim()}`] : []));

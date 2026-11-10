@@ -58,7 +58,7 @@ function stubText(cwd, file, dirty, progress) {
   return fs.readFileSync(STUB_FILE, 'utf8').replace(/\{\{(\w+)\}\}/g, (_, key) => values[key]);
 }
 
-export function writeHandoffStub({ cwd, transcript_path: transcriptPath }) {
+function writeHandoffStub({ cwd, transcript_path: transcriptPath }) {
   if (gitLine(cwd, ['rev-parse', '--git-dir']) === null) return undefined;
   const file = handoffFile(cwd);
   if (handoffKept(file, sessionStartMs(transcriptPath))) return undefined;

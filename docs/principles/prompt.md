@@ -10,14 +10,14 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 - **Use a few canonical examples, not lists of edge-case rules.** [1] exo: `skills/edit-skills/references/instruction-style.md`
 - **Turn subjective judgments into concrete grading criteria.** [3] exo: `skills/edit-skills/references/blind-eval.md`
 - **Write names and descriptions for the trigger decision.** A distinct description routes correctly. [4][7] exo: `skills/edit-skills/references/description.md`
-- **State needed context in the delegation prompt.** A subagent starts blank. [5] exo: `lib/references/context.md`, `skills/build/implementer-prompt.md`
-- **Ask for every finding, then filter in a second pass.** Opus 5.5 reads "only high-severity" literally. [6] exo: gap, no review prompt filters in a second pass
-- **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: gap, `skills/edit-skills/references/instruction-style.md` holds no "if in doubt" rule
-- **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: gap, no check flags these phrases
-- **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`
-- **Simplicity first: the least code that works.** [9] exo: `lib/references/lean.md`
-- **Surgical changes: touch only what is asked.** [9] exo: `lib/references/lean.md`
-- **Goal-driven execution: work toward a check.** [9] exo: `harnesses/codex/agent-preamble.md`
+- **State needed context in the delegation prompt.** A subagent starts blank. [5] exo: `hooks/session-rules.md`, `skills/build/implementer-prompt.md`
+- **Ask for every finding, then filter in a second pass.** Opus 5.5 reads "only high-severity" literally. [6] exo: gap
+- **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: gap
+- **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: gap
+- **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`, `verify/checks/brief-grammar.mjs`
+- **Simplicity first: the least code that works.** [9] exo: `lib/references/lean.md`, `verify/checks/module-surface.mjs`
+- **Surgical changes: touch only what is asked.** [9] exo: `agents/task-runner.md`, `verify/checks/shared-contracts.mjs`
+- **Goal-driven execution: work toward a check.** [9] exo: `skills/build/SKILL.md`, `verify/checks/edit-evidence.mjs`
 
 ## Sources
 

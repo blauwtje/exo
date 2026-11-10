@@ -11,4 +11,4 @@ The verdict is the first judgment spec makes, before any question or brief. The 
 5. `go` goes on to the questions. Write both lines under a `## Verdict` heading right after `## Goal`.
 6. After the brief is stored, run `node "${CLAUDE_SKILL_DIR}/scripts/verdict-check.mjs" --plan <brief file>` and fix what it flags. Show the user the `Objection:` line beside the recommendation.
 
-   - When the diff fits one sentence or code settles every point, ask no question and let exo close each choice.
+   - When the diff fits one sentence or code settles every point, ask no question; exo closes each choice.

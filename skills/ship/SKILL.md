@@ -13,6 +13,7 @@ Goal: ship only as the user says.
 
 1. **Authorize.** Letter, non-`ask` `ship` setting or merge request authorizes the route.
    - Watching or comments authorize only fix commits, push and replies, not force, `--no-verify` or a relaxed gate/test.
+   - Confirm the PR is the one the request named before any push or reply.
 2. **Overview**: `../../lib/references/closing.md`, three lines, then the question.
    - `Changed`, `Verified` go only to run report.
    - From `gate`, its lines replace overview.
@@ -48,4 +49,4 @@ Goal: ship only as the user says.
 | `references/pr-merge.md` | 3, 5, 7. |
 | `../../lib/references/closing.md` | Before the report. |
 
-Report: each line `ship.mjs` prints, checkout line (branch for Keep local), status `gh pr view <n> --json state,isDraft`, `gh pr ready <n>` if draft, if merged `node "${CLAUDE_SKILL_DIR}/../build/scripts/remove-worktree.mjs" --kept --worktree <path> --run .`, refused → leave it, report it.
+Report: each line `ship.mjs` prints and the checkout line (branch for Keep local); status `gh pr view <n> --json state,isDraft`; `gh pr ready <n>` if draft; if merged `node "${CLAUDE_SKILL_DIR}/../build/scripts/remove-worktree.mjs" --kept --worktree <path> --run .`; when that script refuses, leave the worktree and report the refusal.

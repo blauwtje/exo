@@ -6,7 +6,6 @@ Goal: run each round as two tool calls, reading only the worker's return line an
 2. On `IDEA <hash>`, run `node "${CLAUDE_SKILL_DIR}/scripts/round.mjs" --root <root> --tag <tag> --commit <hash>`. Run it in the background when `limit` × `defaults.improve.maxRuns` > 500, since a noisy score reruns; its output `ROW <hash> <score> <status> best=<score>` ends the round and step 1 starts the next.
 3. On `NO-IDEA <reason>`, repeat step 1. After `noidea` of them in a row, from the settled line, Stop and name the last reason.
 4. On `STOP <reason> <detail>` (`scorer-changed`, `reset-failed <hash>`, `no-keep 10`), Stop and name both.
-5. After a crash row, start the next round as usual. Its idea may be retried with the cause fixed.
 
 ## Stop
 

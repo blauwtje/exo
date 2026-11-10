@@ -7,19 +7,20 @@ argument-hint: <symptom, failing command or error>
 ---
 # Find cause
 
-a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: run the bisect in `investigator-prompt.md`, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (with no symbol, `exo:research-worker` with `Sources: repo`).
+a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: follow `investigator-prompt.md`, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (with no symbol, `exo:research-worker` with `Sources: repo`).
 b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in source: write `Status: proven`. Otherwise dispatch `exo:build-task` with `exo-kind: hardest` from `investigator-prompt.md`.
-c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build` and a `Reads:` line, resume `failed` via SendMessage, else dispatch a fresh agent with the prior result path.
+c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Change only what the request names.
+   - Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build` and a `Reads:` line, resume `failed` via SendMessage, else dispatch a fresh agent with the prior result path.
 d. **Report.** Read only status lines and Report fields. After compaction, re-run `Repro`.
 
-1. **Reproduce.** Read an existing log, profile or `.exo/` report first. One command reproduces it, else evidence, no fix.
-   - Send long output to `<scratch>/debug-repro.log`, `<scratch>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`; read with `tail -n 40`.
+1. **Reproduce.** Read an existing log, profile or `.exo/` report first. One command reproduces it, else evidence, no fix; for an unclear symptom follow `../../lib/references/question.md` `## When to ask`.
+   - Send long output to `<debug-dir>/debug-repro.log`, `<debug-dir>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`; read with `tail -n 40`.
    - Steps 1-5 → read `references/loop.md` first.
 2. **Instrument.**
 3. **Isolate.**
 4. **Predict, then fix.**
 5. **Prove.**
-6. **Retain project knowledge.** Per the table.
+6. **Retain project knowledge.** Follow `../build/references/project-knowledge.md`.
 7. **Fresh eyes.** With no PR review, read Step 7 of `references/loop.md`, which sets `code-review` for when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, then ends on `ship`.
    - Invoked by a stage or workflow: ask nothing, return to caller.
 
@@ -31,10 +32,10 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 | `../build/references/workspace.md` | c |
 | `investigator-prompt.md` | b |
 | `fixer-prompt.md` | c |
-| `../build/references/performance.md` | Speed |
+| `../build/references/performance.md` | Step 1, slowdown |
 | `references/loop.md` | 1-5, 7 |
-| `references/profiling.md` | Trace |
-| `../build/references/critique.md` | No review |
+| `references/profiling.md` | Step 1, captured profile |
+| `../build/references/critique.md` | Step 7, no PR review |
 | `../build/references/security.md` | When its first line applies. |
 | `../build/references/data-migration.md` | When its first line applies. |
 | `../build/references/test-design.md` | When its first line applies. |

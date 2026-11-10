@@ -123,7 +123,7 @@ test('the session text has one wait bullet for the agent notice and one TaskStop
 
 test('the blanket delegation lines are gone from the session text and the context reference', () => {
   const root = path.join(import.meta.dirname, '..');
-  for (const file of [['hooks', 'session-rules.md'], ['lib', 'references', 'context.md']]) {
+  for (const file of [['hooks', 'session-rules.md']]) {
     const text = fs.readFileSync(path.join(root, ...file), 'utf8');
     assert.doesNotMatch(text, /^- Request with 2\+ parts/m);
     assert.doesNotMatch(text, /^- Main-session work/m);
@@ -308,7 +308,7 @@ test('worker size: a none. or punctuated Reads line runs normalized and a missin
     assert.match(output.updatedInput.prompt, /^Reads: (none|a\.md)$/m, reads);
   }
   const reason = run('Reads: gone.md.\nResult: .exo/r.md').permissionDecisionReason;
-  assert.match(reason, /do not exist: gone\.md \(searched [^)]*\)\. Do instead: write `Reads:` as items split by `,` or `;`, each a path, optionally followed by `lines N-M` or `by grep`, or `Reads: none`; an item that does not start with a path is prose and is not read\.$/);
+  assert.match(reason, /do not exist: gone\.md \(searched [^)]*\)\. Do instead: write `Reads:` as items split by `,` or `;`, each a path, optionally followed by `lines N-M`, `by grep` or a trailing \(note\) or \[note\], or `Reads: none`; name only files that exist now and no glob, and an item that does not start with a path is prose and is not read\.$/);
   assert.doesNotMatch(reason, /\.\./);
 });
 
@@ -394,7 +394,7 @@ test('on deepseek an orchestrator part with one worker is told to run its unit i
 });
 
 test('a main-session web research brief to an unnamed agent is denied toward the research route', () => {
-  const unnamed = (type, agentId) => agentHook({ tool_name: 'Agent', session_id: `route-unnamed-${process.pid}`, ...(agentId && { agent_id: agentId, agent_type: 'orchestrator' }), tool_input: { subagent_type: type, prompt: `Sources: web\nFetches: 1\nResult: .exo/r.md\n${type}` } }, 'on', () => false)?.hookSpecificOutput;
+  const unnamed = (type, agentId) => agentHook({ tool_name: 'Agent', session_id: `route-unnamed-${process.pid}-${agentId ?? type}`, ...(agentId && { agent_id: agentId, agent_type: 'orchestrator' }), tool_input: { subagent_type: type, prompt: `Sources: web\nFetches: 1\nResult: .exo/r.md\n${type}` } }, 'on', () => false)?.hookSpecificOutput;
   for (const type of ['general-purpose', 'claude']) {
     const denied = unnamed(type);
     assert.equal(denied.permissionDecision, 'deny');

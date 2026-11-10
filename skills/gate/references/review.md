@@ -16,10 +16,9 @@ Produce findings with `file:line` on changed lines only. Avoid a repair, a comme
 2. **Dispatch the reviewer.** Send `exo:review-branch` one message: `exo-kind: review-deep`, the `DISPATCH Review` fields, then `Read:` and the changed files read.
    - Add 3-5 questions from the diff's riskiest changes, because the input has no plan to draw them from.
 3. **Print the findings.** Read the `findings=` file and print each finding whose range falls inside a `CHANGED` line, grouped by `Category:` and ordered by `Score:` per the reference. Count the rest as outside the change, and findings under score 4 or with no `Cite:` as hidden.
-   - A missing file → resume the reviewer once with SendMessage, then report `BLOCKED` with the path.
+   - A missing file → resume once per the gate resume rule, then report `BLOCKED` with the path.
    - End with: repairs go through `build`; nothing was posted and no file in the checkout changed.
 
 ## Judgment
 
 - A pull request comment is a side effect nobody can take back, so post none; `ship` owns comments.
-- The reviewer's `fix` and `report` marks stay in the print, because `build` reads them as repair tasks.

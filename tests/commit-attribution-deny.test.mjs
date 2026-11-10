@@ -20,8 +20,8 @@ const denies = async (command, extra) => (await decide(command, extra))?.permiss
 test('a plain commit whose message carries a co-author trailer is denied with the allowed form', async () => {
   const output = await decide(`git commit -m "fix: x\n\n${TRAILER}"`);
   assert.equal(output.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /same git commit/);
-  assert.match(output.permissionDecisionReason, /removed/);
+  assert.match(output.permissionDecisionReason, /git commit -F <file>/);
+  assert.match(output.permissionDecisionReason, /earlier call/);
 });
 
 test('a generated-with line is denied in every message form', async () => {

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { sleep } from '#basics';
 import { environmentDelayMs } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
 import { cacheRoot } from './ytdlp-binary.mjs';
@@ -10,10 +11,6 @@ const RATE_LIMITED = /HTTP Error (?:403|429|5\d\d)|Too Many Requests/i;
 const GONE = /private video|this video is private|has been removed|removed by|no longer available|video (?:is )?(?:unavailable|not available)|does not exist|HTTP Error (?:404|410)|account (?:has been |is )?(?:terminated|suspended)/i;
 const CONTENDED = new Set(['EEXIST', 'EPERM', 'EACCES', 'EBUSY']);
 const MAX_REASON = 160;
-
-function sleepFor(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function settingsOf(options) {
   const env = options.env ?? process.env;
@@ -26,7 +23,7 @@ function settingsOf(options) {
     staleMs: options.staleMs ?? DEFAULTS.gateStaleMs,
     pollMs: options.pollMs ?? DEFAULTS.gatePollMs,
     now: options.now ?? Date.now,
-    sleep: options.sleep ?? sleepFor,
+    sleep: options.sleep ?? sleep,
     random: options.random ?? Math.random,
   };
 }

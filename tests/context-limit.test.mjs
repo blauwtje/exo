@@ -141,7 +141,7 @@ test('a subagent past its soft limit is told to hand over, past its hard limit o
   const call = (tokens, tool_name) => contextDecision({ session_id: 'a', agent_id, agent_transcript_path: at(tokens), tool_name });
   const soft = call(AGENT_SOFT, 'Bash');
   assert.match(soft.additionalContext, /exo context limit/);
-  assert.match(soft.additionalContext, /result file/);
+  assert.match(soft.additionalContext, /handover/);
   assert.equal(call(AGENT_SOFT, 'Bash'), null);
   const hard = call(AGENT_HARD, 'Bash');
   assert.match(hard.deny, /Write, Edit and .*checkpoint\.mjs/);
@@ -368,4 +368,17 @@ test('a Reddit call refused three times gets three different refusals', () => {
   assert.match(text(call), /Reddit blocks this call/);
   assert.match(text(call), /refused once already/);
   assert.match(text(call), /record the gap/);
+});
+
+test('a subagent refusal names the Result path of its brief, or the reply', () => {
+  const dir = tempDir('exo-brief-');
+  const refusal = (brief, tokens) => {
+    const file = path.join(dir, `${Math.abs(brief.length)}-${tokens}.jsonl`);
+    const user = { type: 'user', message: { content: brief } };
+    const usage = { type: 'assistant', message: { usage: { input_tokens: tokens } } };
+    fs.writeFileSync(file, `${JSON.stringify(user)}\n${JSON.stringify(usage)}\n`);
+    return contextDecision({ session_id: 'a', agent_id: `b${process.pid}${tokens}`, agent_transcript_path: file, tool_name: 'Read' }).deny;
+  };
+  assert.match(refusal('Reads: none\nResult: .exo/r.md', AGENT_HARD), /write \.exo\/r\.md as a handover/);
+  assert.match(refusal('Reads: none\nResult: reply', TARGET + 1000), /reply with a handover/);
 });

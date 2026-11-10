@@ -10,7 +10,7 @@ export function cacheRoot(env, home) {
   return path.join(home, '.cache', 'exo');
 }
 
-function isExecutable(file) {
+export function isExecutable(file) {
   try {
     fs.accessSync(file, fs.constants.X_OK);
     return true;

@@ -17,7 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { writeAtomic } from '../../lib/basics.mjs';
-import { isPlain, readRecord } from '../install-files.mjs';
+import { isPlain, readRecord, sameInstall } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 
 export const name = 'claude';
@@ -59,7 +59,6 @@ function writeInstalls(file, installs) {
   writeAtomic(file, `${JSON.stringify({ version: 2, installs }, null, 2)}\n`);
 }
 
-const sameInstall = (left, right) => left.scope === right.scope && left.project === right.project;
 const matches = (install, selector) => (selector.scope === undefined || install.scope === selector.scope)
   && (selector.project === undefined || install.project === selector.project);
 

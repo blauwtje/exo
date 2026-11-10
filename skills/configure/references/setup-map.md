@@ -31,7 +31,6 @@ Ask each setting with the plain texts its entry in `../schema.json` holds, not i
 - Every remaining `choices` entry, then `Keep the rest`, become typed answers in the `Or type` line: ``Or type `<value>` for <label>, or `rest` to keep the rest.``
 - `Keep the rest` keeps every setting not yet asked.
 - `scope` has no `Keep the rest`.
-- An answer the `Or type` line names counts as that pick, like a letter.
 
 ## Judgment
 

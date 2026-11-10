@@ -8,7 +8,7 @@ allowed-tools: Bash(node *settings.mjs*), Bash(git remote get-url origin), Bash(
 
 # Settings
 
-Change exo's settings only through its own scripts, one named setting or every setting in one walk. The enemy is a value the user never picked: a guessed layer, or a walk that writes before its review. The overcorrection is a walk through every setting when the request named one.
+Change exo's settings only through its own scripts, one named setting or every setting in one walk. The enemy is a value the user never picked: a walk that writes before its review. The overcorrection is a walk through every setting when the request named one.
 
 ## When to use
 
@@ -32,7 +32,7 @@ Take the first step the request and answers so far leave open.
    - When a topic is picked, run `menu work`, `menu places` or `menu safety` and relay it the same way.
 3. **Ask the value.** When the setting is known and the value is not, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
 4. **Pick the layer.** When the request names no layer, use project scope: it reaches every collaborator, not only you, and only a named local or global layer changes that. The closing line names the layer used, so the choice stays visible.
-5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change.
+5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change. Rerun the write at most once when `show` does not match, then relay what `show` prints.
    - When the script rejects the value, relay the rejection as printed and change nothing by hand.
    - For a project value, add one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
 
@@ -60,4 +60,3 @@ Follow `references/setup-map.md` from its first step. Leave every answer to the 
 - A project or local value outranks a global one.
 - When the user picks every project for a key that a project or local layer holds, the report names that layer, because the new value stays hidden there.
 - Scripts' output outranks any value in context, including the session's `exo settings:` line read at session start.
-- Every delegate that writes code reads `../../lib/references/lean.md` itself. The session text carries no pointer to it and no switch exists, so a request to switch it off gets that answer and runs nothing.

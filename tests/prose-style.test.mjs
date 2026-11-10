@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { hashedWholeFiles } from '../benchmarks/routing.mjs';
+import { hashedWholeFiles } from '../lib/hashed-files.mjs';
 import { proseStyleRow, proseStyleRows, violates } from '../verify/prose-style.mjs';
 import { tempDir } from './harness.mjs';
 

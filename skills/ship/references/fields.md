@@ -14,7 +14,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs"
 ## Pick the vocabulary
 
 1. **`vocabulary: own`.** Use the repository's own names and options only. A field it lacks stays off and is named in the report, not approximated or created.
-2. **`vocabulary: default`.** Create each missing label with `gh label create "<name>" --color <hex> --force`. Use `type: feature`, `type: bug` or `type: chore` in `1d76db`, `size: XS` to `size: XL` in `c5def5`, and `priority: P0`, `priority: P1` or `priority: P2` in `fbca04`.
+2. **`vocabulary: default`.** Create each missing label with `gh label create "<name>" --force`. Use `type: feature`, `type: bug` or `type: chore`, `size: XS` to `size: XL`, and `priority: P0`, `priority: P1` or `priority: P2`.
 
 Create no project, field or milestone. An estimate has no label form, so it stays unset.
 

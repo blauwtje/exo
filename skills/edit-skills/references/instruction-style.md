@@ -51,7 +51,7 @@ This guide covers `CLAUDE.md`, rules, skills, agents, output styles and hook tex
 - Keep a rule that must hold every time in `CLAUDE.md` or a check, because `.claude/rules/*.md` with `paths:` loads unreliably.
 - An `@` import organizes the file and cuts no context, since imported text loads at launch.
 - Keep `CLAUDE.md` under 60 lines. Move material only some paths need to a reference, one level deep, loaded through a pointer that names when to open it.
-- Keep a skill body under 200 words where possible; `## Form` in the edit-skills skill gives the token aim and the cap. A skill file stays under 500 lines, a hard cap.
+- `## Form` in the edit-skills skill gives the skill body token aim and cap. A skill file stays under 500 lines, a hard cap.
 - Keep a load path (skill body plus the references it reads) under about 150 rules.
 - The verifier fails a sentence over 40 words and a list item of 3 or more sentences.
 - Put a rule that must hold every time in a verifier in `npm run check`, since a hook adds overhead to every session.

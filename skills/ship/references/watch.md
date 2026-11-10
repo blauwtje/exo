@@ -22,7 +22,7 @@ Work in this order:
 
 ## The stop conditions
 
-- At the round limit short of green, stop, summarize what remains and hand back.
+- At the round limit (three) short of green, stop, summarize what remains and hand back.
 - Call it ready when the build is green, every comment is resolved and the branch merges cleanly.
 - The draft stays a draft until then, because marking it ready earlier misrepresents its state.
 - When the next fix needs a design choice, stop and ask the user to make it.
@@ -37,4 +37,3 @@ Work in this order:
 
 - Name fixes applied as a count and commit range (`<first>..<last>`), a lone SHA only for a fix the user must act on, comments addressed or deferred with a reason.
 - Name current status, what is pending, what needs the human.
-- Offer any team-useful dismissal pattern from the round's triage as a candidate rubric entry.

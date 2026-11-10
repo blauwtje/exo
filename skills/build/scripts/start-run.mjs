@@ -15,6 +15,7 @@ import { frameOf, openPoints } from '#plan-frame';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
+import { gitText } from '../../../lib/git.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
@@ -30,11 +31,7 @@ const HELP = [
   'A refusal (zero or several plans, a --checkout that is not a checkout, a plan failing plan-check --loop --run) exits 1 with one line naming the cause and the next command.',
 ].join('\n');
 
-export class RefusalError extends Error {}
-
-function gitLine(root, args) {
-  return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
-}
+class RefusalError extends Error {}
 
 function markdownFiles(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -52,22 +49,22 @@ function planFrame(file) {
   }
 }
 
-export function candidatePlans(root, repository) {
+function candidatePlans(root, repository) {
   const directories = [...PLAN_DIRECTORIES.map((dir) => path.join(root, dir)), path.join(os.homedir(), '.claude', 'plans')];
   return directories.flatMap(markdownFiles)
     .map((file) => ({ file, frame: planFrame(file) }))
     .filter(({ frame }) => frame !== null && frame.repository === repository);
 }
 
-export function pickPlans(candidates, branch) {
+function pickPlans(candidates, branch) {
   const onBranch = candidates.filter(({ frame }) => frame.branch === branch);
   return onBranch.length > 0 ? onBranch : candidates;
 }
 
-export function resolvePlan(root) {
-  const repository = gitLine(root, ['rev-parse', '--show-toplevel']);
+function resolvePlan(root) {
+  const repository = gitText(root, ['rev-parse', '--show-toplevel']);
   // why: git branch --show-current prints an empty line on a detached HEAD.
-  const branch = gitLine(root, ['branch', '--show-current']);
+  const branch = gitText(root, ['branch', '--show-current']);
   const candidates = candidatePlans(root, repository);
   if (candidates.length === 0) {
     throw new RefusalError(`no plan under docs/plans/, docs/specs/ or ~/.claude/plans/ names Repository: ${repository}. Next: rerun with --plan <path> naming the plan.`);
@@ -114,7 +111,7 @@ function main(argv) {
 
 function excludedFromPreRunCommit(checkout, planPath) {
   const top = realpathSync(checkout);
-  const listed = gitLine(checkout, ['worktree', 'list', '--porcelain']).split('\n')
+  const listed = gitText(checkout, ['worktree', 'list', '--porcelain']).split('\n')
     .filter((line) => line.startsWith('worktree ')).map((line) => line.slice('worktree '.length));
   const real = (file) => path.join(realpathSync(path.dirname(path.resolve(file))), path.basename(file));
   return [real(planPath), real(decisionsPathOf(planPath)), ...listed]
@@ -123,12 +120,12 @@ function excludedFromPreRunCommit(checkout, planPath) {
 }
 
 function commitPreexistingWork(checkout, planPath) {
-  gitLine(checkout, ['add', '-A', '--', '.']);
+  gitText(checkout, ['add', '-A', '--', '.']);
   const excluded = excludedFromPreRunCommit(checkout, planPath);
-  if (excluded.length > 0) gitLine(checkout, ['reset', '-q', '--', ...excluded]);
-  if (gitLine(checkout, ['diff', '--cached', '--name-only']) === '') return;
-  gitLine(checkout, ['commit', '-q', '-m', PRE_RUN_COMMIT]);
-  process.stdout.write(`start-run: committed pre-existing work as ${gitLine(checkout, ['rev-parse', '--short', 'HEAD'])} (${PRE_RUN_COMMIT}).\n`);
+  if (excluded.length > 0) gitText(checkout, ['reset', '-q', '--', ...excluded]);
+  if (gitText(checkout, ['diff', '--cached', '--name-only']) === '') return;
+  gitText(checkout, ['commit', '-q', '-m', PRE_RUN_COMMIT]);
+  process.stdout.write(`start-run: committed pre-existing work as ${gitText(checkout, ['rev-parse', '--short', 'HEAD'])} (${PRE_RUN_COMMIT}).\n`);
 }
 
 // why: the status line reads this record; a failure here must never fail the run start.

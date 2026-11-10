@@ -29,7 +29,7 @@ Use a perspective that has not seen the implementation reasoning. Give it exactl
 
 ## When no separate context exists
 
-State that no separate context was available. Run the seven checks in order, re-reading the request before the diff. Do not claim a separate review occurred.
+State that no separate context was available. Run the nine checks in order, re-reading the request before the diff. Do not claim a separate review occurred.
 
 ## Judgment
 

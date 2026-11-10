@@ -21,6 +21,6 @@ test('three identical refused calls give three distinct outputs', () => {
   const session = `s-${process.pid}-d`;
   const outputs = [1, 2, 3].map(() => refusalText(call(session), options));
   assert.equal(new Set(outputs).size, 3);
-  assert.ok(outputs[1].length <= 160);
+  assert.ok(outputs[1].includes('follow the first refusal: guard'));
   assert.match(outputs[2], /record the gap/);
 });

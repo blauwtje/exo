@@ -20,7 +20,7 @@ A buyer judges the product, not the slogan, so a marketing page that shows the p
 ## Rhythm
 
 - Bands: alternate in value or hue (deep, light, coloured), so the scroll has a beat. Equal pale bands merge into one blank field.
-- Surfaces: a large band gets a surface treatment in the world's terms (grain, halftone, weave, a gradient of light), so no band is one flat value edge to edge.
+- Surfaces: no band is one flat value; a large band follows the large-ground rule in color.md.
 - Density: follow the contract's density line; a tight page shortens gaps between sections, an airy one keeps them but still fills each band.
 
 ## Section patterns

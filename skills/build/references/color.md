@@ -21,9 +21,6 @@ Color is a system, not an accent. Build it from the direction's world: the mater
 - Non-text contrast: borders of inputs, icons and focus rings at 3:1 or more against their ground, so controls stay findable.
 - Body text on dark: a tinted off-white, not pure `#FFF`, which halates on a dark ground and tires the eye.
   - Good: `color: #E9E4D8` on a deep green ground. Bad: `color: #FFFFFF` on the same ground.
-- Hover: a lightness change of 8% or more; a smaller shift is invisible on most screens.
-  - Good: a button from 45% to 55% lightness on hover. Bad: 45% to 47%, which no one sees.
-- Disabled: about 40% opacity, which reads as off without vanishing.
 
 ## Materials and depth
 

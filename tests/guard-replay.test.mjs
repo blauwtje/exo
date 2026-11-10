@@ -45,3 +45,11 @@ test('rejects an unknown family', () => {
   const run = spawnSync('node', [SCRIPT, '--family', 'nope', '--projects', os.tmpdir()], { encoding: 'utf8', timeout: 30000 });
   assert.notEqual(run.status, 0);
 });
+
+test('--counts prints the refusal count per rule id since a date', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-counts-test-'));
+  const projects = fixture(root);
+  const run = (since) => spawnSync('node', [SCRIPT, '--counts', '--since', since, '--projects', projects], { encoding: 'utf8', timeout: 60000 });
+  assert.equal(run('2026-11-06').stdout.trim(), 'stash 2');
+  assert.equal(run('2026-11-07').stdout.trim(), '');
+});

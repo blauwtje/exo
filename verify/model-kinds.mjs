@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { escapeRegExp } from '#basics';
 import { readKindTable } from '../lib/model-kinds.mjs';
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
@@ -10,10 +11,6 @@ function readField(text, field) {
   if (opening === null) return null;
   const line = opening[1].split('\n').find((row) => row.startsWith(`${field}:`));
   return line === undefined ? null : line.slice(field.length + 1).trim();
-}
-
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function opensWithKind(match, kind) {

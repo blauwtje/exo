@@ -9,11 +9,6 @@ export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name
 export const ALLOWED_EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'];
 export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 
-// First-party documentation caps one hook output string at HOOK_OUTPUT_CAP
-// characters and hands the model a 2,000-character preview of a longer one.
-// hooks/session-start.mjs injects only this context: the text of hooks/session-routing.md and hooks/session-rules.md first,
-// then the pointers and the settings line, so the static text is a shared prefix, and stays far under the cap.
-export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 2764, measured: '2026-11-03' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 // Lowered 803 -> 510 when the nine dispatched-only agents got short descriptions (round 2 merge).
@@ -26,13 +21,13 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 592, measured: '2026-11-06'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 4072, measured: '2026-11-07' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 4009, measured: '2026-11-10' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-budgets.mjs fails above it.
 // Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.
-export const HOOK_LINES_LOCK = { lines: 1098, measured: '2026-11-05' };
+export const HOOK_LINES_LOCK = { lines: 958, measured: '2026-11-10' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
-export const HOOK_TEXT_BYTES_LOCK = { bytes: 6131, measured: '2026-11-05' };
+export const HOOK_TEXT_BYTES_LOCK = { bytes: 5891, measured: '2026-11-10' };
 export const HOOK_SPAWN_MS_LOCK = { ms: 30, measured: '2026-11-06' };
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
 // large test file is split before it lands.
@@ -45,7 +40,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 1370, measured: '2026-11-03' };
+export const SESSION_LOAD_LOCK = { words: 1091, measured: '2026-11-10' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/hook-budgets.mjs fails above it.
@@ -55,17 +50,7 @@ export const SESSION_LOAD_LOCK = { words: 1370, measured: '2026-11-03' };
 // Raised 1745 -> 1926 with the TaskStop rule line.
 // Raised 1926 -> 1950 with the context limit on the settings line.
 // Raised 1950 -> 2141 with the green-command-as-typed rule.
-export const SESSION_START_BYTES_LOCK = { bytes: 4337, measured: '2026-11-03' };
-// Entries in verify/instruction-density-allowlist.txt; a lower count after
-// --prune is copied in by hand, and tests fail until it is.
-export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };
-
-// The rendered project-memory file, which a session opens by path. It is a
-// ceiling the writer enforces before it writes, not a lock the verifier reads:
-// a file that only grows costs more to read than it saves, and one irrelevant
-// line measurably lowers accuracy.
-export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
-
+export const SESSION_START_BYTES_LOCK = { bytes: 4011, measured: '2026-11-10' };
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
 // BYTES_PER_TOKEN, the sizing convention for skill text. The ceiling fails; realistic is the aim edit-skills
 // states and the checks name in their PASS detail.
@@ -86,24 +71,24 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 // lock only ever moves down; a locked file that drops to 750 tokens or under
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
-  'skills/build/references/color.md': 826,
-  'skills/build/references/design-ui.md': 2071,
-  'skills/build/references/improve.md': 1553,
+  'skills/build/references/color.md': 764,
+  'skills/build/references/design-ui.md': 1910,
+  'skills/build/references/improve.md': 1544,
   'skills/build/references/layout.md': 984,
-  'skills/build/references/marketing.md': 924,
-  'skills/build/references/refactor.md': 857,
+  'skills/build/references/marketing.md': 908,
+  'skills/build/references/refactor.md': 853,
   'skills/build/references/typography.md': 968,
-  'skills/ship/references/fields.md': 1305,
-  'skills/build/references/critique.md': 799,
+  'skills/ship/references/fields.md': 1293,
+  'skills/build/references/critique.md': 798,
   'skills/build/references/data-migration.md': 874,
   'skills/build/references/security.md': 1028,
   'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 963,
   'skills/build/run-task-prompt.md': 782,
-  'skills/ship/references/pr-prep.md': 845,
+  'skills/ship/references/pr-prep.md': 841,
   'skills/spec/references/brief.md': 994,
   'skills/spec/references/task-list.md': 1124,
-  'skills/spec/references/worker-modes.md': 1627,
+  'skills/spec/references/worker-modes.md': 1534,
 };
 // lib/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
@@ -120,3 +105,6 @@ export const SCRIPT_OUTPUT_EXEMPT = ['skills/build/scripts/remove-worktree.mjs',
 // Bytes of each tracked .mjs file outside tests/; verify/checks/module-size.mjs fails above it.
 // A file already over it is held at its measured size in verify/module-size-ceilings.txt, a list that only shrinks.
 export const MODULE_FILE_CAP = { bytes: 8 * 1024 };
+
+export const LOADED_PROSE_LOCK = { bytes: 317520 };
+export const LOADED_PROSE_ROOTS = ['skills', 'agents', 'hooks', 'lib/references', 'lib/agent-modes', 'output-styles'];

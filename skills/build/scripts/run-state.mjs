@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { readJsonOrNull, sleepSync, writeAtomic } from '#basics';
+import { isAlive } from '#land-lock';
+
+export { isAlive };
 
 export const PHASES = ['starting', 'build', 'verify', 'landing', 'passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
@@ -20,16 +23,6 @@ export function liveLogFile(root) {
 
 export function runDir(root, id) {
   return path.join(runsDir(root), id);
-}
-
-export function isAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (err) {
-    return err.code === 'EPERM';
-  }
 }
 
 export function newRunId(now = new Date()) {

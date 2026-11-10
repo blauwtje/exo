@@ -12,3 +12,9 @@ test('read-only stash subcommands are allowed', () => {
 test('every mutating stash form is still refused', () => {
   for (const command of refused) assert.equal(sharedStateSubcommand(command), 'stash', command);
 });
+
+test('a stash write inside a data heredoc is not denied, inside a shell heredoc it is', async () => {
+  const { sharedStateSubcommand } = await import('../lib/git-deny.mjs');
+  assert.equal(sharedStateSubcommand("python3 <<'EOF'\ngit stash\nEOF"), undefined);
+  assert.equal(sharedStateSubcommand("zsh <<'EOF'\ngit stash\nEOF"), 'stash');
+});

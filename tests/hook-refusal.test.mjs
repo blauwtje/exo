@@ -24,7 +24,7 @@ function assertEscalates([guard, reminder, stop], route) {
   assert.doesNotMatch(guard, /refused once already/);
   assert.match(reminder, /refused once already/);
   assert.ok(reminder.includes(route), reminder);
-  assert.ok(reminder.length <= 160, reminder);
+  assert.doesNotMatch(reminder, /\.\.$/);
   assert.match(stop, /record the gap/);
 }
 
@@ -38,19 +38,19 @@ test('dispatch-edit escalates three identical too-deep writes', async () => {
   const file = path.join(tempDir('hook-refusal-'), 'tool.mjs');
   const input = { session_id: session('edit'), tool_name: 'Write', tool_input: { file_path: file, content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' } };
   const reasons = await threeReasons(() => dispatchEdit(input, off));
-  assertEscalates(reasons, 'instead, ');
+  assertEscalates(reasons, 'Do instead: ');
 });
 
 test('agent-effort escalates three identical oversized orchestrator calls', async () => {
   const input = { session_id: session('agent'), tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', description: 'd', prompt: 'Workers: 99\nReads: none' } };
   const reasons = await threeReasons(() => agentHook(input, undefined, off));
-  assertEscalates(reasons, 'instead, ');
+  assertEscalates(reasons, 'Do instead: ');
 });
 
 test('run-stall-guard escalates three identical land-task calls', async () => {
   const input = { session_id: session('stall'), tool_name: 'Bash', tool_input: { command: 'cd x && node land-task.mjs plan.md 1' } };
   const reasons = await threeReasons(() => stallGuardInput(input));
-  assertEscalates(reasons, 'instead, ');
+  assertEscalates(reasons, 'Do instead: ');
 });
 
 test('context-limit still escalates a repeated Reddit call', async () => {

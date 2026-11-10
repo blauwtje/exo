@@ -23,7 +23,7 @@ const HANDSHAKE = /When a new visual surface does not name [^.]+; design-ui foll
 
 const PINNED_SENTENCES = {
   'skills/spec/SKILL.md': [
-    'Spec always ends on a brief; with no open decision the brief still gets written.',
+    'Spec ends on a brief unless the verdict is `stop`; with no open decision the brief still gets written.',
     'An open decision is one the user would notice that neither request nor code settles.',
     'Not for a clear goal, a failure, or visual-only work.',
   ],
@@ -31,6 +31,7 @@ const PINNED_SENTENCES = {
     'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
   ],
   'skills/find-cause/SKILL.md': [
+    'Change only what the request names.',
     'when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary',
     'Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1.',
   ],
@@ -43,11 +44,18 @@ const PINNED_SENTENCES = {
     ...BREADTH_LIMITS,
   ],
   'skills/edit-skills/SKILL.md': [
+    'Change only what the request names.',
     `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens and ${DESCRIPTION_CHARS.ceiling} characters.`,
     `A reference holds one topic and links to no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
   ],
   'skills/edit-skills/references/description.md': [
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
+  ],
+  'skills/write-docs/SKILL.md': [
+    'Change only what the request names.',
+  ],
+  'agents/task-runner.md': [
+    'Change only what the request names.',
   ],
   'README.md': [
   ],

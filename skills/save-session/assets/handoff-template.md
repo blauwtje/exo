@@ -11,9 +11,6 @@ Written: <date>, last commit <short commit code>, branch <name>
 ## Decisions
 - <The decision>, decided by <the user | this session>
 
-## Files touched
-- <path>: <what changed there, in one clause>
-
 ## Proven
 - <The claim>: <the command that proved it>, <what it showed>
 
@@ -30,5 +27,3 @@ Written: <date>, last commit <short commit code>, branch <name>
 <The fixed paragraph from the skill.>
 
 Resume: <One sentence in the user's language: read this handoff at its path and continue.>
-
-<!-- Write every line in the user's language, in plain words. Leave out a section the session has nothing true for, except Resume. -->

@@ -20,6 +20,5 @@ Apply these in order, rerun after each, and stop at the first rerun that passes.
 
 Ask the failed run how the skill should have been worded, then act on the kind of answer.
 
-- The skill was clear and the model went its own way: add the letter-and-spirit line and a bright line, because wording was not the gap.
 - The model proposes a specific sentence: add it in its words.
 - The model never noticed a section: move that section earlier or into the opening, and add nothing.

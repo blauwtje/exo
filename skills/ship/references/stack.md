@@ -15,8 +15,7 @@ Goal: ship a plan branch as a chain of small pull requests, one per wave, and me
 
 ## Choices
 
-- One pull request per wave, not per task, because each pull request costs one CI run and one review.
-- Gate once on the tip, and per pull request only inside `--merge`.
+- One pull request per wave, not per task, as each costs one CI run and one review; gate each only inside `--merge`.
 - Sync a child to the default branch with a merge commit and retarget it, never a rebase or force push.
 
 ## Merging

@@ -24,10 +24,9 @@ A decided change with no plan file runs these steps instead of the loop, so a sm
    - For a risky change, read the test-design reference first.
    - *Done* needs a `Proof: <command or MCP tool> -> <output>` line from a real call this session made on input it did not write. Otherwise write `Unverified: <reason>` and do not claim Done.
    - A test runner is no proof, unless `package.json` names no `bin` and no `scripts.start`.
-   - For a risky change, quote failing output before the first production edit and passing output after.
    - For a test-first bug, commit its failing test alone, because a test committed with its fix does not show it failed.
    - Otherwise exercise the feature, else run a test that failed before, else type check and build.
    - Run runners unpiped and without `cd &&`, which hide the failing command.
-6. **Project knowledge.**
-7. **Fresh eyes.**
+6. **Project knowledge.** Read the project-knowledge reference when proof reveals a missing command.
+7. **Fresh eyes.** Read the fresh-eyes reference.
 8. **Commit.** Commit where step 3 placed it, leaving out its pre-existing paths, then end on `ship`, unless the request rules out a push. In that case say nothing left the machine.

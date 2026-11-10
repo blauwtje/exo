@@ -19,7 +19,6 @@ Goal: turn a dirty tree into ordered commits that together equal the tree, appli
 
 ## Rules
 
-- The script refuses a plan that omits a changed file, lists a file twice or one that is not changed, has an empty group, a non-conventional subject, or text that credits an AI.
 - Apply resets the index first, so a hand-staged split is replaced by the plan. The working tree is never touched.
 - Commit hooks run as usual; a failed hook stops the split with the earlier commits kept and the rest left in the tree.
-- A pushed commit is never rewritten here; the split only adds new commits on the current branch.
+- A pushed commit is never rewritten here; the split only adds new commits on the current branch, not a rewrite.

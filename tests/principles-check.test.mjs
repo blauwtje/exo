@@ -161,3 +161,11 @@ test('the principles index states the value rule and CONTRIBUTING names it', () 
   assert.match(index, /unsure → speed-ledger line/);
   assert.match(fs.readFileSync(path.join(ROOT, 'CONTRIBUTING.md'), 'utf8'), /value rule/);
 });
+
+test('a [9] bullet without a check module fails and one with it passes', () => {
+  const bullet = (cite) => `- **Rule.** Reason. [9] exo: \`skills/x.md\`${cite}\n`;
+  const files = (cite) => ({ 'README.md': '# P\n\n[a](./prompt.md)\n', 'prompt.md': page(today, bullet(cite)) });
+  const extra = { 'skills/x.md': 'x', 'verify/checks/y.mjs': 'y' };
+  assert.ok(run(files(''), extra).some((line) => line.includes('without a check module')));
+  assert.deepEqual(run(files(', `verify/checks/y.mjs`'), extra).map((line) => line.slice(0, 4)), ['PASS']);
+});

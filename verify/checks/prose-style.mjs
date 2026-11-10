@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { hashedWholeFiles } from '../../benchmarks/routing.mjs';
+import { hashedWholeFiles } from '../../lib/hashed-files.mjs';
 import { proseStyleRows, violates } from '../prose-style.mjs';
 
 const DIRECTORIES = ['skills', 'agents', 'hooks', 'output-styles'];

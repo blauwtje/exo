@@ -8,7 +8,7 @@ argument-hint: "[plan path] [--task <n>] [--land]"
 
 # Build
 
-Build lands a plan through a **unit** (`exo:task-runner`) and the **tail** (step 7).
+Build lands a plan through a **unit** and the **tail** (step 7).
 
 ## The loop
 
@@ -49,7 +49,7 @@ Decided change, no plan file → `references/no-spec.md`. After a compaction, re
 | `drift-repairer-prompt.md` | Unit. |
 | `references/agent-cases.md` | Agents. |
 | `references/fix-class.md` | Repairs. |
-| `bug-fixer-prompt.md` | Step 6, deferred MCP failure. |
+| `bug-fixer-prompt.md` | Step 6, a repair. |
 | `review-fixer-prompt.md` | `gate`. |
 | `references/design-tasks.md` | `Design:` line. |
 | `run-task-prompt.md` | `run-plan.mjs`. |

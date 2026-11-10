@@ -175,6 +175,7 @@ const cases = {
   'shared-state': () => bash('git worktree remove x', agent),
   'wide-find': () => bash('find / -name x'),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
+  'commit-evidence': () => bash('git commit -m "fix: x\n\nEvidence: ran the tests"'),
   'script-size': () => bash(LONG, { ...agent, cwd: '/nonexistent/deep' }),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
   watch: () => bash(['gh pr checks 1 --wat', 'ch'].join(''), { ...agent, agent_type: 'exo:task-runner' }),
@@ -215,7 +216,23 @@ const cases = {
   'brief-over-fetches': () => refuse('Reads: none\nFetches: 19\nSources: web', 'exo:research-worker'),
   'brief-cuts-page': () => refuse('Reads: none\nSources: web\ngh api x | head -c 4000', 'exo:research-worker'),
   'brief-over-budget': () => refuse('Reads: big.txt\nResult: .exo/r.md'),
-  'slice-spent': () => sliceSpent()
+  'slice-spent': () => sliceSpent(),
+  'orchestrator-reads': () => denyReason('orchestrator-reads', '', { named: 'brief.md' }),
+  'orchestrator-budget': () => denyReason('orchestrator-budget', '', { limit: 5 }),
+  'reddit-route': () => redditRouteDecision({ tool_name: 'WebFetch', tool_input: { url: 'https://www.reddit.com/r/a' } }).deny,
+  'repeat-refusal': () => repeated(2),
+  'repeat-stop': () => repeated(3)
+};
+
+const { redditRouteDecision } = await import('../lib/reddit-route.mjs');
+const { refusalText } = await import('../lib/refusal-memory.mjs');
+
+const repeated = (times) => {
+  const hookInput = { session_id: `guard-rules-${process.pid}-${times}`, tool_name: 'WebSearch', tool_input: { query: 'x' } };
+  fs.rmSync(path.join(os.tmpdir(), `exo-refusals-${hookInput.session_id}.json`), { force: true });
+  let text = '';
+  for (let hit = 0; hit < times; hit += 1) text = refusalText(hookInput, { guard: 'g', guardText: 'first Do instead: go' });
+  return text;
 };
 
 const denies = (row) => Boolean(row.rule || row.allowed);
@@ -225,6 +242,8 @@ const partText = (reason, text) => {
 };
 
 const proofs = {
+  'repeat-refusal': (reason) => assert.ok(reason.includes('follow the first refusal: first Do instead: go'), reason),
+  'reddit-route': (reason) => assert.ok(reason.includes('--source reddit --query <text> --run <run-dir>; for a thread run search.mjs --url <thread-url>'), reason),
   'brief-ambiguous-name': (reason) => partText(reason, rules.rulePart('brief-ambiguous-name', { matches: '{m}' })),
   'brief-missing-path': (reason) => partText(reason, GUARD_RULES.find((row) => row.id === 'brief-missing-path').rule),
   'brief-worktree': (reason) => assert.ok(reason.includes(rules.allowedPart('brief-worktree', { dir: holder })), reason),
@@ -304,7 +323,7 @@ for (const [name, command] of [
   ['-F unreadable file', `printf '%s' '${TRAILER}' > m.txt && git commit -F m.txt`]
 ]) {
   test(`attribution is denied for ${name}`, async () => {
-    assert.match(await bash(command), /Do instead: run the same git commit again/);
+    assert.match(await bash(command), /Do instead: write the message .* to a file in an earlier call, then run `git commit -F <file>`/);
   });
 }
 
@@ -396,4 +415,15 @@ test('the Bash brief carries the speed contract C1 to C4 and the byte budget hol
   assert.ok(GUARD_RULES.some((row) => row.id === 'suite' && row.brief));
   assert.ok(GUARD_RULES.some((row) => row.id === 'watch' && row.brief));
   assert.ok(Buffer.byteLength(lines) < 4000, `prelude ${Buffer.byteLength(lines)} bytes`);
+});
+
+test('the repeat refusal row carries the first refusal text', () => {
+  const reason = denyReason('repeat-refusal', '', { first: 'first text' });
+  assert.match(reason, /refused once already.*follow the first refusal: first text/);
+});
+
+test('the deny reason check fails a deny text returned from a template literal', () => {
+  const [verdict] = denyReasonVerdicts({ 'lib/template.mjs': 'export const f = (key) => ({ deny: `ran ${key} twice` });\n' });
+  assert.equal(verdict.status, 'FAIL');
+  assert.match(verdict.detail, /^lib\/template\.mjs:1 /);
 });

@@ -12,7 +12,6 @@ description: <The moments it fires, then "Not for ..." naming the cases it leave
 
 <The principle in one sentence. Produce <the output this skill yields>. Avoid <concrete list of the mistakes this prevents>.>
 
-Add "The overcorrection is <the mistake this must not create>." only when a recorded run shows over-application. An existing enemy/overcorrection opening migrates to this shape when that skill is next edited.
 
 ## When to use
 

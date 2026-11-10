@@ -5,12 +5,12 @@ Goal: open a pull request a reviewer can read, with small ordered commits and a 
 ## Worktree hygiene
 
 - Before a commit, merge or deploy from a worktree, halt every agent running in it, down to agents a delegate spawned. A brief stays with its agent, so no read-only order reaches them.
-- Verify each halt, then read `git status` and the tree that will ship.
+- Verify each halt with `ps -axo command`, then read `git status` and the tree that will ship.
 - When the branch mixes in unrelated work, patch the change out and apply it in a fresh worktree from the base.
 
 ## Commit story
 
-- Regroup only commits not yet pushed. A pushed commit changes only through a force push, which nothing here authorizes.
+- Regroup only commits not yet pushed. A pushed commit changes only by a new commit.
 - Commit liberally while working, then rebase into small, ordered, individually-landable commits before opening the PR.
 - Amend a fix to a just-made commit and give a separable fix its own commit.
 - Regroup in the usual dependency order: schema or storage, core logic, wiring and integration, UI or surface behavior, tests.
@@ -36,7 +36,7 @@ Goal: open a pull request a reviewer can read, with small ordered commits and a 
 - Skip `## Summary` and `## Test plan`.
 - Do not repeat the subject line in a commit body.
 - Leave out full SHAs, narration of parallel or contest runs, essays on lever corrections, checklists walking every file, "CLEAN" verdicts.
-- Keep the PR body under about 40 lines, because it is the squash commit body.
+- Keep the PR body to 40 lines (`wc -l`), as it is the squash commit body.
 - Add video or screenshots only when they prove a claim.
 - Write the sections in order and drop one with nothing to say:
   - `## Why` gives the goal and how the change reaches it in at most two brief paragraphs, and links any issue, dashboard or design doc giving the intent. It has no SHAs, rebase genealogy or "based on main" preamble.

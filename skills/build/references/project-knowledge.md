@@ -1,4 +1,4 @@
-Read this when proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from the root `AGENTS.md` or `CLAUDE.md`, or when a recurring correction could become a lint, type, or check instead of a text line.
+Read this when proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from the root `AGENTS.md` or `CLAUDE.md`.
 
 # Retain project knowledge
 
@@ -6,7 +6,6 @@ Turn a lesson learned this session into something the next session reads unpromp
 
 ## Append the line, or build the check
 
-- Build a lint, type or check for a recurring correction before writing a text line, when the repository can hold one.
 - When proof reveals a build, test, or run command missing from root `AGENTS.md` (root `CLAUDE.md` when `AGENTS.md` is absent), append one line there.
 - When neither file exists, create nothing.
 

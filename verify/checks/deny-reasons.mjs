@@ -8,7 +8,8 @@ const LITERAL_DENIES = [
   new RegExp(`\\bdeny\\b.*\\breason:\\s*${QUOTE}`),
   new RegExp(`\\bdeny\\(\\s*${QUOTE}`),
   new RegExp(`\\b(?:const|let)\\s+reason\\s*=\\s*${QUOTE}`),
-  /_REASON\s*=/
+  /_REASON\s*=/,
+  /\bdeny:\s*`/
 ];
 
 export function literalDenyLines(text) {

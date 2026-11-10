@@ -12,10 +12,10 @@
    - Skip it once when `run started` prints a `Plan:` line.
    - `Route: inline` prints `Steps:` and each task's section. Follow them, not steps 4-6.
    - Only a `Plan-task:` commit shows what landed.
-   - On a restart, write one line naming landed tasks and the next. Later loops are silent.
+   - On a restart, write one line naming landed tasks and the next.
 4. **Take the block from the `Block:` line.**
    - A `Design:` line routes its task per the design tasks reference, then repeat step 3.
-   - An open choice the user would miss stops the run with a question. Rule on any other and record it in the commit.
+   - A choice that changes public behavior, data or cost stops the run with a question; rule on any other in the commit.
 5. **Dispatch the unit.** Send the `Block:` tasks to `exo:task-runner`, silently with `run_in_background: false`, keeping the turn open.
    - Name plan path, branch, checkout and exactly the `Block:` tasks.
    - The tail (`gate`) stays here, in no runner brief.

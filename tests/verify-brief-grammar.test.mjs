@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { briefFailures } from '../verify/checks/brief-grammar.mjs';
+import { briefFailures, limitFailures } from '../verify/checks/brief-grammar.mjs';
 import { createRepository } from '../verify/repository.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -39,4 +39,20 @@ test('a general-purpose delegate template with no Reads: or Fetches: line fails'
   const text = 'Dispatch a `general-purpose` delegate whose prompt opens with `exo-kind: lookup`.\n';
   assert.match(briefFailures(repositoryWith({ 'skills/build/SKILL.md': text }))[0], /skills\/build\/SKILL\.md briefs a general-purpose delegate but shows no Reads: or Fetches: line/);
   assert.deepEqual(briefFailures(repositoryWith({ 'skills/build/SKILL.md': `${text}Add a \`Reads: <paths>\` line.\n` })), []);
+});
+
+test('agent texts that drop the reads count, budget or Fetches: rule fail by name', () => {
+  const files = { 'agents/orchestrator.md': 'Read freely.\n', 'hooks/dispatch-rules.md': 'Fetches: <n>\n' };
+  const found = limitFailures(repositoryWith(files));
+  assert.equal(found.length, 5);
+  assert.match(found[0], /does not state the reads count \(at most 4 reads\)/);
+});
+
+test('the shipped agent texts state the limits', () => {
+  assert.deepEqual(limitFailures(createRepository(process.cwd())), []);
+});
+
+test('a repository without agents/orchestrator.md fails by naming the file', () => {
+  const found = limitFailures(repositoryWith({ 'hooks/dispatch-rules.md': 'Fetches: <n>\n' }));
+  assert.ok(found.includes('agents/orchestrator.md is missing'));
 });

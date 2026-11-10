@@ -37,3 +37,14 @@ test('stopping with no record does nothing', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dev-server-'));
   assert.equal(stopDevServer(path.join(dir, 'state.json')), false);
 });
+
+test('a record whose pid belongs to a process this user cannot signal is not reused', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dev-server-'));
+  const stateFile = path.join(dir, 'state.json');
+  const port = await freePort();
+  const command = serverCommand(port);
+  fs.writeFileSync(stateFile, JSON.stringify({ devServer: { pid: 1, port, command } }));
+  const record = await ensureDevServer({ stateFile, command, port, cwd: dir });
+  assert.notEqual(record.pid, 1);
+  stopDevServer(stateFile);
+});

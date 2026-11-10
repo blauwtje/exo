@@ -13,7 +13,7 @@ const SHOWN_HASH_LENGTH = 12;
 const CHECK_NAME = 'rule retention';
 const CHECKED_FILE = /^skills\/[^/]+\/(?:SKILL\.md|references\/[^/]+\.md)$/;
 const DIFF_PATHSPEC = ['skills/*/SKILL.md', 'skills/*/references/*.md'];
-const CORPUS_FOLDERS = ['skills', 'hooks'];
+const CORPUS_FOLDERS = ['skills', 'hooks', 'lib/references', 'agents'];
 const CORPUS_EXTENSIONS = ['.md', '.mjs', '.txt'];
 const RULE_WORDS = ['never', 'always', 'only', 'must'];
 const MEASURE_UNITS = [
@@ -143,5 +143,5 @@ export function checkRuleRetention(report, repository, options = {}) {
     return;
   }
   const list = lost.map(({ file, text }) => `${file}: "${text}" [${lineHash(text).slice(0, SHOWN_HASH_LENGTH)}]`).join('; ');
-  report.result('FAIL', CHECK_NAME, `removed rule lines found nowhere in skills/ or hooks/; restore each or add its bracketed hash and a reason to ${ALLOWLIST_FILE}: ${list}`);
+  report.result('FAIL', CHECK_NAME, `removed rule lines found nowhere in skills/, hooks/, lib/references/ or agents/; restore each or add its bracketed hash and a reason to ${ALLOWLIST_FILE}: ${list}`);
 }

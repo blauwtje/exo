@@ -11,8 +11,7 @@ Motion explains change: where a view came from, that an item was added, that pro
 
 ## State changes
 
-- Hover and press: 100-150ms, ease-out; a press can sink the control by a pixel or deepen its shadow.
-- View and tab change: 150-250ms with `transform` and `opacity` only, so layout does not reflow mid-animation.
+- Hover, press, view and tab change: short, ease-out, `transform` and `opacity` only, so layout does not reflow mid-animation.
 - Entering uses ease-out. Leaving uses ease-in and runs shorter than entering.
   - Good: a sheet in at 220ms ease-out, out at 160ms ease-in. Bad: both at 400ms linear.
 - Live states: progress bars move, toggles slide, loading placeholders pulse in the direction's colors, a new item slides into its list.

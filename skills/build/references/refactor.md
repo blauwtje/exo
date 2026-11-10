@@ -14,11 +14,11 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 
 1. **Pin behavior before the first move.** Capture current outputs in a test, snapshot or before/after script over the inputs that matter; type check and lint pin nothing, both pass on a wrong result.
 2. **Name the target shape.** One sentence: module layout and call graph as if built today. Reshape removes branches, layers or states and adds no indirection.
-3. **Subtract first.** Delete dead code, one-caller wrappers and orphaned references before building the new shape.
+3. **Subtract first.** Delete code the reshape makes dead before building the new shape; report other dead code.
 4. **Migrate every caller, then delete the old API, in the same change.** No shim, deprecated wrapper, both-shapes signature or re-export stays, because nothing then forces the last caller over. Search strings, docs, scripts and tests too; renames miss usages there.
 5. **Build no seam for a future caller.** No base class, registry, factory or flag with one implementation; a seam arrives with its second adapter. Drop unused sketch code instead of finishing it.
 6. **Prove equality on the real code.** Rerun the pin against old and new versions, quote the comparison; "it compiles" or a green suite that never covered the moved code proves nothing.
-7. **Keep it only if reading got easier.** Revert a step that lowers no reader load (fewer files to trace, less state to hold).
+7. **Keep it only if reading got easier.** Revert a step that raises `git diff --stat` lines or the files to trace.
 8. **Report.** The report rule in the closing reference; equality evidence, line counts and reverted changes go behind the pointer.
 
 ## Red flags

@@ -54,8 +54,8 @@ function sentenceFailures(sentence, claims, hostByRef) {
 }
 
 export function verifyReport(runDir) {
-  const reportFile = path.join(runDir, 'report.md');
-  if (!fs.existsSync(reportFile)) return ['report.md\tmissing'];
+  const reportFile = path.join(runDir, 'answer.md');
+  if (!fs.existsSync(reportFile)) return ['answer.md\tmissing'];
   const claims = readClaims(runDir);
   const hostByRef = new Map(readSources(runDir).map((row) => [row.ref, siteOf(row.url)]));
   const sentences = reportSentences(fs.readFileSync(reportFile, 'utf8'));

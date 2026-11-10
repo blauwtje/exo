@@ -19,6 +19,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `harnesses/capabilities.json` holds each harness's subagents, hooks, efforts and worker count, and a static check fails when an adapter, its hook events or its effort column disagree with it.
 - exo installs into OpenCode with `node install.mjs --harness opencode`, generating `exo-<agent>` subagents and skills from the Claude sources.
 - The Karpathy coding reading (think before coding, simplicity first, surgical changes, goal-driven execution) is a section in `docs/principles/prompt.md`.
+- The `module surface` check fails an export in `lib/` or `hooks/` that no tracked file imports, a named import its module does not export, and one function body defined in two modules.
+- The `agent duplicates` check fails a rule line repeated within one load chain; tolerated repeats sit in `verify/agent-shared-lines.txt`.
+- The `body budgets` check holds loaded prose at or under `LOADED_PROSE_LOCK`, 317,520 bytes, down from 328,213.
+- The `covering tests` check requires a test that names every check module, and the `principles` check ties each of the four working principles to an owner file and a check.
+- `tests/refusal-replay.test.mjs` replays 20 recorded tool calls (14 deny, 4 rewrite, 2 allow), and `node benchmarks/guard-replay.mjs --counts --since <date>` counts refusals per rule.
+- `plan-check` flags a task that changes a module held in `verify/module-size-ceilings.txt` without listing that file.
 
 ### Changed
 
@@ -72,11 +78,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The consolidate plan records its tasks and prune paths as landed.
 - The session rules tell the lead to wait for the next notice of an agent that still waits on background work instead of stopping it, since that agent now resumes on its own.
 - The adhd output style keeps replies short and plain: at most 3 one-sentence bullets, no greeting, preamble or recap, and no technical terms unless the user must type them.
+- A repeated refused call gets the text of the first refusal again.
+- A refused commit names the message-file route, a refused worktree or branch cleanup names the result route, and a context refusal names the `Result:` path of the brief.
+- A refused brief names the exact line to add and lists unresolved `Reads:` entries; a trailing bracket note is dropped and `Fetches:` reads its leading integer.
+- The orchestrator and worker texts state the reads count, the context budget, the `Fetches:` rule, own-shell stops and Write-only changes.
+- The research deliverable of `spec` is `answer.md`.
+- Skills, agents and hook texts lose repeated, conflicting and stale lines; each removed rule is recorded in `verify/rule-removals.txt`.
+- Repeated function bodies in `lib/`, the build and watch scripts and the harness adapters have one definition, and unused exports are gone.
+- The `rule retention` check also reads `lib/references` and `agents`.
 
 ### Removed
 
 - The advice to search Reddit with a `site:reddit.com` WebSearch, which the WebSearch tool refuses.
 - The "Decided for you" list at the end of replies and its number-reply rule; exo still asks for an irreversible step, a choice with no safe default and a choice only the user can settle.
+- The instruction-density allowlist, its lock and the `--prune` mode.
 
 ### Fixed
 
@@ -132,6 +147,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The remember-removed test counts only skill directories, so a stray `.DS_Store` no longer fails it.
 - A benchmark command that times out now stops its whole process group, so leftover child processes no longer hold the run open.
 - The commit guard now refuses a commit message whose `Evidence:` line names neither a `benchmarks/results` or `benchmarks/pressure` file nor `none (<reason>)`, and shows both valid forms.
+- A background start is matched only in the first line of a Bash result.
+- The sleep, watch and stash guards skip data text such as a heredoc body.
+- The find-cause prompts no longer load the skill the fork already runs.
 
 ### Added
 

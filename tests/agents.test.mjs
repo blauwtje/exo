@@ -306,7 +306,9 @@ test('orchestrator dispatches async within its Workers line, reads by range and 
   assert.match(body, /end your turn for the notifications/);
   assert.match(body, /names `-p`[^\n]*wait-report\.mjs[^\n]*timeout 600000/);
   assert.match(body, /no more workers than its `Workers:` line, retries included/);
-  assert.match(body, /Read only your brief's `Reads:` paths by range/);
+  assert.match(body, /at most 4 reads, Bash too, of your brief's `Reads:` paths by range/);
+  assert.match(body, /change a file only by Write of the result or handover/);
+  assert.match(body, /TaskStop takes a shell id from your own Bash result, never an agent id/);
   assert.match(body, /discovery and code reading to a `lookup` worker/);
 });
 

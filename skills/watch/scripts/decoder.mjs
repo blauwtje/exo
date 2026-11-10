@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { environmentMs } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
-import { cacheRoot } from './ytdlp-binary.mjs';
+import { cacheRoot, isExecutable } from './ytdlp-binary.mjs';
 
 const SCOPE = '@ffmpeg-installer';
 const FRAME_COUNT = 6;
@@ -31,15 +31,6 @@ function reasonOf(run, timeout) {
   if (run.error?.killed) return `did not finish within ${timeout / 1000} s`;
   const lastLine = String(run.stderr ?? '').trim().split('\n').pop();
   return lastLine || run.error.message;
-}
-
-function isExecutable(file) {
-  try {
-    fs.accessSync(file, fs.constants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function onPath(env) {

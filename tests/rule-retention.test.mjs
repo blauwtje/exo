@@ -122,3 +122,14 @@ test('removedRuleLines splits sentences and reads only checked files', () => {
   ].join('\n');
   assert.deepEqual(removedRuleLines(diff), [{ file: 'skills/a/SKILL.md', text: 'Never skip the gate.' }]);
 });
+
+test('a rule kept in lib/references or agents passes', async () => {
+  for (const kept of ['lib/references/rules.md', 'agents/worker.md']) {
+    const root = await branchFixture();
+    await commitFiles(root, {
+      'skills/build/SKILL.md': '# Build\n\nPlain sentence about layout.\n',
+      [kept]: `${RULE}\n`
+    }, 'docs: move');
+    assert.equal(outcome(root).counts.FAIL, 0);
+  }
+});

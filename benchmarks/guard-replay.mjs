@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { GUARD_RULES } from '../lib/guard-rules.mjs';
 
 const BASE_REF = '70bcb0c7';
 const SELF = fileURLToPath(import.meta.url);
@@ -91,6 +92,20 @@ export function extract(projectsDir, only) {
   return cutCorpus(kept, families);
 }
 
+const ruleIdOf = (text) => GUARD_RULES.find((row) => row.rule && text.includes(row.rule))?.id;
+
+function refusalTexts(file, since) {
+  const isRefusal = ({ block, time }) => block.type === 'tool_result' && block.is_error && !(since && time < since);
+  return blocksOf(file).filter(isRefusal).map(({ block }) => resultText(block));
+}
+
+export function countRefusals(projectsDir, since) {
+  const counts = {};
+  const texts = listJsonl(projectsDir).flatMap((file) => refusalTexts(file, since));
+  for (const id of texts.map(ruleIdOf).filter(Boolean)) counts[id] = (counts[id] ?? 0) + 1;
+  return counts;
+}
+
 function treeDir(spec, label) {
   if (spec === 'HEAD') return ROOT;
   if (spec) return path.resolve(spec);
@@ -140,7 +155,7 @@ export function replay(tree, familyId, inputs) {
   return tally;
 }
 
-const fmt = (tally) => `deny=${tally.deny} rewrite=${tally.rewrite} pass=${tally.pass} error=${tally.error}`;
+const fmt = (tally) => Object.entries(tally).map(([name, count]) => `${name}=${count}`).join(' ');
 
 export function report(corpus, options) {
   const lines = [];
@@ -153,10 +168,16 @@ export function report(corpus, options) {
   return lines.join('\n');
 }
 
+function printCounts(args, projects) {
+  const counts = countRefusals(projects, flagValue(args, '--since'));
+  for (const [id, count] of Object.entries(counts).sort((a, b) => b[1] - a[1])) console.log(`${id} ${count}`);
+}
+
 function main(args) {
+  const projects = flagValue(args, '--projects') || path.join(os.homedir(), '.claude', 'projects');
+  if (args.includes('--counts')) return printCounts(args, projects);
   const only = flagValue(args, '--family');
   if (only && !FAMILIES[only]) throw new Error(`unknown family ${only}`);
-  const projects = flagValue(args, '--projects') || path.join(os.homedir(), '.claude', 'projects');
   const corpusPath = flagValue(args, '--corpus') || path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'guard-corpus-')), 'corpus.json');
   const corpus = args.includes('--reuse') ? JSON.parse(fs.readFileSync(corpusPath, 'utf8')) : extract(projects, only);
   fs.writeFileSync(corpusPath, JSON.stringify(corpus));

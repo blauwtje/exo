@@ -12,8 +12,6 @@ Read this when you write a skill or agent body, a delegate prompt or a brief. Ea
 
 ## Strip
 
-- Strip thinking cues such as "think hard" and "step by step", and a request for reasoning in the reply.
-- Strip generic checks such as "double-check", and keep a named check.
 - Strip a bare title such as "you are a senior engineer", and keep a role line that names a perspective the task needs.
 - Turn a hedge such as "try to" on a required ask into a plain imperative.
 - Rephrase a negative ask as what to do when its meaning holds.

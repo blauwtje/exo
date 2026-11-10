@@ -8,7 +8,7 @@ Answer a design question with ideas a reader can trust to be new. Produce the to
 
 ## The loop
 
-Work in `.exo/ideate/<slug>/`, where the slug is the first six words of the question in ASCII kebab-case, at most 40 characters, with a short hash on a collision.
+Work in `.exo/ideate/<slug>/`, where the slug is built as in research mode.
 
 1. **Ban** the three most obvious answers. Write them under `Banned` at the top of `<slug>/ranking.md` and the question to `<slug>/run.md`.
 2. **Ground** with English GitHub queries that you run: `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/search.mjs" --source github --query "<query>" --run .exo/ideate/<slug>`.
@@ -25,7 +25,7 @@ Work in `.exo/ideate/<slug>/`, where the slug is the first six words of the ques
 5. **Check novelty** of each top idea with one or two GitHub searches in the same folder.
    - Judge from the `description` whether a hit does the same job, because shared keywords do not count.
    - Fetch at most one README per idea with `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/fetch.mjs" .exo/ideate/<slug> <url>`, only when a description is empty or unclear.
-6. **Deliver** `<slug>/report.md` in the language of the question, one section per idea.
+6. **Deliver** `<slug>/answer.md` in the language of the question, one section per idea.
    - Give `Source` (the grounding repo URL, else the persona name), `Risk` and `First step`.
    - Add `Already exists: <repo url>` only when step 5 found one.
    - Reply with the three titles and the report path.

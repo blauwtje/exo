@@ -13,7 +13,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 - Take no irreversible action to pause: no push, no pull request.
 - Pause between atomic steps, not inside one: complete or undo the step in progress and begin no new work.
 - On the run branch of a plan (`exo:build` loop), commit nothing. Write partial work of the task in progress to a hint file such as `.exo/carry/task<n>-partial.patch`, and list it under `## Current state`.
-- On any other branch than the repository's default, commit every uncommitted edit first as one `chore: wip <topic>` commit.
+- On a non-default branch that is not a plan run branch, commit every uncommitted edit first as one `chore: wip <topic>` commit.
 - If the tree is broken, say so in that commit's body.
 - On the default branch, leave edits uncommitted and list them under `## Current state`.
 - Preserve verbatim any artefact the user explicitly asked to survive the clear, such as a question list or checklist.

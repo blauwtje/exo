@@ -1,26 +1,10 @@
-// Measures how dense the instruction prose under skills/, agents/ and
-// output-styles/ runs. A unit is a list item or a plain paragraph, read
-// outside frontmatter, fenced code, HTML comments, headings and table rows.
-// A finding is a list item holding MAX_BULLET_SENTENCES or more sentences, or
-// a sentence over MAX_SENTENCE_WORDS words. The allowlist holds the offenders
-// the tree carried when the check began; INSTRUCTION_DENSITY_ALLOWLIST_LOCK in
-// verify/budgets.mjs caps its length, so it only ever shrinks.
-//
-//   node verify/instruction-density.mjs            list findings off the allowlist and exit 1 when any
-//   node verify/instruction-density.mjs --prune    drop allowlist entries that no longer match a finding
-//
-// --prune never adds an entry: a new offender gets split, not allowlisted.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
 
 export const MAX_BULLET_SENTENCES = 3;
 export const MAX_SENTENCE_WORDS = 40;
-export const KEY_CHARACTERS = 40;
-export const ALLOWLIST = 'verify/instruction-density-allowlist.txt';
 export const SCANNED_DIRECTORIES = ['skills', 'agents', 'output-styles'];
 // Markdown under a scanned directory that shows an artifact rather than instructing.
 export const NOT_INSTRUCTIONS = ['skills/spec/references/example-plan.md'];
@@ -152,13 +136,6 @@ export function wordCount(sentence) {
   return sentence.replace(/`[^`]*`/g, 'code').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
 }
 
-function keyText(text) {
-  return text.replace(/\s+/g, ' ').slice(0, KEY_CHARACTERS).trimEnd();
-}
-
-// Every finding in one file: { path, line, kind, detail, key }. The key leaves
-// out the line number, so an edit above an offender keeps its allowlist entry,
-// and a bullet's key records its sentence count, so the bullet cannot grow.
 export function fileFindings(relative, text) {
   const findings = [];
   for (const unit of proseUnits(text)) {
@@ -166,8 +143,7 @@ export function fileFindings(relative, text) {
     if (unit.kind === 'bullet' && unitSentences.length >= MAX_BULLET_SENTENCES) {
       findings.push({
         path: relative, line: unit.line, kind: 'bullet',
-        detail: `bullet holds ${unitSentences.length} sentences`,
-        key: `${relative}\tbullet\t${unitSentences.length}\t${keyText(unit.text)}`
+        detail: `bullet holds ${unitSentences.length} sentences`
       });
     }
     for (const sentence of unitSentences) {
@@ -175,8 +151,7 @@ export function fileFindings(relative, text) {
       if (words > MAX_SENTENCE_WORDS) {
         findings.push({
           path: relative, line: unit.line, kind: 'sentence',
-          detail: `sentence holds ${words} words`,
-          key: `${relative}\tsentence\t${keyText(sentence)}`
+          detail: `sentence holds ${words} words`
         });
       }
     }
@@ -188,68 +163,6 @@ export function densityFindings(root) {
   return instructionFiles(root).flatMap((file) => {
     return fileFindings(posix(root, file), fs.readFileSync(file, 'utf8'));
   });
-}
-
-export function readAllowlist(root) {
-  const file = path.join(root, ALLOWLIST);
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, 'utf8').split('\n').filter((line) => line !== '' && !line.startsWith('#'));
-}
-
-// A key splits into the text it matches on and the sentence count a bullet
-// entry allows or a bullet finding holds; a sentence key carries no count.
-function splitKey(key) {
-  const [file, kind, count, ...rest] = key.split('\t');
-  if (kind === 'bullet' && /^\d+$/.test(count ?? '')) return { match: [file, kind, ...rest].join('\t'), count: Number(count) };
-  return { match: key, count: 0 };
-}
-
-// Matches findings against the allowlist as a multiset, so two offenders with
-// one key need two entries, and a bullet entry covers a bullet of at most its
-// recorded sentences. Returns the findings no entry covers and the entries no
-// finding uses, each in its original order.
-export function applyAllowlist(findings, entries) {
-  const open = new Map();
-  entries.forEach((entry, index) => {
-    const { match, count } = splitKey(entry);
-    open.set(match, [...(open.get(match) ?? []), { count, index }]);
-  });
-  const used = new Set();
-  const covered = new Set();
-  const largestFirst = [...findings].sort((left, right) => splitKey(right.key).count - splitKey(left.key).count);
-  for (const finding of largestFirst) {
-    const { match, count } = splitKey(finding.key);
-    const fits = (open.get(match) ?? []).filter((entry) => !used.has(entry.index) && entry.count >= count);
-    if (fits.length === 0) continue;
-    const tightest = fits.reduce((best, entry) => (entry.count < best.count ? entry : best));
-    used.add(tightest.index);
-    covered.add(finding);
-  }
-  return {
-    unlisted: findings.filter((finding) => !covered.has(finding)),
-    stale: entries.filter((_, index) => !used.has(index))
-  };
-}
-
-// The entries left once each stale entry drops one matching line.
-export function pruneAllowlist(entries, stale) {
-  const dropped = new Map();
-  for (const entry of stale) dropped.set(entry, (dropped.get(entry) ?? 0) + 1);
-  return entries.filter((entry) => {
-    const left = dropped.get(entry) ?? 0;
-    if (left === 0) return true;
-    dropped.set(entry, left - 1);
-    return false;
-  });
-}
-
-export function allowlistText(entries) {
-  return [
-    '# Instruction-density offenders the tree carried when the check began: path, kind, a bullet\'s sentence count, first 40 characters, tab-separated.',
-    '# Split an offender and delete its line; `node verify/instruction-density.mjs --prune` drops lines that match nothing.',
-    ...entries,
-    ''
-  ].join('\n');
 }
 
 // Sentences per skill across SKILL.md and its references: the rule count a
@@ -277,17 +190,10 @@ export function rulesPerSkill(root) {
 }
 
 function main() {
-  const { values } = parseArgs({ options: { prune: { type: 'boolean', default: false } } });
   const root = fileURLToPath(new URL('..', import.meta.url));
-  const entries = readAllowlist(root);
-  const { unlisted, stale } = applyAllowlist(densityFindings(root), entries);
-  if (values.prune) {
-    const kept = pruneAllowlist(entries, stale);
-    fs.writeFileSync(path.join(root, ALLOWLIST), allowlistText(kept), 'utf8');
-    console.log(`dropped ${stale.length} stale entries; ${kept.length} remain: set INSTRUCTION_DENSITY_ALLOWLIST_LOCK.entries in verify/budgets.mjs to ${kept.length}`);
-  }
-  for (const finding of unlisted) console.log(`${finding.path}:${finding.line}: ${finding.detail}`);
-  process.exit(unlisted.length > 0 ? 1 : 0);
+  const findings = densityFindings(root);
+  for (const finding of findings) console.log(`${finding.path}:${finding.line}: ${finding.detail}`);
+  process.exit(findings.length > 0 ? 1 : 0);
 }
 
 // Compared through realpath, so a checkout reached through a symlink still runs.

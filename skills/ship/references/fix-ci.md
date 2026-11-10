@@ -8,7 +8,7 @@ Goal: fix the failing check at its real cause within three rounds, or hand back 
 
 ## Rerun rules
 
-- `open-pr` or a merge request stops after three fix rounds, watch included.
+- The round limit is three fix rounds for `open-pr` or a merge request, watch included.
 - At the round limit, stop, hand back and summarize what is still broken.
 
 ## Flake and a stale base
@@ -16,7 +16,7 @@ Goal: fix the failing check at its real cause within three rounds, or hand back 
 - Commit only for a failure inside the diff's own code.
 - Before calling a failure flake, run `git merge-base --is-ancestor origin/<base branch> HEAD`.
 - A suspected flake or infrastructure failure is a reported stop, with no blind retry.
-- A failure that repeats identically across runs is not flake: reclassify it and read the child logs.
+- A failure that repeats identically across runs is not flake: reclassify it and read the child logs. Compare two runs with `gh run view <id> --log-failed`.
 - A stale base is a reported stop that needs an update from its base branch. A pushed branch is not rebased here.
 
 ## Report

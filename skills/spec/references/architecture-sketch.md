@@ -4,7 +4,7 @@ This page gives the user options to pick from before any work starts. Read it wh
 
 ## Draw the pairs
 
-- Before drafting any option, run step 4's repo map once.
+- Before drafting any option, run step 4's repo map once yourself.
 - Then run `node "${CLAUDE_SKILL_DIR}/scripts/draw-seats.mjs"` once, which prints 3 pairs, each a seat and a forbidden move.
 - Keep the pairs as printed: swap none for one you prefer, and never redraw.
 
@@ -36,7 +36,7 @@ Reject or revise a candidate showing:
 ## Show and pick
 
 - Show the 2-3 most distinct survivors, each beside its seat; a second flavor of one shape is not an option.
-- Score each option per 3-5 criteria from the request, interface depth one, not on overall feel.
+- Score each option per 3-5 criteria from the request, interface depth weighted highest, not on overall feel.
 - Prefer the option that hides more behind a smaller public surface, even when its implementation is harder.
 - When parts of two options hold under one data model, graft them and name each source.
 - Recommend one, with its reason.

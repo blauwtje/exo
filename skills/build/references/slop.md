@@ -15,7 +15,7 @@ Each pattern here reads as machine-made because so many generated pages share it
 
 - Swap test: put a competitor's name in the main heading. If it still reads true, rewrite it with this product's own nouns and numbers.
   - Good: "Tide tables for 412 harbours, offline." Bad: "Everything you need to plan your day."
-- Marketing headline: about 7 words or fewer, and about 80 words of marketing prose per screen; people scan, so long copy goes unread. UI labels and data inside product artifacts do not count toward the 80.
+- Marketing headline: advisory: about 7 words or fewer, and about 80 words of marketing prose per screen. UI labels and data inside product artifacts do not count toward the 80.
 - Calls to action: name the outcome ("Install Tidewrack", "Post to Murmur"), not "Get started" or "Learn more" alone.
   - Good: "Install Tidewrack". Bad: "Get started".
 - App labels: standard verbs for standard actions (Play, Install, Follow, Save), since themed renaming makes people guess.

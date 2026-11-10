@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { writeAtomic } from '../../lib/basics.mjs';
-import { statOf } from '../install-files.mjs';
+import { apply, combine, jsonText, removeInstalls, sameInstall, statOf } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 import { agentEntries, planFile, planSkill, releaseFiles, skillEntries, tryRmdir } from './files.mjs';
 import { generateOpenCodeTree } from './generate.mjs';
@@ -11,8 +11,6 @@ import { PLAIN_PATH, SCOPES, readInstalls } from './record.mjs';
 export const name = 'opencode';
 export const label = 'OpenCode';
 
-const jsonText = (value) => `${JSON.stringify(value, null, 2)}\n`;
-const sameInstall = (left, right) => left.scope === right.scope && left.project === right.project;
 const matches = (install, selector) => (selector.scope === undefined || install.scope === selector.scope)
   && (selector.project === undefined || install.project === selector.project);
 
@@ -107,13 +105,6 @@ function planRemove(install, installs, env) {
   return { ...plan, summary: `removed the ${install.scope} install that ${where.recordFile} listed` };
 }
 
-function apply(plan) {
-  for (const write of plan.writes) write();
-  return { summary: plan.summary, notes: plan.notes };
-}
-
-const combine = (results) => ({ summary: results.map((result) => result.summary).join('; '), notes: results.flatMap((result) => result.notes) });
-
 export function detect(env) {
   if (onPath('opencode', env)) return { detected: true, installable: true };
   if (fs.existsSync(locations(env).configHome)) return { detected: true, installable: false, reason: '`opencode` is not on PATH although the OpenCode folder exists' };
@@ -138,15 +129,5 @@ export function update(record) {
 }
 
 export function remove(record) {
-  const { recordFile } = locations(record.env);
-  const installs = readInstalls(recordFile);
-  const wanted = installs.filter((entry) => matches(entry, record));
-  if (wanted.length === 0) return `nothing to remove: ${recordFile} lists no matching install`;
-  let remaining = installs;
-  const plans = wanted.map((entry) => {
-    const plan = planRemove(entry, remaining, record.env);
-    remaining = remaining.filter((candidate) => !sameInstall(candidate, entry));
-    return plan;
-  });
-  return combine(plans.map(apply));
+  return removeInstalls(record, { locations, readInstalls, matches, planRemove });
 }

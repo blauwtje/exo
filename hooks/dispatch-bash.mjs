@@ -9,6 +9,7 @@ import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgen
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
 import { saveLongCommand } from '../lib/long-command.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
+import { stripDataHeredocs } from '../lib/git-deny.mjs';
 import { cappedCommand, cappedInput, resultCapped } from '../lib/bash-cap.mjs';
 import { redditBashDecision } from '../lib/reddit-route.mjs';
 import { fixShellFor } from '../lib/shell-fixes.mjs';
@@ -17,8 +18,6 @@ import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
 import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, deny } from '../lib/lazy-steps.mjs';
-
-export { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP };
 
 const contextStep = (name, decide) => ({
   name,
@@ -40,7 +39,7 @@ export const FIND_STEP = {
   }
 };
 
-export const REDDIT_STEP = {
+const REDDIT_STEP = {
   name: 'reddit-route',
   run(hookInput) {
     const decision = redditBashDecision(hookInput.tool_input?.command);
@@ -73,12 +72,13 @@ export const SLEEP_STEP = {
   run(hookInput) {
     const command = hookInput.tool_input?.command;
     if (!hookInput.agent_id || typeof command !== 'string') return null;
-    if (SLEEP_COMMAND.test(command)) return deny(denyReason('sleep'));
-    return WATCH_COMMAND.test(command) ? deny(denyReason('watch')) : null;
+    const scanned = stripDataHeredocs(command);
+    if (SLEEP_COMMAND.test(scanned)) return deny(denyReason('sleep'));
+    return WATCH_COMMAND.test(scanned) ? deny(denyReason('watch')) : null;
   }
 };
 
-export const RESULT_CAP_STEP = {
+const RESULT_CAP_STEP = {
   name: 'result-cap',
   run(hookInput) {
     const toolInput = hookInput.tool_input;
@@ -95,7 +95,7 @@ export const RESULT_CAP_STEP = {
   }
 };
 
-export const SHELL_STEP = {
+const SHELL_STEP = {
   name: 'shell-fix',
   run(hookInput) {
     // why: a run session gates Bash on prefix allow rules, which a rewritten command no longer matches.
@@ -105,7 +105,7 @@ export const SHELL_STEP = {
   }
 };
 
-export const BASH_CAP_STEP = {
+const BASH_CAP_STEP = {
   name: 'bash-cap',
   run(hookInput, earlier = []) {
     if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
@@ -152,6 +152,5 @@ if (isMain(import.meta.url) && !inSidecall()) {
     const text = await readHookText();
     const input = text.trim() === '' ? null : JSON.parse(text);
     writeHookOutput(input, input && await dispatchBash(input), 'dispatch-bash');
-  } catch {
-  }
+  } catch { process.exitCode = 0; }
 }

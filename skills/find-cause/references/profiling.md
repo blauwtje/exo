@@ -22,16 +22,4 @@ Diagnose a slowdown, memory growth or captured profile from a signal, not from r
 
 - Map the hot frame or retainer to file, symbol and the line that allocates, blocks or schedules.
 - A frame without symbols leaves the diagnosis open. Report that gap and guess no symbol.
-
-## Hypothesis families for a slowdown
-
-When the trace names a region, these families ground the fix. Try a family only if the trace carries its signal; they are not an ordered checklist.
-
-- **Elimination.** Nothing needs the region (dead computation, always-off gate, redundant sync): remove it.
-- **Divide and conquer.** Cost grows with input size: split the input, or run independent parts concurrently.
-- **Caching.** Identical inputs repeat a computation or fetch: keep the first answer, name what makes it stale.
-- **Indirection.** A cheaper intermediate could absorb the cost: look up through an index instead of scanning, or queue work off the interactive thread.
-- **Batching.** Many small calls each pay the same fixed cost: combine to pay once.
-- **Redundancy.** One slow instance dominates a wait while others have headroom: run the attempt twice, keep the first to finish.
-- **Lazy evaluation.** Cost goes to a result nothing reads yet: postpone to first read.
-- **Scheduling.** Work required, but not while the user interacts: move it out of the user's wait.
+- Quote the trace query output that names the frame.

@@ -9,8 +9,8 @@ A blind eval lets a judge pick the stronger of two answers without knowing which
 
 ## Steps
 
-1. Get two clones: the pre-edit worktree (or the commit before the change) as baseline, and the edited worktree as changed.
-2. Judge the stored `with` answers of both clones. When the user asks for a run, or a clone has none, run `pressure.mjs --prompt <the same case file> --cells <cell> --plugin-dir <clone>` once per clone.
+1. Take two clones, only when the user asks: the pre-edit worktree (or the commit before the change) as baseline, and the edited worktree as changed.
+2. Judge the stored `with` answers of both clones. When the user asks for a run, run `pressure.mjs --prompt <the same case file> --cells <cell> --plugin-dir <clone>` once per clone.
 3. Read the full `with` answer files only, because each clone's `without` answers are the same skill-less answers twice.
 4. Label the two clones' `with` answers A and B. Alternate which letter holds the changed answers so no pattern forms across evals, and keep the mapping yourself.
 5. Copy the labels and full answer texts into a scratch file for the judge. Leave "baseline", "changed", "old" and "new" out of it, since they unmask the labels.

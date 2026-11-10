@@ -12,7 +12,7 @@ Shaping turns a request into a brief that settles what done means, so the build 
 
 1. **Gate.**
    - First invoke every installed non-`exo:` skill matching the request.
-   - Spec always ends on a brief; with no open decision the brief still gets written.
+   - Spec ends on a brief unless the verdict is `stop`; with no open decision the brief still gets written.
    - Open with the verdict.
    - An open decision is one the user would notice that neither request nor code settles.
    - Read `references/verdict.md` for the no-question case.
@@ -27,8 +27,8 @@ Shaping turns a request into a brief that settles what done means, so the build 
    - Ask per `../../lib/references/question.md`, and record each choice exo decides in Decisions.
    - Read `references/step-rules.md` for recommendations and the `Land:` question.
    - After the last answer, write the brief with no recap and no yes question.
-4. **Dispatch steps 4 to 8 as one `exo:orchestrator` part** with `Workers: 1`, `Reads: none` and a Result file under `.exo/`. It runs:
-   - `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`,, then `references/step-rules.md`.
+4. **Dispatch steps 4 and 5 as one `exo:orchestrator` part** with `Workers: 1`, `Reads: none` and a Result file under `.exo/`. It runs:
+   - `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, then `references/step-rules.md`.
    - List tasks per `references/task-list.md`, `references/brief.md` and `references/templates.md`; store per `references/brief.md`.
    - `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --root <checkout root> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
    - Open points per `references/brief.md` `## Open points step`, then rerun plan-check; leave flagged `## Open points` unfixed.

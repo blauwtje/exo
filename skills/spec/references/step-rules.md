@@ -4,7 +4,7 @@
 
 This page holds the recommendation and `Land:` rules of step 3 in `spec`, so each question carries a recommendation and the mode is asked only when open.
 
-   - Recommend a loaded skill's pattern over one it rules out.
+   - Recommend a loaded skill's pattern over one it rules out; when two loaded skills disagree, take the one the request names.
    - Plan approval approves only the `Land:` mode, so ask about it only when `ship` is `ask`.
    - With no git repo or no `origin`, write `Land: local` and ask nothing.
 
@@ -17,7 +17,7 @@ This page holds the dispatch rules of step 4 in `spec`, so ranges the map omits 
 
 ## Step 1, modes
 
-Open the mode file, then follow it in place of steps 2 to 9.
+Open the mode file, then follow it in place of steps 2 to 5.
 
 | Mode | Read it when |
 |---|---|
@@ -26,7 +26,7 @@ Open the mode file, then follow it in place of steps 2 to 9.
 
 ## Mode research, report shape
 
-Save the report as report.md in the run folder:
+Save the report as answer.md in the run folder:
 
 1. **Answer**: 3-8 sentences, each carrying `[^id]` footnotes that match stored claim ids.
 2. **Key claims**: one line each with the label (supported, unsupported, contradicted), the source count, and engagement in its own column when a social or video source is cited.

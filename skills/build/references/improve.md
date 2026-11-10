@@ -47,6 +47,3 @@ Ask the user nothing, because the user may be away. Read only each worker's retu
 - A kept commit comes only from a `round.mjs` `keep` row. Edit no scorer and take no score from chat.
 - At an equal score the simpler commit wins. A removal that keeps the score is a win, and a tiny gain that adds much code is not worth it.
 - `round.mjs` reruns a noisy score up to `defaults.improve.maxRuns` times and keeps only when the lower bound of the gain's `keepZ` interval exceeds `keepFloor`. An exact score decides on one run.
-
-| File | Read it when |
-|---|---|

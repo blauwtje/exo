@@ -4,7 +4,7 @@
 - `GREEN` names a diff path, which this session reads only as `git apply --stat <diff path>` before it runs `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, a wave's per the wave worktrees reference's step 3. The report and the full diff stay unread.
 - land-task ends in `Next: none` or a `Then:` line. The `Then:` line dispatches nothing, so step 3 reruns `next-task.mjs` for the next `Next:` or `Wave:` line.
 - A `Next:` line sends its task, and a `Wave:` line sends each task per the wave worktrees reference in one message, to `exo:build-task` from `../implementer-prompt.md`, which carries `Return: one line`.
-- `Task <n>: BLOCKED NEEDS ANSWER: <question>` parks that task. Land the green siblings first, ask each question after the wave in its own message, and redispatch `exo:build-task` with the answer in its dispatch prompt only, not in the plan file.
+- `Task <n>: BLOCKED NEEDS ANSWER: <question>` follows the loop's step 6.
 - In a wave, a failed sibling leaves a green task landed.
 - That reference's step 4 saves each worktree's diff, then removes it.
 - A build report held as text and not on disk lands by piping its full text to `land-task.mjs --report -`, which refuses no file as missing.

@@ -8,9 +8,9 @@
 - Per task, write the failing test from its pasted block, run its `Run:` and expect the stated failure.
 - Then write the code from its pasted block, run `Run:` again and expect green.
 - Commit with `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, one commit per task, not a hand-written `git commit`.
-- A failed `Run:` or a land-task refusal gets one fix by this session, then goes to `${CLAUDE_SKILL_DIR}/bug-fixer-prompt.md`. A second failure of one task stops the run `BLOCKED` with 2-3 options.
+- A failed `Run:` or a land-task refusal gets one fix by this session, then goes to `${CLAUDE_SKILL_DIR}/bug-fixer-prompt.md`. A second failure ends as the direct route does.
 - After a `Then:` line from a landing, rerun `next-task.mjs` for the next task's `Steps:`.
-- On `Next: none`, run `node "${CLAUDE_SKILL_DIR}/../gate/scripts/gate.mjs" --plan <plan> --root <checkout> --base <base>` once. Load no `Skill exo:gate` and read no tail reference unless the output asks for them.
+- On `Next: none`, run `node "${CLAUDE_SKILL_DIR}/../gate/scripts/gate.mjs" --plan <plan> --root <checkout> --base <base>` once.
 - Clean output holds only `PASS`, `DONE`, `REPORT`, `MANUAL`, `Proof:`, `REVIEW ... none`, `OVERLAP none` and `SKIP` lines. A `SKIP` with `(out of scope` or `Proof: not a single` is not clean.
 - On clean output, finish as `gate` step 4 does: end on `ship`, whose three lines name the `REPORT` path as the pointer and omit `Proof:` and `MANUAL` lines.
 - On clean output with a request that rules out a push, skip `ship`, give the same three lines, and say nothing left the machine.

@@ -10,78 +10,21 @@ eff91901a144 the cheat sheet is generated from skill frontmatter, so the hand-wr
 c7e40d27c8ad the refactor description moved into the build skill, which routes mode refactor
 6345285903ec the behavior-pin row moved into the build reference table
 00426c1768ee the review description moved into the gate skill, which routes mode review
-01b6afb1e297 the rule moved with its file to lib/references, which the retention scan does not read
-01d13e2b06c2 the rule moved with its file to lib/references, which the retention scan does not read
-02d9666fbe69 the rule moved with its file to lib/references, which the retention scan does not read
-0488c1b065a9 the rule moved with its file to lib/references, which the retention scan does not read
-04a61af05897 the rule moved with its file to lib/references, which the retention scan does not read
-0c451cd2154f the rule moved with its file to lib/references, which the retention scan does not read
 116491d2010e the rule moved with its file to lib/references, which the retention scan does not read
 1a3d4b95460b the rule moved with its file to lib/references, which the retention scan does not read
-222d36578f1b the rule moved with its file to lib/references, which the retention scan does not read
-292906f77ee7 the rule moved with its file to lib/references, which the retention scan does not read
-2c66b0e050ca the rule moved with its file to lib/references, which the retention scan does not read
-2eb3bdf4bb6f the rule moved with its file to lib/references, which the retention scan does not read
 2f0a52a8b902 the rule moved with its file to lib/references, which the retention scan does not read
-30b156fd5b10 the rule moved with its file to lib/references, which the retention scan does not read
-33f7d5a8fbac the rule moved with its file to lib/references, which the retention scan does not read
-344bcb5ee475 the rule moved with its file to lib/references, which the retention scan does not read
 35356af283b4 the rule moved with its file to lib/references, which the retention scan does not read
-3c3fd0167935 the rule moved with its file to lib/references, which the retention scan does not read
 3c591fecbba8 the rule moved with its file to lib/references, which the retention scan does not read
-3d56104ff9fa the rule moved with its file to lib/references, which the retention scan does not read
-3ed65b9a5fa8 the rule moved with its file to lib/references, which the retention scan does not read
 3ed8b86ab4d6 the rule moved with its file to lib/references, which the retention scan does not read
-3eff162d9afa the rule moved with its file to lib/references, which the retention scan does not read
-3f699438f619 the rule moved with its file to lib/references, which the retention scan does not read
-45a865d46d96 the rule moved with its file to lib/references, which the retention scan does not read
-4aa9b334b6da the rule moved with its file to lib/references, which the retention scan does not read
 4d46630d5824 the rule moved with its file to lib/references, which the retention scan does not read
-54c3c4d67163 the rule moved with its file to lib/references, which the retention scan does not read
-57ffd326ad87 the rule moved with its file to lib/references, which the retention scan does not read
-5b68cd0bdada the rule moved with its file to lib/references, which the retention scan does not read
-5c3133399c29 the rule moved with its file to lib/references, which the retention scan does not read
-5cd79c37ee4e the rule moved with its file to lib/references, which the retention scan does not read
-60393696102d the rule moved with its file to lib/references, which the retention scan does not read
-609820649810 the rule moved with its file to lib/references, which the retention scan does not read
-62ab5602b207 the rule moved with its file to lib/references, which the retention scan does not read
 6a3aa6d7ee4f the rule moved with its file to lib/references, which the retention scan does not read
-6bf097c5a623 the rule moved with its file to lib/references, which the retention scan does not read
-6dfd6a42b411 the rule moved with its file to lib/references, which the retention scan does not read
-70d1608d75f5 the rule moved with its file to lib/references, which the retention scan does not read
-71fe9853e9e0 the rule moved with its file to lib/references, which the retention scan does not read
-73e9610e515d the rule moved with its file to lib/references, which the retention scan does not read
-74f1dbb9b12b the rule moved with its file to lib/references, which the retention scan does not read
-755dd9a1588e the rule moved with its file to lib/references, which the retention scan does not read
-75b7f3b924ae the rule moved with its file to lib/references, which the retention scan does not read
 80ca306ed8cf the rule moved with its file to lib/references, which the retention scan does not read
-87d3716e42f8 the rule moved with its file to lib/references, which the retention scan does not read
-8b7933d7e5bd the rule moved with its file to lib/references, which the retention scan does not read
-8ebca7ecfe9e the rule moved with its file to lib/references, which the retention scan does not read
-91f36396ba7e the rule moved with its file to lib/references, which the retention scan does not read
-94e69975316f the rule moved with its file to lib/references, which the retention scan does not read
-964a0a461702 the rule moved with its file to lib/references, which the retention scan does not read
-a96c1103b954 the rule moved with its file to lib/references, which the retention scan does not read
 ac2daab90ab2 the rule moved with its file to lib/references, which the retention scan does not read
-ae402de352ff the rule moved with its file to lib/references, which the retention scan does not read
-b063b890d860 the rule moved with its file to lib/references, which the retention scan does not read
-ba8fd925c145 the rule moved with its file to lib/references, which the retention scan does not read
-bf6a76f3a3e3 the rule moved with its file to lib/references, which the retention scan does not read
-c07808452a5a the rule moved with its file to lib/references, which the retention scan does not read
-c2bbf2b0904b the rule moved with its file to lib/references, which the retention scan does not read
 c504e6a16490 the rule moved with its file to lib/references, which the retention scan does not read
-cab9b3cddd40 the rule moved with its file to lib/references, which the retention scan does not read
-d4cf0c8dca5d the rule moved with its file to lib/references, which the retention scan does not read
 dbbede694607 the rule moved with its file to lib/references, which the retention scan does not read
-de5a3aa39026 the rule moved with its file to lib/references, which the retention scan does not read
-e08c73d0e044 the rule moved with its file to lib/references, which the retention scan does not read
-e429b9c2b362 the rule moved with its file to lib/references, which the retention scan does not read
 e5c7c9b475f7 the rule moved with its file to lib/references, which the retention scan does not read
 e8c8202c13c1 the rule moved with its file to lib/references, which the retention scan does not read
-ebc8e4a8fb29 the rule moved with its file to lib/references, which the retention scan does not read
-ee814437e21f the rule moved with its file to lib/references, which the retention scan does not read
 f6b2b95fe415 the rule moved with its file to lib/references, which the retention scan does not read
-f8a5d366f909 the rule moved with its file to lib/references, which the retention scan does not read
 059e116158f7 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
 11cf44916787 the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
 1230b42d1b6e the prompt skill folded into edit-skills; its rules live in references/prompt-rules.md or instruction-style.md
@@ -130,7 +73,6 @@ f244c50611ca the prompt skill folded into edit-skills; its rules live in referen
 726db38a1682 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
 b09530674a14 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
 cb8600a38fce gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
-1149011b7a12 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
 c2d0b05ff184 gate launcher trim: the line is reworded in place to leave body headroom for the fork launcher
 eb3d22c76d8c remember skill deleted: its lesson store and booking rules are gone
 d15ea084a100 remember skill deleted: its lesson store and booking rules are gone
@@ -166,3 +108,38 @@ cccd5f3ae347 file-issues mode deleted: it had no use in 30 days
 549622901c4c file-issues mode deleted: it had no use in 30 days
 732a3d7567af review-dispatch page deleted: gate-step.mjs prints the same NEXT lines
 577daf447c61 site:reddit.com web search guidance removed: Anthropic web search refuses reddit.com, search.mjs --source reddit replaces it
+e1b8b23ce8a0 DOCS line folded into the WARN line of gate-lines.md
+43366f50097a ship rubric offer and script-enforced split rule removed: the report and commit-split.mjs cover them
+77c3b643cc36 ship rubric offer and script-enforced split rule removed: the report and commit-split.mjs cover them
+e47b398a1167 ship force-push sentence removed: SKILL.md step 1 already bars force
+b894dec8634a ship gate-once-on-tip line removed: the When section of stack.md states it
+a7026bae18fe the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+7f3a1d40ffec the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+a7e61521d501 the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+8aeece6d2d9d the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+f46cb2a36d38 the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+c858321ddfaf the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+d66278b36d52 the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+292d9b1e70a3 the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+90714e5ab741 the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+4238c24acffa the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+5511a9d02df3 the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+5e546a6a2fea the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+b12322d9260c the build skill and design references no longer repeat or state this unproven rule, so the line is replaced by a shorter one or removed
+b8d00504a784 agent-cases drops the branch for a dispatch without Return: one line, since every dispatch keeps it, and a repeated ask-nothing clause
+6873a3e6fca0 agent-cases drops the branch for a dispatch without Return: one line, since every dispatch keeps it, and a repeated ask-nothing clause
+d21611a1028c agent-cases drops the branch for a dispatch without Return: one line, since every dispatch keeps it, and a repeated ask-nothing clause
+e426f58a114cde809cffa237f9a1c84f4d500ef7 the build run references state each rule once and ask for no unrequested work, so this wording is reworded or removed
+859b308e2e7de3bf3a83627692ffa9ca6386d5e0 the build run references state each rule once and ask for no unrequested work, so this wording is reworded or removed
+21bb3f7d76e0ca6a6b57f52c2ebcd92fb83367fd the build run references state each rule once and ask for no unrequested work, so this wording is reworded or removed
+d257fa707302218c32035153aeae51a9e43ef4a9 the build run references state each rule once and ask for no unrequested work, so this wording is reworded or removed
+d038badf2bb14b630491c9d1a273e9b2899e8e5d the build run references state each rule once and ask for no unrequested work, so this wording is reworded or removed
+9328429f1c0a56377130bc411c61f4c19510b03e the build run references state each rule once and ask for no unrequested work, so this wording is reworded or removed
+00d5ebc6f578 the 200-word clause conflicts with the 2,000-token body aim that edit-skills SKILL.md owns, so it is removed
+17a71dbf7a12 the overcorrection sentence repeats the opening row of the SKILL.md shape table, so it is removed from the template
+2b42a2a8df50 configure no longer carries a lean.md line, because it covers no setting configure handles
+5fe35de2300d the undefined "no sign-off" is replaced by "do not ask the user first"
+71f9e53f58ec the slowdown hypothesis families are generic advice with no recorded failure, so the family list is cut
+86faefc8a608 the slowdown hypothesis families are generic advice with no recorded failure, so the family list is cut
+290bfcb26970 no script implements diarization, so the speaker-model bullet is cut
+73e25b01c7a2 the empty-region rule stands only in layout.md Fill the frame, so the critic question points there

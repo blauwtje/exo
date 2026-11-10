@@ -62,13 +62,18 @@ function covering(root) {
 }
 
 test('the covering-tests check passes when the known pair maps and fails when the scan loses it', () => {
-  const passing = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/task-runner.md');\n" }));
+  const passing = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/task-runner.md'); 'x.mjs';\n", 'verify/checks/x.mjs': '' }));
   assert.match(passing[0], /^\[PASS\] covering tests: /);
-  const failing = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/other.md');\n" }));
+  const failing = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/other.md');\n", 'verify/checks/x.mjs': '' }));
   assert.match(failing[0], /^\[FAIL\] covering tests: .*agents\/task-runner\.md to tests\/agents\.test\.mjs/);
 });
 
 test('the real repository still maps agents/task-runner.md to tests/agents.test.mjs', () => {
   const root = fileURLToPath(new URL('..', import.meta.url));
   assert.match(covering(root)[0], /^\[PASS\] covering tests: /);
+});
+
+test('the covering-tests check fails when a check module is named by no test', () => {
+  const unnamed = covering(repo({ 'agents/task-runner.md': 'a\n', 'tests/agents.test.mjs': "read('agents/task-runner.md');\n", 'verify/checks/lonely.mjs': '' }));
+  assert.match(unnamed[0], /^\[FAIL\] covering tests: no tests\/\*\.test\.mjs names verify\/checks\/lonely\.mjs/);
 });

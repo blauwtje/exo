@@ -11,8 +11,7 @@ Decide first whether the page is an app or a document, because the two fit the s
 - App: launcher, feed, inbox, dashboard, editor, store, any tool someone uses daily.
 - App at 1440: it fits the 1440x900 window like a desktop app: chrome bar, panes, lists that scroll inside their pane.
 - App at 390: a phone app with a top bar and a bottom tab bar switching views.
-- Document: landing, marketing, docs and article pages, laid out per the marketing reference. One message per screen, each shown through a product artifact rather than copy on an empty ground, and each explicit ask high on the page where readers still are.
-- App hierarchy: the largest type and image go to the primary object (the game, the post, the tracked number), not a greeting or slogan. Chrome stays smaller and quieter than content, so the eye lands on what the person came for.
+- Document: landing, marketing, docs and article pages, laid out per the marketing reference.
 
 ## Direction
 
@@ -24,7 +23,7 @@ A named direction wins: the request's own look, the repo's tokens, a plan's `## 
 4. Pick the candidate that fits this audience best and is furthest from the category default.
 5. Write the contract in a few lines: thesis (what the page should feel like and why), world and materials, palette (dominant color, sharp accent), type roles (display face, text face). Add the signature object that recurs across the page and the per-item imagery idea.
 6. Add density, tight or airy, for this audience: a trading desk runs tight, a recipe journal can breathe. Airy is where pages drift; pick it on purpose.
-7. Add a region inventory: every region of the first viewport at 1440 (each pane, rail, band and the hero's two halves) with the content it holds. A region with nothing to list is a dead region; give it a module that belongs there or remove it, before any code.
+7. Add a region inventory: every region of the first viewport at 1440 (each pane, rail, band and the hero's two halves) with the content it holds. Give an empty region (layout.md) a module that belongs there, or remove it, before any code.
 
 Read the slop reference while choosing; it names the generic looks and copy tells to steer away from. Ask only when the page cannot be built without the answer; else decide and report the decision.
 
@@ -41,7 +40,6 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 - Method: an art module of its own (SVG or canvas) with a per-item motif table and hand-written path data where a shape needs it. Size it to the job; a rich module of a few hundred lines is normal.
 - Scale: art fills whole tiles, banners and cover areas edge to edge, and is the largest element of a feed post that has one.
 - Detail: grows with area. A field over about 300px square gets planes (fore, mid, back), one light direction, a texture in the world's terms and small secondary marks; a large flat shape on a flat fill reads as a placeholder.
-- Product as imagery: on marketing pages a real-fidelity UI fragment in HTML and CSS, full of specific data, counts as imagery and usually beats an illustrated metaphor.
 - Subject: the world from the contract shows in the materials and the signature object; the items' own art carries their variety.
 
 ## Build
@@ -49,7 +47,7 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 - Stack: the repo's stack and tokens, or plain HTML, CSS and JS when it has none. Split CSS, art, data and script into files when it helps, and write as many files and Write calls as the page needs.
 - Restyle: keep all content, links and working behavior; change only presentation.
 - Content: the request's facts and names as given, and specific made-up data where it gives none. Invent no proof (reviews, logos, metrics).
-- Product data: rows, logs, builds, schedules, invoices and statuses inside the product can be invented freely and generously, since they are product, not proof; a list holds enough items to fill its pane plus one scroll.
+- Product data: rows, logs, builds, schedules, invoices and statuses inside the product can be invented freely and generously, since they are product, not proof.
 - Repeated items: one data array plus one render function, so content lands in the DOM before the first paint.
 - Finish: a full, working product surface, not a hero with stubs: tabs and views switch, toggles toggle, progress moves, each requested state (loading, empty, error, success) has a styled place.
 - Controls: hover, `:focus-visible`, active and disabled styles; themed `::selection`, `caret-color` and scrollbar.

@@ -25,14 +25,14 @@ One pressure gives a usable case. For a skill that guards a habit, stack three, 
 
 ## What each kind of file needs
 
-- A skill guarding a costly habit (test first, prove a cause before fixing, ask before building) needs three or more pressure scenarios.
+- A skill guarding a costly habit (test first, prove a cause before fixing, ask before building) needs pressure scenarios for it.
 - A skill teaching a technique or pattern needs a case that applies it, one that varies it, one missing a detail and one where the pattern must not be used.
 - A reference needs one case that looks something up, one that applies it and one whose answer the reference does not hold, all without pressure.
 
 ## Running it
 
 1. Save the case to a prompt file.
-2. When the user asks for a run, or no stored answers cover the case, run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`. It runs both arms of every cell `--runs` times (default 3) in parallel, each in a scratch directory outside the repository (it writes nowhere else, `~/.claude` included), and writes each full answer to a file in `--out`.
+2. When the user asks for a run, or no stored answers cover the case, run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`. It runs both arms of every cell `--runs` times (default 1; `--full` for more) in parallel, each in a scratch directory outside the repository (it writes nowhere else, `~/.claude` included), and writes each full answer to a file in `--out`.
 3. To compare against `main`, add `--main-dir <main clone>`, which swaps the without arm for a `main` arm. A `WRONG COPY` line with exit 1 voids a run that loaded another copy.
 4. Copy the chosen action and justification word for word from the `without` answers, because the skill must answer that wording.
 5. Keep the prompt and both justifications in the report.

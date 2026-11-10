@@ -27,9 +27,7 @@ export function questionOptionFindings(repository) {
   return findings;
 }
 
-// Word caps per part, and the most options a question offers.
 export const QUESTION_CAPS = { title: 10, context: 15, label: 3, option: 8, reason: 8 };
-export const MAX_OPTIONS = 3;
 
 // The one copy of the line patterns; tests/question-shape.mjs imports them.
 // Any letter parses, so a fourth option or a reason off A fails its own check.

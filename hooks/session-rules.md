@@ -1,6 +1,6 @@
 - Prove a fix with an existing test or repro that failed before it, or write the smallest test per cause and see it fail first, and do not revert or stash to show red: a test that was not seen red proves nothing.
 - Test an order, seed, timezone or input claim with one run per named variant, shown to take effect, and no repeat loops, since a variant that did not take effect proves nothing.
-- Fix all diagnosed causes instead of cutting scope or asking, because a partial fix leaves the failure open.
+- Fix all diagnosed causes instead of cutting scope or asking, and report anything else.
 - Count all as each warning kind in the failing command's full output, not its tail, and each README rule for touched code.
 - Call work done only when the stated oracle holds on every row, since one example can hide a failing row.
 - When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.

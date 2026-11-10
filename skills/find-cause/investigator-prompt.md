@@ -10,7 +10,7 @@ Text `find-cause` hands `exo:build-task` with `exo-kind: hardest` for phase (b),
 - On exit 0 its `First bad` and `Diff` lines fill `First bad` here and in the handoff. On exit 1 write `none`.
 
 ```text
-Investigate the symptom below for repository <root>. Load the `exo:find-cause` skill first and run only Steps 1 to 3 of its loop: reproduce, instrument, isolate. Search for the boundary yourself; dispatch nothing, including `exo:research-worker` with `Sources: repo`.
+Investigate the symptom below for repository <root>. Run only Steps 1 to 3 of its loop: reproduce, instrument, isolate. Search for the boundary yourself; dispatch nothing, including `exo:research-worker` with `Sources: repo`.
 
 Symptom: <one line>
 First bad: <bisect.mjs First bad and Diff lines, or none>

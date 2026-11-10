@@ -19,7 +19,7 @@ function claim(ref, overrides) {
 }
 
 function writeReport(runDir, body) {
-  fs.writeFileSync(path.join(runDir, 'report.md'), body);
+  fs.writeFileSync(path.join(runDir, 'answer.md'), body);
 }
 
 test('addClaim accepts a quote after whitespace and case folding', async () => {

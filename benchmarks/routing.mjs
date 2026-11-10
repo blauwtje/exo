@@ -17,6 +17,7 @@ import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { countsCost } from './pricing.mjs';
 import { readJson } from './basics.mjs';
 import { printStats } from './routing-spoken.mjs';
+import { WHOLE_FILE_HASHES } from '../lib/hashed-files.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_MS = environmentMs('EXO_ROUTING_SESSION_MS', 120_000);
@@ -58,12 +59,6 @@ export function modelInvocableSkills(root) {
     const file = path.join(root, 'skills', name, 'SKILL.md');
     return fs.existsSync(file) && descriptionOf(fs.readFileSync(file, 'utf8')).invocable;
   });
-}
-
-const WHOLE_FILE_HASHES = { 'session-routing': path.join('hooks', 'session-routing.md') };
-
-export function hashedWholeFiles(root) {
-  return Object.values(WHOLE_FILE_HASHES).map((file) => path.join(root, file));
 }
 
 export function descriptionHashes(root) {

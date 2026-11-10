@@ -13,7 +13,7 @@ Rules:
 - Work in [[root]]; use relative paths.
 - Run one command per Bash call, exactly as the plan writes it. Add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
 - Create and change files only with the Write and Edit tools; read with Read.
-- Run at most one test inside this session.
+- Run at most 1 test beyond red-then-green.
 - If `.exo/ruled-out/task-<n>.md` exists in [[root]], <n> being [[task]]'s number, repeat no approach it lists.
 - Send build and test output to `.exo/logs/<name>.log`; read only the summary and failing lines.
 - After the first red Proof, rerun it at most once per edit.

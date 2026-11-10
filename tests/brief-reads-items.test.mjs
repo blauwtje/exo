@@ -71,3 +71,10 @@ test('a leading ~/ in a Reads item resolves under the home directory', () => {
     process.env.HOME = saved;
   }
 });
+
+test('a Fetches count with a trailing note and a Reads entry with a bracket note are read', () => {
+  const cwd = folder();
+  const size = workerSize({ prompt: 'Fetches: 10 (hard cap 20)\nReads: agents/orchestrator.md [the plan]\nResult: .exo/r.md', cwd });
+  assert.deepEqual(size.invalid, []);
+  assert.deepEqual(size.unresolved, []);
+});

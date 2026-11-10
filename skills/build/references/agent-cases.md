@@ -4,7 +4,7 @@ Read on a rare case. Each unit has its own section, and a **unit** is one delega
 
 ## task-runner
 
-- Ask the user nothing. A choice or a build `BLOCKED` returns `BLOCKED`, the question and the options.
+- A choice or a build `BLOCKED` returns `BLOCKED`, the question and the options.
 - A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`. The lead asks it after the wave and re-dispatches with the answer.
 - Leave edits, writes and commits to others: builds edit, land-task commits.
 - When no tool dispatches, return `BLOCKED all nested dispatch unavailable`, alone.
@@ -19,12 +19,6 @@ Read on a rare case. Each unit has its own section, and a **unit** is one delega
 - A `Deferred:` brief line names a Proof only the session can run. Skip it and write `<command>: deferred`.
 - With no `Proof:`, pick or write one test for `Success criterion:`, run only it, and list it first under Proof.
 - In a long task, code each step. Green is each `Run:` printing `Expected:`.
-- Without `Return: one line`, return the report on failure or unfinished work, else:
-
-Task <n>: GREEN
-<each command under Proof>: pass
-Report: <report path>
-
 - Report layout:
 
 Landed: <change>

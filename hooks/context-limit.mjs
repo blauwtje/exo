@@ -26,7 +26,7 @@ function shortReason(reason) {
   return text.length > REASON_MAX ? `${text.slice(0, REASON_MAX - 1)}…` : text;
 }
 
-export function receiptLine({ tool_name: tool, tool_input: original } = {}, fields, input = original) {
+function receiptLine({ tool_name: tool, tool_input: original } = {}, fields, input = original) {
   if (fields?.permissionDecision === 'deny') return `exo blocked: ${shortReason(fields.permissionDecisionReason)}`;
   if (tool === 'Skill') {
     const name = /^exo:(.+)$/.exec(input?.skill ?? '')?.[1];

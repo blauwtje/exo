@@ -101,3 +101,9 @@ test('the long-command module imports no child process', () => {
   const source = fs.readFileSync(new URL('../lib/long-command.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /child_process/);
 });
+
+test('a heredoc fed to cat is data, one fed to bash is scanned', async () => {
+  assert.equal(await decide("cat <<'EOF'\nsleep 5\nEOF"), undefined);
+  assert.equal((await decide("bash <<'EOF'\nsleep 5\nEOF"))?.permissionDecision, 'deny');
+  assert.equal((await decide("cat <<'EOF'\nx\nEOF\nsleep 5"))?.permissionDecision, 'deny');
+});

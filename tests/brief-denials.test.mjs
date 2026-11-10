@@ -39,3 +39,8 @@ test('a 124k-token whole-file read is refused with the lines range that fits the
   const fixed = refusal(`Reads: big.md lines 1-${range[1]}\nResult: .exo/r.md`, dir);
   assert.equal(fixed, undefined);
 });
+
+test('a brief reading a missing file is refused with the files-exist limit', () => {
+  const dir = tempDir('brief-denials-');
+  assert.match(refusal('Reads: new.test.mjs\nResult: .exo/r.md', dir), /name only files that exist now/);
+});

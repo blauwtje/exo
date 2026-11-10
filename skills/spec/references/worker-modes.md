@@ -51,9 +51,7 @@
 - Sort each point: `code` (the repository answers it: answer and `path:line`), `assume` (a wrong guess is cheap to undo: the assumption) or `user` (a wrong guess is costly and it passes the `## When to ask` gate of the route-skills question reference)
 - A point that fails that gate is `assume`, marked `(exo decided)`.
 - Write the `code` and `assume` points under `## Assumptions` of the `.exo/<topic>/assumptions.md` path the dispatch names, else the open-points folder under .exo, one bullet each: `- [code|assume] <point> -> <recommended answer> (<path:line>)`.
-- Return at most 10 lines in this order, omitting a kind with no entry: `Assumptions: <path>`, the `user` points as `<n>. [user] <point> -> <recommended answer> (<path:line>)`, ranked by wrong-guess cost, then `Cannot follow:` and `Reuse:` lines.
-- Write the `code` and `assume` points under `## Assumptions`, one bullet each, by wrong-guess cost: `- [code|assume] <point> → <recommended answer> (<path:line>)`.
-- Return at most 10 lines in this order, omitting a kind with no entry: `Assumptions: <path>`, the `user` points as `<n>. [user] <point> → <recommended answer> (<path:line>)`, `Cannot follow:`, `Reuse:`, `Scope:`. Write `none` for the `user` points when there is none; with no `code` or `assume` point, write no file and no `Assumptions:` line.
+- Return at most 10 lines in this order, omitting a kind with no entry: `Assumptions: <path>`, the `user` points as `<n>. [user] <point> -> <recommended answer> (<path:line>)`, ranked by wrong-guess cost, then `Cannot follow:`, `Reuse:` and `Scope:` lines. Write `none` for the `user` points when there is none; with no `code` or `assume` point, write no file and no `Assumptions:` line.
 
 ## Brief
 

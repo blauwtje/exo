@@ -7,6 +7,5 @@ An agent takes the same shape as a skill with two changes. Its frontmatter carri
 - Require `name` and `description`. The `description` says when the caller dispatches the agent.
 - Leave out `model` and `effort`. `lib/model-kinds.json` maps each agent file to a kind, and the `agent-effort` hook sets model and effort at dispatch.
 - Give `tools` as an allowlist, so the agent gets only the tools the job needs; discovery and bulk reading take few. `disallowedTools` removes from the inherited set instead.
-- The harness also reads `maxTurns`, `autoCompactWindow` (100000 to 1000000), `skills` (first 32), `memory` (`user`, `project` or `local`), `background`, `omitClaudeMd`, `isolation`, `color` and `experimental`.
 - Plugin agents ignore `permissionMode`, `mcpServers`, `hooks` and `initialPrompt`, so leave them out of a plugin agent file.
 - The harness ignores an unknown key without an error. Run `claude --debug` once on a new agent, because it logs each key the harness does not recognize or apply.

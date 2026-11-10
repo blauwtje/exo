@@ -13,5 +13,5 @@
 
 ## Step 3, routes the menu skips
 
-- An `Unasked: push` line runs `--route push` unforced before the question, dropping the menu's Push.
+- An `Unasked: push` line runs `--route push` unforced before the question, dropping the menu's Push. `ship.mjs --routes` prints the `Unasked:` line.
    - Plan `Land:` from `gate` sets the route with no question: `push-main` gives `push`, `pr` gives `open-pr`, `local` gives no route.

@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { baseOf, workerSize } from '../../lib/worker-size.mjs';
+import { agentContextTarget, orchestratorPredispatchReads } from '../../lib/context-limits.mjs';
 
+const CATALOG_HOME = path.join(os.tmpdir(), 'exo-catalog-defaults');
 const FIELD = /(?:^|[\s(*`])(?:\*\*)?(Reads|Result|Fetches|Workers|Worktree)(?::\*\*|\*\*:|:)/g;
 const SPAN = /`((?:Reads|Result|Fetches|Workers|Worktree):[^`\n]*\S[^`\n]*)`/g;
 const FENCE = /```[a-z]*\n([\s\S]*?)```/g;
@@ -79,6 +81,24 @@ function delegateFailures(repository) {
   });
 }
 
+function stated(repository, { file, needle, label }) {
+  const path = repository.join(file);
+  if (!fs.existsSync(path)) return [`${file} is missing`];
+  return repository.text(path).includes(needle) ? [] : [`${file} does not state ${label} (${needle})`];
+}
+
+export function limitFailures(repository) {
+  const budget = `${agentContextTarget(CATALOG_HOME) / 2000}k tokens`;
+  const fetches = 'whole number first';
+  return [
+    ...stated(repository, { file: 'agents/orchestrator.md', needle: `at most ${orchestratorPredispatchReads(CATALOG_HOME)} reads`, label: 'the reads count' }),
+    ...stated(repository, { file: 'agents/orchestrator.md', needle: budget, label: 'the context budget' }),
+    ...stated(repository, { file: 'hooks/dispatch-rules.md', needle: budget, label: 'the context budget' }),
+    ...stated(repository, { file: 'agents/orchestrator.md', needle: fetches, label: 'the Fetches: rule' }),
+    ...stated(repository, { file: 'hooks/dispatch-rules.md', needle: fetches, label: 'the Fetches: rule' })
+  ];
+}
+
 export function briefFailures(repository) {
   const directory = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'brief-grammar-')));
   fs.writeFileSync(path.join(directory, 'x.md'), 'x\n');
@@ -91,11 +111,11 @@ export function briefFailures(repository) {
 }
 
 export function checkBriefGrammar(report, repository) {
-  const found = briefFailures(repository);
+  const found = [...briefFailures(repository), ...limitFailures(repository)];
   report.assert(
     found.length === 0,
     'brief grammar',
-    'every brief example shown to a writer parses to the fields it shows, and each general-purpose delegate template shows a Reads: or Fetches: line',
+    'every brief example shown to a writer parses to the fields it shows, each general-purpose delegate template shows a Reads: or Fetches: line, and the agent texts state the reads count, the context budget and the Fetches: rule of the rule table',
     found.join('; ')
   );
 }

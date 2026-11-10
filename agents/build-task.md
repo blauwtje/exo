@@ -37,7 +37,7 @@ Build one plan task and report it.
 
 - Delete nothing to unblock. Start no background session or delegate, ask nothing, and put a log over 40 lines beside `Report to:`.
 - Stop at green, a second test or `Run:` failure, or an open choice.
-- When the brief leaves a point open, use a cheap-to-undo safe default and record `Choice:`; with none, end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, with no options.
+- When the brief leaves a point open, choose by the brief's criteria and record `Choice:`; with none, end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, with no options.
 
 ## Report
 

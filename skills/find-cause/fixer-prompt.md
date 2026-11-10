@@ -8,7 +8,7 @@ forbidden-steps: 6-7
 ## find-cause opening
 
 ```text
-Fix the proven cause in the handoff, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only it and its `Ranges`.
+Fix the proven cause in the handoff, repository <root>. Run only Steps 4 and 5 of its loop: predict, fix, prove. Read only it and its `Ranges`.
 
 Reads: <handoff path>
 Worktree: <abs path>
@@ -26,7 +26,7 @@ Return: `status=<fixed|failed|blocked> handoff=<path>`.
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.
 
-Fix one failure whose cause is unproven. Load the `exo:find-cause` skill first and run only Steps 1 to 5 of its loop: reproduce, instrument, isolate, predict, fix, prove.
+Fix one failure whose cause is unproven. Run only Steps 1 to 5 of its loop: reproduce, instrument, isolate, predict, fix, prove.
 `git diff` shows the edits already made.
 
 Symptom: <one line>
@@ -44,9 +44,6 @@ Return only the handoff path.
 ## Shared block
 
 ```text
-Make the smallest change that fully does what the user asked.
-Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
-
 Before the fix, read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
 
 Hard boundaries:

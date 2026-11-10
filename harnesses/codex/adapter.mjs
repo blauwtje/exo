@@ -31,7 +31,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
 import { shellQuote, writeAtomic } from '../../lib/basics.mjs';
-import { hashOf, isPlain, plainChain, readRecord, statOf } from '../install-files.mjs';
+import { apply, combine, hashOf, isPlain, jsonText, plainChain, readRecord, removeInstalls, sameInstall, statOf } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 import { generateTree } from './generate.mjs';
 import { codexHookEntries } from './hooks.mjs';
@@ -47,7 +47,6 @@ const EXCLUDE_LINE = /^\/\.agents\/skills\/[a-z0-9][a-z0-9-]*\/$|^\/\.codex\/age
 const SKILL_PREFIX = 'harnesses/codex/generated/skills/';
 const AGENT_PREFIX = 'harnesses/codex/generated/agents/';
 
-const jsonText = (value) => `${JSON.stringify(value, null, 2)}\n`;
 
 function safeName(value, pattern, what) {
   if (typeof value !== 'string' || !pattern.test(value)) throw new Error(`${what} name ${JSON.stringify(value)} is not a plain name`);
@@ -100,7 +99,6 @@ function readInstalls(file) {
   return [old];
 }
 
-const sameInstall = (left, right) => left.scope === right.scope && left.project === right.project;
 const matches = (install, selector) => (selector.scope === undefined || install.scope === selector.scope)
   && (selector.project === undefined || install.project === selector.project);
 const withInstall = (installs, install) => [...installs.filter((entry) => !sameInstall(entry, install)), install];
@@ -510,13 +508,6 @@ function planRemove(install, installs, env) {
   return { writes, notes, summary: `removed the ${install.scope} install that ${where.recordFile} listed` };
 }
 
-function apply(plan) {
-  for (const write of plan.writes) write();
-  return { summary: plan.summary, notes: plan.notes };
-}
-
-const combine = (results) => ({ summary: results.map((result) => result.summary).join('; '), notes: results.flatMap((result) => result.notes) });
-
 export function detect(env) {
   const cli = onPath('codex', env);
   const folder = fs.existsSync(locations(env).codexHome);
@@ -546,15 +537,5 @@ export function update(record) {
 }
 
 export function remove(record) {
-  const { recordFile } = locations(record.env);
-  const installs = readInstalls(recordFile);
-  const wanted = installs.filter((entry) => matches(entry, record));
-  if (wanted.length === 0) return `nothing to remove: ${recordFile} lists no matching install`;
-  let remaining = installs;
-  const plans = wanted.map((entry) => {
-    const plan = planRemove(entry, remaining, record.env);
-    remaining = remaining.filter((candidate) => !sameInstall(candidate, entry));
-    return plan;
-  });
-  return combine(plans.map(apply));
+  return removeInstalls(record, { locations, readInstalls, matches, planRemove });
 }

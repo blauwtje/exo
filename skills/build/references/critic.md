@@ -32,7 +32,7 @@ Read every screenshot. Judge what a user would see, against the request and the 
 - Does type have a clear display and text role, and color a dominant hue with a sharp accent?
 - Are the states styled and legible: focus, selection, empty, error, other tabs and sheets?
 - Is there finish: materials, depth, alignment, consistent radius and spacing?
-- Squint at each shot. Which region over about 1/6 of the viewport holds no content, texture or product detail? An empty region counts as a weak area.
+- Which region over about 1/6 of the viewport is empty (layout.md `## Fill the frame`)? It counts as a weak area.
 - Does the first viewport show the product working, with specific data, or only a slogan and a picture?
 - Does any copy or look read as machine-made (stock phrases, two-tone headlines, purple gradients, cream and terracotta)?
 

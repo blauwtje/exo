@@ -16,6 +16,6 @@ With `concern=1` or more and `fix=0`, still dispatch: the fixer, not the gate se
    - `next=stop`: end the turn with its `STOP` line and the open findings in the report, and dispatch no further.
    - `next=done`: go to step 4.
 4. Dispatch `exo:review-branch` with no model override per the `DISPATCH Repair` line, with findings path `<checkout>/.exo/fix-review.md`. Run no `merge-reviews.mjs` on that file.
-   - No file at `<checkout>/.exo/fix-review.md` means the one resume in the `## Dispatch` rules that gate's step 2 names. If there is still no file, end the turn `BLOCKED` with its report, even when the return line reads `CLEAN`.
+   - No file at `<checkout>/.exo/fix-review.md` means the one resume in the gate `BLOCKED` and resume rules. If there is still no file, end the turn `BLOCKED` with its report, even when the return line reads `CLEAN`.
    - `FINDINGS` with `fix=0` (only `report` findings) goes to `gate` step 4.
    - `FINDINGS` with `fix=1` or more, or `BLOCKED`, ends the turn with its report.

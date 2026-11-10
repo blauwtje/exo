@@ -5,7 +5,7 @@ Handing off ends the shaping turn by asking the user whether to start the build.
 First match wins:
 
 - When another stage or a workflow invoked spec, ask nothing and return to the caller.
-- In plan mode the plan approval is the pick. After it, start the run per the Start line and ask no question.
+- In plan mode the plan approval is the pick. After it, start the run and ask no question.
 - Otherwise, end the message on the question script's output and start nothing before the reply.
 
 On the reply:

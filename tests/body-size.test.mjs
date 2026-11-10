@@ -9,6 +9,8 @@ function fake(files) {
     agentFiles: () => Object.keys(files).filter((f) => f.startsWith('agents/')),
     relative: (f) => f,
     text: (f) => files[f],
+    trackedFiles: () => [],
+    join: (f) => f,
   };
 }
 
@@ -65,4 +67,22 @@ test('a locked reference that moves off its lock in either direction fails', asy
   };
   assert.match(run(lock - 10), /critique\.md is \d+ tokens, under its/);
   assert.match(run(lock + 1), /critique\.md is \d+ tokens, over its/);
+});
+
+test('loaded prose over its byte lock fails and at the lock passes', async () => {
+  const { checkLoadedProse } = await import('../verify/checks/body-budgets.mjs');
+  const { LOADED_PROSE_LOCK } = await import('../verify/budgets.mjs');
+  const run = (bytes) => {
+    const repo = {
+      trackedFiles: () => ['skills/a.md', 'docs/b.md'],
+      relative: (f) => f,
+      join: (f) => f,
+      text: (f) => (f === 'skills/a.md' ? 'x'.repeat(bytes) : 'y'.repeat(999999)),
+    };
+    const calls = [];
+    checkLoadedProse({ assert: (...args) => calls.push(args) }, repo);
+    return calls[0][0];
+  };
+  assert.equal(run(LOADED_PROSE_LOCK.bytes), true);
+  assert.equal(run(LOADED_PROSE_LOCK.bytes + 1), false);
 });

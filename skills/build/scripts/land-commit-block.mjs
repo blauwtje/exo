@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { withoutRunVariables } from '#process-tree';
 import { UsageError } from '#script-flags';
 import { planTaskTrailer } from '#plan-landed';
-import { shellQuote } from '#basics';
+import { escapeRegExp, shellQuote } from '#basics';
+
+export { escapeRegExp };
 import { LandingError } from './land-errors.mjs';
 
 function trailersOf(planId, number, signatures) {
@@ -49,8 +51,4 @@ export function commitBlockOf(plan, number, planId, signatures = [], root = '.')
   }
   if (task.compact) return deriveCommit(task, number, planId, signatures, root);
   throw new LandingError(`Task ${number} has no Commit: block`);
-}
-
-export function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
