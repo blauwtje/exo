@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { RUN_OUTCOMES } from '../lib/run-outcomes.mjs';
 import { REFUSAL_HANDLERS, isRetryable, refusalHandler } from '../lib/refusal-handlers.mjs';
 
 const KINDS = ['plan drift', 'input unreachable', 'outside Files', 'report missing', 'proof failed', 'env', 'code rule', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
 
 test('every refusal kind maps to one single-line Then: handler', () => {
   assert.deepEqual(Object.keys(REFUSAL_HANDLERS).sort(), [...KINDS].sort());
+  assert.ok(Object.keys(REFUSAL_HANDLERS).every((kind) => RUN_OUTCOMES[kind] !== undefined));
   for (const kind of KINDS) {
     const line = refusalHandler(kind);
     assert.match(line, /^Then: \S/, kind);

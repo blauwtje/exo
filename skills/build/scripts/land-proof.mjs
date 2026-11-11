@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { runTreeSync } from '#process-tree';
+import { runCheck } from '../../../lib/run-check.mjs';
 import { environmentMs } from '#script-flags';
 import { cachedPass, gateRefusal, recordPass, workingTreeKey } from '#check-cache';
 import { readShadow, recordShadow, shadowSelection, trialActive } from '#suite-command';
@@ -27,7 +27,8 @@ export function quietText(text, ok) {
 
 function proofAttempt(task, command, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs, env: proofEnvOf(task, pendingEvidence) });
+  const outcome = runCheck(root, command, { timeoutMs: deadlineMs, env: proofEnvOf(task, pendingEvidence), fresh: true, record: false });
+  const proofRun = { status: outcome.code, signal: outcome.signal, timedOut: outcome.timedOut, error: outcome.error, output: outcome.output };
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   return { command, proofRun, deadlineMs, tail, passed: proofRun.status === 0 && !proofRun.timedOut && gateRefusal(command, proofRun.output) === null };
@@ -100,8 +101,8 @@ function testRunFailure(file, testRun, deadlineMs) {
 function testFileFailure(task, file, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
-  const testRun = runTreeSync(`node --test --test-reporter=spec ${file}`, { cwd: root, timeoutMs: deadlineMs, env });
-  return testRunFailure(file, testRun, deadlineMs);
+  const testRun = runCheck(root, `node --test --test-reporter=spec ${file}`, { timeoutMs: deadlineMs, env, record: false, fresh: true });
+  return testRunFailure(file, { status: testRun.ok ? 0 : (testRun.code ?? 1), timedOut: testRun.timedOut, output: testRun.output }, deadlineMs);
 }
 
 function parallelFailures(task, files, root, pendingEvidence) {
@@ -109,8 +110,8 @@ function parallelFailures(task, files, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
   const waves = Math.ceil(files.length / poolSize(files.length));
-  const pool = runTreeSync(testPoolCommand(files), { cwd: root, timeoutMs: deadlineMs * waves, env: { ...env, EXO_TEST_POOL_TIMEOUT_MS: String(deadlineMs) } });
-  const results = pool.status === 0 ? parseTestPool(pool.output) : null;
+  const pool = runCheck(root, testPoolCommand(files), { timeoutMs: deadlineMs * waves, env: { ...env, EXO_TEST_POOL_TIMEOUT_MS: String(deadlineMs) }, record: false, fresh: true });
+  const results = pool.ok ? parseTestPool(pool.output) : null;
   if (results === null) return files.map((file) => testFileFailure(task, file, root, pendingEvidence));
   return results.map((result) => testRunFailure(result.file, result, deadlineMs));
 }

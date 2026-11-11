@@ -14,13 +14,16 @@ import { LandingError, PlanDriftError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
 import { parsePin, refuseOutsidePin, refuseMismatchedToplevel } from './land-pin.mjs';
 import { fixLand } from './land-fix.mjs';
-import { quiet, quietText, runCoveringTests } from './land-proof.mjs';
+import { quiet, quietText } from './land-proof.mjs';
+import { appendTimeline } from '../../../lib/timeline.mjs';
 import { appendDecisions, writeProofRecord } from './land-record.mjs';
-import { proofEvidenceOf, gateEnvOf } from './land-gate.mjs';
+import { proofEvidenceOf } from './land-gate.mjs';
 import { refuseAlreadyLanded, refuseUnfinishedMerge, taskChangedPaths } from './land-refusals.mjs';
 import { checkTask, checkCodeRules } from './land-check.mjs';
-import { taskOf, refuseBeforeProof, proveTask, runPreCommitGates } from './land-prove.mjs';
-import { dropCandidate, clearStaleCandidate, commitCandidate, promoteCandidate, gateCandidate, committedSha } from './land-candidate.mjs';
+import { amendOutsideFiles } from './land-amend.mjs';
+import { taskOf, refuseBeforeProof, proveTask } from './land-prove.mjs';
+import { clearStaleCandidate } from './land-candidate.mjs';
+import { stageCandidate, coverOrDrop, promoteAndCommit } from './land-stage.mjs';
 import { landingReport, landingForCaller, withNext } from './land-output.mjs';
 import { foldCheckpoints, reportFlagOf, reportSourceOf } from './land-stopped.mjs';
 
@@ -47,6 +50,14 @@ function recordRuledOut(root, number, error) {
 }
 
 function landTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin, docker }) {
+  const early = parsePlan(planText);
+  refuseAlreadyLanded(early, taskOf(early, number), root, planIdOf(planPath));
+  const amended = amendOutsideFiles({ planText, number, context: { root, planPath, docker, reportText, reportPath, pendingEvidence: proofEvidenceOf(parsePlan(planText), root, planIdOf(planPath)) } });
+  const report = landAmended({ planText: amended.planText, number, root, reportText, reportPath, planPath, pin, docker });
+  return `${amended.lines.map((line) => `${line}\n`).join('')}${report}`;
+}
+
+function landAmended({ planText, number, root, reportText, reportPath, planPath, pin, docker }) {
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
   clearStaleCandidate(root, planId);
@@ -57,24 +68,15 @@ function landTaskLocked({ planText, number, root, reportText, reportPath, planPa
   const pendingEvidence = proofEvidenceOf(plan, root, planId);
   const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
   const frame = frameOf(plan.frame);
-  const warnLines = runPreCommitGates(task, frame, root);
-  const changed = taskChangedPaths(root);
-  const candidate = commitCandidate(block, root, task, planId, reportText);
-  const gateLine = warnLines + gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
-  try {
-    runCoveringTests(task, proofs.map(({ command }) => command), root, changed, pendingEvidence);
-  } catch (error) {
-    dropCandidate(root, candidate);
-    throw error;
-  }
-  promoteCandidate(root, task, planId, candidate);
-  const sha = committedSha(task, { root, planId, planPath, base: candidate.base });
+  const { changed, candidate, gateLine } = stageCandidate({ plan, task, frame, block, root, planId, reportText });
+  coverOrDrop({ task, proofs, root, changed, pendingEvidence, candidate });
+  const sha = promoteAndCommit({ task, root, planId, planPath, candidate });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   writeProofRecord({ root, planId, number, proofs, redLine });
+  appendTimeline(root, 'landed', number);
   return landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine });
 }
-
 
 const USAGE = [
   'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>|-] [--check] [--code-rules] [--next]',

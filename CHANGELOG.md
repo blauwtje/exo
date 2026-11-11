@@ -9,12 +9,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- A gate question finding parks under `.exo/questions/` and the run goes on.
+- A land adds an unclaimed, unprotected missed path to the task's `Files:` once its Proof passes, and prints an `AMEND` line instead of refusing.
+- `run-report` shows per-task build, wait and land durations and the idle total, read from a run timeline file.
+- `npm run check` fails on a stop or decide line outside the outcome table, turn-ending prose outside it, or a check command outside `runCheck`.
 - The gate reruns only the failed specs of a failing Success criterion on the base branch and prints `SKIP success-criterion (also fails on base: ...)`, so a failure the branch did not cause starts no repair round.
 - `plan-check.mjs` flags a `Proof:` command that cannot start from the checkout root and a path a `Data:` line names that `Files:` omits.
 - A build runs the environment setup an end-to-end `Proof:` needs once, before the first block, and ends a stalled setup command at its deadline with its whole process group.
 
 ### Changed
 
+- The gate runs one full branch review and one overlap review per plan run, then keeps or reverts each fixer commit by script, scopes later findings to the fix diff and appends one row per round to `review-rounds.tsv`.
+- An in-session build and gate share one outcome table, `lib/run-outcomes.mjs`: each stop, decide and repair line has an action, and only a `stop` row ends the turn.
+- One `repairBound` (default 2) in `lib/run-providers.json` sets the repair limit, and a gate FAIL loops through repair up to that bound.
+- Every run check goes through `runCheck` on a tree-keyed record, with `env` and `fresh` options; the baseline, round, land-proof and run-tail checks use it, and gate proofs run concurrently again.
+- A re-entered gate resumes from its steps recorded as passed on the same tree.
+- `wait-report.mjs` returns at once on a settled report with no verdict line, as a repair row.
 - A plan build keeps the main session smaller, a median peak of 25870 tokens against 31709: the build skill body carries the loop steps, the dispatch rules skip an `exo:task-runner` call, and `next-task.mjs --block` prints no `Proof:` lines once every task has landed.
 
 ### Fixed
@@ -23,6 +33,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The first gate call returns the review lines, and the full run goes only through a backgrounded `--full` call that writes a progress file.
 - An interactive build runner gets the `wait-report.mjs` command as its `Wait:` line, so a lost notification no longer leaves it idle.
 - A background `until ... sleep` or `while ... sleep` polling loop is refused with the `Wait:` route named, also inside `bash -c` and `eval` text; a loop wrapped by `timeout` and a counted retry pass.
+- The DeepSeek peak notice test pins the clock through `EXO_NOW_MS`, so it passes at every hour.
 
 ## 0.140.0 - 2026-11-10
 

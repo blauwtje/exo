@@ -80,7 +80,7 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(GATE.includes('scripts/gate-step.mjs" --plan <plan path> --root <checkout> --base <base>` first'), 'verify lists the reviews before the gate through gate-step');
   assert.ok(GATE.includes('Then in one message: the full run in the background and step 2\'s dispatch'), 'the gate and the dispatch start in one message');
   assert.ok(GATE.includes('A dispatched agent backgrounds the full run, ends its turn, and writes its result after its own shells have ended.'), 'a dispatched agent backgrounds the gate and ends its turn');
-  assert.ok(GATE.includes('On `FAIL` or `UNPLANNED`, end the turn with its report, rerunning nothing'), 'the repair waits for the gate');
+  assert.ok(GATE.includes('On `FAIL` or `UNPLANNED`, follow the action of its row in `${CLAUDE_PLUGIN_ROOT}/lib/run-outcomes.mjs`, rerunning nothing'), 'the repair follows the outcome table');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');

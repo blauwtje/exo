@@ -17,7 +17,7 @@ The gate readies a branch for a pull request.
    - The full run is the same command with `--full`, its progress in `.exo/gate-progress.log` read with a plain `tail`.
    - No plan file → end the turn: ask for its path and name `build`'s no-plan route; hand-run no check or `ship`.
    - `SKIP`, `WARN`, `FIX-ONLY`, `SESSION`, `SELF-HOSTED` → `references/gate-lines.md`.
-   - On `FAIL` or `UNPLANNED`, end the turn with its report, rerunning nothing.
+   - On `FAIL` or `UNPLANNED`, follow the action of its row in `${CLAUDE_PLUGIN_ROOT}/lib/run-outcomes.mjs`, rerunning nothing.
 2. **Review the branch.** Reviewer `none`: skip the dispatch, still merge.
    - Dispatch `exo:review-branch` per `DISPATCH Branch` in one message, starting `exo-kind: review-deep` unless the line has none, its fields and `Read:` changed files.
    - Then run `gate-step.mjs --after review` with those flags and a `--report <path>` per report; follow its `NEXT` lines.

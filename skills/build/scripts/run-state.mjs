@@ -102,17 +102,21 @@ export function readJournal(root, id) {
 export function resumePoint(steps) {
   const open = new Map();
   let pending = null;
+  const gateSteps = new Map();
+  let gateReview = null;
   let failedAttempts = 0;
   for (const step of steps) {
+    if (step.kind === 'gate-step') gateSteps.set(step.step, step.tree);
+    if (step.kind === 'gate-review') gateReview = step;
     if (step.kind === 'session') pending = step;
-    else if (step.kind !== 'check') pending = null;
+    else if (step.kind !== 'check' && step.kind !== 'gate-step' && step.kind !== 'gate-review') pending = null;
     if (step.kind === 'attempt') {
       open.set(step.task, step);
       failedAttempts = step.failedAttempts;
     }
     if (step.kind === 'commit') open.delete(step.task);
   }
-  return { pending, attempts: open, failedAttempts };
+  return { pending, attempts: open, failedAttempts, gateSteps, gateReview };
 }
 
 const gatesFile =(dir) => path.join(dir, 'gates.md');

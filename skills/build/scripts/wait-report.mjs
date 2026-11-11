@@ -2,14 +2,17 @@ import fs from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { exitWithParent } from '#lifetime';
 import { sessionWait } from '../../../harnesses/coordination-contract.mjs';
+import { outcomeLine } from '../../../lib/run-outcomes.mjs';
+import { appendTimeline, taskOfReport } from '../../../lib/timeline.mjs';
 import { parseFlags, UsageError, isMain, environmentMs } from '#script-flags';
 
 const DEFAULT_TIMEOUT_MS = 540000;
+const DEFAULT_SETTLE_MS = 20000;
 const POLL_INTERVAL_MS = 5000;
 const USAGE = [
   'usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--report <path>...] [--any] [--timeout <seconds>]',
   '--since is given once for all reports or once per --report, paired in order;',
-  'a report counts once it is fresh and holds a verdict line (GREEN, BLOCKED, PLAN DRIFT, FAIL or Unresolved:), with no stamp file;',
+  'a report counts once it is fresh and holds a verdict line (GREEN, BLOCKED, PLAN DRIFT, FAIL or Unresolved:), or has not changed for EXO_WAIT_SETTLE_MS (default 20000) and then prints `no verdict <paths>` with its Then: line;',
   '--any returns as soon as one report is fresh and prints only the fresh paths.',
   'Exit 0 prints each report path, then a `final` line: do not wait again; exit 2 prints `waiting <paths>` at the EXO_WAIT_REPORT_MS deadline (default 540000); exit 1 is a bad argument, also a --since later than now.',
 ].join('\n');
@@ -30,8 +33,12 @@ function hasVerdict(reportPath) {
   return lines.some((line) => VERDICT_LINE.test(line) || BLOCKING_LINE.test(line) || UNRESOLVED_LINE.test(line));
 }
 
+function isSettled(reportPath) {
+  return Date.now() - fs.statSync(reportPath).mtimeMs >= environmentMs('EXO_WAIT_SETTLE_MS', DEFAULT_SETTLE_MS);
+}
+
 function isDone(reportPath, sinceMs) {
-  return isFresh(reportPath, sinceMs) && hasVerdict(reportPath);
+  return isFresh(reportPath, sinceMs) && (hasVerdict(reportPath) || isSettled(reportPath));
 }
 
 export async function waitForReports({ reports, sinceSeconds, timeoutMs, any = false }) {
@@ -73,6 +80,7 @@ async function main(argv) {
   if (late !== undefined) {
     throw new UsageError(`flag --since ${late} is later than now ${nowSeconds}, so no report can count as fresh; pass the printed Since: or Wait: value, else \`date +%s\` taken before the dispatch`);
   }
+  flags.report.forEach((reportPath) => appendTimeline(process.cwd(), 'wait-start', taskOfReport(reportPath)));
   const pending = await waitForReports({
     reports: flags.report,
     sinceSeconds: sinceSeconds.length === 1 ? sinceSeconds[0] : sinceSeconds,
@@ -85,7 +93,14 @@ async function main(argv) {
     process.exitCode = 2;
     return;
   }
-  process.stdout.write(`${fresh.join('\n')}\nfinal\n`);
+  const mute = fresh.filter((reportPath) => !hasVerdict(reportPath));
+  const verdictless = mute.length === 0 ? '' : `no verdict ${mute.join(' ')}\n${outcomeLine('no verdict')}\n`;
+  fresh.forEach((reportPath) => {
+    const task = taskOfReport(reportPath);
+    appendTimeline(process.cwd(), 'report-written', task, Math.floor(fs.statSync(reportPath).mtimeMs / 1000));
+    appendTimeline(process.cwd(), 'wait-end', task);
+  });
+  process.stdout.write(`${fresh.join('\n')}\nfinal\n${verdictless}`);
 }
 
 async function runCli() {

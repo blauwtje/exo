@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
 import { runCoveringTests } from '../skills/build/scripts/land-proof.mjs';
 import { LandingError } from '../skills/build/scripts/land-errors.mjs';
@@ -15,9 +16,11 @@ const testSource = (body) => `import { test } from 'node:test';\nconst source = 
 
 async function checkout(bodies) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-covering-'));
+  execFileSync('git', ['init', '-q'], { cwd: root });
   await fs.mkdir(path.join(root, 'tests'));
   await fs.writeFile(path.join(root, 'package.json'), '{"type":"module"}\n');
   await Promise.all(bodies.map((body, index) => fs.writeFile(path.join(root, 'tests', `case-${index}.test.mjs`), testSource(body))));
+  execFileSync('git', ['add', '-A'], { cwd: root });
   return root;
 }
 

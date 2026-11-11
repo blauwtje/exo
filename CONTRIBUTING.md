@@ -186,6 +186,16 @@ A plan whose tasks all landed passes `exo:gate` in one round, because land catch
 - Every plan ends with a task that writes its `## Unreleased` line, so the line lands in the run's squash commit.
 - Phases hand over through the brief and `.exo/` files.
 
+## Run contract
+
+- `lib/run-outcomes.mjs` is the one outcome table of the in-session build and gate: each row has a kind, an action (`continue`, `repair`, `amend`, `park` or `stop`) and the printed line. Only `stop` rows end the turn; `park` writes one file to `.exo/questions/`, which `gate-step.mjs` does for each question finding.
+- `repairBound` in `lib/run-providers.json` `defaults` (default 2) is the one repair bound, and the pass count resets on each gate run.
+- At land, `outside Files` is an `amend` when the path is in no other open task's `Files:`, is not protected and the task's Proof passes; the amendment prints as an `AMEND Task <n> <path>` line on `land-task.mjs` stdout and edits the plan's `Files:`.
+- `runCheck` in `lib/run-check.mjs` runs a check command through the tree-keyed record in `lib/check-cache.mjs`, with `env` and `fresh` options; the baseline, round, land-proof and run-tail checks go through it, and `changelog-task.mjs` runs its command directly. A skipped, empty or flaky-retried run records no pass.
+- A re-entered gate skips steps recorded as passed on the same tree, in the headless journal shape.
+- The gate review loop records the round-1 full and overlap reviews with their reviewed sha and does not repeat them on re-entry. Each later round lands one fixer commit per cluster and reviews only `<reviewed sha>..HEAD`; a script keeps the commit when its proof and the scripted checks pass and the fix-diff review raises no new `fix`, else it runs `git revert` and the finding becomes `report`. The budget is `repairBound` rounds and `EXO_GATE_TIMEOUT_MS`, and each round appends one row to `review-rounds.tsv` in the run folder.
+- `verify/checks/run-contract.mjs` fails `npm run check` on a stop or decide line outside the table, turn-ending prose outside it, or a check command outside `runCheck`.
+
 ## Hooks
 
 Other variables, each read through `environmentMs` unless noted: `EXO_BUILD_STALE_MS` (`lib/build-progress.mjs`, 3600000) is the age at which build progress counts as stale; `EXO_RUN_REPAIR` (`hooks/run-no-wait.mjs`, any value) makes the no-wait guard ignore the run task; `EXO_TEST_POOL_TIMEOUT_MS` (`lib/test-pool.mjs`, plain number) bounds one test file; `EXO_RED_BASE_MARGIN_MS` (`lib/red-green.mjs`, 60000) is the margin added to the base run time of a red proof; `EXO_RESEARCH_FANOUT_MS` (`lib/research-route.mjs`, 30000) is the research age after which fan-out routing stops; `EXO_STALL_MS` (`lib/stall-guard.mjs`, 60000) is the stall guard threshold.

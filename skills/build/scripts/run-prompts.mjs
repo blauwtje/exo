@@ -13,6 +13,7 @@ import { taskBrief } from './next-task-brief.mjs';
 import { SCRIPT } from './run-session-paths.mjs';
 
 const SKILL_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const RUN_CHECK = path.join(SKILL_DIR, '..', '..', 'lib', 'run-check.mjs');
 const readText = (...parts) => fs.readFileSync(path.join(...parts), 'utf8');
 
 function sectionOf(text, heading) {
@@ -54,7 +55,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     root: relativeFor(root, root),
     brief: [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root, { relative: true }).trimEnd()].join('\n'),
     codeRules: `\`${codeRulesCommand(planPath, number, root)}\``,
-    landGate: landGate === 'none' ? '' : `- After the code rules print \`Code rules OK\` and before "Task ${number} is done", run the plan's Land gate \`${landGate}\` and fix every failure it prints until it passes, except one that names only words in the task's \`Drops:\` line: land-task drops those.\n`,
+    landGate: landGate === 'none' ? '' : `- After the code rules print \`Code rules OK\` and before "Task ${number} is done", run the plan's Land gate with \`node ${RUN_CHECK} ${landGate}\` and fix every failure it prints until it passes, except one that names only words in the task's \`Drops:\` line: land-task drops those.\n`,
     extra,
     retry: retryNote
   };

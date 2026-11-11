@@ -10,6 +10,6 @@ This page explains the gate output lines that step 1 meets beyond `PASS`, `FAIL`
 - A `SELF-HOSTED` line goes in the report.
 - Report `UNPLANNED` as "file outside the plan" and a concern as "unproven risk", each with what exo did.
 - A `SESSION <check>` line names a skipped `mcp:<tool> <args>` call. Call `mcp__<server>__<tool>` with those args, and do not go through Bash.
-  - Record `PASS <check>` or `FAIL <check> (<why>)` in the gate output. That `FAIL` ends the turn.
+  - Record `PASS <check>` or `FAIL <check> (<why>)` in the gate output. That `FAIL` follows its row in `${CLAUDE_PLUGIN_ROOT}/lib/run-outcomes.mjs`.
   - When no `mcp__*__<tool>` tool exists, record `UNRUN <check>` instead of `PASS`, and list it in the `REPORT` file.
 - A `benchmark` line compares the newest `*-sweep.md` results file with the plan's `Baseline: <file> @ <commit>`. `FAIL benchmark (regression|unmeasured: …)` ends the turn; `WARN benchmark override (<reason>)` goes in the report, and `WARN benchmark override ignored (added after the run started)` means the line was not in the plan at its spec commit.

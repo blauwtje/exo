@@ -6,6 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { changedFiles, findingsDigest, mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
+import { outcome } from '../lib/run-outcomes.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const MERGE = fileURLToPath(new URL('../skills/gate/scripts/merge-reviews.mjs', import.meta.url));
@@ -83,6 +84,7 @@ test('merge-reviews.mjs prints COVERAGE and one UNREAD-FILE line per changed fil
   assert.match(lines[0], /^verdict=BLOCKED /);
   assert.ok(lines.includes('COVERAGE 3/4'), lines.join('\n'));
   assert.ok(lines.includes('UNREAD-FILE d.js'), lines.join('\n'));
+  assert.ok(lines.includes(outcome('unread file').line), lines.join('\n'));
   assert.equal(lines.filter((line) => line.startsWith('UNREAD-FILE')).length, 1);
   const written = fs.readFileSync(path.join(root, '.exo', 'branch-review.md'), 'utf8');
   assert.ok(lines.includes(`FINDINGS-SHA ${findingsDigest(written)}`), lines.join('\n'));

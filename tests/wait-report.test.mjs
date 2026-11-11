@@ -79,3 +79,13 @@ test('outside a run session the script waits and finds a fresh report', async ()
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, `${report}\nfinal\n`);
 });
+
+test('a fresh report with no verdict that stopped changing returns at once with the no-verdict outcome', async () => {
+  const reportPath = path.join(await fixture(), 'implementer-1.md');
+  await fs.writeFile(reportPath, 'Landed: src/app.js\n');
+  const started = Date.now();
+  const result = await run(SCRIPT, ['--since', String(nowSeconds() - 60), '--report', reportPath], { env: { ...RUN_ENV, EXO_WAIT_REPORT_MS: '30000', EXO_WAIT_SETTLE_MS: '1' } });
+  assert.ok(Date.now() - started < 4000, 'timing-ok: hang guard, a settled report returns at once; waited for the deadline');
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /final\nno verdict .*implementer-1\.md\nThen: send the report back to its writer once for the verdict line/);
+});

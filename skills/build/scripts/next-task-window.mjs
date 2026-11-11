@@ -3,6 +3,7 @@ import { baselineFile, openSlots, slotEnvLine, slotOf } from './open-slots.mjs';
 import { driftOf, relativeInputPaths } from '#plan-inputs';
 import { scriptPath } from './next-task-paths.mjs';
 import { taskLines } from './next-task-brief.mjs';
+import { appendTimeline } from '../../../lib/timeline.mjs';
 import { sessionWait } from '../../../harnesses/coordination-contract.mjs';
 
 const WAIT_NOTE = '   (tool timeout 600000; exit 2 reruns at most three times, then BLOCKED <n> no report)';
@@ -30,6 +31,7 @@ function dispatchable(task, frame, root) {
 export function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
   const report = path.join(checkout, '.exo', `implementer-${task.number}.md`);
+  appendTimeline(checkout, 'dispatched', task.number);
   return [`Dispatch: exo:build-task`, `Since: ${since}`, waitLine(`node "${scriptPath('wait-report.mjs')}" --since ${since} --report "${report}"`, WAIT_NOTE), ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 

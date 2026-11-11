@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { peakNotice } from '../../../lib/deepseek-peak.mjs';
+import { environmentMs } from '../../../lib/script-flags.mjs';
 import { insideClaudeCode } from './run-session-env.mjs';
 import { resolveClaude } from './run-session-claude.mjs';
 
@@ -71,7 +72,7 @@ export async function startClaude(args, { home, env = process.env }) {
     effort: parsed.flags.effort
   });
   if (built.refused) return built;
-  const notice = built.provider === 'deepseek' ? peakNotice(Date.now(), config.defaults.deepseekPeak) : null;
+  const notice = built.provider === 'deepseek' ? peakNotice(environmentMs('EXO_NOW_MS', Date.now(), env), config.defaults.deepseekPeak) : null;
   if (notice) process.stderr.write(`${notice}\n`);
   const claude = resolveClaude({ pathValue: env.PATH ?? '' });
   if (claude.refused) return { refused: `refused: ${claude.refused}` };

@@ -114,7 +114,7 @@ async function launchWithPeak(args, peak) {
   await fs.writeFile(path.join(directory, 'keys.env'), `DEEPSEEK_API_KEY=${SECRET}\n`);
   await fs.writeFile(path.join(directory, 'run.json'), JSON.stringify({ defaults: peak }));
   await fs.writeFile(path.join(tools, 'claude'), STUB, { mode: 0o755 });
-  return run(CLI, ['claude', ...args], { env: { HOME: home, PATH: tools, CLAUDECODE: '', STUB_RECORD: path.join(tools, 'record.json') } });
+  return run(CLI, ['claude', ...args], { env: { HOME: home, PATH: tools, CLAUDECODE: '', EXO_NOW_MS: String(Date.UTC(2026, 10, 9, 7)), STUB_RECORD: path.join(tools, 'record.json') } });
 }
 
 test('a deepseek start inside a peak window prints the off-peak notice on stderr', async () => {

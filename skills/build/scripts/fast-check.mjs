@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
+import { runCheck } from '../../../lib/run-check.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
 
 const TEST_TIMEOUT_MS = 60_000;
@@ -22,8 +23,7 @@ function touchedPaths(worktree) {
 }
 
 function runFastCommand(worktree, command) {
-  const run = spawnSync(command, { cwd: worktree, shell: true, encoding: 'utf8' });
-  return run.status === 0 ? null : command;
+  return runCheck(worktree, command).ok ? null : command;
 }
 
 function runCoveringTests(worktree, tests, timeoutMs) {
@@ -31,8 +31,7 @@ function runCoveringTests(worktree, tests, timeoutMs) {
   const env = { ...process.env };
   // why: a NODE_TEST_CONTEXT inherited from an outer `node --test` makes the nested runner skip its own run and exit 0.
   delete env.NODE_TEST_CONTEXT;
-  const run = spawnSync('node', ['--test', ...tests], { cwd: worktree, env, encoding: 'utf8', timeout: timeoutMs });
-  return run.status === 0 ? null : command;
+  return runCheck(worktree, command, { env, timeoutMs, record: false, fresh: true }).ok ? null : command;
 }
 
 export function fastCheck({ worktree, fastCheck: command }, timeoutMs = TEST_TIMEOUT_MS) {

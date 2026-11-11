@@ -1,20 +1,21 @@
 import path from 'node:path';
 import process from 'node:process';
-import { environmentMs } from '#script-flags';
 import { criterionCommand, frameOf } from '#plan-frame';
 import { isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
-import { cachedPass, recordPass, successCriterionPasses } from '#check-cache';
+import { cachedPass, successCriterionPasses } from '#check-cache';
 import { failedTestFiles, isNodeTest, recordFlaky } from '../../../lib/flaky-record.mjs';
 import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { runnableProof } from '#red-green';
 import { boundaryLines, dispatchLines, redLines, writeReviewInput } from './review-input.mjs';
-import { DEFAULT_BASE, PROOF_TIMEOUT_MS } from './gate-constants.mjs';
-import { unmarkedMcpTool, commandLine, runCommand, failReason, failLines, mapLimited } from './gate-command.mjs';
+import { DEFAULT_BASE, GATE_TIMEOUT_MS, PROOF_TIMEOUT_MS } from './gate-constants.mjs';
+import { unmarkedMcpTool, commandLine, failReason, failLines, mapLimited } from './gate-command.mjs';
+import { checkRun } from './gate-check.mjs';
 import { reviewedState, reviewLines, taskOwners } from './review-lines.mjs';
-import { recordRepairPasses } from './gate-repair.mjs';
+import { noteGateStep, passedOnTree } from './gate-journal.mjs';
+import { recordGateStart, recordRepairPasses } from './gate-repair.mjs';
 import { packageScripts, suiteGlobs, filesUnderGlobs } from './proof-globs.mjs';
 import { repoPathOf, findUnplannedPaths, splitFixOnlyPaths, commitsTouching } from './unplanned-paths.mjs';
 import { claimLines, codeRuleLines } from './code-rule-lines.mjs';
@@ -32,7 +33,9 @@ const TEST_SUITE_PROOF = /^npm test( |$)/;
 
 const PROOF_CONCURRENCY = 3;
 
-const GATE_TIMEOUT_MS = 900_000;
+const PROOF_TIMEOUT = { variable: 'EXO_PROOF_TIMEOUT_MS', defaultMs: PROOF_TIMEOUT_MS };
+
+const GATE_TIMEOUT = { variable: 'EXO_GATE_TIMEOUT_MS', defaultMs: GATE_TIMEOUT_MS };
 
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
   const plan = parsePlan(planText);
@@ -45,6 +48,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     const range = { base: base ?? DEFAULT_BASE, head: 'HEAD' };
     const taskOf = taskOwners(plan, landed, { root, planId });
     recordRepairPasses(checkout, 0);
+    recordGateStart(checkout);
     const shards = writeReviewInput(frame, { checkout, ...range, redSection: redLines(plan, landed, { checkout, planId }), boundaries: boundaryLines(plan, landed), taskOf });
     return { lines: [...printed, ...dispatchLines(printed, { root, planPath, ...range, shards }), ...reviewedState(checkout)], failed: false };
   }
@@ -58,6 +62,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const gateSkipped = gateCommand === 'none';
   const gateMcpCall = mcpToolCall(gateCommand);
 
+  const resumed = passedOnTree(root, 'checks');
   const proofRuns = [];
   const queued = new Set();
   const globs = suiteGlobs(scripts);
@@ -75,7 +80,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
     }
-    if (cachedPass(root, command) !== null) {
+    if (resumed || cachedPass(root, command) !== null) {
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: passed on this same tree)` });
       continue;
     }
@@ -91,19 +96,19 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     proofRuns.push({ number: task.number, command });
   }
 
-  const gateRuns = !gateSkipped && gateMcpCall === null && cachedPass(root, gateCommand) === null;
-  const [proofResults, gateRun] = await Promise.all([
-    mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS)))),
-    gateRuns ? runCommand(gateCommand, environmentMs('EXO_GATE_TIMEOUT_MS', GATE_TIMEOUT_MS)) : null
+  const gateRuns = !resumed && !gateSkipped && gateMcpCall === null && cachedPass(root, gateCommand) === null;
+  const [results, gateRun] = await Promise.all([
+    mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : checkRun(root, run.command, PROOF_TIMEOUT))),
+    gateRuns ? checkRun(root, gateCommand, GATE_TIMEOUT) : null
   ]);
   for (const [index, run] of proofRuns.entries()) {
-    if (run.line || proofResults[index].ok || !isNodeTest(run.command)) continue;
-    const files = failedTestFiles(proofResults[index].output);
+    if (run.line || results[index].ok || !isNodeTest(run.command)) continue;
+    const files = failedTestFiles(results[index].output);
     if (files.length === 0) continue;
-    const retried = await runCommand(`node --test ${files.join(' ')}`, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS));
+    const retried = await checkRun(root, `node --test ${files.join(' ')}`, PROOF_TIMEOUT, false);
     if (!retried.ok) continue;
     recordFlaky(root, files);
-    proofResults[index] = retried;
+    results[index] = retried;
     run.flaky = files;
   }
   proofRuns.forEach((run, index) => {
@@ -111,9 +116,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       lines.push(run.line);
       return;
     }
-    const proofRun = proofResults[index];
+    const proofRun = results[index];
     if (proofRun.ok) {
-      recordPass(root, run.command, proofRun.ms, undefined, proofRun.output);
       lines.push(run.flaky ? `FLAKY Task ${run.number} (passed on retry: ${run.flaky.join(', ')})` : `PASS Task ${run.number}`);
     } else {
       const tool = unmarkedMcpTool(run.command, proofRun);
@@ -130,7 +134,6 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else if (!gateRuns) {
     lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
-    if (successCriterionPasses(gateRun)) recordPass(root, gateCommand, gateRun.ms, undefined, gateRun.output);
     if (successCriterionPasses(gateRun) && testScriptGate) {
       lines.push(TEST_SCRIPT_PASS);
       if (!packageHasEntryPoint(root)) lines.push(`Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);
@@ -149,11 +152,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   const changed = changedPaths({ base });
   const planFile = repoPathOf(planPath, root);
-  const undeclared = findUnplannedPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
-  const split = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
-  const { fixOnly, lead } = split;
-  const docs = split.unplanned.filter(isPlanDoc);
-  const unplanned = split.unplanned.filter((candidate) => !isPlanDoc(candidate));
+  const undeclared = findUnplannedPaths(plan.tasks, changed.filter((file) => file !== planFile));
+  const { fixOnly, lead, unplanned: found } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
+  const docs = found.filter(isPlanDoc);
+  const unplanned = found.filter((file) => !isPlanDoc(file));
   if (unplanned.length === 0) {
     lines.push('PASS unplanned-paths');
   } else {
@@ -170,6 +172,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   lines.push(...codeRuleLines(plan, landed, { root, planId, base }));
   lines.push(...reviewLines(plan, landed, { root, planId, base }));
+  if (!failed) noteGateStep(root, 'checks');
   for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
   for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
   return { lines, failed };

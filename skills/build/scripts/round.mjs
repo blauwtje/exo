@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { runTreeSync } from '../../../lib/process-tree.mjs';
+import { runCheck } from '../../../lib/run-check.mjs';
 import { isMain, parseFlags, UsageError } from '../../../lib/script-flags.mjs';
 import { decideKeep, mean, pooledSd } from '../../../lib/eval-stats.mjs';
 import { clearlyWorse, heldOutDiff, itemsMean, splitItems } from '../../../lib/holdout.mjs';
@@ -174,14 +174,14 @@ export function writeBrief({ dir, tag, cfg, rows, last = null }) {
 }
 
 function scoreOnce(cfg, cwd, logs) {
-  const run = runTreeSync(cfg.command, { cwd, timeoutMs: cfg.limit * 1000, env: scoreEnv(cfg) });
+  const run = runCheck(cwd, cfg.command, { timeoutMs: cfg.limit * 1000, env: scoreEnv(cfg), fresh: true, record: false });
   const output = visibleOutput(run.output, cfg);
   for (const log of logs) {
     fs.mkdirSync(path.dirname(log), { recursive: true });
     fs.writeFileSync(log, output);
   }
   const { score, items, held } = readRun(run.output, cfg);
-  return { score, items, held, output, timedOut: run.timedOut, failed: run.status !== 0, infra: run.status === 0 && score === null };
+  return { score, items, held, output, timedOut: run.timedOut, failed: run.code !== 0, infra: run.code === 0 && score === null };
 }
 
 function sampleRuns({ cfg, cwd, logs, judge }) {

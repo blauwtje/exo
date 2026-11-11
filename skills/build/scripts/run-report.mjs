@@ -1,20 +1,9 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { SCRATCH_FOLDER } from '#scratch-path';
 import { readDecisions } from '#run-decision';
 import { cacheTokenText } from './run-cache-tokens.mjs';
-import { isFileOnDisk } from './run-session-claude.mjs';
-
-function reportLines(root, number) {
-  const file = path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
-  if (!isFileOnDisk(file)) return [];
-  const lines = fs.readFileSync(file, 'utf8').split('\n');
-  return ['Unresolved', 'Decision'].flatMap((label) => {
-    const line = lines.find((entry) => new RegExp(`^(?:- )?${label}:`).test(entry));
-    return line === undefined || /:\s*none\.?\s*$/i.test(line) ? [] : [`Task ${number} ${line.replace(/^- /, '')}`];
-  });
-}
+import { reportLines } from './run-report-lines.mjs';
+import { timelineLines } from '../../../lib/timeline.mjs';
 
 export const money = (cost) => `$${cost.toFixed(2)}`;
 
@@ -154,6 +143,7 @@ export function detailLines(run, stop) {
   if (tail !== undefined) lines.push(`Tail: ${tail.log}, turns ${tail.turns}, last line: ${tail.last || '(none)'}`);
   lines.push(...deniedLines(records));
   if (run.redGreenLine) lines.push(run.redGreenLine);
+  lines.push(...timelineLines(root));
   lines.push(...run.verifyLines);
   for (const [number, landing] of landings) if (!landing.before) lines.push(...reportLines(root, number));
   if (run.uncommitted.size > 0) lines.push(`Uncommitted after a landing: ${[...run.uncommitted].join(', ')}`);

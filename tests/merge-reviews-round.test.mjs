@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ledgerRows } from '../skills/gate/scripts/merge-reviews.mjs';
+import { outcome } from '../lib/run-outcomes.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const MERGE = fileURLToPath(new URL('../skills/gate/scripts/merge-reviews.mjs', import.meta.url));
@@ -41,5 +42,6 @@ test('a merge after a fix commit is a new round and an unfixed finding recurs', 
   git(root, 'commit', '-q', '--allow-empty', '-m', 'fix: attempt');
   const next = merge(root);
   assert.match(next, /BLOCKED recurring/);
+  assert.ok(next.includes(outcome('recurring finding').line), next);
   assert.deepEqual(rounds(root), [1, 2]);
 });

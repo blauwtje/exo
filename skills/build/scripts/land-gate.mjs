@@ -1,7 +1,7 @@
-import { runTreeSync } from '#process-tree';
+import { runCheck } from '../../../lib/run-check.mjs';
 import { environmentMs } from '#script-flags';
 import { landedTasks } from '#plan-landed';
-import { cachedPass, gateRefusal, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
+import { gateRefusal, lastPassMs, SLOW_GATE_MS } from '#check-cache';
 import { LandingError } from './land-errors.mjs';
 import { dropsOf } from './land-commit-block.mjs';
 import { PROOF_TIMEOUT_MS } from './land-report.mjs';
@@ -44,28 +44,21 @@ export function gateEnvOf(plan, task, root, planId) {
 
 export function runLandGate(landGate, root, gateEnv = {}) {
   if (landGate === null || landGate === 'none') return null;
-  if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: its log shows a clean pass on this tree.\n`;
   const last = lastPassMs(root, landGate);
   if (last !== null && last >= SLOW_GATE_MS) {
     return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so gate runs it once.\n`;
   }
-  const before = workingTreeKey(root);
-  const started = Date.now();
   const deadlineMs = environmentMs('EXO_LAND_GATE_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const restore = setGateEnv(gateEnv);
   let gate;
   try {
-    gate = runTreeSync(landGate, { cwd: root, timeoutMs: deadlineMs });
+    gate = runCheck(root, landGate, { timeoutMs: deadlineMs });
   } finally {
     restore();
   }
-  if (gate.status !== 0 || gate.timedOut) {
-    const timedOut = gate.timedOut ? `timed out after ${deadlineMs / 1000}s` : '';
-    const output = `${gate.output}${timedOut || (gate.error?.message ?? '')}`.trim();
-    throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
-  }
-  const refusal = gateRefusal(landGate, gate.output);
-  if (refusal !== null) throw new LandingError(`Land gate "${landGate}" exited 0 but ${refusal}:\n${gate.output.trim()}`);
-  recordPass(root, landGate, Date.now() - started, before, gate.output);
+  if (gate.cached) return `Land gate "${landGate}" skipped: its log shows a clean pass on this tree.\n`;
+  if (gate.timedOut) throw new LandingError(`Land gate "${landGate}" failed:\n${`${gate.output}timed out after ${deadlineMs / 1000}s`.trim()}`);
+  if (gate.code !== 0) throw new LandingError(`Land gate "${landGate}" failed:\n${gate.output.trim()}`);
+  if (!gate.ok) throw new LandingError(`Land gate "${landGate}" exited 0 but ${gateRefusal(landGate, gate.output)}:\n${gate.output.trim()}`);
   return '';
 }

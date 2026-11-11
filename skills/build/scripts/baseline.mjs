@@ -1,6 +1,6 @@
 import { pooledSd } from '../../../lib/eval-stats.mjs';
 import { planHoldout } from '../../../lib/holdout.mjs';
-import { runTreeSync } from '../../../lib/process-tree.mjs';
+import { runCheck } from '../../../lib/run-check.mjs';
 import { addRun, emptySamples, improveDefaults, readItems, readRun, readScore, scoreEnv } from './round.mjs';
 
 const BASELINE_TIMEOUT_MS = 3_600_000;
@@ -10,9 +10,9 @@ export class SetupError extends Error {}
 function baselineRun(cwd, cfg) {
   const { command, regex } = cfg;
   const started = Date.now();
-  const run = runTreeSync(command, { cwd, timeoutMs: BASELINE_TIMEOUT_MS, env: scoreEnv(cfg) });
+  const run = runCheck(cwd, command, { timeoutMs: BASELINE_TIMEOUT_MS, env: scoreEnv(cfg), fresh: true, record: false });
   const score = readScore(run.output, regex);
-  if (run.status !== 0 || score === null) throw new SetupError(`score command failed on the baseline run: ${run.output.slice(-300)}`);
+  if (run.code !== 0 || run.timedOut || score === null) throw new SetupError(`score command failed on the baseline run: ${run.output.slice(-300)}`);
   return { output: run.output, seconds: (Date.now() - started) / 1000 };
 }
 

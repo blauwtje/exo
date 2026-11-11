@@ -9,7 +9,8 @@ import { settingOrDefault } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, recordReview, reviewVerdict, successCriterionPasses, workingTreeKey } from '#check-cache';
 import { criterionCommand } from '#plan-frame';
-import { runTreeSync, withoutRunVariables } from '#process-tree';
+import { withoutRunVariables } from '#process-tree';
+import { runCheck } from '../../../lib/run-check.mjs';
 import { environmentMs } from '#script-flags';
 import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';
 
@@ -130,13 +131,13 @@ const CRITERION_FAIL = /^\s*(?:fail\b|not ok\b|✖|✗|×)/i;
 function runCriterion(command, root) {
   const started = Date.now();
   const timeoutMs = environmentMs('EXO_GATE_TIMEOUT_MS', 1_800_000);
-  const answer = runTreeSync(command, { cwd: root, timeoutMs, env: withoutRunVariables() });
+  const answer = runCheck(root, command, { timeoutMs, env: withoutRunVariables(), fresh: true, record: false });
   const output = `${answer.output}${answer.timedOut ? `timed out after ${timeoutMs} ms\n` : ''}`;
   const lines = output.split(/\r?\n/).filter((line) => line.trim() !== '');
   const failing = lines.filter((line) => CRITERION_FAIL.test(line));
-  const first = failing[0] ?? lines.at(-1) ?? (answer.error?.message ?? `exit ${answer.status ?? answer.signal}`);
+  const first = failing[0] ?? lines.at(-1) ?? (answer.error?.message ?? `exit ${answer.code ?? answer.signal}`);
   const tail = (failing.length > 0 ? failing : lines).slice(0, 20).map((line) => line.slice(0, 200));
-  return { ok: successCriterionPasses({ ok: answer.status === 0 && !answer.timedOut, output }), output, ms: Date.now() - started, first: first.trim(), tail };
+  return { ok: successCriterionPasses({ ok: answer.code === 0 && !answer.timedOut, output }), output, ms: Date.now() - started, first: first.trim(), tail };
 }
 
 function landRepair({ planPath, plan, root }) {

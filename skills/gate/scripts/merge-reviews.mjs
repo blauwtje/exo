@@ -4,8 +4,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { inRun } from '#run-decision';
+import { outcomeLine } from '../../../lib/run-outcomes.mjs';
 import { codexVerdict } from './pick-reviewer.mjs';
 import { findingsDigest } from '#fixer-mark';
+import { fixDiffRanges, insideFixDiff } from './fix-diff-scope.mjs';
 
 export { findingsDigest };
 
@@ -34,7 +36,7 @@ const READ_LINE = /^\s*Read:\s*(.*)$/;
 const OVERLAP = /^review-overlap/;
 const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|concern|question|note|out-of-scope)\b.*\b(fix|report)\W*$/;
 
-const USAGE = `Usage: node merge-reviews.mjs --root <checkout> [--base <ref>] --report <file> [--report <file> ...]
+const USAGE = `Usage: node merge-reviews.mjs --root <checkout> [--base <ref>] --report <file> [--report <file> ...] [--fix-base <sha>]
 Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line,
 then COVERAGE <read>/<total> and one UNREAD-FILE line per file changed since --base (default main) that no non-overlap report lists on a Read: line,
 then each question, note and report finding as a FINDING line, then FINDINGS-SHA <digest> (the findings lines without fixer marks, action words, indented detail and FAIL lines), then a CODEX offer or CODEX none line.
@@ -220,7 +222,7 @@ function recurringOf(findings, prior) {
 
 const reading = ({ round, path: file, range, weight }) => `round ${round}: ${file}:${range} ${weight}`;
 
-export function mergeReviews(reports, prior = new Map(), changed = null, root = null, minScore = DEFAULT_MIN_SCORE) {
+export function mergeReviews(reports, prior = new Map(), changed = null, root = null, minScore = DEFAULT_MIN_SCORE, fixRanges = null) {
   const counts = { defect: 0, concern: 0, question: 0, note: 0, fix: 0, 'out-of-scope': 0 };
   let demoted = 0;
   let uncited = 0;
@@ -229,6 +231,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   const quoteDemoted = [];
   const sweepDemoted = [];
   const settledDemoted = [];
+  const scopeDemoted = [];
   let unread = 0;
   let unreadFix = 0;
   let verdict = 'CLEAN';
@@ -266,7 +269,12 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
       if (isUncited) uncited += 1;
       counts[weight] += 1;
       const parsed = parseFinding(line);
-      let reported = match[2] !== 'fix' || lowered;
+      const outsideFixDiff = match[2] === 'fix' && fixRanges !== null && !outOfScope && !insideFixDiff(fixRanges, parsed);
+      if (outsideFixDiff) {
+        lines[index] = lines[index].replace(/\bfix(\W*)$/, 'report$1');
+        scopeDemoted.push(`${parsed.path}:${parsed.range}`);
+      }
+      let reported = match[2] !== 'fix' || lowered || outsideFixDiff;
       const detailed = !reported && !outOfScope && !settled.has(findingKey(parsed)) && hasFixDetails(lines, index, name);
       const unquoted = detailed && name !== MECHANICAL_REPORT && root !== null && quoteAbsent(lines[index + 4], parsed.path, root);
       const unswept = detailed && !unquoted && name !== MECHANICAL_REPORT && root !== null && sweepInvalid(lines[index + 3], lines[index + 4], root);
@@ -302,11 +310,11 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
   if (verdict === 'CLEAN' && counts.defect + counts.concern + counts.question + counts.note + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} concern=${counts.concern} question=${counts.question} note=${counts.note} fix=${counts.fix}\n`;
-  return { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, scopeDemoted, unread, unreadFix, shown, findings, recurring, coverage, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', base: 'value', report: 'list', 'min-score': 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { root: 'value', base: 'value', report: 'list', 'min-score': 'value', 'fix-base': 'value' }, { usage: USAGE });
   if (!flags.root) throw new UsageError('--root is required');
   if (!flags.report?.length) throw new UsageError('--report is required');
   const reports = flags.report.map((file) => ({
@@ -315,7 +323,7 @@ function main(argv) {
   }));
   const { round, priorRound } = mergeRound(flags.root);
   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
-  const { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root, priorRound), changed, flags.root, minScoreOf(flags['min-score']));
+  const { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, scopeDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root, priorRound), changed, flags.root, minScoreOf(flags['min-score']), flags['fix-base'] ? fixDiffRanges(flags.root, flags['fix-base']) : null);
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
@@ -325,13 +333,15 @@ function main(argv) {
   );
   if (coverage !== null) process.stdout.write(`COVERAGE ${coverage.read}/${coverage.total}\n`);
   for (const file of coverage?.unread ?? []) process.stdout.write(`UNREAD-FILE ${file}\n`);
+  if ((coverage?.unread.length ?? 0) > 0) process.stdout.write(`${outcomeLine('unread file')}\n`);
   for (const { now, before } of recurring) {
-    process.stdout.write(`BLOCKED recurring ${now.rule} ${now.path}\n  ${reading(before)}\n  ${reading({ ...now, round })}\n`);
+    process.stdout.write(`BLOCKED recurring ${now.rule} ${now.path}\n  ${reading(before)}\n  ${reading({ ...now, round })}\n${outcomeLine('recurring finding')}\n`);
   }
   if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe:, Class: and Sweep: lines under them\n`);
   for (const location of quoteDemoted) process.stdout.write(`DEMOTED-QUOTE ${location}\n`);
   for (const location of sweepDemoted) process.stdout.write(`DEMOTED-SWEEP ${location}\n`);
   for (const location of settledDemoted) process.stdout.write(`DEMOTED-SETTLED ${location}\n`);
+  for (const location of scopeDemoted) process.stdout.write(`DEMOTED-SCOPE ${location}\n`);
   if (unread > 0) process.stdout.write(`UNREAD ${unread} finding line(s) not in the one-line shape, ${unreadFix} marked fix\n`);
   if (uncited > 0) process.stdout.write(`UNCITED ${uncited} finding(s) have no valid Cite: file:line and cannot block\n`);
   if (hidden > 0) process.stdout.write(`${hidden} findings under score ${minScore} hidden\n`);

@@ -96,3 +96,12 @@ test('open fix findings cluster by file into groups of at most five', () => {
   assert.deepEqual([...new Set(clusters[0].map((finding) => finding.path))], ['a.mjs', 'c.mjs']);
   assert.equal(clusters.flat().some((finding) => finding.path === 'd.mjs'), false);
 });
+
+test('a later-round fix finding outside the fix diff is demoted to report', () => {
+  const ranges = new Map([['lib/b.mjs', [[3, 4]]]]);
+  const inside = mergeReviews([{ name: 'review-branch', text: settledFix('lib/b.mjs') }], new Map(), null, null, 4, ranges);
+  assert.equal(inside.counts.fix, 1);
+  const outside = mergeReviews([{ name: 'review-branch', text: settledFix('lib/c.mjs') }], new Map(), null, null, 4, ranges);
+  assert.equal(outside.counts.fix, 0);
+  assert.deepEqual(outside.scopeDemoted, ['lib/c.mjs:3-4']);
+});

@@ -103,3 +103,9 @@ test('a changed plan or a timed out session is not replayed', () => {
   inRun(root, 'r4', () => restoreResume(drifted, new Map(), new Set()));
   assert.equal(drifted.resumed.pending, null);
 });
+
+test('resumePoint keeps each gate step with its tree and leaves a pending session open', () => {
+  const point = resumePoint([{ kind: 'session', task: 1 }, { kind: 'gate-step', step: 'checks', tree: 't1' }]);
+  assert.equal(point.gateSteps.get('checks'), 't1');
+  assert.equal(point.pending.task, 1);
+});

@@ -1,5 +1,5 @@
 import { planRoute } from '#plan-waves';
-import { BRANCH_REVIEW_KEY, reviewVerdict } from '#check-cache';
+import { recordedReview } from './review-record.mjs';
 import { REVIEWER_AGENTS, redProvedOf, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 import { DEFAULT_BASE } from './gate-constants.mjs';
@@ -11,15 +11,16 @@ export function reviewedState(root) {
 
 export function reviewLines(plan, landed, { root, planId, base }) {
   const lines = [];
+  const recorded = recordedReview(root);
   const route = planRoute(plan.tasks).route;
   const reviewers = plan.tasks.filter((entry) => landed.has(entry.number))
     .map((task) => taskReviewer(task, taskPaths(task, root, planId), { route, taskDiff: taskDiffOf(task, root, planId), redProved: redProvedOf(task, root, planId) }));
   if (reviewers.length > 0) {
     const reviewer = reviewers.find((entry) => entry === REVIEWER_AGENTS.deep) ?? reviewers.find((entry) => !entry.startsWith('none')) ?? reviewers[0];
     const range = `${base ?? DEFAULT_BASE}..HEAD`;
-    lines.push(reviewVerdict(root, BRANCH_REVIEW_KEY) === null ? `REVIEW Branch ${range}: ${reviewer}` : `REVIEW Branch ${range}: none (reviewed on this same tree)`);
+    lines.push(recorded === null ? `REVIEW Branch ${range}: ${reviewer}` : `REVIEW Branch ${range}: none (recorded at ${recorded?.sha})`);
   }
-  lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
+  lines.push(...(base === undefined || recorded !== null ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
   return lines;
 }
 

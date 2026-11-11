@@ -1,0 +1,27 @@
+import { runCoveringTests } from './land-proof.mjs';
+import { gateEnvOf } from './land-gate.mjs';
+import { taskChangedPaths } from './land-refusals.mjs';
+import { runPreCommitGates } from './land-prove.mjs';
+import { dropCandidate, commitCandidate, promoteCandidate, gateCandidate, committedSha } from './land-candidate.mjs';
+
+export function stageCandidate({ plan, task, frame, block, root, planId, reportText }) {
+  const warnLines = runPreCommitGates(task, frame, root);
+  const changed = taskChangedPaths(root);
+  const candidate = commitCandidate(block, root, task, planId, reportText);
+  const gateLine = warnLines + gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
+  return { changed, candidate, gateLine };
+}
+
+export function coverOrDrop({ task, proofs, root, changed, pendingEvidence, candidate }) {
+  try {
+    runCoveringTests(task, proofs.map(({ command }) => command), root, changed, pendingEvidence);
+  } catch (error) {
+    dropCandidate(root, candidate);
+    throw error;
+  }
+}
+
+export function promoteAndCommit({ task, root, planId, planPath, candidate }) {
+  promoteCandidate(root, task, planId, candidate);
+  return committedSha(task, { root, planId, planPath, base: candidate.base });
+}

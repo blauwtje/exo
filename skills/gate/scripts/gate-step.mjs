@@ -6,6 +6,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { CHECK_LINE } from './gate-command.mjs';
+import { blockedNext, decide } from './gate-decide.mjs';
+import { parkQuestion } from '../../../lib/run-outcomes.mjs';
+import { takePending } from './repair-round.mjs';
+import { settleFixDiff } from './fix-diff-settle.mjs';
+import { completeMerge, recordReview } from './review-record.mjs';
+import { fullFailLines } from './gate-repair.mjs';
 import { FULL_NEXT, gateArgs, logProgress } from './gate-progress.mjs';
 
 const USAGE = `Usage: node gate-step.mjs --plan <path> --root <checkout> --base <ref> [--full] [--after review|fix] [--report <file> ...]
@@ -69,27 +75,20 @@ function fullStage(flags, run) {
   logProgress(flags.root, full.lines.filter((line) => line.startsWith('STEP ')).join(' '));
   const lines = [...full.lines, ...nextLines(full.body)];
   const unplanned = full.body.some((line) => line.startsWith('UNPLANNED'));
-  if (unplanned) lines.push('DECIDE UNPLANNED ends the turn with the report');
-  if (full.status !== 0 && !unplanned) lines.push('DECIDE FAIL ends the turn with the report');
+  if (unplanned) lines.push(decide('UNPLANNED', 'outside Files'));
+  if (full.status !== 0 && !unplanned) lines.push(...fullFailLines(flags.root));
   if (full.body.some((line) => line.startsWith('SESSION'))) lines.push('DECIDE session check');
   return { lines, status: full.status };
 }
 
-const BLOCKED_CLEARS = [
-  [/^UNREAD-FILE\b/, 'rerun the reviewer that did not read the UNREAD-FILE files, then merge again'],
-  [/^BLOCKED: report missing/, 'rerun the reviewer whose report is missing, then merge again'],
-  [/^BLOCKED recurring\b/, 'end the turn with the recurring finding in the report; fixing code does not clear it']
-];
-
-function blockedNext(body) {
-  const actions = BLOCKED_CLEARS.filter(([pattern]) => body.some((line) => pattern.test(line))).map(([, action]) => action);
-  return `NEXT the merged review is blocked; dispatch nothing until it clears: ${actions.join('; ') || 'rerun the reviewers that did not finish, then merge again'}`;
-}
-
 function reviewStage(flags, run) {
-  const reportArgs = flags.reports.flatMap((report) => ['--report', report]);
-  const merged = step('merge', run, 'merge-reviews.mjs', ['--root', flags.root, '--base', flags.base, ...reportArgs]);
+  const reportArgs = flags.reports.flatMap((r) => ['--report', r]);
+  const pending = takePending(flags.root);
+  const fixBase = pending === null ? [] : ['--fix-base', pending.preFixSha];
+  const ran = step('merge', run, 'merge-reviews.mjs', ['--root', flags.root, '--base', flags.base, ...reportArgs, ...fixBase]);
+  const merged = pending === null ? ran : settleFixDiff(pending, ran, flags.root);
   const lines = [...merged.lines];
+  if (completeMerge(merged.body)) recordReview(flags.root, flags.reports);
   const verdict = merged.body.find((line) => line.startsWith('verdict=')) ?? '';
   const count = (name) => Number(verdict.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
   const blocked = verdict.startsWith('verdict=BLOCKED');
@@ -98,7 +97,9 @@ function reviewStage(flags, run) {
   if (repairable) lines.push('NEXT dispatch one exo:build-task with exo-kind: fix-review per CLUSTER line, in parallel, each with only its findings; record git rev-parse HEAD as pre-fix-sha first');
   if (repairable) lines.push('DECIDE repair dispatch');
   if (merged.body.some((line) => line.startsWith('BLOCKED'))) lines.push('DECIDE BLOCKED');
-  if (merged.body.some((line) => line.startsWith('FINDING') && /\bquestion\b/.test(line))) lines.push('DECIDE question findings');
+  const questions = merged.body.filter((line) => line.startsWith('FINDING') && /\bquestion\b/.test(line));
+  questions.forEach((question, i) => parkQuestion({ root: flags.root, task: i + 1, question }));
+  if (questions.length > 0) lines.push('DECIDE question findings');
   if (merged.body.some((line) => line === 'CODEX offer')) lines.push('DECIDE CODEX offer');
   return { lines, status: merged.status };
 }
@@ -107,7 +108,7 @@ function fixStage(flags, run) {
   const repair = step('repair', run, 'gate.mjs', ['--repair', '--plan', flags.plan, '--root', flags.root, '--pre-fix-sha', flags.preFixSha, '--findings', flags.findings, '--findings-sha256', flags.findingsSha256]);
   const probes = step('probes', run, 'run-probes.mjs', ['--report', flags.findings, '--root', flags.root]);
   const lines = [...repair.lines, ...probes.lines];
-  if (repair.status !== 0 || probes.status !== 0) lines.push('DECIDE FAIL ends the turn with the report');
+  if (repair.status !== 0 || probes.status !== 0) lines.push(decide('FAIL', 'gate fail'));
   if (repair.body.some((line) => /^LOOP next=(?:fix|stop)\b/.test(line))) lines.push('DECIDE loop');
   return { lines, status: repair.status || probes.status };
 }

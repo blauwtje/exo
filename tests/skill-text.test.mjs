@@ -62,7 +62,7 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(loopFollow !== -1 && loopFollow < fixDiffReview, 'gate follows the LOOP line before the fix diff review');
   for (const next of ['next=fix', 'next=stop', 'next=done']) assert.ok(repairAfter.slice(loopFollow, fixDiffReview).includes(`\`${next}\``), `repair.md acts on ${next}`);
   assert.ok(!repairAfter.includes('land-task.mjs'), 'the fixer commits, so repair.md runs no land-task');
-  assert.match(repairAfter, /A `FAIL probe` line ends the turn/, 'a FAIL probe line ends the turn');
+  assert.match(repairAfter, /A `FAIL probe` line follows its row in `\$\{CLAUDE_PLUGIN_ROOT\}\/lib\/run-outcomes\.mjs`/, "a FAIL probe line follows the outcome table");
   assert.match(repairAfter, /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`/, 'a missing fix-review.md ends the turn BLOCKED');
   assert.doesNotMatch(repairAfter, /A `FAIL` or `UNPLANNED` line from `gate\.mjs`/, 'the prose exit the script replaces is gone');
   assert.match(repairStep, /`fix=0`[^\n]*no fixer dispatch/, 'gate skips the fixer when the review holds no fix finding');
