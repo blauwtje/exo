@@ -2,20 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { decisionsPathOf, isCovered, landedTasks, planIdOf } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
-import { changedPaths, siblingWorkOf, unplannedPaths } from './land-paths.mjs';
+import { changedPaths, isProtectedPath, siblingWorkOf, unplannedPaths } from './land-paths.mjs';
 import { proveTask } from './land-prove.mjs';
 
-const PROTECTED_PATHS = [
-  /^\.claude\//,
-  /^hooks\//,
-  /^lib\/(?:git-deny|guard-rules)\.mjs$/,
-  /^skills\/build\/scripts\/land-[^/]+\.mjs$/,
-  /^docs\/plans\//
-];
-
-export function isProtectedPath(changed, { root, planPath }) {
+function isRefusedPath(changed, { root, planPath }) {
   const own = [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
-  return own.includes(changed) || PROTECTED_PATHS.some((pattern) => pattern.test(changed));
+  return own.includes(changed) || isProtectedPath(changed);
 }
 
 function otherOpenEntries(plan, task, { root, planPath }) {
@@ -33,7 +25,7 @@ function amendablePaths(plan, task, context) {
   const claimed = otherOpenEntries(plan, task, context);
   const changed = changedPaths(context.root, context.planPath);
   const stray = changed.filter((file) => !isCovered(task.files.map((entry) => entry.path), file));
-  const refusable = stray.some((file) => isProtectedPath(file, context) || isCovered(claimed, file));
+  const refusable = stray.some((file) => isRefusedPath(file, context) || isCovered(claimed, file));
   return refusable ? [] : unplanned;
 }
 

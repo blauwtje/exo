@@ -54,7 +54,7 @@ test('the handoff template holds the same sections as the stub', async () => {
 
 test('the handoff stub uses only placeholders session-end fills', () => {
   const stub = fs.readFileSync('hooks/handoff-stub.md', 'utf8');
-  const filled = ['date', 'head', 'branch', 'state', 'next', 'paragraph', 'file'];
+  const filled = ['date', 'head', 'branch', 'goal', 'state', 'next', 'paragraph', 'file'];
   const used = [...stub.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]);
   assert.deepEqual(used.filter((key) => !filled.includes(key)), []);
 });

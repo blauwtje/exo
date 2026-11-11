@@ -57,21 +57,21 @@
 8554 lib/check-cache.mjs
 11006 lib/code-comments.mjs
 14727 lib/code-rules.mjs
-16299 lib/context-decisions.mjs
+16297 lib/context-decisions.mjs
 10545 lib/eval-stats.mjs
-10359 lib/guard-rules.mjs
+   9493 lib/guard-rules.mjs
 8624 lib/plan-tasks.mjs
 9926 lib/red-green.mjs
 9701 lib/statusline.mjs
 14892 lib/worker-size.mjs
 12827 skills/build/scripts/land-run.mjs
 9236 skills/build/scripts/remove-worktree.mjs
-25298 skills/build/scripts/run-plan.mjs
+24978 skills/build/scripts/run-plan.mjs
 9464 skills/build/scripts/run-report.mjs
 10757 skills/build/scripts/run-state.mjs
 21080 skills/build/scripts/run-tail.mjs
 8656 skills/build/scripts/start-run.mjs
-10866 skills/configure/scripts/settings.mjs
+10760 skills/configure/scripts/settings.mjs
 13251 skills/build/scripts/look.mjs
 12698 skills/edit-skills/scripts/pressure-grade.mjs
 9031 skills/ship/scripts/repo-fields.mjs
@@ -83,7 +83,8 @@
 8567 skills/ship/scripts/pr-body.mjs
 12237 skills/ship/scripts/ship.mjs
 8256 skills/ship/scripts/stack.mjs
-9876 skills/spec/scripts/plan-check-frame.mjs
+8751 skills/spec/scripts/plan-check.mjs
+9864 skills/spec/scripts/plan-check-frame.mjs
 8305 skills/spec/scripts/plan-check-text.mjs
 8870 skills/spec/scripts/plan-template.mjs
 8310 verify/checks/name-clash.mjs

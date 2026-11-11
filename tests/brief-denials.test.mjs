@@ -9,7 +9,8 @@ import { tempDir } from './harness.mjs';
 
 delete process.env.EXO_PROVIDER;
 
-const refusal = (prompt, cwd) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
+const reasonOf = (output) => output?.permissionDecisionReason ?? output?.additionalContext;
+const refusal = (prompt, cwd) => reasonOf(agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput);
 
 function bigFile(dir, tokens) {
   const lines = Math.ceil((tokens * dispatchBytesPerToken()) / 40);
@@ -40,9 +41,11 @@ test('a 124k-token whole-file read is refused with the lines range that fits the
   assert.equal(fixed, undefined);
 });
 
-test('a brief reading a missing file is refused with the files-exist limit', () => {
+test('a brief reading a missing file is allowed with a warning of the files-exist limit', () => {
   const dir = tempDir('brief-denials-');
-  assert.match(refusal('Reads: new.test.mjs\nResult: .exo/r.md', dir), /name only files that exist now/);
+  const output = agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt: 'Reads: new.test.mjs\nResult: .exo/r.md' } }, 'on', () => false).hookSpecificOutput;
+  assert.notEqual(output.permissionDecision, 'deny');
+  assert.match(output.additionalContext, /name only files that exist now/);
 });
 
 test('mergedFields joins every denial into one refusal', async () => {

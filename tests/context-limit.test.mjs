@@ -165,6 +165,10 @@ test('a subagent is warned again after it shrinks below the soft limit', () => {
   assert.ok(call(AGENT_SOFT));
 });
 
+function assertTargetWarns(call, tools, tokens) {
+  for (const tool of tools) assert.match(call(tokens, tool).additionalContext, /new reads, searches, fetches, skills and agents/, `${tool} at ${tokens}`);
+}
+
 test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and is bound by agentContextTarget on the way', () => {
   const runJson = path.join(testHome, '.config', 'exo', 'run.json');
   fs.mkdirSync(path.dirname(runJson), { recursive: true });
@@ -188,7 +192,7 @@ test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and
     for (const tool of intake) assert.equal(call(59_000, tool), null, `${tool} at 59000`);
 
     for (const tokens of [61_000, 74_000]) {
-      for (const tool of intake) assert.match(call(tokens, tool).deny, /new reads, searches, fetches, skills and agents/, `${tool} at ${tokens}`);
+      assertTargetWarns(call, intake, tokens);
       for (const tool of ['Bash', 'Write', 'Edit']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
     }
 
@@ -305,8 +309,8 @@ test('a Read whose single line is over the cap is not told to retry with limit 1
   fs.writeFileSync(file, `${'x'.repeat(20000)}\n`);
   try {
     const decision = readCapDecision({ tool_name: 'Read', agent_type: 'exo:research-worker', agent_id: 'a', tool_input: { file_path: file, offset: 1, limit: 1 } });
-    assert.ok(decision?.deny);
-    assert.doesNotMatch(decision.deny, /limit 1/);
+    assert.ok(decision?.additionalContext);
+    assert.doesNotMatch(decision.additionalContext, /limit 1/);
   } finally {
     fs.rmSync(file, { force: true });
   }
@@ -323,8 +327,8 @@ function agentCaller(tokens, agent_type) {
 test('an orchestrator over the target still dispatches and stops workers but cannot read', () => {
   const call = agentCaller(TARGET + 1000, 'exo:orchestrator');
   for (const tool of ['Agent', 'SendMessage', 'Monitor', 'TaskStop']) assert.equal(call(tool)?.deny, undefined, tool);
-  assert.match(call('Read').deny, /new reads, searches, fetches, skills and agents/);
-  assert.match(call('Grep').deny, /new reads/);
+  assert.match(call('Read').additionalContext, /new reads, searches, fetches, skills and agents/);
+  assert.match(call('Grep').additionalContext, /new reads/);
 });
 
 test('an orchestrator past the hard limit cannot dispatch', () => {
@@ -335,7 +339,7 @@ test('an orchestrator past the hard limit cannot dispatch', () => {
 test('an agent that is not a coordinator is still refused Agent over the target', () => {
   for (const type of ['exo:build-task', 'general-purpose', undefined]) {
     const call = agentCaller(TARGET + 1000, type);
-    assert.match(call('Agent').deny, /new reads, searches, fetches, skills and agents/, String(type));
+    assert.match(call('Agent').additionalContext, /new reads, searches, fetches, skills and agents/, String(type));
   }
 });
 
@@ -372,8 +376,17 @@ test('a subagent refusal names the Result path of its brief, or the reply', () =
     const user = { type: 'user', message: { content: brief } };
     const usage = { type: 'assistant', message: { usage: { input_tokens: tokens } } };
     fs.writeFileSync(file, `${JSON.stringify(user)}\n${JSON.stringify(usage)}\n`);
-    return contextDecision({ session_id: 'a', agent_id: `b${process.pid}${tokens}`, agent_transcript_path: file, tool_name: 'Read' }).deny;
+    return contextDecision({ session_id: 'a', agent_id: `b${process.pid}${tokens}`, agent_transcript_path: file, tool_name: 'Read' });
   };
-  assert.match(refusal('Reads: none\nResult: .exo/r.md', AGENT_HARD), /write \.exo\/r\.md as a handover/);
-  assert.match(refusal('Reads: none\nResult: reply', TARGET + 1000), /reply with a handover/);
+  assert.match(refusal('Reads: none\nResult: .exo/r.md', AGENT_HARD).deny, /write \.exo\/r\.md as a handover/);
+  assert.match(refusal('Reads: none\nResult: reply', TARGET + 1000).additionalContext, /reply with a handover/);
+});
+
+test('context target warns: intake past the target runs with the rule in its context', () => {
+  const call = agentCaller(TARGET + 1000, 'exo:build-task');
+  for (const tool of ['Read', 'Grep', 'Agent']) {
+    const decision = call(tool);
+    assert.equal(decision.deny, undefined, tool);
+    assert.match(decision.additionalContext, /new reads, searches, fetches, skills and agents/, tool);
+  }
 });

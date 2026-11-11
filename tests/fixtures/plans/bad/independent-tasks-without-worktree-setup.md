@@ -1,4 +1,4 @@
-<!-- expect: Task 1 and Task 2 share no Depends on chain, but the plan's '## Plan basis' has no 'Worktree setup:' line: add 'Worktree setup: <command>' or 'Worktree setup: none' so they build together -->
+<!-- expect: [WARN] Task 1 and Task 2 share no Depends on chain, but the plan's '## Plan basis' has no 'Worktree setup:' line: add 'Worktree setup: <command>' or 'Worktree setup: none' so they build together -->
 <!-- repo: src/a.mjs, src/b.mjs -->
 # Plan: independent tasks and no Worktree setup line
 

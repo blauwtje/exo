@@ -9,6 +9,9 @@ Applies to written or changed code, beside the code standard. Covers how much co
 - When the user has not stated a need, add no option, setting or extension point for it.
 - Leave code the user did not ask about unchanged, even when it could be better.
 - Match the surrounding style; remove only leftovers of your own change and report other dead code.
+- Say so when a simpler approach exists.
+- Write no abstraction for single-use code and no handling of impossible cases.
+- For a trivial task, scale these checks down.
 
 ## Assumptions
 

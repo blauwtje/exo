@@ -10,6 +10,5 @@ First match wins:
 
 On the reply:
 
-- On `ok`, when setting `env` is `ask` and the main checkout holds gitignored .env files, first ask once whether to copy them into each run worktree or not. Store the answer with `node "${CLAUDE_SKILL_DIR}/../configure/scripts/settings.mjs" set env <copy or never> --scope project`.
 - On `ok`, invoke `exo:build` with the brief path in this session.
 - On a change request, edit the brief, check it, then ask again, and build nothing.

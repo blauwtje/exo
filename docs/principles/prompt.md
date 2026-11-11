@@ -15,7 +15,7 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 - **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: gap
 - **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: gap
 - **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`, `verify/checks/brief-grammar.mjs`
-- **Simplicity first: the least code that works.** [9] exo: `lib/references/lean.md`, `verify/checks/module-surface.mjs`
+- **Simplicity first: the least code that works.** [9][10] exo: `lib/references/lean.md`, `verify/checks/module-surface.mjs`
 - **Surgical changes: touch only what is asked.** [9] exo: `verify/checks/shared-contracts.mjs`
 - **Goal-driven execution: work toward a check.** [9] exo: `skills/build/SKILL.md`, `verify/checks/edit-evidence.mjs`
 
@@ -30,3 +30,4 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 7. [Agent Skills specification](https://agentskills.io/specification), undated
 8. [Agent Skills best practices](https://github.com/agentskills/agentskills/blob/main/docs/skill-creation/best-practices.mdx), undated
 9. [Karpathy coding guidelines](https://github.com/forrestchang/andrej-karpathy-skills), undated
+10. [Karpathy on coding with LLMs](https://x.com/karpathy/status/2015883857489522876), 2026-01-26

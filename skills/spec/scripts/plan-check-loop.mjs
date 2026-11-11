@@ -1,6 +1,7 @@
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
-import { frameOf, loopCommands } from '#plan-frame';
+import { criterionCommand, frameOf, loopCommands } from '#plan-frame';
 import { mcpToolCall } from '#mcp-tool-call';
 import { defaultBranch } from '#git';
 
@@ -23,6 +24,16 @@ function checkLoopLandGate(basis, root) {
   const gate = basis.landGate?.trim().replace(/^`(.*)`$/, '$1') ?? 'none';
   if (command === null || gate !== 'none') return [];
   return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes, per task only while it stays under a minute`];
+}
+
+const CRITERION_TIMEOUT_MS = Number(process.env.EXO_CRITERION_TIMEOUT_MS ?? 120000);
+
+function checkCriterionRuns(command, root) {
+  if (command === null || root === undefined || root === null || !fs.existsSync(root) || mcpToolCall(command.trim()) !== null) return [];
+  const run = spawnSync(command, { cwd: root, shell: true, stdio: 'ignore', timeout: CRITERION_TIMEOUT_MS });
+  if (run.error?.code === 'ETIMEDOUT') return [`loop: the plan's '## Success criterion' '${command}' timed out after ${CRITERION_TIMEOUT_MS} ms`];
+  if (run.status === 127) return [`loop: the plan's '## Success criterion' '${command}' exits 127, so its command is not found`];
+  return [];
 }
 
 const SESSION_BUILD = '; it may stay: build with exo:build, not run-plan';
@@ -51,7 +62,7 @@ export function checkLoop(plan, root, planPath) {
   }
   const defaultName = root === undefined ? null : defaultBranch(root);
   if (defaultName !== null && basis.branch?.trim() === defaultName) problems.push(`loop: 'Branch: ${basis.branch}' names the default branch`);
-  return [...problems, ...checkLoopLandGate(basis, root)];
+  return [...problems, ...checkCriterionRuns(criterionCommand(basis.successCriterion), root), ...checkLoopLandGate(basis, root)];
 }
 
 const HTML_ENTITY = /&(?:gt|lt|amp|quot|apos|#\d+|#x[0-9a-f]+);/i;

@@ -36,6 +36,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 7: `node --test tests/design-ui-read-budget.test.mjs` passes. The preview set sums ≤ 30,000 B and the one-pass set ≤ 46,000 B.
 - The Success criterion passes on the branch rebased onto `origin/main`.
 
+## lean-open
+- Success criterion, second done line: `node benchmarks/lean-guards-compare.mjs` exits 0 with bytes <= 2666 and modules <= 77; no task adds a module.
+
 ## loop-budget-2
 - A two-task plan builds with the main session dispatching exo:build-task directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
 

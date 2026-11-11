@@ -68,11 +68,12 @@ test('the check applies to a subagent and to the lead alike', async () => {
   assert.ok(await denies(command, { agent_id: undefined }));
 });
 
-test('a commit whose Evidence line is invalid is denied with the correct form, a valid one is allowed', async () => {
+test('a commit whose Evidence line is invalid runs with one WARN line naming the correct form, a valid one is allowed', async () => {
   const bad = await decide(`git commit -m "fix: x\n\nEvidence: ran the tests"`);
-  assert.equal(bad.permissionDecision, 'deny');
-  assert.match(bad.permissionDecisionReason, /Evidence: benchmarks\/results\/<file>/);
-  assert.match(bad.permissionDecisionReason, /Evidence: none \(<reason>\)/);
+  assert.equal(bad.permissionDecision, undefined);
+  assert.match(bad.additionalContext, /^\[WARN\] /);
+  assert.match(bad.additionalContext, /Evidence: benchmarks\/results\/<file>/);
+  assert.match(bad.additionalContext, /Evidence: none \(<reason>\)/);
   assert.equal(await denies('git commit -m "fix: x\n\nEvidence: benchmarks/results/a.json"'), false);
   assert.equal(await denies('git commit -m "fix: x\n\nEvidence: none (covered by unit test)"'), false);
 });

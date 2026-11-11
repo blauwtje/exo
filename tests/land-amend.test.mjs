@@ -20,14 +20,15 @@ test('an unclaimed missed path joins Files and the task lands with an AMEND line
   assert.match(git(root, 'show', '--name-only', '--format=', 'HEAD'), /src\/extra\.js/);
 });
 
-test('a protected missed path keeps the outside Files refusal and edits no plan', async () => {
+test('a protected out-of-scope path warns outside Files as not committed, lands and edits no plan', async () => {
   const { root, planPath } = await compactCheckout();
   const before = await fs.readFile(planPath, 'utf8');
   await fs.mkdir(path.join(root, 'hooks'));
   await fs.writeFile(path.join(root, 'hooks/guard.mjs'), 'export {};\n');
   const refused = await land(root, planPath);
-  assert.equal(refused.code, 1);
-  assert.match(refused.stderr, /outside Files: `hooks\/guard\.mjs`/);
+  assert.equal(refused.code, 0, refused.stderr);
+  assert.match(refused.stdout, /^\[WARN\] .*outside Files: .*`hooks\/guard\.mjs`/m);
+  assert.match(refused.stdout, /not committed: `hooks\/guard\.mjs`; add it to Files or give it its own task/);
   assert.equal(await fs.readFile(planPath, 'utf8'), before);
 });
 
@@ -41,7 +42,7 @@ test('a missed path with a failing Proof is refused and edits no plan', async ()
   assert.equal(await fs.readFile(planPath, 'utf8'), before);
 });
 
-test('a missed path that another open task claims keeps the outside Files refusal and edits no plan', async () => {
+test('a missed path that another open task claims warns outside Files, lands and edits no plan', async () => {
   const plan = compactPlanFixture({ tasks: [
     compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' }),
     compactTask({ number: 2, title: 'feat(app): extra', files: ['src/claimed.js'], proof: 'node tests/greet.test.mjs' })
@@ -51,8 +52,8 @@ test('a missed path that another open task claims keeps the outside Files refusa
   await fs.writeFile(path.join(root, 'src/claimed.js'), 'export const claimed = 1;\n');
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
   const refused = await land(root, planPath);
-  assert.equal(refused.code, 1);
-  assert.match(refused.stderr, /outside Files: `src\/extra\.js`/);
+  assert.equal(refused.code, 0, refused.stderr);
+  assert.match(refused.stdout, /^\[WARN\] .*outside Files: .*`src\/extra\.js`/m);
   assert.equal(await fs.readFile(planPath, 'utf8'), before);
 });
 

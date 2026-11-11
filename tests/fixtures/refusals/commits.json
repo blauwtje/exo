@@ -1,5 +1,5 @@
 [
-  { "rule": "commit-evidence", "hook": "dispatch-bash.mjs", "input": { "command": "git commit -m 'fix: x\n\nEvidence: ran the tests'" }, "transcript": "lead", "expect": "deny", "says": "git commit -F <file>" },
+  { "rule": "commit-evidence", "hook": "dispatch-bash.mjs", "input": { "command": "git commit -m 'fix: x\n\nEvidence: ran the tests'" }, "transcript": "lead", "expect": "allow", "says": "git commit -F <file>" },
   { "rule": "commit-attribution", "hook": "dispatch-bash.mjs", "input": { "command": "git commit -m 'fix: x\n\nCo-Authored-By: Example <user@example.com>'" }, "transcript": "lead", "expect": "deny", "says": "earlier call" },
   { "rule": "shared-state", "hook": "dispatch-bash.mjs", "input": { "command": "git worktree remove .claude/worktrees/x" }, "transcript": "subagent", "expect": "deny", "says": "a worktree you added stays" }
 ]

@@ -21,10 +21,11 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 592, measured: '2026-11-06'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 4178, measured: '2026-11-11' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2425, measured: '2026-11-11' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-budgets.mjs fails above it.
 // Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.
+export const BRIEF_LINES_LOCK = { bytes: 1163, measured: '2026-11-11' };
 export const HOOK_LINES_LOCK = { lines: 980, measured: '2026-11-11' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
 export const HOOK_TEXT_BYTES_LOCK = { bytes: 5936, measured: '2026-11-11' };
@@ -37,7 +38,7 @@ export const HOOK_WORK_LOCK = {
     'dispatch-edit.mjs': { modules: 51, reads: 5 },
     'context-limit.mjs': { modules: 34, reads: 5 },
     'run-no-wait.mjs': { modules: 19, reads: 3 },
-    'session-end.mjs': { modules: 13, reads: 1 }
+    'session-end.mjs': { modules: 13, reads: 2 }
   }
 };
 // Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
@@ -51,7 +52,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 1116, measured: '2026-11-11' };
+export const SESSION_LOAD_LOCK = { words: 805, measured: '2026-11-11' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/hook-budgets.mjs fails above it.
@@ -61,7 +62,7 @@ export const SESSION_LOAD_LOCK = { words: 1116, measured: '2026-11-11' };
 // Raised 1745 -> 1926 with the TaskStop rule line.
 // Raised 1926 -> 1950 with the context limit on the settings line.
 // Raised 1950 -> 2141 with the green-command-as-typed rule.
-export const SESSION_START_BYTES_LOCK = { bytes: 4180, measured: '2026-11-11' };
+export const SESSION_START_BYTES_LOCK = { bytes: 2427, measured: '2026-11-11' };
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
 // BYTES_PER_TOKEN, the sizing convention for skill text. The ceiling fails; realistic is the aim edit-skills
 // states and the checks name in their PASS detail.
@@ -105,7 +106,7 @@ export const REFERENCE_TOKEN_LOCKS = {
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
 // bytes, the same two ways: growth fails and so does a shrink the lock does
 // not follow.
-export const LEAN_REFERENCE_LOCK = { bytes: 1342, measured: '2026-11-03' };
+export const LEAN_REFERENCE_LOCK = { bytes: 1510, measured: '2026-11-11' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;

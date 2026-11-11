@@ -128,11 +128,11 @@ export function checkRedGreen(plan, landed) {
   for (const task of plan.tasks) {
     if (task.red !== null) continue;
     if (equalsLandGate(task.proof ?? undefined, landGate)) {
-      problems.push(`Task ${task.number}: 'Proof: ${task.proof}' equals the 'Land gate:' command, so land will refuse it with "no red proof": name a Proof that fails before the task, or add 'Red: none (<reason>)'`);
+      problems.push(`Task ${task.number}: 'Proof: ${task.proof}' equals the 'Land gate:' command, so land will warn "no red proof" on it: name a Proof that fails before the task, or add 'Red: none (<reason>)'`);
     } else if (REFACTOR_HEADING.test(task.title) && !landed.includes(task.number)) {
-      problems.push(`Task ${task.number}: a refactor task has no 'Red:' field, so land will refuse a Proof that passes before the change with "no red proof": add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead`);
+      problems.push(`Task ${task.number}: a refactor task has no 'Red:' field, so land will warn "no red proof" on a Proof that passes before the change: add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead`);
     } else if (!landed.includes(task.number) && task.files.length > 0 && task.files.every((file) => isTestPath(file.path))) {
-      problems.push(`Task ${task.number}: the Files are all tests and the task has no 'Red:' field, so its Proof passes before the change and land will refuse it with "no red proof": add a source file to Files, or add 'Red: none (<reason>)'`);
+      problems.push(`Task ${task.number}: the Files are all tests and the task has no 'Red:' field, so its Proof passes before the change and land will warn "no red proof" on it: add a source file to Files, or add 'Red: none (<reason>)'`);
     }
   }
   if (plan.successBaseline?.malformed !== undefined) problems.push("the plan's Success criterion 'Baseline:' is not '<results file> @ <commit>'");

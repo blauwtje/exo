@@ -88,3 +88,12 @@ test('pollUntil stops at the wall cap and records a wait row', async () => {
   assert.deepEqual(readLedger(dir).map((row) => row.kind), ['wait', 'wait']);
   assert.ok(kindWallMs('wait', {}) > 0);
 });
+
+test('decide needs-input stops a kind whose last round left a question open', () => {
+  const dir = tempDir('exo-loop-');
+  assert.equal(recordRound(dir, { kind: 'fix', openBefore: 3, openAfter: 2, needsInput: true }), 'needs-input');
+  const decision = decide(dir, 'fix', { env: {} });
+  assert.equal(decision.verdict, 'STOP');
+  assert.equal(decision.state, 'needs-input');
+  assert.equal(decide(dir, 'look', { env: {} }).verdict, 'CONTINUE');
+});

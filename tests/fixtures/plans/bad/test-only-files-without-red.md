@@ -1,4 +1,4 @@
-<!-- expect: Task 1: the Files are all tests and the task has no 'Red:' field, so its Proof passes before the change and land will refuse it with "no red proof": add a source file to Files, or add 'Red: none (<reason>)' -->
+<!-- expect: [WARN] Task 1: the Files are all tests and the task has no 'Red:' field, so its Proof passes before the change and land will warn "no red proof" on it: add a source file to Files, or add 'Red: none (<reason>)' -->
 <!-- repo: tests/a.test.mjs -->
 # Plan: a task whose Files are all tests and has no Red
 

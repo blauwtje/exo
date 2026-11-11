@@ -22,11 +22,9 @@ async function repositoryWithWorktree() {
   return { root, worktree };
 }
 
-async function envRepository(setting) {
+async function envRepository() {
   const root = await gitRepository(SEED);
   await fs.writeFile(path.join(root, '.env'), 'TOKEN=1\n');
-  await fs.mkdir(path.join(root, '.claude'), { recursive: true });
-  await fs.writeFile(path.join(root, '.claude', 'exo.local.json'), JSON.stringify({ env: setting }));
   return { root, where: path.join(root, '.worktrees', 'topic') };
 }
 
@@ -53,36 +51,38 @@ test('relativeFor gives a path below the root and a dot for the root itself', ()
   assert.equal(relativeFor(root, root), '.');
 });
 
-test('createWorktree copies a gitignored .env when env is copy', async () => {
-  const { root, where } = await envRepository('copy');
+test('createWorktree copies env without setting', async () => {
+  const { root, where } = await envRepository();
   const done = createWorktree(root, where, ['-q', '-b', 'topic', where]);
   assert.equal(done.ok, true);
   assert.equal(await fs.readFile(path.join(where, '.env'), 'utf8'), 'TOKEN=1\n');
 });
 
-test('createWorktree copies no .env when env is never', async () => {
-  const { root, where } = await envRepository('never');
+test('createWorktree leaves a tracked .env as committed, out-of-scope of the copy', async () => {
+  const root = await gitRepository({ 'README.md': 'seed\n', '.env': 'TOKEN=1\n' });
+  await fs.writeFile(path.join(root, '.env'), 'TOKEN=2\n');
+  const where = path.join(root, '.worktrees', 'topic');
   const done = createWorktree(root, where, ['-q', '-b', 'topic', where]);
   assert.equal(done.ok, true);
-  await assert.rejects(fs.access(path.join(where, '.env')));
+  assert.equal(await fs.readFile(path.join(where, '.env'), 'utf8'), 'TOKEN=1\n');
 });
 
 test('createWorktree reports a failed git worktree add', async () => {
-  const { root, where } = await envRepository('copy');
+  const { root, where } = await envRepository();
   const done = createWorktree(root, where, ['-q', where, 'no-such-branch']);
   assert.equal(done.ok, false);
   assert.notEqual(done.error, '');
 });
 
-test('createWorktree with env false copies no .env even when env is copy', async () => {
-  const { root, where } = await envRepository('copy');
+test('createWorktree with env false copies no .env', async () => {
+  const { root, where } = await envRepository();
   const done = createWorktree(root, where, ['-q', '--detach', where, 'HEAD'], { env: false });
   assert.equal(done.ok, true);
   await assert.rejects(fs.access(path.join(where, '.env')));
 });
 
-test('openSlots leaves .env out of a slot when env is copy', async () => {
-  const { root } = await envRepository('copy');
+test('openSlots leaves .env out of a slot ', async () => {
+  const { root } = await envRepository();
   const opened = openSlots({ root, numbers: [1], setup: 'none', fresh: true });
   assert.equal(opened.reason, undefined);
   await assert.rejects(fs.access(path.join(`${root}-task-1`, '.env')));
@@ -95,8 +95,8 @@ test('the land lock taken from a linked worktree lives under the common dir', as
   assert.equal(held, true);
 });
 
-test('applyPick worktree copies .env when env is copy', async () => {
-  const { root } = await envRepository('copy');
+test('applyPick worktree copies .env ', async () => {
+  const { root } = await envRepository();
   const target = applyPick('worktree', { dir: root, name: 'topic' });
   assert.equal(await fs.readFile(path.join(target, '.env'), 'utf8'), 'TOKEN=1\n');
 });
@@ -212,4 +212,15 @@ test('isWorktreePath matches both worktree folders and nothing else', () => {
 
 test('worktreePath without a directory fails at once', () => {
   assert.throws(() => worktreePath('run-task-1'));
+});
+
+test('env setting removed: a worktree gets .env with a leftover env never in an old settings file', async () => {
+  const schema = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
+  assert.equal('env' in schema, false);
+  const { root, where } = await envRepository();
+  await fs.mkdir(path.join(root, '.claude'), { recursive: true });
+  await fs.writeFile(path.join(root, '.claude', 'exo.json'), '{"env":"never"}\n');
+  const done = createWorktree(root, where, ['-q', '-b', 'topic', where]);
+  assert.equal(done.ok, true);
+  assert.equal(await fs.readFile(path.join(where, '.env'), 'utf8'), 'TOKEN=1\n');
 });

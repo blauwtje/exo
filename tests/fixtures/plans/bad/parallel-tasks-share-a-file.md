@@ -1,4 +1,4 @@
-<!-- expect: Task 1 and Task 2 both list Files: `src/a.mjs` with no Depends on chain between them -->
+<!-- expect: [WARN] Task 1 and Task 2 both list Files: `src/a.mjs` with no Depends on chain between them -->
 <!-- repo: src/a.mjs -->
 # Plan: two parallel tasks list the same file
 

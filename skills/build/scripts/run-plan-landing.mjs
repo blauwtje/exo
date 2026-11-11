@@ -26,10 +26,6 @@ export function sayIdle(ctx, started) {
   if (line !== null) ctx.say(line);
 }
 
-export function noRedProofLine(output) {
-  return output.split('\n').find((line) => line.includes('no red proof'))?.trim();
-}
-
 export function markLanded(ctx, n, record, startedTask) {
   const { root, say, run, plan, passes } = ctx;
   ctx.lastLandOutput = '';
@@ -98,8 +94,6 @@ export function landInOrder(ctx, numbers, record, started) {
       continue;
     }
     ctx.say(`task ${n} not landed by the script: ${clip(failingLine(attempt.output), 80)}`);
-    const noRed = noRedProofLine(attempt.output);
-    if (noRed !== undefined) return { n, reason: noRed };
     ctx.retryNote = failedAttemptNote({ root: ctx.root, task: n, last: failingLine(attempt.output), log: attempt.log, fallback: ctx.sessionFallback });
     return;
   }

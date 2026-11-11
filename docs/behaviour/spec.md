@@ -9,5 +9,8 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `ls skills/*/SKILL.md | wc -l` prints 9, `ls -d skills/*/ | wc -l` prints 9 and `ls agents | wc -l` prints 5 (Tasks 2 to 10).
 - Skill plus agent bytes always loaded shrink against main and `npm run check` holds (Success criterion).
 
+## lean-open
+- Task 6: plan-check says land warns.
+
 ## run-efficiency
 - Task 9: plan-check warns on adjacent tiny tasks; seam: `tests/plan-check-tiny-tasks.test.mjs`. Gain unmeasured; adoption test: one plan with 4 one-file tasks against the same plan merged into 2 tasks, comparing cost, wall time and retries.

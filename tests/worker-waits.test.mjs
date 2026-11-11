@@ -13,9 +13,9 @@ test('sleep is refused for every subagent', async () => {
   }
 });
 
-test('every agent with Bash gets the same end-the-turn wait line, with or without TaskStop', () => {
+test('no agent with Bash gets a wait line, with or without TaskStop', () => {
   for (const tools of [['Bash', 'Read'], ['Bash', 'TaskStop']]) {
-    assert.equal(briefLines(tools).some((line) => /end the turn/.test(line)), true);
+    assert.equal(briefLines(tools).some((line) => /end the turn/.test(line)), false);
     assert.equal(briefLines(tools).some((line) => /no background shell|foreground/i.test(line)), false);
   }
 });

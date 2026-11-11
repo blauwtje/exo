@@ -28,6 +28,14 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 4: `remove-worktree.mjs --report <absent file>` exits 1, and the worktree stays in `git worktree list` (a blocked wave with one build still running); with the report present it removes; `--patch` with an absent or empty file refuses on a dirty tree; with a non-empty patch it removes; `--force` exits 2; seam: `tests/remove-worktree.test.mjs`.
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.
 
+## lean-open
+- Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
+- Task 2: the several-violations land is covered and passes.
+- Task 3: the warning for a protected path names it, says it was not committed and gives the next step.
+- Task 4: `lib/guard-rules.mjs`, `lib/git-deny.mjs`, `skills/build/scripts/land-*.mjs` and `docs/plans/` outside Files are not in the commit and get the same warning.
+- Task 5: a newly added prose file lands.
+- Success criterion: `npm run check` ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
+
 ## loop-budget-2
 - A two-task plan builds with the main session dispatching exo:build-task directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
 

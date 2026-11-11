@@ -34,8 +34,8 @@ test('an agent without Write is refused a file result and the deny names the rep
 
 test('an agent with Write still needs a .exo markdown file as its result', () => {
   const general = dispatch('general-purpose', 'Reads: none\nResult: reply');
-  assert.equal(general.permissionDecision, 'deny');
-  assert.match(general.permissionDecisionReason, /lacks Result\b.*naming one `\.exo\/<\.\.\.>\.md` file/);
+  assert.equal(general.permissionDecision, 'allow');
+  assert.match(general.additionalContext, /lacks Result\b.*naming one `\.exo\/<\.\.\.>\.md` file/);
   assert.equal(dispatch('general-purpose', 'Reads: none\nResult: .exo/x.md').permissionDecision, 'allow');
 });
 

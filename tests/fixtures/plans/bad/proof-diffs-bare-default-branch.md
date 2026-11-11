@@ -1,4 +1,4 @@
-<!-- expect: Task 1: 'Proof: git diff main --stat' diffs against bare `main`, which moves when the default branch moves: use `$(git merge-base main HEAD)` as the base -->
+<!-- expect: [WARN] Task 1: 'Proof: git diff main --stat' diffs against bare `main`, which moves when the default branch moves: use `$(git merge-base main HEAD)` as the base -->
 <!-- repo: src/a.mjs -->
 # Plan: a proof that diffs against the bare default branch
 

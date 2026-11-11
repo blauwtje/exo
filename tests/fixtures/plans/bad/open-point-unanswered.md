@@ -1,4 +1,4 @@
-<!-- expect: the plan's '## Open points' still holds an unanswered question: Which date format does the badge use? -->
+<!-- expect: [WARN] the plan's '## Open points' still holds an unanswered question: Which date format does the badge use? -->
 <!-- repo: src/a.mjs -->
 # Plan: an Open points question left unanswered
 

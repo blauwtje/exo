@@ -29,7 +29,7 @@ Take the first step the request and answers so far leave open.
 
 1. **Relay.** When the request only asks to see the settings, relay the `show` block above as the whole reply and run nothing. Keep its ```` ```text ```` fence unchanged; rows line up only in a monospace block.
 2. **Pick the setting.** When the request names none, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply.
-   - When a topic is picked, run `menu work`, `menu places` or `menu safety` and relay it the same way.
+   - When a topic is picked, run `menu work` or `menu places` and relay it the same way.
 3. **Ask the value.** When the setting is known and the value is not, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
 4. **Pick the layer.** When the request names no layer, use project scope: it reaches every collaborator, not only you, and only a named local or global layer changes that. The closing line names the layer used, so the choice stays visible.
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change. When `show` does not match, rerun the write once (`attempt`), then relay `show`.

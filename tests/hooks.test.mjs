@@ -174,12 +174,11 @@ function sessionContext(prefix, option) {
   return output.hookSpecificOutput.additionalContext;
 }
 
-test('the session hook with no exo settings injects no reply rules, only the fix-all and confirm lines', () => {
+test('the session hook with no exo settings injects no reply rules, only the confirm line', () => {
   const context = sessionContext('exo-plain-');
   assert.ok(!context.includes('compression'));
   assert.ok(!context.includes('Say the answer first.'));
   assert.ok(!context.includes('one question per message'));
-  assert.ok(context.includes('Fix all diagnosed causes instead of cutting scope or asking,'));
   assert.ok(context.includes('Ask instead when the step is irreversible, has no safe default'));
 });
 
@@ -243,10 +242,9 @@ test('the Stop hook lets a repair session end without a task status line', async
   assert.equal(runNoWait(input, { env }), null);
 });
 
-test('the dispatch rules leave agent models to the kind table and send long command output to a log', () => {
+test('the dispatch rules leave agent models to the kind table', () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
   assert.match(rules, /pass no `model` or `effort` because the kind table decides/);
-  assert.match(rules, /Send long command output to a log under `\.exo\/`/);
   assert.doesNotMatch(rules, /cheapest and low for lookups/);
 });
 
@@ -410,10 +408,9 @@ test('the session hook names no progress file when none exists', () => {
   assert.doesNotMatch(progressPointer('clear', { files: [] }), /A progress file sits at/);
 });
 
-test('hooks/session-rules.md states the irreversible-step rule and the safe-default rule once each', () => {
+test('hooks/session-rules.md states the irreversible-step rule once', () => {
   const text = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-rules.md'), 'utf8');
   assert.equal(text.split('irreversible').length - 1, 1, 'irreversible');
-  assert.equal(text.split('has a safe default').length - 1, 1, 'has a safe default');
   assert.equal(text.split('no safe default').length - 1, 1, 'no safe default');
 });
 
@@ -422,11 +419,9 @@ test('the dispatch rules state the sized-brief lines, the read budget and the sp
   assert.match(rules, /`Reads:` line[^\n]*`Fetches: <n>`[^\n]*30k tokens[^\n]*split into more agents/);
 });
 
-test('the dispatch rules add the Workers line, the slice plan, the worker Reads line and the wait', () => {
+test('the dispatch rules add the Workers line and the slice plan', () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
-  assert.match(rules, /unnamed worker brief a `Reads:` or `Fetches:` line/);
   assert.match(rules, /more than 4 workers[^\n]*`Workers: <n>` line of at most 4[^\n]*in parallel[^\n]*next slice's `Reads:`/);
-  assert.match(rules, /harnesses\/coordination-contract\.json[^\n]*end the turn and wait for the notification/);
   assert.equal(rules.split('wait-report').length - 1, 0);
 });
 

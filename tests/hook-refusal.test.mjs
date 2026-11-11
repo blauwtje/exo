@@ -1,14 +1,11 @@
 import assert from 'node:assert/strict';
-import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
 import { SLEEP_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
-import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { stallGuardInput } from '../hooks/run-stall-guard.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { rememberRefusal } from '../lib/hook-refusal.mjs';
-import { tempDir } from './harness.mjs';
 
 const off = () => false;
 const session = (name) => `${name}-${process.pid}-${Date.now()}`;
@@ -31,13 +28,6 @@ function assertEscalates([guard, reminder, stop], route) {
 test('dispatch-bash escalates three identical agent shell waits', async () => {
   const input = { session_id: session('bash'), agent_id: 'worker', tool_name: 'Bash', tool_input: { command: 'sleep 30' } };
   const reasons = await threeReasons(() => dispatchBash(input, [SLEEP_STEP], off));
-  assertEscalates(reasons, 'Do instead: ');
-});
-
-test('dispatch-edit escalates three identical too-deep writes', async () => {
-  const file = path.join(tempDir('hook-refusal-'), 'tool.mjs');
-  const input = { session_id: session('edit'), tool_name: 'Write', tool_input: { file_path: file, content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' } };
-  const reasons = await threeReasons(() => dispatchEdit(input, off));
   assertEscalates(reasons, 'Do instead: ');
 });
 

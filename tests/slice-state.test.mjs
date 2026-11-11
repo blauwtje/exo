@@ -77,7 +77,9 @@ test('a Workers line from a worker, a notification or a number above the limit l
 
 test('a call denied by another check is not counted', () => {
   const agent = orchestrator(2);
-  const output = agentHook({ ...agent, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'no reads' } }, 'on', () => false).hookSpecificOutput;
+  fs.mkdirSync(path.join(agent.cwd, '.claude', 'agents'), { recursive: true });
+  fs.writeFileSync(path.join(agent.cwd, '.claude', 'agents', 'reader.md'), '---\nname: reader\ntools: Read, Grep\n---\nbody\n');
+  const output = agentHook({ ...agent, tool_name: 'Agent', tool_input: { subagent_type: 'reader', prompt: 'Reads: none\nResult: .exo/r.md' } }, 'on', () => false).hookSpecificOutput;
   assert.equal(output.permissionDecision, 'deny');
   assert.equal(sliceCount(agent.agent_id), 0);
 });

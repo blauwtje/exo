@@ -2,11 +2,12 @@ import { runCoveringTests } from './land-proof.mjs';
 import { gateEnvOf } from './land-gate.mjs';
 import { taskChangedPaths } from './land-refusals.mjs';
 import { runPreCommitGates } from './land-prove.mjs';
-import { dropCandidate, commitCandidate, promoteCandidate, gateCandidate, committedSha } from './land-candidate.mjs';
+import { dropCandidate, stageOutside, commitCandidate, promoteCandidate, gateCandidate, committedSha } from './land-candidate.mjs';
 
-export function stageCandidate({ plan, task, frame, block, root, planId, reportText }) {
+export function stageCandidate({ plan, task, frame, block, outside, root, planId, reportText }) {
   const warnLines = runPreCommitGates(task, frame, root);
   const changed = taskChangedPaths(root);
+  stageOutside(root, outside);
   const candidate = commitCandidate(block, root, task, planId, reportText);
   const gateLine = warnLines + gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
   return { changed, candidate, gateLine };

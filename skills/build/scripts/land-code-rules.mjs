@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { codeRuleFindings, codeRuleRefusal } from '#code-rules';
-import { LandingError, CodeRuleError } from './land-errors.mjs';
+import { LandingError } from './land-errors.mjs';
 
 export function runLint(lint, files, root) {
   if (lint === null || lint === 'none') return;
@@ -20,8 +20,6 @@ export function runLint(lint, files, root) {
 
 export function runCodeRules(files, root) {
   const { fails, warns } = codeRuleFindings({ root, base: 'HEAD', paths: files.filter((file) => !file.endsWith('/')) });
-  if (fails.length > 0) {
-    throw new CodeRuleError(codeRuleRefusal(fails));
-  }
-  return warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
+  const block = fails.length > 0 ? `[WARN] ${codeRuleRefusal(fails)}\n` : '';
+  return block + warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
 }

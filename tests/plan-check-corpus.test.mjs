@@ -33,7 +33,7 @@ async function check(planText, header) {
   const rootArguments = flags.includes('noroot') ? [] : ['--root', root];
   const result = await run(PLAN_CHECK, ['--plan', planPath, ...rootArguments, ...flags.filter((flag) => flag !== 'noroot')]);
   const lines = result.stdout.split('\n').map((line) => line.replaceAll(root, '<root>'));
-  return { code: result.code, first: lines[0] };
+  return { code: result.code, first: lines[0], lines };
 }
 
 function fixturesIn(directory) {
@@ -47,6 +47,11 @@ for (const [directory, code] of [['ok', 0], ['bad', 1]]) {
       const header = parseHeader(text);
       assert.ok(header.expect !== undefined, 'the first line reads <!-- expect: ok --> or <!-- expect: <first refusal line> -->');
       const outcome = await check(text, header);
+      if (header.expect.startsWith('[WARN] ')) {
+        assert.equal(outcome.code, 0, outcome.first);
+        assert.ok(outcome.lines.includes(header.expect), outcome.lines.join('\n'));
+        return;
+      }
       assert.equal(outcome.code, code, outcome.first);
       if (code === 0) assert.equal(header.expect, 'ok');
       else assert.equal(outcome.first, header.expect);

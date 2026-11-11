@@ -65,22 +65,32 @@ test('a failing block reports the failure', async () => {
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
 });
 
-test('a stray path outside Files: is refused before anything stages or commits', async () => {
+test('outside files warns and the task lands', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
-  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Task 1 changed a path outside Files: `src\/extra\.js`/);
-  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
-  assert.match(git(root, 'status', '--porcelain'), /extra\.js/);
+  const output = landTask({ planPath, planText: PLAN, number: 1, root });
+  assert.match(output, /^\[WARN\] Task 1 changed a path outside Files: `src\/extra\.js`$/m);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a same-stem companion of a listed file is not a stray, a prefix-sharing sibling and a different directory still are', async () => {
+test('an out-of-scope protected path outside Files is warned about and left out of the derived commit', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.mkdir(path.join(root, 'lib'));
+  await fs.writeFile(path.join(root, 'lib/guard-rules.mjs'), 'export {};\n');
+  const output = landTask({ planPath, planText: await fs.readFile(planPath, 'utf8'), number: 1, root, reportText: PASS_REPORT });
+  assert.match(output, /^\[WARN\] Task 1 changed a path outside Files: `lib\/guard-rules\.mjs`; not committed: /m);
+  assert.doesNotMatch(git(root, 'show', '--name-only', '--format=', 'HEAD'), /guard-rules/);
+  assert.match(git(root, 'status', '--short'), /lib\//);
+});
+
+test('a same-stem companion of a listed file is not a stray, a prefix-sharing sibling and a different directory still warn', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   for (const stray of ['src/apple.js', 'src/app', 'lib/app.test.js']) {
     await fs.mkdir(path.dirname(path.join(root, stray)), { recursive: true });
     await fs.writeFile(path.join(root, stray), 'x\n');
-    assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), (error) => error.message.includes(`changed a path outside Files: \`${stray}\``));
+    assert.ok(checkTask({ planPath, planText: PLAN, number: 1, root }).includes(`[WARN] Task 1 changed a path outside Files: \`${stray}\``));
     await fs.rm(path.join(root, stray));
     await fs.rm(path.join(root, '.exo/refusals'), { recursive: true, force: true });
   }
@@ -88,7 +98,7 @@ test('a same-stem companion of a listed file is not a stray, a prefix-sharing si
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a git worktree nested in the checkout is skipped, a plain untracked directory beside it is still refused', async () => {
+test('a git worktree nested in the checkout is skipped, a plain untracked directory beside it still warns', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'agents', 'agent-1'));
@@ -96,7 +106,9 @@ test('a git worktree nested in the checkout is skipped, a plain untracked direct
   await fs.rm(path.join(root, 'agents', 'agent-gone'), { recursive: true }); // prunable: still listed, directory gone
   await fs.mkdir(path.join(root, 'stray'));
   await fs.writeFile(path.join(root, 'stray', 'file.txt'), 'x\n');
-  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), (error) => /changed a path outside Files: `stray\/file\.txt`/.test(error.message) && !error.message.includes('agent-1'));
+  const checked = checkTask({ planPath, planText: PLAN, number: 1, root });
+  assert.match(checked, /changed a path outside Files: `stray\/file\.txt`/);
+  assert.doesNotMatch(checked, /agent-1/);
   await fs.rm(path.join(root, 'stray'), { recursive: true });
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
 });
@@ -225,15 +237,6 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.ok(noTrailer.stderr.endsWith(`${refusalHandler('proof failed')}\nexo-retry\n`), noTrailer.stderr);
 });
 
-test('a stray path refusal prints the outside-Files handler line before exo-retry', async () => {
-  const { root, planPath } = await landingCheckout();
-  await editApp(root);
-  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
-  const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(refused.code, 1);
-  assert.ok(refused.stderr.endsWith(`${refusalHandler('outside Files')}\nexo-retry\n`), refused.stderr);
-});
-
 test('a missing build report refusal prints the report-missing handler line before exo-retry', async () => {
   const { root, planPath } = await compactCheckout();
   const missing = path.join(root, '.exo/absent-report.md');
@@ -244,14 +247,13 @@ test('a missing build report refusal prints the report-missing handler line befo
   assert.ok(refused.stderr.endsWith(`${refusalHandler('report missing')}\nexo-retry\n`), refused.stderr);
 });
 
-test('a code-rule refusal prints no exo-retry line, so the retry keeps its model', async () => {
+test('a code-rule finding lands with one WARN block and no refusal', async () => {
   const { root, planPath } = await landingCheckout();
   await fs.writeFile(path.join(root, 'src/app.js'), '// greets the user\nexport function greet() {\n  return "hello";\n}\n');
-  const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(refused.code, 1);
-  assert.match(refused.stderr, /breaks the code rules/);
-  assert.doesNotMatch(refused.stderr, /exo-retry/);
-  assert.ok(refused.stderr.includes(`\n${refusalHandler('code rule')}\n`), refused.stderr);
+  const output = landTask({ planPath, planText: PLAN, number: 1, root });
+  assert.match(output, /^\[WARN\] the added code breaks the code rules:\n/m);
+  assert.equal(output.match(/\[WARN\]/g).length, 1);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
 const literalPlan = (data, escape = '') => compactPlanFixture({ tasks: [
@@ -373,4 +375,28 @@ test('a file the block stages outside Files warns and lands, a security-boundary
     }
     assert.match(result.stderr, /security-boundary path outside Files: `hooks\/gen\.js`/);
   }
+});
+
+test('boundary word warns unless the task names it in Drops', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.mkdir(path.join(root, 'skills'));
+  await fs.writeFile(path.join(root, 'skills/rule.md'), 'Run only this, never that.\n');
+  git(root, 'add', 'skills/rule.md');
+  git(root, 'commit', '-m', 'add rule');
+  await fs.writeFile(path.join(root, 'skills/rule.md'), 'Run this.\n');
+  const planText = await fs.readFile(planPath, 'utf8');
+  const warned = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT });
+  assert.match(warned, /^\[WARN\] Task 1 dropped boundary words: only, never in `skills\/rule\.md`$/m);
+  const named = planText.replace('Depends on: none |', 'Depends on: none | Drops: only never in skills/rule.md |');
+  assert.doesNotMatch(checkTask({ planPath, planText: named, number: 1, root, reportText: PASS_REPORT }), /dropped boundary words/);
+});
+
+test('a newly added prose file has no HEAD blob and is skipped by the dropped-words check', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.mkdir(path.join(root, 'skills'));
+  await fs.writeFile(path.join(root, 'skills/fresh.md'), 'Run only this, never that.\n');
+  git(root, 'add', 'skills/fresh.md');
+  const planText = await fs.readFile(planPath, 'utf8');
+  const report = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT });
+  assert.doesNotMatch(report, /dropped boundary words/);
 });

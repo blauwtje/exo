@@ -8,7 +8,6 @@ import { clip } from './run-report.mjs';
 import { PLUGIN_ROOT, SCRIPT } from './run-session-paths.mjs';
 import { breachOf, worktreeTree } from './run-worktree.mjs';
 import { planHash, spawnOne } from './run-plan-session.mjs';
-import { blockedStop } from './run-plan-stops.mjs';
 
 function withoutFields(line) {
   return line.replace(/(?:Files|Proof):[^|]*/g, '');
@@ -41,16 +40,11 @@ function adoptRepair(ctx, text, n) {
   }
 }
 
-function noRedProofHint(report) {
-  return report.includes('no red proof') ? ['The Proof passes without the production change: tighten the Proof first, and add `Red: none (<reason>)` only when no test can fail before the change.'] : [];
-}
-
 function repairPrompt(ctx, n, report) {
   return [
     `Plan repair of task ${n} in ${ctx.planPath}, repository ${ctx.root}.`,
     `Read ${path.join(PLUGIN_ROOT, 'skills', 'build', 'drift-repairer-prompt.md')} and follow its prompt; the task list spec is ${path.join(PLUGIN_ROOT, 'skills', 'spec', 'references', 'task-list.md')}.`,
     `Edit only the Files: or Proof: line of task ${n}, or add \`Red: none (<reason>)\` to its field line; any other change is rejected.`,
-    ...noRedProofHint(report),
     `Drift report: ${report}`
   ].join('\n');
 }
@@ -90,10 +84,4 @@ export async function repairTask(ctx, n, report) {
 
 export function repairedNote(n, reason) {
   return `\nThe previous attempt on task ${n} reported ${clip(reason, 120)}; the plan's field line for it was repaired. Read the plan task again.`;
-}
-
-export async function repairOrBlock(ctx, n, reason) {
-  if (!(await repairTask(ctx, n, reason))) return blockedStop(ctx, n, reason);
-  ctx.retryNote = repairedNote(n, reason);
-  return undefined;
 }

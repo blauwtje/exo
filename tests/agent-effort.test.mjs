@@ -123,11 +123,9 @@ test('the session text leaves the dispatch-only rules out', () => {
   for (const line of readDispatchRules().split('\n')) assert.ok(!sessionText.includes(line.slice(2)), line);
 });
 
-test('the session text has one wait bullet for the agent notice and one TaskStop bullet for the final report', () => {
+test('the session text has one TaskStop bullet for the final report', () => {
   const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
-  assert.ok(lines.includes('- Before saying an agent or task still runs, check it this turn (`tasks/<id>.output` mtime or tail, its log, or `ps`), and if its work ended with no notice, SendMessage it to resume, never claim it runs from a notice alone.'));
   for (const file of ['session-rules.md', 'dispatch-rules.md']) assert.ok(!fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', file), 'utf8').includes('resumes when'));
-  assert.ok(readDispatchRules().split('\n').includes('- Wait, return cap and depth per role are in `harnesses/coordination-contract.json`; after a dispatch, end the turn and wait for the notification, and never write the final result while your own background shell runs.'));
   assert.ok(!lines.some((line) => line.includes('holds the session open')));
   assert.ok(lines.includes('- Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.'));
 });
@@ -139,13 +137,6 @@ test('the blanket delegation lines are gone from the session text and the contex
     assert.doesNotMatch(text, /^- Request with 2\+ parts/m);
     assert.doesNotMatch(text, /^- Main-session work/m);
   }
-});
-
-test('the session text has one off-brief return line: a SendMessage correction before any redispatch, fix rounds kept for review findings', () => {
-  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n').filter((l) => l.startsWith('- When an agent returns off-brief'));
-  assert.equal(lines.length, 1);
-  assert.match(lines[0], /one SendMessage naming the drift .*and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `\*\*Fix rounds\.\*\*`\.$/);
-  assert.doesNotMatch(lines[0], /fresh session/);
 });
 
 test('the session text has no Decided for you list or number-reply rule and still asks the hard cases', () => {
@@ -169,6 +160,8 @@ test('a prompt with an exo-retry line gets the retry cell of a build-task, other
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nexo-retry' }, 'on').model, on.kinds.lookup.model);
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task' }, 'on').model, on.kinds['build-task'].model);
 });
+
+const reasonOf = (output) => output.permissionDecisionReason ?? output.additionalContext;
 
 function hookOutput(input, budget = 'on') {
   const output = agentHook({ tool_name: 'Agent', tool_input: input }, budget, () => false)?.hookSpecificOutput;
@@ -273,11 +266,11 @@ test('worker size: an orchestrator dispatch needs Reads and Result and stays in 
   const dir = tempDir('worker-hook-');
   fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
   const run = (agent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type, cwd: dir, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecision;
-  assert.equal(run('exo:orchestrator', 'do it'), 'deny');
+  assert.equal(run('exo:orchestrator', 'do it'), 'allow');
   assert.equal(run('exo:orchestrator', 'Reads: big.txt\nResult: .exo/r.md'), 'deny');
   assert.equal(run('exo:orchestrator', 'Reads: none\nResult: .exo/r.md'), 'allow');
-  assert.equal(run('exo:orchestrator', 'Reads: none'), 'deny');
-  assert.equal(run('exo:orchestrator', 'Reads: none\nResult: out.txt'), 'deny');
+  assert.equal(run('exo:orchestrator', 'Reads: none'), 'allow');
+  assert.equal(run('exo:orchestrator', 'Reads: none\nResult: out.txt'), 'allow');
   assert.equal(run(undefined, 'do it'), 'allow');
   assert.equal(run(undefined, 'Reads: none'), 'allow');
   assert.equal(run(undefined, 'Reads: big.txt'), 'deny');
@@ -286,7 +279,7 @@ test('worker size: an orchestrator dispatch needs Reads and Result and stays in 
 test('worker size: a refusal names unresolved paths, the largest reads and a missing Result', () => {
   const dir = tempDir('worker-hook-');
   fs.writeFileSync(path.join(dir, 'big.txt'), 'x'.repeat(70000));
-  const reason = (subagent_type, prompt) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type, description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
+  const reason = (subagent_type, prompt) => reasonOf(agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd: dir, tool_input: { subagent_type, description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput);
   assert.match(reason('general-purpose', 'Reads: nope.txt\nResult: .exo/r.md'), /nope\.txt/);
   assert.match(reason('general-purpose', 'Reads: big.txt\nResult: .exo/r.md'), /largest reads big\.txt \(\d+\).*cut at least \d+ tokens.*`lines N-M` or `by grep`.*by path/);
   assert.match(reason('general-purpose', 'Reads: none'), /lacks Result\b.*`Result:` line naming one `\.exo\/<\.\.\.>\.md` file/);
@@ -318,12 +311,12 @@ test('worker size: a none. or punctuated Reads line runs normalized and a missin
     assert.notEqual(output?.permissionDecision, 'deny', reads);
     assert.match(output.updatedInput.prompt, /^Reads: (none|a\.md)$/m, reads);
   }
-  const reason = run('Reads: gone.md.\nResult: .exo/r.md').permissionDecisionReason;
+  const reason = run('Reads: gone.md.\nResult: .exo/r.md').additionalContext;
   assert.match(reason, /do not exist: gone\.md \(searched [^)]*\)\. Do instead: write `Reads:` as items split by `,` or `;`, each a path, optionally followed by `lines N-M`, `by grep` or a trailing \(note\) or \[note\], or `Reads: none`; name only files that exist now and no glob, and an item that does not start with a path is prose and is not read\.$/);
   assert.doesNotMatch(reason, /\.\./);
 });
 
-const workerReason = (prompt, cwd) => agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput.permissionDecisionReason;
+const workerReason = (prompt, cwd) => reasonOf(agentHook({ tool_name: 'Agent', agent_type: 'exo:orchestrator', cwd, tool_input: { subagent_type: 'general-purpose', description: 'work', prompt } }, 'on', () => false)?.hookSpecificOutput);
 
 test('a missing path that exists under an absolute directory in the prompt asks for a Worktree line', () => {
   const tree = tempDir('worker-tree-');
@@ -370,11 +363,11 @@ test('the orchestrator description states the Reads line shape', () => {
   assert.match(/^description: (.+)$/m.exec(agent)[1], /`Reads: a\.md, lib\/b\.mjs` or `none`/);
 });
 
-test('an Agent call with worktree isolation is denied and the deny names the Worktree line route', () => {
+test('an Agent call with worktree isolation warns and the warning names the Worktree line route', () => {
   const output = hookOutput({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' });
-  assert.equal(output.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /`Worktree: <abs path>`/);
-  assert.match(output.permissionDecisionReason, /no `isolation`/);
+  assert.notEqual(output.permissionDecision, 'deny');
+  assert.match(output.additionalContext, /`Worktree: <abs path>`/);
+  assert.match(output.additionalContext, /no `isolation`/);
 });
 
 test('an Agent call without isolation, or with a Worktree line, is not denied for isolation', () => {
@@ -447,11 +440,11 @@ function refusals(tag, input) {
   }
 }
 
-test('one dispatch breaking three rules is refused once naming all three and the third stops naming them still', () => {
-  const input = { subagent_type: 'exo:orchestrator', isolation: 'worktree', model: 'haiku', prompt: 'do it' };
+test('one dispatch breaking two rules is refused once naming both and the third stops naming them still', () => {
+  const input = { subagent_type: 'exo:orchestrator', model: 'haiku', prompt: 'Workers: 5' };
   const reasons = refusals('loop', input);
   for (const reason of [reasons[0], reasons[2]]) {
-    assert.match(reason, /isolation/i);
+    assert.match(reason, /1 to 4/);
     assert.match(reason, /passed haiku/);
   }
   assert.doesNotMatch(reasons[0], /LOOP refusal STOP/);
@@ -463,9 +456,15 @@ test('out-of-scope: an edited brief of the same dispatch identity keeps counting
   const session = `edit-${process.pid}-${Date.now()}`;
   const ledger = path.join(os.tmpdir(), `exo-refusal-${session}`);
   try {
-    const reasons = ['a', 'b', 'c'].map((tail) => agentHook({ session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', description: 'same task', isolation: 'worktree', prompt: `do it ${tail}` } }, 'on').hookSpecificOutput.permissionDecisionReason);
+    const reasons = ['a', 'b', 'c'].map((tail) => agentHook({ session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', description: 'same task', prompt: `Workers: 5 ${tail}` } }, 'on').hookSpecificOutput.permissionDecisionReason);
     assert.match(reasons[2], /LOOP refusal STOP/);
   } finally {
     fs.rmSync(ledger, { recursive: true, force: true });
   }
+});
+
+test('brief without fetches still dispatches with a warning', () => {
+  const output = hookOutput({ subagent_type: 'exo:research-worker', prompt: 'Sources: web\nReads: none\nResult: .exo/answer.md' });
+  assert.notEqual(output.permissionDecision, 'deny');
+  assert.match(output.additionalContext, /add the line `Fetches: <n>`/);
 });

@@ -1,4 +1,4 @@
-<!-- expect: the plan's '## Acceptance' item "The badge looks right to the reader" names no task number, 'Data:' segment, Success criterion or Manual checks line -->
+<!-- expect: [WARN] the plan's '## Acceptance' item "The badge looks right to the reader" names no task number, 'Data:' segment, Success criterion or Manual checks line -->
 <!-- repo: src/a.mjs -->
 # Plan: an Acceptance item that cites no task
 

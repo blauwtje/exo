@@ -1,4 +1,4 @@
-<!-- expect: Task 1: a refactor task has no 'Red:' field, so land will refuse a Proof that passes before the change with "no red proof": add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead -->
+<!-- expect: [WARN] Task 1: a refactor task has no 'Red:' field, so land will warn "no red proof" on a Proof that passes before the change: add 'Red: none (<reason>)'; a Proof that fails before the change marks a behavior change, so give the heading type feat or fix instead -->
 <!-- repo: src/a.mjs -->
 # Plan: a refactor task with no Red field
 

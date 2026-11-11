@@ -73,11 +73,9 @@ test('a green slot prints the caller view and names the full text in a land-slot
 test('a refused landing keeps the slot and puts nothing on the run branch', async () => {
   const { root, slot, land } = await slotFixture();
   const head = git(root, 'rev-parse', 'HEAD');
-  await editApp(slot);
-  await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
   const result = await land();
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^REFUSED 1\b.*outside Files/s);
+  assert.match(result.stdout, /^REFUSED 1\b/);
   assert.match(result.stdout, /^Start: none$/m);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
   assert.match(worktrees(root), new RegExp(slot));
@@ -88,8 +86,6 @@ test('a refused landing prints Land: for the rebuild into the same slot and reco
   const other = `${root}-task-3`;
   const window = path.join(root, '.exo', 'window.json');
   await fs.writeFile(window, JSON.stringify({ 1: { slot, base, since: 1000000000 }, 3: { slot: other, base, since: 1000000003 } }));
-  await editApp(slot);
-  await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
   const before = Math.floor(Date.now() / 1000);
   const result = await land(undefined, { EXO_RUN_SESSION: '1' });
   assert.match(result.stdout, /^REFUSED 1\b/);
@@ -103,13 +99,11 @@ test('--only reaches the rebuild Land: lines of a refused landing and a landing 
   const { root, slot, land, base } = await slotFixture();
   const other = `${root}-task-3`;
   await fs.writeFile(path.join(root, '.exo', 'window.json'), JSON.stringify({ 1: { slot, base, since: 1000000000 }, 3: { slot: other, base, since: 1000000003 } }));
-  await editApp(slot);
-  await fs.writeFile(path.join(slot, 'src/extra.js'), 'export const extra = 1;\n');
   const refused = await land(['--in-flight', '3', '--only', '1,3']);
   assert.equal(refused.code, 0, refused.stderr);
   assert.match(refused.stdout, /^Land 1: .*--in-flight 3 --only 1,3$/m);
   assert.match(refused.stdout, /^Land 3: .* --only 1,3$/m);
-  await fs.rm(path.join(slot, 'src/extra.js'));
+  await editApp(slot);
   const landed = await land(['--in-flight', '3', '--only', '1,3']);
   assert.match(landed.stdout, /^LANDED 1\b/);
   assert.match(landed.stdout, /^Start: none$/m);

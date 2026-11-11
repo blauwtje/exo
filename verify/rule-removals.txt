@@ -152,3 +152,4 @@ e4a4736ae567 the optional-sections rule is replaced by the four fixed handoff se
 1c4a677a2b0e the concern-dispatch rule is gone because only a proven defect reaches the fixer (lean-rounds Task 2)
 bb1283c01801 the per-cluster fixer rule is gone because one cluster goes to one fixer (lean-rounds Task 2)
 c4e8d9d43fb3 the per-CLUSTER parallel concern rule is gone because one cluster of defects goes to one fixer (lean-rounds Task 3)
+dc162e9b2b11 the env copy question is gone because every new worktree copies .env files with no question (lean-native Task 12)

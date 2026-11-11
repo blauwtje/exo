@@ -32,13 +32,13 @@ function checkTaskLocked({ planText, number, root, reportText, reportPath, planP
   clearStaleCandidate(root, planId);
   clearCheckStamp(root, number);
   refuseMcpProofUnderPin(pin, task);
-  refuseTogether(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }), reportText, reportPath });
+  const warning = refuseTogether(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }), reportText, reportPath });
   const frame = frameOf(plan.frame);
   const warnLines = runPreCommitGates(task, frame, root);
   const gateLine = warnLines + gateCheckedOnCandidate(plan, task, frame, { root, planId });
   const report = `Report OK: Task ${number}\n`;
   writeCheckStamp(root, number, report);
-  return `${gateLine}${report}`;
+  return `${warning}${gateLine}${report}`;
 }
 
 function gateCheckedOnCandidate(plan, task, frame, { root, planId }) {

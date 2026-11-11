@@ -136,3 +136,24 @@ test('a branch name with a slash gets its parent folders', () => {
   endSession(cwd);
   assert.ok(fs.existsSync(handoff));
 });
+
+test('stub goal from plan: the Goal section of the newest progress file fills the stub', () => {
+  const { cwd, handoff } = repository();
+  const progress = path.join(cwd, '.exo', 'plan-a', 'progress.md');
+  fs.mkdirSync(path.dirname(progress), { recursive: true });
+  fs.writeFileSync(progress, '# Plan\n\n## Goal\nShip the lean handoff.\n\n## Tasks\n- one\n');
+  endSession(cwd);
+  const text = fs.readFileSync(handoff, 'utf8');
+  assert.match(text, /## Goal\nShip the lean handoff\.\n\n## Progress/);
+  assert.ok(!text.includes('Not recorded'));
+});
+
+test('stub goal keeps every line of a goal that starts after a blank line', () => {
+  const { cwd, handoff } = repository();
+  const progress = path.join(cwd, '.exo', 'plan-a', 'progress.md');
+  fs.mkdirSync(path.dirname(progress), { recursive: true });
+  fs.writeFileSync(progress, '# Plan\n\n## Goal\n\nShip it.\nThen stop.\n\n## Tasks\n- one\n');
+  endSession(cwd);
+  const text = fs.readFileSync(handoff, 'utf8');
+  assert.match(text, /## Goal\nShip it\.\nThen stop\.\n\n## Progress/);
+});

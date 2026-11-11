@@ -64,18 +64,18 @@ function landAmended({ planText, number, root, reportText, reportPath, planPath,
   foldCheckpoints(root);
   const task = taskOf(plan, number);
   refuseAlreadyLanded(plan, task, root, planId);
-  const block = refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath });
+  const { block, warning: filesWarning, outside } = refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath });
   const pendingEvidence = proofEvidenceOf(plan, root, planId);
-  const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
+  const { proofs, pending, redLine, warning: redWarning } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
   const frame = frameOf(plan.frame);
-  const { changed, candidate, gateLine } = stageCandidate({ plan, task, frame, block, root, planId, reportText });
+  const { changed, candidate, gateLine } = stageCandidate({ plan, task, frame, block, outside, root, planId, reportText });
   coverOrDrop({ task, proofs, root, changed, pendingEvidence, candidate });
   const sha = promoteAndCommit({ task, root, planId, planPath, candidate });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   writeProofRecord({ root, planId, number, proofs, redLine });
   appendTimeline(root, 'landed', number);
-  return landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine });
+  return filesWarning + redWarning + landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine });
 }
 
 const USAGE = [

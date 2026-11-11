@@ -30,3 +30,16 @@ test('an HTML entity in Land gate or Proof is refused naming the field', async (
   assert.match(await planCheck({ gate: 'npm test 2&gt;&amp;1' }), /Land gate: .*HTML entity '&gt;'/);
   assert.match(await planCheck({ gate: 'npm run check', proof: 'node --test a &gt; b' }), /Proof of Task 1: .*HTML entity '&gt;'/);
 });
+
+async function loopCriterion(command) {
+  const root = await gitRepository({ 'src/run.mjs': 'export {};\n' });
+  const base = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Change the runner', files: ['src/run.mjs'], proof: 'node --test' })] });
+  const planPath = path.join(await fixture(), 'plan.md');
+  await fs.writeFile(planPath, base.replace('`node --test` passes.', `\`${command}\` passes.`));
+  return spawnSync('node', [PLAN_CHECK, '--loop', '--plan', planPath, '--root', root], { encoding: 'utf8' }).stdout;
+}
+
+test('criterion runs: exit 127 is flagged and a failing exit 1 is not', async () => {
+  assert.match(await loopCriterion('sh -c "exit 127"'), /Success criterion.*exit 127/);
+  assert.doesNotMatch(await loopCriterion('sh -c "exit 1"'), /Success criterion.*(exit 127|timed out)/);
+});

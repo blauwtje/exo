@@ -1,4 +1,4 @@
-<!-- expect: Task 1: `CONTRIBUTING.md` names Files: `benchmarks/big.mjs` and Files: does not list `CONTRIBUTING.md` -->
+<!-- expect: [WARN] Task 1: `CONTRIBUTING.md` names Files: `benchmarks/big.mjs` and Files: does not list `CONTRIBUTING.md` -->
 <!-- repo: benchmarks/big.mjs, tests/keep.txt, CONTRIBUTING.md -->
 # Plan: a lock doc naming a Files entry is not listed
 

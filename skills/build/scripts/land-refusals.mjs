@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { dataLiterals, literalFinder } from '#data-literals';
 import { environmentMs } from '#script-flags';
@@ -6,9 +7,11 @@ import { defaultBase, landedTasks, taskCommits } from '#plan-landed';
 import { treePassMs } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
-import { AlreadyLandedError, LandingError, OutsideFilesError, UnfinishedMergeError } from './land-errors.mjs';
+import { AlreadyLandedError, LandingError, UnfinishedMergeError } from './land-errors.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
-import { unplannedPaths } from './land-paths.mjs';
+import { outsideFilesWarning } from './land-paths.mjs';
+import { dropsOf } from './land-commit-block.mjs';
+import { countWords, parseDrops } from '../../../verify/checks/boundary-words.mjs';
 import { unfinishedMergeNote } from '#merge-state';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { landRefusal } from '../../../lib/refusal-handlers.mjs';
@@ -37,9 +40,9 @@ function untaggedBaseNote(task, root) {
 }
 
 export function redGreenLine(task, proofCommands, root, pending) {
-  if (task.red !== null) return `Red: skipped: none (${task.red.reason})`;
-  if (pending !== null) return 'Red: skipped: deferred MCP proof';
-  if (proofCommands.length === 0) return 'Red: skipped: no passing Bash proof command';
+  if (task.red !== null) return { line: `Red: skipped: none (${task.red.reason})`, warning: '' };
+  if (pending !== null) return { line: 'Red: skipped: deferred MCP proof', warning: '' };
+  if (proofCommands.length === 0) return { line: 'Red: skipped: no passing Bash proof command', warning: '' };
   const overlay = testPaths(taskChangedPaths(root));
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
@@ -49,9 +52,10 @@ export function redGreenLine(task, proofCommands, root, pending) {
     if (base.status === 'error') {
       throw new LandingError(`Task ${task.number}: the red-green check of "${command}" on ${sha || 'HEAD'} failed to finish:\n${base.output.trim().split('\n').slice(-PROOF_TAIL_LINES).join('\n')}`);
     }
-    if (base.status === 'red') return 'Red: proved';
+    if (base.status === 'red') return { line: 'Red: proved', warning: '' };
   }
-  throw new LandingError(`Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}`);
+  const warning = `[WARN] Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}\n`;
+  return { line: 'Red: skipped: Proof passed without the production change', warning };
 }
 
 // why: gate's claims-diff check refuses the same commit, but only at the end of the run.
@@ -83,12 +87,41 @@ export function refuseUnfinishedMerge(root) {
   if (note !== null) throw new UnfinishedMergeError(note);
 }
 
-export function refuseUnplannedPaths(task, options) {
-  const unplanned = unplannedPaths(task, options);
-  if (unplanned.length === 0) return;
-  const unfinished = unfinishedMergeNote(options.root);
-  const paths = unplanned.map((file) => `\`${file}\``).join(', ');
-  throw new OutsideFilesError(`Task ${task.number} changed a path outside Files: ${paths}${unfinished === null ? '' : `; ${unfinished}`}`);
+const PROSE_FOLDERS = ['skills/', 'agents/', 'rules/', 'hooks/'];
+
+function headText(file, root) {
+  try {
+    return execFileSync('git', ['-C', root, 'show', `HEAD:${file}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch {
+    return null;
+  }
+}
+
+function droppedWords(file, root, permitted) {
+  const head = headText(file, root);
+  if (head === null) return [];
+  const before = countWords(head);
+  const after = countWords(fs.readFileSync(path.join(root, file), 'utf8'));
+  return Object.keys(before).filter((word) => after[word] < before[word] && !permitted.has(`${word} in ${file}`));
+}
+
+function isTrackedProse(file, root) {
+  if (!file.endsWith('.md') || !PROSE_FOLDERS.some((folder) => file.startsWith(folder))) return false;
+  return fs.existsSync(path.join(root, file)) && execFileSync('git', ['-C', root, 'ls-files', file], { encoding: 'utf8' }) !== '';
+}
+
+export function droppedBoundaryWarning(task, root) {
+  const permitted = new Set();
+  parseDrops(dropsOf(task) ?? '').forEach((entry) => {
+    const [words, file] = entry.split(/ in (\S+)$/);
+    words.split(' ').forEach((word) => permitted.add(`${word} in ${file}`));
+  });
+  const lines = taskChangedPaths(root)
+    .filter((file) => isTrackedProse(file, root))
+    .map((file) => ({ file, words: droppedWords(file, root, permitted) }))
+    .filter((entry) => entry.words.length > 0)
+    .map((entry) => `[WARN] Task ${task.number} dropped boundary words: ${entry.words.join(', ')} in \`${entry.file}\`\n`);
+  return lines.join('');
 }
 
 export function passingRunsOf(task) {
@@ -118,13 +151,12 @@ function attempt(id, run) {
 
 export function refuseTogether(task, { root, planPath, siblingWork, reportText, reportPath }) {
   const checks = [
-    attempt('outside Files', () => refuseUnplannedPaths(task, { root, planPath, siblingWork })),
     attempt('untested test-first', () => refuseUntestedTestFirst(task, root)),
     attempt('missing literals', () => refuseMissingLiterals(task, root, planPath)),
     attempt('report', () => checkReport(task, reportText, reportPath))
   ];
   const text = landRefusal(path.join(root, SCRATCH_FOLDER, 'refusals'), task.number, checks, {});
-  if (text === null) return;
+  if (text === null) return outsideFilesWarning(task, { root, planPath, siblingWork }) + droppedBoundaryWarning(task, root);
   const first = checks.find((check) => check.error !== null).error;
   throw new first.constructor(text.trimEnd());
 }

@@ -16,7 +16,7 @@ async function planCheck({ proof, data = 'a plain object' }) {
 }
 
 test('a Proof whose first word is a missing path warns', async () => {
-  assert.match(await planCheck({ proof: 'scripts/prove.sh' }), /warning: Task 1: Proof starts with `scripts\/prove.sh`/);
+  assert.match(await planCheck({ proof: 'scripts/prove.sh' }), /\[WARN\] Task 1: Proof starts with `scripts\/prove.sh`/);
 });
 
 test('a Proof that starts with a command warns of nothing', async () => {
@@ -24,7 +24,7 @@ test('a Proof that starts with a command warns of nothing', async () => {
 });
 
 test('a Data path that Files omits warns', async () => {
-  assert.match(await planCheck({ proof: 'node --test', data: 'rows from `lib/other.mjs`' }), /warning: Task 1: Data: names `lib\/other.mjs`, which Files: omits/);
+  assert.match(await planCheck({ proof: 'node --test', data: 'rows from `lib/other.mjs`' }), /\[WARN\] Task 1: Data: names `lib\/other.mjs`, which Files: omits/);
 });
 
 test('a Data path that Files lists warns of nothing', async () => {

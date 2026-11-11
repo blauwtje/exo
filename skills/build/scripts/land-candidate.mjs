@@ -7,7 +7,7 @@ import { LandingError, OutsideFilesError } from './land-errors.mjs';
 import { headMessage, headSha, moveHead } from './land-git.mjs';
 import { gitText } from '#git';
 import { candidateTrailer } from './land-commit-block.mjs';
-import { nestedWorktrees } from './land-paths.mjs';
+import { isProtectedPath, nestedWorktrees } from './land-paths.mjs';
 import { runLandGate } from './land-gate.mjs';
 import { carryRaises } from './land-raises.mjs';
 
@@ -70,7 +70,10 @@ function runCommitBlock(block, root, number) {
   throw new LandingError(`the Commit: block of Task ${number} failed:\n${output}`);
 }
 
-const SECURITY_BOUNDARY = /^(\.github\/|\.claude\/|hooks\/|\.env(\.|$)|.*\.(pem|key)$)/;
+export function stageOutside(root, paths) {
+  const staged = paths.filter((changed) => !isProtectedPath(changed));
+  if (staged.length > 0) execFileSync('git', ['-C', root, 'update-index', '--add', '--remove', '--', ...staged]);
+}
 
 function outsideTaskFiles(task, { root, planPath, base }) {
   const entries = task.files.map((file) => file.path);
@@ -88,7 +91,7 @@ function quoted(paths) {
 
 function checkOutsideTaskFiles(task, options) {
   const outside = outsideTaskFiles(task, options);
-  const guarded = outside.filter((changed) => SECURITY_BOUNDARY.test(changed));
+  const guarded = outside.filter((changed) => isProtectedPath(changed));
   if (guarded.length > 0) throw new OutsideFilesError(`the commit of Task ${task.number} holds a security-boundary path outside Files: ${quoted(guarded)}; move it to its own task`);
   if (outside.length === 0) return;
   process.stderr.write(`Warning: the commit of Task ${task.number} holds a path outside Files: ${quoted(outside)}\n`);

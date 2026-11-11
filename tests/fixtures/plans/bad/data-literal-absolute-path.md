@@ -1,4 +1,4 @@
-<!-- expect: Task 1: Data: names `/etc/hosts`, a path the land check cannot search (absolute, outside the repository or git-ignored); name it relative to the repository, or add `Literals: none (<reason>)` -->
+<!-- expect: [WARN] Task 1: Data: names `/etc/hosts`, a path the land check cannot search (absolute, outside the repository or git-ignored); name it relative to the repository, or add `Literals: none (<reason>)` -->
 <!-- repo: src/a.mjs -->
 # Plan: a Data literal outside the repository
 

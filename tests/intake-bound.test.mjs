@@ -54,13 +54,13 @@ test('replay: a Read over the room left is cut to the lines that fit and the age
   assert.match(cut.additionalContext, /grep -n/);
 });
 
-test('replay: a Read whose first line alone is over the room left is still denied', () => {
+test('replay: a Read whose first line alone is over the room left warns', () => {
   growTo(10_000);
   const longLine = path.join(dir, 'long-line.log');
   fs.writeFileSync(longLine, `${'x'.repeat(200_000)}\n`);
   const denial = read({ file_path: longLine });
-  assert.equal(denial.permissionDecision, 'deny');
-  assert.match(denial.permissionDecisionReason, /grep|head -c/);
+  assert.equal(denial.permissionDecision, undefined);
+  assert.match(denial.additionalContext, /grep|head -c/);
 });
 
 test('replay: a growing agent is steered to grep or a line range once a read would pass the room left of its target', async () => {
@@ -97,7 +97,7 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
   assert.equal(denied(read({ file_path: smallFile })), false, 'small read at 50k');
 
   growTo(TARGET + 1000);
-  assert.match(read({ file_path: testLog }).permissionDecisionReason, /Status: handover/);
+  assert.match(read({ file_path: testLog }).additionalContext, /handover/);
   assert.match((await bash(`cat '${testLog}'`)).updatedInput.command, new RegExp(`head -c ${resultCapBytes()} `));
 
   const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
@@ -124,9 +124,9 @@ test('replay: a growing agent has its Grep and ToolSearch cut to the room left, 
 
   growTo(54_000);
   const glob = search('Glob', { pattern: '**/*.mjs', path: dir });
-  assert.equal(denied(glob), true, 'a Glob that may pass the room left at 54k');
-  assert.match(glob.permissionDecisionReason, /Grep/);
-  assert.match(glob.permissionDecisionReason, /files_with_matches/);
+  assert.equal(denied(glob), false, 'a Glob that may pass the room left at 54k only warns');
+  assert.match(glob.additionalContext, /Grep/);
+  assert.match(glob.additionalContext, /files_with_matches/);
 
   growTo(59_000);
   const floor = resultCapBytes();
@@ -136,7 +136,7 @@ test('replay: a growing agent has its Grep and ToolSearch cut to the room left, 
   assert.match(search('Grep', { pattern: 'line', offset: 30 }).additionalContext, new RegExp(`offset ${30 + Math.floor(floor / catalog.searchLineBytes)}`));
 
   growTo(TARGET + 1000);
-  assert.match(search('Grep', { pattern: 'line' }).permissionDecisionReason, /Status: handover/);
+  assert.match(search('Grep', { pattern: 'line' }).additionalContext, /handover/);
 
   const capped = { ...agent, agent_id: `a-capped-${process.pid}`, agent_type: 'general-purpose' };
   growTo(10_000);

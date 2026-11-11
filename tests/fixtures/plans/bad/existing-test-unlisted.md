@@ -1,4 +1,4 @@
-<!-- expect: Task 1: Files: `src/widget.mjs` has existing tests `tests/widget.test.mjs` and lists none of them -->
+<!-- expect: [WARN] Task 1: Files: `src/widget.mjs` has existing tests `tests/widget.test.mjs` and lists none of them -->
 <!-- repo: src/widget.mjs, tests/widget.test.mjs -->
 # Plan: a source file with existing tests and none listed
 

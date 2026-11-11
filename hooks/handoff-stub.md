@@ -1,10 +1,10 @@
-The session ended before a handoff was written, so this note holds only what the files show: the changed files, the last commit and the progress file if one exists.
+The session ended before a handoff was written, so this note holds only what the files show: the changed files, the last commit and the progress file if one exists. The Goal is copied from the plan, so ask the user when it is not current.
 
 Written: {{date}}, last commit {{head}}, branch {{branch}}
 Source: auto
 
 ## Goal
-Not recorded, because the session ended before a handoff was written. Ask the user for the goal.
+{{goal}}
 
 ## Progress
 {{state}}

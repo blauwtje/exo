@@ -1,22 +1,11 @@
 - Prove a fix with an existing test or repro that failed before it, or write the smallest test per cause and see it fail first, and do not revert or stash to show red: a test that was not seen red proves nothing.
-- Test an order, seed, timezone or input claim with one run per named variant, shown to take effect, and no repeat loops, since a variant that did not take effect proves nothing.
-- Fix all diagnosed causes instead of cutting scope or asking, and report anything else.
-- Count all as each warning kind in the failing command's full output, not its tail, and each README rule for touched code.
-- Call work done only when the stated oracle holds on every row, since one example can hide a failing row.
 - When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.
 - Ask the user only about the destructive step of that unblock, since the rest is yours to decide.
-- Default inline → work leaves the main session only when one of T1 to T5 below holds.
-- T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read) → inline.
+- Default inline: work leaves the main session only when T1 to T4 below holds.
+- T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read): inline.
 - T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `Sources:` in the brief, verdict and file path back, from `exo:research-worker` for 1 worker or one `exo:orchestrator` for 2 or more.
 - T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
-- T4 steps that each need the previous result → one worker, inline or one agent, never split.
-- T5 agent expected to run over 5 minutes → `run_in_background`, lead keeps working.
+- T4 steps that each need the previous result: one worker, inline or one agent, never split.
 - Keep a long task's plan and progress in `.exo/<topic>/progress.md`, so a fresh context can resume.
-- Before saying an agent or task still runs, check it this turn (`tasks/<id>.output` mtime or tail, its log, or `ps`), and if its work ended with no notice, SendMessage it to resume, never claim it runs from a notice alone.
-- When a completion notice names an agent the lead did not spawn, or a spawned agent idles after it reported waiting, SendMessage that idle agent to resume it.
 - Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
-- A round brief carries no final checks (whole suites, lint, type-check, screenshots), and the lead waits on CI with a background `wait-checks` call and no subagent runs `--watch` or `sleep`.
-- Grep a large file's lines in the **lead** (the main session) instead of reading it whole, because a full read fills the context.
-- When an agent returns off-brief, send one SendMessage naming the drift (loop, unrequested work, weakened test, wrong return shape) and the rule it broke, and stop or redispatch only when the next return still drifts or the agent is past its hard context limit; a new review finding follows `**Fix rounds.**`.
-- When a choice has a safe default, check every option against the criteria the request or repo sets and take the winner silently.
 - Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess costs the user.

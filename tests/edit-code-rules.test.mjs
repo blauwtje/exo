@@ -28,8 +28,8 @@ function decision(output) {
 }
 
 function denial(output) {
-  assert.equal(decision(output), 'deny', JSON.stringify(output));
-  return output.hookSpecificOutput.permissionDecisionReason;
+  assert.equal(decision(output), undefined, JSON.stringify(output));
+  return output.hookSpecificOutput.additionalContext;
 }
 
 test('an Edit that adds a comment is refused with the comment rule', () => {

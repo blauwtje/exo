@@ -1,4 +1,4 @@
-<!-- expect: Task 1: 'Proof: npm run check' equals the 'Land gate:' command, so land will refuse it with "no red proof": name a Proof that fails before the task, or add 'Red: none (<reason>)' -->
+<!-- expect: [WARN] Task 1: 'Proof: npm run check' equals the 'Land gate:' command, so land will warn "no red proof" on it: name a Proof that fails before the task, or add 'Red: none (<reason>)' -->
 <!-- repo: src/a.mjs -->
 # Plan: a proof equal to the land gate
 

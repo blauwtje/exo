@@ -104,7 +104,6 @@ const MAX_PICKS = 2;
 const TOPICS = {
   work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['budget', 'receipts'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code and finished work go', keys: ['specs', 'workspace', 'ship'] },
-  safety: { label: 'Safety', question: 'Which part of safety?', about: 'what runs copy', keys: ['env'] },
   notices: { label: 'Notices', question: 'Which notice?', about: 'where a finished, stuck or waiting run tells you', keys: ['notify'] }
 };
 

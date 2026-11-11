@@ -130,14 +130,14 @@ function proofStartWarning(task, root, listed) {
   const first = task.proof.trim().split(/\s+/)[0].replace(/^\.\//, '');
   if (!/^[\w@-][\w./@-]*\/[\w./@-]+$/.test(first)) return [];
   if (isCovered(listed, first) || fs.existsSync(path.join(root, first))) return [];
-  return [`warning: Task ${task.number}: Proof starts with \`${first}\`, which is not in the checkout root and not in Files:`];
+  return [`Task ${task.number}: Proof starts with \`${first}\`, which is not in the checkout root and not in Files:`];
 }
 
 function dataPathWarnings(task, listed) {
   const paths = [...(task.data ?? '').matchAll(DATA_PATH)].map((match) => match[1].replace(/^\.\//, ''));
   return [...new Set(paths)]
     .filter((dataPath) => !isCovered(listed, dataPath))
-    .map((dataPath) => `warning: Task ${task.number}: Data: names \`${dataPath}\`, which Files: omits`);
+    .map((dataPath) => `Task ${task.number}: Data: names \`${dataPath}\`, which Files: omits`);
 }
 
 export function warnProofAndData(task, root, byNumber) {

@@ -22,3 +22,9 @@ test('a round that fixed nothing ends as no-progress', () => {
   recordRound(dir, { kind: 'review', openBefore: 4, openAfter: 4 });
   assert.equal(decide(dir, 'review', { env: {} }).state, 'no-progress');
 });
+
+test('a round with a question open ends as needs-input', () => {
+  const dir = tempDir('exo-end-');
+  recordRound(dir, { kind: 'review', openBefore: 4, openAfter: 2, needsInput: true });
+  assert.equal(decide(dir, 'review', { env: {} }).state, 'needs-input');
+});

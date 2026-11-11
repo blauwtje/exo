@@ -8,10 +8,6 @@ export class PlanDriftError extends LandingError {
   kind = 'plan drift';
 }
 
-export class CodeRuleError extends LandingError {
-  kind = 'code rule';
-}
-
 export class EnvError extends LandingError {
   kind = 'env';
 }

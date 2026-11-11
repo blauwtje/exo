@@ -24,7 +24,6 @@ Read only the plan's `## Goal`, `## Decisions`, `## Plan basis` and the drifted 
 Re-read the working-tree regions that task names.
 Rewrite that task's field line (`Files:`, `Data:`, `Proof:`) against the current tree, or in a long-format task its step code, `Run:`, `Expected:` and `Commit:` paths.
 Inside a run, edit only that task's `Files:` or `Proof:` line, or add `Red: none (<reason>)` to its field line: the run rejects any other change and stops.
-A report of `no red proof` means the Proof passes without the production change: tighten the Proof first, and add `Red: none (<reason>)` only when no test can fail before the change.
 Leave every other task untouched.
 
 Return, and nothing else, in at most five lines: the plan path, the task number rewritten, and any fact that kept the task unrepaired.

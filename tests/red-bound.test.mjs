@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { LandingError } from '../skills/build/scripts/land-errors.mjs';
 import { redGreen, runOnBase } from '../lib/red-green.mjs';
 import { commitFiles, gitRepository } from './harness.mjs';
 import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs';
@@ -56,14 +55,18 @@ test('a base that exits non-zero fast is red, as before', async () => {
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a base that passes fast is no red proof, as before', async () => {
+test('a base that passes fast warns of no red proof and lands', async () => {
   const land = await landWith('true');
-  await assert.rejects(() => withEnv(TINY, land), (error) => error instanceof LandingError && /no red proof/.test(error.message));
+  const result = await withEnv(TINY, land);
+  assert.match(result, /^\[WARN\] Task 1: Proof passes on .* no red proof/m);
+  assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a base that passes within head plus margin is no red proof', async () => {
+test('a base that passes within head plus margin warns of no red proof and lands', async () => {
   const land = await landWith(inBase('sleep 0.3'));
-  await assert.rejects(() => withEnv(TINY, land), (error) => error instanceof LandingError && /no red proof/.test(error.message));
+  const result = await withEnv(TINY, land);
+  assert.match(result, /^\[WARN\] Task 1: Proof passes on .* no red proof/m);
+  assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
 test('runOnBase names both times in the red line of a base stopped at the bound', async () => {

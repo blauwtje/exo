@@ -39,9 +39,8 @@ import { rebaseOntoMovedBase } from './run-plan-rebase.mjs';
 import { runDefaults } from './run-config.mjs';
 import { handoffFile, handoffNote, planHash, spawnOne } from './run-plan-session.mjs';
 import { autonomyStop, blockedStop, budgetStop, maxTurnsStop, pausesBefore, parkedStop, unreachableInputStop, unsafeStop } from './run-plan-stops.mjs';
-import { failedAttemptNote, landByScript, landedByChangelogScript, markLanded, markNow, noRedProofLine, notePlanSession, sayIdle } from './run-plan-landing.mjs';
+import { failedAttemptNote, landByScript, landedByChangelogScript, landInOrder, markLanded, markNow, notePlanSession, sayIdle } from './run-plan-landing.mjs';
 import { repairTask, repairedNote } from './run-plan-repair.mjs';
-import { landOrRepair, repairThenLand } from './run-plan-land-repair.mjs';
 import { printDryRun } from './run-plan-dry-run.mjs';
 import { finishRun } from './run-plan-finish.mjs';
 import { RUN_PLAN_FLAG_KINDS, requirePlanArgument, runPlanOptions } from './run-plan-flags.mjs';
@@ -179,7 +178,7 @@ async function main(argv) {
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
       if (stop === undefined && status !== null) stop = blockedStop(ctx, first, status[1] || last);
       if (stop === undefined) stop = maxTurnsStop(ctx, first, outcome, parsed, order.length);
-      stop = (await landOrRepair(ctx, stop === undefined ? order : [], record, null)) ?? stop;
+      landInOrder(ctx, stop === undefined ? order : [], record, null);
       notePlanSession(ctx, record, startedPlan);
       if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
         const { patch, failed } = shelveLeftover(root, path.join(logDir, `plan-leftover-${ctx.iteration}.patch`), untrackedBefore);
@@ -284,11 +283,6 @@ async function main(argv) {
     const attempt = outcome.timedOut ? null : landByScript(ctx, n);
     if (attempt?.landed) {
       markLanded(ctx, n, record, startedTask);
-      continue;
-    }
-    const noRed = attempt === null ? undefined : noRedProofLine(attempt.output);
-    if (noRed !== undefined) {
-      stop = await repairThenLand(ctx, n, noRed, { record, started: startedTask });
       continue;
     }
     const failure = attempt === null ? last : failingLine(attempt.output);

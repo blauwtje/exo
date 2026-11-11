@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { RUN_OUTCOMES } from '../lib/run-outcomes.mjs';
 import { REFUSAL_HANDLERS, isRetryable, refusalHandler } from '../lib/refusal-handlers.mjs';
 
-const KINDS = ['plan drift', 'input unreachable', 'outside Files', 'report missing', 'proof failed', 'env', 'code rule', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
+const KINDS = ['plan drift', 'input unreachable', 'outside Files', 'report missing', 'proof failed', 'env', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
 
 test('every refusal kind maps to one single-line Then: handler', () => {
   assert.deepEqual(Object.keys(REFUSAL_HANDLERS).sort(), [...KINDS].sort());
@@ -27,7 +27,7 @@ test('the input unreachable handler stops the run BLOCKED and parks no task for 
 });
 
 test('a stop kind is not retryable', () => {
-  for (const kind of ['refused', 'landed', 'pin', 'lock', 'unfinished merge', 'env', 'code rule', 'input unreachable']) assert.equal(isRetryable(kind), false, kind);
+  for (const kind of ['refused', 'landed', 'pin', 'lock', 'unfinished merge', 'env', 'input unreachable']) assert.equal(isRetryable(kind), false, kind);
   for (const kind of ['proof failed', 'outside Files', 'report missing', 'plan drift']) assert.equal(isRetryable(kind), true, kind);
 });
 
@@ -88,4 +88,11 @@ test('REFUSAL_RULES entries report their rule when named violated', async () => 
 test('the refusal loop kind is owned by the handlers module', () => {
   const kinds = JSON.parse(fs.readFileSync(new URL('../lib/loop-kinds.json', import.meta.url), 'utf8'));
   assert.equal(kinds['refusal'].owner, 'lib/refusal-handlers.mjs');
+});
+
+test('the dead repair path and the code rule kind are gone', () => {
+  assert.ok(!fs.existsSync(new URL('../skills/build/scripts/run-plan-land-repair.mjs', import.meta.url)));
+  assert.ok(!fs.readFileSync(new URL('../skills/build/scripts/run-plan-repair.mjs', import.meta.url), 'utf8').includes('repairOrBlock'));
+  assert.equal(RUN_OUTCOMES['code rule'], undefined);
+  assert.ok(!fs.readFileSync(new URL('../skills/build/drift-repairer-prompt.md', import.meta.url), 'utf8').includes('no red proof'));
 });

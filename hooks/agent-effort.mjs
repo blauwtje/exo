@@ -2,7 +2,7 @@
 
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { briefedInput, readsWarnOnly, mergedFields, refusalRound, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
+import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
@@ -91,7 +91,7 @@ function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const over = (fromOrchestrator || size.sized) && size.tokens > size.budget;
   if (!(size.invalid.length || size.unresolved.length || missing.length || over)) return null;
   const reason = sizeDenial(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) });
-  if (readsWarnOnly(size, missing, rewrite.scope)) return { additionalContext: reason };
+  if (!over) return { additionalContext: reason };
   return { permissionDecision: 'deny', permissionDecisionReason: reason };
 }
 

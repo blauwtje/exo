@@ -85,3 +85,44 @@ test('remove-worktree refuses a branch whose removed line main still holds', asy
   assert.throws(() => removeWorktree({ worktree, run: root, kept: true }), /feat\/drop conflicts with main in: CHANGELOG\.md/);
   assert.equal(fs.existsSync(worktree), true);
 });
+
+test('remove-worktree removes a branch landed by patch id though later commits rewrote its lines', async () => {
+  const root = await checkout();
+  const worktree = await branchFrom(root, 'rewrite', { 'src/app.js': 'export const app = 2;\n' });
+  squashInto(root, 'feat/rewrite');
+  await commitFiles(root, { 'src/app.js': 'export const app = 3;\n' }, 'feat: rewrite');
+
+  const report = removeWorktree({ worktree, run: root, kept: true });
+
+  assert.match(report, /removed /);
+  assert.equal(fs.existsSync(worktree), false);
+});
+
+test('remove-worktree removes a branch landed by patch id when its commits were rebased onto main', async () => {
+  const root = await checkout();
+  const worktree = await branchFrom(root, 'picked', { 'src/app.js': 'export const app = 2;\n' });
+  git(root, 'cherry-pick', 'feat/picked');
+  await commitFiles(root, { 'src/app.js': 'export const app = 4;\n' }, 'feat: rewrite');
+
+  const report = removeWorktree({ worktree, run: root, kept: true });
+
+  assert.match(report, /removed /);
+});
+
+test('remove-worktree refuses an out-of-scope branch with an unlanded commit by patch id', async () => {
+  const root = await checkout();
+  const worktree = await branchFrom(root, 'unlanded', { 'src/app.js': 'export const app = 2;\n' });
+  await commitFiles(root, { 'src/app.js': 'export const app = 3;\n' }, 'feat: other');
+
+  assert.throws(() => removeWorktree({ worktree, run: root, kept: true }), RemoveWorktreeError);
+  assert.equal(fs.existsSync(worktree), true);
+});
+
+test('landed by patch id', async () => {
+  const root = await checkout();
+  const worktree = await branchFrom(root, 'pid', { 'src/app.js': 'export const app = 2;\n' });
+  squashInto(root, 'feat/pid');
+  await commitFiles(root, { 'src/app.js': 'export const app = 9;\n' }, 'feat: later');
+
+  assert.match(removeWorktree({ worktree, run: root, kept: true }), /removed /);
+});

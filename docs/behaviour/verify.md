@@ -30,6 +30,10 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.
 - The Success criterion passes on the branch rebased onto `origin/main`.
 
+## lean-open
+- Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
+- Task 6: plan-check says land warns.
+
 ## loop-budget-2
 - A two-task plan builds with the main session dispatching exo:build-task directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
 

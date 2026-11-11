@@ -2,8 +2,20 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { coversCompanion, decisionsPathOf, isCovered, isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
+import { unfinishedMergeNote } from '#merge-state';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { addedPathspecs } from './land-signatures.mjs';
+
+const PROTECTED_PATHS = [
+  /^(\.github\/|\.claude\/|hooks\/|\.env(\.|$)|.*\.(pem|key)$)/,
+  /^lib\/(?:git-deny|guard-rules)\.mjs$/,
+  /^skills\/build\/scripts\/land-[^/]+\.mjs$/,
+  /^docs\/plans\//
+];
+
+export function isProtectedPath(changed) {
+  return PROTECTED_PATHS.some((pattern) => pattern.test(changed));
+}
 
 // why: a git worktree nested in the checkout is another checkout, not task output.
 export function nestedWorktrees(root) {
@@ -32,6 +44,16 @@ export function changedPaths(root, planPath) {
 export function unplannedPaths(task, { root, planPath, siblingWork = () => false }) {
   const entries = task.files.map((file) => file.path);
   return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed) && !siblingWork(changed));
+}
+
+export function outsideFilesWarning(task, options) {
+  const unplanned = unplannedPaths(task, options);
+  if (unplanned.length === 0) return '';
+  const unfinished = unfinishedMergeNote(options.root);
+  const quote = (files) => files.map((file) => `\`${file}\``).join(', ');
+  const kept = unplanned.filter(isProtectedPath);
+  const left = kept.length === 0 ? '' : `; not committed: ${quote(kept)}; add it to Files or give it its own task`;
+  return `[WARN] Task ${task.number} changed a path outside Files: ${quote(unplanned)}${left}${unfinished === null ? '' : `; ${unfinished}`}\n`;
 }
 
 export function siblingWorkOf(plan, task, { root, planPath, landing }) {

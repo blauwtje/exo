@@ -29,7 +29,7 @@ test('a larger figure is flagged with its delta', () => {
 const script = fileURLToPath(new URL('../benchmarks/lean-guards-compare.mjs', import.meta.url));
 
 test('no argument measures this checkout and passes', () => {
-  const result = spawnSync(process.execPath, [script], { encoding: 'utf8', timeout: 60000 });
+  const result = spawnSync(process.execPath, [script], { encoding: 'utf8', timeout: 60000, env: { ...process.env, EXO_HOOK_EXTRA_MS: '60000' } });
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.stdout.trim().split('\n').length, 3);
 });

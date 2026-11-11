@@ -1,4 +1,4 @@
-<!-- expect: the plan's '## Checkpoint' line 'Parallel: whichever order.' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3' -->
+<!-- expect: [WARN] the plan's '## Checkpoint' line 'Parallel: whichever order.' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3' -->
 <!-- repo: src/a.mjs -->
 # Plan: a Parallel line in no accepted form
 

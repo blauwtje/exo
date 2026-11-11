@@ -1,4 +1,4 @@
-<!-- expect: Task 1: add `tests/a.test.mjs` to Files: (its Proof runs it) -->
+<!-- expect: [WARN] Task 1: add `tests/a.test.mjs` to Files: (its Proof runs it) -->
 <!-- repo: src/b.mjs, tests/a.test.mjs -->
 # Plan: a proof test listed by no task in the chain
 

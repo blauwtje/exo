@@ -155,18 +155,18 @@ test('a bare file name with one tracked match is rewritten to its path and sized
   assert.match(output.updatedInput.prompt, /^Reads: web\/src\/card\.jsx:1-5, lib\/other\.mjs$/m);
 });
 
-test('a bare file name with several tracked matches is denied and the candidates are named', () => {
+test('a bare file name with several tracked matches warns and the candidates are named', () => {
   const cwd = repository({ 'a/card.jsx': 10, 'b/card.jsx': 10 });
   const output = dispatch(cwd, 'card.jsx');
-  assert.equal(output.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /card\.jsx[^\n]*a\/card\.jsx[^\n]*b\/card\.jsx/);
+  assert.notEqual(output.permissionDecision, 'deny');
+  assert.match(output.additionalContext, /card\.jsx[^\n]*a\/card\.jsx[^\n]*b\/card\.jsx/);
 });
 
-test('a bare file name with no tracked match is denied as a missing path', () => {
+test('a bare file name with no tracked match warns as a missing path', () => {
   const cwd = repository({ 'a/card.jsx': 10 });
   const output = dispatch(cwd, 'gone.jsx');
-  assert.equal(output.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /do not exist: gone\.jsx/);
+  assert.notEqual(output.permissionDecision, 'deny');
+  assert.match(output.additionalContext, /do not exist: gone\.jsx/);
 });
 
 test('reads over budget move to a Search line, smallest fix first, and the dispatch is allowed', () => {

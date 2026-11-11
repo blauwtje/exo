@@ -9,7 +9,7 @@ Read it when: you change what a skill, agent or run loads into a window, hands t
 - **Load data just in time.** Keep lightweight identifiers such as file paths and read them when needed. [1] exo: `hooks/session-rules.md`
 - **Delegate focused work to sub-agents.** They start with a clean window and return a short result. [1] exo: `agents/research-worker.md`, `hooks/session-rules.md`
 - **Keep full history in a durable store outside the window.** Irreversible trimming loses what a later step may need. [3] exo: `skills/build/references/run-loop.md` keeps landed tasks in commits, `hooks/session-rules.md` logs output under `.exo/`
-- **Prefer a reset to compaction for a fresh start.** A reset hands over files instead of a summary; later guidance refines the earlier compaction advice. [1][2] exo: `hooks/session-rules.md` suggests a fresh session, `skills/build/references/run-loop.md` resumes from commits
+- **Hand over files rather than a summary when a fresh start is cheaper.** A reset hands over files instead of a summary; auto compaction still covers the context target, so a reset is a choice, not a rule. [1][2] exo: `hooks/session-rules.md` suggests a fresh session, `skills/build/references/run-loop.md` resumes from commits
 
 ## Sources
 

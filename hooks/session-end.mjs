@@ -36,6 +36,8 @@ function handoffKept(file, startMs) {
 
 const SKILL_FILE = fileURLToPath(new URL('../skills/save-session/SKILL.md', import.meta.url));
 const STUB_FILE = fileURLToPath(new URL('./handoff-stub.md', import.meta.url));
+const GOAL_SECTION = /(?:^|\n)## Goal\n([\s\S]*?)(?=\n## |$)/;
+const GOAL_MISSING = 'Not recorded, because the session ended before a handoff was written. Ask the user for the goal.';
 const RESUME_BLOCK = /^## Resume\n[\s\S]*?```text\n([\s\S]*?)\n```/m;
 
 function stateText(dirty, progress) {
@@ -45,11 +47,17 @@ function stateText(dirty, progress) {
   return (progress === undefined ? changes : [...changes, '', `Progress file: ${progress}`]).join('\n');
 }
 
+function goalText(progress) {
+  if (progress === undefined) return GOAL_MISSING;
+  return GOAL_SECTION.exec(fs.readFileSync(progress, 'utf8'))?.[1].trim() || GOAL_MISSING;
+}
+
 function stubText(cwd, file, dirty, progress) {
   const values = {
     date: new Date().toISOString().slice(0, 10),
     head: gitLine(cwd, ['rev-parse', '--short', 'HEAD']) ?? 'none',
     branch: gitLine(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']) ?? path.basename(path.resolve(cwd)),
+    goal: goalText(progress),
     state: stateText(dirty, progress),
     next: progress === undefined ? 'Look at the changed files, then continue the work.' : 'Read the progress file, then continue the work.',
     paragraph: RESUME_BLOCK.exec(fs.readFileSync(SKILL_FILE, 'utf8'))?.[1] ?? '',

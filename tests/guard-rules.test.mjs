@@ -37,7 +37,7 @@ const edit = () => dispatchEdit({
   tool_name: 'Write',
   cwd,
   tool_input: { file_path: path.join(cwd, 'a.mjs'), content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' }
-})?.hookSpecificOutput?.permissionDecisionReason ?? '';
+})?.hookSpecificOutput?.additionalContext ?? '';
 
 const bashWarning = async (command, extra = {}) => {
   const output = await dispatchBash({ tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
@@ -53,7 +53,10 @@ const grownTo = (tokens, name = 'grown') => {
   fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
   return file;
 };
-const contextDeny = (input) => contextHook({ session_id: 's', permission_mode: 'bypassPermissions', ...input }, () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+const contextDeny = (input) => {
+  const fields = contextHook({ session_id: 's', permission_mode: 'bypassPermissions', ...input }, () => false)?.hookSpecificOutput;
+  return fields?.permissionDecisionReason ?? fields?.additionalContext ?? '';
+};
 const subagent = (tokens, tool_name, tool_input = {}) => contextDeny({
   agent_id: `guard-rules-${tokens}-${tool_name}`,
   agent_type: 'exo:build-task',
@@ -115,10 +118,10 @@ const stallGuard = () => stallGuardInput({
   tool_name: 'Bash',
   tool_input: { command: 'node skills/build/scripts/land-task.mjs x; echo' }
 })?.hookSpecificOutput?.permissionDecisionReason ?? '';
-const dispatch = (input) => agentHook({ tool_name: 'Agent', tool_input: input }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+const dispatch = (input) => ((output) => output?.permissionDecisionReason ?? output?.additionalContext ?? '')(agentHook({ tool_name: 'Agent', tool_input: input }, 'on', () => false)?.hookSpecificOutput);
 const refusalCap = () => {
   const session = `cap-${process.pid}-${Date.now()}`;
-  const input = { session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' } };
+  const input = { session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', prompt: 'Workers: 5' } };
   const reasons = [1, 2, 3].map(() => agentHook(input, 'on', () => false).hookSpecificOutput.permissionDecisionReason);
   fs.rmSync(path.join(os.tmpdir(), `exo-refusal-${session}`), { recursive: true, force: true });
   return reasons[2];
@@ -131,12 +134,13 @@ const sized = tempDir('guard-rules-size-');
 fs.writeFileSync(path.join(sized, 'big.txt'), 'x'.repeat(70000));
 fs.mkdirSync(path.join(sized, '.claude', 'agents'), { recursive: true });
 fs.writeFileSync(path.join(sized, '.claude', 'agents', 'reader.md'), '---\nname: reader\ntools: Read\n---\nReads.\n');
-const refuse = (prompt, subagent_type = 'general-purpose', base = sized) => agentHook({
+const refuseOutput = (prompt, subagent_type = 'general-purpose', base = sized) => agentHook({
   tool_name: 'Agent',
   agent_type: 'exo:orchestrator',
   cwd: base,
   tool_input: { subagent_type, description: 'work', prompt }
-}, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+}, 'on', () => false)?.hookSpecificOutput;
+const refuse = (...args) => ((output) => output?.permissionDecisionReason ?? output?.additionalContext ?? '')(refuseOutput(...args));
 const mainResearch = (type, session) => agentHook({
   tool_name: 'Agent',
   session_id: session,
@@ -189,7 +193,7 @@ const cases = {
   'shared-state': () => bash('git worktree remove x', agent),
   'wide-find': () => bashWarning('find / -name x'),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
-  'commit-evidence': () => bash('git commit -m "fix: x\n\nEvidence: ran the tests"'),
+  'commit-evidence': () => bashWarning('git commit -m "fix: x\n\nEvidence: ran the tests"'),
   'script-size': () => bashWarning(LONG, { ...agent, cwd: '/nonexistent/deep' }),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
   watch: () => bash(['gh pr checks 1 --wat', 'ch'].join(''), { ...agent, agent_type: 'exo:task-runner' }),
@@ -458,4 +462,44 @@ test('the deny reason check fails a deny text returned from a template literal',
 
 test('the script-size warning does not say the command was refused', () => {
   assert.doesNotMatch(denyReason('script-size'), /refused/);
+});
+
+test('evidence line warns: a commit with a bad Evidence line runs with one WARN line', async () => {
+  const context = await bashWarning('git commit -m "fix: x\n\nEvidence: ran the tests"');
+  assert.match(context, /Evidence: ran the tests/);
+  assert.equal(rules.guardKind('commit-evidence'), 'warn');
+  assert.equal(rules.guardKind('commit-attribution'), 'hard');
+});
+
+test('one warn table: guardKind reads the warn flag of each row', () => {
+  const flagged = GUARD_RULES.filter((row) => row.warn).map((row) => row.id).sort();
+  assert.deepEqual(flagged, ['agent-isolation', 'brief-cuts-page', 'brief-invalid', 'brief-lacks-fetches', 'brief-lacks-fields', 'brief-lacks-reads', 'brief-reads-label', 'brief-unresolved', 'brief-worktree', 'code-rules', 'commit-evidence', 'context-target', 'intake-glob', 'result-line', 'script-size', 'suite-passed', 'wide-find']);
+  for (const row of GUARD_RULES) assert.equal(rules.guardKind(row.id), row.warn ? 'warn' : 'hard');
+});
+
+test('code rules warn: a breaking Write runs with the rule in its context', () => {
+  const output = dispatchEdit({
+    tool_name: 'Write',
+    cwd,
+    tool_input: { file_path: path.join(cwd, 'a.mjs'), content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' }
+  });
+  assert.equal(output?.hookSpecificOutput?.permissionDecision, undefined);
+  assert.match(output?.hookSpecificOutput?.additionalContext ?? '', /max-depth/);
+  assert.equal(rules.guardKind('code-rules'), 'warn');
+});
+
+test('no tool-case rule', () => {
+  assert.equal(GUARD_RULES.some((row) => row.id === 'tool-case'), false);
+});
+
+test('injected text drops native lines', async () => {
+  const dropped = ['sleep', 'wide-find', 'script-size', 'code-rules', 'result-line', 'context-target', 'intake-glob'];
+  for (const id of dropped) assert.equal(GUARD_RULES.find((row) => row.id === id).brief, null, id);
+  const read = (name) => fs.readFileSync(new URL(`../hooks/${name}`, import.meta.url), 'utf8');
+  const texts = [read('dispatch-rules.md'), read('session-rules.md'), read('session-routing.md')].join('\n');
+  const phrases = ['keeps decisions and the user dialogue', 'Brief an agent with the goal', 'The lead reads no file', 'Send long command output', 'Give an unnamed worker brief', 'end the turn and wait for the notification, and never', 'Test an order, seed', 'Fix all diagnosed causes', 'Count all as each warning', 'Call work done only', 'T5 agent expected', 'Before saying an agent or task still runs', 'completion notice names', 'A round brief carries no final checks', 'Grep a large file', 'returns off-brief', 'safe default, check every option'];
+  for (const phrase of phrases) assert.ok(!texts.includes(phrase), phrase);
+  const { BRIEF_LINES_LOCK } = await import('../verify/budgets.mjs');
+  const bytes = Buffer.byteLength(rules.briefLines().join('\n'));
+  assert.ok(bytes <= BRIEF_LINES_LOCK.bytes, `${bytes} bytes against ${BRIEF_LINES_LOCK.bytes}`);
 });

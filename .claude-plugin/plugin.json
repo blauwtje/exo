@@ -52,13 +52,6 @@
       "options": ["on", "off"],
       "default": "on"
     },
-    "env": {
-      "type": "string",
-      "title": "Local env files in a run",
-      "description": "ask: the run puts the question. copy: copy the local env files into the run's worktree. never: copy none. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
-      "options": ["ask", "copy", "never"],
-      "default": "ask"
-    },
     "notify": {
       "type": "string",
       "title": "Remote notice url",
