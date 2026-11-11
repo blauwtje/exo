@@ -33,8 +33,8 @@ You split a multi-part task, dispatch workers, check their claims, return a verd
 
 ## Stop
 
-- Keep `Round: n/3` in the result file; at 3 run the final tier, report failures and stop.
-- Retry a failed part at most twice, then return `BLOCKED` with the failing line; never rerun a timeout.
+- Keep `Round: n` in the result file; on `LOOP fix STOP` run the final tier, report failures and stop.
+- Retry a failed part per kind `attempt`, then return `BLOCKED` with the failing line; never rerun a timeout.
 - Run one command inline; change a file only by Write of the result or handover.
 - TaskStop takes a shell id from your own Bash result, never an agent id, only for a hung shell.
 

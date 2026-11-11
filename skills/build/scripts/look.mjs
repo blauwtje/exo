@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { devServerUrl } from '../../../lib/dev-server.mjs';
+import { kindWallMs } from '../../../lib/loop-budget.mjs';
 
 const USAGE = 'usage: node look.mjs <file-or-url> [--out <dir>] [--app] [--no-shots] [--expect "<text>"]... [--state "<name>=<js>"]...';
 const args = process.argv.slice(2);
@@ -19,7 +20,6 @@ for (let i = 0; i < args.length; i++) {
   else target = args[i];
 }
 if (!target) { console.log(USAGE); process.exit(2); }
-
 async function loadPlaywright() {
   try { return await import('playwright'); } catch {}
   const root = join(homedir(), '.npm', '_npx');
@@ -36,7 +36,6 @@ const chromium = pw.chromium ?? pw.default?.chromium;
 const runServerUrl = process.env.EXO_RUN_STATE && target.startsWith('/') ? devServerUrl(process.env.EXO_RUN_STATE, target) : null;
 const url = runServerUrl ?? (/^[a-z]+:\/\//i.test(target) ? target : pathToFileURL(resolve(target)).href);
 mkdirSync(out, { recursive: true });
-
 function measure() {
   const parse = (c) => { const m = c.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0, 0]; return { r: m[0], g: m[1], b: m[2], a: m[3] ?? 1 }; };
   const over = (f, b) => ({ r: f.r * f.a + b.r * (1 - f.a), g: f.g * f.a + b.g * (1 - f.a), b: f.b * f.a + b.b * (1 - f.a), a: 1 });
@@ -72,7 +71,6 @@ function measure() {
   }
   return rows;
 }
-
 function layout(isApp) {
   const rows = [];
   const cap = (kind, list) => { rows.push(...list.slice(0, 5)); if (list.length > 5) rows.push(`${kind} +${list.length - 5} more`); };
@@ -123,9 +121,13 @@ function layout(isApp) {
   }
   return rows;
 }
-
 const lines = [];
 let fail = 0;
+const wallMs = kindWallMs('look');
+setTimeout(() => {
+  console.log([...lines,`LOOK timeout ${wallMs}ms`, `LOOK fail=${fail + 1}`].join('\n'));
+  process.exit(1);
+}, wallMs).unref();
 const browser = await chromium.launch();
 for (const width of [1440, 768, 390]) {
   const page = await browser.newPage({ viewport: { width, height: 900 } });
@@ -198,5 +200,5 @@ for (const { name, js } of shots ? states : []) for (const width of [1440, 390])
   await page.close();
 }
 await browser.close();
-console.log([...lines, `LOOK fail=${fail}`].join('\n'));
+done();
 process.exit(fail > 0 ? 1 : 0);

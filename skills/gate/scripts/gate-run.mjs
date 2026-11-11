@@ -9,13 +9,13 @@ import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { runnableProof } from '#red-green';
+import { wallBudgetMs } from '../../../lib/loop-budget.mjs';
 import { boundaryLines, dispatchLines, redLines, writeReviewInput } from './review-input.mjs';
-import { DEFAULT_BASE, GATE_TIMEOUT_MS, PROOF_TIMEOUT_MS } from './gate-constants.mjs';
+import { DEFAULT_BASE, DEFAULT_LAND_GATE, PROOF_CONCURRENCY, PROOF_TIMEOUT_MS, TEST_SCRIPT_GATE, TEST_SCRIPT_PASS, TEST_SUITE_PROOF } from './gate-constants.mjs';
 import { unmarkedMcpTool, commandLine, failReason, failLines, mapLimited } from './gate-command.mjs';
 import { checkRun } from './gate-check.mjs';
 import { reviewedState, reviewLines, taskOwners } from './review-lines.mjs';
 import { noteGateStep, passedOnTree } from './gate-journal.mjs';
-import { recordGateStart, recordRepairPasses } from './gate-repair.mjs';
 import { packageScripts, suiteGlobs, filesUnderGlobs } from './proof-globs.mjs';
 import { repoPathOf, findUnplannedPaths, splitFixOnlyPaths, commitsTouching } from './unplanned-paths.mjs';
 import { claimLines, codeRuleLines } from './code-rule-lines.mjs';
@@ -23,19 +23,9 @@ import { failedCriterionLines } from './gate-criterion.mjs';
 import { benchmarkLines } from './benchmark-lines.mjs';
 import { taskStates, manualChecks } from './task-states.mjs';
 
-const DEFAULT_LAND_GATE = 'npm run check';
-
-const TEST_SCRIPT_GATE = 'npm test';
-
-const TEST_SCRIPT_PASS = 'PASS success-criterion (npm test; no check script)';
-
-const TEST_SUITE_PROOF = /^npm test( |$)/;
-
-const PROOF_CONCURRENCY = 3;
-
 const PROOF_TIMEOUT = { variable: 'EXO_PROOF_TIMEOUT_MS', defaultMs: PROOF_TIMEOUT_MS };
 
-const GATE_TIMEOUT = { variable: 'EXO_GATE_TIMEOUT_MS', defaultMs: GATE_TIMEOUT_MS };
+const GATE_TIMEOUT = { variable: 'EXO_GATE_TIMEOUT_MS', defaultMs: wallBudgetMs() };
 
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
   const plan = parsePlan(planText);
@@ -47,8 +37,6 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     const checkout = path.resolve(root);
     const range = { base: base ?? DEFAULT_BASE, head: 'HEAD' };
     const taskOf = taskOwners(plan, landed, { root, planId });
-    recordRepairPasses(checkout, 0);
-    recordGateStart(checkout);
     const shards = writeReviewInput(frame, { checkout, ...range, redSection: redLines(plan, landed, { checkout, planId }), boundaries: boundaryLines(plan, landed), taskOf });
     return { lines: [...printed, ...dispatchLines(printed, { root, planPath, ...range, shards }), ...reviewedState(checkout)], failed: false };
   }

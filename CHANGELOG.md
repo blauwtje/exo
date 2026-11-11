@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- One loop budget: `lib/loop-kinds.json` holds each loop kind's round cap and wall time, `lib/loop-budget.mjs` keeps one ledger per run, prints `LOOP <kind> CONTINUE|STOP`, stops a round that fixes nothing, and `--report` lists the rounds.
+- `npm run check` fails a retry, round or attempt cap literal outside the kinds table, a kind its owner script never reads or no test names, and a missing kinds table.
 - A gate question finding parks under `.exo/questions/` and the run goes on.
 - A land adds an unclaimed, unprotected missed path to the task's `Files:` once its Proof passes, and prints an `AMEND` line instead of refusing.
 - `run-report` shows per-task build, wait and land durations and the idle total, read from a run timeline file.
@@ -21,7 +23,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The gate runs one full branch review and one overlap review per plan run, then keeps or reverts each fixer commit by script, scopes later findings to the fix diff and appends one row per round to `review-rounds.tsv`.
 - An in-session build and gate share one outcome table, `lib/run-outcomes.mjs`: each stop, decide and repair line has an action, and only a `stop` row ends the turn.
-- One `repairBound` (default 2) in `lib/run-providers.json` sets the repair limit, and a gate FAIL loops through repair up to that bound.
+- Loop caps come from `EXO_LOOP_<KIND>_CAP`, then run.json `defaults.loopCaps` (with `repairBound` for review rounds), then the kinds table; the gate repair loop follows the review cap.
+- A refused agent dispatch names every broken brief rule at once, counts refusals per dispatch, and keeps the rule names at the refusal cap.
+- An agent dispatch with an unknown or missing kind gets the default kind instead of a refusal.
+- A refused land names every violated rule at once and counts refusals per task.
+- Build attempts, review-fix rounds and gate review rounds stop when a round fixes nothing, and an unproven free retry spends no attempt round.
+- The gate repair loop counts all time since the gate started, agent time included, against `EXO_RUN_WALL_MS`, and the gate check timeout uses that same default.
+- `look.mjs` stops at its wall time and still prints the fail lines it collected.
 - Every run check goes through `runCheck` on a tree-keyed record, with `env` and `fresh` options; the baseline, round, land-proof and run-tail checks use it, and gate proofs run concurrently again.
 - A re-entered gate resumes from its steps recorded as passed on the same tree.
 - `wait-report.mjs` returns at once on a settled report with no verdict line, as a repair row.

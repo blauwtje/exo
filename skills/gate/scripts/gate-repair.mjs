@@ -7,17 +7,19 @@ import { wholeSuiteKeys } from '#suite-command';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
-import { repairBound } from '../../../lib/run-outcomes.mjs';
+import { decide as budgetDecision, formatLine, recordRound, roundCap } from '../../../lib/loop-budget.mjs';
 import { decide, stopLine } from './gate-decide.mjs';
 import { dispatchLines } from './review-input.mjs';
 import { findingsDigest } from './merge-reviews.mjs';
 import { fixedProbes } from './run-probes.mjs';
 import { PROOF_TIMEOUT_MS } from './gate-constants.mjs';
 import { runCheck } from '../../../lib/run-check.mjs';
-import { budgetLine, budgetSpent, guardLines, namedGuards, repairCommits, settleRound, writePending } from './repair-round.mjs';
+import { guardLines, lapMs, ledgerDirOf, namedGuards, recordReviewRound, repairCommits, roundsRun, settleRound, writePending } from './repair-round.mjs';
 import { gitOutput, failReason, failLines } from './gate-command.mjs';
 
-const REPAIR_BOUND = repairBound();
+const JUDGE_PATH = /^(skills\/build\/scripts\/look\.mjs|skills\/gate\/scripts\/run-probes\.mjs|skills\/gate\/references\/(?:review[^/]*|triage\.md|plan-checks\.md)|lib\/agent-modes\/claims-mode\.md|agents\/[^/]*review[^/]*)$/;
+
+const PROOF_TEST = /tests\/[^\s`]+\.test\.mjs/g;
 
 const GUARD_TEST_FILE = /^tests\/[^/]+\.test\.mjs$/;
 
@@ -59,46 +61,26 @@ function fixDiffDispatch({ root, planPath, preFixSha }) {
   return branch.replace('DISPATCH Branch:', 'DISPATCH Repair:').replace('scope=branch', 'scope=fix-diff').replace(/ findings=\S+/, ` findings=${path.join(path.resolve(root), '.exo', 'fix-review.md')}`).replace(/ ledger=\S+/, '');
 }
 
-function readState(root) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(root, '.exo', 'verify-state.json'), 'utf8'));
-  } catch (error) {
-    if (error.code === 'ENOENT') return {};
-    throw error;
-  }
+function judgeTouched(planText, diffFiles) {
+  const proofTests = parsePlan(planText).tasks.flatMap((task) => task.proof?.match(PROOF_TEST) ?? []);
+  return diffFiles.some((file) => JUDGE_PATH.test(file) || proofTests.includes(file));
 }
 
-function writeState(root, state) {
-  const file = path.join(root, '.exo', 'verify-state.json');
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(state)}\n`);
-}
-
-function repairPasses(root) {
-  return readState(root).repairPasses ?? 0;
-}
-
-export function recordRepairPasses(root, repairPasses) {
-  const state = { ...readState(root), repairPasses };
-  writeState(root, repairPasses === 0 ? { ...state, failRepairs: 0 } : state);
-}
-
-export function recordGateStart(root, startedAt = Date.now()) {
-  writeState(root, { ...readState(root), gateStartedAt: startedAt });
-}
-
-export function fullFailLines(root) {
-  const state = readState(root);
-  const failRepairs = state.failRepairs ?? 0;
-  if (failRepairs >= REPAIR_BOUND) return [stopLine()];
-  writeState(root, { ...state, failRepairs: failRepairs + 1 });
+export function fullFailLines(root, planPath) {
+  const dir = ledgerDirOf(root, planPath);
+  const decision = budgetDecision(dir, 'review');
+  if (decision.verdict === 'STOP') return [stopLine(), formatLine('review', decision)];
+  recordRound(dir, { kind: 'review', openAfter: 1, wallMs: lapMs(dir) });
   return [decide('FAIL', 'gate fail')];
 }
 
-function loopLines(round, failed) {
-  if (!failed) return [`LOOP next=done round=${round}/${REPAIR_BOUND}`];
-  if (round < REPAIR_BOUND) return [`LOOP next=fix round=${round}/${REPAIR_BOUND}`];
-  return [stopLine(), `LOOP next=stop round=${REPAIR_BOUND}/${REPAIR_BOUND}`];
+function loopLines(kindDecision, failed, ran) {
+  const line = formatLine('fix', kindDecision);
+  const cap = roundCap('fix');
+  const round = Number(kindDecision.reason.match(/^round (\d+)/)?.[1] ?? ran);
+  if (!failed) return [line, `LOOP next=done round=${round}/${cap}`];
+  if (kindDecision.verdict === 'CONTINUE') return [line, `LOOP next=fix round=${round}/${cap}`];
+  return [stopLine(), line, `LOOP next=stop round=${ran}/${cap}`];
 }
 
 function handbackLines({ root, preFixSha, findings, findingsSha256 }) {
@@ -115,21 +97,25 @@ function handbackLines({ root, preFixSha, findings, findingsSha256 }) {
 }
 
 export async function repairLines({ root, planText, planPath, preFixSha, findings, findingsSha256 }) {
-  const passes = repairPasses(root);
-  if (budgetSpent(readState(root).gateStartedAt)) return [budgetLine(), `LOOP next=stop round=${passes}/${REPAIR_BOUND}`];
-  if (passes >= REPAIR_BOUND) return [stopLine(), `LOOP next=stop round=${REPAIR_BOUND}/${REPAIR_BOUND}`];
+  const dir = ledgerDirOf(root, planPath);
+  const before = budgetDecision(dir, 'fix');
+  if (before.verdict === 'STOP') return [stopLine(), formatLine('fix', before), `LOOP next=stop round=${roundsRun(dir, 'fix')}/${roundCap('fix')}`];
+  const round = Number(before.reason.match(/^round (\d+)/)[1]);
   const { lines: problems, commits, diffFiles } = handbackLines({ root, preFixSha, findings, findingsSha256 });
   const lines = problems.length === 0 ? ['PASS fixer-committed'] : problems;
+  const fixBefore = fixedProbes(fs.readFileSync(findings, 'utf8')).length;
+  if (problems.length > 0 || commits.length === 0) recordRound(dir, { kind: 'fix', openBefore: fixBefore, openAfter: fixBefore, wallMs: lapMs(dir) });
   if (problems.length === 0 && commits.length > 0) {
-    lines.push(...await recheckLines({ root, planText, diffFiles, commits, last: passes + 1 >= REPAIR_BOUND }));
+    lines.push(...await recheckLines({ root, planText, diffFiles, commits, last: round >= roundCap('fix') }));
     const checksGreen = !lines.some((line) => line.startsWith('FAIL '));
-    const fixBefore = fixedProbes(fs.readFileSync(findings, 'utf8')).length;
     const fixAfter = fixedProbes(fs.readFileSync(findings, 'utf8')).filter((probe) => probe.unmarked).length;
     const shas = commits.map(({ sha }) => sha);
-    if (checksGreen) writePending(root, { round: passes + 1, commits: shas, preFixSha, fixBefore, fixAfter });
-    if (!checksGreen) lines.push(...settleRound({ root, round: passes + 1, commits: shas, checksGreen, fixBefore, fixAfter }));
+    const settled = { root, planPath, round, commits: shas, preFixSha, fixBefore, fixAfter, judgeTouched: judgeTouched(planText, diffFiles) };
+    if (checksGreen) writePending(dir, settled);
+    if (!checksGreen) lines.push(...settleRound({ ...settled, checksGreen }));
     if (checksGreen) lines.push(fixDiffDispatch({ root, planPath, preFixSha }));
   }
-  recordRepairPasses(root, passes + 1);
-  return [...lines, ...loopLines(passes + 1, lines.some((line) => line.startsWith('FAIL ')))];
+  const after = budgetDecision(dir, 'fix');
+  const failed = lines.some((line) => line.startsWith('FAIL '));
+  return [...lines, ...loopLines(failed ? after : { ...after, reason: `round ${round}` }, failed, roundsRun(dir, 'fix'))];
 }

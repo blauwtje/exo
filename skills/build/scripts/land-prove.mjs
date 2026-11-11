@@ -6,7 +6,7 @@ import { runProof, runNamedTests } from './land-proof.mjs';
 import { siblingWorkOf } from './land-paths.mjs';
 import { signatureChanges } from './land-signatures.mjs';
 import { runLint, runCodeRules } from './land-code-rules.mjs';
-import { redGreenLine, refuseUntestedTestFirst, refuseMissingLiterals, refuseUnplannedPaths, passingRunsOf, checkReport } from './land-refusals.mjs';
+import { redGreenLine, refuseTogether, passingRunsOf, checkReport } from './land-refusals.mjs';
 
 export function taskOf(plan, number) {
   const task = plan.tasks.find((entry) => entry.number === number);
@@ -14,11 +14,9 @@ export function taskOf(plan, number) {
   return task;
 }
 
-export function refuseBeforeProof(plan, task, { root, planPath, pin, planId }) {
+export function refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath }) {
   refuseMcpProofUnderPin(pin, task);
-  refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }) });
-  refuseUntestedTestFirst(task, root);
-  refuseMissingLiterals(task, root, planPath);
+  refuseTogether(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: true }), reportText, reportPath });
   const block = commitBlockOf(plan, task.number, planId, signatureChanges(task, root), root);
   refuseBadCommitText(task.commitSubject ?? task.title, block);
   if (task.evidence != null) refuseBadEvidence(`Evidence: ${task.evidence}`);

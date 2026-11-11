@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { environmentMs } from '#script-flags';
+import { planIdOf } from '#plan-landed';
+import { readLedger, recordRound } from '../../../lib/loop-budget.mjs';
+import { runDir } from '../../build/scripts/run-state.mjs';
 import { outcome, outcomeLine } from '../../../lib/run-outcomes.mjs';
-import { GATE_TIMEOUT_MS } from './gate-constants.mjs';
 import { gitOutput } from './gate-command.mjs';
 
 const COMMIT_SEPARATOR = '\u001e';
@@ -40,48 +41,57 @@ export function guardLines(commits, diffFiles) {
   ];
 }
 
-const ROUNDS_FILE = 'review-rounds.tsv';
+const CLOCK_FILE = 'gate-wall-mark';
 
-const ROUNDS_HEADER = 'round\tcommit\tchecks\tfix_before\tfix_after\tdecision\n';
-
-export function budgetSpent(startedAt, now = Date.now()) {
-  if (startedAt === undefined) return false;
-  return now - startedAt >= environmentMs('EXO_GATE_TIMEOUT_MS', GATE_TIMEOUT_MS);
+export function startGateClock(dir) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, CLOCK_FILE), String(Date.now()));
 }
 
-export function budgetLine() {
-  return `STOP ${outcome('review budget').kind.replace(' ', '-')}: ${outcomeLine('review budget')}`;
+export function lapMs(dir) {
+  const file = path.join(dir, CLOCK_FILE);
+  const now = Date.now();
+  const mark = fs.existsSync(file) ? Number(fs.readFileSync(file, 'utf8')) : now;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(file, String(now));
+  return Math.max(0, now - mark);
 }
 
-export function keepFix({ checksGreen, newFixInDiff }) {
-  return checksGreen && newFixInDiff === 0;
+export function roundsRun(dir, kind) {
+  return readLedger(dir).filter((row) => row.kind === kind).length;
 }
 
-export function appendRound(root, { round, commits, checksGreen, fixBefore, fixAfter, kept }) {
-  const file = path.join(root, '.exo', ROUNDS_FILE);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  if (!fs.existsSync(file)) fs.writeFileSync(file, ROUNDS_HEADER);
-  const fields = [round, commits.join(','), checksGreen ? 'pass' : 'fail', fixBefore, fixAfter, kept ? 'kept' : 'discarded'];
-  fs.appendFileSync(file, `${fields.join('\t')}\n`);
+export function recordReviewRound(dir, openAfter) {
+  const prior = readLedger(dir).filter((row) => row.kind === 'review').at(-1);
+  return recordRound(dir, { kind: 'review', openBefore: prior === undefined ? undefined : Number(prior.open_after), openAfter, wallMs: lapMs(dir) });
 }
 
-export function settleRound({ root, round, commits, checksGreen, newFixInDiff = 0, fixBefore, fixAfter }) {
-  const kept = keepFix({ checksGreen, newFixInDiff });
+export function ledgerDirOf(root, planPath) {
+  return runDir(path.resolve(root), planIdOf(planPath));
+}
+
+export function keepFix({ checksGreen, newFixInDiff, judgeTouched = false, fixBefore, fixAfter }) {
+  if (judgeTouched) return false;
+  return checksGreen && newFixInDiff === 0 && Number(fixAfter) < Number(fixBefore);
+}
+
+export function settleRound({ root, planPath, round, commits, checksGreen, newFixInDiff = 0, judgeTouched = false, fixBefore, fixAfter }) {
+  const kept = keepFix({ checksGreen, newFixInDiff, judgeTouched, fixBefore, fixAfter });
   if (!kept) execFileSync('git', ['-C', root, 'revert', '--no-edit', ...commits], { stdio: 'ignore' });
-  appendRound(root, { round, commits, checksGreen, fixBefore, fixAfter: kept ? fixAfter : fixBefore, kept });
+  recordRound(ledgerDirOf(root, planPath), { kind: 'fix', openBefore: fixBefore, openAfter: kept ? fixAfter : fixBefore, wallMs: lapMs(ledgerDirOf(root, planPath)) });
   if (kept) return [];
   return [`DISCARDED round ${round} (${commits.join(',')}) ${outcome('fix discarded').action}: ${outcomeLine('fix discarded')}`];
 }
 
 const PENDING_FILE = 'review-round-pending.json';
 
-export function writePending(root, pending) {
-  fs.mkdirSync(path.join(root, '.exo'), { recursive: true });
-  fs.writeFileSync(path.join(root, '.exo', PENDING_FILE), JSON.stringify(pending));
+export function writePending(dir, pending) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, PENDING_FILE), JSON.stringify(pending));
 }
 
-export function takePending(root) {
-  const file = path.join(root, '.exo', PENDING_FILE);
+export function takePending(dir) {
+  const file = path.join(dir, PENDING_FILE);
   if (!fs.existsSync(file)) return null;
   const pending = JSON.parse(fs.readFileSync(file, 'utf8'));
   fs.rmSync(file);

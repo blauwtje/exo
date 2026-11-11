@@ -16,11 +16,11 @@ Each fix → `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
 Edit only paths `git diff --name-only <base>...HEAD` lists, a concern's test file and a guard; a fix needing another path is reported, not made.
 Then run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited via `run-check.mjs` as below. Find them with unanchored `grep -nE 'Files:|Proof:|Run:' <plan>`: a compact task puts them mid-line.
 Under each `fixed` finding, `concern` included, keep the reviewer's `  Probe:` line or write `  Probe: <command failing before its edit, passing after>`, exiting 0. Run it first, write `  Before: pass|fail`.
-Run each finding's `Sweep:` before marking it `fixed`: repair every hit in a branch-diff path like the named range; other hits count as reported. A Sweep still matching the repaired code is rewritten once, rerun once, else `reported: sweep matches repair`.
+Run each finding's `Sweep:` before marking it `fixed`: repair every hit in a branch-diff path like the named range; other hits count as reported. A Sweep still matching the repaired code is rewritten and rerun once (`fix`), else `reported: sweep matches repair`.
 Run the plan's `Land gate:` before each commit through `node ${CLAUDE_PLUGIN_ROOT}/lib/run-check.mjs <command>`; on failure → revert, reported with its output.
 Run no full test suite (`npm test`, `npm run check`); only the above.
 Search only files a finding names; no others except each `Sweep:` and the plan `grep`.
-Give each command a timeout of at most 120 s; a timeout fails it, rerun once, narrower.
+Time each command out at 120 s; a timeout fails it; rerun once, narrow (`proof`).
 A fix whose command or probe fails twice is reverted and reported with its outputs.
 
 End each finding line, not its `Probe:` line, as `a:3; x; fix | fixed` or `b:9; y; report | reported: <one-clause reason>`.

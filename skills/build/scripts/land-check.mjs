@@ -14,7 +14,7 @@ import { siblingWorkOf } from './land-paths.mjs';
 import { signatureChanges } from './land-signatures.mjs';
 import { runCodeRules } from './land-code-rules.mjs';
 import { gateEnvOf } from './land-gate.mjs';
-import { refuseUnplannedPaths, checkReport } from './land-refusals.mjs';
+import { refuseTogether } from './land-refusals.mjs';
 import { runPreCommitGates } from './land-prove.mjs';
 import { dropCandidate, clearStaleCandidate, commitCandidate, gateCandidate } from './land-candidate.mjs';
 
@@ -32,8 +32,7 @@ function checkTaskLocked({ planText, number, root, reportText, reportPath, planP
   clearStaleCandidate(root, planId);
   clearCheckStamp(root, number);
   refuseMcpProofUnderPin(pin, task);
-  refuseUnplannedPaths(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }) });
-  checkReport(task, reportText, reportPath);
+  refuseTogether(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }), reportText, reportPath });
   const frame = frameOf(plan.frame);
   const warnLines = runPreCommitGates(task, frame, root);
   const gateLine = warnLines + gateCheckedOnCandidate(plan, task, frame, { root, planId });

@@ -74,3 +74,41 @@ test('the run plan budgets the soft limit and follows a run.json contextLimit', 
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), '{"defaults":{"contextLimit":200000}}');
   assert.equal(chooseProvider({}, home, home).contextBudget, 150_000);
 });
+
+test('a failed attempt is a ledger round of kind attempt with its cost and the cap is the kinds table cap', async () => {
+  const { settleAttempt, attemptsLeft } = await import('../skills/build/scripts/run-plan-attempts.mjs');
+  const { readLedger, roundCap } = await import('../lib/loop-budget.mjs');
+  const { ledgerDirOf } = await import('../skills/gate/scripts/repair-round.mjs');
+  const root = tempDir('exo-attempt-root-');
+  const ctx = { root, planPath: path.join(root, 'plan.md'), plan: { tasks: [{}, {}] }, run: { landings: new Map() }, spent: 0.5, failedAttempts: 1 };
+  const settled = settleAttempt(ctx, { wallMs: 10 });
+  const rows = readLedger(ledgerDirOf(root, ctx.planPath));
+  assert.equal(rows[0].kind, 'attempt');
+  assert.equal(rows[0].cost_usd, '0.5');
+  assert.equal(settled.stop, false);
+  assert.equal(attemptsLeft(ctx), roundCap('attempt') - 1);
+});
+
+test('a second failed attempt that lands nothing stops as no-progress', async () => {
+  const { settleAttempt } = await import('../skills/build/scripts/run-plan-attempts.mjs');
+  const root = tempDir('exo-attempt-stall-');
+  const ctx = { root, planPath: path.join(root, 'plan.md'), plan: { tasks: [{}, {}] }, run: { landings: new Map() }, spent: 0, failedAttempts: 1 };
+  assert.equal(settleAttempt(ctx, { wallMs: 1 }).stop, false);
+  const second = settleAttempt(ctx, { wallMs: 1 });
+  assert.equal(second.stop, true);
+  assert.equal(second.reason, 'last round made no progress');
+});
+
+test('an attempt after a landing counts as progress', async () => {
+  const { settleAttempt } = await import('../skills/build/scripts/run-plan-attempts.mjs');
+  const root = tempDir('exo-attempt-progress-');
+  const ctx = { root, planPath: path.join(root, 'plan.md'), plan: { tasks: [{}, {}, {}] }, run: { landings: new Map() }, spent: 0, failedAttempts: 1 };
+  settleAttempt(ctx, { wallMs: 1 });
+  ctx.run.landings.set(1, {});
+  assert.equal(settleAttempt(ctx, { wallMs: 1 }).stop, false);
+});
+
+test('a free try spends no attempt round', async () => {
+  const source = fs.readFileSync(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url), 'utf8');
+  assert.match(source, /freeTry \? \{ stop: false \} : settleAttempt/);
+});

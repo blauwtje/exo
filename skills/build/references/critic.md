@@ -45,6 +45,6 @@ Name no strengths.
 ## Acting on it
 
 - `ship`: no fix round; report the verdict.
-- `fix`: make the three changes in one round of edits.
+- `fix` (ledger kind `look`): make the three changes in one round of edits.
 - `rebuild`: rebuild the named area (the art module, the palette, the chrome) in that same round, keeping the rest.
 - A finding that conflicts with an explicit ask: the ask wins; note the conflict in the report.

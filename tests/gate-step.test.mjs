@@ -5,9 +5,10 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { runStage } from '../skills/gate/scripts/gate-step.mjs';
-import { writePending } from '../skills/gate/scripts/repair-round.mjs';
+import { ledgerDirOf, writePending } from '../skills/gate/scripts/repair-round.mjs';
 import { recordedReview } from '../skills/gate/scripts/review-record.mjs';
 import { decide, stopLine } from '../skills/gate/scripts/gate-decide.mjs';
+import { readLedger } from '../lib/loop-budget.mjs';
 import { outcome, outcomeLine } from '../lib/run-outcomes.mjs';
 
 function gitRoot() {
@@ -159,7 +160,7 @@ function fixRound(root, round, content) {
   spawnSync('git', ['add', 'a.txt'], { cwd: root });
   spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', `fix: round ${round}`], { cwd: root });
   const sha = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
-  writePending(root, { round, commits: [sha], preFixSha, fixBefore: 1, fixAfter: 0 });
+  writePending(ledgerDirOf(root, base.plan), { round, commits: [sha], preFixSha, fixBefore: 1, fixAfter: 0 });
   return sha;
 }
 
@@ -186,10 +187,10 @@ test('the review stage keeps a clean fix-diff review and reverts one with a new 
   const subject = spawnSync('git', ['log', '-1', '--format=%s'], { cwd: root, encoding: 'utf8' }).stdout;
   assert.match(subject, /^Revert/);
   assert.notEqual(keptSha, second);
-  const rows = readFileSync(path.join(root, '.exo', 'review-rounds.tsv'), 'utf8').trim().split('\n').slice(1);
+  const rows = readLedger(ledgerDirOf(root, base.plan)).filter((row) => row.kind === 'fix');
   assert.equal(rows.length, 2);
-  assert.match(rows[0], /\tkept$/);
-  assert.match(rows[1], /\tdiscarded$/);
+  assert.equal(rows[0].verdict, 'stop');
+  assert.equal(rows[1].verdict, 'discard');
 });
 
 test('a BLOCKED merge records no review', () => {
@@ -204,8 +205,8 @@ test('a BLOCKED fix-diff merge leaves the pending round pending and keeps nothin
   fixRound(root, 1, 'kept\n');
   const run = () => ({ status: 0, stdout: 'verdict=BLOCKED defect=0\nBLOCKED: report missing x\n' });
   runStage('review', { ...base, root, reports: ['r.md'] }, run);
-  assert.ok(existsSync(path.join(root, '.exo', 'review-round-pending.json')));
-  assert.equal(existsSync(path.join(root, '.exo', 'review-rounds.tsv')), false);
+  assert.ok(existsSync(path.join(ledgerDirOf(root, base.plan), 'review-round-pending.json')));
+  assert.equal(readLedger(ledgerDirOf(root, base.plan)).length, 0);
 });
 
 test('the repair route hands the fix-diff findings file to the settle step', () => {

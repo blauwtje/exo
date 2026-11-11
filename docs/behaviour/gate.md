@@ -7,3 +7,6 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
+
+## loop-budget
+- A gate re-entry on the same run continues the ledger round count instead of restarting it (Task 5).

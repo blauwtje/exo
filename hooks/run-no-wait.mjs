@@ -8,13 +8,14 @@ import { readJsonOrNull } from '#basics';
 import { inSidecall, readHookText } from '#hook-input';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { inRun } from '../lib/run-decision.mjs';
+import { roundCap } from '../lib/loop-budget.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 
-export const BLOCK_LIMIT = 2;
-
 const RECORD = fileURLToPath(new URL('../lib/run-decision.mjs', import.meta.url));
 const OPTION = /^(?:[-*+]\s+)?[*_`]*(?:Option\s+(?:[A-Za-z]|\d{1,2})\b|(?:[A-Za-z]|\d{1,2})(?:\s*\([^)]*\))?[*_`]*\s*[):.])/;
+
+const blockLimit = () => roundCap('wait') - 1;
 
 const lines = (text) => String(text ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
 
@@ -55,7 +56,7 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
   const counts = readJsonOrNull(file) ?? {};
   const session = String(input.session_id ?? '');
   const count = Number.isInteger(counts[session]) ? counts[session] : 0;
-  const atLimit = count >= BLOCK_LIMIT;
+  const atLimit = count >= blockLimit();
   if (atLimit) {
     fs.writeFileSync(path.join(dir, 'blocked'), `Task ${task ?? ''}: BLOCKED ${line}\n`);
   } else {
@@ -63,7 +64,7 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
     fs.writeFileSync(file, JSON.stringify({ ...counts, [session]: count + 1 }));
   }
   const record = `record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to ${path.join(dir, 'decisions.md')}`;
-  const why = denyReason(count + 1 >= BLOCK_LIMIT ? 'run-no-wait-final' : 'run-no-wait', record);
+  const why = denyReason(count + 1 >= blockLimit() ? 'run-no-wait-final' : 'run-no-wait', record);
   if (asking) return rememberRefusal(input, { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } }, { guard: 'run-no-wait' });
   return atLimit ? null : rememberRefusal(input, { decision: 'block', reason: why }, { guard: 'run-no-wait' });
 }

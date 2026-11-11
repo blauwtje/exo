@@ -241,7 +241,7 @@ test('review-branch reads its opening inputs together in its first message', () 
 test('task-runner dispatches every build and repair in the foreground and waits by W1 in a session and W2 in a run session', () => {
   const unit = agents.find((agent) => agent.frontmatter.name === 'task-runner');
   assert.match(unit.body, /^ {2}- A `Wave:`\/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- After `Async agent launched`, end your turn to wait \(W1\)\. In a `-p` run session run `Wait:` \(W2\), timeout 600000, never a `sleep` loop; exit 2 reruns 3 times, then `BLOCKED <n> no report`\.$/m);
+  assert.match(unit.body, /^ {2}- After `Async agent launched`, end your turn to wait \(W1\)\. In a `-p` run session run `Wait:` \(W2\), timeout 600000, never a `sleep` loop; exit 2 reruns per kind `wait`, then `BLOCKED <n> no report`\.$/m);
   assert.match(unit.body, /^ {2}- `Detail:` names a script's full log; read it only on a failure\.$/m);
   assert.match(unit.body, /^ {2}- Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise\.$/m);
   assert.match(unit.body, /^ {2}- When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot, do not `sleep`\.$/m);
@@ -342,7 +342,7 @@ test('build-task carries the fix-review and hardest modes and review-branch the 
 
 test('trimmed agent rules stay pinned', () => {
   const body = (name) => agents.find((agent) => agent.frontmatter.name === name).body;
-  for (const phrase of ['end your turn to wait', 'fixed brief', 'a report with an unsourced', 'Retry a failed part at most', 'no text between calls']) {
+  for (const phrase of ['end your turn to wait', 'fixed brief', 'a report with an unsourced', 'Retry a failed part per kind', 'no text between calls']) {
     assert.ok(body('orchestrator').includes(phrase), phrase);
   }
   for (const phrase of ['before or between', 'start no background session']) {

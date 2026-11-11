@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { fixerMark, withoutFixerMark } from '#fixer-mark';
 import { readKindTable } from '#model-kinds';
 import { settingOrDefault } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -11,7 +10,9 @@ import { BRANCH_REVIEW_KEY, cachedPass, recordPass, recordReview, reviewVerdict,
 import { criterionCommand } from '#plan-frame';
 import { withoutRunVariables } from '#process-tree';
 import { runCheck } from '../../../lib/run-check.mjs';
-import { environmentMs } from '#script-flags';
+import { decide, formatLine, recordRound, wallBudgetMs } from '../../../lib/loop-budget.mjs';
+import { ledgerDirOf } from '../../gate/scripts/repair-round.mjs';
+import { parseRepairLines, parseReviewLines, unprovenRisks } from './run-tail-parse.mjs';
 import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -66,37 +67,9 @@ export function reviewPrompt({ planPath, root, base, branch, scope, findings, in
 const verdictOf = (text) => text.match(/verdict=(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? null;
 const countOf = (text, name) => Number(text.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
 
-export function parseReviewLines(text) {
-  let review = null;
-  const branches = [];
-  const overlaps = [];
-  for (const line of text.split('\n')) {
-    const dispatch = line.match(/^DISPATCH Branch(?: (\d+)\/(\d+))?: .*\bscope=branch (\S+).*\bfindings=(\S+)/);
-    if (dispatch !== null) branches.push({ range: dispatch[3], findings: dispatch[4], input: line.match(/\binput=(\S+)/)?.[1], number: dispatch[1] });
-    const branchLine = line.match(/^REVIEW Branch ([^:]*): (review-branch)(?: exo-kind: (\S+))?\s*$/);
-    if (branchLine !== null) review = { range: branchLine[1], kind: branchLine[3] ?? 'review-branch' };
-    const overlap = line.match(/^OVERLAP (?!none)(.+?) \(Tasks [^)]*\)$/);
-    if (overlap !== null) overlaps.push(overlap[1]);
-  }
-  return { review, branches, overlaps };
-}
-
-export function unprovenRisks(findings) {
-  if (!fs.existsSync(findings)) return [];
-  return fs.readFileSync(findings, 'utf8').split('\n')
-    .filter((line) => /\bconcern\b/.test(line) && /^unproven\b/.test(fixerMark(line)?.reason ?? ''))
-    .map((line) => withoutFixerMark(line).trim());
-}
-
 export const mergeArgs = ({ root, base, reports }) => ['--root', root, ...(base === null ? [] : ['--base', base]), ...reports.flatMap((report) => ['--report', report])];
 
 export const fixReviewScope = (preFixSha) => `fix diff ${preFixSha}..HEAD`;
-
-export function parseRepairLines(text) {
-  const lines = text.split('\n');
-  const stopLine = lines.find((line) => /^STOP\b/.test(line) || /^LOOP next=stop\b/.test(line));
-  return { stopLine, failLine: lines.find((line) => /^FAIL\b/.test(line)) };
-}
 
 const findingsShaOf = (text) => text.match(/^FINDINGS-SHA (\S+)/m)?.[1] ?? null;
 
@@ -130,7 +103,7 @@ const CRITERION_FAIL = /^\s*(?:fail\b|not ok\b|✖|✗|×)/i;
 
 function runCriterion(command, root) {
   const started = Date.now();
-  const timeoutMs = environmentMs('EXO_GATE_TIMEOUT_MS', 1_800_000);
+  const timeoutMs = wallBudgetMs();
   const answer = runCheck(root, command, { timeoutMs, env: withoutRunVariables(), fresh: true, record: false });
   const output = `${answer.output}${answer.timedOut ? `timed out after ${timeoutMs} ms\n` : ''}`;
   const lines = output.split(/\r?\n/).filter((line) => line.trim() !== '');
@@ -210,124 +183,166 @@ const BRANCH_QUESTIONS = [
   'Is any changed behavior wrong, whatever task it came from?'
 ];
 
-export async function runTail({ planPath, plan, root, base, branch, runSession, exec = node, logDir = path.join(root, SCRATCH_FOLDER), say = () => {}, attemptsLeft = 1 }) {
+function tailContext({ planPath, plan, root, base, branch, runSession, exec = node, logDir = path.join(root, SCRATCH_FOLDER), say = () => {}, attemptsLeft = 1, spentUsd = () => 0 }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
-  const exo = path.join(root, SCRATCH_FOLDER);
-  const baseText = base ?? 'HEAD';
-  const criterionStop = await proveCriterion({ planPath, plan, root, logDir, runSession, say });
+  return { planPath, plan, root, base, branch, runSession, exec, logDir, say, attemptsLeft, spentUsd, gateArgs, exo: path.join(root, SCRATCH_FOLDER), baseText: base ?? 'HEAD', reviewModel: agentModel(), reports: [] };
+}
+
+function reviewDispatches(t, { review, branches, overlaps }) {
+  const shardKey = (shard) => (shard.number === undefined ? BRANCH_REVIEW_KEY : `${BRANCH_REVIEW_KEY}-${shard.number}`);
+  const shardName = (shard) => (shard.number === undefined ? 'branch' : `branch ${shard.number}`);
+  const shardDispatch = (shard) => ({ task: null, name: shardName(shard), key: shardKey(shard), model: agentModel(review.kind), findings: shard.findings, input: shard.input, scope: `branch ${shard.range}`, questions: BRANCH_QUESTIONS });
+  const overlap = { task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel(), findings: path.join(t.exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] };
+  return [...(review === null ? [] : branches.map(shardDispatch)), ...(overlaps.length === 0 ? [] : [overlap])];
+}
+
+function reviewOutcome(session, text) {
+  const verdict = verdictOf(text);
+  const model = session.model ?? 'unpinned';
+  if (session.timedOut) return `timed out (${model})`;
+  if (verdict === null) return `no verdict line (${model})`;
+  const found = ['defect', 'concern', 'question', 'note'].reduce((total, kind) => total + countOf(text, kind), 0);
+  return `${verdict} (${model}, ${found} findings)`;
+}
+
+async function runReview(t, dispatch) {
+  t.say(`review start: ${dispatch.name}`);
+  fs.rmSync(dispatch.findings, { force: true });
+  const session = await t.runSession({ kind: 'review', task: dispatch.task, model: dispatch.model, prompt: reviewPrompt({ planPath: t.planPath, root: t.root, base: t.baseText, branch: t.branch, ...dispatch }) });
+  if (session.stop === undefined) t.say(`review done: ${dispatch.name}: ${reviewOutcome(session, session.resultText ?? '')} (session ${session.sessionId ?? 'none'})`);
+  return session;
+}
+
+export async function runTail(options) {
+  const t = tailContext(options);
+  const criterionStop = await proveCriterion({ planPath: t.planPath, plan: t.plan, root: t.root, logDir: t.logDir, runSession: t.runSession, say: t.say });
   if (criterionStop !== null) return { stop: criterionStop };
-  const reviewedTree = workingTreeKey(root);
-  const dispatched = exec(SCRIPT.gate, [...gateArgs, '--reviews-only'], root);
+  const tree = workingTreeKey(t.root);
+  const dispatched = t.exec(SCRIPT.gate, [...t.gateArgs, '--reviews-only'], t.root);
   if (crashed(dispatched, REVIEW_LINES)) return { stop: crashStop('gate --reviews-only', dispatched) };
-  const { review: branchReview, branches, overlaps } = parseReviewLines(out(dispatched));
-  const reviewModel = agentModel();
-  const dispatches = [
-    ...(branchReview === null ? [] : branches.map((shard) => ({ task: null, name: shard.number === undefined ? 'branch' : `branch ${shard.number}`, key: shard.number === undefined ? BRANCH_REVIEW_KEY : `${BRANCH_REVIEW_KEY}-${shard.number}`, model: agentModel(branchReview.kind), findings: shard.findings, input: shard.input, scope: `branch ${shard.range}`, questions: BRANCH_QUESTIONS }))),
-    ...(overlaps.length === 0 ? [] : [{ task: null, name: 'overlap', key: OVERLAP_REVIEW_KEY, model: agentModel(), findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
-  ];
-  const reports = dispatches.map((dispatch) => dispatch.findings);
-  const review = async (dispatch) => {
-    const name = dispatch.name;
-    say(`review start: ${name}`);
-    fs.rmSync(dispatch.findings, { force: true });
-    const session = await runSession({ kind: 'review', task: dispatch.task, model: dispatch.model, prompt: reviewPrompt({ planPath, root, base: baseText, branch, ...dispatch }) });
-    if (session.stop === undefined) {
-      const text = session.resultText ?? '';
-      const verdict = verdictOf(text);
-      const found = countOf(text, 'defect') + countOf(text, 'concern') + countOf(text, 'question') + countOf(text, 'note');
-      const model = session.model ?? 'unpinned';
-      const outcome = session.timedOut ? `timed out (${model})` : verdict === null ? `no verdict line (${model})` : `${verdict} (${model}, ${found} findings)`;
-      say(`review done: ${name}: ${outcome} (session ${session.sessionId ?? 'none'})`);
-    }
-    return session;
-  };
-  const fresh = dispatches.filter((dispatch) => !reusableReview(root, dispatch));
-  for (const dispatch of dispatches) if (!fresh.includes(dispatch)) say(`review reused: ${dispatch.name}`);
-  const sessions = await Promise.all(fresh.map(review));
+  const dispatches = reviewDispatches(t, parseReviewLines(out(dispatched)));
+  t.reports = dispatches.map((dispatch) => dispatch.findings);
+  const fresh = dispatches.filter((dispatch) => !reusableReview(t.root, dispatch));
+  for (const dispatch of dispatches) if (!fresh.includes(dispatch)) t.say(`review reused: ${dispatch.name}`);
+  const sessions = await Promise.all(fresh.map((dispatch) => runReview(t, dispatch)));
+  return afterReviews(t, { fresh, sessions, tree });
+}
+
+async function afterReviews(t, { fresh, sessions, tree }) {
   const stopped = sessions.find((session) => session.stop !== undefined);
   if (stopped !== undefined) {
-    recordReviews(root, { fresh, sessions, tree: reviewedTree });
+    recordReviews(t.root, { fresh, sessions, tree });
     return { stop: stopped.stop };
   }
-
-  if (reports.length === 0) return finish(reviewedTree);
-  const mergeAnswer = exec(SCRIPT.mergeReviews, mergeArgs({ root, base, reports }), root);
+  if (t.reports.length === 0) return finish(t, tree);
+  const mergeAnswer = t.exec(SCRIPT.mergeReviews, mergeArgs({ root: t.root, base: t.base, reports: t.reports }), t.root);
   const merged = out(mergeAnswer);
   const verdict = verdictOf(merged);
-  const findings = path.join(exo, 'branch-review.md');
-  recordReviews(root, { fresh, sessions, tree: reviewedTree });
+  const findings = path.join(t.exo, 'branch-review.md');
+  recordReviews(t.root, { fresh, sessions, tree });
   if (verdict === null) return { stop: crashStop('merge-reviews', mergeAnswer) };
   if (verdict === 'BLOCKED') return { stop: stopOf('branch review BLOCKED', 'The branch review could not finish (BLOCKED)', `read ${findings}, fix the cause, then run exo run again`) };
-  if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) {
-    const untrackedBefore = new Set(untrackedPaths(root));
-    const patchFile = path.join(logDir, 'review-fix-leftover.patch');
-    const shelved = (first, recheckClean) => {
-      const { patch, failed } = shelveLeftover(root, patchFile, untrackedBefore);
-      const treeRestored = failed === undefined;
-      const stop = recheckClean !== undefined && treeRestored ? recheckClean() : first;
-      const notCleared = treeRestored ? '' : `; leftover not cleared: ${failed}`;
-      if (patch !== null) return { stop: { ...stop, why: `${stop.why}; its edits are shelved in ${patch}${notCleared}`, next: `${stop.next}; the fix edits are in ${patch}` } };
-      if (failed !== undefined) return { stop: { ...stop, why: `${stop.why}; shelving the edits failed: ${failed}` } };
-      return { stop };
-    };
-    const fixReview = path.join(exo, 'fix-review.md');
-    const findingsSha = findingsShaOf(merged);
-    const fixAttempt = async (failedLine) => {
-      say(failedLine === null ? 'fix start' : 'fix retry start');
-      const note = failedLine === null ? '' : `\n\nThe previous fix failed: ${failedLine}\nThe previous fix's commits are on the branch; repair them with new commits so this check passes.`;
-      const preFixSha = headOf(root);
-      const session = await runSession({ kind: 'fix', task: null, model: null, prompt: `${fixerPrompt({ planPath, root, base: baseText, findings })}${note}` });
-      if (session.stop !== undefined) return { result: shelved(session.stop) };
-      const repaired = exec(SCRIPT.gate, [...gateArgs, '--repair', '--pre-fix-sha', preFixSha, '--findings', findings, '--findings-sha256', findingsSha], root);
-      if (crashed(repaired, REPAIR_LINES)) return { result: shelved(crashStop('gate --repair', repaired)) };
-      const { stopLine, failLine } = parseRepairLines(out(repaired));
-      if (stopLine !== undefined) return { result: shelved(stopOf(`fix repair stopped: ${stopLine}`, 'gate --repair stopped the review fix', `read ${findings}, repair on the branch, then run exo run again`)) };
-      if (failLine !== undefined) return { failure: { line: failLine, stop: stopOf(`fix repair failed: ${failLine}`, 'gate --repair refused the review fix', `read ${findings}, repair on the branch, then run exo run again`) } };
-      const gate = exec(SCRIPT.gate, gateArgs, root);
-      if (crashed(gate, GATE_LINES)) return { result: shelved(crashStop('gate', gate)) };
-      const failing = gateFailures(gate);
-      const recheck = () => {
-        const without = exec(SCRIPT.gate, gateArgs, root);
-        if (crashed(without, GATE_LINES)) return crashStop('gate', without);
-        return gateStop(failing, gateFailures(without), findings);
-      };
-      if (failing.length > 0) return { failure: { line: failing[0], stop: fixBrokeGate(failing[0], findings), recheck } };
-      const probes = exec(SCRIPT.runProbes, ['--report', findings, '--root', root], root);
-      if (crashed(probes, PROBE_LINES)) return { result: shelved(crashStop('run-probes', probes)) };
-      const failedProbe = out(probes).split('\n').find((line) => /^FAIL probe\b/.test(line));
-      if (failedProbe !== undefined) return { failure: { line: failedProbe, stop: stopOf(`fix probe failed: ${failedProbe}`, 'A fixed finding still fails its probe', `read ${findings}, repair on the branch, then run exo run again`) } };
-      if (headOf(root) === preFixSha) {
-        say('fix review skipped: fixer changed nothing');
-        return { result: finish(reviewedTree) };
-      }
-      fs.rmSync(fixReview, { force: true });
-      say('fix review start');
-      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: fixReviewScope(preFixSha), findings: fixReview }) });
-      if (second.stop !== undefined) return { result: shelved(second.stop) };
-      const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
-      const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
-      say(`review done: fix diff: ${second.timedOut ? 'timed out' : secondVerdict} (session ${second.sessionId ?? 'none'})`);
-      const fixLines = text.split('\n').filter((line) => /;\s*fix\s*$/.test(line));
-      const reviewStop = () => stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}`, `read ${fixReview}, then run exo run again`);
-      if (secondVerdict === 'BLOCKED') return { result: shelved(reviewStop()) };
-      if (secondVerdict === 'FINDINGS' && fixLines.length > 0) return { failure: { line: fixLines[0].trim(), stop: reviewStop() } };
-      return {};
-    };
-    savePreFix(root, base, logDir);
-    let attempt = await fixAttempt(null);
-    if (attempt.failure !== undefined && attemptsLeft - 1 >= 1) attempt = await fixAttempt(attempt.failure.line);
-    if (attempt.result !== undefined) return attempt.result;
-    if (attempt.failure !== undefined) return shelved(attempt.failure.stop, attempt.failure.recheck);
-    say('fix committed');
-    return finish(workingTreeKey(root));
-  }
-  return finish(reviewedTree);
+  if (verdict === 'FINDINGS' && countOf(merged, 'fix') + countOf(merged, 'concern') >= 1) return fixLoop(t, { merged, findings, tree });
+  return finish(t, tree);
+}
 
-  function finish(reviewPassTree) {
-    if (reports.length > 0) recordPass(root, BRANCH_REVIEW_KEY, 0, reviewPassTree);
-    const gate = exec(SCRIPT.gate, gateArgs, root);
-    const unproven = unprovenRisks(path.join(exo, 'branch-review.md'));
-    if (unproven.length === 0) return { gate };
-    return { gate: { status: gate.status, stdout: `${gate.stdout ?? ''}${unproven.map((line) => `WARN Unproven risk: ${line}\n`).join('')}`, stderr: gate.stderr } };
-  }
+function shelved(f, first, recheckClean) {
+  const { patch, failed } = shelveLeftover(f.root, f.patchFile, f.untrackedBefore);
+  const treeRestored = failed === undefined;
+  const stop = recheckClean !== undefined && treeRestored ? recheckClean() : first;
+  const notCleared = treeRestored ? '' : `; leftover not cleared: ${failed}`;
+  if (patch !== null) return { stop: { ...stop, why: `${stop.why}; its edits are shelved in ${patch}${notCleared}`, next: `${stop.next}; the fix edits are in ${patch}` } };
+  if (failed !== undefined) return { stop: { ...stop, why: `${stop.why}; shelving the edits failed: ${failed}` } };
+  return { stop };
+}
+
+function repairStep(f, preFixSha) {
+  const repaired = f.exec(SCRIPT.gate, [...f.gateArgs, '--repair', '--pre-fix-sha', preFixSha, '--findings', f.findings, '--findings-sha256', f.findingsSha], f.root);
+  if (crashed(repaired, REPAIR_LINES)) return { result: shelved(f, crashStop('gate --repair', repaired)) };
+  const { stopLine, failLine } = parseRepairLines(out(repaired));
+  const next = `read ${f.findings}, repair on the branch, then run exo run again`;
+  if (stopLine !== undefined) return { result: shelved(f, stopOf(`fix repair stopped: ${stopLine}`, 'gate --repair stopped the review fix', next)) };
+  if (failLine === undefined) return null;
+  return { failure: { line: failLine, open: 1, stop: stopOf(`fix repair failed: ${failLine}`, 'gate --repair refused the review fix', next) } };
+}
+
+function gateStep(f) {
+  const gate = f.exec(SCRIPT.gate, f.gateArgs, f.root);
+  if (crashed(gate, GATE_LINES)) return { result: shelved(f, crashStop('gate', gate)) };
+  const failing = gateFailures(gate);
+  if (failing.length === 0) return null;
+  const recheck = () => {
+    const without = f.exec(SCRIPT.gate, f.gateArgs, f.root);
+    if (crashed(without, GATE_LINES)) return crashStop('gate', without);
+    return gateStop(failing, gateFailures(without), f.findings);
+  };
+  return { failure: { line: failing[0], open: failing.length, stop: fixBrokeGate(failing[0], f.findings), recheck } };
+}
+
+function probeStep(f) {
+  const probes = f.exec(SCRIPT.runProbes, ['--report', f.findings, '--root', f.root], f.root);
+  if (crashed(probes, PROBE_LINES)) return { result: shelved(f, crashStop('run-probes', probes)) };
+  const failed = out(probes).split('\n').filter((line) => /^FAIL probe\b/.test(line));
+  if (failed.length === 0) return null;
+  return { failure: { line: failed[0], open: failed.length, stop: stopOf(`fix probe failed: ${failed[0]}`, 'A fixed finding still fails its probe', `read ${f.findings}, repair on the branch, then run exo run again`) } };
+}
+
+async function reviewFix(f, preFixSha) {
+  fs.rmSync(f.fixReview, { force: true });
+  f.say('fix review start');
+  const second = await f.runSession({ kind: 'review', task: null, model: f.reviewModel, prompt: reviewPrompt({ planPath: f.planPath, root: f.root, base: f.baseText, branch: f.branch, scope: fixReviewScope(preFixSha), findings: f.fixReview }) });
+  if (second.stop !== undefined) return { result: shelved(f, second.stop) };
+  const text = fs.existsSync(f.fixReview) ? fs.readFileSync(f.fixReview, 'utf8') : '';
+  const verdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
+  f.say(`review done: fix diff: ${second.timedOut ? 'timed out' : verdict} (session ${second.sessionId ?? 'none'})`);
+  const fixLines = text.split('\n').filter((line) => /;\s*fix\s*$/.test(line));
+  const stop = stopOf(`fix review ${verdict}`, `The review of the fix returned ${verdict}`, `read ${f.fixReview}, then run exo run again`);
+  if (verdict === 'BLOCKED') return { result: shelved(f, stop) };
+  if (verdict === 'FINDINGS' && fixLines.length > 0) return { failure: { line: fixLines[0].trim(), open: fixLines.length, stop } };
+  return {};
+}
+
+async function fixAttempt(f, failedLine) {
+  f.say(failedLine === null ? 'fix start' : 'fix retry start');
+  const note = failedLine === null ? '' : `\n\nThe previous fix failed: ${failedLine}\nThe previous fix's commits are on the branch; repair them with new commits so this check passes.`;
+  const preFixSha = headOf(f.root);
+  const session = await f.runSession({ kind: 'fix', task: null, model: null, prompt: `${fixerPrompt({ planPath: f.planPath, root: f.root, base: f.baseText, findings: f.findings })}${note}` });
+  if (session.stop !== undefined) return { result: shelved(f, session.stop) };
+  const checked = repairStep(f, preFixSha) ?? gateStep(f) ?? probeStep(f);
+  if (checked !== null) return checked;
+  if (headOf(f.root) !== preFixSha) return reviewFix(f, preFixSha);
+  f.say('fix review skipped: fixer changed nothing');
+  return { result: finish(f, f.tree) };
+}
+
+async function settledFix(f, failedLine) {
+  const startedAt = Date.now();
+  const settled = await fixAttempt(f, failedLine);
+  const costUsd = f.spentUsd() - f.ledgeredUsd;
+  f.ledgeredUsd += costUsd;
+  const openAfter = settled.failure === undefined ? 0 : Math.max(1, settled.failure.open);
+  recordRound(f.ledger, { kind: 'review-fix', openBefore: f.open, openAfter, wallMs: Date.now() - startedAt, costUsd });
+  f.open = openAfter;
+  return settled;
+}
+
+async function fixLoop(t, { merged, findings, tree }) {
+  const f = { ...t, findings, tree, untrackedBefore: new Set(untrackedPaths(t.root)), patchFile: path.join(t.logDir, 'review-fix-leftover.patch'), fixReview: path.join(t.exo, 'fix-review.md'), findingsSha: findingsShaOf(merged), ledger: ledgerDirOf(t.root, t.planPath), ledgeredUsd: t.spentUsd(), open: countOf(merged, 'fix') + countOf(merged, 'concern') };
+  savePreFix(t.root, t.base, t.logDir);
+  let attempt = await settledFix(f, null);
+  const retryDecision = decide(f.ledger, 'review-fix');
+  t.say(formatLine('review-fix', retryDecision));
+  if (attempt.failure !== undefined && t.attemptsLeft - 1 >= 1 && retryDecision.verdict === 'CONTINUE') attempt = await settledFix(f, attempt.failure.line);
+  if (attempt.result !== undefined) return attempt.result;
+  if (attempt.failure !== undefined) return shelved(f, attempt.failure.stop, attempt.failure.recheck);
+  t.say('fix committed');
+  return finish(t, workingTreeKey(t.root));
+}
+
+function finish(t, reviewPassTree) {
+  if (t.reports.length > 0) recordPass(t.root, BRANCH_REVIEW_KEY, 0, reviewPassTree);
+  const gate = t.exec(SCRIPT.gate, t.gateArgs, t.root);
+  const unproven = unprovenRisks(path.join(t.exo, 'branch-review.md'));
+  if (unproven.length === 0) return { gate };
+  return { gate: { status: gate.status, stdout: `${gate.stdout ?? ''}${unproven.map((line) => `WARN Unproven risk: ${line}\n`).join('')}`, stderr: gate.stderr } };
 }

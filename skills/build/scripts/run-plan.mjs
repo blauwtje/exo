@@ -29,10 +29,11 @@ import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { clip, numbersText, startLine, taskSubject, wallClock } from './run-report.mjs';
 import { Refusal } from './run-plan-errors.mjs';
 import { hasPin, isDocTask, chooseProvider } from './run-plan-provider.mjs';
-import { lastLine, taskOrder, utcStamp, preflight } from './run-plan-preflight.mjs';
+import { sessionLast, taskOrder, utcStamp, preflight } from './run-plan-preflight.mjs';
 import { setPhase, noteTask, noteCounts, noteStop, noteStep } from './run-plan-notes.mjs';
 import { noteAttempt, noteSession, replayedSession, restoreResume, takePending } from './run-plan-resume.mjs';
-import { attemptsLeft, proofNotRun, recordAttempt, writeReplyReport } from './run-plan-attempts.mjs';
+import { wallBudgetMs } from '../../../lib/loop-budget.mjs';
+import { attemptsLeft, proofNotRun, recordAttempt, settleAttempt, writeReplyReport } from './run-plan-attempts.mjs';
 import { appTail, ensureApp, killApp } from './run-plan-app.mjs';
 import { rebaseOntoMovedBase } from './run-plan-rebase.mjs';
 import { runDefaults } from './run-config.mjs';
@@ -169,7 +170,7 @@ async function main(argv) {
       const log = path.join(logDir, `iter-${ctx.iteration}-plan.log`);
       const { before, outcome, parsed } = await spawnOne(ctx, { prompt: planPrompt({ plan, planPath, numbers: order, root, sandbox: sandbox.enabled }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first, taskCount: order.length });
       sayIdle(ctx, startedPlan);
-      const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
+      const last = sessionLast(outcome, parsed, timeoutMs);
       const record = { iteration: ctx.iteration, task: first, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, ...deniedFields(parsed) };
       run.records.push(record);
       lastTask = first;
@@ -236,7 +237,7 @@ async function main(argv) {
     const { before, outcome, parsed } = pending !== null ? replayedSession(ctx, pending) : await spawnOne(ctx, { prompt, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n, sessionModel: taskPin.model ?? model, sessionEffort: taskPin.effort, resume });
     sayIdle(ctx, startedTask);
     writeReplyReport(ctx, n, outcome.timedOut ? '' : parsed.resultText);
-    const last =outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
+    const last = sessionLast(outcome, parsed, timeoutMs);
     const record = { iteration: ctx.iteration, task: n, log, turns: parsed.turns, weightedTokens: parsed.weightedTokens, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, ...deniedFields(parsed) };
     run.records.push(record);
     lastTask = n;
@@ -304,8 +305,9 @@ async function main(argv) {
       stop = { kind: 'stalled', task: n, line: `no progress on task ${n} in ${tries} iterations, log ${log}`, why: `Task ${n} did not land in ${tries} tries`, next: fix(log) };
       break;
     }
-    if (ctx.failedAttempts >= provider.attemptCap) {
-      stop = { kind: 'capped', task: n, line: `attempt cap ${provider.attemptCap} reached`, why: `The run hit its limit of ${provider.attemptCap} failed attempts`, next: fix(log) };
+    const settled = freeTry ? { stop: false } : settleAttempt(ctx, { wallMs: Date.now() - startedTask.wall });
+    if (settled.stop) {
+      stop = { kind: 'capped', task: n, line: settled.line, why: `The run stopped its failed attempts: ${settled.reason}`, next: fix(log) };
       break;
     }
   }
@@ -346,7 +348,7 @@ async function main(argv) {
       const evaluate = () => redGreen({
         root, base: startCommit, command, repeat: Number.isInteger(plan.successRepeat?.count) ? plan.successRepeat.count : 1,
         overlay: testPaths(gitOut(root, ['diff', '--name-only', '-z', `${startCommit}..HEAD`], { trim: false }).split('\0').filter(Boolean)),
-        timeoutMs: environmentMs('EXO_GATE_TIMEOUT_MS', 1_800_000)
+        timeoutMs: wallBudgetMs()
       });
       let result = evaluate();
       if (result.outcome !== 'proved') {
@@ -371,7 +373,7 @@ async function main(argv) {
     const runSession = (request) => runTailSession(ctx, request);
     const gateStop = (await successGate()) ?? reviewRebaseStop();
     if (gateStop === null) say('all tasks landed, final review start');
-    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say, attemptsLeft: attemptsLeft(ctx), attemptCap: provider.attemptCap }) : { stop: gateStop };
+    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, logDir, say, attemptsLeft: attemptsLeft(ctx), spentUsd: () => ctx.spent }) : { stop: gateStop };
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
       const gate = tail.gate;

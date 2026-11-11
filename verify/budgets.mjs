@@ -25,7 +25,7 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 4009, measured: '2026-11-10' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-budgets.mjs fails above it.
 // Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.
-export const HOOK_LINES_LOCK = { lines: 968, measured: '2026-11-10' };
+export const HOOK_LINES_LOCK = { lines: 980, measured: '2026-11-11' };
 export const HOOK_ENTRIES_LOCK = { entries: 8, measured: '2026-11-05' };
 export const HOOK_TEXT_BYTES_LOCK = { bytes: 5891, measured: '2026-11-10' };
 export const HOOK_WORK_LOCK = {
@@ -33,10 +33,10 @@ export const HOOK_WORK_LOCK = {
   scripts: {
     'session-start.mjs': { modules: 28, reads: 9 },
     'dispatch-bash.mjs': { modules: 43, reads: 5 },
-    'agent-effort.mjs': { modules: 44, reads: 42 },
+    'agent-effort.mjs': { modules: 46, reads: 45 },
     'dispatch-edit.mjs': { modules: 50, reads: 5 },
     'context-limit.mjs': { modules: 34, reads: 5 },
-    'run-no-wait.mjs': { modules: 18, reads: 3 },
+    'run-no-wait.mjs': { modules: 19, reads: 3 },
     'session-end.mjs': { modules: 13, reads: 1 }
   }
 };
@@ -83,7 +83,7 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/color.md': 764,
-  'skills/build/references/design-ui.md': 1910,
+  'skills/build/references/design-ui.md': 1891,
   'skills/build/references/improve.md': 1544,
   'skills/build/references/layout.md': 984,
   'skills/build/references/marketing.md': 908,

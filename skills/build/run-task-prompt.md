@@ -16,7 +16,7 @@ Rules:
 - Run at most 1 test beyond red-then-green.
 - If `.exo/ruled-out/task-<n>.md` exists in [[root]], <n> being [[task]]'s number, repeat no approach it lists.
 - Send build and test output to `.exo/logs/<name>.log`; read only the summary and failing lines.
-- After the first red Proof, rerun it at most once per edit.
+- After the first red Proof, rerun once per edit (`proof`).
 - A test or command your sandbox or permission rules refuse is not a block: never end `[[task]]: BLOCKED` on one; report it as `not run`, not `failed`.
 - Write no report file. The report, at most 25 lines, is the reply text above the last line: what landed, the proof output, `Unresolved:`.
 - Change only the files the task lists. A registry, index or test list that must name a new file and is not listed → end on `[[task]]: BLOCKED <file> is missing from the file list`.

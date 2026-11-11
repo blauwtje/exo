@@ -62,7 +62,7 @@ The floors catch what is broken; the critique catches what is weak.
 1. Floors: `node "${CLAUDE_SKILL_DIR}/scripts/look.mjs" <file-or-url> --out <dir>`, with `--app` for an app, one `--expect "<text>"` per explicit ask, and one `--state "<name>=<js>"` per state worth seeing (a second tab, an open sheet, a filled form, an error, keyboard focus). The JS runs in the page and puts it in that state, for example `document.querySelector('#tab-friends').click()`.
 2. Fix each printed line: `CONTRAST` (the ratio decides, not the eye), `CLIP`, `OVERLAP`, `FONTS`, `FIT`, `NAV`, `OVERFLOW`, `CONSOLE`, `MISSING`, `BELOW`, `STATE`. A hidden view counts for an ask only when its tab or control is visible and its content is in the DOM.
 3. Critique: dispatch one fresh delegate whose prompt opens with `exo-kind: review` as critic with `Reads: <shot paths>` and `Worktree: <abs path>` lines, briefed per the critic reference. It sees the shots, the request and the contract, never your code or reasoning.
-4. Fix round: act on its findings in one round of edits, then rerun look with `--no-shots` to confirm the floors still hold. A `rebuild` verdict on one area means rebuilding that area in this round.
+4. Fix round, bounded by ledger kind `look`: act on its findings, rebuild any `rebuild` area, rerun look with `--no-shots`.
 
 ## Report
 

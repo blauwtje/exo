@@ -34,7 +34,7 @@ Skip this when the prompt holds the brief.
 ## Finish
 
 1. Run `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`; it refuses a report fault before it runs the proof, so run no `--check` first.
-   - Refusal → fix what it names and rerun once; a second refusal, `PLAN DRIFT` line or non-zero exit → `BLOCKED <first output line>`.
+   - Refusal → fix and rerun once (`refusal`); a second refusal, `PLAN DRIFT` line or non-zero exit → `BLOCKED <first output line>`.
    - `Pending: mcp:` line → `BLOCKED mcp proof`.
 2. End on one line, the last of the reply, nothing after it.
    - `Task <n>: LANDED <sha>`, the sha from the `Committed:` line.

@@ -2,6 +2,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { readDecisions } from '#run-decision';
 import { cacheTokenText } from './run-cache-tokens.mjs';
+import { report as loopReport } from '../../../lib/loop-budget.mjs';
+import { ledgerDirOf } from '../../gate/scripts/repair-round.mjs';
 import { reportLines } from './run-report-lines.mjs';
 import { timelineLines } from '../../../lib/timeline.mjs';
 
@@ -110,6 +112,7 @@ export function summaryLines(run, stop) {
   if (refused > 0) lines.push(`${refused} command${refused === 1 ? ' was' : 's were'} refused by hooks; the detail file lists them.`);
   const decisions = process.env.EXO_RUN_DIR ? readDecisions(process.env.EXO_RUN_DIR) : [];
   if (decisions.length > 0) lines.push(`Decisions: ${decisions.length}, in ${path.join(process.env.EXO_RUN_DIR, 'decisions.md')}`);
+  lines.push(loopReport(ledgerDirOf(run.root, run.planPath)));
   lines.push(`Next: ${stop.next}`);
   lines.push(`Cost ${money(records.reduce((sum, record) => sum + record.cost, 0))}, time ${duration(run.elapsed())}${cacheTokenText(records)}.`);
   lines.push(`Details: ${path.join(logDir, 'summary.txt')}`);

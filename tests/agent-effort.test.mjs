@@ -67,7 +67,7 @@ test('an explicit model or effort, an exo-kind line, off and other types leave t
   for (const type of ['fork', 'Explore', 'claude-code-guide', 'statusline-setup']) assert.equal(call({ subagent_type: type }), undefined);
 });
 
-test('an unnamed call with no exo-kind line runs as build with the line prepended, an unknown label is denied', () => {
+test('an unnamed call with no exo-kind line runs as build with the line prepended, an unknown label becomes build', () => {
   const decision = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', ...input } }, budget, () => false)?.hookSpecificOutput.permissionDecision;
   const { kinds } = readKindTable(undefined, { budget: 'on' });
   const unlabelled = call({ description: 'Edit-evidence false block', prompt: 'x' });
@@ -78,10 +78,8 @@ test('an unnamed call with no exo-kind line runs as build with the line prepende
   assert.equal(call({ description: 'Edit-evidence false block' }).prompt, 'exo-kind: build\n');
   assert.equal(call({ description: 'Review the branch', prompt: 'x' }).prompt, 'x');
   assert.equal(call({ description: 'Edit-evidence false block', prompt: 'exo-kind: hardest\nx' }).prompt, 'exo-kind: hardest\nx');
-  const unknown = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'exo-kind: Hardest\nx' } }, 'on', () => false).hookSpecificOutput;
-  assert.equal(unknown.permissionDecision, 'deny');
-  assert.match(unknown.permissionDecisionReason, /exo-kind:/);
-  assert.match(unknown.permissionDecisionReason, /hardest/);
+  const unknown = call({ description: 'Edit-evidence false block', prompt: 'exo-kind: Hardest\nx' });
+  assert.match(unknown.prompt, /^exo-kind: build\nx/);
   assert.notEqual(decision({ description: 'review the branch', prompt: 'Reads: none' }), 'deny');
   for (const word of ['Investigate', 'Research', 'Summarise', 'Summarize', 'Explore']) assert.notEqual(decision({ description: `${word} the stall`, prompt: 'Reads: none' }), 'deny');
   assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, kinds.hardest.model);
@@ -436,4 +434,39 @@ test('an Agent dispatch from a worker role is denied and one from a coordinator 
   assert.equal(worker.permissionDecision, 'deny');
   assert.match(worker.permissionDecisionReason, /worker row has mayDispatch false/);
   assert.doesNotMatch(dispatch('exo:orchestrator')?.permissionDecisionReason ?? '', /mayDispatch false/);
+});
+
+function refusals(tag, input) {
+  const session = `${tag}-${process.pid}-${Date.now()}`;
+  const hook = { session_id: session, tool_name: 'Agent', tool_input: input };
+  const ledger = path.join(os.tmpdir(), `exo-refusal-${session}`);
+  try {
+    return [1, 2, 3].map(() => agentHook(hook, 'on').hookSpecificOutput.permissionDecisionReason);
+  } finally {
+    fs.rmSync(ledger, { recursive: true, force: true });
+  }
+}
+
+test('one dispatch breaking three rules is refused once naming all three and the third stops naming them still', () => {
+  const input = { subagent_type: 'exo:orchestrator', isolation: 'worktree', model: 'haiku', prompt: 'do it' };
+  const reasons = refusals('loop', input);
+  for (const reason of [reasons[0], reasons[2]]) {
+    assert.match(reason, /isolation/i);
+    assert.match(reason, /Workers/);
+    assert.match(reason, /passed haiku/);
+  }
+  assert.doesNotMatch(reasons[0], /LOOP refusal STOP/);
+  assert.doesNotMatch(reasons[1], /LOOP refusal STOP/);
+  assert.match(reasons[2], /LOOP refusal STOP .*cap/);
+});
+
+test('out-of-scope: an edited brief of the same dispatch identity keeps counting toward the cap', () => {
+  const session = `edit-${process.pid}-${Date.now()}`;
+  const ledger = path.join(os.tmpdir(), `exo-refusal-${session}`);
+  try {
+    const reasons = ['a', 'b', 'c'].map((tail) => agentHook({ session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', description: 'same task', isolation: 'worktree', prompt: `do it ${tail}` } }, 'on').hookSpecificOutput.permissionDecisionReason);
+    assert.match(reasons[2], /LOOP refusal STOP/);
+  } finally {
+    fs.rmSync(ledger, { recursive: true, force: true });
+  }
 });

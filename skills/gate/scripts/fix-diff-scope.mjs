@@ -6,7 +6,10 @@ export function fixDiffRanges(root, preFixSha) {
   const diff = execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'diff', '-U0', '--no-color', `${preFixSha}..HEAD`], { encoding: 'utf8' });
   const ranges = new Map();
   let file = null;
+  let oldFile = null;
   for (const line of diff.split('\n')) {
+    if (line.startsWith('--- a/')) oldFile = line.slice('--- a/'.length);
+    if (line === '+++ /dev/null') file = oldFile;
     if (line.startsWith('+++ b/')) file = line.slice('+++ b/'.length);
     const hunk = HUNK.exec(line);
     if (file === null || hunk === null) continue;

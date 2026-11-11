@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCheck } from '../../../lib/run-check.mjs';
+import { roundCap } from '../../../lib/loop-budget.mjs';
 import { environmentMs } from '#script-flags';
 import { cachedPass, gateRefusal, recordPass, workingTreeKey } from '#check-cache';
 import { readShadow, recordShadow, shadowSelection, trialActive } from '#suite-command';
@@ -74,7 +75,7 @@ export function runProof(task, command, options) {
   const before = workingTreeKey(root);
   const started = Date.now();
   let attempt = proofAttempt(task, command, root, pendingEvidence);
-  if (!attempt.passed && startedServices(root, docker)) attempt = proofAttempt(task, command, root, pendingEvidence);
+  if (!attempt.passed && roundCap('proof') > 1 && startedServices(root, docker)) attempt = proofAttempt(task, command, root, pendingEvidence);
   if (attempt.passed) recordPass(root, command, Date.now() - started, before, attempt.proofRun.output);
   if (selection !== null) shadowRun(task, command, selection, options, attempt.passed);
   if (attempt.passed) return { command, tail: attempt.tail };

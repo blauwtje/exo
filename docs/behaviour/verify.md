@@ -30,6 +30,12 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.
 - The Success criterion passes on the branch rebased onto `origin/main`.
 
+## loop-budget
+- A gate re-entry on the same run continues the ledger round count instead of restarting it (Task 5).
+- One Agent dispatch that breaks three brief rules is refused once, naming all three; the third refusal of the same dispatch stops with `LOOP refusal STOP cap` (Task 2).
+- look.mjs ends within its kinds-table wall timeout (Task 8).
+- `npm run check` fails a planted cap literal and a first-only rule module (Task 4, Task 11, Success criterion).
+
 ## review-reliability
 - `node skills/verify/scripts/verify.mjs --plan <plan> --root .worktrees/<name> --base main` run from the repository root prints the same lines as with the absolute root (Task 1; seam: `verify.mjs` command in `tests/verify-gate.test.mjs`).
 - `merge-reviews.mjs` given a report with a probe-less `fix` finding prints `fix=0` and a `DEMOTED 1` line (Task 2; seam: the command in `tests/merge-reviews.test.mjs`).

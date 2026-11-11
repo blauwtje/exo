@@ -3,12 +3,12 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { environmentMs } from '../../../lib/script-flags.mjs';
 import { sleep } from '#basics';
+import { roundCap } from '../../../lib/loop-budget.mjs';
 import { parseStream } from './run-session-stream.mjs';
 import { fallbackModel } from './run-plan-provider.mjs';
 
 const KILL_GRACE_MS = 5000;
 const PARENT_POLL_MS = 5000;
-const PROVIDER_RETRIES = 3;
 const TRANSIENT_PROVIDER_ERROR = /\b(?:429|503|529)\b|rate_limit_error|overloaded_error/;
 
 export function appendLog(file, text, write = fs.appendFileSync) {
@@ -144,14 +144,15 @@ async function spawnOnFallback(claude, args, options, outcome) {
   const from = primaryModel(args);
   const to = fallbackModel(from);
   if (to === null) return outcome;
-  appendLog(options.log, `exo: provider overloaded on ${from ?? 'the default model'} after ${PROVIDER_RETRIES} retries, running once on ${to}\n`);
+  appendLog(options.log, `exo: provider overloaded on ${from ?? 'the default model'} after ${roundCap('provider')} retries, running once on ${to}\n`);
   return { ...(await spawnOnce(claude, withModel(args, to), options)), fallback: { from, to } };
 }
 
 export async function spawnClaude(claude, args, options) {
   const baseMs = environmentMs('EXO_PROVIDER_RETRY_MS', 30_000);
+  const retries = roundCap('provider');
   let outcome = await spawnOnce(claude, args, options);
-  for (let retry = 0; retry < PROVIDER_RETRIES && retriesProviderError(outcome); retry += 1) {
+  for (let retry = 0; retry < retries && retriesProviderError(outcome); retry += 1) {
     await sleep(baseMs * 2 ** retry);
     outcome = await spawnOnce(claude, args, options);
   }

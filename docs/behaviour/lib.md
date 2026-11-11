@@ -21,6 +21,12 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `runTreeSync` past its deadline returns `timedOut: true` and a grandchild that would write a marker file after the deadline writes none; a passing command returns status 0 with stdout and stderr merged (Task 3; seam: `tests/process-tree.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).
 
+## loop-budget
+- A fix round that does not lower the open count is reverted and prints `LOOP <kind> STOP no-progress` (Task 1, Task 5).
+- One Agent dispatch that breaks three brief rules is refused once, naming all three; the third refusal of the same dispatch stops with `LOOP refusal STOP cap` (Task 2).
+- look.mjs ends within its kinds-table wall timeout (Task 8).
+- `node lib/loop-budget.mjs --report <run dir>` prints rounds, wall and cost per kind (Task 1, Task 7).
+
 ## brief
 - `node --test tests/harness-capabilities.test.mjs` passes and fails when a matrix row and an adapter disagree (Task 1).
 

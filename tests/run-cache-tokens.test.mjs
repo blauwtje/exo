@@ -5,6 +5,8 @@ import { summaryLines } from '../skills/build/scripts/run-report.mjs';
 
 const record = (cacheRead, cacheWrite, inputTokens) => ({ cost: 0.5, denied: [], refused: [], cacheRead, cacheWrite, inputTokens });
 const run = (records) => ({
+  root: '/tmp/exo-cache-tokens-root',
+  planPath: 'docs/specs/cache-tokens.md',
   plan: { tasks: [{ number: 1 }] },
   records,
   landings: new Map([[1, {}]]),

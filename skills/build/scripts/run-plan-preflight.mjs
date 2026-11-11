@@ -80,3 +80,5 @@ export function numberFlag(value, name, { integer = false } = {}) {
   if (!Number.isFinite(number) || number <= 0 || (integer && !Number.isInteger(number))) throw new UsageError(`flag '--${name}' needs a positive ${integer ? 'integer' : 'number'}`);
   return number;
 }
+
+export const sessionLast = (outcome, parsed, timeoutMs) => outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;

@@ -8,10 +8,11 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { CHECK_LINE } from './gate-command.mjs';
 import { blockedNext, decide } from './gate-decide.mjs';
 import { parkQuestion } from '../../../lib/run-outcomes.mjs';
-import { takePending } from './repair-round.mjs';
+import { ledgerDirOf, recordReviewRound, startGateClock, takePending } from './repair-round.mjs';
 import { settleFixDiff } from './fix-diff-settle.mjs';
 import { completeMerge, recordReview } from './review-record.mjs';
 import { fullFailLines } from './gate-repair.mjs';
+import { nextLines } from './gate-next.mjs';
 import { FULL_NEXT, gateArgs, logProgress } from './gate-progress.mjs';
 
 const USAGE = `Usage: node gate-step.mjs --plan <path> --root <checkout> --base <ref> [--full] [--after review|fix] [--report <file> ...]
@@ -50,18 +51,6 @@ function step(name, run, script, args) {
   return { status, lines, body };
 }
 
-const NEXT_BY_PREFIX = [
-  [/^(?:WARN|FIX-ONLY|SELF-HOSTED|DOCS)\b/, 'NEXT put this line in the report; it ends no turn'],
-  [/^SKIP\b/, 'NEXT accept the cached pass; do not rerun it'],
-  [/^FLAKY\b/, 'NEXT list the file in the report; it ends no turn'],
-  [/^SESSION\b/, 'NEXT call the named mcp tool with its args, record PASS or FAIL, or UNRUN when no such tool exists'],
-  [/^DISPATCH\b/, 'NEXT add 3-5 questions from Goal and each task Data, Risk and Acceptance; dispatch exo:review-branch per line, one message']
-];
-
-function nextLines(body) {
-  return NEXT_BY_PREFIX.flatMap(([pattern, text]) => (body.some((line) => pattern.test(line)) ? [text] : []));
-}
-
 function startStage(flags, run) {
   const reviews = step('reviews-only', run, 'gate.mjs', [...gateArgs(flags), '--reviews-only']);
   const lines = [...reviews.lines, ...nextLines(reviews.body), FULL_NEXT];
@@ -70,27 +59,29 @@ function startStage(flags, run) {
 }
 
 function fullStage(flags, run) {
+  startGateClock(ledgerDirOf(flags.root, flags.plan));
   logProgress(flags.root, 'gate start');
   const full = step('gate', run, 'gate.mjs', gateArgs(flags));
   logProgress(flags.root, full.lines.filter((line) => line.startsWith('STEP ')).join(' '));
   const lines = [...full.lines, ...nextLines(full.body)];
   const unplanned = full.body.some((line) => line.startsWith('UNPLANNED'));
   if (unplanned) lines.push(decide('UNPLANNED', 'outside Files'));
-  if (full.status !== 0 && !unplanned) lines.push(...fullFailLines(flags.root));
+  if (full.status !== 0 && !unplanned) lines.push(...fullFailLines(flags.root, flags.plan));
   if (full.body.some((line) => line.startsWith('SESSION'))) lines.push('DECIDE session check');
   return { lines, status: full.status };
 }
 
 function reviewStage(flags, run) {
   const reportArgs = flags.reports.flatMap((r) => ['--report', r]);
-  const pending = takePending(flags.root);
+  const pending = takePending(ledgerDirOf(flags.root, flags.plan));
   const fixBase = pending === null ? [] : ['--fix-base', pending.preFixSha];
   const ran = step('merge', run, 'merge-reviews.mjs', ['--root', flags.root, '--base', flags.base, ...reportArgs, ...fixBase]);
-  const merged = pending === null ? ran : settleFixDiff(pending, ran, flags.root);
+  const merged = pending === null ? ran : settleFixDiff(pending, ran, { root: flags.root, planPath: flags.plan });
   const lines = [...merged.lines];
   if (completeMerge(merged.body)) recordReview(flags.root, flags.reports);
   const verdict = merged.body.find((line) => line.startsWith('verdict=')) ?? '';
   const count = (name) => Number(verdict.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
+  if (completeMerge(merged.body)) recordReviewRound(ledgerDirOf(flags.root, flags.plan), count('fix') + count('concern'));
   const blocked = verdict.startsWith('verdict=BLOCKED');
   if (blocked) lines.push(blockedNext(merged.body));
   const repairable = !blocked && (count('fix') > 0 || count('concern') > 0);

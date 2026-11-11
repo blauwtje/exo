@@ -10,6 +10,8 @@ import { AlreadyLandedError, LandingError, OutsideFilesError, UnfinishedMergeErr
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { unplannedPaths } from './land-paths.mjs';
 import { unfinishedMergeNote } from '#merge-state';
+import { SCRATCH_FOLDER } from '#scratch-path';
+import { landRefusal } from '../../../lib/refusal-handlers.mjs';
 
 export function taskChangedPaths(root) {
   const entries = execFileSync('git', ['-C', root, 'status', '--porcelain', '-z', '-uall'], { encoding: 'utf8' }).split('\0').filter((entry) => entry !== '');
@@ -98,4 +100,31 @@ export function checkReport(task, reportText, reportPath) {
   const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, reportText, reportPath);
   const proofCommand = task.compact && pending === null ? proofCommandOf(task, reportText, reportPath) : null;
   return { proofCommand, pending };
+}
+
+function attempt(id, run) {
+  const check = { id, error: null, violation() {
+    try {
+      run();
+      return null;
+    } catch (error) {
+      if (!(error instanceof LandingError)) throw error;
+      check.error = error;
+      return error.message;
+    }
+  } };
+  return check;
+}
+
+export function refuseTogether(task, { root, planPath, siblingWork, reportText, reportPath }) {
+  const checks = [
+    attempt('outside Files', () => refuseUnplannedPaths(task, { root, planPath, siblingWork })),
+    attempt('untested test-first', () => refuseUntestedTestFirst(task, root)),
+    attempt('missing literals', () => refuseMissingLiterals(task, root, planPath)),
+    attempt('report', () => checkReport(task, reportText, reportPath))
+  ];
+  const text = landRefusal(path.join(root, SCRATCH_FOLDER, 'refusals'), task.number, checks, {});
+  if (text === null) return;
+  const first = checks.find((check) => check.error !== null).error;
+  throw new first.constructor(text.trimEnd());
 }

@@ -110,7 +110,13 @@ const stallGuard = () => stallGuardInput({
   tool_input: { command: 'node skills/build/scripts/land-task.mjs x; echo' }
 })?.hookSpecificOutput?.permissionDecisionReason ?? '';
 const dispatch = (input) => agentHook({ tool_name: 'Agent', tool_input: input }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
-const unknownKind = () => dispatch({ subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'exo-kind: nope\nx' });
+const refusalCap = () => {
+  const session = `cap-${process.pid}-${Date.now()}`;
+  const input = { session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' } };
+  const reasons = [1, 2, 3].map(() => agentHook(input, 'on', () => false).hookSpecificOutput.permissionDecisionReason);
+  fs.rmSync(path.join(os.tmpdir(), `exo-refusal-${session}`), { recursive: true, force: true });
+  return reasons[2];
+};
 const isolated = () => dispatch({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' });
 const resultFile = () => agentHook({ tool_name: 'Agent', cwd: sized, tool_input: { subagent_type: 'reader', prompt: 'Reads: none\nResult: .exo/x.md' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
 const orchestrator = (prompt, pair) => dispatch({ subagent_type: 'exo:orchestrator', prompt, ...pair });
@@ -193,7 +199,7 @@ const cases = {
   'run-no-wait': () => noWait(1),
   'run-no-wait-final': () => noWait(2),
   'run-stall-guard': () => stallGuard(),
-  'unknown-kind': () => unknownKind(),
+  'refusal-cap': () => refusalCap(),
   'agent-isolation': () => isolated(),
   'result-tools': () => resultFile(),
   'kind-mismatch': () => orchestrator('Workers: 1', { model: 'opus', effort: 'max' }),
@@ -287,7 +293,6 @@ test('only the final run-no-wait refusal offers the BLOCKED line', () => {
 });
 
 test('the agent-effort denies are the rule table reasons', () => {
-  assert.equal(unknownKind(), denyReason('unknown-kind'));
   assert.equal(isolated(), denyReason('agent-isolation'));
 });
 

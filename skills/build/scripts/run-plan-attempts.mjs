@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { attemptFingerprint } from '#attempt-fingerprint';
+import { decide, formatLine, recordRound, roundCap } from '../../../lib/loop-budget.mjs';
+import { ledgerDirOf } from '../../gate/scripts/repair-round.mjs';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { isFileOnDisk } from './run-session-claude.mjs';
 import { gitOut } from './run-worktree.mjs';
@@ -15,7 +17,19 @@ export function recordAttempt(ctx, n, check, line) {
 }
 
 export function attemptsLeft(ctx) {
-  return Math.max(0, ctx.provider.attemptCap - ctx.failedAttempts);
+  return Math.max(0, roundCap('attempt') - ctx.failedAttempts);
+}
+
+export function settleAttempt(ctx, { wallMs }) {
+  const dir = ledgerDirOf(ctx.root, ctx.planPath);
+  const open = ctx.plan.tasks.length - ctx.run.landings.size;
+  const costUsd = ctx.spent - (ctx.ledgeredUsd ?? 0);
+  ctx.ledgeredUsd = ctx.spent;
+  const openAfter = Math.max(1, open);
+  recordRound(dir, { kind: 'attempt', openBefore: ctx.openAfterRound, openAfter, wallMs, costUsd });
+  ctx.openAfterRound = openAfter;
+  const decision = decide(dir, 'attempt');
+  return { stop: decision.verdict === 'STOP', line: formatLine('attempt', decision), reason: decision.reason };
 }
 
 export function proofNotRun(ctx, n) {

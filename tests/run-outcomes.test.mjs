@@ -3,16 +3,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { RUN_OUTCOMES, outcome, outcomeLine, parkQuestion, repairBound } from '../lib/run-outcomes.mjs';
+import { RUN_OUTCOMES, outcome, outcomeLine, parkQuestion } from '../lib/run-outcomes.mjs';
 
 const ACTIONS = ['continue', 'repair', 'amend', 'park', 'stop'];
-
-function homeWith(json) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'outcomes-'));
-  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), json);
-  return home;
-}
 
 test('every row has its own kind, one known action and a single Then: line', () => {
   for (const [kind, row] of Object.entries(RUN_OUTCOMES)) {
@@ -36,13 +29,9 @@ test('a gate fail repairs, an unplanned path amends, a question parks and only t
   assert.equal(outcome('repair bound').action, 'stop');
 });
 
-test('the repair bound defaults to 2 and a run.json default overrides it', () => {
-  const empty = homeWith('{}');
-  assert.equal(repairBound(empty), 2);
-  assert.equal(repairBound(homeWith('{"defaults":{"repairBound":3}}')), 3);
-  assert.equal(repairBound(homeWith('{"defaults":{"repairBound":0}}')), 2);
-  assert.match(outcomeLine('proof failed', empty), /at most 2 times/);
-  assert.match(outcomeLine('proof failed', homeWith('{"defaults":{"repairBound":3}}')), /at most 3 times/);
+test('the repair line reads its cap from the fix kind', () => {
+  assert.match(outcomeLine('proof failed'), /at most 2 times/);
+  assert.match(outcomeLine('findings'), /at most 2 times/);
 });
 
 test('parkQuestion writes one question file under .exo/questions', () => {

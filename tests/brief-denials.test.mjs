@@ -44,3 +44,10 @@ test('a brief reading a missing file is refused with the files-exist limit', () 
   const dir = tempDir('brief-denials-');
   assert.match(refusal('Reads: new.test.mjs\nResult: .exo/r.md', dir), /name only files that exist now/);
 });
+
+test('mergedFields joins every denial into one refusal', async () => {
+  const { mergedFields } = await import('../lib/brief-denials.mjs');
+  const deny = (text) => ({ permissionDecision: 'deny', permissionDecisionReason: text });
+  assert.equal(mergedFields([null, deny('one'), deny('two')]).permissionDecisionReason, 'one\n\ntwo');
+  assert.equal(mergedFields([null, null]), null);
+});

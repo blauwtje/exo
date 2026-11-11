@@ -31,7 +31,7 @@ Build one plan task and report it.
 - Read `agent-cases.md` first for `Deferred:` or `Run:` steps, a missing `Proof:` or `Return: one line`, a down service or a failed `--check`.
 - Pick test-first by `test-design.md` `## Risky or routine`.
 - Run only the brief's `Proof:`, `Run:` or `--check`, in the background, logged to `.exo/logs/<name>.log`, and wait as `harnesses/coordination-contract.json` says for a worker. Read the summary and failing lines only; no `Monitor` or `sleep`.
-- A red `Proof:`: read `fix-class.md`, rerun at most once per edit. A timeout or hang is a finding: rerun nothing.
+- A red `Proof:`: read `fix-class.md`, rerun once per edit (kind `proof`). A timeout or hang is a finding: rerun nothing.
 
 ## Stop
 

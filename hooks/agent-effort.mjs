@@ -2,7 +2,7 @@
 
 import process from 'node:process';
 import { inSidecall, readHookText } from '#hook-input';
-import { briefedInput, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
+import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
@@ -15,17 +15,12 @@ import { recordResearchDispatch, researchFields } from '../lib/research-route.mj
 import { sizeDenial } from '../lib/size-denial.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
-import { defaulted, liftedEffort, resolvedKind, unknownKind } from '../lib/kind-resolution.mjs';
+import { defaulted, liftedEffort, resolvedKind } from '../lib/kind-resolution.mjs';
 import { inlineSingleWorker } from '../lib/inline-single-worker.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
 
 function budgetSetting() {
   return settingOrDefault('budget').value;
-}
-
-function unknownKindFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
-  if (tool !== 'Agent' || !input || !unknownKind(input, budget)) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('unknown-kind') };
 }
 
 function filled(input, budget, level) {
@@ -117,10 +112,22 @@ function recordDispatch(hookInput) {
 export function agentHook(hookInput, budget, enabled) {
   const rewrite = readsRewrite(hookInput);
   const output = agentEffort(hookInput, budget, rewrite);
-  const fields = roleFields(hookInput) ?? researchFields(hookInput) ?? mismatchFields(hookInput, budget) ?? unknownKindFields(hookInput, budget) ?? isolationFields(hookInput) ?? resultToolsFields(hookInput) ?? workerSizeFields(hookInput, rewrite) ?? sliceFields(hookInput) ?? contextFields(contextDecision(hookInput));
+  const fields = refusalRound(hookInput, mergedFields([
+    roleFields(hookInput),
+    researchFields(hookInput),
+    mismatchFields(hookInput, budget),
+    isolationFields(hookInput),
+    resultToolsFields(hookInput),
+    workerSizeFields(hookInput, rewrite),
+    sliceFields(hookInput),
+    contextFields(contextDecision(hookInput))
+  ]));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
   const receipt = (message, noted) => withReceipt(message, hookInput, noted, ran, enabled);
-  if (fields?.permissionDecision) return rememberRefusal(hookInput, receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields), { guard: 'agent-effort' });
+  if (fields?.permissionDecision) {
+    const sent = receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
+    return fields.permissionDecisionReason.includes('LOOP ') ? sent : rememberRefusal(hookInput, sent, { guard: 'agent-effort' });
+  }
   recordDispatch(hookInput);
   const context = [dispatchRules(hookInput), fields?.additionalContext].filter(Boolean).join('\n\n');
   if (!context) return receipt(output, null);

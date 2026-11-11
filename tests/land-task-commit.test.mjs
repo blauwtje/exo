@@ -82,6 +82,7 @@ test('a same-stem companion of a listed file is not a stray, a prefix-sharing si
     await fs.writeFile(path.join(root, stray), 'x\n');
     assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), (error) => error.message.includes(`changed a path outside Files: \`${stray}\``));
     await fs.rm(path.join(root, stray));
+    await fs.rm(path.join(root, '.exo/refusals'), { recursive: true, force: true });
   }
   await fs.writeFile(path.join(root, 'src/app.test.js'), 'export const spec = 1;\n');
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);

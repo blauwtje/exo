@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { budgetSpent, settleRound } from '../skills/gate/scripts/repair-round.mjs';
-import { GATE_TIMEOUT_MS } from '../skills/gate/scripts/gate-constants.mjs';
+import { ledgerDirOf, settleRound } from '../skills/gate/scripts/repair-round.mjs';
+import { readLedger } from '../lib/loop-budget.mjs';
 import { fixDiffRanges, insideFixDiff } from '../skills/gate/scripts/fix-diff-scope.mjs';
 import { git, tempDir } from './harness.mjs';
 
@@ -21,27 +21,29 @@ function repoWithFix() {
   return { root, pre, sha: git(root, 'rev-parse', '--short', 'HEAD').trim() };
 }
 
-const rows = (root) => fs.readFileSync(path.join(root, '.exo', 'review-rounds.tsv'), 'utf8').trim().split('\n');
+const planPath = 'docs/plans/p.md';
+
+const rows = (root) => readLedger(ledgerDirOf(root, planPath));
 
 test('a fix whose checks pass is kept and logged as one row', () => {
   const { root, sha } = repoWithFix();
-  assert.deepEqual(settleRound({ root, round: 1, commits: [sha], checksGreen: true, fixBefore: 2, fixAfter: 0 }), []);
-  assert.equal(rows(root)[1], `1\t${sha}\tpass\t2\t0\tkept`);
+  assert.deepEqual(settleRound({ root, planPath, round: 1, commits: [sha], checksGreen: true, fixBefore: 2, fixAfter: 0 }), []);
+  assert.deepEqual(rows(root).map((row) => [row.kind, row.open_before, row.open_after, row.verdict]), [['fix', '2', '0', 'stop']]);
   assert.equal(fs.readFileSync(path.join(root, 'a.txt'), 'utf8'), 'one\nTWO\nthree\n');
 });
 
 test('a fix whose checks fail is reverted, logged discarded and keeps the fix count', () => {
   const { root, sha } = repoWithFix();
-  const lines = settleRound({ root, round: 1, commits: [sha], checksGreen: false, fixBefore: 2, fixAfter: 0 });
+  const lines = settleRound({ root, planPath, round: 1, commits: [sha], checksGreen: false, fixBefore: 2, fixAfter: 0 });
   assert.match(lines[0], /^DISCARDED round 1/);
-  assert.equal(rows(root)[1], `1\t${sha}\tfail\t2\t2\tdiscarded`);
+  assert.deepEqual(rows(root).map((row) => [row.open_before, row.open_after, row.verdict]), [['2', '2', 'discard']]);
   assert.equal(fs.readFileSync(path.join(root, 'a.txt'), 'utf8'), 'one\ntwo\nthree\n');
 });
 
 test('a new fix finding inside the fix diff discards a green fix', () => {
   const { root, sha } = repoWithFix();
-  settleRound({ root, round: 2, commits: [sha], checksGreen: true, newFixInDiff: 1, fixBefore: 1, fixAfter: 0 });
-  assert.match(rows(root)[1], /discarded$/);
+  settleRound({ root, planPath, round: 2, commits: [sha], checksGreen: true, newFixInDiff: 1, fixBefore: 1, fixAfter: 0 });
+  assert.equal(rows(root)[0].verdict, 'discard');
 });
 
 test('fix diff ranges hold the changed lines and findings outside them are not inside', () => {
@@ -52,8 +54,17 @@ test('fix diff ranges hold the changed lines and findings outside them are not i
   assert.equal(insideFixDiff(ranges, { path: 'b.txt', range: '2' }), false);
 });
 
-test('the gate budget is spent at the shared constant', () => {
-  assert.equal(budgetSpent(1000, 1000 + GATE_TIMEOUT_MS - 1), false);
-  assert.equal(budgetSpent(1000, 1000 + GATE_TIMEOUT_MS), true);
-  assert.equal(budgetSpent(undefined, 1e15), false);
+test('a fix that touches the judge is discarded even when green', () => {
+  const { root, sha } = repoWithFix();
+  const lines = settleRound({ root, planPath, round: 1, commits: [sha], checksGreen: true, judgeTouched: true, fixBefore: 2, fixAfter: 0 });
+  assert.match(lines[0], /^DISCARDED round 1/);
+  assert.equal(rows(root)[0].verdict, 'discard');
+});
+
+test('a green fix whose fix count did not drop is reverted as no progress', () => {
+  const { root, sha } = repoWithFix();
+  const lines = settleRound({ root, planPath, round: 1, commits: [sha], checksGreen: true, fixBefore: 2, fixAfter: 2 });
+  assert.match(lines[0], /^DISCARDED round 1/);
+  assert.deepEqual(rows(root).map((row) => [row.open_before, row.open_after, row.verdict]), [['2', '2', 'discard']]);
+  assert.equal(fs.readFileSync(path.join(root, 'a.txt'), 'utf8'), 'one\ntwo\nthree\n');
 });

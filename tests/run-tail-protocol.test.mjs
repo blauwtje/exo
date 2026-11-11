@@ -170,3 +170,12 @@ test('a crash of the gate re-run after a failing fix stops the run with a reason
   const { result } = await repairedRun({ repair: REPAIR_OK, replies });
   assert.match(result.stop?.line ?? '', /^gate failed: exit 1/);
 });
+
+test('a review-fix round that leaves as many open findings as it began with stops without a retry', async () => {
+  const root = checkout();
+  const verifyDispatch = `${REVIEW_LINE}${branchDispatch(root)} findings=${root}/.exo/review-branch.md\n`;
+  const played = scenario({ root, verifyDispatch, merged: FINDINGS, repair: 'FAIL fixer-no-guard (x)\n' });
+  const result = await played.run({ attemptsLeft: 3 });
+  assert.equal(played.prompts.filter((entry) => entry.kind === 'fix').length, 1);
+  assert.match(result.stop?.line ?? '', /fixer-no-guard/);
+});

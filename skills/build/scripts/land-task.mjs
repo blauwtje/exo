@@ -64,7 +64,7 @@ function landAmended({ planText, number, root, reportText, reportPath, planPath,
   foldCheckpoints(root);
   const task = taskOf(plan, number);
   refuseAlreadyLanded(plan, task, root, planId);
-  const block = refuseBeforeProof(plan, task, { root, planPath, pin, planId });
+  const block = refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath });
   const pendingEvidence = proofEvidenceOf(plan, root, planId);
   const { proofs, pending, redLine } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
   const frame = frameOf(plan.frame);
