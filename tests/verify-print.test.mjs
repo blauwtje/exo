@@ -4,6 +4,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -149,7 +150,7 @@ test('merge-reviews.mjs appends one ledger row per finding per round, the round 
   assert.deepEqual(first[2], { round: 1, rule: 'question', path: 'src/c.js', range: '5', weight: 'question', state: 'reported', head });
   assert.deepEqual(first[5], { round: 1, rule: 'swallowed failure', path: 'src/f.js', range: '8-9', weight: 'defect', state: 'open', head });
   git(root, 'commit', '-q', '--allow-empty', '-m', 'fix: repair round 1');
-  run('merge-reviews.mjs', ['--root', root, '--report', report]);
+  run('merge-reviews.mjs', ['--root', root, '--report', report, '--fix-base', head]);
   const all = await rows();
   assert.equal(all.length, 12);
   assert.deepEqual(new Set(all.slice(6).map((row) => row.round)), new Set([2]));
@@ -159,8 +160,14 @@ const FIX_LINE = (rule, file) => [`${file}:8-9; defect; ${rule}; catch drops err
 
 async function reviewRound(root, text) {
   const report = path.join(root, 'review-branch.md');
+  const source = path.join(root, 'src', 'f.js');
+  const repaired = existsSync(path.join(root, '.exo', 'review-ledger.jsonl'));
   await fs.writeFile(report, text);
-  const printed = run('merge-reviews.mjs', ['--root', root, '--report', report]);
+  const fixBase = repaired ? ['--fix-base', git(root, 'rev-parse', 'HEAD~1').trim()] : [];
+  const printed = run('merge-reviews.mjs', ['--root', root, '--report', report, ...fixBase]);
+  await fs.mkdir(path.dirname(source), { recursive: true });
+  await fs.appendFile(source, 'x\n'.repeat(20));
+  git(root, 'add', '-A', 'src');
   git(root, 'commit', '-q', '--allow-empty', '-m', 'fix: repair round');
   return printed.trim().split('\n').filter((line) => !line.startsWith('COVERAGE'));
 }

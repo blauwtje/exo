@@ -70,15 +70,28 @@ function runCommitBlock(block, root, number) {
   throw new LandingError(`the Commit: block of Task ${number} failed:\n${output}`);
 }
 
-function refuseOutsideTaskFiles(task, { root, planPath, base }) {
+const SECURITY_BOUNDARY = /^(\.github\/|\.claude\/|hooks\/|\.env(\.|$)|.*\.(pem|key)$)/;
+
+function outsideTaskFiles(task, { root, planPath, base }) {
   const entries = task.files.map((file) => file.path);
   const exempt = [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
   const worktrees = nestedWorktrees(root);
   const top = realpathSync(root);
-  const outside = gitText(root, ['diff', '--name-only', base, 'HEAD']).split('\n')
+  return gitText(root, ['diff', '--name-only', base, 'HEAD']).split('\n')
     .filter((changed) => changed !== '' && !changed.startsWith(`${SCRATCH_FOLDER}/`) && !exempt.includes(changed) && !worktrees.has(path.join(top, changed)))
     .filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed));
-  if (outside.length > 0) throw new OutsideFilesError(`the commit of Task ${task.number} holds a path outside Files: ${outside.map((file) => `\`${file}\``).join(', ')}`);
+}
+
+function quoted(paths) {
+  return paths.map((file) => `\`${file}\``).join(', ');
+}
+
+function checkOutsideTaskFiles(task, options) {
+  const outside = outsideTaskFiles(task, options);
+  const guarded = outside.filter((changed) => SECURITY_BOUNDARY.test(changed));
+  if (guarded.length > 0) throw new OutsideFilesError(`the commit of Task ${task.number} holds a security-boundary path outside Files: ${quoted(guarded)}; move it to its own task`);
+  if (outside.length === 0) return;
+  process.stderr.write(`Warning: the commit of Task ${task.number} holds a path outside Files: ${quoted(outside)}\n`);
 }
 
 export function committedSha(task, { root, planId, planPath, base }) {
@@ -89,6 +102,6 @@ export function committedSha(task, { root, planId, planPath, base }) {
   const expectedSubject = task.commitSubject ?? task.title;
   if (subject !== expectedSubject) throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   if (gitText(root, ['rev-parse', 'HEAD~1']) !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${base.slice(0, 7)}, the commit Task ${task.number} started from`);
-  refuseOutsideTaskFiles(task, { root, planPath, base });
+  checkOutsideTaskFiles(task, { root, planPath, base });
   return sha;
 }

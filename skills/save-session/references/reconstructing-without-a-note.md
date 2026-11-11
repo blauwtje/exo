@@ -11,4 +11,4 @@ Rebuild working context from what git and the forge hold; do not ask the user to
 ## Judgment
 
 - Fact read from git or the forge outranks one inferred from branch name or commit subjects alone.
-- When the result feeds a new note, a gap the trail does not cover is an open question, not a fact under `## Current state`.
+- When the result feeds a new note, a gap the trail does not cover is an open question, not a fact under `## Progress`.

@@ -162,8 +162,9 @@ function runVerifyScript(pluginDir, script, args) {
   return spawnSync(process.execPath, [file, ...args], { encoding: 'utf8' }).stdout;
 }
 
-function mergeStep(pluginDir, { repository, findings }) {
-  const printed = runVerifyScript(pluginDir, 'merge-reviews.mjs', ['--root', repository, '--report', findings]);
+function mergeStep(pluginDir, { repository, findings }, round) {
+  const fixBase = round > 1 ? ['--fix-base', git(repository, ['rev-parse', 'HEAD~1']).trim()] : [];
+  const printed = runVerifyScript(pluginDir, 'merge-reviews.mjs', ['--root', repository, '--report', findings, ...fixBase]);
   if (printed === null) return { clean: null, stopReason: null, report: findings };
   const recurring = printed.match(RECURRING_LINE);
   const verdict = printed.match(VERDICT_LINE);
@@ -202,7 +203,7 @@ async function playRounds(context, model) {
     await model(reviewPrompt(line), paths.repository);
     if (!review.findings || !fs.existsSync(review.findings)) return { ...result, failure: 'no findings file' };
     snapshotRound(review, round);
-    const merged = mergeStep(pluginDir, review);
+    const merged = mergeStep(pluginDir, review, round);
     if (merged.stopReason !== null) return { ...result, stopReason: merged.stopReason };
     const step = await repairRound(context, model, { round, merged });
     if (round === 1 && !step.clean) result.grade = gradeRepair(plants, step.findingsText, step.diff);

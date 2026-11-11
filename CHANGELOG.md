@@ -19,6 +19,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `plan-check.mjs` flags a `Proof:` command that cannot start from the checkout root and a path a `Data:` line names that `Files:` omits.
 - A build runs the environment setup an end-to-end `Proof:` needs once, before the first block, and ends a stalled setup command at its deadline with its whole process group.
 - `npm run check` fails a poll loop or poll instruction outside the loop budget, and a worktree path built outside `lib/checkout.mjs`.
+- Every loop in the round budget ends with a named state, `rounds-spent`, `no-progress` or `needs-input`, each with a row in the outcome table.
+- A change under three files with a known proof skips the questions, the plan and the gate, and goes to one worktree worker.
+- `benchmarks/lean-guards-compare.mjs` compares session-start bytes, hook modules and hook latency with a stored baseline and exits 1 when one is worse.
 
 ### Changed
 
@@ -40,6 +43,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Build dispatches `exo:build-task` from the lead at depth 1, and only the lead waits on agents.
 - Every remaining wait runs as a wait kind of the loop budget.
 - Every worktree sits under `.claude/worktrees/<name>` of the main checkout.
+- A guard is a refusal or a warning by kind: a wide `find`, a failed script save, a lead `sleep`, a repeated suite run, a missing `Reads:` line and a missing or too small `Workers:` count now warn and let the call run.
+- A land warns on a path outside the task's `Files:` and refuses only a security-boundary path.
+- Byte caps for results carry a margin, `capMargin` (default 0.1, set in run.json `defaults`), so a result a few bytes over still passes.
+- A stop-hook block and a stall-guard refusal print one reason line and one `Do instead:` line.
+- A handoff holds four sections, Goal, Progress, Evidence and Next step.
 
 ### Fixed
 
@@ -48,6 +56,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - An interactive build runner gets the `wait-report.mjs` command as its `Wait:` line, so a lost notification no longer leaves it idle.
 - A background `until ... sleep` or `while ... sleep` polling loop is refused with the `Wait:` route named, also inside `bash -c` and `eval` text; a loop wrapped by `timeout` and a counted retry pass.
 - The DeepSeek peak notice test pins the clock through `EXO_NOW_MS`, so it passes at every hour.
+- A gate review merge with no repair stays in the same round, so its findings are no longer marked `recurring`.
+- `worktreePath` needs the run directory, so a test builds its worktrees in its own temp directory and `npm run check` fails a call without one.
+- `remove-worktree.mjs` refuses a worktree whose changes or commits the run branch does not hold, and names three options.
 
 ### Removed
 

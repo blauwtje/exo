@@ -14,9 +14,13 @@ function denied(output) {
   return output?.hookSpecificOutput?.permissionDecision === 'deny';
 }
 
-function leadDispatch(dispatch, cwd, prompt) {
+function leadOutput(dispatch, cwd, prompt) {
   const input = { tool_name: 'Agent', cwd, tool_input: { subagent_type: 'exo:orchestrator', description: 'research wave', prompt } };
-  return denied(dispatch(input, 'on', () => false));
+  return dispatch(input, 'on', () => false);
+}
+
+function leadDispatch(dispatch, cwd, prompt) {
+  return denied(leadOutput(dispatch, cwd, prompt));
 }
 
 function workerDispatch(dispatch, caller) {
@@ -43,7 +47,8 @@ function routingProblems(dispatch, cap) {
   try {
     if (cap && leadDispatch(dispatch, cwd, `Workers: ${cap}\nReads: none`)) found.push(`the step 5 \`Workers: ${cap}\` is refused for a lead dispatch`);
     if (!leadDispatch(dispatch, cwd, `Workers: ${limit + 1}\nReads: none`)) found.push(`a lead dispatch of \`exo:orchestrator\` with \`Workers: ${limit + 1}\` is allowed`);
-    if (!leadDispatch(dispatch, cwd, 'Reads: none')) found.push('a lead dispatch of `exo:orchestrator` with no `Workers:` line is allowed');
+    const unsized = leadOutput(dispatch, cwd, 'Reads: none');
+    if (denied(unsized) || !unsized?.hookSpecificOutput?.additionalContext?.includes('Workers')) found.push('a lead dispatch of `exo:orchestrator` with no `Workers:` line does not run with the Workers warning');
     const slice = sliceOverrun(dispatch, cwd);
     if (slice.slice(0, SLICE).some(Boolean)) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` is refused a research-worker within its slice`);
     if (!slice[SLICE]) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` made ${SLICE + 1} research-worker dispatches`);

@@ -15,6 +15,16 @@ function lineFindings(repository, file) {
   return findings;
 }
 
+const PATH_CALL = /\bworktreePath\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g;
+
+function directoryFindings(repository, file) {
+  if (!file.endsWith('.mjs')) return [];
+  const relative = repository.relative(file);
+  return [...repository.text(file).matchAll(PATH_CALL)]
+    .filter((call) => !call[1].includes(','))
+    .map((call) => `${relative}: worktreePath(${call[1]}) names no directory`);
+}
+
 function scannedFiles(repository) {
   const scripts = repository.trackedFiles().filter((file) => {
     const relative = repository.relative(file);
@@ -27,6 +37,7 @@ function scannedFiles(repository) {
 export function checkWorktreePaths(report, repository) {
   const findings = [];
   for (const file of scannedFiles(repository)) {
+    findings.push(...directoryFindings(repository, file));
     if (repository.relative(file) === OWNER) continue;
     findings.push(...lineFindings(repository, file));
   }

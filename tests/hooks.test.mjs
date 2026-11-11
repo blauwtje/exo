@@ -480,7 +480,9 @@ test('the sleep step denies a background sleep polling loop for the lead too', a
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny', command);
     assert.match(denied.hookSpecificOutput.permissionDecisionReason, /No sleep polling/);
   }
-  assert.equal(run('sleep 2'), null);
+  const warned = run('sleep 2').hookSpecificOutput;
+  assert.equal(warned.permissionDecision, undefined);
+  assert.match(warned.additionalContext, /No sleep polling/);
 });
 
 async function cappedRun(command, extra = {}) {
@@ -507,10 +509,12 @@ const CAP_FORMS = {
 };
 
 test('a capped agent Bash output is cut at the result cap and keeps the exit code', async () => {
+  const { resultCapBytes } = await import('../lib/context-limits.mjs');
+  const cap = resultCapBytes();
   for (const [form, command] of Object.entries(CAP_FORMS)) {
     const { stdout } = await cappedRun(command);
-    assert.match(stdout, /^[\s\S]{4096}\[output cut at 4096 bytes; full log: .*exo-bash-cap-agent-.*\.log\]\n$/, form);
-    assert.ok(Buffer.byteLength(stdout) < 4096 + 400, form);
+    assert.match(stdout, new RegExp(`^[\\s\\S]{${cap}}\\[output cut at ${cap} bytes; full log: .*exo-bash-cap-agent-.*\\.log\\]\\n$`), form);
+    assert.ok(Buffer.byteLength(stdout) < cap + 400, form);
   }
   assert.equal((await cappedRun('echo hi; exit 7')).status, 7);
   assert.equal((await cappedRun('exit 3')).status, 3);
@@ -555,7 +559,8 @@ test('the context-limit entry starts node only for Read, Skill, a run session or
 test('a capped agent Bash keeps a timeout and skips background, trailing backslash, other modes and other types', async () => {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
   const timed = await cappedRun(`timeout 5 ${BIG_OUTPUT}`);
-  assert.match(timed.stdout, /output cut at 4096/);
+  const { resultCapBytes } = await import('../lib/context-limits.mjs');
+  assert.match(timed.stdout, new RegExp(`output cut at ${resultCapBytes()}`));
   const skipped = [
     { tool_input: { command: 'echo hi', run_in_background: true } },
     { tool_input: { command: 'echo hi \\' } },

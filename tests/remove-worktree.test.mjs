@@ -107,7 +107,7 @@ test('--kept git refusal after a move restores the existing folder and leaves no
 
   assert.throws(() => removeWorktree({ worktree: second, run: root, kept: true }), (error) => {
     assert.ok(error instanceof RemoveWorktreeError);
-    assert.match(error.message, /git refused to remove .*contains modified or untracked files/);
+    assert.match(error.message, /holds commits or tracked changes not in/);
     return true;
   });
   const keptRoot = path.join(root, '.exo', 'kept');
@@ -133,7 +133,7 @@ test('--kept turns git refusal into a RemoveWorktreeError, drops its copy and al
 
   assert.throws(() => removeWorktree({ worktree, run: root, kept: true }), (error) => {
     assert.ok(error instanceof RemoveWorktreeError);
-    assert.match(error.message, /git refused to remove .*contains modified or untracked files/);
+    assert.match(error.message, /holds commits or tracked changes not in/);
     return true;
   });
   assert.equal(fs.existsSync(path.join(root, '.exo', 'kept', path.basename(worktree))), false);
@@ -389,4 +389,36 @@ test('--help prints the usage and exits 0', async () => {
   assert.match(help.stdout, /^usage: remove-worktree\.mjs --worktree <dir> --run <dir>/);
   assert.match(help.stdout, /--kept/);
   assert.match(help.stdout, /--patch/);
+});
+
+function branchWorktree(root) {
+  const worktree = `${root}-task-2`;
+  git(root, 'worktree', 'add', '-b', 'task-2', worktree, 'HEAD');
+  return worktree;
+}
+
+test('refuses a worktree with a commit not in the run, and removes one whose commit was squash-merged', async () => {
+  const root = await gitRepository({ 'src/app.js': 'a\n' });
+  excludeScratch(root);
+  const worktree = branchWorktree(root);
+  fs.writeFileSync(path.join(worktree, 'src', 'app.js'), 'b\n');
+  git(worktree, 'commit', '-am', 'change');
+
+  assert.throws(() => removeWorktree({ worktree, run: root }), /not in/);
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+
+  git(root, 'merge', '--squash', 'task-2');
+  git(root, 'commit', '-m', 'squash');
+  removeWorktree({ worktree, run: root });
+  assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
+});
+
+test('refuses a worktree with a tracked change', async () => {
+  const root = await gitRepository({ 'src/app.js': 'a\n' });
+  excludeScratch(root);
+  const worktree = branchWorktree(root);
+  fs.writeFileSync(path.join(worktree, 'src', 'app.js'), 'dirty\n');
+
+  assert.throws(() => removeWorktree({ worktree, run: root }), RemoveWorktreeError);
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
 });

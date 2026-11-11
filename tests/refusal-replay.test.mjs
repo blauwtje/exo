@@ -45,8 +45,8 @@ function decisionOf(run) {
   const output = run.stdout.trim() ? JSON.parse(run.stdout) : {};
   const fields = output.hookSpecificOutput ?? {};
   if (fields.permissionDecision === 'deny') return { kind: 'deny', text: fields.permissionDecisionReason ?? '' };
-  if (fields.updatedInput) return { kind: 'rewrite', text: '' };
-  return { kind: 'allow', text: '' };
+  if (fields.updatedInput) return { kind: 'rewrite', text: fields.additionalContext ?? '' };
+  return { kind: 'allow', text: fields.additionalContext ?? '' };
 }
 
 const cleanEnv = () => Object.fromEntries(Object.entries(process.env).filter(([name]) => !INHERITED.includes(name)));

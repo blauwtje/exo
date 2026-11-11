@@ -357,3 +357,20 @@ test('a --fix commit body whose Evidence line is not a result path or none (<rea
   await editApp(root);
   assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Evidence: benchmarks/results/x.md, findings (a)' }), /commit text refused: Evidence:/);
 });
+
+test('a file the block stages outside Files warns and lands, a security-boundary one is refused', async () => {
+  for (const [generated, landed] of [['src/gen.js', true], ['hooks/gen.js', false]]) {
+    const { root, planPath } = await landingCheckout();
+    const planText = PLAN.replace('git add .', `mkdir -p $(dirname ${generated}) && echo x > ${generated} && git add .`);
+    await fs.writeFile(planPath, planText);
+    git(root, 'commit', '-qam', 'plan');
+    await editApp(root);
+    const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+    if (landed) {
+      assert.match(result.stdout, /^Committed: [0-9a-f]+ Task 1$/m);
+      assert.match(result.stderr, /Warning: the commit of Task 1 holds a path outside Files: `src\/gen\.js`/);
+      continue;
+    }
+    assert.match(result.stderr, /security-boundary path outside Files: `hooks\/gen\.js`/);
+  }
+});

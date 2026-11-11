@@ -22,8 +22,8 @@ function openFindingRepo() {
   return root;
 }
 
-function merge(root) {
-  return execFileSync(process.execPath, [MERGE, '--root', root, '--base', 'main', '--report', path.join(root, 'code-rules.md')], { encoding: 'utf8' });
+function merge(root, ...extra) {
+  return execFileSync(process.execPath, [MERGE, '--root', root, '--base', 'main', '--report', path.join(root, 'code-rules.md'), ...extra], { encoding: 'utf8' });
 }
 
 const rounds = (root) => [...new Set(ledgerRows(root).map((row) => row.round))];
@@ -39,8 +39,9 @@ test('a second merge at the same HEAD stays the same round and is not recurring'
 test('a merge after a fix commit is a new round and an unfixed finding recurs', () => {
   const root = openFindingRepo();
   merge(root);
-  git(root, 'commit', '-q', '--allow-empty', '-m', 'fix: attempt');
-  const next = merge(root);
+  fs.writeFileSync(path.join(root, 'a.js'), 'y\n');
+  git(root, 'commit', '-q', '-am', 'fix: attempt');
+  const next = merge(root, '--fix-base', git(root, 'rev-parse', 'HEAD~1').trim());
   assert.match(next, /BLOCKED recurring/);
   assert.ok(next.includes(outcome('recurring finding').line), next);
   assert.deepEqual(rounds(root), [1, 2]);

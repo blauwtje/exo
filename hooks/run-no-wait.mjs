@@ -64,7 +64,7 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
     fs.writeFileSync(file, JSON.stringify({ ...counts, [session]: count + 1 }));
   }
   const record = `record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to ${path.join(dir, 'decisions.md')}`;
-  const why = denyReason(count + 1 >= blockLimit() ? 'run-no-wait-final' : 'run-no-wait', record);
+  const why = denyReason(count + 1 >= blockLimit() ? 'run-no-wait-final' : 'run-no-wait', record).replace('. Do instead: ', '.\nDo instead: ');
   if (asking) return rememberRefusal(input, { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } }, { guard: 'run-no-wait' });
   return atLimit ? null : rememberRefusal(input, { decision: 'block', reason: why }, { guard: 'run-no-wait' });
 }

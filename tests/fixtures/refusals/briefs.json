@@ -1,5 +1,5 @@
 [
   { "rule": "brief-lacks-fetches", "hook": "agent-effort.mjs", "tool": "Agent", "input": { "subagent_type": "exo:research-worker", "description": "research", "prompt": "Sources: web\nReads: none\nResult: .exo/answer.md" }, "transcript": "main", "expect": "deny", "says": "add the line `Fetches: <n>` with a whole number first" },
-  { "rule": "brief-lacks-reads", "hook": "agent-effort.mjs", "tool": "Agent", "input": { "subagent_type": "general-purpose", "description": "work", "prompt": "Say hello.\nResult: .exo/r.md" }, "transcript": "main", "expect": "deny", "says": "add `Reads: none`" },
+  { "rule": "brief-lacks-reads", "hook": "agent-effort.mjs", "tool": "Agent", "input": { "subagent_type": "general-purpose", "description": "work", "prompt": "Say hello.\nResult: .exo/r.md" }, "transcript": "main", "expect": "rewrite", "says": "add `Reads: none`" },
   { "rule": "brief-unresolved", "hook": "agent-effort.mjs", "tool": "Agent", "input": { "subagent_type": "general-purpose", "description": "work", "prompt": "Reads: nothere/new.test.mjs\nResult: .exo/r.md" }, "transcript": "main", "expect": "deny", "says": "name only files that exist now" }
 ]

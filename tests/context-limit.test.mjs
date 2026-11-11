@@ -257,8 +257,10 @@ test('the slice, result cap and script size defaults read the catalog and honor 
   const limits = await import('../lib/context-limits.mjs');
   const home = tempDir('exo-sizes-');
   assert.equal(limits.orchestratorWorkers(home), 4);
-  assert.equal(limits.resultCapBytes(home), 4096);
-  assert.equal(limits.orchestratorResultCapBytes(home), (limits.agentContextTarget(home) / 2) * limits.dispatchBytesPerToken(home) / (limits.orchestratorWorkers(home) + limits.orchestratorPredispatchReads(home)));
+  assert.equal(limits.capMargin(home), 0.1);
+  assert.equal(limits.resultCapBytes(home), Math.round(4096 * 1.1));
+  const share = (limits.agentContextTarget(home) / 2) * limits.dispatchBytesPerToken(home) / (limits.orchestratorWorkers(home) + limits.orchestratorPredispatchReads(home));
+  assert.equal(limits.orchestratorResultCapBytes(home), Math.round(Math.round(share) * 1.1));
   assert.equal(limits.scriptBytes(home), 4096);
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { orchestratorWorkers: 3, resultCapBytes: 1, orchestratorResultCapBytes: 2, scriptBytes: 5 } }));
@@ -289,9 +291,9 @@ test('readCapDecision runs a capped Read with the largest limit that fits instea
   const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:research-worker', permission_mode: 'bypassPermissions', tool_input: { file_path: file } };
   const corrected = readCapDecision(capped);
   assert.equal(corrected.deny, undefined);
-  assert.deepEqual(corrected.updatedInput, { file_path: file, offset: 1, limit: 40 });
-  assert.match(corrected.additionalContext, /lines 1-40 .*offset 41/);
-  assert.deepEqual(readCapDecision({ ...capped, tool_input: { file_path: file, offset: 41 } }).updatedInput, { file_path: file, offset: 41, limit: 40 });
+  assert.deepEqual(corrected.updatedInput, { file_path: file, offset: 1, limit: 45 });
+  assert.match(corrected.additionalContext, /lines 1-45 .*offset 46/);
+  assert.deepEqual(readCapDecision({ ...capped, tool_input: { file_path: file, offset: 41 } }).updatedInput, { file_path: file, offset: 41, limit: 45 });
   assert.equal(readCapDecision({ ...capped, tool_input: { file_path: file, limit: 40 } }), null);
   assert.equal(readCapDecision({ ...capped, tool_input: { file_path: file, pages: '1' } }), null);
   assert.equal(readCapDecision({ ...capped, agent_type: 'exo:build-task' }), null);

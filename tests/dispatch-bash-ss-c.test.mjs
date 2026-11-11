@@ -11,13 +11,13 @@ async function decide(command, cwd) {
   return (await dispatchBash(input, undefined, () => false))?.hookSpecificOutput;
 }
 
-test('a whole suite on a tree that already passed it is refused', async () => {
+test('a whole suite on a tree that already passed it warns and lets the call run', async () => {
   const { root } = await landingCheckout();
   await editApp(root);
   recordPass(root, 'npm test', 5, undefined, NODE_PASS);
   const output = await decide('npm test', root);
-  assert.equal(output?.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /already passed/);
+  assert.equal(output?.permissionDecision, undefined);
+  assert.match(output?.additionalContext ?? '', /already passed/);
 });
 
 test('a whole suite on a changed tree runs', async () => {

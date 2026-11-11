@@ -63,6 +63,9 @@ test('squash-check and remove-worktree pass a clean branch', async () => {
 
   assert.equal(squashCheck(root, 'feat/b').status, 0);
   assert.equal(squashCheck(root, 'feat/a').status, 0);
+  assert.throws(() => removeWorktree({ worktree: worktrees.b, run: root, kept: true }), /not in/);
+  assert.equal(fs.existsSync(worktrees.b), true);
+  squashInto(root, 'feat/b');
   removeWorktree({ worktree: worktrees.b, run: root, kept: true });
   assert.equal(fs.existsSync(worktrees.b), false);
 });
@@ -136,4 +139,20 @@ test('landing.md runs squash-check before each squash', () => {
 
   assert.ok(check >= 0);
   assert.ok(check < landing.indexOf('`git merge --squash <branch>` and commit'));
+});
+
+test('remove-worktree refuses a landed branch with a tracked change and removes it once clean', async () => {
+  const { root, worktrees } = await repositoryWithBranches({
+    a: { 'src/app.js': 'export const greeting = "hi from a";\n' },
+  });
+  squashInto(root, 'feat/a');
+  fs.appendFileSync(path.join(root, 'src', 'app.js'), 'export const later = 1;\n');
+  git(root, 'commit', '-q', '-am', 'later');
+  fs.writeFileSync(path.join(worktrees.a, 'src', 'app.js'), 'export const greeting = "unsaved";\n');
+
+  assert.throws(() => removeWorktree({ worktree: worktrees.a, run: root, kept: true }), /not in/);
+  assert.equal(fs.existsSync(worktrees.a), true);
+  git(worktrees.a, 'checkout', '--', 'src/app.js');
+  removeWorktree({ worktree: worktrees.a, run: root, kept: true });
+  assert.equal(fs.existsSync(worktrees.a), false);
 });

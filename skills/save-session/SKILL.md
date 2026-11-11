@@ -12,10 +12,10 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 
 - Take no irreversible action to pause: no push, no pull request.
 - Pause between atomic steps, not inside one: complete or undo the step in progress and begin no new work.
-- On the run branch of a plan (`exo:build` loop), commit nothing. Write partial work of the task in progress to a hint file such as `.exo/carry/task<n>-partial.patch`, and list it under `## Current state`.
+- On the run branch of a plan (`exo:build` loop), commit nothing. Write partial work of the task in progress to a hint file such as `.exo/carry/task<n>-partial.patch`, and list it under `## Progress`.
 - On a non-default branch that is not a plan run branch, commit every uncommitted edit first as one `chore: wip <topic>` commit.
 - If the tree is broken, say so in that commit's body.
-- On the default branch, leave edits uncommitted and list them under `## Current state`.
+- On the default branch, leave edits uncommitted and list them under `## Progress`.
 - Preserve verbatim any artefact the user explicitly asked to survive the clear, such as a question list or checklist.
 
 ## Pointers, not content
@@ -33,19 +33,19 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 
 ## What it holds
 
-Fill `assets/handoff-template.md`. Its first line answers in one sentence where the work stands, and `## Resume` is always present while the other sections are left out when the session has nothing true for them. The file is read by the user, so write plain words in the user's language per `../../lib/references/user-read-format.md`.
+Fill `assets/handoff-template.md`: a work record with `## Goal`, `## Progress`, `## Evidence` and `## Next step` in that order, then `## Resume`, and no chat history. Its first line answers in one sentence where the work stands. The file is read by the user, so write plain words in the user's language per `../../lib/references/user-read-format.md`.
 
 The last line of the file is `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue. The sections carry every step, so this one line suffices.
 
 In those sections:
 
 - Record the user's decision as theirs, in their wording, not as shared.
-- When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Decisions` unchanged.
-- Put a claim no command proved under `## Open questions`, not `## Proven`.
-- Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` for the task in progress and carry its lines into `## Open questions` as approaches the next session must not retry.
-- Read `## Current state` from `git status --short`, not memory.
+- When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Progress` unchanged.
+- Put a claim no command proved under the unproven list in `## Evidence`, not the proven one.
+- Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` for the task in progress and carry its lines into `## Evidence` as approaches the next session must not retry.
+- Read `## Progress` from `git status --short`, not memory.
 - List which changes are committed, then every uncommitted path in full, because a next session that cannot see the difference treats working-tree edits as saved and discards them.
-- For a session running a plan, open `## Current state` with the plan path and the number of the task in progress.
+- For a session running a plan, open `## Progress` with the plan path and the number of the task in progress.
 
 ## Resume
 
@@ -64,5 +64,5 @@ Diff the work this handoff records as done against the work it still lists as ne
 ## Judgment
 
 - File read this session outranks memory of it: confirm path, branch and commit with a command before writing them down.
-- A short true handoff outranks a full one that guesses. Put what the session does not know under `## Open questions`.
+- A short true handoff outranks a full one that guesses. Put what the session does not know under the unproven list in `## Evidence`.
 - Turn ends naming the written path, saying to run `/clear`, and quoting the `Resume:` prompt to paste after it. Nothing else written; no work continues after.

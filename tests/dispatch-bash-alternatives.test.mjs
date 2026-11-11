@@ -38,9 +38,11 @@ test('a branch deny tells the subagent to return BLOCKED naming the branch', asy
   }
 });
 
-test('a wide find deny names find . and git ls-files', async () => {
+test('a wide find warns with find . and git ls-files and lets the call run', async () => {
   for (const command of ['find / -name x', 'find ~ -name x', 'find $HOME -name x']) {
-    const reason = await reasonOf(command, { agent_id: undefined });
+    const verdict = await decide(command, { agent_id: undefined });
+    assert.equal(verdict.permissionDecision, undefined, command);
+    const reason = verdict.additionalContext;
     assert.match(reason, /`find \.`/, command);
     assert.match(reason, /`git ls-files`/, command);
   }

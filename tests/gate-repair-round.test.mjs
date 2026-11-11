@@ -68,3 +68,15 @@ test('a green fix whose fix count did not drop is reverted as no progress', () =
   assert.deepEqual(rows(root).map((row) => [row.open_before, row.open_after, row.verdict]), [['2', '2', 'discard']]);
   assert.equal(fs.readFileSync(path.join(root, 'a.txt'), 'utf8'), 'one\ntwo\nthree\n');
 });
+
+test('a merge without a repair stays in the same round', async () => {
+  const { mergeRound, appendLedger } = await import('../skills/gate/scripts/merge-reviews.mjs');
+  const { root } = repoWithFix();
+  assert.deepEqual(mergeRound(root, false), { round: 1, priorRound: 0 });
+  appendLedger(root, [], 1);
+  fs.writeFileSync(path.join(root, 'b.txt'), 'x');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'later');
+  assert.deepEqual(mergeRound(root, false), { round: 1, priorRound: 0 });
+  assert.deepEqual(mergeRound(root, true), { round: 2, priorRound: 1 });
+});

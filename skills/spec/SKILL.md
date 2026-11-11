@@ -13,8 +13,8 @@ Shaping turns a request into a brief that settles what done means, so the build 
 1. **Gate.**
    - First invoke every installed non-`exo:` skill matching the request.
    - Spec ends on a brief unless the verdict is `stop`; with no open decision the brief still gets written.
-   - Open with the verdict.
-   - An open decision is one the user would notice that neither request nor code settles.
+   - Open with the verdict. An open decision is one the user would notice that neither request nor code settles.
+   - Fast route: under three files with a known proof, skip questions, plan and gate; one worktree worker per build `## No spec`.
    - Read `references/verdict.md` for the no-question case.
    - Ask only per `../../lib/references/question.md` `## When to ask`.
    - When the user asked for options, follow `references/architecture-sketch.md` and write no file.

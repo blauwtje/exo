@@ -189,13 +189,7 @@ test('worktreePath roots a slot beside its run worktree under the main checkout'
   const root = await gitRepository(SEED);
   const run = path.join(root, '.claude', 'worktrees', 'run');
   git(root, 'worktree', 'add', '-q', '-b', 'run', run);
-  const previous = process.cwd();
-  process.chdir(run);
-  try {
-    assert.equal(worktreePath('run-task-1'), path.join(await fs.realpath(root), '.claude', 'worktrees', 'run-task-1'));
-  } finally {
-    process.chdir(previous);
-  }
+  assert.equal(worktreePath('run-task-1', run), path.join(await fs.realpath(root), '.claude', 'worktrees', 'run-task-1'));
 });
 
 test('createWorktree excludes .claude/worktrees once when no rule covers it', async () => {
@@ -214,4 +208,8 @@ test('isWorktreePath matches both worktree folders and nothing else', () => {
   assert.equal(isWorktreePath('.worktrees/run'), true);
   assert.equal(isWorktreePath('.claude/commands/a.md'), false);
   assert.equal(isWorktreePath('src/worktrees/a.js'), false);
+});
+
+test('worktreePath without a directory fails at once', () => {
+  assert.throws(() => worktreePath('run-task-1'));
 });

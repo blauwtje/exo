@@ -59,7 +59,7 @@ export function verdictFor(extras, limit = extraLimitMs()) {
 
 export function spawnMilliseconds(script, input) {
   const started = performance.now();
-  spawnSync(process.execPath, [script], { input: JSON.stringify(input), encoding: 'utf8', cwd: ROOT });
+  spawnSync(process.execPath, [script], { input: JSON.stringify(input), encoding: 'utf8', cwd: ROOT, timeout: 60000 });
   return performance.now() - started;
 }
 

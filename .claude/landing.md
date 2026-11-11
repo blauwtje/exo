@@ -13,6 +13,7 @@ This file covers the start-of-run cleanup and how a finished branch lands on `ma
 - Before each `git merge --squash <branch>`, run `node skills/build/scripts/squash-check.mjs --branch <branch>` and stop on a non-zero exit, keeping the branch.
 - Then run `git merge --squash <branch>` and commit one Conventional Commit that copies every branch `Evidence:` and `Proof:` line into the body, with no push or pull request.
 - Remove each worktree with `node skills/build/scripts/remove-worktree.mjs --kept --worktree .claude/worktrees/<name> --run .`, one unpiped command per worktree with its exit visible and no `--force`, because `git worktree remove` deletes the excluded `.exo/`.
+- `remove-worktree.mjs` refuses a worktree with commits whose content is not on the run's HEAD or with tracked changes, so a squash-merged or cherry-picked slot passes.
 - When `remove-worktree.mjs` refuses, keep the worktree and branch and give the user 2-3 options.
 - Delete a branch with `git branch -D <name>`, in its own command.
 - Session push, at session end or when the user asks: run `git reset --soft origin/main` and commit one Conventional Commit named after the main change, with the batch's highest type (`feat` over `fix` over the rest).

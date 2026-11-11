@@ -4,12 +4,15 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
-import { agentContextTarget, dispatchBytesPerToken } from '../lib/context-limits.mjs';
+import { agentContextTarget, dispatchBytesPerToken, resultCapBytes } from '../lib/context-limits.mjs';
 import { tempDir } from './harness.mjs';
 
 const testHome = tempDir('exo-intake-home-');
 process.env.HOME = testHome;
 process.env.USERPROFILE = testHome;
+process.env.TMPDIR = testHome;
+process.env.TEMP = testHome;
+process.env.TMP = testHome;
 
 const TARGET = agentContextTarget();
 const BYTES = dispatchBytesPerToken();
@@ -31,7 +34,8 @@ function growTo(tokens) {
   fs.writeFileSync(agentTranscript, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
 }
 
-const agent = { session_id: 's', transcript_path, agent_id: `a-intake-${process.pid}`, agent_type: 'exo:build-task', agent_transcript_path: agentTranscript, permission_mode: 'bypassPermissions' };
+const SESSION = `s-intake-${process.pid}`;
+const agent = { session_id: SESSION, transcript_path, agent_id: `a-intake-${process.pid}`, agent_type: 'exo:build-task', agent_transcript_path: agentTranscript, permission_mode: 'bypassPermissions' };
 const read = (tool_input, caller = agent) => contextHook({ ...caller, tool_name: 'Read', tool_input }, () => false)?.hookSpecificOutput;
 const bash = async (command, caller = agent) => (await dispatchBash({ ...caller, tool_name: 'Bash', tool_use_id: 'u1', tool_input: { command } }, undefined, () => false))?.hookSpecificOutput;
 
@@ -94,9 +98,9 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
 
   growTo(TARGET + 1000);
   assert.match(read({ file_path: testLog }).permissionDecisionReason, /Status: handover/);
-  assert.match((await bash(`cat '${testLog}'`)).updatedInput.command, /head -c 4096 /);
+  assert.match((await bash(`cat '${testLog}'`)).updatedInput.command, new RegExp(`head -c ${resultCapBytes()} `));
 
-  const lead = { session_id: 's', transcript_path, permission_mode: 'bypassPermissions' };
+  const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
   assert.equal(read({ file_path: testLog }, lead), undefined, 'the lead reads as before');
   assert.equal((await bash(`cat '${testLog}'`, lead))?.updatedInput, undefined, 'the lead runs Bash as before');
 });
@@ -125,7 +129,7 @@ test('replay: a growing agent has its Grep and ToolSearch cut to the room left, 
   assert.match(glob.permissionDecisionReason, /files_with_matches/);
 
   growTo(59_000);
-  const floor = catalog.resultCapBytes;
+  const floor = resultCapBytes();
   assert.equal(search('ToolSearch', { query: 'slack', max_results: 5 })?.updatedInput?.max_results, Math.floor(floor / catalog.toolSchemaBytes), 'ToolSearch at 59k');
   assert.equal(search('ToolSearch', { query: 'select:Monitor,WebFetch' }), undefined, 'a select ToolSearch names its tools');
   assert.equal(search('Grep', { pattern: 'line', offset: 30 })?.updatedInput?.head_limit, Math.floor(floor / catalog.searchLineBytes));
@@ -141,7 +145,7 @@ test('replay: a growing agent has its Grep and ToolSearch cut to the room left, 
   assert.match(cappedGrep.additionalContext, /exo result cap/);
   assert.equal(denied(search('Glob', { pattern: '**/*' }, capped)), false, 'a capped agent Glob with room left');
 
-  const lead = { session_id: 's', transcript_path, permission_mode: 'bypassPermissions' };
+  const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
   assert.equal(search('Grep', { pattern: 'line' }, lead), undefined, 'the lead greps as before');
   assert.equal(search('Glob', { pattern: '**/*' }, lead), undefined, 'the lead globs as before');
 });

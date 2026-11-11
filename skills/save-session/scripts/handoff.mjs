@@ -6,6 +6,8 @@ import os from 'node:os';
 import { currentHost } from '#host';
 import { isMain } from '#script-flags';
 
+export const HANDOFF_SECTIONS = ['Goal', 'Progress', 'Evidence', 'Next step'];
+
 function configDirectory() {
   return currentHost() === 'codex'
     ? process.env.CODEX_HOME || path.join(os.homedir(), '.codex')

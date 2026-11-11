@@ -53,7 +53,7 @@ test('a hook that lets a lead dispatch an orchestrator past the worker limit fai
   const result = outcome({ dispatch: allowAll });
   assert.equal(result.ok, false);
   assert.match(result.detail, /lead dispatch of `exo:orchestrator` with `Workers: 5` is allowed/);
-  assert.match(result.detail, /with no `Workers:` line is allowed/);
+  assert.match(result.detail, /with no `Workers:` line does not run with the Workers warning/);
 });
 
 test('a hook that lets an orchestrator dispatch past its sized slice fails', () => {

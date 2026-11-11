@@ -18,7 +18,7 @@ const runsExoScript = (command) => [`node "${PLUGIN_ROOT}${path.sep}`, `node ${P
 const refusal = (command) => {
   const file = UNSANDBOXED.find((script) => command.includes(path.basename(script)));
   if (file === undefined) return null;
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: denyReason('run-stall-guard', `${path.basename(file)} starts \`node "${file}" \`, one call per task`) } };
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: denyReason('run-stall-guard', `${path.basename(file)} starts \`node "${file}" \`, one call per task`).replace('. Do instead: ', '.\nDo instead: ') } };
 };
 
 export function stallGuardInput(input) {

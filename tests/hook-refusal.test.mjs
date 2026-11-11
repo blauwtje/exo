@@ -3,7 +3,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
-import { FIND_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
+import { SLEEP_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { stallGuardInput } from '../hooks/run-stall-guard.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
@@ -28,10 +28,10 @@ function assertEscalates([guard, reminder, stop], route) {
   assert.match(stop, /record the gap/);
 }
 
-test('dispatch-bash escalates three identical wide finds', async () => {
-  const input = { session_id: session('bash'), tool_name: 'Bash', tool_input: { command: 'find / -name x' } };
-  const reasons = await threeReasons(() => dispatchBash(input, [FIND_STEP], off));
-  assertEscalates(reasons, 'run `find .`');
+test('dispatch-bash escalates three identical agent shell waits', async () => {
+  const input = { session_id: session('bash'), agent_id: 'worker', tool_name: 'Bash', tool_input: { command: 'sleep 30' } };
+  const reasons = await threeReasons(() => dispatchBash(input, [SLEEP_STEP], off));
+  assertEscalates(reasons, 'Do instead: ');
 });
 
 test('dispatch-edit escalates three identical too-deep writes', async () => {

@@ -136,8 +136,9 @@ function headSha(root) {
   return head.status === 0 ? head.stdout.trim() : null;
 }
 
-export function mergeRound(root) {
+export function mergeRound(root, repaired = true) {
   const latest = latestRound(root);
+  if (!repaired) return { round: Math.max(1, latest), priorRound: Math.max(0, latest - 1) };
   const sha = headSha(root);
   const repeat = sha !== null && ledgerRows(root).some((row) => row.round === latest && row.head === sha);
   return repeat ? { round: latest, priorRound: latest - 1 } : { round: latest + 1, priorRound: latest };
@@ -321,7 +322,7 @@ function main(argv) {
     name: path.basename(file, '.md'),
     text: fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'BLOCKED: report missing\n'
   }));
-  const { round, priorRound } = mergeRound(flags.root);
+  const { round, priorRound } = mergeRound(flags.root, Boolean(flags['fix-base']));
   const changed = changedFiles(flags.root, flags.base ?? DEFAULT_BASE);
   const { verdict, counts, demoted, uncited, hidden, minScore, groups, quoteDemoted, sweepDemoted, settledDemoted, scopeDemoted, unread, unreadFix, shown, findings, recurring, coverage, text } = mergeReviews(reports, openInLastRound(flags.root, priorRound), changed, flags.root, minScoreOf(flags['min-score']), flags['fix-base'] ? fixDiffRanges(flags.root, flags['fix-base']) : null);
   const target = path.join(flags.root, '.exo', 'branch-review.md');

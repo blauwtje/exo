@@ -35,7 +35,7 @@ A request for `refactor`, `improve` or `design-ui` opens that mode's reference a
 
 ## No spec
 
-Decided change, no plan file → `references/no-spec.md`. After a compaction, rebuild what landed from the working-tree diff, not memory.
+Decided change, no plan file, or spec's fast route → `references/no-spec.md`. After a compaction, rebuild what landed from the working-tree diff, not memory.
 
 - Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed, or orientation missed a required file.
 - When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.

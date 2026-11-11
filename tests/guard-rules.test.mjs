@@ -39,6 +39,12 @@ const edit = () => dispatchEdit({
   tool_input: { file_path: path.join(cwd, 'a.mjs'), content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' }
 })?.hookSpecificOutput?.permissionDecisionReason ?? '';
 
+const bashWarning = async (command, extra = {}) => {
+  const output = await dispatchBash({ tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
+  assert.equal(output?.hookSpecificOutput?.permissionDecision, undefined);
+  return output?.hookSpecificOutput?.additionalContext ?? '';
+};
+
 const agent = { agent_id: 'a' };
 
 const spent = tempDir('guard-rules-context-');
@@ -119,6 +125,7 @@ const refusalCap = () => {
 };
 const isolated = () => dispatch({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' });
 const resultFile = () => agentHook({ tool_name: 'Agent', cwd: sized, tool_input: { subagent_type: 'reader', prompt: 'Reads: none\nResult: .exo/x.md' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+const dispatchOutput = (prompt) => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', prompt } }, 'on', () => false)?.hookSpecificOutput ?? {};
 const orchestrator = (prompt, pair) => dispatch({ subagent_type: 'exo:orchestrator', prompt, ...pair });
 const sized = tempDir('guard-rules-size-');
 fs.writeFileSync(path.join(sized, 'big.txt'), 'x'.repeat(70000));
@@ -180,10 +187,10 @@ const cases = {
   'role-no-dispatch': () => agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:research-worker', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '',
   stash: () => bash('git stash', agent),
   'shared-state': () => bash('git worktree remove x', agent),
-  'wide-find': () => bash('find / -name x'),
+  'wide-find': () => bashWarning('find / -name x'),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
   'commit-evidence': () => bash('git commit -m "fix: x\n\nEvidence: ran the tests"'),
-  'script-size': () => bash(LONG, { ...agent, cwd: '/nonexistent/deep' }),
+  'script-size': () => bashWarning(LONG, { ...agent, cwd: '/nonexistent/deep' }),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
   watch: () => bash(['gh pr checks 1 --wat', 'ch'].join(''), { ...agent, agent_type: 'exo:task-runner' }),
   'suite-passed': () => denyReason('suite-passed', 'This tree already passed a suite'),
@@ -204,7 +211,7 @@ const cases = {
   'result-tools': () => resultFile(),
   'kind-mismatch': () => orchestrator('Workers: 1', { model: 'opus', effort: 'max' }),
   'kind-mismatch-label': () => orchestrator('Workers: 1', labelledPair()),
-  'workers-line': () => orchestrator('do it', {}),
+  'workers-line': () => orchestrator('Workers: 5', {}),
   'research-unnamed': () => mainResearch('general-purpose', `guard-rules-unnamed-${process.pid}`),
   'research-fanout': () => fannedOut(),
   'brief-lacks-fetches': () => refuse('Sources: web\nResult: .exo/r.md', 'exo:research-worker'),
@@ -286,6 +293,12 @@ for (const row of GUARD_RULES) {
     if (row.without) assert.ok(!readDispatchRules([...row.without]).includes(row.brief));
   });
 }
+
+test('a missing Workers line or Reads line warns and lets the dispatch run', () => {
+  assert.match(dispatchOutput('do it').additionalContext, /Workers/);
+  assert.notEqual(dispatchOutput('do it').permissionDecision, 'deny');
+  for (const id of ['brief-lacks-reads', 'wide-find', 'script-size']) assert.equal(rules.guardKind(id), 'warn');
+});
 
 test('only the final run-no-wait refusal offers the BLOCKED line', () => {
   assert.doesNotMatch(noWait(1), /BLOCKED/);
@@ -428,8 +441,21 @@ test('the repeat refusal row carries the first refusal text', () => {
   assert.match(reason, /refused once already.*follow the first refusal: first text/);
 });
 
+test('a warn-kind guard returns its reason as context and a hard guard denies', async () => {
+  const { refuse, warn, deny } = await import('../lib/lazy-steps.mjs');
+  assert.equal(rules.guardKind('suite-passed'), 'warn');
+  assert.equal(rules.guardKind('stash'), 'hard');
+  assert.deepEqual(refuse('suite-passed', 'x'), warn('x'));
+  assert.equal(refuse('suite-passed', 'x').hookSpecificOutput.permissionDecision, undefined);
+  assert.deepEqual(refuse('stash', 'x'), deny('x'));
+});
+
 test('the deny reason check fails a deny text returned from a template literal', () => {
   const [verdict] = denyReasonVerdicts({ 'lib/template.mjs': 'export const f = (key) => ({ deny: `ran ${key} twice` });\n' });
   assert.equal(verdict.status, 'FAIL');
   assert.match(verdict.detail, /^lib\/template\.mjs:1 /);
+});
+
+test('the script-size warning does not say the command was refused', () => {
+  assert.doesNotMatch(denyReason('script-size'), /refused/);
 });

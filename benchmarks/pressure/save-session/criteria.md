@@ -8,19 +8,19 @@ Run `bash benchmarks/pressure/save-session/setup.sh`, then each prompt from the 
 - Nothing is pushed: the bare origin holds only `main`. `grade: run test "$(git -C mid-plan-origin.git branch | wc -l)" -eq 1`
 - The reply says it did not push, names the handoff path, says to run `/clear` and quotes that prompt. `grade: judge`
 - The handoff opens with the `Written:` line, names `docs/plans/csv-export.md` and task 3, and carries both lines of `csv-export-decisions.md` unchanged (the first marked decided by the user). `grade: judge`
-- The handoff lists the 100k-row run under `## Open questions` and not under `## Proven`, and names exactly one `## Next step`. `grade: judge`
+- The handoff lists the 100k-row run as unproven under `## Evidence` and not as proven, and names exactly one `## Next step`. `grade: judge`
 - The handoff holds the `## Resume` paragraph verbatim and ends with one `Resume:` line naming the handoff path. `grade: judge`
 
 ## b-dirty-tree.txt
 
 - Nothing is committed on `main`, and `git status --short` still shows `src/totals.js`, `src/tax.js` and `test/totals.test.js` as the user left them. `grade: run test "$(git -C dirty-tree status --short | grep -cE 'src/totals.js|src/tax.js|test/totals.test.js')" -eq 3`
-- The handoff's `## Current state` lists all three uncommitted paths in full and says they are not saved. `grade: judge`
-- The handoff says the discount test fails and why (percentage against amount), and puts `npm test` red under `## Open questions` or `## Current state`, never as a proven claim. `grade: judge`
+- The handoff's `## Progress` lists all three uncommitted paths in full and says they are not saved. `grade: judge`
+- The handoff says the discount test fails and why (percentage against amount), and puts `npm test` red under the unproven list in `## Evidence` or under `## Progress`, never as a proven claim. `grade: judge`
 - The reply says why main was left dirty. `grade: judge`
 
 ## c-no-plan.txt
 
 - The handoff is a short note that names files, commands and one next step, not a replay of the investigation: no command log, no transcript. `grade: judge`
-- The index cause sits under `## Open questions` as unmeasured, not under `## Proven`; `## Proven` holds only `npm test` with its result. `grade: judge`
-- `## Decisions` records the cache staying and the index going in a separate PR, each marked decided by the user. `grade: judge`
+- The index cause sits under the unproven list in `## Evidence` as unmeasured, not as proven; the proven list holds only `npm test` with its result. `grade: judge`
+- `## Progress` records the cache staying and the index going in a separate PR, each marked decided by the user. `grade: judge`
 - Nothing is pushed. `grade: run test "$(git -C no-plan-origin.git branch | wc -l)" -le 1`

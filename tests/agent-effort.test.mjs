@@ -278,7 +278,7 @@ test('worker size: an orchestrator dispatch needs Reads and Result and stays in 
   assert.equal(run('exo:orchestrator', 'Reads: none\nResult: .exo/r.md'), 'allow');
   assert.equal(run('exo:orchestrator', 'Reads: none'), 'deny');
   assert.equal(run('exo:orchestrator', 'Reads: none\nResult: out.txt'), 'deny');
-  assert.equal(run(undefined, 'do it'), 'deny');
+  assert.equal(run(undefined, 'do it'), 'allow');
   assert.equal(run(undefined, 'Reads: none'), 'allow');
   assert.equal(run(undefined, 'Reads: big.txt'), 'deny');
 });
@@ -297,8 +297,8 @@ test('worker size: an exo:orchestrator dispatch from a non-orchestrator needs Wo
   assert.notEqual(run(undefined, 'Workers: 4')?.permissionDecision, 'deny');
   assert.equal(run(undefined, 'Workers: 5').permissionDecision, 'deny');
   assert.match(run(undefined, 'Workers: 5').permissionDecisionReason, /1 to 4.*slices/);
-  assert.equal(run(undefined, 'do it').permissionDecision, 'deny');
-  assert.equal(run(undefined, 'Workers: 0').permissionDecision, 'deny');
+  assert.match(run(undefined, 'do it').additionalContext, /1 to 4.*slices/);
+  assert.match(run(undefined, 'Workers: 0').additionalContext, /1 to 4.*slices/);
   assert.notEqual(run('exo:orchestrator', 'do it')?.permissionDecision, 'deny');
 });
 
@@ -452,7 +452,6 @@ test('one dispatch breaking three rules is refused once naming all three and the
   const reasons = refusals('loop', input);
   for (const reason of [reasons[0], reasons[2]]) {
     assert.match(reason, /isolation/i);
-    assert.match(reason, /Workers/);
     assert.match(reason, /passed haiku/);
   }
   assert.doesNotMatch(reasons[0], /LOOP refusal STOP/);

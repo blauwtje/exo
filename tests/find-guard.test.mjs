@@ -14,18 +14,18 @@ async function decide(command) {
   return output?.hookSpecificOutput;
 }
 
-test('find on /, ~, $HOME or .. is denied with a reason that names find . and git ls-files', async () => {
+test('find on /, ~, $HOME or .. is warned with context that names find . and git ls-files', async () => {
   for (const command of ['find / -name plan.md', 'find ~ -name plan.md', 'find ~/ -name x', 'find $HOME -name x', 'find "$HOME" -name x', 'find .. -name plan.md', 'find ../.. -name x', 'cd x && find / -name y', 'ls | xargs echo; find -L / -name y']) {
     const verdict = await decide(command);
-    assert.equal(verdict?.permissionDecision, 'deny', command);
-    assert.match(verdict.permissionDecisionReason, /`find \.`.*`git ls-files`/, command);
-    assert.match(verdict.permissionDecisionReason, /BLOCKED/, command);
+    assert.equal(verdict?.permissionDecision, undefined, command);
+    assert.match(verdict.additionalContext, /`find \.`.*`git ls-files`/, command);
+    assert.match(verdict.additionalContext, /BLOCKED/, command);
   }
 });
 
-test('find with -maxdepth 1, or inside the checkout, passes', async () => {
+test('find with -maxdepth 1, or inside the checkout, passes without a warning', async () => {
   for (const command of ['find / -maxdepth 1 -name tmp', 'find .. -maxdepth 1 -name x', 'find . -name plan.md', 'find /tmp/x -name y', 'find skills -name SKILL.md', 'echo find /']) {
-    assert.notEqual((await decide(command))?.permissionDecision, 'deny', command);
+    assert.equal((await decide(command))?.additionalContext, undefined, command);
   }
 });
 
@@ -34,7 +34,7 @@ test('a Bash call with an = word is rewritten, and a denied one is not', async (
   const rewritten = await dispatchBash(input, undefined, () => false);
   assert.match(rewritten.hookSpecificOutput.updatedInput.command, /setopt noequals; echo =ls/);
   assert.equal(rewritten.hookSpecificOutput.permissionDecision, undefined);
-  const denied = await dispatchBash({ ...input, tool_input: { command: 'find / -name x; echo =ls' } }, undefined, () => false);
+  const denied = await dispatchBash({ ...input, tool_input: { command: 'until [ -f done ]; do sleep 2; done; echo =ls' } }, undefined, () => false);
   assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(denied.hookSpecificOutput.updatedInput, undefined);
 });

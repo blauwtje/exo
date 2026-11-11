@@ -17,7 +17,7 @@ import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
-import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, deny } from '../lib/lazy-steps.mjs';
+import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, deny, warn } from '../lib/lazy-steps.mjs';
 
 const contextStep = (name, decide) => ({
   name,
@@ -31,11 +31,11 @@ export const CONTEXT_STEP = contextStep('context-limit', contextDecision);
 
 const WIDE_FIND = /(?:^|[;&|(]|&&|\|\|)\s*find\s+(?:-[HLP]\s+)*["']?(?:\/|~\/?|\$HOME|\$\{HOME\}|(?:\.\.\/?)+)["']?(?=\s|$)/;
 
-export const FIND_STEP = {
+const FIND_STEP = {
   name: 'wide-find',
   run(hookInput) {
     const command = hookInput.tool_input?.command;
-    return typeof command === 'string' && !/-maxdepth\s+1(?!\d)/.test(command) && WIDE_FIND.test(command) ? deny(denyReason('wide-find')) : null;
+    return typeof command === 'string' && !/-maxdepth\s+1(?!\d)/.test(command) && WIDE_FIND.test(command) ? warn(denyReason('wide-find')) : null;
   }
 };
 
@@ -56,7 +56,7 @@ export const SCRIPT_SIZE_STEP = {
     if (Buffer.byteLength(command) <= limit) return null;
     if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
     const saved = saveLongCommand(command, hookInput.cwd ?? process.cwd());
-    if (!saved) return deny(denyReason('script-size', `this command is over ${limit} bytes`));
+    if (!saved) return warn(denyReason('script-size', `this command is over ${limit} bytes`));
     const updatedInput = { ...hookInput.tool_input, command: `bash ${saved}` };
     return { hookSpecificOutput: { updatedInput, additionalContext: `the command was over ${limit} bytes, so it runs from its saved copy ${saved}` } };
   }
@@ -74,7 +74,7 @@ export const SLEEP_STEP = {
     if (typeof command !== 'string') return null;
     const scanned = stripDataHeredocs(command);
     if (pollsUnbounded(scanned)) return deny(denyReason('sleep'));
-    if (!hookInput.agent_id) return null;
+    if (!hookInput.agent_id) return SLEEP_COMMAND.test(scanned) ? warn(denyReason('sleep')) : null;
     if (SLEEP_COMMAND.test(scanned)) return deny(denyReason('sleep'));
     return WATCH_COMMAND.test(scanned) ? deny(denyReason('watch')) : null;
   }

@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { gitLine } from '#git';
@@ -27,7 +27,6 @@ function exoFiles(root) {
 }
 
 function untrackedFiles(worktree, folder) {
-  // why: -z keeps a name with a space or quote raw, and --ignored=traditional with --untracked-files=all lists each file inside an ignored directory.
   const args = ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=traditional', '--untracked-files=all', '--', folder];
   return execFileSync('git', args, { encoding: 'utf8' })
     .split('\0')
@@ -63,8 +62,21 @@ function moveAside(folder) {
 function refuseUnsquashable(worktree, run) {
   const branch = gitLine(worktree, ['symbolic-ref', '-q', '--short', 'HEAD']);
   const block = squashBlock(run, branch ?? 'HEAD');
-  if (block === null || block.landed) return;
+  if (block === null || block.landed) return block !== null;
   throw new RemoveWorktreeError(`${[block.problem, block.fix].filter(Boolean).join('; ')}; removed nothing, the worktree and branch are kept`);
+}
+
+function isMerged(worktree, run) {
+  const head = gitLine(worktree, ['rev-parse', 'HEAD']);
+  const merge = spawnSync('git', ['-C', run, 'merge-tree', '--write-tree', 'HEAD', head], { encoding: 'utf8' });
+  if (merge.status !== 0) return false;
+  return merge.stdout.split('\n')[0] === gitLine(run, ['rev-parse', 'HEAD^{tree}']);
+}
+
+function refuseUnmerged(worktree, run, landed) {
+  const tracked = gitLine(worktree, ['status', '--porcelain', '--untracked-files=no']);
+  if (!tracked && (landed || isMerged(worktree, run))) return;
+  throw new RemoveWorktreeError(`'${worktree}' holds commits or tracked changes not in '${run}'; land them, pass --patch with a saved patch, or keep the worktree; removed nothing`);
 }
 
 export function removeWorktree({ worktree, run, report, patch, kept = false }) {
@@ -74,7 +86,8 @@ export function removeWorktree({ worktree, run, report, patch, kept = false }) {
   if (patch !== undefined && !(fs.existsSync(patch) && fs.statSync(patch).size > 0)) {
     throw new RemoveWorktreeError(`patch '${patch}' is absent or empty, so the worktree's work is not saved; removed nothing`);
   }
-  refuseUnsquashable(worktree, run);
+  const landed = refuseUnsquashable(worktree, run);
+  if (patch === undefined) refuseUnmerged(worktree, run, landed);
   if (patch === undefined) refuseStray(worktree);
   const keptRoot = path.join(run, '.exo', 'kept', path.basename(worktree));
   const keptTarget = `${keptRoot}/`;
