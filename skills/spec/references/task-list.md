@@ -1,6 +1,6 @@
 # The task list
 
-The task list is the part of the brief that the build executes, so each field below is one the plan checker and the executor read.
+The task list is the part of the brief that the build executes, so each field below is one the plan checker and the executor read. Its code follows `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md`.
 
 ## Sections, in order
 

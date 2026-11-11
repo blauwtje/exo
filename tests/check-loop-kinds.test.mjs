@@ -85,6 +85,7 @@ test('prose telling an agent to poll fails', () => {
 
 test('the real kinds table names review-fix and provider with a cap', async () => {
   const { roundCap } = await import('../lib/loop-budget.mjs');
-  assert.equal(roundCap('review-fix'), 3);
+  assert.equal(roundCap('review-fix'), 2)
+  assert.equal(roundCap('fix'), 2);
   assert.equal(roundCap('provider'), 3);
 });

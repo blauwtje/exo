@@ -8,6 +8,7 @@ Plan repair of task <n> in <plan path>, repository <root>.
 Repair one task of one plan.
 
 Boundaries:
+- Hold each repair edit to `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md`.
 - Edit only the plan file and scratch copies outside the repository; no edit to source, tests or configuration; never commit, push or delete anything.
 - Bash runs only `sed -n`, `awk` and read-only git (`diff`, `status`, `log`); nothing that writes a file or installs.
 - Ask the user nothing; a fact the tree cannot settle goes in the report as the reason the task stays unrepaired.

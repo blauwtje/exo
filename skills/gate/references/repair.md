@@ -2,7 +2,7 @@
 
 This page runs the recheck after `exo:build-task` with `exo-kind: fix-review` returns, so each repair is verified before the branch moves on. It is step 3 of `gate`. The fixer commits each repair, and `gate.mjs --repair` checks and rechecks them and prints the `LOOP` line this page follows. Before every fixer dispatch, record `git -C <checkout> rev-parse HEAD` as `<pre-fix-sha>`.
 
-With `concern=1` or more and `fix=0`, still dispatch: the fixer, not the gate session, writes each concern's failing test, marking it unproven only if it passes. Give each cluster's fixer only its own findings.
+Dispatch only for a `defect` finding; a `concern` stays in the report as `report`.
 
 0. When the fixer returns with no `fixed=` line (turn cap), append `reported: turn cap` to each finding line it left unmarked, so the probe run does not fail on it. Do not resume or dispatch it again, and continue with step 1.
 1. In one turn, start both of these so they run side by side. Later steps read all of their output.

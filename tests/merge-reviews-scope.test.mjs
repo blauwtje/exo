@@ -88,13 +88,12 @@ test('review input holds a Boundaries block that names the out-of-scope weight',
   assert.match(input, /## Boundaries\n.*out-of-scope.*\nTask 1: Boundary: in a path \| out symlinks \| test t\n/);
 });
 
-test('open fix findings cluster by file into groups of at most five', () => {
-  const at = (file, count) => Array.from({ length: count }, (_, index) => ({ path: file, range: String(index + 1), state: 'open' }));
-  const findings = [...at('a.mjs', 3), ...at('b.mjs', 3), ...at('c.mjs', 7), { path: 'd.mjs', range: '1', state: 'reported' }];
+test('open defect findings form one cluster; concern and reported ones stay out', () => {
+  const at = (file, count, weight) => Array.from({ length: count }, (_, index) => ({ path: file, range: String(index + 1), state: 'open', weight }));
+  const findings = [...at('a.mjs', 3, 'defect'), ...at('c.mjs', 7, 'defect'), ...at('e.mjs', 1, 'concern'), { path: 'd.mjs', range: '1', state: 'reported', weight: 'defect' }];
   const clusters = clusterFindings(findings);
-  assert.deepEqual(clusters.map((cluster) => cluster.length), [5, 3, 5]);
-  assert.deepEqual([...new Set(clusters[0].map((finding) => finding.path))], ['a.mjs', 'c.mjs']);
-  assert.equal(clusters.flat().some((finding) => finding.path === 'd.mjs'), false);
+  assert.deepEqual(clusters.map((cluster) => cluster.length), [10]);
+  assert.equal(clusters.flat().some((finding) => ['d.mjs', 'e.mjs'].includes(finding.path)), false);
 });
 
 test('a later-round fix finding outside the fix diff is demoted to report', () => {

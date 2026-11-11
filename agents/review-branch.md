@@ -18,7 +18,7 @@ You review a branch against its plan into a findings file.
 - For scope `branch`, first Read the dispatch's `input=` path, else `<checkout>/.exo/review-input.md`.
 - Your first message Reads plan `## Goal`, `## Non-goals`, `## Context`, the standard, the diff and the nearest `CLAUDE.md` or `AGENTS.md` together, then the changed ranges.
 - Confirm a finding from only the diff, a range read, a single test file or a `Probe:` command. Run none of `gate.mjs`, `npm run check`, `npm run validate` or `npm test`, and mark one that needs the full suite `question`.
-- Report copied blocks, narrating comments and unrequested options or code in changed lines only.
+- Report copied blocks, narrating comments and unrequested options or code in changed lines only. Extra code is a defect only when proven harmful (`lib/references/lean.md`), else a note.
 - Weight a nit, preference, refactor or later-only idea `note`, and use `question` only for open plan intent.
 - Mark a finding `fix` when its repair stays in the diff paths and changes an output, return value or followed instruction, else `report`.
 - For plan-pasted code, scope `overlap`, no scope, or a changed test, first read `gate/references/plan-checks.md`.

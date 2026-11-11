@@ -44,7 +44,7 @@ Return only the handoff path.
 ## Shared block
 
 ```text
-Before the fix, read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
+Before the fix, read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
 
 Hard boundaries:
 - Edit only paths in scope; fix needs another path → stop, report that path and why.

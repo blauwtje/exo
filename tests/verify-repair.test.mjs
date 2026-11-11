@@ -16,7 +16,7 @@ const VERIFY = fileURLToPath(new URL('../skills/gate/scripts/gate.mjs', import.m
 const FINDINGS = 'src/app.js:1-3; defect; greet returns nothing; fix | fixed\n  Probe: grep -q hello src/app.js\n';
 const env = { ...process.env, EXO_RUN: '', EXO_RUN_DIR: '' };
 
-const GUARDED = 'Sweep: 1 fixed\nGuard: none (one-off)';
+const GUARDED = 'Guard: none (one-off)';
 
 async function repairCheckout(findings = FINDINGS, landGate = null) {
   const { root, planPath } = await landingCheckout();
@@ -96,39 +96,39 @@ test('--repair passes a guarded commit, dispatches the fix-diff review and count
   const dispatch = lines.filter((line) => line.startsWith('DISPATCH Repair: '));
   assert.equal(dispatch.length, 1, lines.join('\n'));
   assert.ok(dispatch[0].includes(` scope=fix-diff ${checkout.preFixSha}..HEAD findings=${path.join(checkout.root, '.exo', 'fix-review.md')}`), dispatch[0]);
-  assert.equal(lines.at(-1), 'LOOP next=done round=1/3');
+  assert.equal(lines.at(-1), 'LOOP next=done round=1/2');
 });
 
 test('--repair accepts a clean tree with no commit when no finding was fixed', async () => {
   const unfixed = 'src/app.js:1-3; defect; greet returns nothing; fix | reported: unproven\n';
   const checkout = await repairCheckout(unfixed);
   const { status, lines } = verifyRepair(checkout, findingsDigest(unfixed));
-  assert.equal(lines.at(-1), 'LOOP next=done round=1/3');
+  assert.equal(lines.at(-1), 'LOOP next=done round=1/2');
   assert.equal(lines[0], 'PASS fixer-committed');
   assert.equal(status, 0);
 });
 
-test('--repair fails fixer-no-guard naming a commit that lacks Sweep: or Guard:', async () => {
+test('--repair fails fixer-no-guard naming a commit that lacks Guard:', async () => {
   const checkout = await repairCheckout();
-  await commitFix(checkout.root, 'Sweep: 1 fixed');
+  await commitFix(checkout.root, 'Proof: x');
   const { status, lines } = verifyRepair(checkout);
   const sha = git(checkout.root, 'rev-parse', '--short', 'HEAD').trim();
   assert.equal(status, 1);
   assert.ok(lines.includes(`FAIL fixer-no-guard (commit ${sha} lacks Guard:)`), lines.join('\n'));
   assert.ok(!lines.some((line) => line.startsWith('DISPATCH')), lines.join('\n'));
-  assert.equal(lines.at(-1), 'LOOP next=stop round=1/3');
+  assert.equal(lines.at(-1), 'LOOP next=stop round=1/2');
 });
 
 test('--repair fails fixer-no-guard when Guard: none gives no reason', async () => {
   const checkout = await repairCheckout();
-  await commitFix(checkout.root, 'Sweep: 1 fixed\nGuard: none');
+  await commitFix(checkout.root, 'Guard: none');
   const { lines } = verifyRepair(checkout);
   assert.ok(lines.some((line) => line.startsWith('FAIL fixer-no-guard') && line.endsWith('lacks Guard:)')), lines.join('\n'));
 });
 
 test('--repair fails fixer-guard-not-in-diff when the named guard was not touched', async () => {
   const checkout = await repairCheckout();
-  await commitFix(checkout.root, 'Sweep: 1 fixed\nGuard: tests/untouched.test.mjs');
+  await commitFix(checkout.root, 'Guard: tests/untouched.test.mjs');
   const { status, lines } = verifyRepair(checkout);
   assert.equal(status, 1);
   assert.ok(lines.some((line) => line.startsWith('FAIL fixer-guard-not-in-diff (tests/untouched.test.mjs')), lines.join('\n'));
@@ -136,7 +136,7 @@ test('--repair fails fixer-guard-not-in-diff when the named guard was not touche
 
 test('--repair runs a named guard test and fails repair-test when it fails', async () => {
   const checkout = await repairCheckout();
-  await commitFix(checkout.root, 'Sweep: 1 fixed\nGuard: tests/guard.test.mjs', { 'tests/guard.test.mjs': 'process.exit(1);\n' });
+  await commitFix(checkout.root, 'Guard: tests/guard.test.mjs', { 'tests/guard.test.mjs': 'process.exit(1);\n' });
   const { status, lines } = verifyRepair(checkout);
   assert.equal(status, 1);
   assert.ok(lines.some((line) => line.startsWith('FAIL repair-test tests/guard.test.mjs')), lines.join('\n'));
@@ -162,9 +162,9 @@ test('--repair runs the Land gate over the repair diff', async () => {
 test('--repair stops at the repair bound and refuses a third pass', async () => {
   const checkout = await repairCheckout();
   await commitFix(checkout.root, GUARDED, { 'tests/app.test.mjs': FAILING_TEST });
-  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/3');
+  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/2');
   const second = verifyRepair(checkout);
-  assert.deepEqual(second.lines, [stopLine(), 'LOOP fix STOP last round made no progress', 'LOOP next=stop round=1/3']);
+  assert.deepEqual(second.lines, [stopLine(), 'LOOP fix STOP last round made no progress', 'LOOP next=stop round=1/2']);
   const third = verifyRepair(checkout);
   assert.deepEqual(third.lines, second.lines);
   assert.equal(third.status, 1);
@@ -174,9 +174,9 @@ test('--reviews-only never resets the repair rounds already run', async () => {
   const checkout = await repairCheckout();
   await commitFix(checkout.root, GUARDED, { 'tests/app.test.mjs': FAILING_TEST });
   verifyRepair(checkout);
-  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/3');
+  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/2');
   spawnSync('node', [VERIFY, '--plan', checkout.planPath, '--root', checkout.root, '--base', 'main', '--reviews-only'], { encoding: 'utf8', env });
-  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/3');
+  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/2');
 });
 
 test('--reviews-only prints HEAD and no FINDINGS-SHA, which merge-reviews owns', async () => {
@@ -196,7 +196,6 @@ test('--reviews-only prints HEAD and no FINDINGS-SHA, which merge-reviews owns',
 test('--repair runs a whole-suite Land gate on the last round', async () => {
   const checkout = await repairCheckout(FINDINGS, 'npm test');
   const dir = ledgerDirOf(checkout.root, checkout.planPath);
-  recordRound(dir, { kind: 'fix', openBefore: 3, openAfter: 2 });
   recordRound(dir, { kind: 'fix', openBefore: 2, openAfter: 1 });
   await commitFix(checkout.root);
   const last = verifyRepair(checkout);
@@ -220,10 +219,10 @@ test('--repair names the signal that killed the Land gate', async () => {
 test('gate FAIL repairs and review repairs each get the full bound', async () => {
   const checkout = await repairCheckout();
   await commitFix(checkout.root, GUARDED, { 'tests/app.test.mjs': FAILING_TEST });
-  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/3');
+  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/2');
   assert.ok(fullFailLines(checkout.root, checkout.planPath)[0].startsWith('DECIDE FAIL'));
   assert.ok(fullFailLines(checkout.root, checkout.planPath)[0].startsWith('DECIDE FAIL'));
   assert.ok(fullFailLines(checkout.root, checkout.planPath)[0].startsWith('DECIDE FAIL'));
   assert.equal(fullFailLines(checkout.root, checkout.planPath)[0], stopLine());
-  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/3');
+  assert.equal(verifyRepair(checkout).lines.at(-1), 'LOOP next=stop round=1/2');
 });

@@ -8,6 +8,15 @@ Applies to written or changed code, beside the code standard. Covers how much co
 - Smaller = fewer parts, not denser lines.
 - When the user has not stated a need, add no option, setting or extension point for it.
 - Leave code the user did not ask about unchanged, even when it could be better.
+- Match the surrounding style; remove only leftovers of your own change and report other dead code.
+
+## Assumptions
+
+- Name your assumptions and, when a task reads two ways, the reading you take; stop and report when it stays unclear.
+
+## Check
+
+- Name the pass-or-fail check before the first edit and work until it passes.
 
 ## Reuse
 

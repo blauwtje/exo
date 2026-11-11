@@ -24,7 +24,6 @@ const CITE_LINE = /^\s*Cite:\s*`?([^\s`:]+):(\d+)(?:-\d+)?`?\s*$/;
 const SCORE_LINE = /^\s*Score:\s*(\d+)\s*$/;
 const CATEGORY_LINE = /^\s*Category:\s*([\w-]+)\s*$/;
 const DEFAULT_MIN_SCORE = 4;
-const CLUSTER_SIZE = 5;
 const MAX_SCORE = 10;
 const OTHER_CATEGORY = 'other';
 const UNCITED_CATEGORY = 'uncited';
@@ -86,24 +85,9 @@ export function parseFinding(line) {
   };
 }
 
-function chunked(group, size) {
-  const pieces = [];
-  for (let start = 0; start < group.length; start += size) pieces.push(group.slice(start, start + size));
-  return pieces;
-}
-
-export function clusterFindings(findings, size = CLUSTER_SIZE) {
-  const byFile = new Map();
-  for (const finding of findings.filter(({ state }) => state === 'open')) {
-    byFile.set(finding.path, [...(byFile.get(finding.path) ?? []), finding]);
-  }
-  const clusters = [];
-  for (const piece of [...byFile.values()].flatMap((group) => chunked(group, size))) {
-    const room = clusters.find((cluster) => cluster.length + piece.length <= size);
-    if (room) room.push(...piece);
-    else clusters.push(piece);
-  }
-  return clusters;
+export function clusterFindings(findings) {
+  const proven = findings.filter(({ state, weight }) => state === 'open' && weight === 'defect');
+  return proven.length > 0 ? [proven] : [];
 }
 
 export function ledgerPath(root) {
@@ -276,7 +260,7 @@ export function mergeReviews(reports, prior = new Map(), changed = null, root = 
         scopeDemoted.push(`${parsed.path}:${parsed.range}`);
       }
       let reported = match[2] !== 'fix' || lowered || outsideFixDiff;
-      const detailed = !reported && !outOfScope && !settled.has(findingKey(parsed)) && hasFixDetails(lines, index, name);
+      const detailed = !reported && !outOfScope && weight === 'defect' && !settled.has(findingKey(parsed)) && hasFixDetails(lines, index, name);
       const unquoted = detailed && name !== MECHANICAL_REPORT && root !== null && quoteAbsent(lines[index + 4], parsed.path, root);
       const unswept = detailed && !unquoted && name !== MECHANICAL_REPORT && root !== null && sweepInvalid(lines[index + 3], lines[index + 4], root);
       if (detailed && !unquoted && !unswept) {

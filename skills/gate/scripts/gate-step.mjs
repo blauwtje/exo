@@ -81,11 +81,11 @@ function reviewStage(flags, run) {
   if (completeMerge(merged.body)) recordReview(flags.root, flags.reports);
   const verdict = merged.body.find((line) => line.startsWith('verdict=')) ?? '';
   const count = (name) => Number(verdict.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
-  if (completeMerge(merged.body)) recordReviewRound(ledgerDirOf(flags.root, flags.plan), count('fix') + count('concern'));
+  if (completeMerge(merged.body)) recordReviewRound(ledgerDirOf(flags.root, flags.plan), count('fix'));
   const blocked = verdict.startsWith('verdict=BLOCKED');
   if (blocked) lines.push(blockedNext(merged.body));
-  const repairable = !blocked && (count('fix') > 0 || count('concern') > 0);
-  if (repairable) lines.push('NEXT dispatch one exo:build-task with exo-kind: fix-review per CLUSTER line, in parallel, each with only its findings; record git rev-parse HEAD as pre-fix-sha first');
+  const repairable = !blocked && count('fix') > 0;
+  if (repairable) lines.push('NEXT dispatch one exo:build-task with exo-kind: fix-review for the one CLUSTER line, with only its findings; record git rev-parse HEAD as pre-fix-sha first');
   if (repairable) lines.push('DECIDE repair dispatch');
   if (merged.body.some((line) => line.startsWith('BLOCKED'))) lines.push('DECIDE BLOCKED');
   const questions = merged.body.filter((line) => line.startsWith('FINDING') && /\bquestion\b/.test(line));

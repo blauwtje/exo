@@ -3,6 +3,7 @@ import path from 'node:path';
 import { relativeFor } from '#checkout';
 import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
+import { coveringTests } from '../../../lib/covering-tests.mjs';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { driftOf, INPUT_UNREADABLE, inputPaths, isInputDrift } from '#plan-inputs';
@@ -82,6 +83,12 @@ function deferredLines(task) {
   return [...new Set(commands.filter((command) => mcpToolCall(command) !== null))].map((command) => `Deferred: ${command}`);
 }
 
+function coveringLines(task, root) {
+  const tests = coveringTests(root, task.files.map((file) => file.path));
+  if (tests.length === 0) return [];
+  return [`Covering: node --test --test-timeout=60000 ${tests.join(' ')}`];
+}
+
 function readable(file) {
   try {
     fs.readFileSync(file);
@@ -115,6 +122,7 @@ export function taskBrief(task, frame, root, { relative = false } = {}) {
     ...(hasRules && direction.length === 1 ? [] : direction),
     ...(hasRules ? [] : reportCapLines()),
     ...deferredLines(task),
+    ...coveringLines(task, root),
     ...modifyRangeLines(task, root),
     '',
     ...(hasRules ? [] : ['The task section:']),

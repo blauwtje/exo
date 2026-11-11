@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { ledgerDirOf, settleRound } from '../skills/gate/scripts/repair-round.mjs';
+import { guardLines, ledgerDirOf, settleRound } from '../skills/gate/scripts/repair-round.mjs';
 import { readLedger } from '../lib/loop-budget.mjs';
 import { fixDiffRanges, insideFixDiff } from '../skills/gate/scripts/fix-diff-scope.mjs';
 import { git, tempDir } from './harness.mjs';
@@ -79,4 +79,12 @@ test('a merge without a repair stays in the same round', async () => {
   git(root, 'commit', '-q', '-m', 'later');
   assert.deepEqual(mergeRound(root, false), { round: 1, priorRound: 0 });
   assert.deepEqual(mergeRound(root, true), { round: 2, priorRound: 1 });
+});
+
+test('guardLines fails a commit naming two guards and passes one guard per commit', () => {
+  const files = ['x.test.mjs', 'y.test.mjs'];
+  assert.deepEqual(guardLines([{ sha: 'a', guard: 'x.test.mjs' }, { sha: 'b', guard: 'y.test.mjs' }], files), []);
+  assert.deepEqual(guardLines([{ sha: 'a', guard: 'x.test.mjs' }, { sha: 'b', guard: 'x.test.mjs' }], files), []);
+  const lines = guardLines([{ sha: 'a', guard: 'x.test.mjs y.test.mjs' }], files);
+  assert.ok(lines.some((line) => line.startsWith('FAIL fixer-many-guards')));
 });

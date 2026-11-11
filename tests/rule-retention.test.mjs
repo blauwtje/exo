@@ -133,3 +133,8 @@ test('a rule kept in lib/references or agents passes', async () => {
     assert.equal(outcome(root).counts.FAIL, 0);
   }
 });
+
+test('the gate help names only the Guard: line a fixer commit needs', async () => {
+  const help = await fs.readFile(path.resolve(import.meta.dirname, '../skills/gate/scripts/gate.mjs'), 'utf8');
+  assert.doesNotMatch(help, /lacks Sweep:/);
+});

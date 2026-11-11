@@ -94,6 +94,14 @@ test('every Decision reaches a task brief, even one naming only another task\'s 
   assert.ok(brief.includes('Decisions for these paths:\n- 4. keep `lib/other.mjs` unchanged\n- 5. no file named\n'), brief);
 });
 
+test('a brief carries one Covering: line naming the tests that mention its files', async () => {
+  const { root } = await landingCheckout();
+  await commitFiles(root, { 'tests/mine.test.mjs': "import 'lib/mine.mjs';\n", 'tests/other.test.mjs': 'nothing\n' }, 'test: mine');
+  const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame([]), root);
+  assert.match(brief, /^Covering: node --test --test-timeout=60000 tests\/mine\.test\.mjs$/m);
+  assert.doesNotMatch(taskBrief(briefTask(['lib/none.mjs']), briefFrame([]), root), /^Covering:/m);
+});
+
 test('a small task with no Decision prints no Decisions section', async () => {
   const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame([]), (await landingCheckout()).root);
   assert.doesNotMatch(brief, /^Decisions for these paths:/m);

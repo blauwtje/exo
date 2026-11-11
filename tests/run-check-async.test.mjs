@@ -15,11 +15,10 @@ function root() {
 }
 
 test('two async checks overlap instead of running one after another', async () => {
-  const one = await runCheckAsync(root(), 'sleep 1', { record: false });
-  const started = Date.now();
-  const runs = await Promise.all([1, 2, 3].map(() => runCheckAsync(root(), 'sleep 1', { record: false })));
+  const dir = mkdtempSync(path.join(tmpdir(), 'run-check-marks-'));
+  const marked = (self, other) => `touch ${dir}/${self}.start; i=0; while [ ! -e ${dir}/${other}.start ] && [ $i -lt 100 ]; do sleep 0.1; i=$((i+1)); done; [ -e ${dir}/${other}.start ]`;
+  const runs = await Promise.all([runCheckAsync(root(), marked('a', 'b'), { record: false }), runCheckAsync(root(), marked('b', 'a'), { record: false })]);
   assert.ok(runs.every((run) => run.ok));
-  assert.ok(Date.now() - started < one.ms * 2);
 });
 
 test('the async check reports like the sync check', async () => {

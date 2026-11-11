@@ -9,6 +9,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- The task brief carries a `Covering:` line with the tests that landing runs for the task's files, from the same `coveringTests` function, so the builder runs them before it reports.
+- `plan-check` fails a `Proof:` whose first command is on no `PATH` directory.
+- `lib/references/lean.md` states the four working principles once (assumptions named, simplest thing, only the needed lines, the check named first); every plan, build, review and fix prompt points to it, and `npm run check` fails when a principle or a pointer is dropped.
 - One loop budget: `lib/loop-kinds.json` holds each loop kind's round cap and wall time, `lib/loop-budget.mjs` keeps one ledger per run, prints `LOOP <kind> CONTINUE|STOP`, stops a round that fixes nothing, and `--report` lists the rounds.
 - `npm run check` fails a retry, round or attempt cap literal outside the kinds table, a kind its owner script never reads or no test names, and a missing kinds table.
 - A gate question finding parks under `.exo/questions/` and the run goes on.
@@ -25,6 +28,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- A gate repair is one fix pass: the review merge sends one cluster of open `defect` findings to one fixer and leaves every `concern` in the report; the `fix` and `review-fix` loops stop after 2 rounds.
+- A fixer names at most one guard test per cause and no longer sweeps for similar code; a repair with more than one guard fails as `fixer-many-guards`.
 - Every worktree lives in one folder, `.claude/worktrees/<name>`, built by `worktreePath` in `lib/checkout.mjs`; a run slot is a flat sibling, and the repo rules and landing steps name the new folder.
 - The main session sends every build task to `exo:build-task` itself at depth 1, so the task-runner layer is gone.
 - The gate runs one full branch review and one overlap review per plan run, then keeps or reverts each fixer commit by script, scopes later findings to the fix diff and appends one row per round to `review-rounds.tsv`.

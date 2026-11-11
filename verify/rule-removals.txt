@@ -149,3 +149,6 @@ bada6542e885 the request-names-the-workspace case is folded into the first rare-
 481b1e91e7bb the nested-dispatch-unavailable return is gone because the lead dispatches at depth 1
 71c1e295526d the never-end-the-turn rule is gone because the lead dispatches at depth 1, so no nested child outlives the turn (loop-budget-2 Decision 1)
 e4a4736ae567 the optional-sections rule is replaced by the four fixed handoff sections in the same paragraph
+1c4a677a2b0e the concern-dispatch rule is gone because only a proven defect reaches the fixer (lean-rounds Task 2)
+bb1283c01801 the per-cluster fixer rule is gone because one cluster goes to one fixer (lean-rounds Task 2)
+c4e8d9d43fb3 the per-CLUSTER parallel concern rule is gone because one cluster of defects goes to one fixer (lean-rounds Task 3)

@@ -16,6 +16,16 @@ const FENCE = /^\s*(`{3,}|~{3,})/;
 const REFERENCE_TOKEN_CEILING = 750;
 const STAGE_SKILLS = Object.keys(STAGE_BODY_TOKENS);
 const LEAN_REFERENCE = 'lib/references/lean.md';
+const LEAN_MARKERS = ['Name your assumptions', 'smallest change', 'leftovers of your own change', 'pass-or-fail check'];
+const LEAN_READERS = [
+  'skills/build/run-task-prompt.md',
+  'skills/build/drift-repairer-prompt.md',
+  'skills/build/review-fixer-prompt.md',
+  'skills/find-cause/fixer-prompt.md',
+  'skills/build/references/no-spec.md',
+  'skills/spec/references/task-list.md',
+  'agents/review-branch.md'
+];
 
 function referenceFiles(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -84,6 +94,13 @@ function leanSizeProblem(bytes) {
   return null;
 }
 
+export function leanPrincipleProblems(repository) {
+  const owner = repository.text(LEAN_REFERENCE);
+  const missing = LEAN_MARKERS.filter((marker) => !owner.includes(marker)).map((marker) => `${LEAN_REFERENCE} lacks "${marker}"`);
+  const silent = LEAN_READERS.filter((file) => !repository.text(file).includes(LEAN_REFERENCE)).map((file) => `${file} does not name ${LEAN_REFERENCE}`);
+  return [...missing, ...silent];
+}
+
 function namedReferences(file, text) {
   return markdownTargets(text).filter((target) => {
     const resolved = resolveMarkdownTarget(file, target);
@@ -137,6 +154,7 @@ export function checkReferenceShape(report, repository) {
     }
     failures.push(...shapeProblems);
   }
+  failures.push(...leanPrincipleProblems(repository));
   report.assert(
     failures.length === 0,
     'reference shape',

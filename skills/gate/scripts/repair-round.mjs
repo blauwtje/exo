@@ -21,12 +21,12 @@ export function repairCommits(root, preFixSha) {
   const log = gitOutput(root, ['log', `--format=%h${FIELD_SEPARATOR}%B${COMMIT_SEPARATOR}`, `${preFixSha}..HEAD`]);
   return log.split(COMMIT_SEPARATOR).map((entry) => entry.trim()).filter((entry) => entry !== '').map((entry) => {
     const [sha, body] = entry.split(FIELD_SEPARATOR);
-    return { sha, sweep: bodyField(body, 'Sweep'), guard: bodyField(body, 'Guard') };
+    return { sha, guard: bodyField(body, 'Guard') };
   });
 }
 
-function missingFields({ sweep, guard }) {
-  return [sweep === null ? 'Sweep:' : null, guard === null || GUARD_WITHOUT_REASON.test(guard) ? 'Guard:' : null].filter((field) => field !== null);
+function lacksGuard({ guard }) {
+  return guard === null || GUARD_WITHOUT_REASON.test(guard);
 }
 
 export function namedGuards(commits) {
@@ -34,9 +34,12 @@ export function namedGuards(commits) {
 }
 
 export function guardLines(commits, diffFiles) {
-  const incomplete = commits.filter((commit) => missingFields(commit).length > 0);
+  const incomplete = commits.filter(lacksGuard);
+  const crowded = commits.filter((commit) => new Set(namedGuards([commit]).flatMap((guard) => guard.split(/[\s,]+/))).size > 1);
+  const manyGuards = crowded.map((commit) => `FAIL fixer-many-guards (commit ${commit.sha} names more than one guard, at most 1 per fixed cause)`);
   return [
-    ...incomplete.map((commit) => `FAIL fixer-no-guard (commit ${commit.sha} lacks ${missingFields(commit).join(' and ')})`),
+    ...incomplete.map((commit) => `FAIL fixer-no-guard (commit ${commit.sha} lacks Guard:)`),
+    ...manyGuards,
     ...namedGuards(commits).filter((guard) => !diffFiles.includes(guard)).map((guard) => `FAIL fixer-guard-not-in-diff (${guard} is not in the repair diff)`)
   ];
 }

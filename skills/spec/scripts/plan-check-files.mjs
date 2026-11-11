@@ -62,7 +62,20 @@ export function checkProofTestsListed(task, root, byNumber) {
   const unlisted = (task.proof.match(/[\w./@-]+/g) ?? [])
     .map((token) => token.replace(/^\.\//, ''))
     .filter((token) => TEST_FILE_NAME.test(path.posix.basename(token)) && !isCovered(listed, token) && fs.existsSync(path.join(root, token)));
-  return [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add \`${testPath}\` to Files: (its Proof runs it)`);
+  const listedProblems = [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add \`${testPath}\` to Files: (its Proof runs it)`);
+  return [...listedProblems, ...proofCommandProblems(task)];
+}
+
+const SHELL_WORDS = new Set(['cd', 'export', 'test', 'true', 'false', 'source', 'set', 'echo', 'exit']);
+
+function isOnPath(command) {
+  return (process.env.PATH ?? '').split(path.delimiter).some((directory) => directory !== '' && fs.existsSync(path.join(directory, command)));
+}
+
+function proofCommandProblems(task) {
+  const command = task.proof.trim().replace(/^`+/, '').split(/\s+/)[0];
+  if (!/^[A-Za-z][\w.-]*$/.test(command) || SHELL_WORDS.has(command) || isOnPath(command)) return [];
+  return [`Task ${task.number}: Proof starts with \`${command}\`, which is not on this host's PATH`];
 }
 
 function laterChainedPaths(byNumber, number) {

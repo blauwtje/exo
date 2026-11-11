@@ -23,9 +23,9 @@ The gate readies a branch for a pull request.
    - Then run `gate-step.mjs --after review` with those flags and a `--report <path>` per report; follow its `NEXT` lines.
    - On a `CODEX offer` line, ask once for a `codex exec` review of plan and diff, into findings.
    - `--land` → skip.
-3. **Repair the findings.** `FINDINGS` with `fix=1` or more, or `concern=1` or more, goes to the `exo:build-task` agent with `exo-kind: fix-review`, no model override, the dispatch line and `../build/review-fixer-prompt.md` by path.
-   - One `exo:build-task` per `CLUSTER` line, in parallel, each with only its findings, `concern` ones too.
-   - With `fix=0` and `concern=0`, go to step 4: no fixer dispatch, rerun or fix commit.
+3. **Repair the findings.** `FINDINGS` with `fix=1` or more goes to the `exo:build-task` agent with `exo-kind: fix-review`, no model override, the dispatch line and `../build/review-fixer-prompt.md` by path.
+   - One `exo:build-task` for the one `CLUSTER` line; `concern` findings stay `report`.
+   - With `fix=0`, go to step 4: no fixer dispatch, rerun or fix commit.
    - Else read `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
    - `--land` → pass `--land` to `ship`.

@@ -95,17 +95,17 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/security.md': 1028,
   'skills/build/references/test-design.md': 921,
   'skills/build/references/wave-worktrees.md': 954,
-  'skills/build/run-task-prompt.md': 782,
+  'skills/build/run-task-prompt.md': 801,
   'skills/ship/references/pr-prep.md': 841,
   'skills/spec/references/brief.md': 994,
-  'skills/spec/references/task-list.md': 1124,
+  'skills/spec/references/task-list.md': 1140,
   'skills/spec/references/worker-modes.md': 1534,
 };
 // lib/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
 // bytes, the same two ways: growth fails and so does a shrink the lock does
 // not follow.
-export const LEAN_REFERENCE_LOCK = { bytes: 1018, measured: '2026-11-03' };
+export const LEAN_REFERENCE_LOCK = { bytes: 1342, measured: '2026-11-03' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;

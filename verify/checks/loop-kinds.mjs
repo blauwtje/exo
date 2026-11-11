@@ -15,6 +15,7 @@ const SLEEP_CALL = /setInterval\(|setTimeout\(|Atomics\.wait\(|\bsleep\(|\bdelay
 const PROBE_CALL = /existsSync\(|statSync\(|accessSync\(|process\.kill\([^)]*,\s*0\)|readFileSync\(|\bpgrep\b/;
 const LOOP_HEAD = /\b(?:while|for)\s*\(|\bdo\s*\{|setInterval\(/;
 const LOOP_WINDOW = 12;
+const CAPPED_AT_TWO = ['fix', 'review-fix'];
 
 function kindNames(kinds) {
   return Object.keys(kinds);
@@ -73,6 +74,9 @@ function readsKind(ownerText, name) {
 function kindFindings(repository, kinds) {
   const findings = [];
   const tests = repository.trackedFiles().filter((file) => /^tests\/.*\.test\.mjs$/.test(repository.relative(file)));
+  for (const name of CAPPED_AT_TWO) {
+    if (kinds[name] && kinds[name].cap !== 2) findings.push(`loop kind ${name}: cap must be 2`);
+  }
   for (const [name, entry] of Object.entries(kinds)) {
     const owner = path.join(repository.root, entry.owner);
     if (!fs.existsSync(owner)) {

@@ -4,7 +4,7 @@
 
 ## Build session
 
-Land [[task]] of [[plan]] in this session. Load no skill; the brief and the rules below are all you need.
+Land [[task]] of [[plan]] in this session. Load no skill; the brief and the rules below are all you need. Read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` before the first edit.
 
 Brief:
 [[brief]]

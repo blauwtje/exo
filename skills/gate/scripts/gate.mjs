@@ -22,7 +22,7 @@ one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md lin
 --base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
 --reviews-only also prints HEAD.
 --repair checks the fixer's return and prints FAIL fixer-uncommitted, FAIL fixer-no-commits, FAIL stale-findings,
-FAIL fixer-no-guard (a commit lacks Sweep: or Guard:) or FAIL fixer-guard-not-in-diff, else PASS fixer-committed.
+FAIL fixer-no-guard (a commit lacks Guard:) or FAIL fixer-guard-not-in-diff, else PASS fixer-committed.
 It then rechecks only the repair diff: the Land gate, the tests covering the changed files and each named Guard test,
 then prints one DISPATCH Repair line for the fix-diff review and LOOP next=fix|done|stop round=<n>/2.
 A third repair pass prints STOP repair-bound. The pass count lives in <root>/.exo/verify-state.json.

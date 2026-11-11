@@ -30,3 +30,8 @@ test('a Data path that Files omits warns', async () => {
 test('a Data path that Files lists warns of nothing', async () => {
   assert.doesNotMatch(await planCheck({ proof: 'node --test', data: 'rows from `src/run.mjs`' }), /Data: names/);
 });
+
+test('a Proof whose first command is not on PATH fails', async () => {
+  assert.match(await planCheck({ proof: 'no-such-tool-xyz --run' }), /Task 1: Proof starts with `no-such-tool-xyz`, which is not on this host's PATH/);
+  assert.match(await planCheck({ proof: '`no-such-tool-xyz --run`' }), /Task 1: Proof starts with `no-such-tool-xyz`, which is not on this host's PATH/);
+});

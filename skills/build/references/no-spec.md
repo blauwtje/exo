@@ -7,6 +7,7 @@ A decided change with no plan file runs these steps instead of the loop, so a sm
    - When `<scratch>/implement-next.md` exists, resume from it and delete it once edits land. `<scratch>` is what `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs"` prints.
    - Otherwise, or after one failed direct search, dispatch `exo:research-worker` with `Sources: repo` and read only its `Read next` ranges plus direct callers or callees.
    - Upstream Decisions are settled.
+   - Read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` before editing code.
 2. **Gate.**
    - An open product decision goes to `spec` first, because the earliest stage wins.
    - With zero facts, edit directly, run the check, report and stop.

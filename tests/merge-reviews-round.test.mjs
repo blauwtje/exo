@@ -46,3 +46,11 @@ test('a merge after a fix commit is a new round and an unfixed finding recurs', 
   assert.ok(next.includes(outcome('recurring finding').line), next);
   assert.deepEqual(rounds(root), [1, 2]);
 });
+
+test('a concern is no CLUSTER line and a defect is one', () => {
+  const root = openFindingRepo();
+  fs.writeFileSync(path.join(root, 'code-rules.md'), 'FINDINGS\n\na.js:1 concern worry\n');
+  assert.doesNotMatch(merge(root), /^CLUSTER/m);
+  fs.writeFileSync(path.join(root, 'code-rules.md'), 'FINDINGS\n\na.js:1 concern worry fix\n  Probe: grep -q x a.js\n');
+  assert.doesNotMatch(merge(root), /fix=[1-9]/);
+});
