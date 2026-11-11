@@ -1,13 +1,12 @@
 # Unit cases
 
-Read on a rare case. Each unit has its own section, and a **unit** is one delegate that `build` dispatches.
+Read on a rare case. Each section is one delegate or route that `build` runs.
 
-## task-runner
+## lead dispatch
 
 - A choice or a build `BLOCKED` returns `BLOCKED`, the question and the options.
 - A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`. The lead asks it after the wave and re-dispatches with the answer.
 - Leave edits, writes and commits to others: builds edit, land-task commits.
-- When no tool dispatches, return `BLOCKED all nested dispatch unavailable`, alone.
 - Send a repair to `exo:build-task` with `exo-kind: build-repair` with the dispatch `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`. Run it in the foreground, because a background run ends the turn early, and read that report.
 - When a build report ends on a context limit, start a fresh `exo:build-task` from the same `Prompt:` plus the report path, same kind and model, no `exo-retry` or a repair.
 - Done means `GREEN` from land-task, which runs each `Run:` or `Proof:`, and your own report does not count.

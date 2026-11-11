@@ -30,6 +30,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.
 - The Success criterion passes on the branch rebased onto `origin/main`.
 
+## loop-budget-2
+- A two-task plan builds with the main session dispatching exo:build-task directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
+
 ## loop-budget
 - A gate re-entry on the same run continues the ledger round count instead of restarting it (Task 5).
 - One Agent dispatch that breaks three brief rules is refused once, naming all three; the third refusal of the same dispatch stops with `LOOP refusal STOP cap` (Task 2).

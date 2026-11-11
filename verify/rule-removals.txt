@@ -146,3 +146,5 @@ d038badf2bb14b630491c9d1a273e9b2899e8e5d the build run references state each rul
 
 428e083cb14d the unit route is now stated once as step 2 and the intro bullets of the skill body
 bada6542e885 the request-names-the-workspace case is folded into the first rare-branch bullet of run-loop.md
+481b1e91e7bb the nested-dispatch-unavailable return is gone because the lead dispatches at depth 1
+71c1e295526d the never-end-the-turn rule is gone because the lead dispatches at depth 1, so no nested child outlives the turn (loop-budget-2 Decision 1)

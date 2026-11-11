@@ -280,7 +280,7 @@ async function measureCell(cell, repository, usage, cellDirectory) {
 const replayFindings = (repository) => path.join(path.dirname(repository), 'branch-review.md');
 
 function addReplayWorktree(cell, repository) {
-  const added = createWorktree(ROOT, repository, ['worktree', 'add', '--detach', repository, cell.replay.head], { env: false });
+  const added = createWorktree(ROOT, repository, ['--detach', repository, cell.replay.head], { env: false });
   if (!added.ok) throw new Error(`git worktree add --detach ${repository} ${cell.replay.head} failed: ${added.error}`);
   const { base, scope } = cell.replay;
   const source = path.resolve(ROOT, cell.replay.plan);

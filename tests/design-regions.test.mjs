@@ -47,3 +47,15 @@ test('no regions is a usage error', () => {
   const result = spawnSync('node', [script, '--root', tempDir('regions-')], { encoding: 'utf8' });
   assert.equal(result.status, 2);
 });
+
+test('worktree copies under .claude/worktrees and .worktrees are not mapped', () => {
+  const root = tempDir('regions-');
+  for (const folder of ['.claude/worktrees/run', '.worktrees/run', 'src']) {
+    fs.mkdirSync(path.join(root, folder), { recursive: true });
+    fs.writeFileSync(path.join(root, folder, 'Hero.tsx'), '');
+  }
+  const result = run(root, ['Hero']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /src\/Hero\.tsx/);
+  assert.doesNotMatch(result.stdout, /worktrees/);
+});

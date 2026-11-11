@@ -13,7 +13,3 @@ export function contractRow(harness, role, file = FILE) {
   if (row === undefined) throw new Error(`no coordination contract row for ${harness} ${role}`);
   return row;
 }
-
-export function sessionWait(env = process.env) {
-  return contractRow('claude', env.EXO_RUN_SESSION === '1' ? 'run-session' : 'main').wait;
-}

@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isWorktreePath } from '#checkout';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
 export class RenameError extends Error {}
@@ -9,10 +10,10 @@ export class RenameError extends Error {}
 const USAGE = `Usage: node rename-skill.mjs --from <old-name> --to <new-name> [--root <dir>]
 Moves skills/<from>/, docs/skills/<from>.md and benchmarks/pressure/<from>/ to <to>,
 then rewrites every word-bounded mention of <from> to <to>. Skips CHANGELOG.md,
-benchmarks/results/, .git/ and .worktrees/, which name the skill as it was.
+benchmarks/results/, .git/ and worktree folders, which name the skill as it was.
 Prints one line per rewritten file as <path> <count>.`;
 const NAME_PATTERN =/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
-const SKIPPED_DIR_NAMES = new Set(['.git', '.worktrees']);
+const SKIPPED_DIR_NAMES = new Set(['.git']);
 const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md']);
 const SKIPPED_RELATIVE_PREFIXES = ['benchmarks/results/'];
 
@@ -32,7 +33,7 @@ function listFiles(root) {
       if (SKIPPED_DIR_NAMES.has(entry.name)) continue;
       const full = path.join(dir, entry.name);
       const relative = path.relative(root, full).split(path.sep).join('/');
-      if (isSkipped(relative)) continue;
+      if (isSkipped(relative) || isWorktreePath(relative)) continue;
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.isFile()) {

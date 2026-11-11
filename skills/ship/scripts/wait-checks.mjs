@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { exitWithParent } from '#lifetime';
-import { sleep } from '#basics';
+import { pollUntil } from '../../../lib/loop-budget.mjs';
 
 export const DEFAULT_MINUTES = 20;
 const USAGE = 'usage: wait-checks.mjs --pr <number> [--minutes <n>] [--grace-seconds <n>]';
@@ -87,12 +87,13 @@ async function main() {
     running?.kill('SIGTERM');
   }, flags.minutes * 60_000);
   const track = (child) => { running = child; };
-  const graceEnds = Date.now() + flags.graceMs;
   let outcome = await watchChecks(flags.pr, track, log);
-  while (!timedOut && NO_CHECKS.test(outcome.errorText) && Date.now() + RETRY_MS <= graceEnds) {
-    await sleep(RETRY_MS);
-    if (timedOut) break;
+  const checksReady = async () => {
     outcome = await watchChecks(flags.pr, track, log);
+    return !NO_CHECKS.test(outcome.errorText);
+  };
+  if (NO_CHECKS.test(outcome.errorText)) {
+    await pollUntil(checksReady, { intervalMs: RETRY_MS, wallMs: flags.graceMs, giveUp: () => timedOut });
   }
   clearTimeout(deadline);
   log.end();

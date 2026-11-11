@@ -57,7 +57,7 @@ test('labels on an entry outside agents is rejected', () => {
 
 test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
   const { kinds } = readKindTable(undefined, { provider: 'deepseek' });
-  for (const name of ['build-task', 'doc-task', 'task-runner', 'build', 'orchestrator', 'chore']) assert.equal(kinds[name].effort, 'low', name);
+  for (const name of ['build-task', 'doc-task', 'build', 'orchestrator', 'chore']) assert.equal(kinds[name].effort, 'low', name);
   for (const name of ['review', 'hardest', 'fix-review']) assert.equal(kinds[name].effort, 'high', name);
   for (const kind of Object.values(kinds)) assert.equal(kind.model, INHERIT, kind.model);
 });

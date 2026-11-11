@@ -28,7 +28,7 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
   const branchStep = loopStep(1);
   assert.ok(branchStep.includes('authorizes commits there.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |'), 'the workspace is read before the first dispatch');
-  assert.ok(SKILL.indexOf('start-run.mjs') < SKILL.indexOf('`exo:task-runner`'), 'the workspace settles before the unit dispatch');
+  assert.ok(SKILL.indexOf('start-run.mjs') < SKILL.indexOf('`exo:build-task`'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
@@ -46,24 +46,7 @@ test('the workspace question offers a branch, a worktree and the current branch,
   assert.ok(!WORKSPACE.includes('git push'), 'the workspace step pushes nothing');
 });
 
-test('a green task commits and pushes nothing', () => {
-  const unit = fs.readFileSync(new URL('../agents/task-runner.md', import.meta.url), 'utf8');
-  const commitStep = unit.match(/^4\. \*\*Commit a green foreground task\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m)[0];
-  assert.ok(commitStep.includes('push nothing'));
-  assert.ok(!commitStep.includes('git push'), 'the unit commit step runs no push');
-});
-
-test('an off-brief return gets one in-place correction, a red proof or failing command a fresh retry', () => {
-  const unit = fs.readFileSync(new URL('../agents/task-runner.md', import.meta.url), 'utf8');
-  const commitStep = unit.match(/^4\. \*\*Commit a green foreground task\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m)[0];
-  const lines = commitStep.split('\n');
-  const offBrief = lines.find((line) => line.includes('Off-brief'));
-  assert.ok(offBrief.includes('SendMessage'), 'the first answer to an off-brief return is a SendMessage');
-  assert.ok(offBrief.includes('`hooks/session-rules.md`'), 'the line cites the drift rule');
-  assert.ok(/second|still/.test(offBrief), 'a fresh agent follows only a repeated off-brief return');
-  const refusal = lines.find((line) => line.includes('Other refusal'));
-  assert.ok(!refusal.includes('SendMessage'), 'a red proof or failing command is retried by a fresh agent, per Fix rounds');
-  assert.ok(refusal.includes('fresh `exo:build-task`'));
+test('a failing command in a report is retried by a fresh agent', () => {
   const direct = fs.readFileSync(new URL('../skills/build/references/run-loop-direct.md', import.meta.url), 'utf8');
   const report = direct.split('\n').find((line) => line.includes('about the report'));
   assert.ok(!report.includes('SendMessage') && report.includes('fresh `exo:build-task`'), 'a failing command in a report is retried by a fresh agent');

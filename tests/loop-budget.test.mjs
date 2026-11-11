@@ -77,3 +77,14 @@ test('the report CLI runs and an empty open count records stop', () => {
   const out = execFileSync('node', [path.join(root, 'lib', 'loop-budget.mjs'), '--report', dir], { encoding: 'utf8' });
   assert.match(out, /^fix\t1/m);
 });
+
+test('pollUntil stops at the wall cap and records a wait row', async () => {
+  const { pollUntil } = await import('../lib/loop-budget.mjs');
+  const dir = tempDir('poll-');
+  const stopped = await pollUntil(() => false, { intervalMs: 10, wallMs: 50, runDir: dir });
+  assert.equal(stopped, false);
+  const ready = await pollUntil(() => true, { runDir: dir });
+  assert.equal(ready, true);
+  assert.deepEqual(readLedger(dir).map((row) => row.kind), ['wait', 'wait']);
+  assert.ok(kindWallMs('wait', {}) > 0);
+});

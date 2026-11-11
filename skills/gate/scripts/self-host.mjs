@@ -17,7 +17,7 @@ function underAny(file, prefixes) {
 
 export function selfHostingGap(root, base = DEFAULT_BASE) {
   const changed = gitOutput(root, ['-c', 'core.quotepath=off', 'diff', '--name-only', `${base}...HEAD`]).split('\n').filter((file) => file !== '');
-  return { scripts: changed.filter((file) => underAny(file, SELF_HOSTED_SCRIPTS)), agents: changed.filter((file) => underAny(file, SELF_HOSTED_AGENTS)) };
+  return { scripts: changed.filter((file) => underAny(file, SELF_HOSTED_SCRIPTS)), agents: changed.filter((file) => underAny(file, SELF_HOSTED_AGENTS) && fs.existsSync(path.join(root, file))) };
 }
 
 function sharesRepository(root, pluginRoot) {

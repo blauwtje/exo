@@ -464,7 +464,7 @@ test('the sleep step denies sleep in command position for every subagent', async
   for (const command of ['sleep 30', 'ls && sleep 5', 'node x.mjs; sleep 1']) {
     const denied = run('exo:task-runner', command);
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny', command);
-    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /interactive: wait-report\.mjs[\s\S]*subagent: start the long command in the background/);
+    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /subagent: start the long command in the background/);
   }
   assert.equal(run('exo:orchestrator', 'sleep 2').hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(run('exo:task-runner', 'grep sleep file.txt'), null);
@@ -478,10 +478,9 @@ test('the sleep step denies a background sleep polling loop for the lead too', a
   for (const command of ['until [ -f done ]; do sleep 2; done', 'while ! grep -q ok log; do\n  sleep 5\ndone']) {
     const denied = run(command);
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny', command);
-    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /wait-report\.mjs/);
+    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /No sleep polling/);
   }
   assert.equal(run('sleep 2'), null);
-  assert.equal(run('node wait-report.mjs --task 3'), null);
 });
 
 async function cappedRun(command, extra = {}) {

@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { briefLines } from '../lib/guard-rules.mjs';
 
-const BUILD_ONLY_AGENT = 'exo:task-runner';
+const BUILD_ONLY_AGENT = 'exo:build-task';
 const RULES = new URL('./dispatch-rules.md', import.meta.url);
 
 export const dispatchMarker = (sessionId) => path.join(os.tmpdir(), `exo-dispatch-${String(sessionId).replace(/[^\w-]/g, '_')}`);

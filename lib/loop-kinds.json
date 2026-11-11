@@ -5,7 +5,7 @@
   "proof": { "cap": 3, "progress": "failing proof tests", "owner": "skills/build/scripts/land-proof.mjs" },
   "attempt": { "cap": 3, "progress": "open task items", "owner": "skills/build/scripts/run-plan-attempts.mjs" },
   "review-fix": { "cap": 3, "progress": "open fix count", "owner": "skills/build/scripts/run-tail.mjs" },
-  "wait": { "cap": 3, "progress": "pending waits", "owner": "hooks/run-no-wait.mjs" },
+  "wait": { "cap": 3, "wallMs": 600000, "progress": "pending waits", "owner": "hooks/run-no-wait.mjs" },
   "provider": { "cap": 3, "progress": "transient provider errors", "owner": "skills/build/scripts/run-session.mjs" },
   "refusal": { "cap": 2, "progress": "rule violations", "owner": "lib/refusal-handlers.mjs" }
 }

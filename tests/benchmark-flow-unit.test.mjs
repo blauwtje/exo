@@ -37,7 +37,6 @@ test('fold-unit replaces the whole of step 5, bullets included, and keeps the bu
   assert.ok(!step.includes('Name plan path'));
   assert.ok(!step.includes('do not apply'));
   assert.ok(!step.includes('dispatching no agent'));
-  assert.ok(step.includes('${CLAUDE_PLUGIN_ROOT}/agents/task-runner.md'));
   assert.ok(step.includes('`<skill>` = `${CLAUDE_SKILL_DIR}`'));
   assert.ok(step.includes('exo:build-task'));
   assert.ok(!step.includes('exo:task-runner'));

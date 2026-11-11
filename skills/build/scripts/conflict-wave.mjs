@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { planIdOf } from '#plan-landed';
-import { resolvePlanPath } from '#checkout';
+import { createWorktree, resolvePlanPath } from '#checkout';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
 import { conflictMarkers, squashBlock, unmergedPaths } from '#merge-state';
@@ -55,7 +55,8 @@ export function keepConflict({ planPath, root, number, sha, base }) {
   const folder = folderOf(root, number);
   const tree = path.join(folder, 'tree');
   fs.mkdirSync(folder, { recursive: true });
-  gitText(root, ['worktree', 'add', '-q', '-b', branchOf(number), tree, 'HEAD']);
+  const added = createWorktree(root, tree, ['-q', '-b', branchOf(number), tree, 'HEAD'], { env: false });
+  if (!added.ok) throw new Error(added.failure);
   spawnSync('git', ['-C', tree, 'cherry-pick', sha], { encoding: 'utf8' });
   const files = unmergedPaths(tree);
   gitText(tree, ['add', '-A']);

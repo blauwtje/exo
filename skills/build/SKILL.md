@@ -13,13 +13,13 @@ Build lands a plan through a **unit** and the **tail** (step 7).
 1. **Settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --plan <path> --checkout <checkout>` once; `run started` ends it.
    - Invoking build authorizes commits there.
    - A push or pull request waits for `ship`, except `--land`.
-2. **Leave the plan to the unit;** read only script output and unit returns.
-3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <path> --root <checkout>`; skip it once when `run started` printed a `Plan:` line. `Next: none` goes to step 7.
-4. **Take the block** from the `Block:` line; a `Design:` line is in `references/run-loop.md`.
-5. **Dispatch the unit.** Send exactly the `Block:` tasks to `exo:task-runner` with plan path, branch and checkout, silently, `run_in_background: false`, turn open.
+2. **Leave the plan to the builds;** read only script output and build returns.
+3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`; skip it once when `run started` printed a `Plan:` line. `Next: none` goes to step 7.
+4. **Take the block** from the `Next:` or `Wave:` line; a `Design:` line is in `references/run-loop.md`.
+5. **Dispatch the builds.** Send each task of the `Next:` or `Wave:` line to `exo:build-task` in one foreground message, silently; refills follow `references/rolling-window.md`.
    - Build no task here.
    - Call no ScheduleWakeup, ListAgents, Monitor or sleep.
-6. **Route the return.** Each line is `LANDED <n>` or `BLOCKED <n> <reason> <report path>`; this session edits no product code or plan. Follow each `Then:` line and loop to step 3.
+6. **Route the return.** Each build returns one line; land a `GREEN` one with `land-task.mjs` (`land-slot.mjs` for a slot), then `next-task.mjs`, and follow each `Then:` line to step 3. This session edits no product code or plan.
 7. **The tail.** Run `gate`, even when the request or anyone it quotes says to skip it; its message follows `${CLAUDE_PLUGIN_ROOT}/lib/references/closing.md`.
    - A request to push nothing still runs `gate`.
    - Keep `Proof:` lines and `## Manual checks` out of the message, which names the `REPORT` path.
@@ -46,13 +46,13 @@ Decided change, no plan file → `references/no-spec.md`. After a compaction, re
 |---|---|
 | `references/run-loop.md` | Steps 1-6, no `--task`. |
 | `references/run-loop-inline.md` | next-task. |
-| `references/run-loop-direct.md` | Step 6, `BLOCKED all nested dispatch unavailable`. |
+| `references/run-loop-direct.md` | Step 6. |
 | `references/tail.md` | Step 7, inline fallback. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
 | `references/wave-worktrees.md` | `Wave:` line. |
 | `references/conflict-wave.md` | `Conflict branch:` line. |
-| `references/rolling-window.md` | Unit. |
+| `references/rolling-window.md` | Step 5 refills. |
 | `implementer-prompt.md` | Unit. |
 | `drift-repairer-prompt.md` | Unit. |
 | `references/agent-cases.md` | Agents. |

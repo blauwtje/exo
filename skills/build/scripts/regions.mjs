@@ -2,20 +2,22 @@
 import { readdirSync } from 'node:fs';
 import { join, relative, basename, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { isWorktreePath } from '#checkout';
 
 const USAGE = 'usage: node regions.mjs --root <dir> --region "<name>"... (numbered in the order given)';
 const SOURCE = new Set(['.tsx', '.jsx', '.vue', '.svelte', '.astro', '.html', '.js', '.ts', '.css']);
-const SKIPPED = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.exo', '.worktrees']);
+const SKIPPED = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.exo']);
 
 function squash(text) {
   return text.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-function sourceFiles(root) {
+function sourceFiles(root, base = root) {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     if (SKIPPED.has(entry.name)) return [];
     const path = join(root, entry.name);
-    if (entry.isDirectory()) return sourceFiles(path);
+    if (isWorktreePath(relative(base, path))) return [];
+    if (entry.isDirectory()) return sourceFiles(path, base);
     return SOURCE.has(extname(entry.name)) ? [path] : [];
   });
 }

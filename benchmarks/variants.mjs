@@ -32,14 +32,13 @@ const POINTER_EDIT = {
 };
 const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: '- Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `find-cause`.\n', to: '' };
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
-const UNIT_AGENT = 'agents/task-runner.md';
 const FOLD_UNIT_EDIT = {
   file: BUILD_SKILL,
   from: UNIT_DISPATCH_TEXT,
   to: [
-    '5. **Run the unit here.** Dispatch no task-runner agent: read `${CLAUDE_PLUGIN_ROOT}/' + UNIT_AGENT + '`, take `<skill>` = `${CLAUDE_SKILL_DIR}`, and follow its `## Loop` and `## Stop` yourself for the `Block:` tasks.',
-    '   - Its step 3 dispatch to `exo:build-task` stays; never build a task here.',
-    '   - Produce each task\'s `LANDED` or `BLOCKED` line yourself for step 6; skip its `## Return` cap and TaskStop line.'
+    '5. **Run the unit here.** Take `<skill>` = `${CLAUDE_SKILL_DIR}` and follow `references/run-loop-direct.md` yourself for the window\'s tasks.',
+    '   - Its dispatch to `exo:build-task` stays; build no task here, and call no ScheduleWakeup, ListAgents, Monitor or sleep.',
+    '   - Produce each task\'s `LANDED` or `BLOCKED` line yourself for step 6.'
   ].join('\n')
 };
 export const VARIANTS = {
@@ -90,7 +89,6 @@ function foldUnitProblems(copy) {
   const loop = fs.readFileSync(path.join(copy, BUILD_SKILL), 'utf8');
   const problems = [];
   if (loop.includes('exo:task-runner')) problems.push('the run loop still dispatches exo:task-runner');
-  if (!loop.includes(UNIT_AGENT)) problems.push(`the run loop does not name ${UNIT_AGENT}`);
   return problems;
 }
 

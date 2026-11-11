@@ -16,7 +16,7 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 - **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: gap
 - **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`, `verify/checks/brief-grammar.mjs`
 - **Simplicity first: the least code that works.** [9] exo: `lib/references/lean.md`, `verify/checks/module-surface.mjs`
-- **Surgical changes: touch only what is asked.** [9] exo: `agents/task-runner.md`, `verify/checks/shared-contracts.mjs`
+- **Surgical changes: touch only what is asked.** [9] exo: `verify/checks/shared-contracts.mjs`
 - **Goal-driven execution: work toward a check.** [9] exo: `skills/build/SKILL.md`, `verify/checks/edit-evidence.mjs`
 
 ## Sources

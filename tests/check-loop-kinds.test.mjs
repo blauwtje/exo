@@ -71,6 +71,18 @@ test('a rule module chaining denials with ?? fails', () => {
   assert.match(detail({ ...CLEAN, 'hooks/h.mjs': chain }), /return only the first violation/);
 });
 
+test('a sleep loop around a file probe fails outside the budget helper', () => {
+  const loop = "while (!fs.existsSync(f)) {\n  await sleep(50);\n}\n";
+  assert.match(detail({ ...CLEAN, 'skills/x/scripts/w.mjs': loop }), /poll loop outside lib\/loop-budget.mjs/);
+  assert.doesNotMatch(detail({ ...CLEAN, 'lib/loop-budget.mjs': loop }), /poll loop outside/);
+  assert.doesNotMatch(detail({ ...CLEAN, 'skills/x/scripts/w.mjs': 'await sleep(50);\n' }), /poll loop outside/);
+});
+
+test('prose telling an agent to poll fails', () => {
+  assert.match(detail({ ...CLEAN, 'agents/a.md': '---\nname: a\n---\nPoll the log until it ends.\n' }), /poll or rerun a wait/);
+  assert.doesNotMatch(detail({ ...CLEAN, 'agents/a.md': '---\nname: a\n---\nWait with kind `proof`, poll nothing.\n' }), /poll or rerun a wait/);
+});
+
 test('the real kinds table names review-fix and provider with a cap', async () => {
   const { roundCap } = await import('../lib/loop-budget.mjs');
   assert.equal(roundCap('review-fix'), 3);

@@ -89,7 +89,6 @@ The agents run behind the skills; you do not call them.
 |---|---|
 | `orchestrator` | Runs a multi-part task with up to 4 workers. |
 | `build-task` | Builds one plan task, folding the hard-problem and review-fix work. |
-| `task-runner` | Runs the build loop for a plan session. |
 | `review-branch` | Reviews a branch for gate, folding the claim judge. |
 | `research-worker` | Answers one bounded question from named sources, folding the docs fetch, idea and open-point work. |
 

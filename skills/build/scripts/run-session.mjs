@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { environmentMs } from '../../../lib/script-flags.mjs';
 import { sleep } from '#basics';
-import { roundCap } from '../../../lib/loop-budget.mjs';
+import { pollUntil, roundCap } from '../../../lib/loop-budget.mjs';
 import { parseStream } from './run-session-stream.mjs';
 import { fallbackModel } from './run-plan-provider.mjs';
 
@@ -53,15 +53,15 @@ function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit 
     const signals = Object.keys(exitCodes);
     for (const signal of signals) process.on(signal, onSignal);
     const parentPid = process.ppid;
-    const parentWatch = setInterval(() => {
-      if (process.ppid !== parentPid) onSignal('SIGHUP');
-    }, PARENT_POLL_MS).unref();
+    const parentWatch = new AbortController();
+    pollUntil(() => process.ppid !== parentPid, { intervalMs: PARENT_POLL_MS, wallMs: Infinity, unref: true, signal: parentWatch.signal })
+      .then((parentGone) => parentGone && onSignal('SIGHUP'));
     const settle = (code, signal) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       clearTimeout(graceTimer);
-      clearInterval(parentWatch);
+      parentWatch.abort();
       for (const signal of signals) process.off(signal, onSignal);
       resolve({ text, code, signal, timedOut, aborted });
     };

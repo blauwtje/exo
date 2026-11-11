@@ -57,17 +57,29 @@ test('a chain of three layers fails', () => {
 });
 
 test('a contract value restated in two prose files fails', () => {
-  const row = { wait: 'wait-report', return: { maxLines: 8 }, contextBudget: 45000 };
+  const row = { wait: 'none', return: { maxLines: 8 }, contextBudget: 45000 };
   const problems = findCoordinationProblems(
     state({
       contract: { claude: { main: row } },
       prose: [
-        { file: 'a.md', text: 'run wait-report.mjs' },
-        { file: 'b.md', text: 'then wait-report.mjs again' }
+        { file: 'a.md', text: 'keep it to at most 8 lines' },
+        { file: 'b.md', text: 'a cap of 8 lines' }
       ]
     })
   );
-  assert.match(problems.join('\n'), /wait command wait-report is restated in 2 prose files/);
+  assert.match(problems.join('\n'), /return cap 8 is restated in 2 prose files/);
+});
+
+test('prose that tells a subagent to end its turn and wait fails', () => {
+  const problems = findCoordinationProblems(state({ prose: [{ file: 'a.md', text: 'Then end your turn to wait.' }] }));
+  assert.match(problems.join('\n'), /a\.md tells a subagent to end its turn and wait/);
+});
+
+test('a dispatcher agent fails when the contract lets no subagent dispatch', () => {
+  const row = { wait: 'none', maxDepth: 1, mayDispatch: false, return: { maxLines: 8 }, contextBudget: 1 };
+  const agents = [{ name: 'boss', tools: ['Agent', 'SendMessage'], text: '' }];
+  const problems = findCoordinationProblems(state({ agents, contract: { claude: { 'subagent-coordinator': row } } }));
+  assert.match(problems.join('\n'), /boss can dispatch but the contract/);
 });
 
 test('a chain of three layers rooted at a subagent with no fork skill fails', () => {

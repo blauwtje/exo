@@ -1,7 +1,7 @@
 [
   { "rule": "stash", "hook": "dispatch-bash.mjs", "input": { "command": "git stash" }, "transcript": "subagent", "expect": "deny", "says": "git stash is denied" },
   { "rule": "stash", "hook": "dispatch-bash.mjs", "input": { "command": "git stash" }, "transcript": "lead", "expect": "allow", "says": "" },
-  { "rule": "shared-state", "hook": "dispatch-bash.mjs", "input": { "command": "git worktree remove .worktrees/x" }, "transcript": "subagent", "expect": "deny", "says": "worktree remove/prune/move" },
+  { "rule": "shared-state", "hook": "dispatch-bash.mjs", "input": { "command": "git worktree remove .claude/worktrees/x" }, "transcript": "subagent", "expect": "deny", "says": "worktree remove/prune/move" },
   { "rule": "wide-find", "hook": "dispatch-bash.mjs", "input": { "command": "find / -name '*.md'" }, "transcript": "lead", "expect": "deny", "says": "120 s tool timeout" },
   { "rule": "commit-attribution", "hook": "dispatch-bash.mjs", "input": { "command": "git commit -m 'fix\n\nCo-Authored-By: Example <user@example.com>'" }, "transcript": "lead", "expect": "deny", "says": "attribute the work to an AI" },
   { "rule": "script-size", "hook": "dispatch-bash.mjs", "input": { "command": "echo __BIG__" }, "transcript": "subagent", "expect": "rewrite", "says": "" }

@@ -1,8 +1,7 @@
 37794 benchmarks/adhd-score.mjs
 11266 benchmarks/adhd/judges.mjs
-25151 benchmarks/agent-tier.mjs
+24368 benchmarks/agent-tier.mjs
 12055 benchmarks/agent-tier/estimate.mjs
-8418 benchmarks/agent-tier/task-runner/transcript.mjs
 23670 benchmarks/bisect.mjs
 11568 benchmarks/bisect/lib/history.mjs
 8975 benchmarks/bisect/lib/pool.mjs
@@ -44,7 +43,7 @@
 11977 benchmarks/sweep-cells.mjs
 17315 benchmarks/sweep-fixtures.mjs
 11136 benchmarks/sweep-score.mjs
-26653 benchmarks/sweep.mjs
+26634 benchmarks/sweep.mjs
 10508 benchmarks/tasks.mjs
 9790 benchmarks/tbench/readouts.mjs
 15702 benchmarks/value.mjs
@@ -58,11 +57,11 @@
 8554 lib/check-cache.mjs
 11006 lib/code-comments.mjs
 14727 lib/code-rules.mjs
-16314 lib/context-decisions.mjs
+16299 lib/context-decisions.mjs
 10545 lib/eval-stats.mjs
-10218 lib/guard-rules.mjs
+10210 lib/guard-rules.mjs
 8624 lib/plan-tasks.mjs
-9945 lib/red-green.mjs
+9926 lib/red-green.mjs
 9701 lib/statusline.mjs
 14892 lib/worker-size.mjs
 12827 skills/build/scripts/land-run.mjs
@@ -80,7 +79,7 @@
 8729 skills/gate/scripts/gate-run.mjs
 18313 skills/gate/scripts/merge-reviews.mjs
 19457 skills/build/scripts/round.mjs
-12270 skills/build/scripts/setup.mjs
+12127 skills/build/scripts/setup.mjs
 8567 skills/ship/scripts/pr-body.mjs
 12237 skills/ship/scripts/ship.mjs
 8256 skills/ship/scripts/stack.mjs

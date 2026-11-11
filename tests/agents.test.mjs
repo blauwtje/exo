@@ -61,19 +61,6 @@ test('the key allowlist accepts memory and color and rejects remember', () => {
   assert.deepEqual(unsupportedKeys({ name: 'a', remember: 'project' }), ['remember']);
 });
 
-test('only task-runner sets the one-hour prompt cache', () => {
-  for (const agent of agents) {
-    const expected = agent.fileName === 'task-runner.md' ? '{ cacheTtl: 1h }' : undefined;
-    assert.equal(agent.frontmatter.experimental, expected, `${agent.fileName} experimental key`);
-  }
-});
-
-test('task-runner lists Write so it can hand over at the hard context limit', () => {
-  const taskRunner = agents.find((agent) => agent.fileName === 'task-runner.md');
-  const tools = taskRunner.frontmatter.tools.split(', ');
-  assert.ok(tools.includes('Write'), 'task-runner tools lack Write, the one tool the hard limit still allows');
-});
-
 test('every agent is named after its file', () => {
   for (const agent of agents) {
     assert.equal(`${agent.frontmatter.name}.md`, agent.fileName);
@@ -107,8 +94,8 @@ test('every listed tool is a tool the harness has', () => {
 
 const TASK_MODES = fs.readFileSync(new URL('../lib/agent-modes/task-modes.md', import.meta.url), 'utf8');
 
-test('build-task and task-runner hold the TaskStop their bodies tell them to run', () => {
-  for (const name of ['build-task', 'task-runner']) {
+test('build-task holds the TaskStop its body tells it to run', () => {
+  for (const name of ['build-task']) {
     const agent = agents.find((candidate) => candidate.frontmatter.name === name);
     const body = name === 'build-task' ? `${agent.body}\n${TASK_MODES}` : agent.body;
     assert.ok(body.includes('TaskStop'), `${name} body names TaskStop`);
@@ -238,26 +225,6 @@ test('review-branch reads its opening inputs together in its first message', () 
   assert.match(reviewer.body, /^- Your first message Reads plan `## Goal`, `## Non-goals`, `## Context`, the standard, the diff and the nearest `CLAUDE\.md` or `AGENTS\.md` together, then the changed ranges\.$/m);
 });
 
-test('task-runner dispatches every build and repair in the foreground and waits by W1 in a session and W2 in a run session', () => {
-  const unit = agents.find((agent) => agent.frontmatter.name === 'task-runner');
-  assert.match(unit.body, /^ {2}- A `Wave:`\/`Start:` build runs in the script's `Slot:` worktree, so run no `git worktree`; after `Wave discarded:` its `Next:` block builds alone\.$/m);
-  assert.match(unit.body, /^ {2}- After `Async agent launched`, end your turn to wait \(W1\)\. In a `-p` run session run `Wait:` \(W2\), timeout 600000, never a `sleep` loop; exit 2 reruns per kind `wait`, then `BLOCKED <n> no report`\.$/m);
-  assert.match(unit.body, /^ {2}- `Detail:` names a script's full log; read it only on a failure\.$/m);
-  assert.match(unit.body, /^ {2}- Land a returned slot with `Land <n>:`, all with `Land all:`; a `LANDED` refill likewise\.$/m);
-  assert.match(unit.body, /^ {2}- When a build returns no report, send it one SendMessage to write it; if none follows, keep its slot, do not `sleep`\.$/m);
-  assert.match(unit.body, /On `PLAN DRIFT`[^\n]*or return `BLOCKED <n> <path>` to stop/);
-  assert.match(unit.body, /^ {2}- Loop until every block task has a `LANDED` or `BLOCKED` line\.$/m);
-  assert.match(unit.body, /land-task\.mjs[^\n]* --next` with timeout 600000: its last block is the next dispatch, not a rerun\./);
-  assert.doesNotMatch(unit.body, /end the turn/i);
-  assert.doesNotMatch(unit.body, /runs in the background in a/);
-  assert.doesNotMatch(unit.body, /notification resumes|notified/);
-});
-
-test('task-runner runs on its own kind, at sonnet medium', () => {
-  assert.equal(kindTable.agents['agents/task-runner.md'].kind, 'task-runner');
-  assert.deepEqual(kindTable.kinds['task-runner'], { model: 'sonnet', effort: 'medium' });
-});
-
 test('only build-task and doc-task hold a retry cell, above their on cell', () => {
   const table = JSON.parse(fs.readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
   assert.deepEqual(Object.keys(table.kinds).filter((kind) => table.kinds[kind].retry), ['build-task', 'doc-task']);
@@ -303,8 +270,8 @@ test('orchestrator works in phases, keeps worker detail in files and hands over 
 test('orchestrator dispatches async within its Workers line, reads by range and sends discovery to lookup', () => {
   const { body } = agents.find((agent) => agent.frontmatter.name === 'orchestrator');
   assert.doesNotMatch(body, /one foreground dispatch each/);
-  assert.match(body, /only where your brief names `-p`: a `wait-report\.mjs` Bash call, timeout 600000/);
-  assert.match(body, /In a forked skill, dispatch with `run_in_background: false` and keep your turn open, so the gate tail runs/);
+  assert.match(body, /Do not end a turn to wait for a worker/);
+  assert.match(body, /keep your turn open until all return: set `run_in_background: false`/);
   assert.doesNotMatch(body, /at most 8 lines|at most 5 lines/);
   assert.match(body, /no more workers than its `Workers:` line, retries included/);
   assert.match(body, /at most 4 reads, Bash too, of your brief's `Reads:` paths by range/);
@@ -342,13 +309,10 @@ test('build-task carries the fix-review and hardest modes and review-branch the 
 
 test('trimmed agent rules stay pinned', () => {
   const body = (name) => agents.find((agent) => agent.frontmatter.name === name).body;
-  for (const phrase of ['end your turn to wait', 'fixed brief', 'a report with an unsourced', 'Retry a failed part per kind', 'no text between calls']) {
+  for (const phrase of ['Do not end a turn to wait', 'fixed brief', 'a report with an unsourced', 'Retry a failed part per kind', 'no text between calls']) {
     assert.ok(body('orchestrator').includes(phrase), phrase);
   }
   for (const phrase of ['before or between', 'start no background session']) {
     assert.ok(body('review-branch').includes(phrase), phrase);
-  }
-  for (const phrase of ['refusal, no rerun', 'at most 8 lines, one per task']) {
-    assert.ok(body('task-runner').includes(phrase), phrase);
   }
 });

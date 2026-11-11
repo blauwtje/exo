@@ -33,6 +33,8 @@ async function afterTaskOne(worktreeSetup) {
   return { root, planPath, plan, next };
 }
 
+const slotPath = (root, number) => path.join(root, '.claude', 'worktrees', `${path.basename(root)}-task-${number}`);
+
 const worktrees = (root) => git(root, 'worktree', 'list');
 
 test('a Next: task prints Since: and its implementer prompt filled', async () => {
@@ -42,7 +44,7 @@ test('a Next: task prints Since: and its implementer prompt filled', async () =>
   assert.match(result.stdout, /^Next: Task 1$/m);
   assert.match(result.stdout, /^Dispatch: exo:build-task$/m);
   assert.match(result.stdout, /^Since: \d{10}$/m);
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" /m);
+  assert.doesNotMatch(result.stdout, /^Wait:/m);
   const brief = result.stdout.match(/^Brief: (.+)$/m)[1];
   assert.match(result.stdout, new RegExp(`^Prompt:\\nTask 1 of ${planPath}, branch feat/fixture, checkout ${root}\\.\\nRead your brief at ${brief}\\.\\nReport to: ${root}/\\.exo/implementer-1\\.md\\nReturn: one line$`, 'm'));
 });
@@ -185,7 +187,7 @@ test('--open-slots on a Wave writes the baseline, opens each slot and prints the
   assert.doesNotMatch(result.stdout, /^Drift: none$/m);
   assert.equal(await fs.readFile(path.join(root, '.exo', 'baseline.txt'), 'utf8'), '?? preexisting.txt\n');
   for (const number of [2, 3]) {
-    const slot = `${root}-task-${number}`;
+    const slot = slotPath(root, number);
     assert.match(worktrees(root), new RegExp(`${slot} +[0-9a-f]+ \\(detached HEAD\\)`));
     assert.equal(git(slot, 'rev-parse', 'HEAD'), head);
     assert.ok((await fs.stat(path.join(slot, '.exo'))).isDirectory());
@@ -196,14 +198,14 @@ test('--open-slots on a Wave writes the baseline, opens each slot and prints the
   }
   assert.match(result.stdout, /^Dispatch all in one message as foreground Agent calls, no run_in_background; Since: \d{10}$/m);
   assert.doesNotMatch(result.stdout, /run_in_background: true/);
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" /m);
+  assert.doesNotMatch(result.stdout, /^Wait:/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '?? preexisting.txt');
 });
 
 test('a failed worktree add discards the wave and the first task builds alone in the run checkout', async () => {
   const { root, next } = await afterTaskOne('none');
-  await fs.mkdir(`${root}-task-3`);
-  await fs.writeFile(path.join(`${root}-task-3`, 'in-the-way.txt'), 'x\n');
+  await fs.mkdir(slotPath(root, 3), { recursive: true });
+  await fs.writeFile(path.join(slotPath(root, 3), 'in-the-way.txt'), 'x\n');
   const result = await next('--open-slots');
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Wave discarded: git worktree add .+-task-3 failed/m);
@@ -212,7 +214,7 @@ test('a failed worktree add discards the wave and the first task builds alone in
   assert.match(result.stdout, /^Dispatch: exo:build-task$/m);
   assert.match(result.stdout, new RegExp(`checkout ${root}\\.$`, 'm'));
   assert.doesNotMatch(worktrees(root), /-task-2/);
-  await assert.rejects(fs.stat(`${root}-task-2`));
+  await assert.rejects(fs.stat(slotPath(root, 2)));
 });
 
 test('a failing Worktree setup discards the wave', async () => {
@@ -227,7 +229,7 @@ test('the Worktree setup command runs inside each slot', async () => {
   const { root, next } = await afterTaskOne('touch setup-ran');
   const result = await next('--open-slots');
   assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
-  for (const number of [2, 3]) assert.ok((await fs.stat(path.join(`${root}-task-${number}`, 'setup-ran'))).isFile());
+  for (const number of [2, 3]) assert.ok((await fs.stat(path.join(slotPath(root, number), 'setup-ran'))).isFile());
 });
 
 test('a gitignored relative plan input is copied into each slot', async () => {
@@ -239,7 +241,7 @@ test('a gitignored relative plan input is copied into each slot', async () => {
   await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), 'data/\n');
   const result = await next('--open-slots');
   assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
-  for (const number of [2, 3]) assert.equal(await fs.readFile(path.join(`${root}-task-${number}`, 'data', 'notes.md'), 'utf8'), 'secret\n');
+  for (const number of [2, 3]) assert.equal(await fs.readFile(path.join(slotPath(root, number), 'data', 'notes.md'), 'utf8'), 'secret\n');
 });
 
 test('a gitignored folder or .env input is not copied into a slot', async () => {
@@ -254,8 +256,8 @@ test('a gitignored folder or .env input is not copied into a slot', async () => 
   const result = await next('--open-slots');
   assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
   for (const number of [2, 3]) {
-    await assert.rejects(fs.stat(path.join(`${root}-task-${number}`, 'data')));
-    await assert.rejects(fs.stat(path.join(`${root}-task-${number}`, 'config', '.env.local')));
+    await assert.rejects(fs.stat(path.join(slotPath(root, number), 'data')));
+    await assert.rejects(fs.stat(path.join(slotPath(root, number), 'config', '.env.local')));
   }
 });
 
@@ -265,7 +267,7 @@ test('a gitignored relative input missing in the run root is left alone', async 
   await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), 'data/\n');
   const result = await next('--open-slots');
   assert.match(result.stdout, /^Wave: Task 2, Task 3$/m);
-  await assert.rejects(fs.stat(path.join(`${root}-task-2`, 'data')));
+  await assert.rejects(fs.stat(path.join(slotPath(root, 2), 'data')));
 });
 
 test('a refill opens its slot with its own base, keeps the baseline and prints a land command for every running slot', async () => {
@@ -279,11 +281,11 @@ test('a refill opens its slot with its own base, keeps the baseline and prints a
   const result = await next('--open-slots', '--in-flight', '3');
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Start: Task 4$/m);
-  assert.match(result.stdout, new RegExp(`^Land 4: .+--task 4 --root "${root}" --slot "${root}-task-4" --base ${head} .+--in-flight 3$`, 'm'));
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" /m);
+  assert.match(result.stdout, new RegExp(`^Land 4: .+--task 4 --root "${root}" --slot "${slotPath(root, 4)}" --base ${head} .+--in-flight 3$`, 'm'));
+  assert.doesNotMatch(result.stdout, /^Wait:/m);
   assert.match(result.stdout, /^Land 3: /m);
   assert.equal(await fs.readFile(path.join(root, '.exo', 'baseline.txt'), 'utf8'), baseline);
-  assert.match(worktrees(root), new RegExp(`${root}-task-4 `));
+  assert.match(worktrees(root), new RegExp(`${slotPath(root, 4)} `));
 });
 
 test('a refill with nothing to start still prints the land commands for the running slots', async () => {
@@ -291,7 +293,7 @@ test('a refill with nothing to start still prints the land commands for the runn
   await next('--open-slots');
   const result = await next('--open-slots', '--in-flight', '2,3');
   assert.match(result.stdout, /^Start: none$/m);
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" /m);
+  assert.doesNotMatch(result.stdout, /^Wait:/m);
   assert.match(result.stdout, /^Land 2: /m);
   assert.match(result.stdout, /^Land 3: /m);
 });
@@ -320,7 +322,7 @@ test('--block on a fully landed plan prints no per-task proof lines', async () =
 test('a refill with --only starts only named tasks and none once they are all running', async () => {
   const { root, next } = await afterTaskOne('none');
   await next('--open-slots', '--only', '2,3');
-  git(root, 'worktree', 'remove', '--force', `${root}-task-2`);
+  git(root, 'worktree', 'remove', '--force', slotPath(root, 2));
   await fs.writeFile(path.join(root, 'src', 'left.js'), 'export const left = 1;\n');
   git(root, 'add', '.');
   git(root, 'commit', '-q', '-m', 'feat(app): left', '-m', 'Plan-task: fixture/2');
@@ -468,14 +470,7 @@ test('next-task prints usage and exits 0 on --help', async () => {
   assert.match(result.stdout, /^usage: next-task\.mjs --plan <file>/);
 });
 
-test('chainedForCaller drops the lines the runner has and keeps Since: and Wait:', () => {
-  const text = ['Plan: p.md', 'Branch: b', 'Drift: none', 'Base: abc', 'Proof: x', 'Brief: /b/1.md', 'Read your brief at /b/1.md.', 'Since: 1', 'Wait: node w'].join('\n');
-  assert.equal(chainedForCaller(text), ['Read your brief at /b/1.md.', 'Since: 1', 'Wait: node w'].join('\n'));
-});
-
-test('a run session prints the wait-report line', async () => {
-  const { root, planPath } = await landingCheckout();
-  const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root, env: { EXO_RUN_SESSION: '1' } });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Wait: node .+wait-report\.mjs"/m);
+test('chainedForCaller drops the lines the runner has and keeps Since:', () => {
+  const text = ['Plan: p.md', 'Branch: b', 'Drift: none', 'Base: abc', 'Proof: x', 'Brief: /b/1.md', 'Read your brief at /b/1.md.', 'Since: 1'].join('\n');
+  assert.equal(chainedForCaller(text), ['Read your brief at /b/1.md.', 'Since: 1'].join('\n'));
 });

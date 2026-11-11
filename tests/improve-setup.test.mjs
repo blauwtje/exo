@@ -28,16 +28,16 @@ test('setup creates branch, worktree, config, baseline row, brief and the settle
   const result = run(root, ...base);
   assert.equal(result.status, 0, result.stderr);
   const brief = path.join(fs.realpathSync(root), '.exo/improve/t1.brief.md');
-  assert.match(result.stdout, /^tag=t1 branch=improve\/t1 worktree=\.worktrees\/improve-t1 score=12 limit=\d+ seed=1 sd=0 mde=0 holdout=none model=\S+ effort=\S+ noidea=\d+ mode=inline brief=\S+\n$/);
+  assert.match(result.stdout, /^tag=t1 branch=improve\/t1 worktree=\S+\/\.claude\/worktrees\/improve-t1 score=12 limit=\d+ seed=1 sd=0 mde=0 holdout=none model=\S+ effort=\S+ noidea=\d+ mode=inline brief=\S+\n$/);
   assert.equal(fs.realpathSync(result.stdout.trim().split('brief=')[1]), brief);
   const cfg = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8'));
-  assert.deepEqual([cfg.scope, cfg.readOnly, cfg.direction, cfg.worktree], [['code.txt'], ['check.mjs'], 'higher', '.worktrees/improve-t1']);
+  assert.deepEqual([cfg.scope, cfg.readOnly, cfg.direction, cfg.worktree], [['code.txt'], ['check.mjs'], 'higher', path.join(fs.realpathSync(root), '.claude/worktrees/improve-t1')]);
   assert.match(cfg.scorerHash, /^[0-9a-f]{64}$/);
   const rows = fs.readFileSync(path.join(root, '.exo/improve/t1.tsv'), 'utf8').trim().split('\n');
   assert.equal(rows[0], 'commit\tscore\tstatus\tdescription');
   assert.match(rows[1], /^[0-9a-f]+\t12\tkeep\tbaseline$/);
   assert.match(fs.readFileSync(brief, 'utf8'), /best so far 12/);
-  assert.ok(fs.existsSync(path.join(root, '.worktrees/improve-t1')));
+  assert.ok(fs.existsSync(path.join(root, '.claude/worktrees/improve-t1')));
 });
 
 test('setup scores the baseline baselineRuns times and stores the runs and ITEM scores as samples', () => {
@@ -52,7 +52,7 @@ test('setup scores the baseline baselineRuns times and stores the runs and ITEM 
   const [commit] = fs.readFileSync(path.join(root, '.exo/improve/t1.tsv'), 'utf8').trim().split('\n')[1].split('\t');
   const stored = JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.samples.jsonl'), 'utf8'));
   assert.deepEqual(stored, { commit, status: 'keep', runs: Array(runs).fill(12), items: { a: Array(runs).fill(12), b: Array(runs).fill(1) }, aborted: 0 });
-  assert.equal(fs.readFileSync(path.join(root, '.worktrees/improve-t1/runs.log'), 'utf8').trim().split('\n').length, runs);
+  assert.equal(fs.readFileSync(path.join(root, '.claude/worktrees/improve-t1/runs.log'), 'utf8').trim().split('\n').length, runs);
 });
 
 test('the limit is derived from the baseline run unless --limit is given', () => {
@@ -75,7 +75,7 @@ test('setup commits a --scorer path on the improve branch only', () => {
 test('resume resets the worktree to the last kept row and prints the settled line', () => {
   const root = repo();
   assert.equal(run(root, ...base).status, 0);
-  const tree = path.join(root, '.worktrees/improve-t1');
+  const tree = path.join(root, '.claude/worktrees/improve-t1');
   const kept = git(tree, 'rev-parse', '--short', 'HEAD');
   fs.writeFileSync(path.join(tree, 'code.txt'), 'x\n');
   git(tree, 'commit', '-qam', 'unscored');
@@ -108,7 +108,7 @@ test('a second setup with a taken tag gets a numeric suffix', () => {
   assert.equal(run(root, ...base).status, 0);
   const again = run(root, ...base);
   assert.equal(again.status, 0, again.stderr);
-  assert.match(again.stdout, /^tag=t1-2 branch=improve\/t1-2 worktree=\.worktrees\/improve-t1-2 /);
+  assert.match(again.stdout, /^tag=t1-2 branch=improve\/t1-2 worktree=\S+\/\.claude\/worktrees\/improve-t1-2 /);
   assert.match(run(root, ...base).stdout, /^tag=t1-3 /);
 });
 
@@ -141,7 +141,7 @@ test('a scope, readonly or scorer entry that is absolute or outside the repo fai
   }
   assert.equal(git(root, 'branch', '--list', 'improve/*'), '');
   assert.doesNotMatch(git(root, 'worktree', 'list'), /improve-tx/);
-  assert.equal(fs.existsSync(path.join(root, '.worktrees')), false);
+  assert.equal(fs.existsSync(path.join(root, '.claude/worktrees')), false);
 });
 
 test('a read-only path that does not exist fails before any branch', () => {
@@ -171,7 +171,7 @@ test('--first commits the files under its dir as round 1 and prints the round ro
   const [settledLine, row] = result.stdout.trim().split('\n');
   assert.match(settledLine, /^tag=t1 .* score=12 .*mode=inline /);
   assert.match(row, /^ROW [0-9a-f]+ 17 keep best=17$/);
-  const tree = path.join(root, '.worktrees/improve-t1');
+  const tree = path.join(root, '.claude/worktrees/improve-t1');
   assert.equal(git(tree, 'log', '-1', '--format=%s'), 'Widen the greeting');
   assert.equal(fs.readFileSync(path.join(tree, 'code.txt'), 'utf8'), 'hello wide world\n');
   assert.equal(fs.existsSync(path.join(root, '.exo/improve/first')), false);
@@ -184,7 +184,7 @@ test('--first that scores worse is discarded and the worktree is reset to the ba
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout.trim().split('\n')[1], /^ROW [0-9a-f]+ 3 discard best=12$/);
   assert.match(result.stderr, /^OUT /m);
-  assert.equal(fs.readFileSync(path.join(root, '.worktrees/improve-t1/code.txt'), 'utf8'), 'hello world\n');
+  assert.equal(fs.readFileSync(path.join(root, '.claude/worktrees/improve-t1/code.txt'), 'utf8'), 'hello world\n');
 });
 
 test('--first with a read-only or out-of-scope file, no files or no subject fails before any branch', () => {
@@ -211,7 +211,7 @@ test('every baseline run gets the run seed as EXO_SEED and the seed is stored in
   const result = run(root, ...base);
   assert.equal(result.status, 0, result.stderr);
   const seed = String(improveDefaults().seed);
-  assert.deepEqual(fs.readFileSync(path.join(root, '.worktrees/improve-t1/seeds.log'), 'utf8').trim().split('\n'), Array(improveDefaults().baselineRuns).fill(seed));
+  assert.deepEqual(fs.readFileSync(path.join(root, '.claude/worktrees/improve-t1/seeds.log'), 'utf8').trim().split('\n'), Array(improveDefaults().baselineRuns).fill(seed));
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.exo/improve/t1.json'), 'utf8')).seed, Number(seed));
   assert.match(result.stdout, new RegExp(` seed=${seed} `));
 });

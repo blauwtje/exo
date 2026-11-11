@@ -330,13 +330,6 @@ test('an orchestrator past the hard limit cannot dispatch', () => {
   for (const tool of ['Agent', 'SendMessage', 'Monitor']) assert.match(call(tool).deny, /Status: handover/, tool);
 });
 
-test('a task-runner over the target still dispatches an agent but cannot read', () => {
-  const call = agentCaller(TARGET + 1000, 'exo:task-runner');
-  assert.equal(call('Agent')?.deny, undefined);
-  assert.equal(call('SendMessage')?.deny, undefined);
-  assert.match(call('Read').deny, /new reads/);
-});
-
 test('an agent that is not a coordinator is still refused Agent over the target', () => {
   for (const type of ['exo:build-task', 'general-purpose', undefined]) {
     const call = agentCaller(TARGET + 1000, type);

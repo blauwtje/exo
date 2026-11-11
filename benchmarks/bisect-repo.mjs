@@ -29,7 +29,7 @@ export function reproHolds(directory, spec) {
 }
 
 function addWorktree(repo, directory, revision) {
-  return createWorktree(repo, directory, ['worktree', 'add', '--detach', '--quiet', directory, revision], { env: false }).ok;
+  return createWorktree(repo, directory, ['--detach', '--quiet', directory, revision], { env: false }).ok;
 }
 
 export function holdsAt(repo, revision, spec) {

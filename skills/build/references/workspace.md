@@ -17,8 +17,8 @@ Where a run commits is settled before its first edit, so no work lands on a bran
 - `commit-here <where>` commits at `<where>` with no question.
 - `--land` → the `ask` menu takes its (A) through `--pick` with no question.
 - `ask` puts its menu as the question and waits for the letter. Before any edit, rerun the script with `--pick branch|worktree|current --name <branch-name>` for that answer.
-- When the script reports a failed `git switch` or `git worktree add`, stop the run before any edit.
+- When the script reports a failed `git switch` or worktree creation, stop the run before any edit.
 - `<branch-name>` is the plan's `Branch:` line when it names a non-default branch, else `<type>/<slug>` from the goal.
-- When the session has the harness's own worktree tool, prefer it over `git worktree add`.
+- When the session has the harness's own worktree tool, prefer it over a git-made worktree.
 - Every later command runs inside the picked branch or worktree. Name that path or branch as `start-run.mjs`'s `--checkout` and the unit's checkout.
 - Push only after `ship`.

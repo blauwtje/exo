@@ -21,6 +21,10 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `runTreeSync` past its deadline returns `timedOut: true` and a grandchild that would write a marker file after the deadline writes none; a passing command returns status 0 with stdout and stderr merged (Task 3; seam: `tests/process-tree.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).
 
+## loop-budget-2
+- `npm run check` fails a planted agent line telling a subagent to end its turn and wait for a child, a planted `setInterval` file poll outside `lib/loop-budget.mjs` and a planted `git worktree add ../x` outside `lib/checkout.mjs` (Task 4, Task 9, Task 16).
+- A run started in a linked worktree opens its slots as flat siblings under `<main checkout>/.claude/worktrees/`, and a repo with no ignore rule gets `.claude/worktrees/` in `.git/info/exclude` with `git status` clean (Task 10, Task 12).
+
 ## loop-budget
 - A fix round that does not lower the open count is reverted and prints `LOOP <kind> STOP no-progress` (Task 1, Task 5).
 - One Agent dispatch that breaks three brief rules is refused once, naming all three; the third refusal of the same dispatch stops with `LOOP refusal STOP cap` (Task 2).

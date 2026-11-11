@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { readJsonOrNull } from '#basics';
-import { createWorktree } from '#checkout';
+import { createWorktree, worktreePath } from '#checkout';
 import { scratchPath } from '#scratch-path';
 import { git } from '#git';
 
@@ -11,7 +11,7 @@ const windowFile = (root) => scratchPath(root, 'window.json');
 
 export const baselineFile = (root) => scratchPath(root, 'baseline.txt');
 
-export const slotOf = (toplevel, number) => `${toplevel}-task-${number}`;
+export const slotOf = (toplevel, number) => worktreePath(`${path.basename(toplevel)}-task-${number}`, toplevel);
 
 const PORT_STRIDE = 10;
 
@@ -87,8 +87,8 @@ function runSetup(slot, setup, variables) {
 
 function openSlot(toplevel, number, { setup, inputs, variables }, made) {
   const slot = slotOf(toplevel, number);
-  const add = createWorktree(toplevel, slot, ['worktree', 'add', '--detach', slot, 'HEAD'], { env: false });
-  if (!add.ok) return { reason: `git worktree add ${slot} failed: ${add.error}` };
+  const add = createWorktree(toplevel, slot, ['--detach', slot, 'HEAD'], { env: false });
+  if (!add.ok) return { reason: add.failure };
   made.push(slot);
   fs.mkdirSync(path.join(slot, '.exo'), { recursive: true });
   copyInputs(toplevel, slot, inputs);

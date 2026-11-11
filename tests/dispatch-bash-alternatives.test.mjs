@@ -46,9 +46,9 @@ test('a wide find deny names find . and git ls-files', async () => {
   }
 });
 
-test('a sleep deny names the wait-report.mjs route', async () => {
+test('a sleep deny names the no-polling rule', async () => {
   const reason = await reasonOf('sleep 30', { agent_type: 'exo:task-runner' });
-  assert.match(reason, /wait-report\.mjs/);
+  assert.match(reason, /No sleep polling/);
 });
 
 test('a long command is saved verbatim under .exo/ and the command is rewritten to run it', async () => {

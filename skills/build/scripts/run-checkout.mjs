@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
-import { createWorktree } from '#checkout';
+import { createWorktree, worktreePath } from '#checkout';
 import { defaultBranch, gitLine, gitResult } from '#git';
 import { readPluginRoot } from '#plugin-pointer';
 import { Refusal } from './cli-refusal.mjs';
@@ -30,13 +30,13 @@ export function worktreeFor(root, wanted) {
   const held = worktrees(root).find((tree) => tree.branch === wanted);
   if (held?.main) throw new Refusal(`branch ${wanted} is checked out in the main checkout ${held.path}, which the loaded exo runs from; run git switch ${defaultBranch(root) ?? '<default branch>'} there first`);
   if (held !== undefined) return held.path;
-  const where = path.join(root, '.worktrees', wanted.replaceAll('/', '-'));
+  const where = worktreePath(wanted.replaceAll('/', '-'), root);
   const exists = gitLine(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
   const base = defaultBranch(root);
   if (!exists && base === null) throw new Refusal(`branch ${wanted} is missing and the checkout has no default branch to create it from`);
-  const args = exists ? ['worktree', 'add', where, wanted] : ['worktree', 'add', '-b', wanted, where, base];
+  const args = exists ? [where, wanted] : ['-b', wanted, where, base];
   const done = createWorktree(root, where, args);
-  if (!done.ok) throw new Refusal(`git ${args.join(' ')} failed: ${done.error}`);
+  if (!done.ok) throw new Refusal(done.failure);
   return where;
 }
 

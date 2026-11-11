@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { coveringTests } from '../../lib/covering-tests.mjs';
 
-const KNOWN_PAIR = { changed: 'agents/task-runner.md', test: 'tests/agents.test.mjs' };
+const KNOWN_PAIR = { changed: 'agents/build-task.md', test: 'tests/agents.test.mjs' };
 
 function unnamedCheckModules(repository) {
   const testTexts = fs.readdirSync(repository.join('tests'))

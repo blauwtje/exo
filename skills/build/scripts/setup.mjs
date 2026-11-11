@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { createWorktree } from '#checkout';
+import { createWorktree, worktreePath } from '#checkout';
 import { git, gitLine } from '#git';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,9 +28,8 @@ function gitStrict(cwd, ...args) {
 }
 
 function addWorktree(root, worktree, ...rest) {
-  const args = ['worktree', 'add', ...rest];
-  const done = createWorktree(root, path.resolve(root, worktree), args, { env: false });
-  if (!done.ok) throw new SetupError(`git ${args.join(' ')} failed: ${done.error}`);
+  const done = createWorktree(root, worktree, rest, { env: false });
+  if (!done.ok) throw new SetupError(done.failure);
 }
 
 const gitOk = (cwd, ...args) => gitLine(cwd, args) !== null;
@@ -78,7 +77,7 @@ function commitScorer(root, worktree, paths) {
 
 function discardBranch(root, worktree, branch) {
   const left = [];
-  if (fs.existsSync(path.join(root, worktree))) {
+  if (fs.existsSync(worktree)) {
     const removed = spawnSync('git', ['worktree', 'remove', '--force', worktree], { cwd: root, encoding: 'utf8' });
     if (removed.status !== 0) left.push(`worktree ${worktree}: ${removed.stderr.trim()}`);
   }
@@ -157,9 +156,9 @@ function fresh(flags) {
   const dir = path.join(root, '.exo', 'improve');
   excludeScratch(root);
   fs.mkdirSync(dir, { recursive: true });
-  const worktree = `.worktrees/improve-${tag}`;
+  const worktree = worktreePath(`improve-${tag}`, root);
   addWorktree(root, worktree, '-b', branch, worktree);
-  const cwd = path.join(root, worktree);
+  const cwd = worktree;
   try {
     commitScorer(root, cwd, list(flags.scorer));
     const { cfg, samples, score } = buildConfig(flags, cwd, worktree);
@@ -193,8 +192,8 @@ function resume(flags) {
   const rows = readRows(path.join(dir, `${tag}.tsv`));
   const kept = lastKeep(rows);
   if (!kept) throw new SetupError(`${tag}.tsv has no kept row`);
-  if (!fs.existsSync(path.join(root, cfg.worktree))) addWorktree(root, cfg.worktree, cfg.worktree, `improve/${tag}`);
-  gitStrict(path.join(root, cfg.worktree), 'reset', '--hard', kept.commit);
+  if (!fs.existsSync(cfg.worktree)) addWorktree(root, cfg.worktree, cfg.worktree, `improve/${tag}`);
+  gitStrict(cfg.worktree, 'reset', '--hard', kept.commit);
   writeBrief({ dir, tag, cfg, rows });
   settled({ root, dir, cfg, tag, score: kept.score });
 }

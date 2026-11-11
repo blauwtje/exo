@@ -70,7 +70,7 @@ test('return caps fails on the contract pointer when the contract holds no line 
 test('script output fails on a runner script that skips the script-output import', () => {
   const root = tree({
     'agents/task-runner.md': 'Run land-task.mjs.\n',
-    'skills/build/references/rolling-window.md': '\n',
+    'skills/build/references/rolling-window.md': 'Run land-task.mjs.\n',
     'skills/build/scripts/land-task.mjs': 'console.log(1);\n'
   });
   const [failure] = failures(checkScriptOutput, root);

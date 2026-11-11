@@ -93,7 +93,7 @@ test('a refused landing prints Land: for the rebuild into the same slot and reco
   const before = Math.floor(Date.now() / 1000);
   const result = await land(undefined, { EXO_RUN_SESSION: '1' });
   assert.match(result.stdout, /^REFUSED 1\b/);
-  assert.match(result.stdout, /^Wait: node ".+wait-report\.mjs" --any .*--report ".+implementer-1\.md".*--report ".+implementer-3\.md"/m);
+  assert.doesNotMatch(result.stdout, /^Wait:/m);
   assert.match(result.stdout, new RegExp(`^Land 1: node ".+land-slot\\.mjs" .*--task 1 .*--slot "${slot}" --base ${base} .*--in-flight 3$`, 'm'));
   assert.match(result.stdout, new RegExp(`^Land 3: node ".+land-slot\\.mjs" .*--task 3 .*--slot "${other}" `, 'm'));
   assert.ok(JSON.parse(await fs.readFile(window, 'utf8'))[1].since >= before);

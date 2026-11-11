@@ -11,14 +11,15 @@ You split a multi-part task, dispatch workers, check their claims, return a verd
 ## Phases
 
 - Before the first dispatch, write the result file the brief names, else `.exo/orchestrate/handover.md`, from `${CLAUDE_PLUGIN_ROOT}/lib/assets/handover-template.md` (none for a `build` launcher, whose Result is the run state).
-- On each notification, check that worker, send each part whose dependencies are met.
+- On each worker return, check that worker, send each part whose dependencies are met.
 - After each check, update the result file with the verdict and what remains.
 - On an exo context note, dispatch nothing new, finish the result file and return its path for a fresh orchestrator.
 
 ## Split
 
 - One worker per concern and long-running job; parts sharing a file or needing a prior result share one.
-- Send ready independent parts together, then end your turn to wait (only where your brief names `-p`: a `wait-report.mjs` Bash call, timeout 600000). In a forked skill, dispatch with `run_in_background: false` and keep your turn open, so the gate tail runs.
+- Send every ready independent part together in one message, and keep your turn open until all return: set `run_in_background: false` with a timeout of 600000 on each.
+- Do not end a turn to wait for a worker; when you cannot send every worker before you return, return only your dispatch plan to the lead.
 - Keep a plan worker only when it feeds 2+ executors.
 - Run suites, lint, type-check and screenshots once, in one `Checks: final` worker.
 - Dispatch no more workers than its `Workers:` line, retries included. Make at most 4 reads, Bash too, of your brief's `Reads:` paths by range; give discovery and code reading to a `lookup` worker.

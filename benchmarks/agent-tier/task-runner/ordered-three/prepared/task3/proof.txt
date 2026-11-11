@@ -1,1 +1,0 @@
-node --test tests/bar.test.mjs

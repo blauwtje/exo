@@ -88,14 +88,8 @@ test('a held lock is waited for, then the turn is taken', async () => {
   const { fake, options } = gateOptions();
   const lock = path.join(options.dir, 'tiktok.com.lock');
   fs.writeFileSync(lock, '');
-  let polls = 0;
-  const sleep = async (ms) => {
-    await fake.sleep(ms);
-    polls += 1;
-    if (polls === 3) fs.rmSync(lock);
-  };
-  await gateRequest(TIKTOK, { ...options, sleep });
-  assert.deepEqual(fake.state.sleeps, [10, 10, 10]);
+  setTimeout(() => fs.rmSync(lock), 40);
+  await gateRequest(TIKTOK, options);
   assert.equal(fs.existsSync(lock), false);
 });
 

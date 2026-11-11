@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs } from '#script-flags';
-import { sleep } from '#basics';
+import { pollUntil } from '../../../lib/loop-budget.mjs';
 import { CLI, watchCommand } from './cli-paths.mjs';
 import { FINAL_PHASES, isAlive, keptDir, listRuns, readGates, readState, runDir } from './run-state.mjs';
 import { Refusal, checkoutRoot } from './cli-refusal.mjs';
@@ -54,31 +54,35 @@ function finishWait(state, id, dir) {
   return 1;
 }
 
+function requireRun(root, id) {
+  const found = findRun(root, id);
+  if (found === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
+  return found;
+}
+
+function runSettled(root, id) {
+  const { state, kept } = requireRun(root, id);
+  const final = FINAL_PHASES.includes(state.phase);
+  const alive = isAlive(state.pid);
+  // why: a run writes its final phase before report.md and the move to .exo/kept/, so the wait ends once the run is kept or its process is gone.
+  return final ? kept || !alive : !alive;
+}
+
+function settledExit(root, id) {
+  const { state, dir } = requireRun(root, id);
+  if (FINAL_PHASES.includes(state.phase)) return finishWait(state, id, dir);
+  process.stdout.write(`exo: run ${id} ${state.phase}; process gone, continue with: exo run --resume ${id}\n`);
+  return 1;
+}
+
 export async function waitCommand(args) {
   const root = checkoutRoot();
   const id = args[0];
   if (id === undefined || args.length !== 1) throw new Refusal('usage: exo wait <id>');
-  const deadline = Date.now() + environmentMs('EXO_WAIT_MS', WAIT_MS);
-  for (;;) {
-    const found = findRun(root, id);
-    if (found === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
-    const { state, dir, kept } = found;
-    const final = FINAL_PHASES.includes(state.phase);
-    const alive = isAlive(state.pid);
-    // why: a run writes its final phase before report.md and the move to .exo/kept/, so the wait ends once the run is kept or its process is gone.
-    if (final && (kept || !alive)) {
-      return finishWait(state, id, dir);
-    }
-    if (!final && !alive) {
-      process.stdout.write(`exo: run ${id} ${state.phase}; process gone, continue with: exo run --resume ${id}\n`);
-      return 1;
-    }
-    const left = deadline - Date.now();
-    if (left <= 0) {
-      process.stdout.write(`exo: run ${id} still ${state.phase} at the wait deadline; keep waiting with: ${watchCommand(id)}\n`);
-      // why: 124 is the exit code timeout(1) uses, so a deadline reads apart from a failed run.
-      return 124;
-    }
-    await sleep(Math.min(POLL_MS, left));
-  }
+  const settled = await pollUntil(() => runSettled(root, id), { intervalMs: POLL_MS, wallMs: environmentMs('EXO_WAIT_MS', WAIT_MS) });
+  if (settled) return settledExit(root, id);
+  const { state } = findRun(root, id);
+  process.stdout.write(`exo: run ${id} still ${state.phase} at the wait deadline; keep waiting with: ${watchCommand(id)}\n`);
+  // why: 124 is the exit code timeout(1) uses, so a deadline reads apart from a failed run.
+  return 124;
 }

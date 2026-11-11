@@ -59,4 +59,5 @@ test('the check script registers the skill graph and validate differs from check
   assert.equal(pkg.scripts['validate:static'], 'node verify.mjs --static');
   const verifier = fs.readFileSync(path.join(ROOT, 'verify.mjs'), 'utf8');
   assert.match(verifier, /checkSkillGraph\(report, repository\)/);
+  assert.match(verifier, /checkWorktreePaths\(report, repository\)/);
 });

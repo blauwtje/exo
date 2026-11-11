@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { sleep } from '#basics';
 import { environmentDelayMs } from '#script-flags';
+import { pollUntil } from '../../../lib/loop-budget.mjs';
 import { DEFAULTS } from './defaults.mjs';
 import { cacheRoot } from './ytdlp-binary.mjs';
 
@@ -54,12 +55,15 @@ function removeIfStale(lock, settings) {
   }
 }
 
+function tryTake(lock, settings) {
+  if (tryCreate(lock)) return true;
+  removeIfStale(lock, settings);
+  return false;
+}
+
 async function acquire(lock, settings) {
-  while (!tryCreate(lock)) {
-    removeIfStale(lock, settings);
-    if (!fs.existsSync(lock)) continue;
-    await settings.sleep(settings.pollMs);
-  }
+  const taken = await pollUntil(() => tryTake(lock, settings), { intervalMs: settings.pollMs });
+  if (!taken) throw new Error(`gave up waiting for the request lock ${lock}`);
   return () => fs.rmSync(lock, { force: true });
 }
 

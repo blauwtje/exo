@@ -1,4 +1,4 @@
-# The direct route: the fallback when nested dispatch is unavailable
+# The direct route: the loop
 
 - Step 3 runs `next-task.mjs` without `--block`, for its `Next:` or `Wave:` line.
 - `GREEN` names a diff path, which this session reads only as `git apply --stat <diff path>` before it runs `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, a wave's per the wave worktrees reference's step 3. The report and the full diff stay unread.

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { readContract } from '../../harnesses/coordination-contract.mjs';
 
 const MAX_LAYERS = 2;
+const END_TURN_TO_WAIT = /\bend your turn (?:to|and) wait\b|\bwait for (?:a|the) (?:completion )?notification\b/i;
 const AGENT_REFERENCE = /exo:([a-z][a-z-]*)/g;
 
 function listFiles(root, directory, suffix) {
@@ -92,13 +93,12 @@ function contractPatterns(contract) {
   const rows = Object.values(contract).flatMap((harness) => Object.values(harness));
   const patterns = new Map();
   for (const row of rows) {
-    patterns.set(`wait command ${row.wait}`, row.wait === 'wait-report' ? /wait-report\.mjs/ : null);
     patterns.set(`return cap ${row.return.maxLines}`, new RegExp(`\\b(?:at most|max|cap of) ${row.return.maxLines} lines\\b`));
     const budget = String(row.contextBudget);
     const grouped = budget.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     patterns.set(`context budget ${budget}`, new RegExp(`\\b(?:${budget}|${grouped})\\b`));
   }
-  return [...patterns].filter(([, pattern]) => pattern !== null);
+  return [...patterns];
 }
 
 function restatementProblems({ prose, contract }) {
@@ -119,8 +119,23 @@ function forkWaitProblems({ agents, contract }) {
   return [`fork-coordinator wait is ${row.wait} but the orchestrator prose ${foreground ? 'dispatches in the foreground' : 'does not'}`];
 }
 
+function subagentWaitProblems({ prose }) {
+  return prose
+    .filter((entry) => !entry.file.startsWith('hooks/'))
+    .filter((entry) => END_TURN_TO_WAIT.test(entry.text))
+    .map((entry) => `${entry.file} tells a subagent to end its turn and wait for a child`);
+}
+
+function mayDispatchProblems({ agents, contract }) {
+  const rows = Object.values(contract.claude ?? {});
+  if (rows.length === 0 || rows.some((row) => row.mayDispatch && row.maxDepth > 0)) return [];
+  return agents
+    .filter((agent) => agent.tools.includes('Agent'))
+    .map((agent) => `${agent.name} can dispatch but the contract lets no subagent role dispatch`);
+}
+
 export function findCoordinationProblems(state) {
-  return [...depthProblems(state), ...dispatchToolProblems(state), ...forkWaitProblems(state), ...restatementProblems(state)];
+  return [...depthProblems(state), ...dispatchToolProblems(state), ...forkWaitProblems(state), ...subagentWaitProblems(state), ...mayDispatchProblems(state), ...restatementProblems(state)];
 }
 
 export function gatherCoordinationState(root) {

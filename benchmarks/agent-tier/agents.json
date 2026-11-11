@@ -43,19 +43,6 @@
       "wallScale": { "sonnet:medium": 0.99, "sonnet:high": 1.07, "sonnet:xhigh": 2.52, "sonnet:max": 14.46, "opus:low": 1.21, "opus:medium": 1.86, "opus:high": 2.23, "opus:xhigh": 3.41 }
     }
   },
-  "task-runner": {
-    "metric": "task-runner check pass",
-    "fixtures": { "quick": ["false-green", "ordered-three"], "full": ["false-green", "ordered-three", "resume-landed"] },
-    "profile": {
-      "input": 12,
-      "cache5m": 25000,
-      "cacheRead": 200000,
-      "output": 3500,
-      "wallS": 130,
-      "usdScale": { "sonnet:medium": 1.02, "sonnet:high": 1.01, "sonnet:xhigh": 3.06, "sonnet:max": 11.94, "opus:low": 0.91, "opus:medium": 1.42, "opus:high": 1.69, "opus:xhigh": 2.53 },
-      "wallScale": { "sonnet:medium": 0.99, "sonnet:high": 1.07, "sonnet:xhigh": 2.52, "sonnet:max": 14.46, "opus:low": 1.21, "opus:medium": 1.86, "opus:high": 2.23, "opus:xhigh": 3.41 }
-    }
-  },
   "general-build": {
     "kind": "build",
     "metric": "value-task check pass",

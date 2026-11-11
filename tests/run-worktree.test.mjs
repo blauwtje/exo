@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { snapshot, breachOf } from '../skills/build/scripts/run-worktree.mjs';
+import process from 'node:process';
+import { worktreeFor } from '../skills/build/scripts/run-checkout.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const commit = (cwd, file, message) => {
@@ -109,4 +111,14 @@ test('breachOf ignores a push of the unpushed local main the run was cut from', 
   const before = snapshot(root);
   git(root, 'push', '-q', 'origin', 'main');
   assert.equal(breachOf(root, before), null);
+});
+
+test('worktreeFor places the run worktree under .claude/worktrees', () => {
+  const { root } = fixture();
+  git(root, 'switch', '-q', 'main');
+  const previous = process.cwd();
+  process.chdir(root);
+  const placed = worktreeFor(root, 'spec/demo');
+  process.chdir(previous);
+  assert.equal(fs.realpathSync(placed), fs.realpathSync(path.join(root, '.claude', 'worktrees', 'spec-demo')));
 });

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { SCRIPT_OUTPUT_EXEMPT } from '../budgets.mjs';
 
-const DOCS = ['agents/task-runner.md', 'skills/build/references/rolling-window.md'];
+const DOCS = ['skills/build/references/rolling-window.md'];
 const SCRIPT_NAME = /\b([a-z][a-z-]*)\.mjs\b/g;
 
 function namedScripts(repository) {

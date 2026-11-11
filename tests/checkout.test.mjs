@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { existsSync } from 'node:fs';
-import { commonDir, createWorktree, mainCheckout, relativeFor, seedCaches } from '../lib/checkout.mjs';
+import { commonDir, createWorktree, isWorktreePath, mainCheckout, relativeFor, seedCaches, worktreePath } from '../lib/checkout.mjs';
 import { withLandLock } from '../lib/land-lock.mjs';
 import { applyPick } from '../lib/workspace.mjs';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
@@ -55,28 +55,28 @@ test('relativeFor gives a path below the root and a dot for the root itself', ()
 
 test('createWorktree copies a gitignored .env when env is copy', async () => {
   const { root, where } = await envRepository('copy');
-  const done = createWorktree(root, where, ['worktree', 'add', '-q', '-b', 'topic', where]);
+  const done = createWorktree(root, where, ['-q', '-b', 'topic', where]);
   assert.equal(done.ok, true);
   assert.equal(await fs.readFile(path.join(where, '.env'), 'utf8'), 'TOKEN=1\n');
 });
 
 test('createWorktree copies no .env when env is never', async () => {
   const { root, where } = await envRepository('never');
-  const done = createWorktree(root, where, ['worktree', 'add', '-q', '-b', 'topic', where]);
+  const done = createWorktree(root, where, ['-q', '-b', 'topic', where]);
   assert.equal(done.ok, true);
   await assert.rejects(fs.access(path.join(where, '.env')));
 });
 
 test('createWorktree reports a failed git worktree add', async () => {
   const { root, where } = await envRepository('copy');
-  const done = createWorktree(root, where, ['worktree', 'add', '-q', where, 'no-such-branch']);
+  const done = createWorktree(root, where, ['-q', where, 'no-such-branch']);
   assert.equal(done.ok, false);
   assert.notEqual(done.error, '');
 });
 
 test('createWorktree with env false copies no .env even when env is copy', async () => {
   const { root, where } = await envRepository('copy');
-  const done = createWorktree(root, where, ['worktree', 'add', '-q', '--detach', where, 'HEAD'], { env: false });
+  const done = createWorktree(root, where, ['-q', '--detach', where, 'HEAD'], { env: false });
   assert.equal(done.ok, true);
   await assert.rejects(fs.access(path.join(where, '.env')));
 });
@@ -174,7 +174,7 @@ test('createWorktree clones node_modules when the lockfile hash matches', async 
   const { root, where } = await lockedRepository();
   await fs.rm(where, { recursive: true, force: true });
   git(root, 'worktree', 'prune');
-  const done = createWorktree(root, where, ['worktree', 'add', '-q', '-b', 'again', where]);
+  const done = createWorktree(root, where, ['-q', '-b', 'again', where]);
   assert.equal(done.ok, true);
   assert.equal(await fs.readFile(path.join(where, 'node_modules', 'dep', 'index.js'), 'utf8'), 'x\n');
 });
@@ -183,4 +183,35 @@ test('createWorktree seeds nothing when the lockfile hash differs', async () => 
   const { root, where } = await lockedRepository('{"a":2}\n');
   assert.deepEqual(seedCaches(root, where), []);
   assert.equal(existsSync(path.join(where, 'node_modules')), false);
+});
+
+test('worktreePath roots a slot beside its run worktree under the main checkout', async () => {
+  const root = await gitRepository(SEED);
+  const run = path.join(root, '.claude', 'worktrees', 'run');
+  git(root, 'worktree', 'add', '-q', '-b', 'run', run);
+  const previous = process.cwd();
+  process.chdir(run);
+  try {
+    assert.equal(worktreePath('run-task-1'), path.join(await fs.realpath(root), '.claude', 'worktrees', 'run-task-1'));
+  } finally {
+    process.chdir(previous);
+  }
+});
+
+test('createWorktree excludes .claude/worktrees once when no rule covers it', async () => {
+  const root = await gitRepository(SEED);
+  const first = path.join(root, '.claude', 'worktrees', 'one');
+  const second = path.join(root, '.claude', 'worktrees', 'two');
+  createWorktree(root, first, ['-q', '-b', 'one', first]);
+  createWorktree(root, second, ['-q', '-b', 'two', second]);
+  const exclude = await fs.readFile(path.join(root, '.git', 'info', 'exclude'), 'utf8');
+  assert.equal(exclude.split('.claude/worktrees/').length - 1, 1);
+  assert.equal(git(root, 'status', '--porcelain'), '');
+});
+
+test('isWorktreePath matches both worktree folders and nothing else', () => {
+  assert.equal(isWorktreePath('.claude/worktrees/run/a.js'), true);
+  assert.equal(isWorktreePath('.worktrees/run'), true);
+  assert.equal(isWorktreePath('.claude/commands/a.md'), false);
+  assert.equal(isWorktreePath('src/worktrees/a.js'), false);
 });

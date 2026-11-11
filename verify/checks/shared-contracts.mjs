@@ -54,9 +54,6 @@ const PINNED_SENTENCES = {
   'skills/write-docs/SKILL.md': [
     'Change only what the request names.',
   ],
-  'agents/task-runner.md': [
-    'Change only what the request names.',
-  ],
   'README.md': [
   ],
   'CONTRIBUTING.md': [

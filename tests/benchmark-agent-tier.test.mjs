@@ -13,7 +13,7 @@ import { candidatesFor, formatCompliance, ideaBrief, offsetRuns, parseCandidate,
 import { Budget, apiKeySourceOf, candidateComparisons, cellLine, comparisonLine, dryRunText, estimateTotal, estimateUsd, estimateWallS, flaggedShare, modelUsageCost, sessionCost, summarizeCells, usageOfStream, wilson95 } from '../benchmarks/agent-tier/estimate.mjs';
 import { tempDir } from './harness.mjs';
 
-const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'task-runner', 'general-build', 'general-read', 'ideate-worker', 'find-open-points'];
+const AGENTS = ['locate-code', 'review-branch', 'fix-review', 'build-task', 'solve-hard', 'orchestrator', 'general-build', 'general-read', 'ideate-worker', 'find-open-points'];
 const CONFIG = {
   'locate-code': { metric: 'recall', fixtures: { quick: ['a'], full: ['a', 'b'] }, profile: { input: 1_000_000, cacheRead: 0, output: 0 } },
   'solve-hard': { metric: 'pass', fixtures: { quick: ['c'], full: ['c', 'd', 'e'] }, profile: { input: 0, cacheRead: 0, output: 1_000_000 } }

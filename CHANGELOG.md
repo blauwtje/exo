@@ -18,9 +18,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The gate reruns only the failed specs of a failing Success criterion on the base branch and prints `SKIP success-criterion (also fails on base: ...)`, so a failure the branch did not cause starts no repair round.
 - `plan-check.mjs` flags a `Proof:` command that cannot start from the checkout root and a path a `Data:` line names that `Files:` omits.
 - A build runs the environment setup an end-to-end `Proof:` needs once, before the first block, and ends a stalled setup command at its deadline with its whole process group.
+- `npm run check` fails a poll loop or poll instruction outside the loop budget, and a worktree path built outside `lib/checkout.mjs`.
 
 ### Changed
 
+- Every worktree lives in one folder, `.claude/worktrees/<name>`, built by `worktreePath` in `lib/checkout.mjs`; a run slot is a flat sibling, and the repo rules and landing steps name the new folder.
+- The main session sends every build task to `exo:build-task` itself at depth 1, so the task-runner layer is gone.
 - The gate runs one full branch review and one overlap review per plan run, then keeps or reverts each fixer commit by script, scopes later findings to the fix diff and appends one row per round to `review-rounds.tsv`.
 - An in-session build and gate share one outcome table, `lib/run-outcomes.mjs`: each stop, decide and repair line has an action, and only a `stop` row ends the turn.
 - Loop caps come from `EXO_LOOP_<KIND>_CAP`, then run.json `defaults.loopCaps` (with `repairBound` for review rounds), then the kinds table; the gate repair loop follows the review cap.
@@ -34,6 +37,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A re-entered gate resumes from its steps recorded as passed on the same tree.
 - `wait-report.mjs` returns at once on a settled report with no verdict line, as a repair row.
 - A plan build keeps the main session smaller, a median peak of 25870 tokens against 31709: the build skill body carries the loop steps, the dispatch rules skip an `exo:task-runner` call, and `next-task.mjs --block` prints no `Proof:` lines once every task has landed.
+- Build dispatches `exo:build-task` from the lead at depth 1, and only the lead waits on agents.
+- Every remaining wait runs as a wait kind of the loop budget.
+- Every worktree sits under `.claude/worktrees/<name>` of the main checkout.
 
 ### Fixed
 
@@ -42,6 +48,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 - An interactive build runner gets the `wait-report.mjs` command as its `Wait:` line, so a lost notification no longer leaves it idle.
 - A background `until ... sleep` or `while ... sleep` polling loop is refused with the `Wait:` route named, also inside `bash -c` and `eval` text; a loop wrapped by `timeout` and a counted retry pass.
 - The DeepSeek peak notice test pins the clock through `EXO_NOW_MS`, so it passes at every hour.
+
+### Removed
+
+- `wait-report.mjs`, its `Wait:` lines and the `task-runner` agent.
+
+### Removed
+
+- The `exo:task-runner` agent, `wait-report.mjs` and the `Wait:` line.
 
 ## 0.140.0 - 2026-11-10
 

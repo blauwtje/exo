@@ -1,6 +1,6 @@
 # Rolling window
 
-`task-runner` starts the next ready task of its block as soon as one lands, not after a whole wave. Each slot is one task in its own worktree, per wave worktrees steps 1, 3 and 4.
+The lead starts the next ready task of its block when a foreground window returns and its slots land. Each slot is one task in worktree `worktreePath('<run>-task-<n>')`, per wave worktrees.
 
 1. **Baseline.** `next-task.mjs --open-slots` runs steps 1 and 2, and you run them by hand only after `Wave discarded:`. Before the first slot, write the run checkout's `git status --porcelain` once to `<root>/.exo/baseline.txt`.
 2. **Open a slot.**
@@ -13,7 +13,7 @@
    - `REFUSED` routes as a failed build. `CONFLICT` and `NEWPATH` close the window to refills, and each keeps and names the slot folder.
 4. **Close the window.**
    - A new path against the baseline, or a cherry-pick conflict, closes the window to refills.
-   - `task-runner` returns only after every in-flight slot returned or blocked. Every slot folder must also have left per wave worktrees step 4, or be kept per step 6 and named in the return.
+   - The lead moves on only after every in-flight slot returned or blocked. Every slot folder must also have left per wave worktrees step 4, or be kept per step 6 and named in its report.
 5. **Repair.**
    - A repair takes a fresh slot worktree at the current `HEAD`, and the run's checkout holds no uncommitted work while the window is open.
 6. **Missing report.**
@@ -21,7 +21,7 @@
    - With no report still, land from the return text (`land-slot.mjs --report -`), handoff or checkpoint commit. With no report, commit or handoff after the resume the child is dead: keep its slot folder and name it in the return.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
-   - Send each window build, including a `Next:` build, to `exo:build-task`. When it returns `Async agent launched`, run the printed `Wait:` command; never end the turn, since an outliving nested child reports to the main conversation.
+   - Send each window build, including a `Next:` build, to `exo:build-task`. Each call is foreground and returns after its report.
    - A landing's refill is in `land-slot.mjs`'s output, with slots opened. Otherwise run `next-task.mjs --in-flight <running task numbers, comma separated> --only <block>` and read its `Start: Task <n>[, Task <m>]` line.
    - On `Start: none` start no refill, land the returned slots, then return to step 1.
 8. **Wait.**
