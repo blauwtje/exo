@@ -11,7 +11,7 @@ export function reviewedState(root) {
 
 export function reviewLines(plan, landed, { root, planId, base }) {
   const lines = [];
-  const recorded = recordedReview(root);
+  const recorded = recordedReview(root, planId);
   const route = planRoute(plan.tasks).route;
   const reviewers = plan.tasks.filter((entry) => landed.has(entry.number))
     .map((task) => taskReviewer(task, taskPaths(task, root, planId), { route, taskDiff: taskDiffOf(task, root, planId), redProved: redProvedOf(task, root, planId) }));

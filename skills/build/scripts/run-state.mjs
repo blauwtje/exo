@@ -103,11 +103,9 @@ export function resumePoint(steps) {
   const open = new Map();
   let pending = null;
   const gateSteps = new Map();
-  let gateReview = null;
   let failedAttempts = 0;
   for (const step of steps) {
     if (step.kind === 'gate-step') gateSteps.set(step.step, step.tree);
-    if (step.kind === 'gate-review') gateReview = step;
     if (step.kind === 'session') pending = step;
     else if (step.kind !== 'check' && step.kind !== 'gate-step' && step.kind !== 'gate-review') pending = null;
     if (step.kind === 'attempt') {
@@ -116,7 +114,7 @@ export function resumePoint(steps) {
     }
     if (step.kind === 'commit') open.delete(step.task);
   }
-  return { pending, attempts: open, failedAttempts, gateSteps, gateReview };
+  return { pending, attempts: open, failedAttempts, gateSteps };
 }
 
 const gatesFile =(dir) => path.join(dir, 'gates.md');

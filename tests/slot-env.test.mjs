@@ -56,3 +56,12 @@ test('a slot gets the main checkout .env and leaves it ignored', async () => {
   const copied = await fs.readFile(path.join(opened.records[1].slot, '.env'), 'utf8');
   assert.equal(copied, 'MADE_UP=value\n');
 });
+
+test('a plan input under .exo/ stays out of the slot, so landing the slot never copies stale run state back', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n', '.gitignore': '.exo/\n' });
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo', 'window.json'), '{"2":{"base":"stale"}}');
+  const opened = openSlots({ root, numbers: [1], setup: 'true', inputs: ['.exo/window.json'], fresh: true, since: 0 });
+  assert.equal(opened.reason, undefined);
+  await assert.rejects(fs.access(path.join(opened.records[1].slot, '.exo', 'window.json')));
+});

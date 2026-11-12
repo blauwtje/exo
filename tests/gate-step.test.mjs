@@ -151,7 +151,7 @@ test('after review: the first merge records the reviewed sha and a later reviews
   const root = gitRoot();
   const { run } = stub({ 'merge-reviews.mjs': { stdout: 'verdict=CLEAN defect=0 concern=0 question=0 note=0 fix=0 report=r\nCODEX none\n' } });
   runStage('review', { ...base, root, reports: ['branch.md'] }, run);
-  assert.equal(recordedReview(root).branch[0], 'branch.md');
+  assert.equal(recordedReview(root, 'plan').branch[0], 'branch.md');
 });
 
 function fixRound(root, round, content) {
@@ -197,7 +197,7 @@ test('a BLOCKED merge records no review', () => {
   const root = gitRoot();
   const run = () => ({ status: 0, stdout: 'verdict=BLOCKED defect=0\nBLOCKED: report missing x\n' });
   runStage('review', { ...base, root, reports: ['branch.md'] }, run);
-  assert.equal(recordedReview(root), null);
+  assert.equal(recordedReview(root, 'plan'), null);
 });
 
 test('a BLOCKED fix-diff merge leaves the pending round pending and keeps nothing', () => {

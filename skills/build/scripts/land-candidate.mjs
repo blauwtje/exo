@@ -10,7 +10,7 @@ import { createWorktree, worktreePath } from '#checkout';
 import { candidateTrailer } from './land-commit-block.mjs';
 import { isProtectedPath, nestedWorktrees } from './land-paths.mjs';
 import { runLandGate } from './land-gate.mjs';
-import { discard } from './open-slots.mjs';
+import { discard, runSetup, slotEnvOf } from './open-slots.mjs';
 import { carryRaises } from './land-raises.mjs';
 
 export function dropCandidate(root, { base, candidate }) {
@@ -66,9 +66,8 @@ function gateOnDetachedCandidate({ frame, root, gateEnv, candidate }) {
   const made = createWorktree(root, where, ['--detach', where, candidate.candidate]);
   if (!made.ok) throw new LandingError(made.failure);
   try {
-    const setup = frame.worktreeSetup;
-    const ran = setup === null || setup === 'none' ? null : spawnSync(setup, { cwd: where, shell: true, encoding: 'utf8' });
-    if (ran !== null && ran.status !== 0) throw new LandingError(`Worktree setup failed in ${where}: ${`${ran.stdout}${ran.stderr}`.trim().split('\n').at(-1)}`);
+    const failed = runSetup(where, frame.worktreeSetup, slotEnvOf(root));
+    if (failed !== null) throw new LandingError(failed.reason);
     return runLandGate(frame.landGate, where, gateEnv) ?? '';
   } finally {
     discard(root, [where]);

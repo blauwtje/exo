@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { readJsonOrNull } from '#basics';
 import { createWorktree, worktreePath } from '#checkout';
-import { scratchPath } from '#scratch-path';
+import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { git } from '#git';
 
 const windowFile = (root) => scratchPath(root, 'window.json');
@@ -49,7 +49,7 @@ export function restartRecord(root, number, record) {
 function copyInputs(toplevel, slot, inputs) {
   for (const input of inputs) {
     const from = path.join(toplevel, input);
-    if (!fs.statSync(from, { throwIfNoEntry: false })?.isFile() || path.basename(input).startsWith('.env')) continue;
+    if (!fs.statSync(from, { throwIfNoEntry: false })?.isFile() || path.basename(input).startsWith('.env') || input.split(/[\\/]/)[0] === SCRATCH_FOLDER) continue;
     if (git(toplevel, ['check-ignore', '-q', '--', input]).status !== 0) continue;
     fs.mkdirSync(path.dirname(path.join(slot, input)), { recursive: true });
     fs.copyFileSync(from, path.join(slot, input));
@@ -75,10 +75,20 @@ function writeBaseline(toplevel, fresh) {
 
 function writeSlotEnv(slot, variables) {
   fs.mkdirSync(variables.EXO_STATE_DIR, { recursive: true });
-  fs.writeFileSync(path.join(slot, '.exo', 'slot.env'), `${Object.entries(variables).map(([name, value]) => `export ${name}=${JSON.stringify(value)}`).join('\n')}\n`);
+  fs.writeFileSync(path.join(slot, '.exo/slot.env'), `${Object.entries(variables).map(([name, value]) => `export ${name}=${JSON.stringify(value)}`).join('\n')}\n`);
 }
 
-function runSetup(slot, setup, variables) {
+export function slotEnvOf(slot) {
+  const file = path.join(slot, '.exo/slot.env');
+  if (!fs.existsSync(file)) return {};
+  const lines = fs.readFileSync(file, 'utf8').split('\n').filter((line) => line.startsWith('export '));
+  return Object.fromEntries(lines.map((line) => {
+    const at = line.indexOf('=');
+    return [line.slice('export '.length, at), JSON.parse(line.slice(at + 1))];
+  }));
+}
+
+export function runSetup(slot, setup, variables) {
   if (setup === null || setup === 'none') return null;
   const ran = spawnSync(setup, { cwd: slot, shell: true, encoding: 'utf8', env: { ...process.env, ...variables } });
   if (ran.status === 0) return null;

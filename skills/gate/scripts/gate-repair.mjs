@@ -61,9 +61,9 @@ function fixDiffDispatch({ root, planPath, preFixSha }) {
   return branch.replace('DISPATCH Branch:', 'DISPATCH Repair:').replace('scope=branch', 'scope=fix-diff').replace(/ findings=\S+/, ` findings=${path.join(path.resolve(root), '.exo', 'fix-review.md')}`).replace(/ ledger=\S+/, '');
 }
 
-function judgeTouched(planText, diffFiles) {
+function protectedFiles(planText, diffFiles) {
   const proofTests = parsePlan(planText).tasks.flatMap((task) => task.proof?.match(PROOF_TEST) ?? []);
-  return diffFiles.some((file) => JUDGE_PATH.test(file) || proofTests.includes(file));
+  return diffFiles.filter((file) => JUDGE_PATH.test(file) || proofTests.includes(file));
 }
 
 export function fullFailLines(root, planPath) {
@@ -74,7 +74,7 @@ export function fullFailLines(root, planPath) {
   return [decide('FAIL', 'gate fail')];
 }
 
-function loopLines(kindDecision, failed, ran) {
+export function loopLines(kindDecision, failed, ran) {
   const line = formatLine('fix', kindDecision);
   const cap = roundCap('fix');
   const round = Number(kindDecision.reason.match(/^round (\d+)/)?.[1] ?? ran);
@@ -110,12 +110,15 @@ export async function repairLines({ root, planText, planPath, preFixSha, finding
     const checksGreen = !lines.some((line) => line.startsWith('FAIL '));
     const fixAfter = fixedProbes(fs.readFileSync(findings, 'utf8')).filter((probe) => probe.unmarked).length;
     const shas = commits.map(({ sha }) => sha);
-    const settled = { root, planPath, round, commits: shas, preFixSha, fixBefore, fixAfter, judgeTouched: judgeTouched(planText, diffFiles) };
-    if (checksGreen) writePending(dir, settled);
-    if (!checksGreen) lines.push(...settleRound({ ...settled, checksGreen }));
-    if (checksGreen) lines.push(fixDiffDispatch({ root, planPath, preFixSha }));
+    const protectedTouched = protectedFiles(planText, diffFiles);
+    const settled = { root, planPath, round, commits: shas, preFixSha, fixBefore, fixAfter, judgeTouched: protectedTouched.length > 0 };
+    const settleNow = !checksGreen || settled.judgeTouched;
+    if (!settleNow) writePending(dir, settled);
+    if (settleNow) lines.push(...settleRound({ ...settled, checksGreen }));
+    if (settled.judgeTouched) lines.push(`  protected: ${protectedTouched.join(', ')} (put the guard test in a new tests file)`);
+    if (!settleNow) lines.push(fixDiffDispatch({ root, planPath, preFixSha }));
   }
   const after = budgetDecision(dir, 'fix');
-  const failed = lines.some((line) => line.startsWith('FAIL '));
+  const failed = lines.some((line) => line.startsWith('FAIL ') || line.startsWith('DISCARDED '));
   return [...lines, ...loopLines(failed ? after : { ...after, reason: `round ${round}` }, failed, roundsRun(dir, 'fix'))];
 }

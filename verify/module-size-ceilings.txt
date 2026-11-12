@@ -65,10 +65,10 @@
 9701 lib/statusline.mjs
 14892 lib/worker-size.mjs
 12827 skills/build/scripts/land-run.mjs
-9236 skills/build/scripts/remove-worktree.mjs
+9405 skills/build/scripts/remove-worktree.mjs
 24978 skills/build/scripts/run-plan.mjs
 9464 skills/build/scripts/run-report.mjs
-10757 skills/build/scripts/run-state.mjs
+10664 skills/build/scripts/run-state.mjs
 21080 skills/build/scripts/run-tail.mjs
 8656 skills/build/scripts/start-run.mjs
 10760 skills/configure/scripts/settings.mjs
@@ -83,9 +83,8 @@
 8567 skills/ship/scripts/pr-body.mjs
 12237 skills/ship/scripts/ship.mjs
 8256 skills/ship/scripts/stack.mjs
-8751 skills/spec/scripts/plan-check.mjs
+8490 skills/spec/scripts/plan-check.mjs
 9864 skills/spec/scripts/plan-check-frame.mjs
-8305 skills/spec/scripts/plan-check-text.mjs
 8870 skills/spec/scripts/plan-template.mjs
 8310 verify/checks/name-clash.mjs
 8812 verify/checks/reference-tables.mjs

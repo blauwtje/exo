@@ -66,6 +66,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A handoff holds four sections, Goal, Progress, Evidence and Next step.
 - Every window other than the main session takes its model and effort from `lib/model-kinds.json`: a `context: fork` skill gets `model:` and `effort:` lines written from its `skills` entry, and kind `orchestrator` moves from tier deep to strong.
 - Kinds `peer` and `peer-review` are retired; their dispatches take `hardest` and `review`, so no default kind inherits the session model.
+- The first wave of a build fans out every ready task named in `Parallel:`, so a later dependent task no longer limits it to one task.
 
 ### Fixed
 
@@ -73,6 +74,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - An amend no longer commits a hand edit of the plan, and `land-task --check` refreshes the behaviour files before its gate.
 - A land stages a tracked file inside a gitignored folder, such as a plan under `docs/specs/`.
 - `coveringTests` finds a test that names a module after a `${root}/` template prefix.
+- A gate repair report says `LOOP next=done` only when the fix stays in git; a reverted fix prints `DISCARDED`, the protected file and a `LOOP next=fix` or `stop` line.
+- `remove-worktree` counts a squashed fix that a later commit folded with a neighbouring change as landed, and still refuses a branch whose deletion or change main lacks.
+- The worktree setup of a detached land gate gets the slot's `EXO_SLOT`, `EXO_PORT_BASE` and `EXO_STATE_DIR`, through one shared `runSetup`.
+- `plan-check` flags a `Data:` literal with a `<placeholder>` that the land check cannot match, unless the task has a `Literals:` field.
+- A gate reviews the branch of each plan once, where a review recorded for an earlier plan skipped it.
+- A slot no longer copies or returns the run's own state files `.exo/slot.env` and `.exo/window.json`.
 
 - A land that leaves a protected path outside `Files:` out of the commit names the path, says it was not committed and says to add it to `Files:` or give it its own task.
 - A land keeps the land-amend protected paths (`lib/guard-rules.mjs`, `lib/git-deny.mjs`, the land scripts, `docs/plans/`) outside `Files:` out of the task commit.

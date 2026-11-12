@@ -396,6 +396,20 @@ test('a Land gate that passes only on an untracked file outside the commit is re
   assert.doesNotMatch(git(root, 'worktree', 'list'), /gate-/);
 });
 
+test('the setup of the detached candidate sees the slot variables', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/slot.env'), 'export EXO_SLOT="3"\n');
+  await fs.mkdir(path.join(root, '.github'));
+  await fs.writeFile(path.join(root, '.github/stray.txt'), 'only here\n');
+  const planText = withLandGate('test "$(cat slot-seen.txt)" = 3')
+    .replace('Branch: feat/fixture', 'Branch: feat/fixture\nWorktree setup: printf %s "$EXO_SLOT" > slot-seen.txt')
+    .replace('git add .', 'git add src/app.js');
+  const output = landTask({ planPath, planText, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
 test('a slot equal to its candidate commit gates in place', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

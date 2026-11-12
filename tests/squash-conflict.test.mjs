@@ -185,3 +185,24 @@ test('remove-worktree refuses a landed branch with a tracked change and removes 
   removeWorktree({ worktree: worktrees.a, run: root, kept: true });
   assert.equal(fs.existsSync(worktrees.a), false);
 });
+
+test('a squashed fix folded with a later neighbour change by a soft reset counts as landed, a deletion main still lacks does not', async () => {
+  const lines = (...rows) => `${rows.join('\n')}\n`;
+  const root = await gitRepository({ 'f.js': lines('a', 'b', 'c', 'd', 'e', 'f') });
+  excludeScratch(root);
+  git(root, 'checkout', '-q', '-b', 'fix');
+  await commitFiles(root, { 'f.js': lines('a', 'B', 'c', 'd', 'e', 'f') }, 'fix');
+  await commitFiles(root, { 'f.js': lines('a', 'B', 'c', 'd', 'e') }, 'drop f');
+  git(root, 'checkout', '-q', 'main');
+  await commitFiles(root, { 'f.js': lines('a', 'B', 'C', 'd', 'e', 'f') }, 'main folds fix with a neighbour');
+
+  assert.doesNotMatch(squashCheck(root, 'fix').stdout, /already landed/);
+  git(root, 'reset', '-q', '--hard', 'HEAD~1');
+  await commitFiles(root, { 'f.js': lines('a', 'B', 'C', 'd', 'e') }, 'main folds fix and deletion');
+  git(root, 'checkout', '-q', 'fix');
+  git(root, 'reset', '-q', '--soft', 'HEAD~2');
+  await commitFiles(root, { 'f.js': lines('a', 'B', 'c', 'd', 'e') }, 'fix squashed');
+  git(root, 'checkout', '-q', 'main');
+
+  assert.match(squashCheck(root, 'fix').stdout, /already landed/);
+});

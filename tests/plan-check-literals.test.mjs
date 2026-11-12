@@ -8,7 +8,7 @@ import { compactPlanFixture, compactTask, fixture, gitRepository } from './harne
 const PLAN_CHECK = path.resolve('skills/spec/scripts/plan-check.mjs');
 const FLAG = 'a path the land check cannot search';
 
-async function planCheck(data) {
+async function planCheck(data, flag = FLAG) {
   const root = await gitRepository({ '.gitignore': '*.secret\n', 'src/run.mjs': 'export {};\n' });
   await fs.writeFile(path.join(root, 'notes.secret'), 'x\n');
   const outside = path.join(await fs.realpath(await fixture()), 'outside.txt');
@@ -17,7 +17,7 @@ async function planCheck(data) {
   const planPath = path.join(await fixture(), 'plan.md');
   await fs.writeFile(planPath, plan);
   const result = spawnSync('node', [PLAN_CHECK, '--plan', planPath, '--root', root], { encoding: 'utf8' });
-  return { outside, status: result.status, lines: result.stdout.split('\n').filter((line) => line.includes(FLAG)) };
+  return { outside, status: result.status, lines: result.stdout.split('\n').filter((line) => line.includes(flag)) };
 }
 
 test('a Data that names an outside path and a git-ignored path is refused on one line naming both', async () => {
@@ -30,6 +30,13 @@ test('a Data that names an outside path and a git-ignored path is refused on one
 test('the same Data with Literals: none prints no such line', async () => {
   const { lines } = await planCheck((file) => `\`${file}\` and \`notes.secret\` | Literals: none (x)`);
   assert.deepEqual(lines, []);
+});
+
+test('a Data placeholder literal whose text around the placeholder is not in the tree is refused', async () => {
+  const { status, lines } = await planCheck(() => '`slotEnvOf(slot)` reads `<slot>/.exo/slot.env` lines `export NAME=<JSON string>`', 'a <placeholder> literal no file holds verbatim');
+  assert.equal(status, 1);
+  assert.equal(lines.length, 1);
+  assert.ok(lines[0].includes('`<slot>/.exo/slot.env`') && !lines[0].includes('`slotEnvOf(slot)`'));
 });
 
 test('a Data that names only a new name prints no such line', async () => {

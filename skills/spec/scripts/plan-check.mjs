@@ -5,11 +5,12 @@ import { resolvePlanPath } from '#checkout';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { frameOf, openPoints } from '#plan-frame';
 import { taskSize } from '#plan-waves';
-import { checkCommit, checkCompactFields, checkDataLiterals, checkDerivedNames, checkEvidence, checkGitAdd, checkPlaceholders, checkSize, checkSteps } from './plan-check-text.mjs';
+import { checkCommit, checkCompactFields, checkDerivedNames, checkEvidence, checkGitAdd, checkPlaceholders, checkSize, checkSteps } from './plan-check-text.mjs';
+import { dataLiteralsCheck } from './plan-check-literals.mjs';
 import { checkContextSize, forkPointOf, sizeLines, warnNearCap, warnTinyTasks } from './plan-check-size.mjs';
 import { checkFilesExist, checkProofTestsListed, checkSharedFiles, checkUnlistedTests, warnProofAndData } from './plan-check-files.mjs';
 import { checkAcceptanceCitations, checkFrame, checkLandGate, checkParallelDisjoint, checkParallelForm, checkPlanBasis, checkProductRun, checkRedGreen, checkWorktreeSetup } from './plan-check-frame.mjs';
-import { checkLoop, checkNestedClaude, checkRunCommands, realPath } from './plan-check-loop.mjs';
+import { checkLoop, checkNestedClaude, checkRunCommands } from './plan-check-loop.mjs';
 
 const SUCCESS_CRITERION = /Success criterion/;
 const BASIS_LINE = /has no '(?:Repository|Branch|Land):' line/;
@@ -20,12 +21,6 @@ const HARD_LOOP = /^loop: (?!.*(?:redirects output|timed out|skips the full chec
 const compactOnly = (check) => (context) => (context.compactPlan ? check(context) : []);
 const classicOnly = (check) => (context) => (context.compactPlan ? [] : check(context));
 const eachTask = (tasks, check) => tasks.flatMap(check);
-
-const dataLiterals = (context) => {
-  if (!context.hasRoot || !fs.existsSync(context.root)) return [];
-  const planFile = context.planPath === undefined ? null : realPath(context.planPath);
-  return eachTask(context.unlanded, (task) => checkDataLiterals(task, realPath(context.root), planFile));
-};
 
 export const PLAN_CHECKS = [
   { check: compactOnly(({ plan }) => checkFrame(plan.frame)), warn: true, hardWhen: SUCCESS_CRITERION },
@@ -42,7 +37,7 @@ export const PLAN_CHECKS = [
   { check: ({ unlanded, root, forkPoint }) => eachTask(unlanded, (task) => checkContextSize(task, root, forkPoint)), warn: true },
   { check: ({ plan, root, byNumber }) => eachTask(plan.tasks, (task) => checkUnlistedTests(task, root, byNumber)), warn: true },
   { check: ({ unlanded, root, byNumber }) => eachTask(unlanded, (task) => checkProofTestsListed(task, root, byNumber)), warn: true, hardWhen: PROOF_NOT_ON_PATH },
-  { check: dataLiterals, warn: true },
+  { check: dataLiteralsCheck, warn: true },
   { check: ({ planText, root }) => checkDerivedNames(planText, root), warn: true },
   { check: ({ plan }) => checkSharedFiles(plan.tasks), warn: true },
   { check: ({ plan }) => checkParallelForm(plan.frame), warn: true },

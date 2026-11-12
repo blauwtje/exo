@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { planIdOf } from '#plan-landed';
 import { CHECK_LINE } from './gate-command.mjs';
 import { blockedNext, decide } from './gate-decide.mjs';
 import { parkQuestion } from '../../../lib/run-outcomes.mjs';
@@ -78,7 +79,7 @@ function reviewStage(flags, run) {
   const ran = step('merge', run, 'merge-reviews.mjs', ['--root', flags.root, '--base', flags.base, ...reportArgs, ...fixBase]);
   const merged = pending === null ? ran : settleFixDiff(pending, ran, { root: flags.root, planPath: flags.plan });
   const lines = [...merged.lines];
-  if (completeMerge(merged.body)) recordReview(flags.root, flags.reports);
+  if (completeMerge(merged.body)) recordReview(flags.root, flags.reports, planIdOf(flags.plan));
   const verdict = merged.body.find((line) => line.startsWith('verdict=')) ?? '';
   const count = (name) => Number(verdict.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
   if (completeMerge(merged.body)) recordReviewRound(ledgerDirOf(flags.root, flags.plan), count('fix'));

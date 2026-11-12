@@ -8,6 +8,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 export class RemoveWorktreeError extends Error {}
 
 const SPECS = 'docs/specs';
+const SLOT_STATE = ['slot.env', 'window.json'];
 
 function exoFiles(root) {
   const base = path.join(root, '.exo');
@@ -157,9 +158,10 @@ function refuseMissed(worktree, folder, listed, copied) {
 }
 
 function copyChecked({ worktree, exo, keptRoot, keptTarget, briefs }) {
-  const exoCopied = copyFiles(exoFiles(worktree), path.join(worktree, '.exo'), exo.root, { from: `${worktree}/.exo/`, to: exo.target });
+  const carried = (relative) => exo.root === keptRoot || !SLOT_STATE.includes(relative);
+  const exoCopied = copyFiles(exoFiles(worktree).filter(carried), path.join(worktree, '.exo'), exo.root, { from: `${worktree}/.exo/`, to: exo.target });
   const briefsCopied = copyFiles(briefs, path.join(worktree, SPECS), path.join(keptRoot, SPECS), { from: `${worktree}/${SPECS}/`, to: `${keptTarget}${SPECS}/` });
-  refuseMissed(worktree, '.exo/', untrackedFiles(worktree, '.exo'), exoCopied);
+  refuseMissed(worktree, '.exo/', untrackedFiles(worktree, '.exo').filter(carried), exoCopied);
   refuseMissed(worktree, `${SPECS}/`, untrackedFiles(worktree, SPECS), briefsCopied);
   return { exo: exoCopied, briefs: briefsCopied };
 }

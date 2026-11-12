@@ -49,6 +49,21 @@ test('the run checkout under .claude/worktrees/ named as Repository forms the wa
   assert.match(nextTaskReport({ planPath, planText, root: isolated }), /^Wave: Task 1, Task 2$/m);
 });
 
+const cappedPlan = (parallel) => planFixture({ worktreeSetup: 'none', parallel, tasks: [
+  taskSection({ number: 1, title: 'Left', files: ['- Create: `src/left.js`'], subject: 'feat(app): left' }),
+  taskSection({ number: 2, title: 'Right', files: ['- Create: `src/right.js`'], subject: 'feat(app): right' }),
+  taskSection({ number: 3, title: 'Both', dependsOn: 'Task 1', files: ['- Create: `src/both.js`'], subject: 'feat(app): both' })
+] });
+
+test('the first-wave cap applies to the ready set, so a later dependent task keeps the fan-out', async () => {
+  const { root, planPath } = await landingCheckout();
+  const wave = nextTaskReport({ planPath, planText: cappedPlan('Tasks 1 and 2.'), root });
+  assert.match(wave, /^Wave: Task 1, Task 2$/m);
+  const alone = nextTaskReport({ planPath, planText: cappedPlan('Task 1.'), root });
+  assert.match(alone, /^Next: Task 1$/m);
+  assert.doesNotMatch(alone, /Task 2 of/);
+});
+
 test('a Next: task prints Since: and its implementer prompt filled', async () => {
   const { root, planPath } = await landingCheckout();
   const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });

@@ -1,11 +1,9 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { codeBlocks } from '#plan-regions';
 import { isCovered } from '#plan-landed';
 import { fenceAfter } from '#plan-tasks';
 import { taskSize } from '#plan-waves';
-import { dataLiterals, literalFinder, literalFragments } from '#data-literals';
 import { derivedNames } from '#derivation';
 import { isEvidenceValue, WORDING_PATH } from '#evidence-rules';
 import { wholeSuiteKeys } from '#suite-command';
@@ -126,29 +124,6 @@ export function checkEvidence(plan) {
     problems.push(`Task ${wording.number}: Files change skill, agent or session wording and no task has an 'Evidence:' field: add '| Evidence: <benchmarks/results/<file> | benchmarks/pressure/<path> | none (<reason>)>' to one task`);
   }
   return problems;
-}
-
-function hasHead(root) {
-  return spawnSync('git', ['-C', root, 'rev-parse', '--verify', '-q', 'HEAD'], { stdio: 'ignore' }).status === 0;
-}
-
-// why: land searches names relative to the run worktree, so an absolute, outside or ignored path is one it can never find.
-function namesUnsearchablePath(fragment, root) {
-  const target = path.resolve(root, fragment);
-  if (!fs.existsSync(target)) return false;
-  const relative = path.relative(root, fs.realpathSync(target));
-  if (path.isAbsolute(fragment) || relative.startsWith('..') || path.isAbsolute(relative)) return true;
-  return spawnSync('git', ['-C', root, 'check-ignore', '-q', '--', relative], { stdio: 'ignore' }).status === 0;
-}
-
-export function checkDataLiterals(task, root, planPath) {
-  if (task.literals !== null || !task.data || !hasHead(root)) return [];
-  const candidates = [...new Set(dataLiterals(task.data))].filter((literal) => literalFragments(literal).some((fragment) => namesUnsearchablePath(fragment, root)));
-  if (candidates.length === 0) return [];
-  const found = literalFinder(root, planPath);
-  const flagged = candidates.filter((literal) => !found(literal) && literalFragments(literal).some((fragment) => namesUnsearchablePath(fragment, root) && !found(fragment)));
-  if (flagged.length === 0) return [];
-  return [`Task ${task.number}: Data: names ${flagged.map((literal) => `\`${literal}\``).join(', ')}, a path the land check cannot search (absolute, outside the repository or git-ignored); name it relative to the repository, or add \`Literals: none (<reason>)\``];
 }
 
 export function checkDerivedNames(planText, resolvedRoot) {

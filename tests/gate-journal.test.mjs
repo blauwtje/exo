@@ -57,11 +57,20 @@ test('a re-entered gate skips the check recorded as passed on the same tree and 
 test('the first recorded review keeps its sha and a second record never replaces it', async () => {
   const { recordedReview, recordReview } = await import('../skills/gate/scripts/review-record.mjs');
   const root = await gitRepository({ 'a.txt': 'a' });
-  assert.equal(recordedReview(root), null);
-  recordReview(root, ['branch.md', 'overlap.md']);
-  const first = recordedReview(root);
-  recordReview(root, ['other.md']);
-  assert.deepEqual(recordedReview(root), first);
+  assert.equal(recordedReview(root, 'plan'), null);
+  recordReview(root, ['branch.md', 'overlap.md'], 'plan');
+  const first = recordedReview(root, 'plan');
+  recordReview(root, ['other.md'], 'plan');
+  assert.deepEqual(recordedReview(root, 'plan'), first);
   assert.deepEqual(first.branch, ['branch.md']);
   assert.deepEqual(first.overlap, ['overlap.md']);
+});
+
+test('a review recorded for one plan does not count for the next plan and still counts for its own after a repair commit', async () => {
+  const { recordedReview, recordReview } = await import('../skills/gate/scripts/review-record.mjs');
+  const root = await gitRepository({ 'a.txt': 'a' });
+  recordReview(root, ['branch.md'], 'tiering');
+  spawnSync('git', ['commit', '-q', '--allow-empty', '-m', 'repair'], { cwd: root });
+  assert.deepEqual(recordedReview(root, 'tiering').branch, ['branch.md']);
+  assert.equal(recordedReview(root, 'tiering-open'), null);
 });

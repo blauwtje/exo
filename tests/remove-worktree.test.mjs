@@ -39,6 +39,18 @@ test('copies the worktree .exo/ files into the run and removes the worktree', as
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
+test('leaves the slot state files out of the run .exo/', async () => {
+  const { root, worktree } = await runWithWorktree();
+  fs.mkdirSync(path.join(worktree, '.exo'), { recursive: true });
+  for (const name of ['slot.env', 'window.json', 'report.md']) fs.writeFileSync(path.join(worktree, '.exo', name), 'x\n');
+
+  removeWorktree({ worktree, run: root });
+
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'report.md')), true);
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'slot.env')), false);
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'window.json')), false);
+});
+
 test('refuses and removes nothing when a copy fails', { skip: process.getuid?.() === 0 }, async () => {
   const { root, worktree } = await runWithWorktree();
   fs.mkdirSync(path.join(worktree, '.exo'), { recursive: true });
