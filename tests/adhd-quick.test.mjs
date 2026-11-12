@@ -219,7 +219,7 @@ test('--base-style pairs a base arm that loses a fact with a candidate that keep
     assert.equal(record.baseStyle, styleFile);
     assert.equal(record.base.perCase.length, cases.length);
     assert.ok(record.base.factsKept < record.factsKept);
-    assert.ok(record.paired.factsKept.mean > 0);
+    assert.ok(record.paired.gatePass.mean > 0);
     assert.equal(record.paired.factsKept.n, cases.length);
     assert.equal(typeof record.paired.ratio.mean, 'number');
     const refusal = tempDir('exo-adhd-quick-');
@@ -295,7 +295,7 @@ test('--rescore of a paired quick record re-judges both arms from stored texts w
       return { text: side === 'base' && id === lossy.id ? lossy.bad : referenceOf(id).good, tokens: 100, cost: 0.01 };
     };
     const stored = await runQuick({ opts: optsIn(dir, ['--base-style', styleFile]), cases, reply, judge: async ({ input }) => verdicts(input), spend: new Spend(1), concise });
-    assert.ok(stored.paired.factsKept.mean > 0);
+    assert.ok(stored.paired.gatePass.mean > 0);
     const file = path.join(dir, fs.readdirSync(dir).find((f) => f.endsWith('.json')));
     const out = tempDir('exo-adhd-quick-');
     const inputs = [];
@@ -313,7 +313,7 @@ test('--rescore of a paired quick record re-judges both arms from stored texts w
     assert.equal(record.base.perCase.length, stored.base.perCase.length);
     assert.equal(record.perCase[0].answers[0].text, stored.perCase[0].answers[0].text);
     assert.equal(record.perCase[0].tokens, stored.perCase[0].tokens);
-    assert.equal(record.paired.factsKept.mean, 0);
+    assert.equal(record.paired.gatePass.mean, 0);
     assert.equal(typeof record.paired.factsShare.mean, 'number');
   });
 });

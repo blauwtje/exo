@@ -7,3 +7,9 @@ export class Spend {
   }
   line() { return `cost_usd=${this.total.toFixed(4)} reply_cost_usd=${this.reply.toFixed(4)} judge_cost_usd=${this.judge.toFixed(4)}\n`; }
 }
+
+export function assertProjection({ spend, doneUsd, done, total }) {
+  const projected = (doneUsd / done) * total;
+  if (projected <= spend.maxUsd) return;
+  throw new Error(`projected_usd=${projected.toFixed(4)} over --max-usd ${spend.maxUsd}`);
+}

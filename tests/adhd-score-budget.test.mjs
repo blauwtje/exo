@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { Spend, judgeRate, parseArgs, projectDryRun, runDryRun, runScore } from '../benchmarks/adhd-score.mjs';
+import { gatePrereg } from '../benchmarks/adhd/prereg.mjs';
 import { tempDir } from './harness.mjs';
 
 const cases = [
@@ -89,4 +91,38 @@ test('the score carries a case-clustered SE and a baseline verdict that needs th
   assert.match(scoreIntervalLine({ perCase: [{}], scoreSe: null, scoreLo: null, scoreHi: null }), /vs_baseline=no SE/);
   assert.match(quickIntervalLine([{ ratio: 0.5 }]), /no SE \(n=1\) vs_baseline=no SE/);
   assert.match(quickIntervalLine([{ ratio: 0.5 }, { ratio: 0.6 }, { ratio: 0.55 }]), /vs_baseline=shorter/);
+});
+
+const FILES = { 'cases.jsonl': 'cases', 'facts.md': 'judge', 'adhd.md': 'candidate', 'base.md': 'base' };
+const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
+const answersOf = (missing) => missing.map((count) => ({ missing: Array.from({ length: count }, (_, at) => at) }));
+const spreadCases = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => ({ id, facts: ['1', '2', '3', '4', '5', '6', '7', '8'] }));
+const recordOf = (candidateMissing, baseMissing) => ({
+  perCase: spreadCases.map((c, at) => ({ id: c.id, answers: answersOf([candidateMissing[at], candidateMissing[at]]) })),
+  base: { perCase: spreadCases.map((c, at) => ({ id: c.id, answers: answersOf([baseMissing[at], baseMissing[at]]) })) },
+});
+
+function preregFixture(caseIds) {
+  const root = tempDir('exo-prereg-');
+  for (const name of Object.keys(FILES)) fs.writeFileSync(path.join(root, name), name);
+  fs.writeFileSync(path.join(root, 'record.json'), JSON.stringify(recordOf([0, 6, 1, 7, 0, 5], [7, 0, 6, 1, 7, 0])));
+  const hashes = Object.fromEntries(Object.keys(FILES).map((name) => [name, sha256(name)]));
+  const prereg = { caseIds, samples: 2, effect: 1, alpha: 0.05, power: 0.8, hashes, varianceRecords: ['record.json'] };
+  return { root, prereg };
+}
+
+test('a prereg with 6 planned cases and a high recorded spread refuses with the cases it needs', () => {
+  const { root, prereg } = preregFixture(spreadCases.map((c) => c.id));
+  assert.throws(() => gatePrereg({ prereg, root, cases: spreadCases }), /power: 6 tasks x 2 samples x 2 arms.*needs \d+ cases, plans 6/s);
+});
+
+test('a prereg whose planned cases cover the need returns the power line', () => {
+  const { root, prereg } = preregFixture(Array.from({ length: 400 }, (_, at) => `case-${at}`));
+  assert.match(gatePrereg({ prereg, root, cases: spreadCases }), /^power: 400 tasks x 2 samples x 2 arms/);
+});
+
+test('a prereg refuses and names a hashed file that changed', () => {
+  const { root, prereg } = preregFixture(spreadCases.map((c) => c.id));
+  fs.writeFileSync(path.join(root, 'facts.md'), 'edited');
+  assert.throws(() => gatePrereg({ prereg, root, cases: spreadCases }), /facts\.md/);
 });

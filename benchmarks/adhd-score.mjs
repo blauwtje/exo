@@ -11,7 +11,8 @@ import { calibrationLines } from './judge-calibration.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { judgeStatusLines, quickPowerLine } from './adhd/quick-report.mjs';
 import { rescoreQuick } from './adhd/rescore-quick.mjs';
-import { Spend } from './adhd/spend.mjs';
+import { applyPrereg } from './adhd/prereg.mjs';
+import { Spend, assertProjection } from './adhd/spend.mjs';
 import { assertBaseStyle, assertConciseCovers, baseLines, quickCaseLine, summaryLine, summaryOf } from './adhd/paired.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
 import { quickMaxUsd } from './adhd/metrics.mjs';
@@ -176,12 +177,6 @@ function limited(task, max) {
     active += 1;
     try { return await task(...args); } finally { release(); }
   };
-}
-
-function assertProjection({ spend, doneUsd, done, total }) {
-  const projected = (doneUsd / done) * total;
-  if (projected <= spend.maxUsd) return;
-  throw new Error(`projected_usd=${projected.toFixed(4)} over --max-usd ${spend.maxUsd}`);
 }
 
 function assertBaselineCovers(cases, baseline) {
@@ -359,7 +354,7 @@ function latestAdhdReplies() {
 }
 
 const FLAGS = { '--full': 'full', '--baseline': 'baseline', '--concise-baseline': 'conciseBaseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all', '--dry-run': 'dryRun', '--screen': 'screen', '--rescore': 'rescore' };
-const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')], '--arm': ['arm', String], '--answers': ['answers', Number], '--base-style': ['baseStyle', String] };
+const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')], '--arm': ['arm', String], '--answers': ['answers', Number], '--base-style': ['baseStyle', String], '--prereg': ['prereg', String] };
 const FULL_RUN_FLAGS = ['--full', '--screen', '--baseline', '--rescore', '--resume', '--runs'];
 const OTHER_ACTIONS = ['check', 'dryRun', 'toLabel', 'calibrate', 'addFailLabels', 'stability', 'conciseBaseline'];
 const QUICK_ARMS = ['adhd', 'caveman'];
@@ -390,6 +385,7 @@ export function parseArgs(argv) {
   if (opts.ablate !== null && opts.arm === 'caveman') throw new Error('--ablate cannot combine with --arm caveman');
   if (argv.includes('--answers') && opts.mode !== 'quick') throw new Error('--answers cannot combine with a full-run flag');
   if (!Number.isInteger(opts.answers) || opts.answers < 1) throw new Error('--answers needs an integer of at least 1');
+  if (opts.prereg) applyPrereg(opts, ROOT);
   if (opts.baseStyle !== null) assertBaseStyle(argv, opts);
   if (opts.maxUsd === null) opts.maxUsd = defaultMaxUsd(building, opts);
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
