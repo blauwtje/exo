@@ -10,6 +10,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## aie-round1
 - Task 3: the shape appears in the mode file.
 
+## aie-round2
+- Task 2: the mode file states the derivation and empty-output rules.
+
 ## plan
 - A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
 - `exo claude --provider deepseek` at a peak time prints the off-peak notice (Task 5).

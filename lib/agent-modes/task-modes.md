@@ -25,3 +25,5 @@
 - Every worker result, retry and reviewer report uses these lines: `Status: done | blocked | unknown`, `Did`, `Not done`, `Evidence`, `Side effects`, `Searched`.
 - `Evidence` names the command, path or log behind `Did`; `Side effects` lists files, commits or services a retry touched; `Searched` lists what a reviewer looked at.
 - A timeout is `Status: unknown` with its cause on `Not done`.
+- A number or date in `Did` names, on `Evidence`, the command that derived it from the source.
+- A delegate's or batch's empty or partial returned output is `Status: unknown` with the gap on `Not done`, never `done`.

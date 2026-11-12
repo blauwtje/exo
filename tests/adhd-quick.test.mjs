@@ -125,7 +125,7 @@ test('a first reply that prices the run over --max-usd refuses before the other 
       started += 1;
       return { text: referenceOf(caseOf(prompt).id).good, tokens: 100, cost: 0.1 };
     };
-    await assert.rejects(runQuick({ opts: optsIn(dir), cases, reply, judge: async () => '', spend: new Spend(0.3), concise }), /projected_usd=1\.1000 over --max-usd 0\.3/);
+    await assert.rejects(runQuick({ opts: optsIn(dir), cases, reply, judge: async () => '', spend: new Spend(0.3), concise }), /projected_usd=1\.2000 over --max-usd 0\.3/);
     assert.equal(started, 1);
     const log = logIn(dir);
     assert.match(log.error, /projected_usd/);

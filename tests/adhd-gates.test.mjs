@@ -65,3 +65,11 @@ test("a deliverable must be the bare text, not bolded or wrapped in prose", () =
   assert.deepEqual(gateReply("**fix(a): b**", d).failed, ["deliverable"]);
   assert.deepEqual(gateReply("Use fix(a): b", d).failed, ["deliverable"]);
 });
+
+test("every bullet outside a fence must start with a bold label", () => {
+  const n = { literals: [], lead: [] };
+  assert.equal(gateReply("- **Cache:** 10%\n- **Output:** 5x", n).pass, true);
+  assert.deepEqual(gateReply("- **Cache:** 10%\n- Output 5x", n).failed, ["labels"]);
+  assert.deepEqual(gateReply("- **Cache** 10%", n).failed, ["labels"]);
+  assert.equal(gateReply("Run:\n```sh\n- plain\n```", n).pass, true);
+});

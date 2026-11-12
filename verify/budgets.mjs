@@ -99,7 +99,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/run-task-prompt.md': 801,
   'skills/ship/references/pr-prep.md': 841,
   'skills/spec/references/brief.md': 994,
-  'skills/spec/references/task-list.md': 1140,
+  'skills/spec/references/task-list.md': 1165,
   'skills/spec/references/worker-modes.md': 1534,
 };
 // lib/references/lean.md, read before every code edit, sits

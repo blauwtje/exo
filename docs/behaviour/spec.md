@@ -5,6 +5,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## bench-honesty
 - The gate prints `FAIL benchmark` for a fixture regression, `PASS benchmark (baseline: none)` with no baseline, and `WARN benchmark override (<reason>)` with an override (Task 3).
 
+## aie-round2
+- Task 4: the task-list line exists.
+
 ## brief
 - `ls skills/*/SKILL.md | wc -l` prints 9, `ls -d skills/*/ | wc -l` prints 9 and `ls agents | wc -l` prints 5 (Tasks 2 to 10).
 - Skill plus agent bytes always loaded shrink against main and `npm run check` holds (Success criterion).

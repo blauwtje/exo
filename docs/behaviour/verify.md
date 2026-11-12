@@ -12,6 +12,11 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 2: each rule fails on a bad fixture and passes on the repo.
 - Success criterion: the full check.
 
+## aie-round2
+- Task 1: a fixture skill with "double check your work" is reported with rule `ritual` and a quoted mention is not; the repo is clean.
+- Task 4: the task-list line exists.
+- Success criterion: the full check.
+
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
 - `node --test tests/harness-capabilities.test.mjs` passes and fails when a matrix row and an adapter disagree (Task 1).

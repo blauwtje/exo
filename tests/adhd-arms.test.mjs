@@ -14,10 +14,10 @@ const reply = (calls) => async ({ arm, prompt }) => {
   return { text: `${arm} ${prompt.length}`, tokens: 7, cost: 0.01 };
 };
 
-test('the quick list names 11 existing cases', () => {
+test('the quick list names 12 existing cases', () => {
   const quick = readQuick();
-  assert.equal(quick.length, 11);
-  assert.equal(selectCases(readCases(), { caseIds: quick }).length, 11);
+  assert.equal(quick.length, 12);
+  assert.equal(selectCases(readCases(), { caseIds: quick }).length, 12);
 });
 
 test('the concise arm appends "Answer concisely." to the default claude call', async () => {

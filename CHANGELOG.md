@@ -9,6 +9,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- The skill lint flags old-model ritual phrases such as "think step by step" and "double check" outside quotes.
+- The worker result shape names the command behind a derived number or date, and marks a delegate's empty or partial output `Status: unknown`.
+- The branch reviewer flags a change that undoes a fix in `git log -5 -- <path>`.
+- A plan task that renames or changes a name lists every `grep -rl` hit in `Files:`.
 - `npm run check` runs a skill lint that flags a script flag named in a skill but missing from its help, shouted emphasis markers, unsafe skill steps and conflicting counts.
 - Worker agents return one result shape with `Status:`, `Evidence:`, `Side effects:` and `Searched:` lines.
 - `ship` runs the repo formatter or lint autofix on a failing format or lint check before an agent fix.
@@ -34,6 +38,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The `adhd` output style bolds the label of every bullet, the one result figure and the closing action, ends a long list on an `Also:` bullet, and ends a choice on the question; a new `labels` gate fails a bullet without a bold label.
 - A refusal stays hard only for a delete, spent money, the network or security; every other one is now a single `[WARN]` line that lets the work go on: a file outside `Files:` at `land-task --check`, a Proof not seen red first, a boundary word dropped with no `Drops:` line, a brief's `Fetches:`, `Worktree:` or shape, a code rule on an edit or at a land, the context target, the Read line cap, the Glob size, a plan's size or shape flag and a commit's `Evidence:` shape.
 - A land commits a warned path outside `Files:` with the task, and leaves a protected one (another open task's file, a `.env` file, `hooks/`) unstaged with a warning.
 - Every new worktree gets the main checkout's gitignored `.env*` files with no question; a `.env` file in a commit is still refused.

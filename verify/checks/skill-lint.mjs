@@ -12,6 +12,8 @@ const UNSAFE = [
   { rule: 'claude-md-write', pattern: />>?\s*\S*CLAUDE\.md|\b(?:append|write)\w*\s+(?:\w+\s+){0,3}(?:to|into)\s+(?:the\s+)?`?(?:\S*\/)?CLAUDE\.md/i },
   { rule: 'user-prompt-submit', pattern: /["`]UserPromptSubmit["`]\s*:|\bregister\w*\b[^\n]*\bUserPromptSubmit\b/i }
 ];
+const RITUAL = /\b(?:double[- ]check|be maximally thorough|think step by step|think carefully)\b/i;
+const QUOTED = /"[^"\n]*"|“[^”\n]*”|`[^`\n]*`/g;
 const AT_MOST = /((?:\S+\s+){0,2})at most (\d+) ([a-z][a-z-]*)/gi;
 
 function skillMarkdown(repository) {
@@ -64,6 +66,14 @@ function unsafeLines(repository, file, lines) {
   return rows;
 }
 
+function ritualPhrases(repository, file, lines) {
+  const rows = [];
+  lines.forEach((line, index) => {
+    if (RITUAL.test(line.replace(QUOTED, ''))) rows.push({ path: repository.relative(file), line: index + 1, rule: 'ritual' });
+  });
+  return rows;
+}
+
 function conflictingCounts(repository, files) {
   const rows = [];
   const seen = new Map();
@@ -90,7 +100,8 @@ export function skillLintFindings(repository) {
     return [
       ...missingFlags(repository, file, lines),
       ...excessEmphasis(repository, file, lines),
-      ...unsafeLines(repository, file, lines)
+      ...unsafeLines(repository, file, lines),
+      ...ritualPhrases(repository, file, lines)
     ];
   });
   return [...rows, ...conflictingCounts(repository, files)];

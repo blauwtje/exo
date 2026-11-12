@@ -54,3 +54,8 @@ test('one skill stating at most N of a noun with two N is reported once', () => 
   const text = '# Return\nReturn at most 10 lines.\nReturn at most 12 lines.\n';
   assert.deepEqual(rules({ 'skills/build/SKILL.md': text }), ['count-conflict lines']);
 });
+
+test('ritual phrases are reported unless they sit inside quotes', () => {
+  const text = 'Please double check it.\nBe maximally thorough.\nThink step by step.\nThink carefully.\nBan "think carefully" here.\nBan `double check` here.\n';
+  assert.deepEqual(rules({ 'skills/build/SKILL.md': text }), ['ritual', 'ritual', 'ritual', 'ritual']);
+});

@@ -48,5 +48,6 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 3. **Small tasks.** A task holds one concern. Split it only when `Files:` spans a shared write target and an independent one.
    - Size: (task + `Files:` bytes) / 4 over 15,000 fails.
    - `Files:` also lists each registry, index or test list that names an added file, and one existing test per changed source.
+   - Before a rename or change of a name, run `grep -rl '<name>'` and list every hit in `Files:`.
 4. **Shared write target.** Split a file, key or branch that two tasks touch, unless a shared invariant earns a `Depends on:` edge.
 5. **No manual task.** A check only the user can make becomes one `## Manual checks` line.

@@ -37,12 +37,19 @@ function unwrapFence(text) {
   return /^(`{3,}|~{3,})[^\n]*\n([\s\S]*)\n\1[`~]*$/.exec(text)?.[2] ?? text;
 }
 
+function bulletsLabelled(reply) {
+  return outsideFences(reply).split("\n")
+    .filter((line) => /^\s*[-*+]\s/.test(line))
+    .every((line) => /^- \*\*[^*\n]+:\*\*/.test(line));
+}
+
 const GATES = {
   literals: (reply, c) =>
     (c.literals ?? []).every((variants) => variants.some((v) => reply.includes(v))),
   lead: (reply, c) =>
     !c.lead?.length || c.lead.some((k) => hasKey(firstSentence(reply), k)),
   heading: (reply) => !/^\s{0,3}#{1,6}\s/m.test(outsideFences(reply)),
+  labels: (reply) => bulletsLabelled(reply),
   opener: (reply) => !OPENER.test(reply.trim()),
   recap: (reply) => !RECAP.test(lastSentence(reply)),
   question: (reply, c) => closesOnQuestion(reply, c.ask === true),
