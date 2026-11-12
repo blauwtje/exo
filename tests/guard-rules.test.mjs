@@ -465,6 +465,13 @@ test('evidence line warns: a commit with a bad Evidence line runs with one WARN 
   assert.equal(rules.guardKind('commit-attribution'), 'hard');
 });
 
+test('evidence line warns on every bad commit in one session', async () => {
+  const session = { session_id: 'evidence-repeat' };
+  const command = 'git commit -m "fix: x\n\nEvidence: ran the tests"';
+  assert.match(await bashWarning(command, session), /Evidence: ran the tests/);
+  assert.match(await bashWarning(command, session), /Evidence: ran the tests/);
+});
+
 const DENYING_IDS = ['commit-attribution', 'context-hard', 'context-lead', 'run-no-wait', 'run-no-wait-final', 'run-stall-guard', 'shared-state', 'stash'];
 
 test('one deny table: only a row with harm denies, and the denying ids are pinned', () => {

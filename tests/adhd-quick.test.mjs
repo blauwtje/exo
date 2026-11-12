@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import { baseLines } from '../benchmarks/adhd/paired.mjs';
 import { judgeStatusLines, quickPowerLine } from '../benchmarks/adhd/quick-report.mjs';
-import { Spend, judgeRate, parseArgs, readCases, readQuick, runQuick, selectCases } from '../benchmarks/adhd-score.mjs';
+import { Spend, judgeRate, parseArgs, readCases, readQuick, runQuick, runRescore, selectCases } from '../benchmarks/adhd-score.mjs';
 import { tempDir } from './harness.mjs';
 
 const references = fs.readFileSync(new URL('../benchmarks/adhd/references.jsonl', import.meta.url), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
@@ -205,7 +206,7 @@ test('--base-style pairs a base arm that loses a fact with a candidate that keep
   await quickIn(async (dir) => {
     const lossy = referenceOf('failure-q1');
     const styleFile = path.join(dir, 'base.md');
-    fs.writeFileSync(styleFile, 'old style');
+    fs.writeFileSync(styleFile, '---\nname: adhd\n---\nold style');
     const flags = ['--base-style', styleFile];
     const sides = [];
     const reply = async ({ prompt, side }) => {
@@ -230,7 +231,7 @@ test('--base-style pairs a base arm that loses a fact with a candidate that keep
 test('--base-style runs the candidate first reply alone, then the base first reply alone, then the rest together', async () => {
   await quickIn(async (dir) => {
     const styleFile = path.join(dir, 'base.md');
-    fs.writeFileSync(styleFile, 'old style');
+    fs.writeFileSync(styleFile, '---\nname: adhd\n---\nold style');
     const log = [];
     const reply = async ({ prompt, side }) => {
       const id = caseOf(prompt).id;
@@ -242,5 +243,77 @@ test('--base-style runs the candidate first reply alone, then the base first rep
     await runQuick({ opts: optsIn(dir, ['--base-style', styleFile]), cases, reply, judge: async ({ input }) => verdicts(input), spend: new Spend(1), concise });
     assert.deepEqual(log.slice(0, 4), [`start candidate ${cases[0].id}`, `end candidate ${cases[0].id}`, `start base ${cases[0].id}`, `end base ${cases[0].id}`]);
     assert.deepEqual(log.slice(4, 4 + (cases.length * 2 - 2)).map((entry) => entry.split(' ')[0]), Array(cases.length * 2 - 2).fill('start'));
+  });
+});
+
+test('--base-style refuses a file whose front matter lacks name: adhd', async () => {
+  await quickIn(async (dir) => {
+    const refuse = (text) => {
+      const file = path.join(dir, 'style.md');
+      fs.writeFileSync(file, text);
+      return () => parseArgs(['--base-style', file]);
+    };
+    assert.throws(refuse('---\nname: other\n---\nbody'), /name: adhd/);
+    assert.throws(refuse('no front matter'), /name: adhd/);
+    assert.doesNotThrow(refuse('---\nname: adhd\ndescription: x\n---\nbody'));
+  });
+});
+
+test('an aborted --base-style run logs the base style in its error record', async () => {
+  await quickIn(async (dir) => {
+    const styleFile = path.join(dir, 'base.md');
+    fs.writeFileSync(styleFile, '---\nname: adhd\n---\nold');
+    const reply = async ({ prompt }) => ({ text: referenceOf(caseOf(prompt).id).good, tokens: 100, cost: 0.1 });
+    await assert.rejects(runQuick({ opts: optsIn(dir, ['--base-style', styleFile]), cases, reply, judge: async () => '', spend: new Spend(0.3), concise }), /projected_usd/);
+    assert.equal(logIn(dir).baseStyle, styleFile);
+  });
+});
+
+test('the paired record holds a facts_share interval and the base lines print it', async () => {
+  await quickIn(async (dir) => {
+    const lossy = referenceOf('failure-q1');
+    const styleFile = path.join(dir, 'base.md');
+    fs.writeFileSync(styleFile, '---\nname: adhd\n---\nold');
+    const reply = async ({ prompt, side }) => {
+      const id = caseOf(prompt).id;
+      return { text: side === 'base' && id === lossy.id ? lossy.bad : referenceOf(id).good, tokens: 100, cost: 0.01 };
+    };
+    const record = await runQuick({ opts: optsIn(dir, ['--base-style', styleFile]), cases, reply, judge: async ({ input }) => verdicts(input), spend: new Spend(1), concise });
+    assert.ok(record.paired.factsShare.mean > 0);
+    assert.equal(record.paired.factsShare.n, cases.length);
+    assert.match(baseLines(record), /paired facts_share candidate-base mean=.* ci95 .* n=\d+ \(not preregistered\)/);
+  });
+});
+
+test('--rescore of a paired quick record re-judges both arms from stored texts with no reply call', async () => {
+  await quickIn(async (dir) => {
+    const lossy = referenceOf('failure-q1');
+    const styleFile = path.join(dir, 'base.md');
+    fs.writeFileSync(styleFile, '---\nname: adhd\n---\nold');
+    const reply = async ({ prompt, side }) => {
+      const id = caseOf(prompt).id;
+      return { text: side === 'base' && id === lossy.id ? lossy.bad : referenceOf(id).good, tokens: 100, cost: 0.01 };
+    };
+    const stored = await runQuick({ opts: optsIn(dir, ['--base-style', styleFile]), cases, reply, judge: async ({ input }) => verdicts(input), spend: new Spend(1), concise });
+    assert.ok(stored.paired.factsKept.mean > 0);
+    const file = path.join(dir, fs.readdirSync(dir).find((f) => f.endsWith('.json')));
+    const out = tempDir('exo-adhd-quick-');
+    const inputs = [];
+    const judge = async ({ input }) => {
+      inputs.push(input);
+      return verdicts(input, [1]);
+    };
+    const opts = { ...parseArgs(['--rescore', '--log', file, '--max-usd', '1']), logDir: out };
+    await runRescore({ opts, cases: readCases(), judge, spend: new Spend(1) });
+    const record = logIn(out);
+    assert.equal(record.mode, 'quick');
+    assert.equal(record.rescoredFrom, file);
+    assert.ok(inputs.length > 0);
+    assert.equal(record.perCase.length, stored.perCase.length);
+    assert.equal(record.base.perCase.length, stored.base.perCase.length);
+    assert.equal(record.perCase[0].answers[0].text, stored.perCase[0].answers[0].text);
+    assert.equal(record.perCase[0].tokens, stored.perCase[0].tokens);
+    assert.equal(record.paired.factsKept.mean, 0);
+    assert.equal(typeof record.paired.factsShare.mean, 'number');
   });
 });

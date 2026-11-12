@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `--rescore --log <quick record>` re-judges every stored answer of both arms with the current judge and no reply call, prints a projected judge cost and refuses over `--max-usd`; the paired record adds a `facts_share` interval (not preregistered).
 - The skill lint flags old-model ritual phrases such as "think step by step" and "double check" outside quotes.
 - The worker result shape names the command behind a derived number or date, and marks a delegate's empty or partial output `Status: unknown`.
 - The branch reviewer flags a change that undoes a fix in `git log -5 -- <path>`.
@@ -41,6 +42,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The facts judge passes a fact ending in "is named" when the reply names that part in one or two words matching the name or the part in parentheses.
 - The `adhd` output style bolds the label of every bullet, the one result figure and the closing action, ends a long list on an `Also:` bullet, and ends a choice on the question; a new `labels` gate fails a bullet without a bold label.
 - A hook rule denies a call only when its row names the harm it prevents, such as a subagent `git stash` or AI attribution in a commit message; every other rule adds a note once per session and lets the call run.
 - A refusal stays hard only for a delete, spent money, the network or security; every other one is now a single `[WARN]` line that lets the work go on: a file outside `Files:` at `land-task --check`, a Proof not seen red first, a boundary word dropped with no `Drops:` line, a brief's `Fetches:`, `Worktree:` or shape, a code rule on an edit or at a land, the context target, the Read line cap, the Glob size, a plan's size or shape flag and a commit's `Evidence:` shape.
@@ -81,6 +83,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The commit-evidence note now shows on every commit with a bad Evidence line, not only the first in a session.
+- An aborted `--base-style` quick run keeps `baseStyle` in its error record, and `--base-style` refuses a file whose front matter has no `name: adhd`.
 - The adhd case `choice-plan-split` expects a **No** reply instead of a closing question, and `report-nine-changes` asks two full facts and seven name-level facts that fit five bullets and an `Also:` list.
 - The quick adhd score keeps every answer and the `--ablate` value, refuses `--ablate` with `--arm caveman`, calls its power-line MDE a lower bound and scales the default cost limit by `--answers`.
 - The quick `adhd-score` run measures visible tokens against the concise arm and prints billed tokens apart, takes `--answers <n>` per case with a paired interval and power line, allows `--ablate`, stores the concise arm per model and names agent-made judge labels; `benchmarks/results/2026-11-12-adhd-style-measure.md` records the `claude-fable-5-2` baseline of the `adhd` style, which stays unedited.

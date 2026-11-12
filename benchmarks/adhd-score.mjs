@@ -10,7 +10,9 @@ import { gateReply } from './adhd/gates.mjs';
 import { calibrationLines } from './judge-calibration.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { judgeStatusLines, quickPowerLine } from './adhd/quick-report.mjs';
-import { assertBaseStyle, baseLines, quickCaseLine, summaryLine, summaryOf } from './adhd/paired.mjs';
+import { rescoreQuick } from './adhd/rescore-quick.mjs';
+import { Spend } from './adhd/spend.mjs';
+import { assertBaseStyle, assertConciseCovers, baseLines, quickCaseLine, summaryLine, summaryOf } from './adhd/paired.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
 import { quickMaxUsd } from './adhd/metrics.mjs';
 import { writeAtomic } from '../lib/basics.mjs';
@@ -18,6 +20,8 @@ import { clusteredMeanCi, meanCi, median } from '../lib/eval-stats.mjs';
 import { intervalText } from './interval-text.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { mean, readJson } from './basics.mjs';
+
+export { Spend };
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CASES = path.join(import.meta.dirname, 'adhd', 'cases.jsonl');
@@ -94,16 +98,6 @@ export function claudeReply({ arm, prompt, model = REPLY_MODEL, pluginDir, cwd =
       if (!keepCwd) fs.rmSync(cwd, { recursive: true, force: true });
       if (!fixedHome) fs.rmSync(home, { recursive: true, force: true });
     });
-}
-
-export class Spend {
-  constructor(maxUsd) { this.maxUsd = maxUsd; this.reply = 0; this.judge = 0; }
-  get total() { return this.reply + this.judge; }
-  add(cost, kind = 'reply') {
-    this[kind] += cost;
-    if (this.total > this.maxUsd) throw new Error(`spend ${this.total.toFixed(4)} passed --max-usd ${this.maxUsd}`);
-  }
-  line() { return `cost_usd=${this.total.toFixed(4)} reply_cost_usd=${this.reply.toFixed(4)} judge_cost_usd=${this.judge.toFixed(4)}\n`; }
 }
 
 // why: the first call per key runs alone so it writes the prompt cache; later calls read it instead of each writing their own.
@@ -517,6 +511,13 @@ export async function runRescore({ opts, cases, judge, spend, baseline = readBas
   const started = Date.now();
   const log = readJson(opts.log);
   if (log.partial === true) throw new Error(`${opts.log} is a partial log; finish it with --resume first`);
+  if (log.mode === 'quick') {
+    const judgeCall = limited(judge, JUDGE_CONCURRENCY);
+    const judgeOne = async (c, text) => (await judgeMissing({ c, texts: [text], judge: judgeCall, judgeModel: opts.judgeModel, spend }))[0];
+    const record = await rescoreQuick({ log, cases, file: opts.log, maxUsd: opts.maxUsd, judgeOne });
+    writeLog({ ...record, ...costRecord(spend), durationMs: Date.now() - started }, logPath(opts.logDir));
+    return printQuick(record);
+  }
   const result = await rescoreCases({ cases, baseline, log, judge, judgeModel: opts.judgeModel, spend });
   reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - started, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
 }
@@ -528,11 +529,6 @@ const readConcise = (model) => {
   if (!fs.existsSync(file)) throw new Error(`${file} is missing; run with --concise-baseline --model ${model}`);
   return readJson(file);
 };
-
-function assertConciseCovers(cases, concise, model) {
-  const missing = cases.filter((c) => concise[c.id]?.model !== model).map((c) => c.id);
-  if (missing.length > 0) throw new Error(`concise arm lacks cases for model ${model}: ${missing.join(', ')}; run with --concise-baseline`);
-}
 
 // why: the facts judge reads only replies that pass the literals gate, so a missing literal never costs a judge call; each case makes one reply, the first alone to write the prompt cache, then the rest together.
 async function quickRows({ opts, cases, reply, judge, spend, concise }) {
@@ -567,7 +563,7 @@ export async function runQuick({ opts, cases, reply, judge, spend, concise = rea
   assertConciseCovers(cases, concise, opts.model);
   const base = { mode: 'quick', arm: opts.arm, answers: opts.answers, ablate: opts.ablate, model: opts.model, cases: cases.map((c) => c.id) };
   const rows = await quickRows({ opts, cases, reply, judge, spend, concise }).catch((error) => {
-    writeLog({ ...base, error: error.message, ...costRecord(spend), durationMs: Date.now() - started }, logPath(opts.logDir));
+    writeLog({ ...base, ...(opts.baseStyle ? { baseStyle: opts.baseStyle } : {}), error: error.message, ...costRecord(spend), durationMs: Date.now() - started }, logPath(opts.logDir));
     throw error;
   });
   const record = { ...base, ...summaryOf({ opts, cases, rows }), ...costRecord(spend), durationMs: Date.now() - started };
