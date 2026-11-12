@@ -3,8 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readKindTable } from '#model-kinds';
-import { settingOrDefault } from '#settings-store';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { BRANCH_REVIEW_KEY, cachedPass, recordPass, recordReview, reviewVerdict, successCriterionPasses, workingTreeKey } from '#check-cache';
 import { criterionCommand } from '#plan-frame';
@@ -13,6 +11,7 @@ import { runCheck } from '../../../lib/run-check.mjs';
 import { decide, formatLine, recordRound, wallBudgetMs } from '../../../lib/loop-budget.mjs';
 import { ledgerDirOf } from '../../gate/scripts/repair-round.mjs';
 import { parseRepairLines, parseReviewLines, unprovenRisks } from './run-tail-parse.mjs';
+import { agentModel } from './run-plan-provider.mjs';
 import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -34,12 +33,6 @@ const node = (script, args, root) => spawnSync(process.execPath, [script, ...arg
 const out = (answer) => `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
 
 const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN_ROOT).trim();
-
-function agentModel(kind = 'review-branch') {
-  const budget = settingOrDefault('budget').value;
-  if (budget === 'off') return null;
-  return readKindTable(undefined, { budget }).kinds[kind].model;
-}
 
 function fixerPrompt({ planPath, root, base, findings }) {
   const block = fs.readFileSync(FIXER_PROMPT, 'utf8').match(/```text\n([\s\S]*?)\n```/)[1];

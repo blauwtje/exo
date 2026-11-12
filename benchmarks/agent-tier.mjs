@@ -66,12 +66,10 @@ export function candidatesFor({ model, effort }) {
 }
 
 export function settingOf(agent, table) {
-  const kind = generalKind(agent);
-  if (kind) return { model: table.kinds[kind].model, effort: table.kinds[kind].effort };
-  const entry = table.agents[`agents/${agent}.md`];
-  if (!entry) throw new UsageError(`agent '${agent}' is not in lib/model-kinds.json`);
-  const { model, effort } = table.kinds[entry.kind];
-  return { model, effort };
+  const name = generalKind(agent) ?? table.agents[`agents/${agent}.md`]?.kind;
+  if (!name) throw new UsageError(`agent '${agent}' is not in lib/model-kinds.json`);
+  const { model, effort } = table.kinds[name];
+  return { model: model === 'inherit' ? table.providers[table.provider].tiers.strong : model, effort };
 }
 
 export function planJobs({ config, agents, tier, candidates, table, runs = 1 }) {

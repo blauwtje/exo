@@ -153,6 +153,6 @@ test('a skills entry naming an unknown kind is rejected', () => {
 });
 
 test('orchestrator runs on the strong tier', () => {
-  const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude', deep: 'fable' });
+  const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude' });
   assert.equal(kinds.orchestrator.model, 'opus');
 });

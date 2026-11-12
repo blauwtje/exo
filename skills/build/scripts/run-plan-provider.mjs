@@ -27,6 +27,13 @@ export function fallbackModel(model, env = process.env) {
 
 export const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
 
+export function agentModel(kind = 'review-branch') {
+  const budget = settingOrDefault('budget').value;
+  if (budget === 'off') return null;
+  const { model } = readKindTable(undefined, { budget }).kinds[kind];
+  return model === INHERIT ? null : model;
+}
+
 export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingOrDefault('budget').value } = {}) {
   if (flags.model !== undefined || flags.effort !== undefined) return {};
   if (!listedProvider(name)) return {};

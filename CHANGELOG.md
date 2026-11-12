@@ -121,6 +121,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- The `deep` setting: the `hardest` and `review-deep` kinds now run on the model of the main session, each with the effort of its kind.
 - The `needs-input` end state of the round budget, which no caller reached.
 - The unreachable land repair path (`run-plan-land-repair.mjs`, `repairOrBlock`), the `code rule` refusal kind and the `no red proof` line of the drift repairer prompt.
 - The `env` setting, since a worktree always gets the `.env*` files.

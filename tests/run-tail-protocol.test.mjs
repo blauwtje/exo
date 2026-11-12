@@ -36,8 +36,8 @@ function scenario({ root, verifyDispatch, merged, repair = '', fixer = 'commit',
     if (name === 'merge-reviews') return answer(merged);
     return answer();
   };
-  const runSession = async ({ kind, prompt }) => {
-    prompts.push({ kind, prompt });
+  const runSession = async ({ kind, prompt, model }) => {
+    prompts.push({ kind, prompt, model });
     if (kind === 'review') {
       const findings = promptValue(prompt, 'Findings path');
       fs.mkdirSync(path.dirname(findings), { recursive: true });
@@ -83,6 +83,14 @@ test('a sharded branch review dispatches one reviewer per shard with its input a
   const merge = calls.find((call) => call.name === 'merge-reviews');
   const reports = merge.args.flatMap((arg, index) => (arg === '--report' ? [merge.args[index + 1]] : []));
   assert.deepEqual(reports.sort(), [`${root}/.exo/review-branch-1.md`, `${root}/.exo/review-branch-2.md`]);
+});
+
+test('a review-deep branch review session is left unpinned', async () => {
+  const root = checkout();
+  const verifyDispatch = `REVIEW Branch main..HEAD: review-branch exo-kind: review-deep\n${branchDispatch(root)} findings=${root}/.exo/review-branch.md\n`;
+  const { prompts, run } = scenario({ root, verifyDispatch, merged: 'verdict=CLEAN defect=0 concern=0 question=0 note=0 fix=0 report=r\nFINDINGS-SHA abc\n' });
+  await run();
+  assert.equal(prompts.find((entry) => entry.kind === 'review').model, null);
 });
 
 async function repairedRun({ repair, fixer, replies }) {

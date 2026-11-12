@@ -27,19 +27,6 @@
       "off": { "label": "Off", "gives": "agents use your session's model" }
     }
   },
-  "deep": {
-    "type": "string",
-    "options": ["opus", "fable"],
-    "default": "opus",
-    "description": "the model of the deep tier on Claude: opus or fable. The review-deep, orchestrator and hardest kinds run on it",
-    "label": "Deep model",
-    "about": "which model does the hardest thinking",
-    "question": "Which model should do the hardest thinking?",
-    "choices": {
-      "opus": { "label": "Opus", "gives": "deep reviews and orchestration run on Opus" },
-      "fable": { "label": "Fable", "gives": "deep reviews and orchestration run on Fable" }
-    }
-  },
   "ship": {
     "type": "string",
     "options": ["ask", "pr-merge", "open-pr", "stack", "push", "local"],

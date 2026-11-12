@@ -261,8 +261,10 @@ test('the dispatch rules send a brief with an open choice or unknown cause to th
   const { agentEffort } = await import('../hooks/agent-effort.mjs');
   const { readKindTable } = await import('../lib/model-kinds.mjs');
   const { kinds } = readKindTable(undefined, { budget: 'on' });
-  const modelOf = (prompt) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt } }, 'on').hookSpecificOutput.updatedInput.model;
-  assert.equal(modelOf('exo-kind: hardest\nPick the cache design'), kinds.hardest.model);
+  const inputOf = (prompt) => agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt } }, 'on').hookSpecificOutput.updatedInput;
+  const modelOf = (prompt) => inputOf(prompt).model;
+  assert.equal(modelOf('exo-kind: hardest\nPick the cache design'), undefined);
+  assert.equal(inputOf('exo-kind: hardest\nPick the cache design').effort, kinds.hardest.effort);
   assert.equal(modelOf('exo-kind: build\nApply the decided fix'), kinds.build.model);
 });
 

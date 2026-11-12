@@ -22,8 +22,7 @@ function forkSkillFiles(root) {
 
 function expectedLines(root, kind) {
   const raw = readRawTable(root);
-  const provider = raw.providers[raw.provider];
-  const resolved = readKindTable(path.join(root, 'lib', 'model-kinds.json'), { deep: provider.tiers.deep }).kinds[kind];
+  const resolved = readKindTable(path.join(root, 'lib', 'model-kinds.json')).kinds[kind];
   const tier = raw.kinds[kind].on.tier;
   if (tier === 'deep' || tier === INHERIT) return { tier };
   return { model: resolved.model, effort: resolved.effort };

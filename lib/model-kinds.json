@@ -3,7 +3,7 @@
   "providers": {
     "claude": {
       "models": ["fable", "opus", "sonnet", "haiku"],
-      "tiers": { "deep": "opus", "strong": "opus", "standard": "sonnet", "fast": "haiku" },
+      "tiers": { "deep": "inherit", "strong": "opus", "standard": "sonnet", "fast": "haiku" },
       "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" }
     },
     "codex": {

@@ -45,7 +45,7 @@ test('a general-purpose, claude or untyped call with no model or effort gets the
 test('an unnamed call resolves its kind from job words in the description, an exo-kind line first', () => {
   const { kinds } = readKindTable(undefined, { budget: 'on' });
   const kindOf = (input) => call({ subagent_type: 'general-purpose', ...input });
-  assert.equal(kindOf({ description: 'Fix edit-evidence false block cause' }).model, kinds.hardest.model);
+  assert.equal(kindOf({ description: 'Fix edit-evidence false block cause' }).model, undefined);
   assert.equal(kindOf({ description: 'Fix edit-evidence false block cause' }).effort, kinds.hardest.effort);
   assert.equal(kindOf({ description: 'Fix the typo' }).model, kinds.build.model);
   assert.equal(kindOf({ description: 'Fix the typo' }).effort, kinds.build.effort);
@@ -54,7 +54,7 @@ test('an unnamed call resolves its kind from job words in the description, an ex
   assert.equal(kindOf({ description: 'Fix the typo', prompt: 'exo-kind: lookup' }).effort, kinds.lookup.effort);
   assert.equal(kindOf({ description: 'Summarise notes' }).effort, kinds.investigate.effort);
   for (const [description, kind] of [['Decides the cause', 'hardest'], ['Designing a table', 'hardest'], ['Diagnosed stall', 'hardest'], ['Summarised notes', 'investigate'], ['Picked a winner', 'hardest']]) {
-    assert.equal(kindOf({ description }).model, kinds[kind].model, description);
+    assert.equal(kindOf({ description }).model, kinds[kind].model === 'inherit' ? undefined : kinds[kind].model, description);
     assert.equal(kindOf({ description }).effort, kinds[kind].effort, description);
   }
 });
@@ -82,7 +82,7 @@ test('an unnamed call with no exo-kind line runs as build with the line prepende
   assert.match(unknown.prompt, /^exo-kind: build\nx/);
   assert.notEqual(decision({ description: 'review the branch', prompt: 'Reads: none' }), 'deny');
   for (const word of ['Investigate', 'Research', 'Summarise', 'Summarize', 'Explore']) assert.notEqual(decision({ description: `${word} the stall`, prompt: 'Reads: none' }), 'deny');
-  assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, kinds.hardest.model);
+  assert.equal(call({ description: 'Investigate the cause', prompt: 'x' }).model, undefined);
   assert.equal(call({ description: 'Fix the typo', prompt: 'exo-kind: hard\nx' }).model, kinds.build.model);
   for (const description of ['Pickup log lines', 'Picker colours', 'Designated owner', 'Collect findings', 'Add test fixtures']) assert.equal(call({ description, prompt: 'x' }).prompt, 'exo-kind: build\nx', description);
   assert.equal(call({ subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'Reads: none' }, 'off'), undefined);
@@ -178,7 +178,7 @@ test('an exo call whose passed model or effort differs from the table is denied 
   const reason = output.permissionDecisionReason;
   assert.match(reason, new RegExp(`runs on ${model}, ${effort} by the kind table`));
   assert.match(reason, /passed opus, xhigh/);
-  assert.match(reason, /No kind runs opus, xhigh; closest on opus: hardest, build-repair, review-deep\./);
+  assert.match(reason, /No kind runs opus, xhigh; closest on opus: build-repair\./);
   assert.match(reason, /Do instead: drop `model` and `effort`\.$/);
   assert.doesNotMatch(reason, /No user request/);
   const buildTask = readKindTable(undefined, { budget: 'on' }).kinds['build-task'];
@@ -189,7 +189,7 @@ test('an exo call whose passed model or effort differs from the table is denied 
 });
 
 test('a denied pair that no kind runs names the closest kinds on that model, or none', () => {
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: hardest, build-repair, review-deep\./);
+  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'max' }).permissionDecisionReason, /No kind runs opus, max; closest on opus: build-repair\./);
   assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'fable', effort: 'high' }).permissionDecisionReason, /No kind runs fable, high, and none runs fable\./);
 });
 
@@ -197,7 +197,7 @@ test('an exo call passing the table model and effort, a label that makes the pai
   const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrator;
   assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model, effort }), undefined);
   assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model })?.permissionDecision, 'deny');
-  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: hardest\nWorkers: 1', model: 'opus', effort: 'high' })?.permissionDecision, 'deny');
+  assert.notEqual(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: hardest\nWorkers: 1', effort: 'high' })?.permissionDecision, 'deny');
   assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'high' }, 'off'), undefined);
   assert.equal(hookOutput({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nReads: none', model: 'opus', effort: 'max' }), undefined);
 });
@@ -244,10 +244,10 @@ test('a label on an exo call with no model or effort moves it only to a label it
     return { model, effort };
   };
   assert.deepEqual(pair({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review\nx' }), { model: kinds.research.model, effort: kinds.research.effort });
-  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: review-deep\nx' }), kinds['review-deep']);
+  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: review-deep\nx' }), { model: undefined, effort: kinds['review-deep'].effort });
   assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: hardest\nx' }), kinds['review-branch']);
   assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review\nx' }).permissionDecision, 'allow');
-  assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: hardest\nx', model: 'opus', effort: 'high' }), undefined);
+  assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: hardest\nx', effort: 'high' }), undefined);
 });
 
 test('a kind ceiling lifts its effort to the session effort up to the ceiling, and names no agent in the hook', () => {
@@ -474,4 +474,10 @@ test('brief without fetches still dispatches with a warning', () => {
   const output = hookOutput({ subagent_type: 'exo:research-worker', prompt: 'Sources: web\nReads: none\nResult: .exo/answer.md' });
   assert.notEqual(output.permissionDecision, 'deny');
   assert.match(output.additionalContext, /add the line `Fetches: <n>`/);
+});
+
+test('a hardest call gets the kind effort and no model', () => {
+  const { updatedInput } = agentEffort({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'exo-kind: hardest\nx' } }, 'on').hookSpecificOutput;
+  assert.equal(updatedInput.effort, 'high');
+  assert.equal('model' in updatedInput, false);
 });
