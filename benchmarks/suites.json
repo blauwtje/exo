@@ -99,7 +99,8 @@
       "purpose": "Output length and fact coverage of exo:adhd replies against an \"Answer concisely.\" arm.",
       "basis": "adhd/saturated.json lists the cases every arm passes and the screen leaves them out, so the screened cases are the ones still short of 100% (results/2026-10-23-adhd-style.md).",
       "entries": [
-        "benchmarks/adhd-score.mjs"
+        "benchmarks/adhd-score.mjs",
+        "benchmarks/adhd/quick-report.mjs"
       ]
     },
     {

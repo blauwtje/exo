@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ADHD_RUNS, SCORE_MAX_USD, parseArgs, readQuick } from '../benchmarks/adhd-score.mjs';
 import { quickMaxUsd } from '../benchmarks/adhd/metrics.mjs';
+import { quickPowerLine } from '../benchmarks/adhd/quick-report.mjs';
 import { BREVITY_LINES } from '../benchmarks/tasks.mjs';
 
 test('the full run defaults to 3 runs and a $3 cap', () => {
@@ -21,7 +22,7 @@ test('no flag selects the quick run with a cap of the case count times the per-c
 });
 
 test('each full-run flag selects the full run with today\'s defaults', () => {
-  const flags = [['--full'], ['--screen'], ['--baseline'], ['--rescore', '--log', 'f'], ['--resume', 'p'], ['--ablate', 'no-why'], ['--runs', '3']];
+  const flags = [['--full'], ['--screen'], ['--baseline'], ['--rescore', '--log', 'f'], ['--resume', 'p'], ['--runs', '3']];
   for (const argv of flags) {
     assert.equal(parseArgs(argv).mode, 'full', argv.join(' '));
     assert.ok(parseArgs(argv).maxUsd >= 3 || argv.includes('--baseline'), argv.join(' '));
@@ -49,6 +50,11 @@ test('--ablate takes a brevity slug and defaults to null', () => {
   assert.equal(parseArgs(['--ablate', 'no-why']).ablate, 'no-why');
 });
 
+test('--ablate alone stays quick and with a full-run flag goes full', () => {
+  assert.equal(parseArgs(['--ablate', 'no-why', '--cases', 'a']).mode, 'quick');
+  assert.equal(parseArgs(['--ablate', 'no-why', '--runs', '2']).mode, 'full');
+});
+
 test('--ablate with an unknown slug lists the valid slugs', () => {
   assert.throws(() => parseArgs(['--ablate', 'nope']), (error) => Object.keys(BREVITY_LINES).every((slug) => error.message.includes(slug)));
 });
@@ -67,4 +73,25 @@ test('--resume takes a log file and refuses --baseline, --dry-run and --rescore'
   assert.throws(() => parseArgs(['--resume', 'p', '--dry-run']), /cannot combine/);
   assert.throws(() => parseArgs(['--resume', 'p', '--baseline']), /cannot combine/);
   assert.throws(() => parseArgs(['--resume', 'p', '--rescore', '--log', 'f']), /cannot combine/);
+});
+
+test('--answers takes an integer of at least 1 and only in quick mode', () => {
+  assert.equal(parseArgs([]).answers, 1);
+  assert.equal(parseArgs(['--answers', '3']).answers, 3);
+  assert.throws(() => parseArgs(['--answers', '0']), /--answers needs an integer of at least 1/);
+  assert.throws(() => parseArgs(['--answers', '2', '--full']), /--answers cannot combine/);
+});
+
+test('--ablate with --arm caveman is refused', () => {
+  assert.throws(() => parseArgs(['--ablate', 'one-sentence', '--arm', 'caveman']), /--ablate cannot combine with --arm caveman/);
+  assert.equal(parseArgs(['--ablate', 'one-sentence', '--arm', 'adhd']).ablate, 'one-sentence');
+});
+
+test('the power line calls its minimum detectable effect a lower bound', () => {
+  const perCase = Array.from({ length: 4 }, (_, at) => ({ id: `c${at}`, ratios: [0.2 + at * 0.1, 0.21 + at * 0.1] }));
+  assert.match(quickPowerLine(perCase, 2), /lower bound/);
+});
+
+test('the default cost limit grows with --answers', () => {
+  assert.ok(parseArgs(['--answers', '2']).maxUsd > parseArgs([]).maxUsd);
 });

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { ADHD_RUNS, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, claudeReply, makeStylePlugin, parseArgs, projectDryRun, readCases, readSaturated, runAddFailLabels, rescoreCases, runRescore, runScore, runToLabel, scoreCases, selectCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
+import { ADHD_RUNS, Spend, buildBaseline, buildLabelRows, calibrateLines, checkBaseline, callStats, caseLine, concisePath, REPLY_MODEL, claudeReply, makeStylePlugin, parseArgs, projectDryRun, readCases, readSaturated, runAddFailLabels, rescoreCases, runRescore, runScore, runToLabel, scoreCases, selectCases, stabilityItems, visibleTokens } from '../benchmarks/adhd-score.mjs';
 import { buildFailRows, dropFact } from '../benchmarks/adhd/labels.mjs';
 import { BREVITY_LINES, withoutSentence } from '../benchmarks/tasks.mjs';
 import { tempDir } from './harness.mjs';
@@ -661,4 +661,9 @@ test('--rescore refuses a partial log', async () => {
   const source = path.join(dir, 'src.json');
   fs.writeFileSync(source, JSON.stringify({ ...storedLog([storedRow('a', ['x'])]), partial: true }));
   await assert.rejects(runRescore({ opts: { ...parseArgs(['--rescore', '--log', source]), logDir: dir }, cases, judge: pass, spend: spendOf(1), baseline }), /partial/);
+});
+
+test('concisePath keeps concise.json for the default model and names other models', () => {
+  assert.equal(path.basename(concisePath(REPLY_MODEL)), 'concise.json');
+  assert.equal(path.basename(concisePath('claude-fable-5-2')), 'concise.claude-fable-5-2.json');
 });

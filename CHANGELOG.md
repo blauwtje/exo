@@ -37,6 +37,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A change under three files with a known proof skips the questions, the plan and the gate, and goes to one worktree worker.
 - `benchmarks/lean-guards-compare.mjs` compares session-start bytes, hook modules and hook latency with a stored baseline and exits 1 when one is worse.
 - `benchmarks/routing.mjs --variant <name>` runs a paired arm with part of the routing text removed, and `routing-stats.mjs --against <arm>` prints the paired difference per prompt.
+- `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
 
@@ -80,6 +81,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The adhd case `choice-plan-split` expects a **No** reply instead of a closing question, and `report-nine-changes` asks two full facts and seven name-level facts that fit five bullets and an `Also:` list.
+- The quick adhd score keeps every answer and the `--ablate` value, refuses `--ablate` with `--arm caveman`, calls its power-line MDE a lower bound and scales the default cost limit by `--answers`.
+- The quick `adhd-score` run measures visible tokens against the concise arm and prints billed tokens apart, takes `--answers <n>` per case with a paired interval and power line, allows `--ablate`, stores the concise arm per model and names agent-made judge labels; `benchmarks/results/2026-11-12-adhd-style-measure.md` records the `claude-fable-5-2` baseline of the `adhd` style, which stays unedited.
 - The `adhd` output style hands a choice the source leaves open to the user and ends on the question, and its figure rule shows the bold label and bold result figure; the quick `adhd-score` run caps spend at $0.04 per case instead of a fixed $0.30, so a 12-case run no longer stops on its own projection.
 - The sleep note fires only on a foreground wait loop; `Monitor` and a background wait loop pass with no note.
 - `watch` transcribes the original-language audio when YouTube rate-limits the captions with a 429, and keeps the batch stop when the audio is rate-limited too.

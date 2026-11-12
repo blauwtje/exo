@@ -10,15 +10,24 @@ function median(values) {
   return (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
+function factsShare(gated) {
+  const total = gated.reduce((sum, row) => sum + row.testCase.facts.length, 0);
+  if (total === 0) return null;
+  const kept = gated.reduce((sum, row) => sum + (row.failed.includes("literals") ? 0 : row.testCase.facts.length - row.missing.length), 0);
+  return (100 * kept) / total;
+}
+
 export function repoMetrics(rows) {
   const gated = rows.map((row) => ({ ...row, failed: gateReply(row.reply, row.testCase).failed }));
   const passes = (...names) => (row) => names.every((name) => !row.failed.includes(name));
   return {
     medianRatio: median(rows.map((row) => row.ratio)),
+    billedMedianRatio: median(rows.map((row) => row.billedRatio)),
     answerFirst: percent(gated, passes("lead", "opener")),
     cleanDeliverable: percent(gated.filter((row) => row.testCase.deliverable !== undefined), passes("deliverable")),
     questionLast: percent(gated.filter((row) => row.testCase.ask === true), passes("question")),
     factsKept: percent(gated, (row) => passes("literals")(row) && row.missing.length === 0),
+    factsShare: factsShare(gated),
   };
 }
 

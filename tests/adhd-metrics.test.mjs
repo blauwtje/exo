@@ -21,16 +21,18 @@ const METRIC_OF = {
 const scored = (swap = {}) =>
   cases.map((testCase) => {
     const reference = references.find((r) => r.id === testCase.id);
-    return { testCase, reply: swap[testCase.id] ?? reference.good, ratio: 0.5, missing: [] };
+    return { testCase, reply: swap[testCase.id] ?? reference.good, ratio: 0.5, billedRatio: 0.5, missing: [] };
   });
 
 test("every good reference reply scores 100% on the four rate metrics", () => {
   assert.deepEqual(repoMetrics(scored()), {
     medianRatio: 0.5,
+    billedMedianRatio: 0.5,
     answerFirst: 100,
     cleanDeliverable: 100,
     questionLast: 100,
     factsKept: 100,
+    factsShare: 100,
   });
 });
 
@@ -45,14 +47,16 @@ test("a heading or recap break leaves every rate metric at 100%", () => {
   const swap = Object.fromEntries(
     references.filter((r) => ["heading", "recap"].includes(r.breaks)).map((r) => [r.id, r.bad]),
   );
-  const { medianRatio, ...rates } = repoMetrics(scored(swap));
-  assert.deepEqual(Object.values(rates), [100, 100, 100, 100]);
+  const { medianRatio, billedMedianRatio, ...rates } = repoMetrics(scored(swap));
+  assert.deepEqual(Object.values(rates), [100, 100, 100, 100, 100]);
 });
 
 test("a fact the judge reports missing lowers factsKept", () => {
   const rowsWithMiss = scored();
   rowsWithMiss[0].missing = [1];
   assert.equal(repoMetrics(rowsWithMiss).factsKept, 100 - 100 / cases.length);
+  const facts = rowsWithMiss.reduce((sum, row) => sum + row.testCase.facts.length, 0);
+  assert.equal(repoMetrics(rowsWithMiss).factsShare, 100 - 100 / facts);
 });
 
 test("medianRatio is the median of the per-case ratios", () => {

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { gateReply } from '../benchmarks/adhd/gates.mjs';
 
 const file = new URL('../benchmarks/adhd/cases.jsonl', import.meta.url);
 const cases = readFileSync(file, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
@@ -41,8 +42,8 @@ test('no private details', () => {
   assert.doesNotMatch(raw, /\/Users\/|\/home\/|@[\w-]+\.\w+|sk-[A-Za-z0-9]{8}|thomas|hoogteijling|newdata/i);
 });
 
-test('4 ask, 3 deliverable and 4 explain cases', () => {
-  assert.equal(cases.filter((c) => c.ask === true).length, 4);
+test('3 ask, 3 deliverable and 4 explain cases', () => {
+  assert.equal(cases.filter((c) => c.ask === true).length, 3);
   assert.equal(cases.filter((c) => typeof c.deliverable === 'string').length, 3);
   assert.equal(cases.filter((c) => c.id.startsWith('explain-')).length, 4);
 });
@@ -51,4 +52,14 @@ test('explain literals accept a reply that keeps each fact in other words', () =
   const has = (id, reply) => cases.find((c) => c.id === id).literals.every((variants) => variants.some((v) => reply.includes(v)));
   assert.ok(has('explain-gate-order', 'The code gates run first. Replies that pass go to the judge, which checks each fact with 3 votes. A reply that fails a gate gets the worst score and skips the judge.'));
   assert.ok(has('explain-baseline-file', 'The default arm is built once and kept in baseline.json under the git common dir. A score run uses just the adhd arm. --baseline rebuilds it.'));
+});
+
+test('choice-plan-split accepts the observed No reply', () => {
+  const c = cases.find((x) => x.id === 'choice-plan-split');
+  assert.deepEqual(gateReply('**No**, task 3 breaks the project rule; split the rename into its own task.', c), { pass: true, failed: [] });
+});
+
+test('report-nine-changes asks at most 4 full facts and names the rest', () => {
+  const c = cases.find((x) => x.id === 'report-nine-changes');
+  assert.ok(c.facts.filter((f) => !f.endsWith(' is named')).length <= 4);
 });

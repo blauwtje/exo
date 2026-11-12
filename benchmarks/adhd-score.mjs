@@ -9,10 +9,12 @@ import { BREVITY_LINES, withoutSentence } from './tasks.mjs';
 import { gateReply } from './adhd/gates.mjs';
 import { calibrationLines } from './judge-calibration.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
+import { judgeStatusLines, quickPowerLine } from './adhd/quick-report.mjs';
+import { assertBaseStyle, baseLines, quickCaseLine, summaryLine, summaryOf } from './adhd/paired.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
-import { quickMaxUsd, repoMetrics } from './adhd/metrics.mjs';
+import { quickMaxUsd } from './adhd/metrics.mjs';
 import { writeAtomic } from '../lib/basics.mjs';
-import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
+import { clusteredMeanCi, meanCi, median } from '../lib/eval-stats.mjs';
 import { intervalText } from './interval-text.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 import { mean, readJson } from './basics.mjs';
@@ -59,12 +61,11 @@ const meanVisible = (replies) => mean(replies.map(visibleTokens));
 const promptOf = (c) => `${c.context}\n\n${c.question}`;
 
 // why: the adhd arm differs from the default arm only by this plugin dir holding the style file.
-export function makeStylePlugin(ablate = null) {
+export function makeStylePlugin(ablate = null, style = fs.readFileSync(path.join(ROOT, 'output-styles', 'adhd.md'), 'utf8')) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-plugin-'));
   fs.mkdirSync(path.join(dir, '.claude-plugin'));
   fs.mkdirSync(path.join(dir, 'output-styles'));
   fs.writeFileSync(path.join(dir, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'exo', version: '0.0.0', description: 'adhd style only' }));
-  const style = fs.readFileSync(path.join(ROOT, 'output-styles', 'adhd.md'), 'utf8');
   fs.writeFileSync(path.join(dir, 'output-styles', 'adhd.md'), ablate === null ? style : withoutSentence(style, BREVITY_LINES[ablate]));
   return dir;
 }
@@ -364,18 +365,18 @@ function latestAdhdReplies() {
 }
 
 const FLAGS = { '--full': 'full', '--baseline': 'baseline', '--concise-baseline': 'conciseBaseline', '--check': 'check', '--to-label': 'toLabel', '--calibrate': 'calibrate', '--add-fail-labels': 'addFailLabels', '--stability': 'stability', '--all': 'all', '--dry-run': 'dryRun', '--screen': 'screen', '--rescore': 'rescore' };
-const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')], '--arm': ['arm', String] };
-const FULL_RUN_FLAGS = ['--full', '--screen', '--baseline', '--rescore', '--resume', '--ablate', '--runs'];
+const VALUES = { '--runs': ['runs', Number], '--max-usd': ['maxUsd', Number], '--judge-model': ['judgeModel', String], '--model': ['model', String], '--log-dir': ['logDir', String], '--log': ['log', String], '--resume': ['resume', String], '--repeats': ['repeats', Number], '--votes': ['votes', Number], '--ablate': ['ablate', String], '--cases': ['caseIds', (value) => value.split(',')], '--arm': ['arm', String], '--answers': ['answers', Number], '--base-style': ['baseStyle', String] };
+const FULL_RUN_FLAGS = ['--full', '--screen', '--baseline', '--rescore', '--resume', '--runs'];
 const OTHER_ACTIONS = ['check', 'dryRun', 'toLabel', 'calibrate', 'addFailLabels', 'stability', 'conciseBaseline'];
 const QUICK_ARMS = ['adhd', 'caveman'];
 
-function defaultMaxUsd(building, { mode, caseIds }) {
+function defaultMaxUsd(building, { mode, caseIds, answers, baseStyle }) {
   if (building) return BASELINE_MAX_USD;
-  return mode === 'quick' ? quickMaxUsd(caseIds ?? readQuick()) : SCORE_MAX_USD;
+  return mode === 'quick' ? quickMaxUsd(caseIds ?? readQuick()) * answers * (baseStyle ? 2 : 1) : SCORE_MAX_USD;
 }
 
 export function parseArgs(argv) {
-  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, conciseBaseline: false, all: false, dryRun: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null, screen: false, rescore: false, full: false, arm: 'adhd', caseIds: null, resume: null };
+  const opts = { toLabel: false, calibrate: false, addFailLabels: false, stability: false, baseline: false, conciseBaseline: false, all: false, dryRun: false, check: false, runs: ADHD_RUNS, maxUsd: null, judgeModel: DEFAULT_JUDGE_MODEL, model: REPLY_MODEL, logDir: LOG_DIR, log: null, repeats: STABILITY_REPEATS, votes: JUDGE_VOTES, ablate: null, screen: false, rescore: false, full: false, arm: 'adhd', caseIds: null, resume: null, answers: 1, baseStyle: null };
   for (let i = 0; i < argv.length; i += 1) {
     if (FLAGS[argv[i]]) opts[FLAGS[argv[i]]] = true;
     else if (VALUES[argv[i]]) { const [key, cast] = VALUES[argv[i]]; opts[key] = cast(argv[++i]); }
@@ -392,6 +393,10 @@ export function parseArgs(argv) {
   opts.mode = FULL_RUN_FLAGS.some((flag) => argv.includes(flag)) || OTHER_ACTIONS.some((key) => opts[key]) ? 'full' : 'quick';
   if (!QUICK_ARMS.includes(opts.arm)) throw new Error(`--arm needs one of: ${QUICK_ARMS.join(', ')}`);
   if (argv.includes('--arm') && opts.mode !== 'quick') throw new Error('--arm cannot combine with a full-run flag');
+  if (opts.ablate !== null && opts.arm === 'caveman') throw new Error('--ablate cannot combine with --arm caveman');
+  if (argv.includes('--answers') && opts.mode !== 'quick') throw new Error('--answers cannot combine with a full-run flag');
+  if (!Number.isInteger(opts.answers) || opts.answers < 1) throw new Error('--answers needs an integer of at least 1');
+  if (opts.baseStyle !== null) assertBaseStyle(argv, opts);
   if (opts.maxUsd === null) opts.maxUsd = defaultMaxUsd(building, opts);
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
   if (!Number.isInteger(opts.runs) || opts.runs < 1) throw new Error('--runs needs a positive integer');
@@ -516,9 +521,12 @@ export async function runRescore({ opts, cases, judge, spend, baseline = readBas
   reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - started, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
 }
 
-const readConcise = () => {
-  if (!fs.existsSync(CONCISE)) throw new Error(`${CONCISE} is missing; run with --concise-baseline`);
-  return readJson(CONCISE);
+export const concisePath = (model) => (model === REPLY_MODEL ? CONCISE : path.join(STORE, `concise.${model}.json`));
+
+const readConcise = (model) => {
+  const file = concisePath(model);
+  if (!fs.existsSync(file)) throw new Error(`${file} is missing; run with --concise-baseline --model ${model}`);
+  return readJson(file);
 };
 
 function assertConciseCovers(cases, concise, model) {
@@ -529,35 +537,40 @@ function assertConciseCovers(cases, concise, model) {
 // why: the facts judge reads only replies that pass the literals gate, so a missing literal never costs a judge call; each case makes one reply, the first alone to write the prompt cache, then the rest together.
 async function quickRows({ opts, cases, reply, judge, spend, concise }) {
   const judgeCall = limited(judge, JUDGE_CONCURRENCY);
-  const rowOf = async (c, answer) => {
+  const rowOf = async (c, answer, side) => {
     const failed = gateReply(answer.text, c).failed;
     const [missing = []] = failed.includes('literals') ? [] : await judgeMissing({ c, texts: [answer.text], judge: judgeCall, judgeModel: opts.judgeModel, spend });
-    return { testCase: c, reply: answer.text, tokens: answer.tokens, baselineTokens: concise[c.id].mean, ratio: answer.tokens / concise[c.id].mean, missing };
+    const baselineVisible = meanVisible(concise[c.id].replies);
+    const visible = visibleTokens(answer.text);
+    return { testCase: c, reply: answer.text, tokens: answer.tokens, baselineTokens: concise[c.id].mean, visible, baselineVisible, billedRatio: answer.tokens / concise[c.id].mean, ratio: visible / baselineVisible, missing, side };
   };
-  const ask = (c) => Promise.resolve(reply({ arm: opts.arm, prompt: promptOf(c) })).then((answer) => {
+  const ask = ({ c, side }) => Promise.resolve(reply({ arm: opts.arm, prompt: promptOf(c), side })).then((answer) => {
     spend.add(answer.cost);
-    return rowOf(c, answer);
+    return rowOf(c, answer, side);
   });
-  const [first, ...rest] = cases;
-  const firstAnswer = await reply({ arm: opts.arm, prompt: promptOf(first) });
-  spend.add(firstAnswer.cost);
-  assertProjection({ spend, doneUsd: firstAnswer.cost, done: 1, total: cases.length });
-  return Promise.all([rowOf(first, firstAnswer), ...rest.map(ask)]);
+  const sides = opts.baseStyle ? ['candidate', 'base'] : ['candidate'];
+  const jobs = sides.flatMap((side) => cases.flatMap((c) => Array.from({ length: opts.answers }, () => ({ c, side }))));
+  const leaders = sides.map((side) => jobs.find((job) => job.side === side));
+  const rest = jobs.filter((job) => !leaders.includes(job));
+  const leading = [];
+  for (const job of leaders) {
+    const answer = await reply({ arm: opts.arm, prompt: promptOf(job.c), side: job.side });
+    spend.add(answer.cost);
+    leading.push({ job, answer });
+  }
+  assertProjection({ spend, doneUsd: leading.reduce((sum, { answer }) => sum + answer.cost, 0), done: leaders.length, total: jobs.length });
+  return Promise.all([...leading.map(({ job, answer }) => rowOf(job.c, answer, job.side)), ...rest.map(ask)]);
 }
 
-const percentLabel = (value) => (value === null ? 'n/a' : `${value.toFixed(1)}%`);
-
-export async function runQuick({ opts, cases, reply, judge, spend, concise = readConcise() }) {
+export async function runQuick({ opts, cases, reply, judge, spend, concise = readConcise(opts.model) }) {
   const started = Date.now();
   assertConciseCovers(cases, concise, opts.model);
-  const base = { mode: 'quick', arm: opts.arm, model: opts.model, cases: cases.map((c) => c.id) };
+  const base = { mode: 'quick', arm: opts.arm, answers: opts.answers, ablate: opts.ablate, model: opts.model, cases: cases.map((c) => c.id) };
   const rows = await quickRows({ opts, cases, reply, judge, spend, concise }).catch((error) => {
     writeLog({ ...base, error: error.message, ...costRecord(spend), durationMs: Date.now() - started }, logPath(opts.logDir));
     throw error;
   });
-  const metrics = repoMetrics(rows);
-  const perCase = rows.map((row) => ({ id: row.testCase.id, reply: row.reply, tokens: row.tokens, baselineTokens: row.baselineTokens, ratio: row.ratio, failed: gateReply(row.reply, row.testCase).failed, missing: row.missing }));
-  const record = { ...base, ...metrics, ...costRecord(spend), durationMs: Date.now() - started, perCase };
+  const record = { ...base, ...summaryOf({ opts, cases, rows }), ...costRecord(spend), durationMs: Date.now() - started };
   writeLog(record, logPath(opts.logDir));
   return record;
 }
@@ -567,27 +580,36 @@ export function quickIntervalLine(perCase) {
   return `mean_ratio ${intervalText(ratios)} vs_baseline=${baselineVerdict({ lo: ratios.lo, hi: ratios.hi })}\n`;
 }
 
-function printQuick({ perCase, medianRatio, answerFirst, cleanDeliverable, questionLast, factsKept }) {
+function printQuick(record) {
+  const { perCase, answers, billedMedianRatio } = record;
   process.stderr.write(quickIntervalLine(perCase));
-  process.stderr.write(`${calibrationLines(['adhd-facts']).join('\n')}\n`);
-  for (const p of perCase) process.stderr.write(`${p.id} ratio=${p.ratio.toFixed(3)} billed=${p.tokens}/${Math.round(p.baselineTokens)} failed=${p.failed.join(',') || 'none'} missing=${p.missing.map((k) => k + 1).join(',') || 'none'}\n`);
-  process.stdout.write(`median_ratio=${medianRatio.toFixed(3)} answer_first=${percentLabel(answerFirst)} clean_deliverable=${percentLabel(cleanDeliverable)} question_last=${percentLabel(questionLast)} facts_kept=${percentLabel(factsKept)}\n`);
+  process.stderr.write(quickPowerLine(perCase, answers));
+  process.stderr.write(`billed_median=${billedMedianRatio.toFixed(3)}\n`);
+  process.stderr.write(`${judgeStatusLines(LABELS).join('\n')}\n`);
+  for (const p of perCase) process.stderr.write(quickCaseLine(p));
+  process.stderr.write(baseLines(record));
+  process.stdout.write(summaryLine(record));
 }
 
 async function runApi({ opts, cases }) {
   const spend = new Spend(opts.maxUsd);
   const pluginDir = makeStylePlugin(opts.ablate);
+  const basePluginDir = opts.baseStyle ? makeStylePlugin(null, fs.readFileSync(opts.baseStyle, 'utf8')) : pluginDir;
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-base-'));
+  const baseHome = makeCellHome();
   const armDirs = Object.fromEntries(Object.keys(ARM_ARGS).map((arm) => [arm, fs.mkdtempSync(path.join(os.tmpdir(), `exo-adhd-${arm}-`))]));
   const judgeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-adhd-judge-'));
   const armHomes = Object.fromEntries(Object.keys(ARM_ARGS).map((arm) => [arm, makeCellHome()]));
   const judgeHome = makeCellHome();
-  const reply = ({ arm, prompt }) => claudeReply({ arm, prompt, model: opts.model, pluginDir, cwd: armDirs[arm], keepCwd: true, home: armHomes[arm] });
+  const reply = ({ arm, prompt, side }) => side === 'base'
+    ? claudeReply({ arm, prompt, model: opts.model, pluginDir: basePluginDir, cwd: baseDir, keepCwd: true, home: baseHome })
+    : claudeReply({ arm, prompt, model: opts.model, pluginDir, cwd: armDirs[arm], keepCwd: true, home: armHomes[arm] });
   const judge = (call) => claudeJudge({ ...call, cwd: judgeDir, home: judgeHome });
   try {
     if (opts.baseline || opts.conciseBaseline) {
       fs.mkdirSync(STORE, { recursive: true });
       const concise = opts.conciseBaseline;
-      const file = concise ? CONCISE : BASELINE;
+      const file = concise ? concisePath(opts.model) : BASELINE;
       const existing = !opts.all && fs.existsSync(file) ? readJson(file) : {};
       await buildBaseline({ cases, reply, spend, existing, all: opts.all, arm: concise ? 'concise' : 'default', model: concise ? opts.model : undefined, save: (rows) => fs.writeFileSync(file, JSON.stringify(rows, null, 2)) });
     }
@@ -595,7 +617,7 @@ async function runApi({ opts, cases }) {
     else await runScore({ opts, cases, reply, judge, spend });
   } finally {
     process.stderr.write(`${spend.line().trimEnd()} call_timeouts=${callStats.timeouts} parse_retries=${callStats.parseRetries} dropped_votes=${callStats.droppedVotes}\n`);
-    for (const dir of [pluginDir, judgeDir, judgeHome, ...Object.values(armDirs), ...Object.values(armHomes)]) fs.rmSync(dir, { recursive: true, force: true });
+    for (const dir of [pluginDir, basePluginDir, baseDir, baseHome, judgeDir, judgeHome, ...Object.values(armDirs), ...Object.values(armHomes)]) fs.rmSync(dir, { recursive: true, force: true });
   }
 }
 
