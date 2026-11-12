@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ADHD_RUNS, SCORE_MAX_USD, parseArgs } from '../benchmarks/adhd-score.mjs';
+import { ADHD_RUNS, SCORE_MAX_USD, parseArgs, readQuick } from '../benchmarks/adhd-score.mjs';
+import { quickMaxUsd } from '../benchmarks/adhd/metrics.mjs';
 import { BREVITY_LINES } from '../benchmarks/tasks.mjs';
 
 test('the full run defaults to 3 runs and a $3 cap', () => {
@@ -11,9 +12,10 @@ test('the full run defaults to 3 runs and a $3 cap', () => {
   assert.equal(opts.maxUsd, 3);
 });
 
-test('no flag selects the quick run with a $0.30 cap, --max-usd overrides it', () => {
+test('no flag selects the quick run with a cap of the case count times the per-case rate, --max-usd overrides it', () => {
   assert.equal(parseArgs([]).mode, 'quick');
-  assert.equal(parseArgs([]).maxUsd, 0.3);
+  assert.equal(parseArgs([]).maxUsd, quickMaxUsd(readQuick()));
+  assert.equal(parseArgs(['--cases', 'a,b']).maxUsd, 0.08);
   assert.equal(parseArgs(['--max-usd', '1']).maxUsd, 1);
   assert.equal(parseArgs(['--cases', 'a,b', '--model', 'm', '--judge-model', 'j', '--log-dir', 'd']).mode, 'quick');
 });

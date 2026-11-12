@@ -32,7 +32,7 @@ test('the 4 failure cases are present', () => {
 test('literals appear in the context or question', () => {
   for (const c of cases) {
     const text = `${c.context} ${c.question}`.toLowerCase();
-    for (const variants of c.literals) assert.ok(variants.some((v) => text.includes(v.toLowerCase())), `${c.id}: ${variants[0]}`);
+    for (const variants of c.literals.filter(([v]) => !v.startsWith('**'))) assert.ok(variants.some((v) => text.includes(v.toLowerCase())), `${c.id}: ${variants[0]}`);
   }
 });
 

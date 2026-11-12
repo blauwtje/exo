@@ -21,3 +21,6 @@ export function repoMetrics(rows) {
     factsKept: percent(gated, (row) => passes("literals")(row) && row.missing.length === 0),
   };
 }
+
+export const QUICK_USD_PER_CASE = 0.04;
+export const quickMaxUsd = (caseIds) => Number((caseIds.length * QUICK_USD_PER_CASE).toFixed(4));

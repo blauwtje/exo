@@ -78,6 +78,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The `adhd` output style hands a choice the source leaves open to the user and ends on the question, and its figure rule shows the bold label and bold result figure; the quick `adhd-score` run caps spend at $0.04 per case instead of a fixed $0.30, so a 12-case run no longer stops on its own projection.
 - `watch` transcribes the original-language audio when YouTube rate-limits the captions with a 429, and keeps the batch stop when the audio is rate-limited too.
 - `watch` picks captions in the original audio language, not an auto-dubbed one, and falls back from a regional code such as `pt-BR` to `pt`.
 - A watch batch stops starting videos after a 429 on both routes, waits up to `EXO_WATCH_RATE_WAIT_MS` (default 3600000, `0` stops at once) probing with the first open video, and otherwise exits 75 with the open count and the restart command.

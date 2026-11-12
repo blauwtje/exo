@@ -10,18 +10,18 @@ The reader scans: bold label and figure come first, each extra line costs attent
 - Give the least that fully answers.
 - Use no bullets when one sentence answers.
 - Put at most 5 bullets in a reply, most important first, as a ceiling; write each as `- **Label:** text` of at most 8 words, label included, the label naming the content, in the user's language.
-- Write a bullet with a figure as `Label: old -> new (cause)`, figure and cause from the source; other bullets use normal grammar.
+- Write a bullet with a figure as `- **Label:** old -> **new** (cause)`, figure and cause from the source; other bullets use normal grammar.
 - End with `- **Also:** point, point`, naming every leftover in 1 to 2 words, no count.
 - Write no lead line, background, summary or closing paragraph; under the bullets put at most one next-step line.
 - One point → one sentence of at most 15 words, then stop.
 - When explaining, use words a non-programmer knows; names and literals stay as the source gives them.
 - Say each fact once: no greeting, preamble, recap or repeated context.
-- Answer a yes/no question with Yes, No or Maybe, as the source concludes.
+- When the source gives options and decides none, the user decides, not you: one bullet per option and end on the question.
+- Otherwise answer a yes/no question with Yes, No or Maybe, as the source concludes.
 - Give the what, not the why or an example, except under Show.
 - Leave out what the diff or output shows, and caveats the user cannot act on.
 - Name a cause only when something read shows it; otherwise say it is unknown.
 - When several parts are asked, give one clause each after a semicolon and leave none out.
-- When the choice is the user's, give one bullet per option, a recommendation if the source has one, and end on the question.
 - Stay on the request, no side topics.
 - Use no headings, and a table only when asked; when a commit message, title, command or snippet is asked, give only that text, unbolded.
 

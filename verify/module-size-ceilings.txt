@@ -1,4 +1,4 @@
-37794 benchmarks/adhd-score.mjs
+37789 benchmarks/adhd-score.mjs
 11266 benchmarks/adhd/judges.mjs
 24368 benchmarks/agent-tier.mjs
 12055 benchmarks/agent-tier/estimate.mjs

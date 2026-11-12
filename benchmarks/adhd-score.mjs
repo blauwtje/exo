@@ -10,7 +10,7 @@ import { gateReply } from './adhd/gates.mjs';
 import { calibrationLines } from './judge-calibration.mjs';
 import { DEFAULT_JUDGE_MODEL, JUDGE_CONCURRENCY, JUDGE_VOTES, callStats, calibrate, claudeJudge, judgeStability, judgeVote, missingFacts, requireCost, spawnClaude } from './adhd/judges.mjs';
 import { buildFailRows } from './adhd/labels.mjs';
-import { repoMetrics } from './adhd/metrics.mjs';
+import { quickMaxUsd, repoMetrics } from './adhd/metrics.mjs';
 import { writeAtomic } from '../lib/basics.mjs';
 import { clusteredMeanCi, meanCi } from '../lib/eval-stats.mjs';
 import { intervalText } from './interval-text.mjs';
@@ -35,7 +35,6 @@ const RUNS = 3;
 export const ADHD_RUNS = 3;
 const CONCURRENCY = 8;
 export const SCORE_MAX_USD = 3;
-export const QUICK_MAX_USD = 0.3;
 const FAIL_SOURCE_LOGS = 3;
 const STABILITY_REPEATS = 5;
 const BASELINE_MAX_USD = 4;
@@ -370,9 +369,9 @@ const FULL_RUN_FLAGS = ['--full', '--screen', '--baseline', '--rescore', '--resu
 const OTHER_ACTIONS = ['check', 'dryRun', 'toLabel', 'calibrate', 'addFailLabels', 'stability', 'conciseBaseline'];
 const QUICK_ARMS = ['adhd', 'caveman'];
 
-function defaultMaxUsd({ building, mode }) {
+function defaultMaxUsd(building, { mode, caseIds }) {
   if (building) return BASELINE_MAX_USD;
-  return mode === 'quick' ? QUICK_MAX_USD : SCORE_MAX_USD;
+  return mode === 'quick' ? quickMaxUsd(caseIds ?? readQuick()) : SCORE_MAX_USD;
 }
 
 export function parseArgs(argv) {
@@ -393,7 +392,7 @@ export function parseArgs(argv) {
   opts.mode = FULL_RUN_FLAGS.some((flag) => argv.includes(flag)) || OTHER_ACTIONS.some((key) => opts[key]) ? 'full' : 'quick';
   if (!QUICK_ARMS.includes(opts.arm)) throw new Error(`--arm needs one of: ${QUICK_ARMS.join(', ')}`);
   if (argv.includes('--arm') && opts.mode !== 'quick') throw new Error('--arm cannot combine with a full-run flag');
-  if (opts.maxUsd === null) opts.maxUsd = defaultMaxUsd({ building, mode: opts.mode });
+  if (opts.maxUsd === null) opts.maxUsd = defaultMaxUsd(building, opts);
   if (!Number.isFinite(opts.maxUsd)) throw new Error('--max-usd needs a number');
   if (!Number.isInteger(opts.runs) || opts.runs < 1) throw new Error('--runs needs a positive integer');
   if (!Number.isInteger(opts.repeats) || opts.repeats < 2) throw new Error('--repeats needs an integer of at least 2');

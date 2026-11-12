@@ -75,7 +75,7 @@ test('--concise-baseline gets the baseline cap, and --max-usd overrides it', () 
 });
 
 test('--arm caveman keeps the quick cap and --max-usd overrides it', () => {
-  assert.equal(parseArgs(['--arm', 'caveman']).maxUsd, 0.3);
+  assert.equal(parseArgs(['--arm', 'caveman']).maxUsd, parseArgs([]).maxUsd);
   assert.equal(parseArgs(['--arm', 'caveman', '--max-usd', '0.5']).maxUsd, 0.5);
 });
 
