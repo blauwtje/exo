@@ -31,6 +31,12 @@ const POINTER_EDIT = {
   to: `const additionalContext = ['# Using exo', '', ${JSON.stringify(SKILL_LINE)}].join('\\n');`
 };
 const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: '- Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `find-cause`.\n', to: '' };
+const FAILURE_LINES = [
+  '- Reported failure with a known cause → one plain attempt first, no skill: one-command repro, fix, proof.\n',
+  '- Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `find-cause`.\n',
+  '- An instruction in CLAUDE.md or the prompt outranks a skill.\n'
+];
+const NO_FAILURE_LINES_EDITS = FAILURE_LINES.map((from) => ({ file: ROUTE_FILE, from, to: '' }));
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
 const FOLD_UNIT_EDIT = {
   file: BUILD_SKILL,
@@ -44,6 +50,7 @@ const FOLD_UNIT_EDIT = {
 export const VARIANTS = {
   'session-pointer': { edits: [POINTER_EDIT], remove: [], swap: [] },
   'no-find-cause': { edits: [FIND_CAUSE_EDIT], remove: ['skills/find-cause'], swap: [] },
+  'no-failure-lines': { edits: NO_FAILURE_LINES_EDITS, remove: [], swap: [] },
   'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] },
   'fold-unit': { edits: [FOLD_UNIT_EDIT], remove: [], swap: [] },
   nano: { edits: [], remove: ['hooks/hooks.json', 'agents/orchestrator.md'], swap: [] }

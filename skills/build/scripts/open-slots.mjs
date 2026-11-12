@@ -87,7 +87,7 @@ function runSetup(slot, setup, variables) {
 
 function openSlot(toplevel, number, { setup, inputs, variables }, made) {
   const slot = slotOf(toplevel, number);
-  const add = createWorktree(toplevel, slot, ['--detach', slot, 'HEAD'], { env: false });
+  const add = createWorktree(toplevel, slot, ['--detach', slot, 'HEAD']);
   if (!add.ok) return { reason: add.failure };
   made.push(slot);
   fs.mkdirSync(path.join(slot, '.exo'), { recursive: true });

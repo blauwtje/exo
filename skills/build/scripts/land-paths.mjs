@@ -46,14 +46,26 @@ export function unplannedPaths(task, { root, planPath, siblingWork = () => false
   return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed) && !siblingWork(changed));
 }
 
+function leftForSiblingWarning(task, { root, planPath, siblingWork }) {
+  const entries = task.files.map((file) => file.path);
+  return changedPaths(root, planPath)
+    .filter((changed) => !isCovered(entries, changed) && siblingWork(changed))
+    .flatMap((changed) => {
+      const owner = siblingWork.ownerOf?.(changed);
+      return owner === undefined ? [] : [`[WARN] Task ${task.number} left \`${changed}\` for open Task ${owner}\n`];
+    })
+    .join('');
+}
+
 export function outsideFilesWarning(task, options) {
   const unplanned = unplannedPaths(task, options);
-  if (unplanned.length === 0) return '';
+  if (unplanned.length === 0) return options.siblingWork === undefined ? '' : leftForSiblingWarning(task, options);
   const unfinished = unfinishedMergeNote(options.root);
   const quote = (files) => files.map((file) => `\`${file}\``).join(', ');
   const kept = unplanned.filter(isProtectedPath);
   const left = kept.length === 0 ? '' : `; not committed: ${quote(kept)}; add it to Files or give it its own task`;
-  return `[WARN] Task ${task.number} changed a path outside Files: ${quote(unplanned)}${left}${unfinished === null ? '' : `; ${unfinished}`}\n`;
+  const outside = `[WARN] Task ${task.number} changed a path outside Files: ${quote(unplanned)}${left}${unfinished === null ? '' : `; ${unfinished}`}\n`;
+  return options.siblingWork === undefined ? outside : outside + leftForSiblingWarning(task, options);
 }
 
 export function siblingWorkOf(plan, task, { root, planPath, landing }) {
@@ -61,13 +73,15 @@ export function siblingWorkOf(plan, task, { root, planPath, landing }) {
   const added = written ? addedPathspecs(task.commitBlock ?? '') : [];
   if (added === null) return () => false;
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
-  const entries = plan.tasks
-    .filter((other) => other.number !== task.number && !landed.includes(other.number))
-    .flatMap((other) => other.files.map((file) => file.path));
+  const open = plan.tasks.filter((other) => other.number !== task.number && !landed.includes(other.number));
+  const entries = open.flatMap((other) => other.files.map((file) => file.path));
+  const ownerOf = (changed) => open.find((other) => isCovered(other.files.map((file) => file.path), changed))?.number;
   const named = plan.tasks.flatMap((other) => other.files.map((file) => file.path));
   const staged = landing ? execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only'], { encoding: 'utf8' }).split('\n') : [];
   const untracked = written ? new Set(untrackedPaths(root)) : null;
   const siblingFile = (changed) => isCovered(entries, changed) && (!written || (untracked.has(changed) && !isCovered(added, changed)));
   const planDoc = (changed) => isPlanDoc(changed) && !isCovered(named, changed) && !isCovered(added, changed);
-  return (changed) => !staged.includes(changed) && (siblingFile(changed) || planDoc(changed));
+  const siblingWork = (changed) => !staged.includes(changed) && (siblingFile(changed) || planDoc(changed));
+  siblingWork.ownerOf = ownerOf;
+  return siblingWork;
 }

@@ -36,6 +36,10 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 7: `node --test tests/design-ui-read-budget.test.mjs` passes. The preview set sums ≤ 30,000 B and the one-pass set ≤ 46,000 B.
 - The Success criterion passes on the branch rebased onto `origin/main`.
 
+## lean-open-2
+- Task 7: `node benchmarks/routing.mjs` runs the paired arm under `--dry-run` with its sessions and projected cost, and starts no session.
+- Success criterion, second done line: `node benchmarks/lean-guards-compare.mjs` exits 0 with bytes <= 2666 and modules <= 77.
+
 ## lean-open
 - Success criterion, second done line: `node benchmarks/lean-guards-compare.mjs` exits 0 with bytes <= 2666 and modules <= 77; no task adds a module.
 

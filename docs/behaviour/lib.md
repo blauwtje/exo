@@ -21,6 +21,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `runTreeSync` past its deadline returns `timedOut: true` and a grandchild that would write a marker file after the deadline writes none; a passing command returns status 0 with stdout and stderr merged (Task 3; seam: `tests/process-tree.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).
 
+## lean-open-2
+- Task 4: `END_STATES` holds two names and no code names the needs-input state.
+
 ## lean-open
 - Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
 - Task 4: `lib/guard-rules.mjs`, `lib/git-deny.mjs`, `skills/build/scripts/land-*.mjs` and `docs/plans/` outside Files are not in the commit and get the same warning.

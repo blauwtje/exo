@@ -28,7 +28,7 @@ function gitStrict(cwd, ...args) {
 }
 
 function addWorktree(root, worktree, ...rest) {
-  const done = createWorktree(root, worktree, rest, { env: false });
+  const done = createWorktree(root, worktree, rest);
   if (!done.ok) throw new SetupError(done.failure);
 }
 

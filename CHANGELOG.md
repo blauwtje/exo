@@ -25,6 +25,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Every loop in the round budget ends with a named state, `rounds-spent`, `no-progress` or `needs-input`, each with a row in the outcome table.
 - A change under three files with a known proof skips the questions, the plan and the gate, and goes to one worktree worker.
 - `benchmarks/lean-guards-compare.mjs` compares session-start bytes, hook modules and hook latency with a stored baseline and exits 1 when one is worse.
+- `benchmarks/routing.mjs --variant <name>` runs a paired arm with part of the routing text removed, and `routing-stats.mjs --against <arm>` prints the paired difference per prompt.
 
 ### Changed
 
@@ -79,9 +80,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A gate review merge with no repair stays in the same round, so its findings are no longer marked `recurring`.
 - `worktreePath` needs the run directory, so a test builds its worktrees in its own temp directory and `npm run check` fails a call without one.
 - `remove-worktree.mjs` refuses a worktree whose changes or commits the run branch does not hold, and names three options.
+- A land refreshes a stale `docs/behaviour/` file itself, in a repository that has that folder, so a ceiling edit by the builder no longer refuses the land.
+- A land warns `Task <n> left <path> for open Task <m>` when a changed path belongs to another open task.
+- `plan-check --loop` kills the whole child tree of a criterion command at its timeout and reads `EXO_CRITERION_TIMEOUT_MS` through `environmentMs`.
+- A slot, a setup worktree and a conflict tree get the `.env*` files like every other worktree.
+- `.claude/CLAUDE.md` and `docs/principles/agent.md` name the rule range `T1 to T4`.
+- Two land tests match the exact refusal text.
 
 ### Removed
 
+- The `needs-input` end state of the round budget, which no caller reached.
 - The unreachable land repair path (`run-plan-land-repair.mjs`, `repairOrBlock`), the `code rule` refusal kind and the `no red proof` line of the drift repairer prompt.
 - The `env` setting, since a worktree always gets the `.env*` files.
 - The tool-case rule and the lines in the agent brief block, `hooks/dispatch-rules.md` and `hooks/session-rules.md` that restate what Claude Code does itself, such as the ban on `sleep`.

@@ -9,6 +9,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `ls skills/*/SKILL.md | wc -l` prints 9, `ls -d skills/*/ | wc -l` prints 9 and `ls agents | wc -l` prints 5 (Tasks 2 to 10).
 - Skill plus agent bytes always loaded shrink against main and `npm run check` holds (Success criterion).
 
+## lean-open-2
+- Task 3: after the criterion timeout no child of the criterion command is alive, and `EXO_CRITERION_TIMEOUT_MS` is read through `environmentMs`.
+
 ## lean-open
 - Task 6: plan-check says land warns.
 

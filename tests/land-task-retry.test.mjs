@@ -54,6 +54,6 @@ test('a missing Data literal and a missing report are refused together, and coun
   const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(refused.code, 1);
   assert.match(refused.stderr, /missingLiteralName/);
-  assert.match(refused.stderr, /report/i);
+  assert.match(refused.stderr, /no build report at /);
   assert.equal(readLedger(path.join(root, '.exo/refusals/task-1')).length, 1);
 });

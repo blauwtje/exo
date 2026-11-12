@@ -1,9 +1,10 @@
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { criterionCommand, frameOf, loopCommands } from '#plan-frame';
 import { mcpToolCall } from '#mcp-tool-call';
 import { defaultBranch } from '#git';
+import { runTreeSync } from '#process-tree';
+import { environmentMs } from '#script-flags';
 
 const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
 const QUOTED = /"(?:\\.|[^"\\])*"|'[^']*'/g;
@@ -26,12 +27,11 @@ function checkLoopLandGate(basis, root) {
   return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes, per task only while it stays under a minute`];
 }
 
-const CRITERION_TIMEOUT_MS = Number(process.env.EXO_CRITERION_TIMEOUT_MS ?? 120000);
-
 function checkCriterionRuns(command, root) {
   if (command === null || root === undefined || root === null || !fs.existsSync(root) || mcpToolCall(command.trim()) !== null) return [];
-  const run = spawnSync(command, { cwd: root, shell: true, stdio: 'ignore', timeout: CRITERION_TIMEOUT_MS });
-  if (run.error?.code === 'ETIMEDOUT') return [`loop: the plan's '## Success criterion' '${command}' timed out after ${CRITERION_TIMEOUT_MS} ms`];
+  const timeoutMs = environmentMs('EXO_CRITERION_TIMEOUT_MS', 120000);
+  const run = runTreeSync(command, { cwd: root, timeoutMs });
+  if (run.timedOut) return [`loop: the plan's '## Success criterion' '${command}' timed out after ${timeoutMs} ms`];
   if (run.status === 127) return [`loop: the plan's '## Success criterion' '${command}' exits 127, so its command is not found`];
   return [];
 }

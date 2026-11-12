@@ -31,15 +31,25 @@ test('an HTML entity in Land gate or Proof is refused naming the field', async (
   assert.match(await planCheck({ gate: 'npm run check', proof: 'node --test a &gt; b' }), /Proof of Task 1: .*HTML entity '&gt;'/);
 });
 
-async function loopCriterion(command) {
+async function loopCriterion(command, env = process.env) {
   const root = await gitRepository({ 'src/run.mjs': 'export {};\n' });
   const base = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Change the runner', files: ['src/run.mjs'], proof: 'node --test' })] });
   const planPath = path.join(await fixture(), 'plan.md');
   await fs.writeFile(planPath, base.replace('`node --test` passes.', `\`${command}\` passes.`));
-  return spawnSync('node', [PLAN_CHECK, '--loop', '--plan', planPath, '--root', root], { encoding: 'utf8' }).stdout;
+  return spawnSync('node', [PLAN_CHECK, '--loop', '--plan', planPath, '--root', root], { encoding: 'utf8', env }).stdout;
 }
 
 test('criterion runs: exit 127 is flagged and a failing exit 1 is not', async () => {
   assert.match(await loopCriterion('sh -c "exit 127"'), /Success criterion.*exit 127/);
   assert.doesNotMatch(await loopCriterion('sh -c "exit 1"'), /Success criterion.*(exit 127|timed out)/);
+});
+
+test('a timed-out criterion leaves no background process of its own alive', async () => {
+  const pidFile = path.join(await fixture(), 'pid');
+  const out = await loopCriterion(`sh -c 'sleep 30 & echo $! > ${pidFile}; wait'`, { ...process.env, EXO_CRITERION_TIMEOUT_MS: '300' });
+  const pid = Number(await fs.readFile(pidFile, 'utf8'));
+  const alive = (() => { try { process.kill(pid, 0); return true; } catch { return false; } })();
+  if (alive) process.kill(pid, 'SIGKILL');
+  assert.match(out, /Success criterion.*timed out after 300 ms/);
+  assert.equal(alive, false);
 });

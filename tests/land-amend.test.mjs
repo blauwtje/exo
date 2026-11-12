@@ -54,6 +54,7 @@ test('a missed path that another open task claims warns outside Files, lands and
   const refused = await land(root, planPath);
   assert.equal(refused.code, 0, refused.stderr);
   assert.match(refused.stdout, /^\[WARN\] .*outside Files: .*`src\/extra\.js`/m);
+  assert.match(refused.stdout, /^\[WARN\] Task 1 left `src\/claimed\.js` for open Task 2$/m);
   assert.equal(await fs.readFile(planPath, 'utf8'), before);
 });
 

@@ -75,7 +75,8 @@ test('a refused landing keeps the slot and puts nothing on the run branch', asyn
   const head = git(root, 'rev-parse', 'HEAD');
   const result = await land();
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^REFUSED 1\b/);
+  assert.match(result.stdout, /^REFUSED 1: the Commit: block of Task 1 failed:/);
+  assert.match(result.stdout, /^slot \S+ kept$/m);
   assert.match(result.stdout, /^Start: none$/m);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
   assert.match(worktrees(root), new RegExp(slot));
@@ -88,7 +89,8 @@ test('a refused landing prints Land: for the rebuild into the same slot and reco
   await fs.writeFile(window, JSON.stringify({ 1: { slot, base, since: 1000000000 }, 3: { slot: other, base, since: 1000000003 } }));
   const before = Math.floor(Date.now() / 1000);
   const result = await land(undefined, { EXO_RUN_SESSION: '1' });
-  assert.match(result.stdout, /^REFUSED 1\b/);
+  assert.match(result.stdout, /^REFUSED 1: the Commit: block of Task 1 failed:/);
+  assert.match(result.stdout, /^slot \S+ kept$/m);
   assert.doesNotMatch(result.stdout, /^Wait:/m);
   assert.match(result.stdout, new RegExp(`^Land 1: node ".+land-slot\\.mjs" .*--task 1 .*--slot "${slot}" --base ${base} .*--in-flight 3$`, 'm'));
   assert.match(result.stdout, new RegExp(`^Land 3: node ".+land-slot\\.mjs" .*--task 3 .*--slot "${other}" `, 'm'));

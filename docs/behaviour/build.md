@@ -28,6 +28,14 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 4: `remove-worktree.mjs --report <absent file>` exits 1, and the worktree stays in `git worktree list` (a blocked wave with one build still running); with the report present it removes; `--patch` with an absent or empty file refuses on a dirty tree; with a non-empty patch it removes; `--force` exits 2; seam: `tests/remove-worktree.test.mjs`.
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.
 
+## lean-open-2
+- Task 1: a land whose behaviour file is stale refreshes it, stages it and lands; a land with a current file runs no refresh.
+- Task 5: a land that leaves a path of another open task unstaged prints a warning naming the path and that task, and lands.
+- Task 6: the two tests match the exact refusal text.
+- Task 8: a task slot, a setup worktree and a conflict tree hold the main checkout's gitignored `.env` files, and land never stages one.
+- Task 9: `CONTRIBUTING.md` describes the end states and the `.env` copy as Tasks 4 and 8 left them.
+- Success criterion: `npm run check` ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
+
 ## lean-open
 - Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
 - Task 2: the several-violations land is covered and passes.

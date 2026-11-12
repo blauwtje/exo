@@ -55,7 +55,7 @@ export function keepConflict({ planPath, root, number, sha, base }) {
   const folder = folderOf(root, number);
   const tree = path.join(folder, 'tree');
   fs.mkdirSync(folder, { recursive: true });
-  const added = createWorktree(root, tree, ['-q', '-b', branchOf(number), tree, 'HEAD'], { env: false });
+  const added = createWorktree(root, tree, ['-q', '-b', branchOf(number), tree, 'HEAD']);
   if (!added.ok) throw new Error(added.failure);
   spawnSync('git', ['-C', tree, 'cherry-pick', sha], { encoding: 'utf8' });
   const files = unmergedPaths(tree);

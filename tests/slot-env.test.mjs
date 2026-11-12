@@ -47,3 +47,12 @@ test('a slot writes its variables to .exo/slot.env for the proof commands', asyn
   assert.match(text, /export EXO_PORT_BASE="42010"/);
   assert.match(text, /export EXO_STATE_DIR=".*slot-state.1"/);
 });
+
+test('a slot gets the main checkout .env and leaves it ignored', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n', '.gitignore': '.env\n' });
+  await fs.writeFile(path.join(root, '.env'), 'MADE_UP=value\n');
+  const opened = openSlots({ root, numbers: [1], setup: 'true', fresh: true, since: 0 });
+  assert.equal(opened.reason, undefined);
+  const copied = await fs.readFile(path.join(opened.records[1].slot, '.env'), 'utf8');
+  assert.equal(copied, 'MADE_UP=value\n');
+});

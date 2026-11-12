@@ -3,6 +3,7 @@
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
@@ -18,6 +19,8 @@ import { countsCost } from './pricing.mjs';
 import { readJson } from './basics.mjs';
 import { printStats } from './routing-spoken.mjs';
 import { WHOLE_FILE_HASHES } from '../lib/hashed-files.mjs';
+import { copyPluginWithoutTasks } from './value.mjs';
+import { VARIANTS, applyVariant } from './variants.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_MS = environmentMs('EXO_ROUTING_SESSION_MS', 120_000);
@@ -40,11 +43,12 @@ const TIER_DEFAULTS = {
 const QUICK_PER_SKILL = 1;
 const QUICK_PER_NULL = 4;
 const NO_SKILL = 'none';
-const USAGE = `usage: routing.mjs [--full] [--write-baseline] [--cells <model:effort,...>] [--runs <n>] [--arms hook,no-hook] [--split train|held-out] [--concurrency <n>] [--smoke] [--skill <name>] [--dry-run] [--max-budget-usd <usd>] [--out <file>]
+const KNOWN_CAUSE_PROMPT = /^(clamp\(\)|npm test fails: slugify|Pagination off by one)/;
+const USAGE = `usage: routing.mjs [--full] [--write-baseline] [--cells <model:effort,...>] [--runs <n>] [--arms hook,no-hook] [--variant <name>] [--split train|held-out] [--concurrency <n>] [--smoke] [--skill <name>] [--dry-run] [--max-budget-usd <usd>] [--out <file>]
 Default: a fixed quick set of held-out prompts of benchmarks/routing/prompts.json, one run, the hook arm live against the no-hook arm stored in benchmarks/results/routing-baseline.json, written to benchmarks/results/routing-quick.json. A baseline whose cells, prompts or description hashes differ prints 'baseline stale' and runs the no-hook arm live too.
 --write-baseline runs the no-hook arm on the quick set and stores it as the baseline. --full runs every prompt, 3 runs, both arms, and writes benchmarks/results/routing.json; --split needs --full.
 --skill needs --full: it runs only the prompts that expect that skill, or none for the prompts that expect no skill, and merges them into --out, replacing that skill's earlier sessions and stamping its description hash.
---smoke runs one known-good prompt and exits 1 on a miss. --dry-run spends nothing and prints the session count times the median cost_usd recorded in --out. --max-budget-usd starts no further session once the recorded cost reaches it; each session also runs under claude --max-budget-usd ${SESSION_BUDGET_USD}. Defaults: cell sonnet:low, --concurrency 4.`;
+--smoke runs one known-good prompt and exits 1 on a miss. --dry-run spends nothing and prints the session count times the median cost_usd recorded in --out. --max-budget-usd starts no further session once the recorded cost reaches it; each session also runs under claude --max-budget-usd ${SESSION_BUDGET_USD}. --variant <name> runs the 35 prompts that lines 4 to 6 of hooks/session-routing.md can affect (the 32 find-cause prompts and 3 known-cause prompts), arms hook and <name>, the <name> arm loading a plugin copy cut by that variant of benchmarks/variants.mjs; it needs --out, writes nothing else, and read the paired result with routing-stats.mjs --arm hook --against <name>. Defaults: cell sonnet:low, --concurrency 4.`;
 
 function descriptionOf(text) {
   const front = text.split('\n---')[0];
@@ -131,15 +135,24 @@ export function gradeStream(text) {
   return null;
 }
 
+export function failureLinePrompts(all) {
+  return all.filter((entry) => entry.expect === 'find-cause' || (entry.expect === null && KNOWN_CAUSE_PROMPT.test(entry.prompt)));
+}
+
+export function variantPlugin(name) {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-routing-variant-'));
+  return applyVariant(name, copyPluginWithoutTasks(ROOT, path.join(scratch, 'plugin')));
+}
+
 export function routingHome() {
   return makeDefaultOptionsHome({ withoutInstalledPlugins: true });
 }
 
-function claudeSession({ prompt, cell, arm, home }) {
+function claudeSession({ prompt, cell, arm, home, pluginDir }) {
   const [model, effort] = cell.split(':');
   const { scratch, tmp, roots } = makeRunFolder(arm);
   const startedAt = Date.now();
-  const args = ['-p', prompt, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--max-budget-usd', SESSION_BUDGET_USD, '--plugin-dir', ROOT];
+  const args = ['-p', prompt, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--max-budget-usd', SESSION_BUDGET_USD, '--plugin-dir', pluginDir];
   const run = withHome(confinedClaude({ args, roots, cwd: scratch, tmp, settings: ARM_SETTINGS[arm] }), home);
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -254,13 +267,14 @@ function expectOf(skill) {
   return skill === NO_SKILL ? null : skill;
 }
 
-function tierOf({ full, writeBaseline }) {
+function tierOf({ full, writeBaseline, variant }) {
+  if (variant !== undefined) return 'variant';
   if (full) return 'full';
   return writeBaseline ? 'baseline' : 'quick';
 }
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { full: 'boolean', 'write-baseline': 'boolean', cells: 'value', runs: 'value', arms: 'value', split: 'value', concurrency: 'value', smoke: 'boolean', skill: 'value', 'dry-run': 'boolean', 'max-budget-usd': 'value', out: 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { full: 'boolean', 'write-baseline': 'boolean', cells: 'value', runs: 'value', arms: 'value', split: 'value', concurrency: 'value', smoke: 'boolean', skill: 'value', variant: 'value', 'dry-run': 'boolean', 'max-budget-usd': 'value', out: 'value' }, { usage: USAGE });
   for (const name of ['runs', 'concurrency']) {
     if (flags[name] !== undefined && !POSITIVE_INTEGER.test(flags[name])) throw new UsageError(`--${name} needs a positive integer, got '${flags[name]}'`);
   }
@@ -271,14 +285,17 @@ function readFlags(argv) {
   if (flags.split !== undefined && !full) throw new UsageError('--split needs --full');
   if (flags.skill !== undefined && !full) throw new UsageError('--skill needs --full');
   if (flags.skill !== undefined && flags.skill !== NO_SKILL && !modelInvocableSkills(ROOT).includes(flags.skill)) throw new UsageError(`--skill '${flags.skill}' is no model-invocable skill or none`);
+  if (flags.variant !== undefined && !(flags.variant in VARIANTS)) throw new UsageError(`--variant '${flags.variant}' is unknown, known: ${Object.keys(VARIANTS).join(', ')}`);
+  if (flags.variant !== undefined && (full || writeBaseline || flags.skill !== undefined)) throw new UsageError('--variant excludes --full, --write-baseline and --skill');
+  if (flags.variant !== undefined && flags.out === undefined) throw new UsageError('--variant needs --out so benchmarks/results/routing.json stays');
   const cells = (flags.cells ?? 'sonnet:low').split(',');
   for (const cell of cells) if (!CELL_PATTERN.test(cell)) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort`);
-  const tier = tierOf({ full, writeBaseline });
-  const arms = (flags.arms ?? TIER_DEFAULTS[tier].arms).split(',');
-  for (const arm of arms) if (!(arm in ARM_SETTINGS)) throw new UsageError(`--arms entry '${arm}' must be hook or no-hook`);
+  const tier = tierOf({ full, writeBaseline, variant: flags.variant });
+  const arms = (flags.arms ?? (flags.variant === undefined ? TIER_DEFAULTS[tier].arms : `hook,${flags.variant}`)).split(',');
+  for (const arm of arms) if (!(arm in ARM_SETTINGS) && arm !== flags.variant) throw new UsageError(`--arms entry '${arm}' must be hook, no-hook or the --variant name`);
   if (flags.split !== undefined && !['train', 'held-out'].includes(flags.split)) throw new UsageError('--split must be train or held-out');
   const out = flags.out ?? TIER_DEFAULTS[tier].out;
-  return { cells, arms, full, writeBaseline, split: flags.split, skill: expectOf(flags.skill), smoke: flags.smoke === true, dryRun: flags['dry-run'] === true, runs: Number(flags.runs ?? (full ? 3 : 1)), concurrency: Number(flags.concurrency ?? 4), maxBudgetUsd: Number(flags['max-budget-usd'] ?? Infinity), out };
+  return { cells, arms, full, writeBaseline, split: flags.split, skill: expectOf(flags.skill), variant: flags.variant, smoke: flags.smoke === true, dryRun: flags['dry-run'] === true, runs: Number(flags.runs ?? (full ? 3 : 1)), concurrency: Number(flags.concurrency ?? 4), maxBudgetUsd: Number(flags['max-budget-usd'] ?? Infinity), out };
 }
 
 async function smoke(all, flags, runSession) {
@@ -303,6 +320,7 @@ function readPrompts() {
 }
 
 function planRun(flags, all) {
+  if (flags.variant) return { prompts: failureLinePrompts(all), mode: 'variant', arms: flags.arms, baseline: null };
   if (flags.full) return { prompts: all.filter((entry) => (!flags.split || entry.split === flags.split) && (flags.skill === undefined || entry.expect === flags.skill)), mode: 'full', arms: flags.arms, baseline: null };
   const prompts = quickPrompts(all);
   const mode = flags.writeBaseline ? 'baseline' : 'quick';
@@ -317,7 +335,7 @@ function planRun(flags, all) {
 function dryRun(flags) {
   const plan = planRun(flags, readPrompts());
   const sessionCount = plan.prompts.length * flags.cells.length * plan.arms.length * flags.runs;
-  const recorded = recordedSessions(flags.out);
+  const recorded = recordedSessions(flags.variant && !fs.existsSync(flags.out) ? FULL_FILE : flags.out);
   process.stdout.write(`${dryRunLine(sessionCount, recorded)}\n`);
   const scores = scoresByTask(recorded, { task: (session) => session.prompt, score: (session) => (typeof session.expect === 'string' ? Number(session.pick === session.expect) : undefined) });
   process.stdout.write(`${plannedPowerLine({ tasks: plan.prompts.length, samples: flags.runs, arms: flags.cells.length * plan.arms.length, recorded: scores })}\n`);
@@ -330,8 +348,9 @@ async function main() {
   if (refusal) throw new UsageError(refusal);
   const all = readPrompts();
   const home = routingHome();
+  const variantDir = flags.variant ? variantPlugin(flags.variant) : null;
   try {
-    const runSession = (job) => claudeSession({ ...job, home });
+    const runSession = (job) => claudeSession({ ...job, home, pluginDir: job.arm === flags.variant ? variantDir : ROOT });
     if (flags.smoke) return await smoke(all, flags, runSession);
     const plan = planRun(flags, all);
     const outcome = await evaluate({ prompts: plan.prompts, cells: flags.cells, arms: plan.arms, runs: flags.runs, concurrency: flags.concurrency, skills: modelInvocableSkills(ROOT), runSession, mode: plan.mode, maxBudgetUsd: flags.maxBudgetUsd });
@@ -345,6 +364,7 @@ async function main() {
     printStats(result, flags.cells);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
+    if (variantDir) fs.rmSync(path.dirname(variantDir), { recursive: true, force: true });
   }
 }
 

@@ -414,6 +414,16 @@ test('hooks/session-rules.md states the irreversible-step rule once', () => {
   assert.equal(text.split('no safe default').length - 1, 1, 'no safe default');
 });
 
+test('the docs name the T range that hooks/session-rules.md holds', () => {
+  const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-rules.md'), 'utf8');
+  const triggers = [...rules.matchAll(/^- T(\d)\b/gm)].map((match) => Number(match[1]));
+  const range = `T1 to T${Math.max(...triggers)}`;
+  for (const doc of [['.claude', 'CLAUDE.md'], ['docs', 'principles', 'agent.md']]) {
+    const text = fs.readFileSync(path.join(REPOSITORY, ...doc), 'utf8');
+    assert.ok(text.includes(range), `${doc.join('/')} names ${range}`);
+  }
+});
+
 test('the dispatch rules state the sized-brief lines, the read budget and the split', () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
   assert.match(rules, /`Reads:` line[^\n]*`Fetches: <n>`[^\n]*30k tokens[^\n]*split into more agents/);

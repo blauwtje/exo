@@ -14,5 +14,8 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## issues-115-117
 - Task 1: `taskReviewer` returns `none (output only, test covered)` for `['skills/x/scripts/a.mjs', 'tests/a.test.mjs']` with an output-only diff, the light pick for `skills/x/SKILL.md`, `hooks/hooks.json` and `.claude/skills/x/SKILL.md`, and the light pick for a non-output script diff under `skills/`; seam: `tests/pick-reviewer.test.mjs`.
 
+## lean-open-2
+- Task 2: `.claude/CLAUDE.md` and `docs/principles/agent.md` name the T range that `hooks/session-rules.md` holds.
+
 ## loop-budget
 - One Agent dispatch that breaks three brief rules is refused once, naming all three; the third refusal of the same dispatch stops with `LOOP refusal STOP cap` (Task 2).

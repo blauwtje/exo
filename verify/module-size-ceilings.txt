@@ -35,7 +35,7 @@
 11206 benchmarks/replay/grade.mjs
 13076 benchmarks/replay/runner.mjs
 22441 benchmarks/review-replay.mjs
-18666 benchmarks/routing.mjs
+20807 benchmarks/routing.mjs
 26321 benchmarks/run.mjs
 33232 benchmarks/score.mjs
 8978 benchmarks/session-stats.mjs
@@ -79,7 +79,7 @@
 8729 skills/gate/scripts/gate-run.mjs
 17923 skills/gate/scripts/merge-reviews.mjs
 19457 skills/build/scripts/round.mjs
-12127 skills/build/scripts/setup.mjs
+12111 skills/build/scripts/setup.mjs
 8567 skills/ship/scripts/pr-body.mjs
 12237 skills/ship/scripts/ship.mjs
 8256 skills/ship/scripts/stack.mjs
