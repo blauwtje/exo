@@ -23,11 +23,19 @@ function trackKey(tracks, wanted, preferOriginal = false) {
 }
 
 function chooseTrack(tracks, language, preferOriginal) {
-  return trackKey(tracks, language, preferOriginal) ?? trackKey(tracks, null);
+  const base = language?.split('-')[0];
+  return trackKey(tracks, language, preferOriginal)
+    ?? (base && base !== language ? trackKey(tracks, base, preferOriginal) : null)
+    ?? trackKey(tracks, null);
+}
+
+function originalAudioLanguage(info) {
+  const original = (info.formats ?? []).find((format) => format.language && /\boriginal\b/i.test(format.format_note ?? ''));
+  return original?.language ?? null;
 }
 
 export function pickCaptions(info, lang) {
-  const wanted = lang ?? info.language ?? null;
+  const wanted = lang ?? originalAudioLanguage(info) ?? info.language ?? null;
   const manual = lang ? trackKey(info.subtitles, lang) : chooseTrack(info.subtitles, wanted);
   if (manual) return { source: 'manual', key: manual };
   const auto = lang ? trackKey(info.automatic_captions, lang, true) : chooseTrack(info.automatic_captions, wanted, true);

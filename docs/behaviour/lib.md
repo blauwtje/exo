@@ -7,6 +7,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - A cost rise above the noise bound but under `benchmarkMinRise` is not a regression, and a zero-spread run blocks only past 10% (Task 1).
 - The gate prints `FAIL benchmark` for a fixture regression, `PASS benchmark (baseline: none)` with no baseline, and `WARN benchmark override (<reason>)` with an override (Task 3).
 
+## aie-round1
+- Task 3: the shape appears in the mode file.
+
 ## plan
 - A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
 - `exo claude --provider deepseek` at a peak time prints the off-peak notice (Task 5).

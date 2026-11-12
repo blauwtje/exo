@@ -19,3 +19,9 @@
 - Mark every finding in the findings file by your thirtieth turn and return at most two lines.
 - `hardest` and `build-repair`: return the line the prompt names, in at most five lines.
 - Before returning in either mode, end the turn until each background shell you started has ended; use TaskStop only on a shell that hangs.
+
+## Result shape
+
+- Every worker result, retry and reviewer report uses these lines: `Status: done | blocked | unknown`, `Did`, `Not done`, `Evidence`, `Side effects`, `Searched`.
+- `Evidence` names the command, path or log behind `Did`; `Side effects` lists files, commits or services a retry touched; `Searched` lists what a reviewer looked at.
+- A timeout is `Status: unknown` with its cause on `Not done`.

@@ -10,6 +10,7 @@ Goal: fix the failing check at its real cause within three rounds, or hand back 
 
 - The round limit is three fix rounds for `open-pr` or a merge request, watch included.
 - At the round limit, stop, hand back and summarize what is still broken.
+- For a failing format or lint check, run the repo formatter or lint autofix before reading logs for an agent fix.
 
 ## Flake and a stale base
 

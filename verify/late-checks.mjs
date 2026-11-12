@@ -22,6 +22,7 @@ import { checkScriptHelp } from './checks/script-help.mjs';
 import { checkUserReadFormat } from './checks/user-read-format.mjs';
 import { checkRuleRetention } from './checks/rule-retention.mjs';
 import { checkBaselineHonestyReport } from './checks/baseline-honesty.mjs';
+import { checkSkillLint } from './checks/skill-lint.mjs';
 
 export function runLateChecks(report, repository, staticOnly) {
   checkGitWhitespace(report, repository);
@@ -48,4 +49,5 @@ export function runLateChecks(report, repository, staticOnly) {
   checkUserReadFormat(report, repository);
   checkRuleRetention(report, repository);
   checkBaselineHonestyReport(report, repository);
+  checkSkillLint(report, repository);
 }

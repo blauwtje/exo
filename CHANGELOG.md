@@ -9,6 +9,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `npm run check` runs a skill lint that flags a script flag named in a skill but missing from its help, shouted emphasis markers, unsafe skill steps and conflicting counts.
+- Worker agents return one result shape with `Status:`, `Evidence:`, `Side effects:` and `Searched:` lines.
+- `ship` runs the repo formatter or lint autofix on a failing format or lint check before an agent fix.
 - `npm run check` fails a fork skill with no kind, `model:` or `effort:` lines that differ from the kind table, a default kind on tier `inherit`, and an `exo-kind:` label that names no kind; `node verify/checks/fork-skill-tier.mjs --write` rewrites the lines.
 
 - The task brief carries a `Covering:` line with the tests that landing runs for the task's files, from the same `coveringTests` function, so the builder runs them before it reports.
@@ -70,6 +73,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `watch` picks captions in the original audio language, not an auto-dubbed one, and falls back from a regional code such as `pt-BR` to `pt`.
 - The land gate judges the candidate commit: a tracked file an open sibling lists stays with this task, and a slot tree that differs from the commit is gated in a detached worktree of it.
 - An amend no longer commits a hand edit of the plan, and `land-task --check` refreshes the behaviour files before its gate.
 - A land stages a tracked file inside a gitignored folder, such as a plan under `docs/specs/`.

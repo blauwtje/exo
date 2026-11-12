@@ -8,6 +8,10 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - The squash commit body carries the override trailer (Task 4).
 - `npm run check` fails a results file whose comparison counts a bypassing run and passes the rewritten Karpathy file (Tasks 5 and 6, Success criterion).
 
+## aie-round1
+- Task 2: each rule fails on a bad fixture and passes on the repo.
+- Success criterion: the full check.
+
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
 - `node --test tests/harness-capabilities.test.mjs` passes and fails when a matrix row and an adapter disagree (Task 1).

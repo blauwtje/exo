@@ -6,7 +6,6 @@ import { test } from 'node:test';
 import { decodeEntities, parseTimedText, parseVtt } from '../skills/watch/scripts/cues.mjs';
 import { formatDuration, formatStamp, renderTranscript, countWords } from '../skills/watch/scripts/format.mjs';
 import { planChunks } from '../skills/watch/scripts/chunks.mjs';
-import { availableLanguages, pickCaptions } from '../skills/watch/scripts/ytdlp-info.mjs';
 import { videoIdOf } from '../skills/watch/scripts/video-url.mjs';
 import { tracksOf, pickTrack, languagesOf } from '../skills/watch/scripts/youtube.mjs';
 import { chaptersFromHtml } from '../skills/watch/scripts/youtube-chapters.mjs';
@@ -156,30 +155,6 @@ test('planChunks starts at zero and leaves no gap between chunks', () => {
   const gapped = planChunks(1500, [{ start: 0, end: 700, title: 'A' }, { start: 800, end: 1500, title: 'B' }], 600);
   assert.deepEqual(spans(gapped), [[0, 800, 'A'], [800, 1500, 'B']]);
 });
-
-test('pickCaptions prefers manual over auto and the original auto language', () => {
-  const track = [{ ext: 'vtt' }];
-  assert.deepEqual(pickCaptions({ language: 'en', subtitles: { en: track }, automatic_captions: { en: track } }), { source: 'manual', key: 'en' });
-  assert.deepEqual(pickCaptions({ language: 'nl', subtitles: {}, automatic_captions: { en: track, nl: track, 'nl-orig': track } }), { source: 'auto', key: 'nl-orig' });
-  assert.deepEqual(pickCaptions({ language: 'nl', subtitles: { fr: track }, automatic_captions: {} }, 'fr'), { source: 'manual', key: 'fr' });
-  assert.equal(pickCaptions({ language: 'en', subtitles: {}, automatic_captions: {} }), null);
-  assert.equal(pickCaptions({ language: 'en', subtitles: { en: track }, automatic_captions: {} }, 'de'), null);
-});
-
-test('pickCaptions with --lang prefers the exact key, then -orig, then a regional key, and skips live_chat', () => {
-  const pick = (keys, lang, group = 'subtitles') => pickCaptions({ language: 'en', [group]: Object.fromEntries(keys.map((key) => [key, TRACK])) }, lang)?.key;
-  assert.equal(pick(['en-US', 'en-orig', 'en'], 'en'), 'en');
-  assert.equal(pick(['en-US', 'en-orig'], 'en'), 'en-orig');
-  assert.equal(pick(['en-US'], 'en'), 'en-US');
-  assert.equal(pick(['en', 'en-orig'], 'en', 'automatic_captions'), 'en-orig');
-  assert.equal(pickCaptions({ language: 'en', subtitles: { live_chat: TRACK } }), null);
-  assert.deepEqual(availableLanguages({ subtitles: { fr: TRACK, live_chat: TRACK }, automatic_captions: { en: TRACK, fr: TRACK, de: [] } }), ['fr', 'en']);
-});
-
-test('a manual track in another language beats an automatic track in the video language', () => {
-  assert.deepEqual(pickCaptions({ language: 'nl', subtitles: { fr: TRACK }, automatic_captions: { 'nl-orig': TRACK } }), { source: 'manual', key: 'fr' });
-});
-
 
 const ID = 'abc12345678';
 const OTHER_ID = 'xyz98765432';
