@@ -72,8 +72,9 @@ test('a refusal gives one line with its reason from the Bash, Edit and Agent hoo
   const edit = dispatchEdit(refusedEdit(), ON);
   const agent = agentHook(refused('Agent', { subagent_type: 'Explore' }), 'on', ON);
   const read = contextHook(refused('Read', { file_path: '/x' }), ON);
-  assert.equal(edit.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(edit.systemMessage, /^exo blocked: Background shells you started still run/);
+  assert.equal(edit.hookSpecificOutput.permissionDecision, undefined);
+  assert.match(edit.hookSpecificOutput.additionalContext, /^Background shells you started still run/);
+  assert.equal(edit.systemMessage, undefined);
   for (const output of [bash, agent, read]) {
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
     assert.match(output.systemMessage, /^exo blocked: Over the (hard )?context (limit|target)/);
@@ -93,7 +94,6 @@ test('the receipt leaves the model context byte for byte as it was', async () =>
   const cases = [
     [() => contextHook(refused('Read', { file_path: '/x' }), ON), () => contextHook(refused('Read', { file_path: '/x' }), OFF)],
     [() => agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', ON), () => agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', OFF)],
-    [() => dispatchEdit(refusedEdit(), ON), () => dispatchEdit(refusedEdit(), OFF)],
     [() => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', ON), () => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF)]
   ];
   for (const [on, off] of cases) {
@@ -134,7 +134,7 @@ test('the hook script prints the line on stdout with receipts at their default',
   assert.deepEqual(JSON.parse(run('context-limit.mjs', skill('exo:build'))), { systemMessage: 'exo › build' });
   assert.match(JSON.parse(run('agent-effort.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'exo:review-branch' } })).systemMessage, /^exo › review-branch/);
   assert.match(JSON.parse(run('dispatch-bash.mjs', refused('Bash'))).systemMessage, /^exo blocked: /);
-  assert.match(JSON.parse(run('dispatch-edit.mjs', refusedEdit())).systemMessage, /^exo blocked: /);
+  assert.equal(JSON.parse(run('dispatch-edit.mjs', refusedEdit())).systemMessage, undefined);
   fs.mkdirSync(path.join(project, '.claude'));
   fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
   assert.equal(run('context-limit.mjs', skill('exo:build')), '');

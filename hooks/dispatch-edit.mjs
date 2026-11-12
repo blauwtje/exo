@@ -10,7 +10,7 @@ import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
 
 const STEPS = [
-  { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput)) },
+  { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput), hookInput) },
   { name: 'shell-stop', run: shellStopFields },
   { name: 'code-rules', run: editRuleFields },
   { name: 'edit-impact', run: impactFields }

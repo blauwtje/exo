@@ -10,17 +10,17 @@ async function decide(command, extra = {}) {
 
 const subagent = { agent_id: 'agent-1', agent_type: 'exo:build-task' };
 
-test('every subagent is denied sleep and told to run it in the background and end the turn', async () => {
+test('every subagent is noted on sleep and told to run it in the background and end the turn', async () => {
   const output = await decide('sleep 30', subagent);
-  assert.equal(output?.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /in the background, end the turn/);
+  assert.equal(output?.permissionDecision, undefined);
+  assert.match(output.additionalContext, /in the background, end the turn/);
 });
 
 for (const command of ['gh pr checks 5 --watch', 'gh run watch 123']) {
-  test(`a subagent is denied ${command}`, async () => {
+  test(`a subagent is noted on ${command}`, async () => {
     const output = await decide(command, subagent);
-    assert.equal(output?.permissionDecision, 'deny');
-    assert.match(output.permissionDecisionReason, /let the lead wait/);
+    assert.equal(output?.permissionDecision, undefined);
+    assert.match(output.additionalContext, /let the lead wait/);
   });
 
   test(`the main session keeps ${command}`, async () => {

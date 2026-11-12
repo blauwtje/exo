@@ -61,8 +61,8 @@ test('only an agent Write to a result file is checked', () => {
 test('the edit dispatcher runs the shell-stop check and denies the result-file Write', () => {
   const file = transcript([start('t1'), started('t1', 'bg1')]);
   const output = dispatchEdit(write(file), () => false);
-  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(output.hookSpecificOutput.permissionDecisionReason, /Background shells/);
+  assert.ok(output.hookSpecificOutput.additionalContext);
+  assert.match(output.hookSpecificOutput.additionalContext, /Background shells/);
 });
 
 test('shell-stop adds no hook entry', () => {
@@ -109,8 +109,8 @@ test('the Bash dispatcher refuses a redirect to the result file while a shell ru
   const file = transcript([start('t1'), started('t1', 'bg1')]);
   const input = write(file, { tool_name: 'Bash', cwd: process.cwd(), tool_input: { command: 'cat > /repo/.exo/run/result.md <<EOF\nx\nEOF' } });
   const output = await dispatchBash(input);
-  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(output.hookSpecificOutput.permissionDecisionReason, /bg1/);
+  assert.ok(output.hookSpecificOutput.additionalContext);
+  assert.match(output.hookSpecificOutput.additionalContext, /bg1/);
 });
 
 test('a Bash command writing no result file passes while a shell runs', () => {
@@ -133,7 +133,7 @@ test('the shell-stop step spends no refusal under an earlier deny', async () => 
   const input = write(file, { tool_name: 'Bash', tool_input: { command: 'echo x > /repo/.exo/run/result.md' } });
   assert.equal(await SHELL_STOP_STEP.run(input, [{ permissionDecision: 'deny' }]), null);
   const refused = await SHELL_STOP_STEP.run(input, []);
-  assert.match(refused.hookSpecificOutput.permissionDecisionReason, /bg1/);
+  assert.match(refused.hookSpecificOutput.additionalContext, /bg1/);
 });
 
 test('a Result path named only by a tool result is not the brief Result path', () => {

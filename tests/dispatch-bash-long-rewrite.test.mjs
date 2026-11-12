@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { tempDir } from './harness.mjs';
 
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
-const { scriptBytes } = await import('../lib/context-limits.mjs');
+const { scriptBytes, agentContextTarget } = await import('../lib/context-limits.mjs');
 
 async function decide(command, extra = {}) {
   const input = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'agent-1', tool_input: { command }, ...extra };
@@ -75,7 +75,9 @@ test('a run session is not capped', async () => {
 });
 
 test('the timeout sits inside the result-cap wrapper so the head and log still print', async () => {
-  const command = await capped({ command: 'node build.mjs' }, { agent_type: 'general-purpose' });
+  const transcript = path.join(tempDir('exo-room-'), 'agent.jsonl');
+  fs.writeFileSync(transcript, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: agentContextTarget() - 2000 } } })}\n`);
+  const command = await capped({ command: 'node build.mjs' }, { agent_type: 'general-purpose', agent_transcript_path: transcript });
   const [first, ...rest] = command.split('\n');
   assert.match(first, /^\( .*timeout 115 /);
   assert.match(rest.join('\n'), /head -c [\s\S]*\nexit \$rc$/);

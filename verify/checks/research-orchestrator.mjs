@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { agentHook } from '../../hooks/agent-effort.mjs';
 import { orchestratorWorkers } from '../../lib/context-limits.mjs';
+import { rulePart } from '../../lib/guard-rules.mjs';
+import { sliceCount } from '../../lib/slice-state.mjs';
 
 const STEP_FIVE = /^5\. \*\*Dispatch\*\*(.*)$/m;
 const STEP_CAP = /`Workers: (\d+)` or fewer/;
@@ -20,13 +22,18 @@ function leadOutput(dispatch, cwd, prompt) {
 }
 
 function leadDispatch(dispatch, cwd, prompt) {
-  return denied(leadOutput(dispatch, cwd, prompt));
+  const output = leadOutput(dispatch, cwd, prompt);
+  return denied(output) || noted(output, 'workers-line');
 }
 
 function workerDispatch(dispatch, caller) {
   const prompt = 'Sources: repo\nReads: none\nResult: .exo/research/check/claims.md';
   const input = { ...caller, tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker', description: 'sub-question', prompt } };
-  return denied(dispatch(input, 'on', () => false));
+  return dispatch(input, 'on', () => false);
+}
+
+function noted(output, id) {
+  return !denied(output) && Boolean(output?.hookSpecificOutput?.additionalContext?.includes(rulePart(id)));
 }
 
 function sliceOverrun(dispatch, cwd) {
@@ -34,7 +41,8 @@ function sliceOverrun(dispatch, cwd) {
   fs.writeFileSync(transcript, `${JSON.stringify({ message: { content: [{ type: 'text', text: `Workers: ${SLICE}\nReads: none` }] } })}\n{}\n`);
   const caller = { agent_id: `research-check-${path.basename(cwd)}`, agent_type: 'exo:orchestrator', agent_transcript_path: transcript, cwd };
   try {
-    return Array.from({ length: SLICE + 1 }, () => workerDispatch(dispatch, caller));
+    const outputs = Array.from({ length: SLICE + 1 }, () => workerDispatch(dispatch, caller));
+    return { outputs, count: sliceCount(caller.agent_id) };
   } finally {
     fs.rmSync(path.join(os.tmpdir(), `exo-slice-${caller.agent_id}`), { force: true });
   }
@@ -50,8 +58,9 @@ function routingProblems(dispatch, cap) {
     const unsized = leadOutput(dispatch, cwd, 'Reads: none');
     if (denied(unsized) || !unsized?.hookSpecificOutput?.additionalContext?.includes('Workers')) found.push('a lead dispatch of `exo:orchestrator` with no `Workers:` line does not run with the Workers warning');
     const slice = sliceOverrun(dispatch, cwd);
-    if (slice.slice(0, SLICE).some(Boolean)) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` is refused a research-worker within its slice`);
-    if (!slice[SLICE]) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` made ${SLICE + 1} research-worker dispatches`);
+    if (slice.outputs.slice(0, SLICE).some((output) => denied(output) || noted(output, 'slice-spent'))) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` is refused a research-worker within its slice`);
+    if (!noted(slice.outputs[SLICE], 'slice-spent')) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` made ${SLICE + 1} research-worker dispatches with no slice-spent note`);
+    if (slice.count !== SLICE + 1) found.push(`an orchestrator sized at \`Workers: ${SLICE}\` counted ${slice.count} of ${SLICE + 1} research-worker dispatches`);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }

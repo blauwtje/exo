@@ -13,6 +13,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The worker result shape names the command behind a derived number or date, and marks a delegate's empty or partial output `Status: unknown`.
 - The branch reviewer flags a change that undoes a fix in `git log -5 -- <path>`.
 - A plan task that renames or changes a name lists every `grep -rl` hit in `Files:`.
+- `benchmarks/hook-refusals.mjs` counts hook refusals, output cuts and hook errors per rule, per tool and per hook command over a window of days, and lists likely false refusals.
+- `npm run check` runs a table of real hook calls (background wait loop, `git stash list`, worktree paths, a subagent `git stash`, AI attribution) through the hook scripts and fails when a legitimate call is refused or a harm call passes.
 - `npm run check` runs a skill lint that flags a script flag named in a skill but missing from its help, shouted emphasis markers, unsafe skill steps and conflicting counts.
 - Worker agents return one result shape with `Status:`, `Evidence:`, `Side effects:` and `Searched:` lines.
 - `ship` runs the repo formatter or lint autofix on a failing format or lint check before an agent fix.
@@ -39,6 +41,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - The `adhd` output style bolds the label of every bullet, the one result figure and the closing action, ends a long list on an `Also:` bullet, and ends a choice on the question; a new `labels` gate fails a bullet without a bold label.
+- A hook rule denies a call only when its row names the harm it prevents, such as a subagent `git stash` or AI attribution in a commit message; every other rule adds a note once per session and lets the call run.
 - A refusal stays hard only for a delete, spent money, the network or security; every other one is now a single `[WARN]` line that lets the work go on: a file outside `Files:` at `land-task --check`, a Proof not seen red first, a boundary word dropped with no `Drops:` line, a brief's `Fetches:`, `Worktree:` or shape, a code rule on an edit or at a land, the context target, the Read line cap, the Glob size, a plan's size or shape flag and a commit's `Evidence:` shape.
 - A land commits a warned path outside `Files:` with the task, and leaves a protected one (another open task's file, a `.env` file, `hooks/`) unstaged with a warning.
 - Every new worktree gets the main checkout's gitignored `.env*` files with no question; a `.env` file in a commit is still refused.
@@ -69,7 +72,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Every worktree sits under `.claude/worktrees/<name>` of the main checkout.
 - A guard is a refusal or a warning by kind: a wide `find`, a failed script save, a lead `sleep`, a repeated suite run, a missing `Reads:` line and a missing or too small `Workers:` count now warn and let the call run.
 - A land warns on a path outside the task's `Files:` and refuses only a security-boundary path.
-- Byte caps for results carry a margin, `capMargin` (default 0.1, set in run.json `defaults`), so a result a few bytes over still passes.
 - A stop-hook block and a stall-guard refusal print one reason line and one `Do instead:` line.
 - A handoff holds four sections, Goal, Progress, Evidence and Next step.
 - Every window other than the main session takes its model and effort from `lib/model-kinds.json`: a `context: fork` skill gets `model:` and `effort:` lines written from its `skills` entry, and kind `orchestrator` moves from tier deep to strong.
@@ -79,6 +81,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Fixed
 
 - The `adhd` output style hands a choice the source leaves open to the user and ends on the question, and its figure rule shows the bold label and bold result figure; the quick `adhd-score` run caps spend at $0.04 per case instead of a fixed $0.30, so a 12-case run no longer stops on its own projection.
+- The sleep note fires only on a foreground wait loop; `Monitor` and a background wait loop pass with no note.
 - `watch` transcribes the original-language audio when YouTube rate-limits the captions with a 429, and keeps the batch stop when the audio is rate-limited too.
 - `watch` picks captions in the original audio language, not an auto-dubbed one, and falls back from a regional code such as `pt-BR` to `pt`.
 - A watch batch stops starting videos after a 429 on both routes, waits up to `EXO_WATCH_RATE_WAIT_MS` (default 3600000, `0` stops at once) probing with the first open video, and otherwise exits 75 with the open count and the restart command.
@@ -103,7 +106,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A hung gate criterion command ends at its deadline (default 900000 ms, `EXO_GATE_TIMEOUT_MS`), its process group is killed and the timeout is reported as a failure; the base comparison has one total deadline (`EXO_BASE_COMPARE_TIMEOUT_MS`).
 - The first gate call returns the review lines, and the full run goes only through a backgrounded `--full` call that writes a progress file.
 - An interactive build runner gets the `wait-report.mjs` command as its `Wait:` line, so a lost notification no longer leaves it idle.
-- A background `until ... sleep` or `while ... sleep` polling loop is refused with the `Wait:` route named, also inside `bash -c` and `eval` text; a loop wrapped by `timeout` and a counted retry pass.
 - The DeepSeek peak notice test pins the clock through `EXO_NOW_MS`, so it passes at every hour.
 - A gate review merge with no repair stays in the same round, so its findings are no longer marked `recurring`.
 - `worktreePath` needs the run directory, so a test builds its worktrees in its own temp directory and `npm run check` fails a call without one.
@@ -122,6 +124,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Removed
 
 - The `deep` setting: the `hardest` and `review-deep` kinds now run on the model of the main session, each with the effort of its kind.
+- The fixed 4506-byte cap on command output; a hook now cuts output only when the agent's context room runs low.
+- The wide `find` timeout rule and the persisted-read rule, which repeat what Claude Code already enforces.
 - The `needs-input` end state of the round budget, which no caller reached.
 - The unreachable land repair path (`run-plan-land-repair.mjs`, `repairOrBlock`), the `code rule` refusal kind and the `no red proof` line of the drift repairer prompt.
 - The `env` setting, since a worktree always gets the `.env*` files.

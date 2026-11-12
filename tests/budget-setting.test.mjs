@@ -30,13 +30,12 @@ test('on and off are valid values', () => {
   assert.equal(invalidReason('budget', 'off'), null);
 });
 
-test('a byte cap gains the margin from run.json defaults', async () => {
-  const { capMargin, resultCapBytes } = await import('../lib/context-limits.mjs');
+test('capMargin reads run.json defaults', async () => {
+  const { capMargin } = await import('../lib/context-limits.mjs');
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cap-margin-'));
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { resultCapBytes: 1000, capMargin: 0.2 } }));
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { capMargin: 0.2 } }));
   assert.equal(capMargin(home), 0.2);
-  assert.equal(resultCapBytes(home), 1200);
   assert.equal(capMargin(fs.mkdtempSync(path.join(os.tmpdir(), 'cap-margin-'))), 0.1);
 });
 

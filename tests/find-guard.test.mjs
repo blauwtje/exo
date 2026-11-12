@@ -1,7 +1,3 @@
-// A disk-wide find from an agent ran into the 120 s tool timeout 7 times. The
-// Bash hook now denies find on /, ~, $HOME and .., and lets -maxdepth 1 and
-// in-checkout searches through.
-
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
@@ -14,27 +10,12 @@ async function decide(command) {
   return output?.hookSpecificOutput;
 }
 
-test('find on /, ~, $HOME or .. is warned with context that names find . and git ls-files', async () => {
-  for (const command of ['find / -name plan.md', 'find ~ -name plan.md', 'find ~/ -name x', 'find $HOME -name x', 'find "$HOME" -name x', 'find .. -name plan.md', 'find ../.. -name x', 'cd x && find / -name y', 'ls | xargs echo; find -L / -name y']) {
-    const verdict = await decide(command);
-    assert.equal(verdict?.permissionDecision, undefined, command);
-    assert.match(verdict.additionalContext, /`find \.`.*`git ls-files`/, command);
-    assert.match(verdict.additionalContext, /BLOCKED/, command);
-  }
-});
-
-test('find with -maxdepth 1, or inside the checkout, passes without a warning', async () => {
-  for (const command of ['find / -maxdepth 1 -name tmp', 'find .. -maxdepth 1 -name x', 'find . -name plan.md', 'find /tmp/x -name y', 'find skills -name SKILL.md', 'echo find /']) {
-    assert.equal((await decide(command))?.additionalContext, undefined, command);
-  }
-});
-
 test('a Bash call with an = word is rewritten, and a denied one is not', async () => {
   const input = { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo =ls' } };
   const rewritten = await dispatchBash(input, undefined, () => false);
   assert.match(rewritten.hookSpecificOutput.updatedInput.command, /setopt noequals; echo =ls/);
   assert.equal(rewritten.hookSpecificOutput.permissionDecision, undefined);
-  const denied = await dispatchBash({ ...input, tool_input: { command: 'until [ -f done ]; do sleep 2; done; echo =ls' } }, undefined, () => false);
+  const denied = await dispatchBash({ ...input, agent_id: 'agent-1', tool_input: { command: 'git stash; echo =ls' } }, undefined, () => false);
   assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(denied.hookSpecificOutput.updatedInput, undefined);
 });

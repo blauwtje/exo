@@ -8,6 +8,7 @@ import { contextHook } from '../hooks/context-limit.mjs';
 import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
+import { guardKind } from '../lib/guard-rules.mjs';
 import { tempDir } from './harness.mjs';
 
 // why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
@@ -113,23 +114,6 @@ test('Bash and Edit dispatchers give the interactive main session no context not
   }
 });
 
-test('main session Read of a whole persisted tool output is denied; a range or another file passes', async () => {
-  const { persistedReadDecision } = await import('../lib/context-decisions.mjs');
-  const dir = tempDir('exo-persisted-');
-  const transcript_path = path.join(dir, 'session.jsonl');
-  const persisted = path.join(dir, 'session', 'tool-results', 'b123.txt');
-  const read = (tool_input, extra = {}) => persistedReadDecision({ transcript_path, tool_name: 'Read', tool_input, ...extra });
-  assert.match(read({ file_path: persisted }).deny, /offset and limit/);
-  assert.equal(read({ file_path: persisted, offset: 40, limit: 30 }), null);
-  assert.equal(read({ file_path: path.join(dir, 'notes.md') }), null);
-  assert.equal(read({ file_path: persisted }, { agent_id: 'a1' }), null);
-  assert.equal(persistedReadDecision({ transcript_path, tool_name: 'Grep', tool_input: { path: persisted } }), null);
-  const hook = new URL('../hooks/context-limit.mjs', import.meta.url);
-  const { execFileSync } = await import('node:child_process');
-  const out = execFileSync(process.execPath, [hook.pathname], { input: JSON.stringify({ session_id: 'p', transcript_path, tool_name: 'Read', tool_input: { file_path: persisted } }), encoding: 'utf8' });
-  assert.equal(JSON.parse(out).hookSpecificOutput.permissionDecision, 'deny');
-});
-
 test('a subagent past its soft limit is told to hand over, past its hard limit only Write and Edit still work', () => {
   const dir = tempDir('exo-agent-');
   const at = (tokens) => {
@@ -166,7 +150,7 @@ test('a subagent is warned again after it shrinks below the soft limit', () => {
 });
 
 function assertTargetWarns(call, tools, tokens) {
-  for (const tool of tools) assert.match(call(tokens, tool).additionalContext, /new reads, searches, fetches, skills and agents/, `${tool} at ${tokens}`);
+  for (const tool of tools) assert.match(call(tokens, tool).deny, /new reads, searches, fetches, skills and agents/, `${tool} at ${tokens}`);
 }
 
 test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and is bound by agentContextTarget on the way', () => {
@@ -262,15 +246,10 @@ test('the slice, result cap and script size defaults read the catalog and honor 
   const home = tempDir('exo-sizes-');
   assert.equal(limits.orchestratorWorkers(home), 4);
   assert.equal(limits.capMargin(home), 0.1);
-  assert.equal(limits.resultCapBytes(home), Math.round(4096 * 1.1));
-  const share = (limits.agentContextTarget(home) / 2) * limits.dispatchBytesPerToken(home) / (limits.orchestratorWorkers(home) + limits.orchestratorPredispatchReads(home));
-  assert.equal(limits.orchestratorResultCapBytes(home), Math.round(Math.round(share) * 1.1));
   assert.equal(limits.scriptBytes(home), 4096);
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { orchestratorWorkers: 3, resultCapBytes: 1, orchestratorResultCapBytes: 2, scriptBytes: 5 } }));
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { orchestratorWorkers: 3, scriptBytes: 5 } }));
   assert.equal(limits.orchestratorWorkers(home), 3);
-  assert.equal(limits.resultCapBytes(home), 1);
-  assert.equal(limits.orchestratorResultCapBytes(home), 2);
   assert.equal(limits.scriptBytes(home), 5);
 });
 
@@ -288,29 +267,36 @@ test('the shared reader accepts a fractional bytesPerToken and rejects zero, neg
   assert.equal(dispatchBytesPerToken(home), 2);
 });
 
-test('readCapDecision runs a capped Read with the largest limit that fits instead of denying it', () => {
+function roomCaller(tokens, extra = {}) {
+  const dir = tempDir('exo-room-');
+  const transcript = path.join(dir, 'agent.jsonl');
+  fs.writeFileSync(transcript, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+  return { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:research-worker', permission_mode: 'bypassPermissions', agent_transcript_path: transcript, ...extra };
+}
+
+test('readCapDecision runs a Read with the largest limit that fits the room left instead of denying it', () => {
   const dir = tempDir('exo-cap-');
   const file = path.join(dir, 'big.txt');
   fs.writeFileSync(file, `${'x'.repeat(99)}\n`.repeat(100));
-  const capped = { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:research-worker', permission_mode: 'bypassPermissions', tool_input: { file_path: file } };
-  const corrected = readCapDecision(capped);
+  const caller = roomCaller(60000 - 2250);
+  const corrected = readCapDecision({ ...caller, tool_input: { file_path: file } });
   assert.equal(corrected.deny, undefined);
   assert.deepEqual(corrected.updatedInput, { file_path: file, offset: 1, limit: 45 });
   assert.match(corrected.additionalContext, /lines 1-45 .*offset 46/);
-  assert.deepEqual(readCapDecision({ ...capped, tool_input: { file_path: file, offset: 41 } }).updatedInput, { file_path: file, offset: 41, limit: 45 });
-  assert.equal(readCapDecision({ ...capped, tool_input: { file_path: file, limit: 40 } }), null);
-  assert.equal(readCapDecision({ ...capped, tool_input: { file_path: file, pages: '1' } }), null);
-  assert.equal(readCapDecision({ ...capped, agent_type: 'exo:build-task' }), null);
+  assert.deepEqual(readCapDecision({ ...caller, tool_input: { file_path: file, offset: 41 } }).updatedInput, { file_path: file, offset: 41, limit: 45 });
+  assert.equal(readCapDecision({ ...caller, tool_input: { file_path: file, limit: 40 } }), null);
+  assert.equal(readCapDecision({ ...caller, tool_input: { file_path: file, pages: '1' } }), null);
   assert.equal(readCapDecision({ tool_name: 'Read', tool_input: { file_path: file } }), null);
+  assert.equal(readCapDecision({ ...roomCaller(1000), tool_input: { file_path: file } }), null, 'a Read with the whole room left runs as asked');
 });
 
-test('a Read whose single line is over the cap is not told to retry with limit 1', () => {
+test('a Read whose single line is over the room left is not told to retry with limit 1', () => {
   const file = path.join(os.tmpdir(), `exo-long-line-${process.pid}.log`);
   fs.writeFileSync(file, `${'x'.repeat(20000)}\n`);
   try {
-    const decision = readCapDecision({ tool_name: 'Read', agent_type: 'exo:research-worker', agent_id: 'a', tool_input: { file_path: file, offset: 1, limit: 1 } });
-    assert.ok(decision?.additionalContext);
-    assert.doesNotMatch(decision.additionalContext, /limit 1/);
+    const decision = readCapDecision({ ...roomCaller(60000 - 2250), tool_input: { file_path: file, offset: 1, limit: 1 } });
+    assert.ok(decision?.deny);
+    assert.doesNotMatch(decision.deny, /limit 1/);
   } finally {
     fs.rmSync(file, { force: true });
   }
@@ -327,8 +313,8 @@ function agentCaller(tokens, agent_type) {
 test('an orchestrator over the target still dispatches and stops workers but cannot read', () => {
   const call = agentCaller(TARGET + 1000, 'exo:orchestrator');
   for (const tool of ['Agent', 'SendMessage', 'Monitor', 'TaskStop']) assert.equal(call(tool)?.deny, undefined, tool);
-  assert.match(call('Read').additionalContext, /new reads, searches, fetches, skills and agents/);
-  assert.match(call('Grep').additionalContext, /new reads/);
+  assert.match(call('Read').deny, /new reads, searches, fetches, skills and agents/);
+  assert.match(call('Grep').deny, /new reads/);
 });
 
 test('an orchestrator past the hard limit cannot dispatch', () => {
@@ -339,7 +325,7 @@ test('an orchestrator past the hard limit cannot dispatch', () => {
 test('an agent that is not a coordinator is still refused Agent over the target', () => {
   for (const type of ['exo:build-task', 'general-purpose', undefined]) {
     const call = agentCaller(TARGET + 1000, type);
-    assert.match(call('Agent').additionalContext, /new reads, searches, fetches, skills and agents/, String(type));
+    assert.match(call('Agent').deny, /new reads, searches, fetches, skills and agents/, String(type));
   }
 });
 
@@ -361,12 +347,12 @@ test('imageTokenCap, pdfPageTokens and binaryReadTokens read the catalog and hon
   assert.deepEqual([imageTokenCap(home), pdfPageTokens(home), binaryReadTokens(home)], [900, 2000, 100]);
 });
 
-test('a Reddit call refused three times gets three different refusals', () => {
+test('a Reddit call is noted once per session', () => {
   const call = { session_id: `reddit-${process.pid}`, tool_name: 'WebFetch', tool_input: { url: 'https://www.reddit.com/r/neovim/' } };
-  const text = (input) => contextHook(input).hookSpecificOutput.permissionDecisionReason;
+  const text = (input) => contextHook(input)?.hookSpecificOutput.additionalContext;
   assert.match(text(call), /Reddit blocks this call/);
-  assert.match(text(call), /refused once already/);
-  assert.match(text(call), /record the gap/);
+  assert.equal(text(call), undefined);
+  assert.match(text({ ...call, session_id: `reddit-other-${process.pid}` }), /Reddit blocks this call/);
 });
 
 test('a subagent refusal names the Result path of its brief, or the reply', () => {
@@ -379,14 +365,14 @@ test('a subagent refusal names the Result path of its brief, or the reply', () =
     return contextDecision({ session_id: 'a', agent_id: `b${process.pid}${tokens}`, agent_transcript_path: file, tool_name: 'Read' });
   };
   assert.match(refusal('Reads: none\nResult: .exo/r.md', AGENT_HARD).deny, /write \.exo\/r\.md as a handover/);
-  assert.match(refusal('Reads: none\nResult: reply', TARGET + 1000).additionalContext, /reply with a handover/);
+  assert.match(refusal('Reads: none\nResult: reply', TARGET + 1000).deny, /reply with a handover/);
 });
 
 test('context target warns: intake past the target runs with the rule in its context', () => {
   const call = agentCaller(TARGET + 1000, 'exo:build-task');
   for (const tool of ['Read', 'Grep', 'Agent']) {
     const decision = call(tool);
-    assert.equal(decision.deny, undefined, tool);
-    assert.match(decision.additionalContext, /new reads, searches, fetches, skills and agents/, tool);
+    assert.equal(guardKind(decision.rule), 'warn', tool);
+    assert.match(decision.deny, /new reads, searches, fetches, skills and agents/, tool);
   }
 });

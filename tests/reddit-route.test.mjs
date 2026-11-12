@@ -22,9 +22,10 @@ test('WebSearch without reddit passes', () => {
   assert.equal(redditRouteDecision({ tool_name: 'Read', tool_input: {} }), null);
 });
 
-test('the context hook emits the deny', () => {
+test('the context hook emits the note', () => {
   const out = contextHook(fetchUrl('https://www.reddit.com/r/a'));
-  assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(out.hookSpecificOutput.permissionDecision, undefined);
+  assert.match(out.hookSpecificOutput.additionalContext, /reddit/i);
 });
 
 test('the deny names the script, its --run argument and the WebSearch fallback', () => {

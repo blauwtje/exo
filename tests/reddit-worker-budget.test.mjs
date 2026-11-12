@@ -13,9 +13,9 @@ const denial = () => agentHook({
   agent_type: 'exo:orchestrator',
   cwd,
   tool_input: { subagent_type: 'exo:research-worker', description: 'work', prompt }
-}, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+}, 'on', () => false)?.hookSpecificOutput?.additionalContext ?? '';
 
-test('a size denial for Fetches: 5 on reddit keeps the asked total and names a split that fits', () => {
+test('a size note for Fetches: 5 on reddit keeps the asked total and names a split that fits', () => {
   const size = workerSize({ prompt, cwd, requireFetches: true });
   assert.ok(size.tokens > size.budget);
   const reason = denial();

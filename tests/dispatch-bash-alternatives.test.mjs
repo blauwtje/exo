@@ -23,7 +23,7 @@ test('a stash deny names the patch save and restore forms', async () => {
   const reason = await reasonOf(stash);
   assert.match(reason, /git diff > \.exo\/<name>\.patch/);
   assert.match(reason, /git diff --cached/);
-  assert.match(reason, /git apply \.exo\/<name>\.patch/);
+  assert.match(reason, /restore with `git apply`/);
 });
 
 test('a worktree deny tells the subagent to return BLOCKED naming the worktree', async () => {
@@ -38,19 +38,18 @@ test('a branch deny tells the subagent to return BLOCKED naming the branch', asy
   }
 });
 
-test('a wide find warns with find . and git ls-files and lets the call run', async () => {
+test('a wide find gets no decision and no note', async () => {
   for (const command of ['find / -name x', 'find ~ -name x', 'find $HOME -name x']) {
     const verdict = await decide(command, { agent_id: undefined });
-    assert.equal(verdict.permissionDecision, undefined, command);
-    const reason = verdict.additionalContext;
-    assert.match(reason, /`find \.`/, command);
-    assert.match(reason, /`git ls-files`/, command);
+    assert.equal(verdict?.permissionDecision, undefined, command);
+    assert.equal(verdict?.additionalContext, undefined, command);
   }
 });
 
-test('a sleep deny names the no-polling rule', async () => {
-  const reason = await reasonOf('sleep 30', { agent_type: 'exo:task-runner' });
-  assert.match(reason, /No sleep polling/);
+test('a sleep note names the no-polling rule', async () => {
+  const verdict = await decide('sleep 30', { agent_type: 'exo:task-runner' });
+  assert.equal(verdict.permissionDecision, undefined);
+  assert.match(verdict.additionalContext, /No sleep polling/);
 });
 
 test('a long command is saved verbatim under .exo/ and the command is rewritten to run it', async () => {
@@ -66,7 +65,7 @@ test('a long command is saved verbatim under .exo/ and the command is rewritten 
 test('a long command that also holds a denied form returns that deny and saves nothing', async () => {
   const cwd = tempDir('exo-long-');
   const reason = await reasonOf(`${stash}; echo ${longText()}`, { cwd });
-  assert.match(reason, /git apply \.exo\/<name>\.patch/);
+  assert.match(reason, /restore with `git apply`/);
   assert.equal(fs.existsSync(path.join(cwd, '.exo')), false);
 });
 
@@ -105,6 +104,6 @@ test('the long-command module imports no child process', () => {
 
 test('a heredoc fed to cat is data, one fed to bash is scanned', async () => {
   assert.equal(await decide("cat <<'EOF'\nsleep 5\nEOF"), undefined);
-  assert.equal((await decide("bash <<'EOF'\nsleep 5\nEOF"))?.permissionDecision, 'deny');
-  assert.equal((await decide("cat <<'EOF'\nx\nEOF\nsleep 5"))?.permissionDecision, 'deny');
+  assert.match((await decide("bash <<'EOF'\nsleep 5\nEOF"))?.additionalContext, /No sleep polling/);
+  assert.match((await decide("cat <<'EOF'\nx\nEOF\nsleep 5"))?.additionalContext, /No sleep polling/);
 });

@@ -449,52 +449,57 @@ test('the script-size step reads its cap from defaults.scriptBytes', async () =>
   assert.match(rewritten.hookSpecificOutput.additionalContext, new RegExp(`over ${limit} bytes`));
 });
 
-test('an orchestrator Bash command runs within the pre-dispatch read cap and is denied past it until its first dispatch', async () => {
+test('an orchestrator Bash command runs within the pre-dispatch read cap and is noted past it until its first dispatch', async () => {
   const { PREDISPATCH_STEP } = await import('../hooks/dispatch-bash.mjs');
   const { recordSlice } = await import('../lib/slice-state.mjs');
   const { orchestratorPredispatchReads } = await import('../lib/context-limits.mjs');
   const agentId = `predispatch-${process.pid}`;
   const input = (agentType) => ({ agent_id: agentId, agent_type: agentType, tool_input: { command: 'ls' } });
   for (let call = 0; call < orchestratorPredispatchReads() + 1; call += 1) assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
-  const denied = PREDISPATCH_STEP.run(input('exo:orchestrator'));
-  assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(denied.hookSpecificOutput.permissionDecisionReason, /Bash calls before its first dispatch/);
+  const noted = PREDISPATCH_STEP.run(input('exo:orchestrator'));
+  assert.equal(noted.hookSpecificOutput.permissionDecision, undefined);
+  assert.match(noted.hookSpecificOutput.additionalContext, /Bash calls before its first dispatch/);
   assert.equal(PREDISPATCH_STEP.run(input('exo:task-runner')), null);
   recordSlice(agentId);
   assert.equal(PREDISPATCH_STEP.run(input('exo:orchestrator')), null);
   for (const kind of ['slice', 'predispatch']) fs.rmSync(path.join(os.tmpdir(), `exo-${kind}-${agentId}`), { force: true });
 });
 
-test('the sleep step denies sleep in command position for every subagent', async () => {
+test('the sleep step notes sleep in command position for every subagent', async () => {
   const { SLEEP_STEP } = await import('../hooks/dispatch-bash.mjs');
   const run = (agentType, command) => SLEEP_STEP.run({ agent_id: 'a', agent_type: agentType, tool_input: { command } });
   for (const command of ['sleep 30', 'ls && sleep 5', 'node x.mjs; sleep 1']) {
-    const denied = run('exo:task-runner', command);
-    assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny', command);
-    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /subagent: start the long command in the background/);
+    const noted = run('exo:task-runner', command);
+    assert.equal(noted.hookSpecificOutput.permissionDecision, undefined, command);
+    assert.match(noted.hookSpecificOutput.additionalContext, /subagent: start the long command in the background/);
   }
-  assert.equal(run('exo:orchestrator', 'sleep 2').hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(run('exo:orchestrator', 'sleep 2').hookSpecificOutput.permissionDecision, undefined);
   assert.equal(run('exo:task-runner', 'grep sleep file.txt'), null);
   assert.equal(run('exo:task-runner', 'node sleep.test.mjs'), null);
-  assert.equal(run('exo:build-task', 'sleep 5').hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(run('exo:build-task', 'sleep 5').hookSpecificOutput.permissionDecision, undefined);
 });
 
-test('the sleep step denies a background sleep polling loop for the lead too', async () => {
+test('the sleep step notes a background sleep polling loop for the lead too', async () => {
   const { SLEEP_STEP } = await import('../hooks/dispatch-bash.mjs');
   const run = (command) => SLEEP_STEP.run({ tool_input: { command } });
   for (const command of ['until [ -f done ]; do sleep 2; done', 'while ! grep -q ok log; do\n  sleep 5\ndone']) {
-    const denied = run(command);
-    assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny', command);
-    assert.match(denied.hookSpecificOutput.permissionDecisionReason, /No sleep polling/);
+    const noted = run(command);
+    assert.equal(noted.hookSpecificOutput.permissionDecision, undefined, command);
+    assert.match(noted.hookSpecificOutput.additionalContext, /No sleep polling/);
   }
   const warned = run('sleep 2').hookSpecificOutput;
   assert.equal(warned.permissionDecision, undefined);
   assert.match(warned.additionalContext, /No sleep polling/);
 });
 
+const ROOM_BYTES = 4000;
+const ROOM_TRANSCRIPT = path.join(tempDir('exo-room-'), 'agent.jsonl');
+const { agentContextTarget, dispatchBytesPerToken } = await import('../lib/context-limits.mjs');
+fs.writeFileSync(ROOM_TRANSCRIPT, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: agentContextTarget() - ROOM_BYTES / dispatchBytesPerToken() } } })}\n`);
+
 async function cappedRun(command, extra = {}) {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
-  const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', tool_input: { command }, ...extra };
+  const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', agent_transcript_path: ROOM_TRANSCRIPT, tool_input: { command }, ...extra };
   const output = await dispatchBash(hookInput, undefined, () => false);
   const rewritten = output?.hookSpecificOutput?.updatedInput?.command;
   assert.ok(rewritten, command);
@@ -516,12 +521,11 @@ const CAP_FORMS = {
 };
 
 test('a capped agent Bash output is cut at the result cap and keeps the exit code', async () => {
-  const { resultCapBytes } = await import('../lib/context-limits.mjs');
-  const cap = resultCapBytes();
+  const cap = ROOM_BYTES;
   for (const [form, command] of Object.entries(CAP_FORMS)) {
     const { stdout } = await cappedRun(command);
-    assert.match(stdout, new RegExp(`^[\\s\\S]{${cap}}\\[output cut at ${cap} bytes; full log: .*exo-bash-cap-agent-.*\\.log\\]\\n$`), form);
-    assert.ok(Buffer.byteLength(stdout) < cap + 400, form);
+    assert.match(stdout, new RegExp(`^[\\s\\S]{${cap}}\\[output cut at ${cap} bytes, the room left of your context target; full log: .*exo-bash-cap-agent-.*\\.log; .*\\]\\n$`), form);
+    assert.ok(Buffer.byteLength(stdout) < cap + 800, form);
   }
   assert.equal((await cappedRun('echo hi; exit 7')).status, 7);
   assert.equal((await cappedRun('exit 3')).status, 3);
@@ -566,8 +570,7 @@ test('the context-limit entry starts node only for Read, Skill, a run session or
 test('a capped agent Bash keeps a timeout and skips background, trailing backslash, other modes and other types', async () => {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
   const timed = await cappedRun(`timeout 5 ${BIG_OUTPUT}`);
-  const { resultCapBytes } = await import('../lib/context-limits.mjs');
-  assert.match(timed.stdout, new RegExp(`output cut at ${resultCapBytes()}`));
+  assert.match(timed.stdout, new RegExp(`output cut at ${ROOM_BYTES}`));
   const skipped = [
     { tool_input: { command: 'echo hi', run_in_background: true } },
     { tool_input: { command: 'echo hi \\' } },

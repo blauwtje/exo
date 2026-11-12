@@ -53,6 +53,7 @@ import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.
 import { checkCodeComments } from './verify/checks/code-comments.mjs';
 import { checkDenyReasons } from './verify/checks/deny-reasons.mjs';
 import { checkHookRefusals } from './verify/checks/hook-refusals.mjs';
+import { checkRefusalFixtures } from './verify/checks/refusal-fixtures.mjs';
 import { checkRefusalAll } from './verify/checks/refusal-all.mjs';
 import { checkStepReferences } from './verify/checks/step-references.mjs';
 import { checkScriptOutput } from './verify/checks/script-output.mjs';
@@ -133,6 +134,7 @@ checkCodeComments(report, repository);
 checkDenyReasons(report, repository);
 checkHookRefusals(report, repository);
 checkRefusalAll(report, repository);
+checkRefusalFixtures(report, repository);
 if (behavior) {
   const outcome = await behavior;
   report.result(outcome.status, outcome.name, outcome.detail);

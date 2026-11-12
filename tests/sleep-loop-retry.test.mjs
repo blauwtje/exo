@@ -2,26 +2,26 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SLEEP_STEP } from '../hooks/dispatch-bash.mjs';
 
-const decision = (command) => SLEEP_STEP.run({ tool_input: { command } })?.hookSpecificOutput.permissionDecision ?? 'allow';
+const verdict = (command, extra = {}) => SLEEP_STEP.run({ tool_name: 'Bash', tool_input: { command, ...extra } });
+const noted = (command, extra) => Boolean(verdict(command, extra)?.hookSpecificOutput.additionalContext);
 
-test('a bounded retry and quoted loop words pass while a background polling loop is still refused', () => {
-  assert.equal(decision('git commit -m "retry while CI runs, do not sleep on it"'), 'allow');
-  assert.equal(decision('timeout 60 bash -c "until curl -s localhost; do sleep 1; done"'), 'allow');
-  assert.equal(decision('until [ -f done ]; do sleep 2; done'), 'deny');
+test('a foreground wait loop gets the note with the background route', () => {
+  const output = verdict('until [ -f done ]; do sleep 2; done').hookSpecificOutput;
+  assert.equal(output.permissionDecision, undefined);
+  assert.match(output.additionalContext, /run_in_background/);
+  assert.ok(noted('bash -lc "until [ -f done ]; do sleep 5; done"'));
+  assert.ok(noted('timeout 600 npm test; until [ -f done ]; do sleep 20; done'));
 });
 
-test('a timeout elsewhere in the command does not exempt a polling loop outside it', () => {
-  assert.equal(decision('timeout 600 npm test; until [ -f done ]; do sleep 20; done'), 'deny');
+test('a loop in a background Bash call passes with no note', () => {
+  assert.equal(verdict('until [ -f done ]; do sleep 2; done', { run_in_background: true }), null);
 });
 
-test('a polling loop inside a shell -c or eval argument is refused while data quotes stay allowed', () => {
-  assert.equal(decision('bash -lc "until [ -f done ]; do sleep 5; done"'), 'deny');
-  assert.equal(decision('eval "until [ -f done ]; do sleep 5; done"'), 'deny');
-  assert.equal(decision('echo "until x; do sleep 5; done"'), 'allow');
+test('a Monitor call passes with no note', () => {
+  const output = SLEEP_STEP.run({ tool_name: 'Monitor', tool_input: { command: 'until [ -f done ]; do sleep 2; done' } });
+  assert.equal(output, null);
 });
 
-test('gtimeout and timeout -k around the loop bound it', () => {
-  assert.equal(decision('gtimeout 60 bash -c "until [ -f done ]; do sleep 1; done"'), 'allow');
-  assert.equal(decision('timeout -k 5 60 bash -c "until [ -f done ]; do sleep 1; done"'), 'allow');
-  assert.equal(decision('timeout 60 bash -c "until [ -f done ]; do sleep 1; done"'), 'allow');
+test('quoted loop words and data quotes pass', () => {
+  assert.equal(verdict('git commit -m "retry while CI runs, do not sleep on it"'), null);
 });

@@ -1,6 +1,6 @@
 [
   { "rule": "sleep", "hook": "dispatch-bash.mjs", "input": { "command": "cat <<'EOF'\nwhile true; do\nsleep 5\ndone\nEOF" }, "transcript": "subagent", "expect": "rewrite", "says": "" },
-  { "rule": "sleep", "hook": "dispatch-bash.mjs", "input": { "command": "bash <<'EOF'\nsleep 5\nEOF" }, "transcript": "subagent", "expect": "deny", "says": "sleep" },
+  { "rule": "sleep", "hook": "dispatch-bash.mjs", "input": { "command": "bash <<'EOF'\nsleep 5\nEOF" }, "transcript": "subagent", "expect": "rewrite", "says": "sleep" },
   { "rule": "watch", "hook": "dispatch-bash.mjs", "input": { "command": "cat <<'EOF'\ngh run watch 1\nEOF" }, "transcript": "subagent", "expect": "rewrite", "says": "" },
   { "rule": "stash", "hook": "dispatch-bash.mjs", "input": { "command": "tee n.md <<'EOF'\ngit stash\nEOF" }, "transcript": "subagent", "expect": "rewrite", "says": "" },
   { "rule": "stash", "hook": "dispatch-bash.mjs", "input": { "command": "sh <<'EOF'\ngit stash\nEOF" }, "transcript": "subagent", "expect": "deny", "says": "git stash is denied" }

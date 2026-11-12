@@ -13,12 +13,13 @@ const { GUARD_RULES, denyReason } = rules;
 const denyReasons = await import('../verify/checks/deny-reasons.mjs');
 const { checkDenyReasons } = denyReasons;
 const { agentHook } = await import('../hooks/agent-effort.mjs');
+const { refusalRound } = await import('../lib/brief-denials.mjs');
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
 const { dispatchEdit } = await import('../hooks/dispatch-edit.mjs');
 const { contextHook } = await import('../hooks/context-limit.mjs');
 const { readKindTable } = await import('../lib/model-kinds.mjs');
 const { agentContextTarget, contextLimit } = await import('../lib/context-limits.mjs');
-const { agentHardLimit, persistedReadDecision } = await import('../lib/context-decisions.mjs');
+const { agentHardLimit } = await import('../lib/context-decisions.mjs');
 const { readDispatchRules } = await import('../hooks/dispatch-rules.mjs');
 const { runNoWait } = await import('../hooks/run-no-wait.mjs');
 const { stallGuardInput } = await import('../hooks/run-stall-guard.mjs');
@@ -28,9 +29,11 @@ const LONG = `echo ${'x'.repeat(5000)}`;
 const cwd = tempDir('guard-rules-');
 fs.writeFileSync(path.join(cwd, 'message.txt'), `fix: x\n\n${TRAILER}\n`);
 
+const textOf = (fields) => fields?.permissionDecisionReason ?? fields?.additionalContext ?? '';
+
 const bash = async (command, extra = {}) => {
   const output = await dispatchBash({ tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
-  return output?.hookSpecificOutput?.permissionDecisionReason ?? '';
+  return textOf(output?.hookSpecificOutput);
 };
 
 const edit = () => dispatchEdit({
@@ -86,48 +89,41 @@ const largeSearch = () => {
     process.env.HOME = saved;
   }
 };
-const persistedRead = () => {
-  const results = path.join(spent, 'session', 'tool-results');
-  return persistedReadDecision({
-    transcript_path: path.join(spent, 'session.jsonl'),
-    tool_name: 'Read',
-    tool_input: { file_path: path.join(results, 'b1.txt') }
-  })?.deny ?? '';
-};
 const shellTranscript = path.join(spent, 'shells.jsonl');
 fs.writeFileSync(shellTranscript, [
   { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'ls', run_in_background: true } }] } },
   { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: 'Command running in background with ID: bg1. Output is being written to: /tmp/bg1.output.' }] } }
 ].map((entry) => JSON.stringify(entry)).join('\n'));
-const liveShells = () => dispatchEdit({
+const liveShells = () => textOf(dispatchEdit({
   tool_name: 'Write',
   session_id: 'guard-rules',
   agent_id: `guard-rules-live-${process.pid}-${Date.now()}`,
   agent_transcript_path: shellTranscript,
   tool_input: { file_path: '/x/.exo/r.md' }
-})?.hookSpecificOutput?.permissionDecisionReason ?? '';
+})?.hookSpecificOutput);
 const noWait = (asks) => {
   const dir = tempDir('guard-rules-run-');
   const env = { EXO_RUN: '1', EXO_RUN_DIR: dir };
   const ask = () => runNoWait({ tool_name: 'AskUserQuestion', tool_input: { question: 'which?' }, session_id: 's' }, { env, dir });
   let output = null;
   for (let call = 0; call < asks; call += 1) output = ask();
-  return output?.hookSpecificOutput?.permissionDecisionReason ?? '';
+  return textOf(output?.hookSpecificOutput);
 };
-const stallGuard = () => stallGuardInput({
+const stallGuard = () => textOf(stallGuardInput({
   tool_name: 'Bash',
   tool_input: { command: 'node skills/build/scripts/land-task.mjs x; echo' }
-})?.hookSpecificOutput?.permissionDecisionReason ?? '';
-const dispatch = (input) => ((output) => output?.permissionDecisionReason ?? output?.additionalContext ?? '')(agentHook({ tool_name: 'Agent', tool_input: input }, 'on', () => false)?.hookSpecificOutput);
+})?.hookSpecificOutput);
+const dispatch = (input) => textOf(agentHook({ tool_name: 'Agent', tool_input: input }, 'on', () => false)?.hookSpecificOutput);
 const refusalCap = () => {
   const session = `cap-${process.pid}-${Date.now()}`;
   const input = { session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', prompt: 'Workers: 5' } };
-  const reasons = [1, 2, 3].map(() => agentHook(input, 'on', () => false).hookSpecificOutput.permissionDecisionReason);
+  const denied = { permissionDecision: 'deny', permissionDecisionReason: 'refused' };
+  const reasons = [1, 2, 3].map(() => refusalRound(input, denied).permissionDecisionReason);
   fs.rmSync(path.join(os.tmpdir(), `exo-refusal-${session}`), { recursive: true, force: true });
   return reasons[2];
 };
 const isolated = () => dispatch({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' });
-const resultFile = () => agentHook({ tool_name: 'Agent', cwd: sized, tool_input: { subagent_type: 'reader', prompt: 'Reads: none\nResult: .exo/x.md' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+const resultFile = () => textOf(agentHook({ tool_name: 'Agent', cwd: sized, tool_input: { subagent_type: 'reader', prompt: 'Reads: none\nResult: .exo/x.md' } }, 'on', () => false)?.hookSpecificOutput);
 const dispatchOutput = (prompt) => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', prompt } }, 'on', () => false)?.hookSpecificOutput ?? {};
 const orchestrator = (prompt, pair) => dispatch({ subagent_type: 'exo:orchestrator', prompt, ...pair });
 const sized = tempDir('guard-rules-size-');
@@ -140,13 +136,13 @@ const refuseOutput = (prompt, subagent_type = 'general-purpose', base = sized) =
   cwd: base,
   tool_input: { subagent_type, description: 'work', prompt }
 }, 'on', () => false)?.hookSpecificOutput;
-const refuse = (...args) => ((output) => output?.permissionDecisionReason ?? output?.additionalContext ?? '')(refuseOutput(...args));
-const mainResearch = (type, session) => agentHook({
+const refuse = (...args) => textOf(refuseOutput(...args));
+const mainResearch = (type, session) => textOf(agentHook({
   tool_name: 'Agent',
   session_id: session,
   cwd: sized,
   tool_input: { subagent_type: type, description: 'work', prompt: 'Sources: web\nFetches: 1\nResult: .exo/r.md' }
-}, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+}, 'on', () => false)?.hookSpecificOutput);
 function fannedOut() {
   const session = `guard-rules-fanout-${process.pid}`;
   const marker = path.join(os.tmpdir(), `exo-research-${session}`);
@@ -173,7 +169,7 @@ const sliceSpent = () => {
   const transcript = path.join(dir, 'agent.jsonl');
   fs.writeFileSync(transcript, `${JSON.stringify({ message: { content: [{ type: 'text', text: 'Workers: 1\nReads: none' }] } })}\n{}\n`);
   const caller = { agent_id: `guard-rules-slice-${path.basename(dir)}`, agent_type: 'exo:orchestrator', agent_transcript_path: transcript, cwd: dir };
-  const call = () => agentHook({ ...caller, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'work', prompt: 'Reads: none\nResult: .exo/r.md' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '';
+  const call = () => textOf(agentHook({ ...caller, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'work', prompt: 'Reads: none\nResult: .exo/r.md' } }, 'on', () => false)?.hookSpecificOutput);
   try {
     call();
     return call();
@@ -188,10 +184,9 @@ const labelledPair = () => {
   return { model, effort };
 };
 const cases = {
-  'role-no-dispatch': () => agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:research-worker', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput?.permissionDecisionReason ?? '',
+  'role-no-dispatch': () => textOf(agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:research-worker', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput),
   stash: () => bash('git stash', agent),
   'shared-state': () => bash('git worktree remove x', agent),
-  'wide-find': () => bashWarning('find / -name x'),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
   'commit-evidence': () => bashWarning('git commit -m "fix: x\n\nEvidence: ran the tests"'),
   'script-size': () => bashWarning(LONG, { ...agent, cwd: '/nonexistent/deep' }),
@@ -203,7 +198,6 @@ const cases = {
   'context-lead': () => leadOverLimit(),
   'context-hard': () => subagent(agentHardLimit(agentContextTarget()) + 1000, 'Bash', { command: 'ls' }),
   'context-target': () => subagent(agentContextTarget() + 1000, 'Read', { file_path: 'a.md' }),
-  'persisted-read': () => persistedRead(),
   'intake-glob': () => subagent(agentContextTarget() - 6000, 'Glob', { pattern: '**/*' }),
   'intake-websearch': () => largeSearch(),
   'live-shells': () => liveShells(),
@@ -301,7 +295,7 @@ for (const row of GUARD_RULES) {
 test('a missing Workers line or Reads line warns and lets the dispatch run', () => {
   assert.match(dispatchOutput('do it').additionalContext, /Workers/);
   assert.notEqual(dispatchOutput('do it').permissionDecision, 'deny');
-  for (const id of ['brief-lacks-reads', 'wide-find', 'script-size']) assert.equal(rules.guardKind(id), 'warn');
+  for (const id of ['brief-lacks-reads', 'script-size']) assert.equal(rules.guardKind(id), 'warn');
 });
 
 test('only the final run-no-wait refusal offers the BLOCKED line', () => {
@@ -446,12 +440,12 @@ test('the repeat refusal row carries the first refusal text', () => {
 });
 
 test('a warn-kind guard returns its reason as context and a hard guard denies', async () => {
-  const { refuse, warn, deny } = await import('../lib/lazy-steps.mjs');
+  const { refuse, warn } = await import('../lib/lazy-steps.mjs');
   assert.equal(rules.guardKind('suite-passed'), 'warn');
   assert.equal(rules.guardKind('stash'), 'hard');
   assert.deepEqual(refuse('suite-passed', 'x'), warn('x'));
   assert.equal(refuse('suite-passed', 'x').hookSpecificOutput.permissionDecision, undefined);
-  assert.deepEqual(refuse('stash', 'x'), deny('x'));
+  assert.deepEqual(refuse('stash', 'x').hookSpecificOutput, { permissionDecision: 'deny', permissionDecisionReason: 'x' });
 });
 
 test('the deny reason check fails a deny text returned from a template literal', () => {
@@ -471,10 +465,31 @@ test('evidence line warns: a commit with a bad Evidence line runs with one WARN 
   assert.equal(rules.guardKind('commit-attribution'), 'hard');
 });
 
-test('one warn table: guardKind reads the warn flag of each row', () => {
-  const flagged = GUARD_RULES.filter((row) => row.warn).map((row) => row.id).sort();
-  assert.deepEqual(flagged, ['agent-isolation', 'brief-cuts-page', 'brief-invalid', 'brief-lacks-fetches', 'brief-lacks-fields', 'brief-lacks-reads', 'brief-reads-label', 'brief-unresolved', 'brief-worktree', 'code-rules', 'commit-evidence', 'context-target', 'intake-glob', 'result-line', 'script-size', 'suite-passed', 'wide-find']);
-  for (const row of GUARD_RULES) assert.equal(rules.guardKind(row.id), row.warn ? 'warn' : 'hard');
+const DENYING_IDS = ['commit-attribution', 'context-hard', 'context-lead', 'run-no-wait', 'run-no-wait-final', 'run-stall-guard', 'shared-state', 'stash'];
+
+test('one deny table: only a row with harm denies, and the denying ids are pinned', () => {
+  assert.deepEqual(GUARD_RULES.filter((row) => row.harm).map((row) => row.id).sort(), DENYING_IDS);
+  for (const row of GUARD_RULES) assert.equal(rules.guardKind(row.id), row.harm ? 'hard' : 'warn');
+});
+
+test('refuse fails open on an unknown id and notes a rule once per session', async () => {
+  const { refuse } = await import('../lib/lazy-steps.mjs');
+  assert.equal(refuse('no-such-rule', 'x'), null);
+  const input = { session_id: `once-${process.pid}` };
+  assert.ok(refuse('sleep', 'x', input).hookSpecificOutput.additionalContext);
+  assert.equal(refuse('sleep', 'x', input), null);
+});
+
+test('an Agent note and a context note show once per session', () => {
+  const session = `notes-${process.pid}`;
+  const dispatchNote = () => textOf(agentHook({ session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' } }, 'on', () => false)?.hookSpecificOutput);
+  assert.match(dispatchNote(), /isolated agent/);
+  assert.doesNotMatch(dispatchNote(), /isolated agent/);
+  const read = { session_id: session, agent_id: 'notes-agent', agent_type: 'exo:build-task', agent_transcript_path: grownTo(agentContextTarget() + 1000, 'notes'), tool_name: 'Read', tool_input: { file_path: 'a.md' } };
+  const contextNote = () => contextHook(read, () => false)?.hookSpecificOutput?.additionalContext ?? '';
+  assert.equal(contextHook({ ...read, session_id: `${session}-shape` }, () => false).hookSpecificOutput.permissionDecision, undefined);
+  assert.match(contextNote(), /target/);
+  assert.doesNotMatch(contextNote(), /target/);
 });
 
 test('code rules warn: a breaking Write runs with the rule in its context', () => {
@@ -493,7 +508,7 @@ test('no tool-case rule', () => {
 });
 
 test('injected text drops native lines', async () => {
-  const dropped = ['sleep', 'wide-find', 'script-size', 'code-rules', 'result-line', 'context-target', 'intake-glob'];
+  const dropped = ['sleep', 'script-size', 'code-rules', 'result-line', 'context-target', 'intake-glob'];
   for (const id of dropped) assert.equal(GUARD_RULES.find((row) => row.id === id).brief, null, id);
   const read = (name) => fs.readFileSync(new URL(`../hooks/${name}`, import.meta.url), 'utf8');
   const texts = [read('dispatch-rules.md'), read('session-rules.md'), read('session-routing.md')].join('\n');

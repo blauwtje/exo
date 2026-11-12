@@ -57,9 +57,9 @@
 8554 lib/check-cache.mjs
 11006 lib/code-comments.mjs
 14727 lib/code-rules.mjs
-16297 lib/context-decisions.mjs
+14759 lib/context-decisions.mjs
 10545 lib/eval-stats.mjs
-   9493 lib/guard-rules.mjs
+   8734 lib/guard-rules.mjs
 8624 lib/plan-tasks.mjs
 9926 lib/red-green.mjs
 9701 lib/statusline.mjs

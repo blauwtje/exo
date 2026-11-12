@@ -8,7 +8,7 @@ import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { kindLabels, pairText, runsPassed } from '../lib/kind-labels.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
+import { refuseFields, rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { recordResearchDispatch, researchFields } from '../lib/research-route.mjs';
@@ -59,7 +59,8 @@ export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = 
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
 
-function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = budgetSetting()) {
+function mismatchFields(hookInput = {}, budget = budgetSetting()) {
+  const { tool_name: tool, tool_input: input } = hookInput;
   if (tool !== 'Agent' || !input) return null;
   const resolved = resolvedKind(input, budget);
   if (!resolved?.agent) return null;
@@ -71,7 +72,7 @@ function mismatchFields({ tool_name: tool, tool_input: input } = {}, budget = bu
   const source = label ? `because \`exo-kind: ${label}\` in the brief moved it` : 'by the kind table';
   const rule = Object.values(table.kinds).some((entry) => runsPassed(entry, passed)) ? 'kind-mismatch-label' : 'kind-mismatch';
   const detail = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} ${source}; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)}`;
-  return { permissionDecision: 'deny', permissionDecisionReason: denyReason(rule, detail) };
+  return refuseFields(rule, denyReason(rule, detail), hookInput);
 }
 
 function missingFields(size, { fromOrchestrator, fetchDocs }) {
@@ -83,7 +84,7 @@ function missingFields(size, { fromOrchestrator, fetchDocs }) {
 function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const { tool_name: tool, tool_input: input, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
-  if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return workersFields(input.prompt);
+  if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return workersFields(input.prompt, hookInput);
   if (!rewrite.scope) return null;
   const { fromOrchestrator, fetchDocs } = rewrite.scope;
   const size = workerSize({ prompt: rewrite.input.prompt, cwd, session: hookInput, requireFetches: fetchDocs });
@@ -91,8 +92,7 @@ function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
   const over = (fromOrchestrator || size.sized) && size.tokens > size.budget;
   if (!(size.invalid.length || size.unresolved.length || missing.length || over)) return null;
   const reason = sizeDenial(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) });
-  if (!over) return { additionalContext: reason };
-  return { permissionDecision: 'deny', permissionDecisionReason: reason };
+  return refuseFields(over ? 'brief-over-budget' : 'brief-lacks-reads', reason, hookInput);
 }
 
 function isSliceCall(hookInput) {
@@ -103,7 +103,7 @@ function sliceFields(hookInput) {
   if (!isSliceCall(hookInput)) return null;
   const workers = sliceWorkers(hookInput);
   if (workers === undefined || sliceCount(hookInput.agent_id) < workers) return null;
-  return { permissionDecision: 'deny', permissionDecisionReason: denyReason('slice-spent', `sized at ${workers} workers, retries included`) };
+  return refuseFields('slice-spent', denyReason('slice-spent', `sized at ${workers} workers, retries included`), hookInput);
 }
 
 function recordDispatch(hookInput) {
@@ -122,7 +122,7 @@ export function agentHook(hookInput, budget, enabled) {
     resultToolsFields(hookInput),
     workerSizeFields(hookInput, rewrite),
     sliceFields(hookInput),
-    contextFields(contextDecision(hookInput))
+    contextFields(contextDecision(hookInput), hookInput)
   ]));
   const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
   const receipt = (message, noted) => withReceipt(message, hookInput, noted, ran, enabled);

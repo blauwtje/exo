@@ -1,0 +1,294 @@
+[
+ {
+  "rule": "stash",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "git stash list"
+   }
+  },
+  "agent": true
+ },
+ {
+  "rule": "stash",
+  "expect": "deny",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "git stash"
+   }
+  },
+  "agent": true
+ },
+ {
+  "rule": "shared-state",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "sed -i s/a/b/ .worktrees/x/file.txt && node --test .worktrees/x/t.mjs"
+   }
+  },
+  "agent": true
+ },
+ {
+  "rule": "shared-state",
+  "expect": "deny",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "git worktree remove ../other"
+   }
+  },
+  "agent": true
+ },
+ {
+  "rule": "commit-attribution",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "git commit -m \"fix: x\""
+   }
+  }
+ },
+ {
+  "rule": "commit-attribution",
+  "expect": "deny",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "git commit -m \"fix: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\""
+   }
+  }
+ },
+ {
+  "rule": "context-hard",
+  "expect": "pass",
+  "hook": "context-limit",
+  "agent": true,
+  "tokens": 1000,
+  "input": {
+   "tool_input": {
+    "command": "ls"
+   }
+  }
+ },
+ {
+  "rule": "context-hard",
+  "expect": "deny",
+  "hook": "context-limit",
+  "agent": true,
+  "tokens": 900000,
+  "input": {
+   "tool_input": {
+    "command": "ls"
+   }
+  }
+ },
+ {
+  "rule": "context-lead",
+  "expect": "pass",
+  "hook": "context-limit",
+  "tokens": 1000,
+  "env": {
+   "EXO_RUN_HANDOFF": "{dir}/handoff"
+  },
+  "input": {
+   "tool_input": {
+    "command": "ls"
+   }
+  }
+ },
+ {
+  "rule": "context-lead",
+  "expect": "deny",
+  "hook": "context-limit",
+  "tokens": 900000,
+  "env": {
+   "EXO_RUN_HANDOFF": "{dir}/handoff"
+  },
+  "input": {
+   "tool_input": {
+    "command": "ls"
+   }
+  }
+ },
+ {
+  "rule": "run-no-wait",
+  "expect": "pass",
+  "hook": "run-no-wait",
+  "env": {
+   "EXO_RUN": "1",
+   "EXO_RUN_DIR": "{dir}/run",
+   "EXO_RUN_TASK": "1"
+  },
+  "input": {
+   "hook_event_name": "Stop",
+   "last_assistant_message": "Task 1: GREEN"
+  }
+ },
+ {
+  "rule": "run-no-wait",
+  "expect": "deny",
+  "hook": "run-no-wait",
+  "env": {
+   "EXO_RUN": "1",
+   "EXO_RUN_DIR": "{dir}/run",
+   "EXO_RUN_TASK": "1"
+  },
+  "input": {
+   "tool_name": "AskUserQuestion",
+   "hook_event_name": "PreToolUse",
+   "tool_input": {
+    "question": "Which one?"
+   }
+  }
+ },
+ {
+  "rule": "run-no-wait-final",
+  "expect": "pass",
+  "hook": "run-no-wait",
+  "env": {
+   "EXO_RUN": "1",
+   "EXO_RUN_DIR": "{dir}/run",
+   "EXO_RUN_TASK": "1"
+  },
+  "input": {
+   "hook_event_name": "Stop",
+   "last_assistant_message": "Task 1: GREEN"
+  }
+ },
+ {
+  "rule": "run-no-wait-final",
+  "expect": "deny",
+  "repeat": 10,
+  "hook": "run-no-wait",
+  "env": {
+   "EXO_RUN": "1",
+   "EXO_RUN_DIR": "{dir}/run",
+   "EXO_RUN_TASK": "1"
+  },
+  "input": {
+   "tool_name": "AskUserQuestion",
+   "hook_event_name": "PreToolUse",
+   "tool_input": {
+    "question": "Which one?"
+   }
+  }
+ },
+ {
+  "rule": "run-stall-guard",
+  "expect": "pass",
+  "hook": "run-stall-guard",
+  "input": {
+   "tool_input": {
+    "command": "ls"
+   }
+  }
+ },
+ {
+  "rule": "run-stall-guard",
+  "expect": "deny",
+  "hook": "run-stall-guard",
+  "input": {
+   "tool_input": {
+    "command": "for i in 1; do node /x/skills/build/scripts/land-task.mjs; done"
+   }
+  }
+ },
+ {
+  "rule": "refusal-cap",
+  "expect": "pass",
+  "repeat": 2,
+  "hook": "agent-effort",
+  "input": {
+   "tool_name": "Agent",
+   "tool_input": {
+    "subagent_type": "exo:orchestrator",
+    "description": "x",
+    "prompt": "Workers: 1\nReads: none"
+   }
+  }
+ },
+ {
+  "rule": "refusal-cap",
+  "expect": "deny",
+  "repeat": 12,
+  "hook": "agent-effort",
+  "agent": true,
+  "tokens": 900000,
+  "input": {
+   "tool_name": "Agent",
+   "tool_input": {
+    "subagent_type": "exo:research-worker",
+    "description": "x",
+    "prompt": "Reads: none"
+   }
+  }
+ },
+ {
+  "rule": "sleep",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "until [ -f done.txt ]; do sleep 2; done",
+    "run_in_background": true
+   }
+  }
+ },
+ {
+  "rule": "sleep",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "echo \"while true; do sleep 5; done\""
+   }
+  }
+ },
+ {
+  "rule": "sleep",
+  "expect": "note",
+  "hook": "dispatch-bash",
+  "input": {
+   "tool_input": {
+    "command": "while true; do sleep 2; done"
+   }
+  }
+ },
+ {
+  "rule": "size-cap",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "input": {
+   "permission_mode": "bypassPermissions",
+   "tool_input": {
+    "command": "cat docs/big.md"
+   }
+  },
+  "agent": true
+ },
+ {
+  "rule": "fetches",
+  "expect": "pass",
+  "repeat": 2,
+  "hook": "agent-effort",
+  "input": {
+   "tool_name": "Agent",
+   "tool_input": {
+    "subagent_type": "exo:research-worker",
+    "description": "x",
+    "prompt": "Sources: repo\nReads: none\nResult: a path"
+   }
+  }
+ },
+ {
+  "rule": "fail-open",
+  "expect": "pass",
+  "hook": "dispatch-bash",
+  "raw": "not json"
+ }
+]

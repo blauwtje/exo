@@ -176,10 +176,13 @@ test('reads over budget move to a Search line, smallest fix first, and the dispa
   assert.match(output.updatedInput.prompt, /^Reads: big\.txt, small\.txt\nSearch: mid\.txt \(grep -n first, then read by range\)\nResult: \.exo\/r\.md$/m);
 });
 
-test('a single file over budget with no range is denied, alone or beside small reads', () => {
+test('a single file over budget with no range is noted, alone or beside small reads', () => {
   const cwd = repository({ 'huge.txt': 70000, 'small.txt': 200 });
-  assert.equal(dispatch(cwd, 'huge.txt').permissionDecision, 'deny');
-  assert.equal(dispatch(cwd, 'huge.txt, small.txt').permissionDecision, 'deny');
+  for (const reads of ['huge.txt', 'huge.txt, small.txt']) {
+    const output = dispatch(cwd, reads);
+    assert.notEqual(output.permissionDecision, 'deny', reads);
+    assert.match(output.additionalContext, /huge\.txt/, reads);
+  }
 });
 
 test('fields sharing one line are each read, split at the next label', () => {

@@ -8,7 +8,7 @@ import { readShadow, recordShadow, shadowSelection, trialActive } from '#suite-c
 import { changedTestsTrialRuns } from '../../../lib/context-limits.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
-import { parseTestPool, poolSize, testPoolCommand } from '../../../lib/test-pool.mjs';
+import { parseTestPool, poolSize, projectNodeFlags, testPoolCommand } from '../../../lib/test-pool.mjs';
 import { LandingError, EnvError } from './land-errors.mjs';
 import { proofEnvOf } from './land-commit-block.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES } from './land-report.mjs';
@@ -102,7 +102,7 @@ function testRunFailure(file, testRun, deadlineMs) {
 function testFileFailure(task, file, root, pendingEvidence) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
-  const testRun = runCheck(root, `node --test --test-reporter=spec ${file}`, { timeoutMs: deadlineMs, env, record: false, fresh: true });
+  const testRun = runCheck(root, ['node', ...projectNodeFlags(root), '--test', '--test-reporter=spec', file].join(' '), { timeoutMs: deadlineMs, env, record: false, fresh: true });
   return testRunFailure(file, { status: testRun.ok ? 0 : (testRun.code ?? 1), timedOut: testRun.timedOut, output: testRun.output }, deadlineMs);
 }
 

@@ -9,7 +9,7 @@ import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgen
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
 import { saveLongCommand } from '../lib/long-command.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
-import { stripDataHeredocs } from '../lib/git-deny.mjs';
+import { stripDataHeredocs, tokenize } from '../lib/git-deny.mjs';
 import { cappedCommand, cappedInput, resultCapped } from '../lib/bash-cap.mjs';
 import { redditBashDecision } from '../lib/reddit-route.mjs';
 import { fixShellFor, pollsUnbounded } from '../lib/shell-fixes.mjs';
@@ -17,33 +17,23 @@ import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
-import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, deny, warn } from '../lib/lazy-steps.mjs';
+import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, refuse } from '../lib/lazy-steps.mjs';
 
 const contextStep = (name, decide) => ({
   name,
   run(hookInput) {
-    const fields = contextFields(decide(hookInput));
+    const fields = contextFields(decide(hookInput), hookInput);
     return fields && { hookSpecificOutput: fields };
   }
 });
 
 export const CONTEXT_STEP = contextStep('context-limit', contextDecision);
 
-const WIDE_FIND = /(?:^|[;&|(]|&&|\|\|)\s*find\s+(?:-[HLP]\s+)*["']?(?:\/|~\/?|\$HOME|\$\{HOME\}|(?:\.\.\/?)+)["']?(?=\s|$)/;
-
-const FIND_STEP = {
-  name: 'wide-find',
-  run(hookInput) {
-    const command = hookInput.tool_input?.command;
-    return typeof command === 'string' && !/-maxdepth\s+1(?!\d)/.test(command) && WIDE_FIND.test(command) ? warn(denyReason('wide-find')) : null;
-  }
-};
-
 const REDDIT_STEP = {
   name: 'reddit-route',
   run(hookInput) {
     const decision = redditBashDecision(hookInput.tool_input?.command);
-    return decision && deny(decision.deny);
+    return decision && refuse(decision.rule, decision.deny, hookInput);
   }
 };
 
@@ -56,7 +46,7 @@ export const SCRIPT_SIZE_STEP = {
     if (Buffer.byteLength(command) <= limit) return null;
     if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
     const saved = saveLongCommand(command, hookInput.cwd ?? process.cwd());
-    if (!saved) return warn(denyReason('script-size', `this command is over ${limit} bytes`));
+    if (!saved) return refuse('script-size', denyReason('script-size', `this command is over ${limit} bytes`), hookInput);
     const updatedInput = { ...hookInput.tool_input, command: `bash ${saved}` };
     return { hookSpecificOutput: { updatedInput, additionalContext: `the command was over ${limit} bytes, so it runs from its saved copy ${saved}` } };
   }
@@ -64,7 +54,8 @@ export const SCRIPT_SIZE_STEP = {
 
 export const PREDISPATCH_STEP = contextStep('predispatch', predispatchBashDecision);
 
-const SLEEP_COMMAND = /(?:^|[;&|({\n]|\b(?:do|then|else)\b)\s*sleep(?=\s|$)/;
+const COMMAND_KEYWORDS = new Set(['do', 'then', 'else']);
+const runsSleep = (command) => tokenize(command).some((tokens) => tokens.find((token) => !COMMAND_KEYWORDS.has(token)) === 'sleep');
 const WATCH_COMMAND = /\bgh\s+(?:pr\s+checks\b.*--watch|run\s+watch\b)/;
 
 export const SLEEP_STEP = {
@@ -73,10 +64,9 @@ export const SLEEP_STEP = {
     const command = hookInput.tool_input?.command;
     if (typeof command !== 'string') return null;
     const scanned = stripDataHeredocs(command);
-    if (pollsUnbounded(scanned)) return deny(denyReason('sleep'));
-    if (!hookInput.agent_id) return SLEEP_COMMAND.test(scanned) ? warn(denyReason('sleep')) : null;
-    if (SLEEP_COMMAND.test(scanned)) return deny(denyReason('sleep'));
-    return WATCH_COMMAND.test(scanned) ? deny(denyReason('watch')) : null;
+    const waitsInForeground = hookInput.tool_name !== 'Monitor' && !hookInput.tool_input.run_in_background;
+    if (waitsInForeground && (pollsUnbounded(scanned) || runsSleep(scanned))) return refuse('sleep', denyReason('sleep'), hookInput);
+    return hookInput.agent_id && WATCH_COMMAND.test(scanned) ? refuse('watch', denyReason('watch'), hookInput) : null;
   }
 };
 
@@ -123,7 +113,7 @@ function firstRewrite(outputs) {
   return (rewrites.find((output) => output.capped) ?? rewrites[0])?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, FIND_STEP, REDDIT_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SHELL_STOP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, REDDIT_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SHELL_STOP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

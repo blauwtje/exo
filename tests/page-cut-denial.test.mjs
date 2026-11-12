@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { researchFields } from '../lib/research-route.mjs';
 
-const call = (subagent_type, prompt) => ({ tool_name: 'Agent', session_id: 's-cut', tool_input: { subagent_type, prompt } });
+const call = (subagent_type, prompt) => ({ tool_name: 'Agent', session_id: `s-cut-${prompt}`, tool_input: { subagent_type, prompt } });
 const piped = 'Sources: web\nRun gh api repos/o/r/readme | head -c 4000 and answer.';
 
 test('research worker brief that cuts a page with head -c warns', () => {

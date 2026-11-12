@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
-import { agentContextTarget, dispatchBytesPerToken, resultCapBytes } from '../lib/context-limits.mjs';
+import { agentContextTarget, dispatchBytesPerToken } from '../lib/context-limits.mjs';
 import { tempDir } from './harness.mjs';
 
 const testHome = tempDir('exo-intake-home-');
@@ -98,7 +98,7 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
 
   growTo(TARGET + 1000);
   assert.match(read({ file_path: testLog }).additionalContext, /handover/);
-  assert.match((await bash(`cat '${testLog}'`)).updatedInput.command, new RegExp(`head -c ${resultCapBytes()} `));
+  assert.doesNotMatch((await bash(`cat '${testLog}'`)).updatedInput.command, /head -c/, 'past the target Bash runs uncut');
 
   const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
   assert.equal(read({ file_path: testLog }, lead), undefined, 'the lead reads as before');
@@ -106,7 +106,7 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
 });
 
 const catalog = JSON.parse(fs.readFileSync(new URL('../lib/run-providers.json', import.meta.url), 'utf8')).defaults;
-const search = (tool_name, tool_input, caller = agent) => contextHook({ ...caller, tool_name, tool_input }, () => false)?.hookSpecificOutput;
+const search = (tool_name, tool_input, caller = agent) => contextHook({ ...caller, session_id: `${caller.session_id}-${tool_name}-${JSON.stringify(tool_input)}`, tool_name, tool_input }, () => false)?.hookSpecificOutput;
 
 test('replay: a growing agent has its Grep and ToolSearch cut to the room left, and a Glob over the room steered to Grep', () => {
   growTo(50_000);
@@ -129,21 +129,14 @@ test('replay: a growing agent has its Grep and ToolSearch cut to the room left, 
   assert.match(glob.additionalContext, /files_with_matches/);
 
   growTo(59_000);
-  const floor = resultCapBytes();
-  assert.equal(search('ToolSearch', { query: 'slack', max_results: 5 })?.updatedInput?.max_results, Math.floor(floor / catalog.toolSchemaBytes), 'ToolSearch at 59k');
+  const floor = (TARGET - 59_000) * BYTES;
+  assert.equal(search('ToolSearch', { query: 'slack', max_results: 5 })?.updatedInput?.max_results, Math.max(1, Math.floor(floor / catalog.toolSchemaBytes)), 'ToolSearch at 59k');
   assert.equal(search('ToolSearch', { query: 'select:Monitor,WebFetch' }), undefined, 'a select ToolSearch names its tools');
   assert.equal(search('Grep', { pattern: 'line', offset: 30 })?.updatedInput?.head_limit, Math.floor(floor / catalog.searchLineBytes));
   assert.match(search('Grep', { pattern: 'line', offset: 30 }).additionalContext, new RegExp(`offset ${30 + Math.floor(floor / catalog.searchLineBytes)}`));
 
   growTo(TARGET + 1000);
   assert.match(search('Grep', { pattern: 'line' }).additionalContext, /handover/);
-
-  const capped = { ...agent, agent_id: `a-capped-${process.pid}`, agent_type: 'general-purpose' };
-  growTo(10_000);
-  const cappedGrep = search('Grep', { pattern: 'line' }, capped);
-  assert.equal(cappedGrep.updatedInput.head_limit, Math.floor(floor / catalog.searchLineBytes), 'a capped agent Grep at 10k');
-  assert.match(cappedGrep.additionalContext, /exo result cap/);
-  assert.equal(denied(search('Glob', { pattern: '**/*' }, capped)), false, 'a capped agent Glob with room left');
 
   const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
   assert.equal(search('Grep', { pattern: 'line' }, lead), undefined, 'the lead greps as before');
@@ -169,10 +162,4 @@ test('replay: in every permission mode an over-room Read or Grep is cut by updat
   assert.equal(grep.updatedInput.head_limit, lines);
   const fits = search('Grep', { pattern: 'line', head_limit: lines }, { ...agent, permission_mode: 'default' });
   assert.equal(fits?.updatedInput, undefined, 'the Grep that fits runs as asked');
-
-  const capped = { ...agent, permission_mode: 'plan', agent_id: `a-capped-plan-${process.pid}`, agent_type: 'general-purpose' };
-  growTo(10_000);
-  const cappedRead = read({ file_path: sourceFile }, capped);
-  assert.equal(denied(cappedRead), false, 'a result-capped Read in plan mode is cut');
-  assert.equal(cappedRead.updatedInput.offset, 1);
 });
