@@ -74,6 +74,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Fixed
 
 - `watch` picks captions in the original audio language, not an auto-dubbed one, and falls back from a regional code such as `pt-BR` to `pt`.
+- A watch batch stops starting videos after a 429 on both routes, waits up to `EXO_WATCH_RATE_WAIT_MS` (default 3600000, `0` stops at once) probing with the first open video, and otherwise exits 75 with the open count and the restart command.
 - The land gate judges the candidate commit: a tracked file an open sibling lists stays with this task, and a slot tree that differs from the commit is gated in a detached worktree of it.
 - An amend no longer commits a hand edit of the plan, and `land-task --check` refreshes the behaviour files before its gate.
 - A land stages a tracked file inside a gitignored folder, such as a plan under `docs/specs/`.

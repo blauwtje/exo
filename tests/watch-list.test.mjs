@@ -115,6 +115,14 @@ test('a yt-dlp error exits 1 with its last stderr line', () => {
   assert.match(result.stderr, /list failed: ERROR: Unable to extract user/);
 });
 
+test('a 429 from yt-dlp exits 75 with the rate-limited line, a 403 exits 1', () => {
+  const limited = site({ error: 'ERROR: HTTP Error 429: Too Many Requests' }).run(['--url', PROFILE_URL]);
+  assert.equal(limited.status, 75);
+  assert.match(limited.stderr, /rate-limited, retry later/);
+  const refused = site({ error: 'ERROR: HTTP Error 403: Forbidden' }).run(['--url', PROFILE_URL]);
+  assert.equal(refused.status, 1);
+});
+
 test('a yt-dlp that outlasts its wait is reported with the wait', () => {
   const { run } = site({ hang: true, json: TIKTOK_PROFILE });
   const result = run(['--url', PROFILE_URL], { EXO_WATCH_YTDLP_MS: '300' });

@@ -12,13 +12,30 @@ function report(outcome) {
   if (outcome.failure) console.error(outcome.failure);
 }
 
+function quoted(word) {
+  return /^[\w@%+=:,./-]+$/.test(word) ? word : `'${word.replaceAll("'", "'\\''")}'`;
+}
+
+function withoutInputs(args) {
+  return args.filter((arg, index) => !['--url', '--from'].includes(arg) && !['--url', '--from'].includes(args[index - 1]));
+}
+
+function restartFor(args, fromStdin) {
+  return (open) => {
+    const words = fromStdin ? [...withoutInputs(args), ...open.flatMap((url) => ['--url', url])] : args;
+    return ['node', ...words].map(quoted).join(' ');
+  };
+}
+
 async function main(argv) {
-  limitLifetime('watch-transcript', 1800000);
   const flags = parseFlags(argv, SPEC, { usage: USAGE });
   const options = readOptions(flags, await readListed(flags.from ?? []));
-  const outcomes = await watchBatch(options, report);
-  if (outcomes.length > 1) console.log(summaryLine(outcomes));
-  return exitCodeOf(outcomes);
+  limitLifetime('watch-transcript', 1800000 + options.rateWaitMs);
+  const restart = restartFor(process.argv.slice(1), (flags.from ?? []).includes('-'));
+  const outcomes = await watchBatch({ ...options, restart }, report);
+  const exitCode = exitCodeOf(outcomes);
+  if (outcomes.length > 1 || exitCode === 75) console.log(summaryLine(outcomes));
+  return exitCode;
 }
 
 if (isMain(import.meta.url)) {

@@ -10,7 +10,7 @@ export const USAGE = [
   'Lists the videos of a TikTok, YouTube, Instagram or X profile, a YouTube channel or playlist, or another page yt-dlp lists, from metadata alone through yt-dlp: nothing is downloaded or written to disk.',
   'Prints one line per video: url, title, upload date, duration and view count, each only when known, then a summary line with the count and the profile title. Give the printed urls to transcript.mjs.',
   'Defaults: --limit 20. EXO_WATCH_YTDLP_MS sets the wait for yt-dlp (default 120000).',
-  'Exit codes: 0 listed; 1 yt-dlp failed, listed nothing or is missing (`missing tool`, with its install command); 2 bad usage.',
+  'Exit codes: 0 listed; 75 a rate limit (HTTP 429) stopped the listing; 1 yt-dlp failed, listed nothing or is missing (`missing tool`, with its install command); 2 bad usage.',
 ].join('\n');
 
 function profileUrl(text) {

@@ -30,15 +30,16 @@ Given a TikTok, YouTube, Instagram or X profile, a YouTube channel or a playlist
 ## The loop
 
 1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]` with every video in this one call, or `--from <file>` or `--from -` for the `list.mjs` output. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
+   - Run a batch of two or more videos in the background, pass its last line on unchanged, and on exit 75 report the open video count and the restart command from that line.
    - Pass all videos in one batch call, which runs them one by one and skips the finished ones (`--force` redoes them); do not spread watch over parallel agents or parallel Bash calls.
    - For a list too long for one call, run it through `lib/map.mjs` `mapItems` with a spend cap.
    - Add `--lang <code>` only when the user names a language, because it picks a listed track, not a machine translation, and names the spoken language on the speech route.
    - Add `--model <name or ggml file path>` only when the user names a whisper model.
 2. The script reads captions itself, runs yt-dlp only when it is already on PATH and does not download it, and transcribes a video with no captions by speech through yt-dlp, fetching whisper.node, a ggml model and a decoder itself. When a line says `missing tool` for yt-dlp, relay its install command and ask the user before installing anything; relay any other failure line as it is.
-3. Exit 1 means every video failed; a partly failed batch exits 0 and ends `batch done=N skipped=N failed=N | <failure> (<ids>)`.
+3. Exit 75 means a rate limit (HTTP 429) stopped the batch after its wait: the last line gives the open videos and the restart command, and open videos are not failed. Exit 1 means every video failed; a partly failed batch exits 0 and ends `batch done=N skipped=N failed=N | <failure> (<ids>)`.
    - When a line says `no transcript`, tell the user that video has no transcript and why, as the line says; offer no other route for it.
    - When a line lists `available:`, ask which language and rerun with `--lang`.
-   - When the line ends `rate-limited, retry later`, wait a few minutes and rerun only that url; `private/removed` needs no rerun.
+   - When the line ends `rate-limited, retry later`, rerun only that url later; `private/removed` needs no rerun.
 4. When the line shows `frames=<dir> (6 files)`, read those images, or pass the folder to the lookup delegates, for what is on screen.
 5. When the line shows `tokens` on one video that fits your context, read `transcript` yourself and answer.
    - When you cannot dispatch a delegate, read a longer transcript yourself in ranges to its end; do not return BLOCKED for that.

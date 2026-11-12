@@ -5,6 +5,7 @@ import process from 'node:process';
 import { sleep } from '#basics';
 import { environmentDelayMs } from '#script-flags';
 import { pollUntil } from '../../../lib/loop-budget.mjs';
+import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
 import { DEFAULTS } from './defaults.mjs';
 import { cacheRoot } from './ytdlp-binary.mjs';
 
@@ -115,9 +116,14 @@ function shortReason(error) {
   return reason.slice(0, MAX_REASON);
 }
 
+export function isRateLimited(error) {
+  return classifyOutsideFailure({ text: textOf(error) }) === 'rate-limited';
+}
+
 export function failureLine(error) {
   const text = textOf(error);
-  if (RATE_LIMITED.test(text)) return 'rate-limited, retry later';
+  if (classifyOutsideFailure({ text }) === 'rate-limited') return 'rate-limited, retry later';
+  if (RATE_LIMITED.test(text)) return 'refused or failing server, retry later';
   if (GONE.test(text)) return 'private/removed';
   return shortReason(error);
 }

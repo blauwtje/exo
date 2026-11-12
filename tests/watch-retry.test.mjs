@@ -45,12 +45,12 @@ test('a 403 is retried and the later success is returned', async () => {
   });
 });
 
-test('three refused tries end in the rate-limited failure line', async () => {
+test('three refused tries end in the refused failure line', async () => {
   await withFake([FORBIDDEN], async (calls) => {
     const run = await runYtDlpWithRuntime(['-J', '--', URL_], 5000);
     assert.ok(run.error);
     assert.equal(calls().length, 3);
-    assert.equal(ytDlpReason(run, { ytDlpMs: 5000 }), 'rate-limited, retry later');
+    assert.equal(ytDlpReason(run, { ytDlpMs: 5000 }), 'refused or failing server, retry later');
   });
 });
 

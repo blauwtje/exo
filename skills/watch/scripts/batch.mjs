@@ -1,3 +1,5 @@
+import { sleep } from '#basics';
+import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
 import { sourceOf } from './video-url.mjs';
 import { watchGuarded } from './watch.mjs';
 import { findDone, markDone } from './done-ledger.mjs';
@@ -17,10 +19,51 @@ async function runOne(input, options, fetchFn) {
   return { status: 'done', line: result.line };
 }
 
+function note(message) {
+  console.error(`batch: ${message}`);
+}
+
+async function probeUntilOpen(input, options, fetchFn) {
+  let backoffMs = Math.max(options.backoffMs, 1);
+  let waitedMs = 0;
+  let probe = 0;
+  while (waitedMs < options.rateWaitMs) {
+    probe += 1;
+    note(`probe ${probe}, waited ${waitedMs} of ${options.rateWaitMs} ms`);
+    const waitMs = Math.min(backoffMs, options.rateWaitMs - waitedMs);
+    await sleep(waitMs);
+    waitedMs += waitMs;
+    backoffMs *= 2;
+    const outcome = await runOne(input, options, fetchFn);
+    if (!isRateLimited(outcome)) {
+      note('resumed');
+      return outcome;
+    }
+  }
+  return null;
+}
+
+function isRateLimited(outcome) {
+  return Boolean(outcome.failure) && classifyOutsideFailure({ text: outcome.failure }) === 'rate-limited';
+}
+
+async function tripAndProbe(input, options, fetchFn) {
+  note(`rate-limited on ${input}, no further video starts`);
+  return probeUntilOpen(input, options, fetchFn);
+}
+
 export async function watchBatch(options, report, fetchFn = globalThis.fetch) {
   const outcomes = [];
-  for (const input of options.urls) {
-    const outcome = await runOne(input, options, fetchFn);
+  const guarded = options.urls.length > 1;
+  for (const [index, input] of options.urls.entries()) {
+    let outcome = await runOne(input, options, fetchFn);
+    if (guarded && isRateLimited(outcome)) outcome = await tripAndProbe(input, options, fetchFn);
+    if (!outcome) {
+      const open = options.urls.slice(index);
+      const restart = options.restart(open);
+      outcomes.push(...open.map(() => ({ status: 'open', restart })));
+      return outcomes;
+    }
     outcomes.push(outcome);
     report(outcome);
   }
@@ -44,9 +87,11 @@ function failureGroups(outcomes) {
 export function summaryLine(outcomes) {
   const count = (status) => outcomes.filter((outcome) => outcome.status === status).length;
   const counts = `batch done=${count('done')} skipped=${count('skipped')} failed=${count('failed')}`;
-  return [counts, ...failureGroups(outcomes)].join(' | ');
+  if (count('open') === 0) return [counts, ...failureGroups(outcomes)].join(' | ');
+  return [`${counts} open=${count('open')}`, ...failureGroups(outcomes), 'rate-limited', `restart: ${outcomes.find((outcome) => outcome.restart).restart}`].join(' | ');
 }
 
 export function exitCodeOf(outcomes) {
+  if (outcomes.some((outcome) => outcome.status === 'open')) return 75;
   return outcomes.every((outcome) => outcome.status === 'failed') ? 1 : 0;
 }

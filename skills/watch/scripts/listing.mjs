@@ -1,5 +1,6 @@
 import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable } from './ytdlp.mjs';
 import { formatDuration } from './format.mjs';
+import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
 import { YOUTUBE_HOST } from './video-url.mjs';
 
 const MISSING = "listing a profile needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun";
@@ -66,7 +67,10 @@ function parsed(stdout) {
 export async function listProfile(options) {
   if (!(await ytDlpAvailable(options.ytDlpMs))) return { failure: `${options.url}: missing tool: ${MISSING}` };
   const run = await runYtDlpWithRuntime(listArgs(options), options.ytDlpMs);
-  if (run.error) return { failure: `${options.url}: list failed: ${ytDlpReason(run, options)}` };
+  if (run.error) {
+    const rateLimited = classifyOutsideFailure({ text: run.stderr }) === 'rate-limited';
+    return { failure: `${options.url}: list failed: ${ytDlpReason(run, options)}`, rateLimited };
+  }
   const root = parsed(run.stdout);
   if (!root) return { failure: `${options.url}: list failed: yt-dlp printed no listing` };
   const entries = flattened(root.entries).slice(0, options.limit);

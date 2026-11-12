@@ -4,7 +4,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import './watch-gate-env.mjs';
-import { failureLine, gateRequest, isRetryable } from '../skills/watch/scripts/request-gate.mjs';
+import { failureLine, gateRequest, isRateLimited, isRetryable } from '../skills/watch/scripts/request-gate.mjs';
 import { tempDir } from './harness.mjs';
 
 const TIKTOK = 'https://www.tiktok.com/@example/video/7301234567890123456';
@@ -165,9 +165,11 @@ test('processes started together take their turns at least the spacing apart', a
   assert.ok(stamps[2] - stamps[1] >= 290, `gap ${stamps[2] - stamps[1]}`);
 });
 
-test('failureLine names a refused or throttled fetch as rate-limited', () => {
-  const lines = ['ERROR: unable to download video data: HTTP Error 403: Forbidden', 'ERROR: HTTP Error 429: Too Many Requests', 'ERROR: HTTP Error 503: Service Unavailable', 'ERROR: [TikTok] 1: Unable to download webpage: HTTP Error 502: Bad Gateway'];
-  for (const stderr of lines) assert.equal(failureLine({ stderr, error: new Error('Command failed') }), 'rate-limited, retry later');
+test('failureLine names a throttled fetch as rate-limited and a refused or failing one apart', () => {
+  const failure = (stderr) => failureLine({ stderr, error: new Error('Command failed') });
+  assert.equal(failure('ERROR: HTTP Error 429: Too Many Requests'), 'rate-limited, retry later');
+  const others = ['ERROR: unable to download video data: HTTP Error 403: Forbidden', 'ERROR: HTTP Error 503: Service Unavailable', 'ERROR: [TikTok] 1: Unable to download webpage: HTTP Error 502: Bad Gateway'];
+  for (const stderr of others) assert.equal(failure(stderr), 'refused or failing server, retry later');
 });
 
 test('failureLine names a private or removed video', () => {
@@ -193,4 +195,12 @@ test('only a refused, throttled or server-failed fetch is retried', () => {
   assert.equal(isRetryable(failed('ERROR: Private video')), false);
   assert.equal(isRetryable({ error: null, stderr: 'HTTP Error 403: Forbidden' }), false);
   assert.equal(isRetryable(failed('HTTP Error 403', { killed: true })), false);
+});
+
+test('only a 429 is rate-limited for the breaker', () => {
+  assert.equal(isRateLimited({ stderr: 'ERROR: HTTP Error 429: Too Many Requests' }), true);
+  assert.equal(isRateLimited('ERROR: Too Many Requests'), true);
+  assert.equal(isRateLimited({ stderr: 'ERROR: HTTP Error 403: Forbidden' }), false);
+  assert.equal(isRateLimited({ stderr: 'ERROR: HTTP Error 503: Service Unavailable' }), false);
+  assert.equal(isRateLimited({ stderr: 'There are no subtitles' }), false);
 });

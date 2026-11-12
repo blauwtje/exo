@@ -9,10 +9,11 @@ const IDENTITIES = [
 ];
 
 export class Unreadable extends Error {
-  constructor(message, { retryable = false, blocked = false } = {}) {
+  constructor(message, { retryable = false, blocked = false, rateLimited = false } = {}) {
     super(message);
     this.retryable = retryable;
     this.blocked = blocked;
+    this.rateLimited = rateLimited;
   }
 }
 
@@ -24,7 +25,7 @@ function unanswered(url) {
 
 async function request(fetchFn, url, init, options) {
   const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(options.fetchMs) }).catch(unanswered(url));
-  if (response.status === 429) throw new Unreadable('YouTube answered 429, this network is rate limited', { retryable: true, blocked: true });
+  if (response.status === 429) throw new Unreadable('YouTube answered 429, this network is rate limited', { retryable: true, blocked: true, rateLimited: true });
   if (!response.ok) throw new Unreadable(`YouTube answered HTTP ${response.status}`, { retryable: true });
   return response.text().catch(unanswered(url));
 }

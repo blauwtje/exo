@@ -4,6 +4,7 @@ import process from 'node:process';
 import { UsageError, environmentMs, parseFlags, isMain } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
 import { formatDuration } from './format.mjs';
+import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
 import { gateRequest } from './request-gate.mjs';
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
@@ -12,6 +13,7 @@ const WATCH_URL = 'https://www.youtube.com/watch?v=';
 const WEB_CLIENT = { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'en' };
 const UPLOAD_DATE_SORT = 'CAI=';
 const SEARCH_LIMIT = 10;
+const RATE_LIMITED_EXIT = 75;
 
 const SPEC = { query: 'string', limit: 'string', newest: 'boolean', help: 'boolean' };
 const USAGE = [
@@ -19,7 +21,7 @@ const USAGE = [
   'Searches YouTube through its keyless InnerTube search: nothing is downloaded or written to disk.',
   'Prints one line per video: id, url, title, channel, duration, and views and upload date when YouTube sends them. --newest sorts by upload date instead of relevance.',
   'Defaults: --limit 10. EXO_WATCH_FETCH_MS sets the wait for the request (default 30000).',
-  'Exit codes: 0 listed; 1 YouTube refused, answered badly or found nothing; 2 bad usage.',
+  'Exit codes: 0 listed; 75 YouTube answered 429; 1 YouTube refused, answered badly or found nothing; 2 bad usage.',
 ].join('\n');
 
 function readOptions(flags) {
@@ -72,8 +74,8 @@ export async function searchVideos(options, fetchFn = globalThis.fetch) {
   await gateRequest(SEARCH_URL);
   const response = await fetchFn(SEARCH_URL, init).catch((error) => ({ failed: error }));
   if (response.failed) return { failure: `search failed: ${response.failed.message}` };
-  if (response.status === 429) return { failure: 'search failed: YouTube answered 429, this network is rate limited' };
-  if (!response.ok) return { failure: `search failed: YouTube answered HTTP ${response.status}` };
+  if (classifyOutsideFailure({ status: response.status }) === 'rate-limited') return { failure: 'search failed: YouTube answered 429, this network is rate limited', rateLimited: true };
+  if (!response.ok) return { failure: `search failed: YouTube answered HTTP ${response.status}`, rateLimited: false };
   const answer = await response.json().catch(() => null);
   if (!answer) return { failure: 'search failed: YouTube answered with data that is not JSON' };
   const renderers = videosOf(answer).slice(0, options.limit);
@@ -86,7 +88,7 @@ async function main(argv) {
   const result = await searchVideos(options);
   if (result.failure) {
     console.error(result.failure);
-    return 1;
+    return result.rateLimited ? RATE_LIMITED_EXIT : 1;
   }
   console.log(result.lines.join('\n'));
   return 0;

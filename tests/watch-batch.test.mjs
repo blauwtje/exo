@@ -19,6 +19,11 @@ const reply = JSON.parse(fs.readFileSync(process.env.FAKE_MAP, 'utf8'))[url];
 const started = Date.now();
 if (args.includes('-J')) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 120);
 fs.appendFileSync(process.env.FAKE_LOG, JSON.stringify({ url, args, started, ended: Date.now() }) + '\\n');
+if (reply.until) {
+  const mark = process.env.FAKE_LOG + '.first';
+  if (!fs.existsSync(mark)) fs.writeFileSync(mark, String(started));
+  if (started - Number(fs.readFileSync(mark, 'utf8')) < reply.until) { console.error('ERROR: HTTP Error 429: Too Many Requests'); process.exit(1); }
+}
 if (reply.error) { console.error(reply.error); process.exit(1); }
 if (args.includes('-J')) { console.log(JSON.stringify(reply.info)); process.exit(0); }
 const lang = args[args.indexOf('--sub-langs') + 1];
@@ -29,7 +34,7 @@ fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], template.replace('%(id)
 const urlOf = (id) => `https://www.tiktok.com/@u/video/${id}`;
 const infoOf = (id) => ({ info: { id, extractor_key: 'TikTok', title: `Clip ${id}`, duration: 120, language: 'en', subtitles: { en: [{ ext: 'vtt' }] }, automatic_captions: {} } });
 
-function batch(replies) {
+function batch(replies, rateWaitMs = '0') {
   const dir = tempDir('exo-batch-');
   const bin = path.join(dir, 'bin');
   const out = path.join(dir, 'out');
@@ -37,7 +42,7 @@ function batch(replies) {
   fs.writeFileSync(path.join(bin, 'yt-dlp'), FAKE_YT_DLP, { mode: 0o755 });
   fs.writeFileSync(path.join(dir, 'map.json'), JSON.stringify(Object.fromEntries(Object.entries(replies).map(([id, reply]) => [urlOf(id), reply]))));
   fs.writeFileSync(path.join(dir, 'in.vtt'), VTT);
-  const env = { PATH: bin, CLAUDE_PLUGIN_DATA: path.join(dir, 'data'), EXO_WATCH_GATE_MS: '0', EXO_WATCH_BACKOFF_MS: '0', FAKE_MAP: path.join(dir, 'map.json'), FAKE_LOG: path.join(dir, 'calls.log'), FAKE_VTT: path.join(dir, 'in.vtt') };
+  const env = { PATH: bin, CLAUDE_PLUGIN_DATA: path.join(dir, 'data'), EXO_WATCH_GATE_MS: '0', EXO_WATCH_BACKOFF_MS: '0', EXO_WATCH_RATE_WAIT_MS: rateWaitMs, FAKE_MAP: path.join(dir, 'map.json'), FAKE_LOG: path.join(dir, 'calls.log'), FAKE_VTT: path.join(dir, 'in.vtt') };
   const run = (args, input) => spawnSync(process.execPath, [script, ...args, '--out', out], { encoding: 'utf8', env, input });
   const calls = () => (fs.existsSync(env.FAKE_LOG) ? fs.readFileSync(env.FAKE_LOG, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)) : []);
   const metadataCalls = () => calls().filter((call) => call.args.includes('-J'));
@@ -45,7 +50,8 @@ function batch(replies) {
     fs.writeFileSync(path.join(dir, name), text);
     return path.join(dir, name);
   };
-  return { dir, out, run, calls, metadataCalls, write };
+  const rerun = (command) => spawnSync('/bin/sh', ['-c', command], { encoding: 'utf8', env: { ...env, PATH: `${bin}:${path.dirname(process.execPath)}` }, input: '' });
+  return { dir, out, run, rerun, calls, metadataCalls, write };
 }
 
 const lines = (text) => text.split('\n').filter(Boolean);
@@ -132,7 +138,7 @@ test('a failed video does not stop the batch, is grouped by its failure in the s
 });
 
 test('different failures form different groups', () => {
-  const { run } = batch({ 111: { error: 'ERROR: private video' }, 222: { error: 'ERROR: HTTP Error 429' }, 333: infoOf('333') });
+  const { run } = batch({ 111: { error: 'ERROR: private video' }, 222: { error: 'ERROR: unsupported url' }, 333: infoOf('333') });
   const summary = lines(run(urlArgs('111', '222', '333')).stdout).at(-1);
   assert.equal(summary.split(' | ').length, 3);
 });
@@ -155,4 +161,42 @@ test('bad batch input exits 2: no url at all, a missing file, an empty file', ()
   assert.equal(run([]).status, 2);
   assert.equal(run(['--from', path.join(dir, 'missing.txt')]).status, 2);
   assert.equal(run(['--from', write('empty.txt', '\n  \n')]).status, 2);
+});
+
+const RATE_LIMITED = { error: 'ERROR: HTTP Error 429: Too Many Requests' };
+
+test('a rate-limited video stops the batch: no later video starts, exit 75 with the open count and the restart command', () => {
+  const { run, metadataCalls } = batch({ 111: infoOf('111'), 222: RATE_LIMITED, 333: infoOf('333'), 444: infoOf('444') });
+  const result = run(urlArgs('111', '222', '333', '444'));
+  assert.equal(result.status, 75);
+  assert.ok(!metadataCalls().some((call) => call.url === urlOf('333')));
+  const summary = lines(result.stdout).at(-1);
+  assert.match(summary, /^batch done=1 skipped=0 failed=0 open=3 \| rate-limited \| restart: node .*transcript\.mjs .*--url .*333/);
+  assert.ok(lines(result.stderr).some((line) => /rate-limited/.test(line)));
+});
+
+test('the restart command of a stdin batch lists the open videos and starts them', () => {
+  const { run, rerun, metadataCalls } = batch({ 111: infoOf('111'), 222: RATE_LIMITED, 333: infoOf('333') });
+  const result = run(['--from', '-'], [111, 222, 333].map(urlOf).join('\n'));
+  assert.equal(result.status, 75);
+  const restart = lines(result.stdout).at(-1).replace(/^.*restart: /, '');
+  const before = metadataCalls().length;
+  const again = rerun(restart);
+  assert.doesNotMatch(again.stderr, /holds no url/);
+  assert.ok(metadataCalls().slice(before).some((call) => call.url === urlOf('222')));
+});
+
+test('a probe that succeeds resumes the batch', () => {
+  const { run } = batch({ 111: { ...infoOf('111'), until: 1500 }, 222: infoOf('222') }, '5000');
+  const result = run(urlArgs('111', '222'));
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(lines(result.stdout).at(-1), 'batch done=2 skipped=0 failed=0');
+  assert.ok(lines(result.stderr).some((line) => /resumed/.test(line)));
+});
+
+test('a 403 does not trip the breaker', () => {
+  const { run } = batch({ 111: { error: 'ERROR: HTTP Error 403: Forbidden' }, 222: infoOf('222') });
+  const result = run(urlArgs('111', '222'));
+  assert.equal(result.status, 0);
+  assert.match(lines(result.stdout).at(-1), /^batch done=1 skipped=0 failed=1 \| /);
 });

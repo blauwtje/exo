@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs } from '#script-flags';
+import { classifyOutsideFailure } from '../../../../lib/outside-limit.mjs';
 
 const BREAKER_LIMIT = 3;
 const BREAKER_COOLDOWN_MS = 60000;
@@ -17,7 +18,7 @@ function normalizeUrl(url) {
 }
 
 function failureStatus(status) {
-  return status === 429 || status >= 500;
+  return ['rate-limited', 'server'].includes(classifyOutsideFailure({ status }));
 }
 
 function fileStore(dir) {

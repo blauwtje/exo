@@ -61,6 +61,8 @@ test('reports no videos and a 429 as failures', async () => {
   assert.match(empty.failure, /no videos/);
   const limited = await searchVideos(OPTIONS, reply(429, {}));
   assert.match(limited.failure, /429/);
+  assert.equal(limited.rateLimited, true);
+  assert.equal((await searchVideos(OPTIONS, reply(403, {}))).rateLimited, false);
 });
 
 test('a missing query is a usage error', () => {

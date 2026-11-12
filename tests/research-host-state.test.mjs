@@ -119,3 +119,11 @@ test('parallel processes recording into one run dir lose no entry', async () => 
   for (const name of ['p', 'q', 'r']) assert.equal(state.isBlocked(`https://a.com/${name}-19`), true);
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'host-state.json'), 'utf8')).blocked.length, 60);
 });
+
+test('the breaker counts a 429 and a 5xx but not a 403 or 404', () => {
+  const state = createHostState({ dir: runFolder(), now: () => 0 });
+  for (const status of [403, 404, 403]) state.recordStatus('b.com', status);
+  assert.equal(state.isOpen('b.com'), false);
+  for (const status of [429, 503, 429]) state.recordStatus('b.com', status);
+  assert.equal(state.isOpen('b.com'), true);
+});
