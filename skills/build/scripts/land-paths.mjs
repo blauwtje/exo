@@ -85,3 +85,10 @@ export function siblingWorkOf(plan, task, { root, planPath, landing }) {
   siblingWork.ownerOf = ownerOf;
   return siblingWork;
 }
+
+const STATED_LIMIT_LINE = /^(?:- )?(?:Limit:|Unresolved:(?!\s*none\.?\s*$))/i;
+
+export function statedLimitWarning(task, reportText) {
+  const line = (reportText ?? '').split('\n').map((entry) => entry.trim()).find((entry) => STATED_LIMIT_LINE.test(entry));
+  return line === undefined ? '' : `Warning: the report of Task ${task.number} names a limit: ${line}; a case that worked before the change is fixed or returned BLOCKED\n`;
+}

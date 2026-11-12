@@ -5,8 +5,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
-import { git, run, tempDir } from './harness.mjs';
-import { landingCheckout, compactCheckout, editApp, PASS_REPORT } from './land-task-fixture.mjs';
+import { compactPlanFixture, git, run, tempDir } from './harness.mjs';
+import { landingCheckout, compactCheckout, compactTask, editApp, PASS_REPORT } from './land-task-fixture.mjs';
 
 const SCRIPT = new URL('../skills/build/scripts/land-slot.mjs', import.meta.url).pathname;
 
@@ -187,4 +187,27 @@ test('--help prints the usage and exits 0', async () => {
   assert.match(help.stdout, /^usage: land-slot\.mjs --plan <plan> --task <n>/);
   assert.match(help.stdout, /--in-flight/);
   assert.match(help.stdout, /--chained/);
+});
+
+test('a land that amends Files leaves no pending plan edit to refuse the next slot', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' }),
+    compactTask({ number: 2, title: 'feat(two): two', files: ['src/two.js'], proof: 'node tests/greet.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  git(root, 'checkout', '--', 'src/app.js');
+  const base = git(root, 'rev-parse', 'HEAD');
+  const baseline = path.join(root, '.exo', 'baseline.txt');
+  await fs.mkdir(path.dirname(baseline), { recursive: true });
+  await fs.writeFile(baseline, git(root, 'status', '--porcelain'));
+  const slots = [`${root}-task-1`, `${root}-task-2`];
+  for (const slot of slots) git(root, 'worktree', 'add', '--detach', slot, 'HEAD');
+  await editApp(slots[0]);
+  await fs.writeFile(path.join(slots[0], 'src/extra.js'), 'export const extra = 1;\n');
+  await fs.writeFile(path.join(slots[1], 'src/two.js'), 'export const two = 2;\n');
+  const land = (number, slot, input) => run(SCRIPT, ['--plan', planPath, '--task', String(number), '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, '--in-flight', '1,2', '--report', '-'], { cwd: root, input });
+  const first = await land(1, slots[0], PASS_REPORT);
+  assert.match(first.stdout, /^AMEND Task 1 src\/extra\.js$/m);
+  const second = await land(2, slots[1], PASS_REPORT.replace('src/app.js', 'src/two.js').replace('tests/app.test.mjs', 'tests/greet.test.mjs'));
+  assert.doesNotMatch(second.stdout, /NEWPATH/);
 });

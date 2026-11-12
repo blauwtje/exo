@@ -53,6 +53,16 @@ test('near-miss literals, helpers and unrelated paths select nothing', () => {
   assert.deepEqual(coveringTests(repo({ 'a.md': 'x' }), ['a.md']), []);
 });
 
+test('a relative import and a template prefix both select the test naming the module', () => {
+  const root = repo({
+    'x/mod.mjs': 'code\n',
+    'tests/imports.test.mjs': "import '../x/mod.mjs';\n",
+    'tests/template.test.mjs': 'const f = `${root}x/mod.mjs`;\n',
+    'tests/sibling.test.mjs': "import './x/mod.mjs';\n"
+  });
+  assert.deepEqual(coveringTests(root, ['x/mod.mjs']), ['tests/imports.test.mjs', 'tests/template.test.mjs']);
+});
+
 function covering(root) {
   const lines = [];
   const original = console.log;

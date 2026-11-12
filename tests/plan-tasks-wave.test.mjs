@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { test } from 'node:test';
 import { frameOf } from '../lib/plan-frame.mjs';
-import { nextWave } from '../lib/plan-waves.mjs';
+import { isolatedCheckout, nextWave } from '../lib/plan-waves.mjs';
 import { parsePlan } from '../lib/plan-tasks.mjs';
 
 function planWith(parallelLine) {
@@ -40,4 +43,13 @@ test('nextWave never puts two tasks that share a file in one wave', () => {
 test('nextWave keeps a plan whose Parallel: line reads none serial', () => {
   assert.deepEqual(waveOf('none.', [1]), [2]);
   assert.deepEqual(waveOf('none.', [1], [2]), []);
+});
+
+test('a symlinked Repository path to the run checkout is not isolated', () => {
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-wave-')));
+  const real = path.join(base, '.claude', 'worktrees', 'x');
+  fs.mkdirSync(real, { recursive: true });
+  const link = path.join(base, 'link');
+  fs.symlinkSync(real, link);
+  assert.equal(isolatedCheckout(real, link), false);
 });

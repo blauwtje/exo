@@ -36,6 +36,12 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 9: `CONTRIBUTING.md` describes the end states and the `.env` copy as Tasks 4 and 8 left them.
 - Success criterion: `npm run check` ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
 
+## lean-open-3
+- Task 1: a run checkout under `.claude/worktrees` that is the plan's `Repository:` forms a parallel wave; a checkout under `.claude/worktrees` that is not the `Repository:` still builds one task at a time.
+- Task 2: after a land that amends the plan, the run checkout shows no pending plan edit and the next slot land does not refuse `NEWPATH`.
+- Task 3: a slot land that leaves a sibling-owned file unstaged runs the land gate on the committed tree and does not report a cached pass.
+- Success criterion: `npm run check` ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
+
 ## lean-open
 - Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
 - Task 2: the several-violations land is covered and passes.

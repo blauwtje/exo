@@ -40,6 +40,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 7: `node benchmarks/routing.mjs` runs the paired arm under `--dry-run` with its sessions and projected cost, and starts no session.
 - Success criterion, second done line: `node benchmarks/lean-guards-compare.mjs` exits 0 with bytes <= 2666 and modules <= 77.
 
+## lean-open-3
+- Task 4: `coveringTests('.', ['benchmarks/routing.mjs'])` lists `tests/routing-eval.test.mjs`.
+
 ## lean-open
 - Success criterion, second done line: `node benchmarks/lean-guards-compare.mjs` exits 0 with bytes <= 2666 and modules <= 77; no task adds a module.
 

@@ -17,7 +17,7 @@ export function landingReport({ plan, frame, root, planPath, number, sha, landed
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (${proofOutcomeOf(tail)})`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const route = planRoute(plan.tasks);
-  const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root, frame.repository) ? null : frame.worktreeSetup, frame.parallel);
   return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${nextLine(wave, planPath, root)}\n`;
 }
 

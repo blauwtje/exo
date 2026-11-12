@@ -66,3 +66,14 @@ test('an unknown task number with a missed path ends on the usage refusal', asyn
   assert.match(refused.stderr, /no Task 9 in the plan/);
   assert.doesNotMatch(refused.stderr, /TypeError/);
 });
+
+test('an amending land with an untracked plan widens the plan and lands', async () => {
+  const { root, planPath } = await compactCheckout();
+  git(root, 'rm', '--cached', '-q', 'docs/plans/compact.md');
+  git(root, 'commit', '-q', '-m', 'untrack plan');
+  await fs.appendFile(path.join(root, '.git/info/exclude'), 'docs/plans/\n');
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  const landed = await land(root, planPath);
+  assert.equal(landed.code, 0, landed.stderr);
+  assert.match(await fs.readFile(planPath, 'utf8'), /Files: `src\/app\.js`, `src\/extra\.js`/);
+});

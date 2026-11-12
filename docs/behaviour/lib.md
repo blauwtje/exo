@@ -24,6 +24,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## lean-open-2
 - Task 4: `END_STATES` holds two names and no code names the needs-input state.
 
+## lean-open-3
+- Task 1: a run checkout under `.claude/worktrees` that is the plan's `Repository:` forms a parallel wave; a checkout under `.claude/worktrees` that is not the `Repository:` still builds one task at a time.
+
 ## lean-open
 - Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
 - Task 4: `lib/guard-rules.mjs`, `lib/git-deny.mjs`, `skills/build/scripts/land-*.mjs` and `docs/plans/` outside Files are not in the commit and get the same warning.

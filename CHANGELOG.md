@@ -86,6 +86,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A slot, a setup worktree and a conflict tree get the `.env*` files like every other worktree.
 - `.claude/CLAUDE.md` and `docs/principles/agent.md` name the rule range `T1 to T4`.
 - Two land tests match the exact refusal text.
+- A run checkout under `.claude/worktrees/` that the plan names as `Repository:` forms a wave.
+- A land that widens `Files:` commits that plan edit when git tracks the plan, so the next slot land is not refused with `NEWPATH`.
+- The covering-test lookup finds a test that names a module by a relative import or a `${root}` template.
+- A check and a land warn when the build report names a limit or an open `Unresolved:` line.
 
 ### Removed
 
@@ -94,10 +98,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `env` setting, since a worktree always gets the `.env*` files.
 - The tool-case rule and the lines in the agent brief block, `hooks/dispatch-rules.md` and `hooks/session-rules.md` that restate what Claude Code does itself, such as the ban on `sleep`.
 - `wait-report.mjs`, its `Wait:` lines and the `task-runner` agent.
-
-### Removed
-
-- The `exo:task-runner` agent, `wait-report.mjs` and the `Wait:` line.
 
 ## 0.140.0 - 2026-11-10
 

@@ -400,3 +400,13 @@ test('a newly added prose file has no HEAD blob and is skipped by the dropped-wo
   const report = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT });
   assert.doesNotMatch(report, /dropped boundary words/);
 });
+
+test('a report that names a limit makes check and land print a warning and still pass', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const reportText = `${PASS_REPORT}Limit: an untracked plan file makes the commit fail\n`;
+  const planText = await fs.readFile(planPath, 'utf8');
+  const warning = /^Warning: the report of Task 1 names a limit: Limit: an untracked plan file makes the commit fail; a case that worked before the change is fixed or returned BLOCKED$/m;
+  assert.match(checkTask({ planPath, planText, number: 1, root, reportText }), warning);
+  assert.match(landTask({ planPath, planText, number: 1, root, reportText }), warning);
+});

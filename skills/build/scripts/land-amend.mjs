@@ -1,3 +1,4 @@
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { decisionsPathOf, isCovered, landedTasks, planIdOf } from '#plan-landed';
@@ -44,6 +45,14 @@ function widenedPlanText(planText, task, paths) {
   return planText.replace(task.section, task.section.replace(field, widened));
 }
 
+function commitPlanEdit(number, planPath) {
+  const checkout = path.dirname(planPath);
+  const tracked = spawnSync('git', ['-C', checkout, 'ls-files', '--error-unmatch', planPath], { stdio: 'ignore' });
+  if (tracked.status !== 0) return;
+  execFileSync('git', ['-C', checkout, 'add', '--', planPath]);
+  execFileSync('git', ['-C', checkout, 'commit', '-m', `docs(plan): widen Files of Task ${number}`, '--', planPath], { stdio: 'ignore' });
+}
+
 export function amendOutsideFiles({ planText, number, context }) {
   const plan = parsePlan(planText);
   const task = plan.tasks.find((entry) => entry.number === number);
@@ -51,5 +60,6 @@ export function amendOutsideFiles({ planText, number, context }) {
   if (paths.length === 0 || !proofPasses(task, context)) return { planText, lines: [] };
   const widened = widenedPlanText(planText, task, paths);
   fs.writeFileSync(context.planPath, widened);
+  commitPlanEdit(number, context.planPath);
   return { planText: widened, lines: paths.map((file) => `AMEND Task ${number} ${file}`) };
 }

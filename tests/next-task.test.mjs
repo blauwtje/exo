@@ -8,6 +8,7 @@ import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { chainedForCaller } from '../skills/build/scripts/next-task-caller.mjs';
 import { refreshProgress } from '../skills/build/scripts/next-task.mjs';
+import { nextTaskReport } from '../skills/build/scripts/next-task-report.mjs';
 import { taskBrief } from '../skills/build/scripts/next-task-brief.mjs';
 import { commitFiles, git, planFixture, run, tempDir } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
@@ -36,6 +37,17 @@ async function afterTaskOne(worktreeSetup) {
 const slotPath = (root, number) => path.join(root, '.claude', 'worktrees', `${path.basename(root)}-task-${number}`);
 
 const worktrees = (root) => git(root, 'worktree', 'list');
+
+test('the run checkout under .claude/worktrees/ named as Repository forms the wave', async () => {
+  const { root, planPath } = await landingCheckout();
+  const isolated = path.join(root, '.claude', 'worktrees', 'feat+x');
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/x', isolated);
+  const planText = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
+    taskSection({ number: 1, title: 'Left', files: ['- Create: `src/left.js`'], subject: 'feat(app): left' }),
+    taskSection({ number: 2, title: 'Right', files: ['- Create: `src/right.js`'], subject: 'feat(app): right' })
+  ] }).replace('Repository: /tmp/fixture', `Repository: ${await fs.realpath(isolated)}`);
+  assert.match(nextTaskReport({ planPath, planText, root: isolated }), /^Wave: Task 1, Task 2$/m);
+});
 
 test('a Next: task prints Since: and its implementer prompt filled', async () => {
   const { root, planPath } = await landingCheckout();

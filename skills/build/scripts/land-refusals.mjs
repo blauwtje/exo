@@ -9,7 +9,7 @@ import { mcpToolCall } from '#mcp-tool-call';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { AlreadyLandedError, LandingError, UnfinishedMergeError } from './land-errors.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
-import { outsideFilesWarning } from './land-paths.mjs';
+import { outsideFilesWarning, statedLimitWarning } from './land-paths.mjs';
 import { dropsOf } from './land-commit-block.mjs';
 import { countWords, parseDrops } from '../../../verify/checks/boundary-words.mjs';
 import { unfinishedMergeNote } from '#merge-state';
@@ -156,7 +156,7 @@ export function refuseTogether(task, { root, planPath, siblingWork, reportText, 
     attempt('report', () => checkReport(task, reportText, reportPath))
   ];
   const text = landRefusal(path.join(root, SCRATCH_FOLDER, 'refusals'), task.number, checks, {});
-  if (text === null) return outsideFilesWarning(task, { root, planPath, siblingWork }) + droppedBoundaryWarning(task, root);
+  if (text === null) return outsideFilesWarning(task, { root, planPath, siblingWork }) + droppedBoundaryWarning(task, root) + statedLimitWarning(task, reportText);
   const first = checks.find((check) => check.error !== null).error;
   throw new first.constructor(text.trimEnd());
 }
