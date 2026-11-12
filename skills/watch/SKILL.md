@@ -4,6 +4,8 @@ description: Use when a video url (YouTube, TikTok, Instagram, Facebook, X or an
 context: fork
 agent: exo:orchestrator
 argument-hint: "<video, profile, channel or playlist url> [more urls] [question]"
+model: sonnet
+effort: medium
 ---
 
 # Watch a video

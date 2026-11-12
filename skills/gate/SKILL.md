@@ -4,6 +4,8 @@ description: "Use when a plan's tasks are landed and its branch needs the gate b
 context: fork
 agent: exo:orchestrator
 argument-hint: "[plan path] [--land]"
+model: opus
+effort: medium
 ---
 
 # Gate

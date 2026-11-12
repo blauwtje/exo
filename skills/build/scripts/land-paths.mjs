@@ -78,8 +78,8 @@ export function siblingWorkOf(plan, task, { root, planPath, landing }) {
   const ownerOf = (changed) => open.find((other) => isCovered(other.files.map((file) => file.path), changed))?.number;
   const named = plan.tasks.flatMap((other) => other.files.map((file) => file.path));
   const staged = landing ? execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only'], { encoding: 'utf8' }).split('\n') : [];
-  const untracked = written ? new Set(untrackedPaths(root)) : null;
-  const siblingFile = (changed) => isCovered(entries, changed) && (!written || (untracked.has(changed) && !isCovered(added, changed)));
+  const untracked = new Set(untrackedPaths(root));
+  const siblingFile = (changed) => isCovered(entries, changed) && untracked.has(changed) && !isCovered(added, changed);
   const planDoc = (changed) => isPlanDoc(changed) && !isCovered(named, changed) && !isCovered(added, changed);
   const siblingWork = (changed) => !staged.includes(changed) && (siblingFile(changed) || planDoc(changed));
   siblingWork.ownerOf = ownerOf;

@@ -146,3 +146,13 @@ test('CONTRIBUTING.md points at the provider columns of the data file and repeat
   assert.equal(guide.includes('maps every tier to `inherit`'), false);
   assert.equal(guide.includes('puts the `on` column of'), false);
 });
+
+test('a skills entry naming an unknown kind is rejected', () => {
+  const file = tableWith((table) => { table.skills['skills/gate/SKILL.md'] = 'no-such-kind'; });
+  assert.throws(() => readKindTable(file), /skills\/gate\/SKILL\.md: unknown kind no-such-kind/);
+});
+
+test('orchestrator runs on the strong tier', () => {
+  const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude', deep: 'fable' });
+  assert.equal(kinds.orchestrator.model, 'opus');
+});

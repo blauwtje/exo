@@ -7,7 +7,7 @@ import { writeBehaviour } from '../../spec/scripts/behaviour.mjs';
 import { runPreCommitGates } from './land-prove.mjs';
 import { dropCandidate, stageOutside, commitCandidate, promoteCandidate, gateCandidate, committedSha } from './land-candidate.mjs';
 
-function refreshedBehaviour(root) {
+export function refreshedBehaviour(root) {
   return fs.existsSync(path.join(root, 'docs/behaviour')) ? writeBehaviour(root).written : [];
 }
 

@@ -384,3 +384,21 @@ test('a Budget-raise line in the report is on the candidate during the Land gate
   assert.ok(body.split('\n').includes(RAISE_LINE));
   assert.match(body, /^Plan-task: fixture\/1$/m);
 });
+
+test('a Land gate that passes only on an untracked file outside the commit is refused, and the worktree is removed', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.mkdir(path.join(root, '.github'));
+  await fs.writeFile(path.join(root, '.github/stray.txt'), 'only here\n');
+  const planText = withLandGate('test -e .github/stray.txt').replace('git add .', 'git add src/app.js');
+  assert.throws(() => landTask({ planPath, planText, number: 1, root }), /Land gate "test -e \.github\/stray\.txt" failed/);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+  assert.doesNotMatch(git(root, 'worktree', 'list'), /gate-/);
+});
+
+test('a slot equal to its candidate commit gates in place', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const output = landTask({ planPath, planText: withLandGate('test "$(pwd -P)" = "$(cd . && git rev-parse --show-toplevel)" && git worktree list | wc -l | grep -q "^ *1$"'), number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+});

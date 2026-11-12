@@ -224,10 +224,17 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
 });
 
 test('an inherit kind sets no model on an exo call, and a passed model is denied', () => {
-  assert.equal(call({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: peer-review', effort: 'medium' }), undefined);
-  const output = hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: peer-review', model: 'opus' });
-  assert.equal(output.permissionDecision, 'deny');
-  assert.match(output.permissionDecisionReason, /runs on the session model/);
+  const before = process.env.EXO_PROVIDER;
+  process.env.EXO_PROVIDER = 'deepseek';
+  try {
+    assert.equal(call({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review', effort: 'medium' }), undefined);
+    const output = hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review', model: 'opus' });
+    assert.equal(output.permissionDecision, 'deny');
+    assert.match(output.permissionDecisionReason, /runs on the session model/);
+  } finally {
+    if (before === undefined) delete process.env.EXO_PROVIDER;
+    else process.env.EXO_PROVIDER = before;
+  }
 });
 
 test('a label on an exo call with no model or effort moves it only to a label its table entry lists', () => {

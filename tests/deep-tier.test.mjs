@@ -14,14 +14,14 @@ test('the deep option leaves codex and deepseek tiers alone', () => {
   assert.equal(deepseek.kinds.hardest.model, 'inherit');
 });
 
-const DEEP_KINDS = ['hardest', 'review-deep', 'orchestrator'];
+const DEEP_KINDS = ['hardest', 'review-deep'];
 
-test('deep opus gives the strong model on the three deep kinds', () => {
+test('deep opus gives the strong model on the deep kinds', () => {
   const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude', deep: 'opus' });
   for (const name of DEEP_KINDS) assert.equal(kinds[name].model, 'opus', name);
 });
 
-test('deep fable changes exactly the model of the three deep kinds', () => {
+test('deep fable changes exactly the model of the deep kinds', () => {
   const opus = readKindTable(TABLE_PATH, { provider: 'claude', deep: 'opus' }).kinds;
   const fable = readKindTable(TABLE_PATH, { provider: 'claude', deep: 'fable' }).kinds;
   for (const [name, pair] of Object.entries(opus)) {

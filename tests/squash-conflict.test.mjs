@@ -141,6 +141,35 @@ test('landing.md runs squash-check before each squash', () => {
   assert.ok(check < landing.indexOf('`git merge --squash <branch>` and commit'));
 });
 
+test('a squashed branch whose neighbour line later changed counts as landed, a branch with a missing change does not', async () => {
+  const base = { 'src/app.js': 'one\ntwo\nthree\n' };
+  const root = await gitRepository(base);
+  excludeScratch(root);
+  const worktree = `${root}-fix`;
+  git(root, 'worktree', 'add', '-b', 'feat/fix', worktree, 'HEAD');
+  await commitFiles(worktree, { 'src/app.js': 'one\nTWO\nthree\n' }, 'feat: fix');
+  await commitFiles(worktree, { 'src/extra.js': 'x\n' }, 'feat: extra');
+  git(root, 'merge', '--squash', 'feat/fix');
+  git(root, 'commit', '-q', '-m', 'squash');
+  await commitFiles(root, { 'src/app.js': 'one\nTWO\nTHREE\n' }, 'later');
+  await commitFiles(worktree, { 'src/app.js': 'one\nTWO\nthree!\n' }, 'feat: more');
+
+  assert.match(squashCheck(root, 'feat/fix').stdout, /conflicts with main/);
+  git(worktree, 'reset', '-q', '--hard', 'HEAD~1');
+  assert.match(squashCheck(root, 'feat/fix').stdout, /already landed on main/);
+});
+
+test('a branch changing a line the target changed differently is not landed even when the target holds its new text elsewhere', async () => {
+  const root = await gitRepository({ 'f.js': 'a\nx = 1\nb\nc\nreturn;\n' });
+  excludeScratch(root);
+  git(root, 'checkout', '-q', '-b', 'fix');
+  await commitFiles(root, { 'f.js': 'a\nreturn;\nb\nc\nreturn;\n' }, 'fix');
+  git(root, 'checkout', '-q', 'main');
+  await commitFiles(root, { 'f.js': 'a\nx = 2\nb\nc\nreturn;\n' }, 'other');
+
+  assert.doesNotMatch(squashCheck(root, 'fix').stdout, /already landed/);
+});
+
 test('remove-worktree refuses a landed branch with a tracked change and removes it once clean', async () => {
   const { root, worktrees } = await repositoryWithBranches({
     a: { 'src/app.js': 'export const greeting = "hi from a";\n' },

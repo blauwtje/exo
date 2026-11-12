@@ -16,7 +16,8 @@ import { runCodeRules } from './land-code-rules.mjs';
 import { gateEnvOf } from './land-gate.mjs';
 import { refuseTogether } from './land-refusals.mjs';
 import { runPreCommitGates } from './land-prove.mjs';
-import { dropCandidate, clearStaleCandidate, commitCandidate, gateCandidate } from './land-candidate.mjs';
+import { dropCandidate, clearStaleCandidate, commitCandidate, gateCandidate, stageOutside } from './land-candidate.mjs';
+import { refreshedBehaviour } from './land-stage.mjs';
 
 export function checkTask({ planText, number, root, reportText = null, reportPath = null, planPath, pin = null }) {
   refuseOtherPlan(pin, planPath, number);
@@ -43,6 +44,7 @@ function checkTaskLocked({ planText, number, root, reportText, reportPath, planP
 
 function gateCheckedOnCandidate(plan, task, frame, { root, planId }) {
   if (frame.landGate === null || frame.landGate === 'none') return '';
+  stageOutside(root, refreshedBehaviour(root));
   const candidate = commitCandidate(commitBlockOf(plan, task.number, planId, signatureChanges(task, root), root), root, task, planId);
   const gateLine = gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
   if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${candidate.candidate.slice(0, 7)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);

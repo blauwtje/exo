@@ -6,9 +6,11 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError, OutsideFilesError } from './land-errors.mjs';
 import { headMessage, headSha, moveHead } from './land-git.mjs';
 import { gitText } from '#git';
+import { createWorktree, worktreePath } from '#checkout';
 import { candidateTrailer } from './land-commit-block.mjs';
 import { isProtectedPath, nestedWorktrees } from './land-paths.mjs';
 import { runLandGate } from './land-gate.mjs';
+import { discard } from './open-slots.mjs';
 import { carryRaises } from './land-raises.mjs';
 
 export function dropCandidate(root, { base, candidate }) {
@@ -54,8 +56,28 @@ export function promoteCandidate(root, task, planId, { base, candidate }) {
   }
 }
 
+function slotDiffersFromCandidate(root) {
+  const status = gitText(root, ['status', '--porcelain', '--untracked-files=all'], { trim: false });
+  return status.split('\n').some((line) => line !== '' && !line.slice(3).startsWith(`${SCRATCH_FOLDER}/`));
+}
+
+function gateOnDetachedCandidate({ frame, root, gateEnv, candidate }) {
+  const where = worktreePath(`gate-${candidate.candidate.slice(0, 12)}`, root);
+  const made = createWorktree(root, where, ['--detach', where, candidate.candidate]);
+  if (!made.ok) throw new LandingError(made.failure);
+  try {
+    const setup = frame.worktreeSetup;
+    const ran = setup === null || setup === 'none' ? null : spawnSync(setup, { cwd: where, shell: true, encoding: 'utf8' });
+    if (ran !== null && ran.status !== 0) throw new LandingError(`Worktree setup failed in ${where}: ${`${ran.stdout}${ran.stderr}`.trim().split('\n').at(-1)}`);
+    return runLandGate(frame.landGate, where, gateEnv) ?? '';
+  } finally {
+    discard(root, [where]);
+  }
+}
+
 export function gateCandidate(frame, root, gateEnv, candidate) {
   try {
+    if (slotDiffersFromCandidate(root)) return gateOnDetachedCandidate({ frame, root, gateEnv, candidate });
     return runLandGate(frame.landGate, root, gateEnv) ?? '';
   } catch (error) {
     dropCandidate(root, candidate);

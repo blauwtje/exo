@@ -4,6 +4,8 @@ description: Use when reported wrong behavior (bug, error, crash, regression, sl
 context: fork
 agent: exo:orchestrator
 argument-hint: <symptom, failing command or error>
+model: opus
+effort: medium
 ---
 # Find cause
 

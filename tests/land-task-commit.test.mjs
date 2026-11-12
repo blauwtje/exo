@@ -306,6 +306,25 @@ test('a compact task with an Evidence field lands it as a trailer after Plan-tas
   await assert.rejects(fs.access(path.join(root, 'pwned')));
 });
 
+test('a derived commit stages a tracked Files path inside an ignored folder, and an ignored untracked file stays out', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'docs/specs/kept.md'], proof: 'node tests/app.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  await fs.mkdir(path.join(root, 'docs/specs'), { recursive: true });
+  await fs.writeFile(path.join(root, 'docs/specs/kept.md'), '# kept\n');
+  git(root, 'add', '-f', 'docs/specs/kept.md');
+  git(root, 'commit', '-q', '-m', 'track kept spec');
+  await fs.appendFile(path.join(root, '.gitignore'), 'docs/*\n');
+  await fs.writeFile(path.join(root, 'docs/specs/kept.md'), '# kept, edited\n');
+  await fs.writeFile(path.join(root, 'docs/specs/new.md'), '# new\n');
+  await writeReport(root, PASS_REPORT);
+  assert.match(landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT }), /^Committed: [0-9a-f]+ Task 1$/m);
+  const landed = git(root, 'show', '--name-only', '--format=', 'HEAD');
+  assert.match(landed, /^docs\/specs\/kept\.md$/m);
+  assert.doesNotMatch(landed, /new\.md/);
+});
+
 test('a compact task without Evidence lands no Evidence trailer', async () => {
   const { root, planPath } = await compactCheckout();
   await writeReport(root, PASS_REPORT);

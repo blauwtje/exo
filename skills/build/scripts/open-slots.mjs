@@ -56,7 +56,7 @@ function copyInputs(toplevel, slot, inputs) {
   }
 }
 
-function discard(toplevel, slots) {
+export function discard(toplevel, slots) {
   for (const slot of slots) {
     git(toplevel, ['worktree', 'remove', '--force', slot]);
     fs.rmSync(slot, { recursive: true, force: true });

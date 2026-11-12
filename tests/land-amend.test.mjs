@@ -77,3 +77,13 @@ test('an amending land with an untracked plan widens the plan and lands', async 
   assert.equal(landed.code, 0, landed.stderr);
   assert.match(await fs.readFile(planPath, 'utf8'), /Files: `src\/app\.js`, `src\/extra\.js`/);
 });
+
+test('an amending land commits no plan whose file has a hand edit', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.appendFile(planPath, '\nhand note\n');
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  const landed = await land(root, planPath);
+  assert.equal(landed.code, 0, landed.stderr);
+  assert.doesNotMatch(git(root, 'log', '--format=%s'), /widen Files/);
+  assert.match(await fs.readFile(planPath, 'utf8'), /Files: `src\/app\.js`, `src\/extra\.js`/);
+});

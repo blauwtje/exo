@@ -25,14 +25,19 @@ export function proofEnvOf(task, pendingEvidence) {
   return pendingEvidence === undefined ? env : { ...env, EXO_PENDING_EVIDENCE: pendingEvidence };
 }
 
+function addLineOf(command, paths) {
+  return paths.length === 0 ? '' : `${command} ${paths.map(shellQuote).join(' ')}\n`;
+}
+
 function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
   // why: git add refuses a path that matches neither the index nor the tree, so a path already staged as deleted stays out of it; with rename detection off, the old path of a git mv counts as a staged deletion.
   const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--no-renames', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
-  const addArgs = task.files.filter((file) => !removed.has(file.path)).map((file) => shellQuote(file.path)).join(' ');
-  const addLine = addArgs === '' ? '' : `git add ${addArgs}\n`;
+  const paths = task.files.map((file) => file.path).filter((file) => !removed.has(file));
+  const tracked = new Set(paths.length === 0 ? [] : execFileSync('git', ['-C', root, 'ls-files', '-z', '--', ...paths], { encoding: 'utf8' }).split('\0'));
+  const addLine = addLineOf('git add -u --', paths.filter((file) => tracked.has(file))) + addLineOf('git add', paths.filter((file) => !tracked.has(file)));
   const drops = dropsOf(task);
   const evidence = task.evidence === null ? '' : `\nEvidence: ${task.evidence}`;
   const trailers = trailersOf(planId, number, signatures) + (drops === null ? '' : `\nDrops: ${drops}`) + evidence;

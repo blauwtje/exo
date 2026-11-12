@@ -33,7 +33,7 @@ Work in `.exo/ideate/<slug>/`, where the slug is built as in research mode.
 ## Worker brief
 
 ```
-exo-kind: ideate
+exo-kind: research
 Persona: <name>
 Question: <the design question>
 Do not propose: <the three banned defaults>

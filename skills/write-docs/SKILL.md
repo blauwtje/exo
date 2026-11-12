@@ -4,6 +4,8 @@ description: Use when the user asks to write or edit prose read later, such as a
 context: fork
 agent: exo:orchestrator
 argument-hint: <the document or text to write or edit>
+model: sonnet
+effort: medium
 ---
 
 # Technical writing

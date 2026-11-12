@@ -1,6 +1,7 @@
 import { checkGitWhitespace } from './checks/git-whitespace.mjs';
 import { checkPluginVersion } from './checks/plugin-version.mjs';
 import { checkModelKinds } from './checks/model-kinds.mjs';
+import { checkForkSkillTier } from './checks/fork-skill-tier.mjs';
 import { checkCodexOverrides } from './checks/codex-overrides.mjs';
 import { checkHarnessCapabilities } from './checks/harness-capabilities.mjs';
 import { checkCoordinationContract } from './checks/coordination-contract.mjs';
@@ -26,6 +27,7 @@ export function runLateChecks(report, repository, staticOnly) {
   checkGitWhitespace(report, repository);
   if (!staticOnly) checkPluginVersion(report, repository);
   checkModelKinds(report, repository);
+  checkForkSkillTier(report, repository);
   checkCodexOverrides(report, repository);
   checkHarnessCapabilities(report, repository);
   checkCoordinationContract(report, repository);

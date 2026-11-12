@@ -4,6 +4,8 @@ description: Use when the user asks to create, edit or size a skill, agent, hook
 context: fork
 agent: exo:orchestrator
 argument-hint: <skill or agent to create, edit or size>
+model: opus
+effort: medium
 ---
 
 # Skills tool

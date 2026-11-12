@@ -211,3 +211,26 @@ test('a land that amends Files leaves no pending plan edit to refuse the next sl
   const second = await land(2, slots[1], PASS_REPORT.replace('src/app.js', 'src/two.js').replace('tests/app.test.mjs', 'tests/greet.test.mjs'));
   assert.doesNotMatch(second.stdout, /NEWPATH/);
 });
+
+test('a tracked file an open sibling lists and this task modified is no sibling work', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' }),
+    compactTask({ number: 2, title: 'feat(two): two', files: ['src/two.js'], proof: 'node tests/greet.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  git(root, 'checkout', '--', 'src/app.js');
+  await fs.writeFile(path.join(root, 'src/two.js'), 'export const two = 1;\n');
+  git(root, 'add', 'src/two.js');
+  git(root, 'commit', '-m', 'chore: add two');
+  const base = git(root, 'rev-parse', 'HEAD');
+  const baseline = path.join(root, '.exo', 'baseline.txt');
+  await fs.mkdir(path.dirname(baseline), { recursive: true });
+  await fs.writeFile(baseline, git(root, 'status', '--porcelain'));
+  const slot = `${root}-task-1`;
+  git(root, 'worktree', 'add', '--detach', slot, 'HEAD');
+  await editApp(slot);
+  await fs.writeFile(path.join(slot, 'src/two.js'), 'export const two = 2;\n');
+  const landed = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, '--in-flight', '1,2', '--report', '-'], { cwd: root, input: PASS_REPORT });
+  assert.match(landed.stdout, /changed a path outside Files: `src\/two\.js`/);
+  assert.doesNotMatch(landed.stdout, /left `src\/two\.js` for open Task 2/);
+});

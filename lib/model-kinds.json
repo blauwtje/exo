@@ -57,7 +57,7 @@
       "on": { "tier": "standard", "effort": "high" }
     },
     "orchestrator": {
-      "on": { "tier": "deep", "effort": "medium" }
+      "on": { "tier": "strong", "effort": "medium" }
     },
     "research": {
       "on": { "tier": "standard", "effort": "medium", "ceiling": "high" }
@@ -70,12 +70,6 @@
     },
     "chore": {
       "on": { "tier": "standard", "effort": "medium" }
-    },
-    "peer": {
-      "on": { "tier": "inherit", "effort": "high" }
-    },
-    "peer-review": {
-      "on": { "tier": "inherit", "effort": "medium" }
     }
   },
   "unnamed": {
@@ -98,13 +92,21 @@
     "agents/research-worker.md": { "kind": "research" },
     "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep", "judge"] }
   },
+  "skills": {
+    "skills/gate/SKILL.md": "orchestrator",
+    "skills/ship/SKILL.md": "orchestrator",
+    "skills/find-cause/SKILL.md": "orchestrator",
+    "skills/edit-skills/SKILL.md": "orchestrator",
+    "skills/watch/SKILL.md": "lookup",
+    "skills/write-docs/SKILL.md": "doc-task"
+  },
   "dispatches": [
     { "file": "skills/build/references/worker-round.md", "match": "delegate whose prompt opens with `exo-kind: improve-round`", "kind": "improve-round" },
     { "file": "skills/find-cause/SKILL.md", "match": "the prompt opening with `exo-kind: build`", "kind": "build" },
     { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: build` for phase (c)", "kind": "build" },
-    { "file": "skills/build/reviewer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
-    { "file": "skills/build/references/fresh-eyes.md", "match": "delegate whose prompt opens with `exo-kind: peer-review`", "kind": "peer-review" },
-    { "file": "skills/build/references/design-tasks.md", "match": "delegate whose prompt opens with `exo-kind: peer`", "kind": "peer" },
+    { "file": "skills/build/reviewer-prompt.md", "match": "delegate whose prompt opens with `exo-kind: review`", "kind": "review" },
+    { "file": "skills/build/references/fresh-eyes.md", "match": "delegate whose prompt opens with `exo-kind: review`", "kind": "review" },
+    { "file": "skills/build/references/design-tasks.md", "match": "delegate whose prompt opens with `exo-kind: hardest`", "kind": "hardest" },
     { "file": "skills/edit-skills/references/blind-eval.md", "match": "delegate whose prompt opens with `exo-kind: review` as judge", "kind": "review" },
     { "file": "skills/watch/SKILL.md", "match": "delegate whose prompt opens with `exo-kind: lookup`", "kind": "lookup" },
     { "file": "skills/build/references/design-ui.md", "match": "delegate whose prompt opens with `exo-kind: review` as critic", "kind": "review" }

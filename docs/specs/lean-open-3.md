@@ -59,6 +59,7 @@ Depends on: none | Files: `lib/plan-waves.mjs`, `skills/build/scripts/next-task-
 ### Task 2: fix(build): leave no pending plan edit after an amending land
 Depends on: none | Files: `skills/build/scripts/land-amend.mjs`, `tests/land-slot.test.mjs`, `tests/land-amend.test.mjs` | Data: no new structure; the widened plan is committed in the run checkout right after it is written | Proof: node --test --test-timeout=60000 tests/land-slot.test.mjs
 ### Task 3: fix(build): judge the committed tree at the land gate
+Reverted in f064f50fd; point c moved to a later change.
 Depends on: 2 | Files: `skills/build/scripts/land-gate.mjs`, `tests/land-slot.test.mjs`, `tests/land-gate-summary.test.mjs` | Data: no new structure; runCheck runs fresh when the tree is dirty after the candidate commit | Proof: node --test --test-timeout=60000 tests/land-slot.test.mjs
 ### Task 4: fix(covering): find a test that names a module by a relative import or a template
 Depends on: none | Files: `lib/covering-tests.mjs`, `tests/covering-tests.test.mjs`, `CONTRIBUTING.md` | Data: CONTRIBUTING.md line 151 names the two extra forms; no new structure; literalsOf also yields the `${...}`-stripped and tests/-resolved forms of a literal | Proof: node --test --test-timeout=60000 tests/covering-tests.test.mjs

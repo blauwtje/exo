@@ -58,9 +58,10 @@ test('a relative import and a template prefix both select the test naming the mo
     'x/mod.mjs': 'code\n',
     'tests/imports.test.mjs': "import '../x/mod.mjs';\n",
     'tests/template.test.mjs': 'const f = `${root}x/mod.mjs`;\n',
+    'tests/slash.test.mjs': 'const f = `${root}/x/mod.mjs`;\n',
     'tests/sibling.test.mjs': "import './x/mod.mjs';\n"
   });
-  assert.deepEqual(coveringTests(root, ['x/mod.mjs']), ['tests/imports.test.mjs', 'tests/template.test.mjs']);
+  assert.deepEqual(coveringTests(root, ['x/mod.mjs']), ['tests/imports.test.mjs', 'tests/slash.test.mjs', 'tests/template.test.mjs']);
 });
 
 function covering(root) {

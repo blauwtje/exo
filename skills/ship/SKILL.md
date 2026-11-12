@@ -5,6 +5,8 @@ context: fork
 agent: exo:orchestrator
 argument-hint: "[pull request numbers] [--land]"
 allowed-tools: Bash(node *repo-fields.mjs*)
+model: opus
+effort: medium
 ---
 
 # Ship

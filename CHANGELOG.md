@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `npm run check` fails a fork skill with no kind, `model:` or `effort:` lines that differ from the kind table, a default kind on tier `inherit`, and an `exo-kind:` label that names no kind; `node verify/checks/fork-skill-tier.mjs --write` rewrites the lines.
+
 - The task brief carries a `Covering:` line with the tests that landing runs for the task's files, from the same `coveringTests` function, so the builder runs them before it reports.
 - `plan-check` fails a `Proof:` whose first command is on no `PATH` directory.
 - `lib/references/lean.md` states the four working principles once (assumptions named, simplest thing, only the needed lines, the check named first); every plan, build, review and fix prompt points to it, and `npm run check` fails when a principle or a pointer is dropped.
@@ -62,8 +64,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Byte caps for results carry a margin, `capMargin` (default 0.1, set in run.json `defaults`), so a result a few bytes over still passes.
 - A stop-hook block and a stall-guard refusal print one reason line and one `Do instead:` line.
 - A handoff holds four sections, Goal, Progress, Evidence and Next step.
+- Every window other than the main session takes its model and effort from `lib/model-kinds.json`: a `context: fork` skill gets `model:` and `effort:` lines written from its `skills` entry, and kind `orchestrator` moves from tier deep to strong.
+- Kinds `peer` and `peer-review` are retired; their dispatches take `hardest` and `review`, so no default kind inherits the session model.
 
 ### Fixed
+
+- The land gate judges the candidate commit: a tracked file an open sibling lists stays with this task, and a slot tree that differs from the commit is gated in a detached worktree of it.
+- An amend no longer commits a hand edit of the plan, and `land-task --check` refreshes the behaviour files before its gate.
+- A land stages a tracked file inside a gitignored folder, such as a plan under `docs/specs/`.
+- `coveringTests` finds a test that names a module after a `${root}/` template prefix.
 
 - A land that leaves a protected path outside `Files:` out of the commit names the path, says it was not committed and says to add it to `Files:` or give it its own task.
 - A land keeps the land-amend protected paths (`lib/guard-rules.mjs`, `lib/git-deny.mjs`, the land scripts, `docs/plans/`) outside `Files:` out of the task commit.

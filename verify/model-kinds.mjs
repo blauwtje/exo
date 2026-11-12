@@ -70,7 +70,11 @@ function sourceFiles(root, folder) {
 
 function tableUses(table) {
   const members = [...Object.values(table.agents ?? {}), ...(table.dispatches ?? []), table.unnamed ?? {}];
-  return [...members.flatMap((member) => [member.kind, ...(member.labels ?? [])]), ...Object.values(table.unnamed?.jobs ?? {})];
+  return [
+    ...members.flatMap((member) => [member.kind, ...(member.labels ?? [])]),
+    ...Object.values(table.skills ?? {}),
+    ...Object.values(table.unnamed?.jobs ?? {})
+  ];
 }
 
 function namesKind(text, kind) {
@@ -93,8 +97,8 @@ function filePins(root, file) {
     .filter((pin) => pin.actual !== null);
 }
 
-function findFrontmatterPins(root) {
-  const files = [...markdownFiles(root, 'agents'), ...markdownFiles(root, 'skills')];
+function findFrontmatterPins(root, table) {
+  const files = [...markdownFiles(root, 'agents'), ...markdownFiles(root, 'skills')].filter((file) => !(file in (table.skills ?? {})));
   return files.flatMap((file) => filePins(root, file));
 }
 
@@ -114,5 +118,15 @@ function findDispatchPins(root, table) {
 
 export function findKindDrift(root, table) {
   const kinds = table ?? readKindTable(path.join(root, 'lib', 'model-kinds.json'));
-  return [...findFrontmatterPins(root), ...findDispatchPins(root, kinds)];
+  return [...findFrontmatterPins(root, kinds), ...findDispatchPins(root, kinds)];
+}
+
+export function findUnknownKindLabels(root, table) {
+  const files = ['agents', 'hooks', 'skills'].flatMap((folder) => markdownFiles(root, folder));
+  return files.flatMap((file) => fs.readFileSync(path.join(root, file), 'utf8').split('\n').flatMap((line, index) => {
+    const labels = [...line.matchAll(/exo-kind: ([a-z][\w-]*)/g)].map((found) => found[1].replace(/-+$/, ''));
+    return labels
+      .filter((label) => !(label in table.kinds))
+      .map((label) => `${file}:${index + 1}: exo-kind: ${label} names no kind`);
+  }));
 }

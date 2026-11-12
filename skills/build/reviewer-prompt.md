@@ -1,6 +1,6 @@
 # Reviewer prompt
 
-Text build's No-spec step 7 hands a `general-purpose` delegate whose prompt opens with `exo-kind: peer-review`.
+Text build's No-spec step 7 hands a `general-purpose` delegate whose prompt opens with `exo-kind: review`.
 
 ```text
 Review the pending change in <root>. Request: <request>

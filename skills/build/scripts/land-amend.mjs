@@ -45,11 +45,15 @@ function widenedPlanText(planText, task, paths) {
   return planText.replace(task.section, task.section.replace(field, widened));
 }
 
+function hasHandEdit(planPath) {
+  const diff = spawnSync('git', ['-C', path.dirname(planPath), 'diff', '--quiet', '--', planPath], { stdio: 'ignore' });
+  return diff.status === 1;
+}
+
 function commitPlanEdit(number, planPath) {
   const checkout = path.dirname(planPath);
   const tracked = spawnSync('git', ['-C', checkout, 'ls-files', '--error-unmatch', planPath], { stdio: 'ignore' });
   if (tracked.status !== 0) return;
-  execFileSync('git', ['-C', checkout, 'add', '--', planPath]);
   execFileSync('git', ['-C', checkout, 'commit', '-m', `docs(plan): widen Files of Task ${number}`, '--', planPath], { stdio: 'ignore' });
 }
 
@@ -59,7 +63,8 @@ export function amendOutsideFiles({ planText, number, context }) {
   const paths = amendablePaths(plan, task, context);
   if (paths.length === 0 || !proofPasses(task, context)) return { planText, lines: [] };
   const widened = widenedPlanText(planText, task, paths);
+  const handEdited = hasHandEdit(context.planPath);
   fs.writeFileSync(context.planPath, widened);
-  commitPlanEdit(number, context.planPath);
+  if (!handEdited) commitPlanEdit(number, context.planPath);
   return { planText: widened, lines: paths.map((file) => `AMEND Task ${number} ${file}`) };
 }

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
+import { checkTask } from '../skills/build/scripts/land-check.mjs';
 import { git, gitRepository } from './harness.mjs';
 import { PLAN, editApp } from './land-task-fixture.mjs';
 
@@ -48,4 +49,16 @@ test('a land in a repository without docs/behaviour creates and stages no behavi
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.doesNotMatch(git(root, 'show', '--name-only', '--format=', 'HEAD'), /^docs\/behaviour\//m);
   await assert.rejects(fs.access(path.join(root, 'docs/behaviour')));
+});
+
+test('--check regenerates a stale behaviour file before the gate', async () => {
+  const { root, planPath } = await checkout();
+  await fs.mkdir(path.join(root, 'docs/behaviour'));
+  await fs.writeFile(path.join(root, 'docs/behaviour/lib.md'), 'old\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-m', 'seed behaviour');
+  await editApp(root);
+  const reportText = 'Task 1: GREEN\nLanded: src/app.js\nTest first: skipped\nRed: none\nProof: skipped\nUnresolved: none\n';
+  const output = checkTask({ planPath, planText: withBehaviourGate(root), number: 1, root, reportText });
+  assert.match(output, /Report OK: Task 1/);
 });
