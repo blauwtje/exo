@@ -15,7 +15,7 @@ const PIN = {
   size: MODEL_BYTES.length,
   sha256: createHash('sha256').update(MODEL_BYTES).digest('hex'),
 };
-const SELECTOR = 'bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best';
+const SELECTOR = 'bestaudio[format_note*=original]/bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best';
 const FAKE_PACKAGE = `
 exports.initWhisper = async ({ filePath }) => ({
   transcribeFile: (file, options) => ({

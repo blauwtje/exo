@@ -21,6 +21,7 @@ const STUBS = {
   'yt-dlp': `${shebang}${logged('yt-dlp')}
 if (args.includes('--version')) process.exit(0);
 if (args.includes('-J')) { console.log(process.env.FAKE_INFO); process.exit(0); }
+if (process.env.FAKE_FAIL === 'captions' && args.includes('--skip-download')) { console.error('ERROR: HTTP Error 429: Too Many Requests'); process.exit(1); }
 if (process.env.FAKE_FAIL === 'download') { console.error('ERROR: download denied'); process.exit(1); }
 fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], 'audio.mp3'), 'audio');
 `,
@@ -59,7 +60,7 @@ test('whisper.cpp transcribes the audio when --model names an existing file', ()
   assert.equal(fs.readFileSync(path.join(site.folder, 'transcript.txt'), 'utf8'), '[00:00] Hello from the audio second spoken line\n');
   const calls = site.calls();
   const download = calls.find((args) => args[0] === 'yt-dlp' && args.includes('-f'));
-  assert.deepEqual(download.slice(1, 6), ['--js-runtimes', download[2], '-f', 'bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best', '--no-playlist']);
+  assert.deepEqual(download.slice(1, 6), ['--js-runtimes', download[2], '-f', 'bestaudio[format_note*=original]/bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best', '--no-playlist']);
   assert.ok(download.includes('audio.%(ext)s'));
   const engine = calls.find((args) => args[0] === 'whisper-cli');
   assert.equal(engine[engine.indexOf('-l') + 1], 'pt');
@@ -200,4 +201,12 @@ test('non-speech tokens are cut from spoken cues and later cues are dropped', as
   const cues = [{ start: 0, text: '♪ la la ♪ Hello [Applause] there' }, { start: 2, text: '[BLANK_AUDIO]' }, { start: 3, text: '[ ]' }, { start: 20, text: 'after the end' }];
   const { text } = await rendered(cues, 10);
   assert.equal(text, '[00:00] Hello there\n');
+});
+
+test('a rate-limited caption download falls back to transcribing the audio', () => {
+  const captioned = { ...INFO, automatic_captions: { en: [{ ext: 'vtt', url: 'https://example.com/en.vtt' }] } };
+  const site = setup(ALL, { info: captioned });
+  const result = site.run(['--model', site.model, '--lang', 'en'], { FAKE_FAIL: 'captions' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /captions=speech:whisper\.cpp/);
 });

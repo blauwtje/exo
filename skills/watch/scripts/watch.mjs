@@ -3,6 +3,7 @@ import path from 'node:path';
 import { transcribe } from './speech.mjs';
 import { parseVtt } from './cues.mjs';
 import { writeOutputs, headOf } from './outputs.mjs';
+import { isRateLimited } from './request-gate.mjs';
 import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './ytdlp.mjs';
 import { pickCaptions, availableLanguages, chaptersOf, folderOf } from './ytdlp-info.mjs';
 import { sourceOf } from './video-url.mjs';
@@ -78,6 +79,10 @@ async function watchWithYtDlp({ id, url }, options, why) {
   const flag = picked.source === 'manual' ? '--write-subs' : '--write-auto-subs';
   const download = await runYtDlpWithRuntime(['--skip-download', flag, '--sub-langs', picked.key, '--sub-format', 'vtt', '--no-warnings', '--no-playlist', '--playlist-items', '1', '-P', dir, '-o', '%(id)s.%(ext)s', '--', url], options.ytDlpMs);
   const vttName = fs.readdirSync(dir).find((name) => name.startsWith(`${info.id}.`) && name.endsWith('.vtt'));
+  if (!vttName && isRateLimited(download)) {
+    const details = { duration: info.duration, chapters: () => chaptersOf(info) };
+    return watchBySpeech({ label: folder, url, dir, head: headOf(folder, info.title), details, why: 'captions are rate-limited' }, options);
+  }
   if (!vttName) return noTranscript(folder, `${why ? `${why}; ` : ''}yt-dlp wrote no ${picked.key} captions: ${ytDlpReason(download, options)}`);
   const raw = path.join(dir, 'raw.vtt');
   fs.renameSync(path.join(dir, vttName), raw);

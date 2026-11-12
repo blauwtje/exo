@@ -5,7 +5,7 @@ import { runTool, toolReason } from './run-tool.mjs';
 import { ensureModel } from './whisper-model.mjs';
 import { transcribeWithNode, vttOf } from './whisper-node.mjs';
 
-const AUDIO_SELECTOR = 'bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best';
+const AUDIO_SELECTOR = 'bestaudio[format_note*=original]/bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaudio/best';
 const READABLE = new Set(['.mp3', '.wav', '.flac']);
 const ENGINE_NAMES = { 'whisper-cli': 'whisper.cpp', whisper: 'whisper', 'whisper-node': 'whisper.node' };
 
