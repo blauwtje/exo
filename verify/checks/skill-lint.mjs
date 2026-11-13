@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const NAME = 'skill lint';
-const EMPHASIS = /\b(?:IMPORTANT|CRITICAL|MUST)\b/;
+const EMPHASIS = /\b(?:IMPORTANT|CRITICAL|MUST|NEVER|ALWAYS)\b/;
 const EMPHASIS_LIMIT = 2;
+const PROMPT_FOLDERS = ['agents', 'hooks', 'lib/references', 'lib/agent-modes'];
 const SCRIPT_COMMAND = /`[^`]*?([\w-]+\.mjs)([^`]*)`/g;
 const FLAG = /(?<![\w-])--[a-z][a-z0-9-]*/g;
 const UNSAFE = [
@@ -18,6 +19,13 @@ const AT_MOST = /((?:\S+\s+){0,2})at most (\d+) ([a-z][a-z-]*)/gi;
 
 function skillMarkdown(repository) {
   return repository.walk(repository.skillsRoot, (file) => file.endsWith('.md'));
+}
+
+function promptMarkdown(repository) {
+  return PROMPT_FOLDERS
+    .map((folder) => repository.join(folder))
+    .filter((folder) => fs.existsSync(folder))
+    .flatMap((folder) => repository.walk(folder, (file) => file.endsWith('.md')));
 }
 
 function scriptSource(repository, markdownFile, scriptName) {
@@ -104,7 +112,9 @@ export function skillLintFindings(repository) {
       ...ritualPhrases(repository, file, lines)
     ];
   });
-  return [...rows, ...conflictingCounts(repository, files)];
+  const promptRows = promptMarkdown(repository)
+    .flatMap((file) => excessEmphasis(repository, file, repository.text(file).split('\n')));
+  return [...rows, ...promptRows, ...conflictingCounts(repository, files)];
 }
 
 export function checkSkillLint(report, repository) {

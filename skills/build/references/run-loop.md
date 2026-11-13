@@ -20,3 +20,4 @@ The skill body holds steps 1-7 of the common route. This file holds only what it
 - `BLOCKED <n> NEEDS ANSWER: <question>`: after the wave, ask each question in its own message, no batching, then re-dispatch that task with the answer in its prompt only.
 - Any other `BLOCKED` follows its row in `lib/run-outcomes.mjs`, or goes unread to a fresh agent.
 - `BLOCKED all nested dispatch unavailable` asks to set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 3+ for a launched run, else 2+. Otherwise step 5 uses the direct route reference.
+- The run ends at its cap per `lib/loop-budget.mjs`: set `EXO_MAX_RUN_USD` or `EXO_RUN_WALL_MS` to bound it.

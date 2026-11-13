@@ -59,3 +59,11 @@ test('ritual phrases are reported unless they sit inside quotes', () => {
   const text = 'Please double check it.\nBe maximally thorough.\nThink step by step.\nThink carefully.\nBan "think carefully" here.\nBan `double check` here.\n';
   assert.deepEqual(rules({ 'skills/build/SKILL.md': text }), ['ritual', 'ritual', 'ritual', 'ritual']);
 });
+
+test('emphasis in agents, hooks and lib prompt text is reported past two lines', () => {
+  const text = 'IMPORTANT a\nNEVER b\nYou ALWAYS c\n';
+  for (const name of ['agents/x.md', 'hooks/x.md', 'lib/references/x.md', 'lib/agent-modes/x.md']) {
+    assert.deepEqual(rules({ [name]: text, 'skills/build/SKILL.md': '' }), ['emphasis']);
+    assert.deepEqual(rules({ [name]: 'IMPORTANT a\nNEVER b\n', 'skills/build/SKILL.md': '' }), []);
+  }
+});

@@ -21,7 +21,7 @@ export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 592, measured: '2026-11-06'
 // Raised 1580 -> 1600 when the proof rule split into reuse-a-failing-check and one-run-per-variant bullets (same words, more arrows).
 // Raised 1606 -> 1787 with the TaskStop rule line.
 // Raised 1787 -> 1978 when the delete-would-unblock rule became the green-command-as-typed rule.
-export const INJECTED_CONTEXT_LOCK = { bytes: 2425, measured: '2026-11-11' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2579, measured: '2026-11-13' };
 // Lines of hooks/**/*.mjs plus lib/hook-input.mjs, which run on every Bash call
 // and session start; verify/checks/hook-budgets.mjs fails above it.
 // Raised 1097 -> 1098 with the intake bound in dispatch-bash.mjs.
@@ -52,7 +52,7 @@ export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Raised 636 -> 667 with the TaskStop rule line.
 // Raised 667 -> 669 with the context limit on the settings line.
 // Raised 669 -> 703 with the green-command-as-typed rule.
-export const SESSION_LOAD_LOCK = { words: 805, measured: '2026-11-11' };
+export const SESSION_LOAD_LOCK = { words: 829, measured: '2026-11-13' };
 // Bytes of the whole additionalContext hooks/session-start.mjs injects (pointers, settings line with
 // its compression rule text, routing and rules text), measured in an empty home and folder;
 // verify/checks/hook-budgets.mjs fails above it.
@@ -62,7 +62,7 @@ export const SESSION_LOAD_LOCK = { words: 805, measured: '2026-11-11' };
 // Raised 1745 -> 1926 with the TaskStop rule line.
 // Raised 1926 -> 1950 with the context limit on the settings line.
 // Raised 1950 -> 2141 with the green-command-as-typed rule.
-export const SESSION_START_BYTES_LOCK = { bytes: 2427, measured: '2026-11-11' };
+export const SESSION_START_BYTES_LOCK = { bytes: 2581, measured: '2026-11-13' };
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
 // BYTES_PER_TOKEN, the sizing convention for skill text. The ceiling fails; realistic is the aim edit-skills
 // states and the checks name in their PASS detail.

@@ -43,6 +43,7 @@ In those sections:
 - When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Progress` unchanged.
 - Put a claim no command proved under the unproven list in `## Evidence`, not the proven one.
 - Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` for the task in progress and carry its lines into `## Evidence` as approaches the next session must not retry.
+- List each correction the user made this session under `## Evidence`, with the one-line rule or check that would have prevented it.
 - Read `## Progress` from `git status --short`, not memory.
 - List which changes are committed, then every uncommitted path in full, because a next session that cannot see the difference treats working-tree edits as saved and discards them.
 - For a session running a plan, open `## Progress` with the plan path and the number of the task in progress.
@@ -52,7 +53,7 @@ In those sections:
 Copy this paragraph into `## Resume` exactly, so the reading session inherits the rule without this skill:
 
 ```text
-Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof.
+Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof. Compare the `Written` date and last commit with `git log -1` and `git status --short`, and name what changed since before relying on a claim.
 ```
 
 ## References

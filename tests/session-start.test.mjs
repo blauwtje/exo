@@ -30,3 +30,9 @@ test('a human session prints context and a resume skips the rules', () => {
   const resume = runHook({ source: 'resume' });
   assert.ok(!JSON.parse(resume.stdout).hookSpecificOutput.additionalContext.includes(RULES));
 });
+
+test('the rules part of the output carries no timestamp, commit sha or run id', () => {
+  assert.doesNotMatch(RULES, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+  assert.doesNotMatch(RULES, /\b[0-9a-f]{40}\b/);
+  assert.doesNotMatch(RULES, /\brun-[0-9a-z]{6,}\b/i);
+});

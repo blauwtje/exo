@@ -9,6 +9,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- The session rules re-inject the brief path and offer a fresh session after two corrections, and a test keeps the rules part free of timestamps, shas and run ids.
+- `save-session` lists the session corrections, checks note staleness with `git status --short` and reopens read ranges on resume.
+- The emphasis lint also scans agents, hooks and lib prompt text.
+- `npm run check` runs a shipped-text scan for credentials and override phrases.
 - `node benchmarks/lead-delegation.mjs` runs one session on a 5-component board refactor and passes when the lead starts at least 1 subagent and writes at most 2 files itself; `--dry-run` spends nothing, `--score <stream.jsonl>` scores a stored stream, and a run with a permission denial prints `VOID`.
 - A main session that writes its 3rd distinct file inline gets one note to hand the remaining writes to `exo:build`; subagent writes and `.exo/` paths are not counted, and `leadWriteNudge` in run.json `defaults` sets the count.
 - `adhd-score.mjs --prereg benchmarks/adhd/prereg.json` refuses a paired adhd run when a frozen file's hash changed or the planned cases fall below the cases the recorded spread needs, then runs the frozen cases, samples, arms, model and cap; the paired facts-kept count uses a t interval and prints `decided`, `no effect of 1` or `not decided`, and gate passes print on their own line.
@@ -45,6 +49,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The spec open-points step also checks the spec, brief and plan for contradicting statements, the find-cause skill reproduces as the reporter and races two fixers after failed rounds, and the run loop names `EXO_MAX_RUN_USD`.
 - `search.mjs --source reddit` reads live Reddit through an exo-owned logged-in browser session (`--login` sets it up) and drops the archive and RSS; a missing login prints one `blocked` line naming the fix.
 - The facts judge passes a fact ending in "is named" when the reply names that part in one or two words matching the name or the part in parentheses.
 - The `adhd` output style bolds the label of every bullet, the one result figure and the closing action, ends a long list on an `Also:` bullet, and ends a choice on the question; a new `labels` gate fails a bullet without a bold label.

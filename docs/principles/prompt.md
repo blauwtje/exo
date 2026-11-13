@@ -12,7 +12,7 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 - **Write names and descriptions for the trigger decision.** A distinct description routes correctly. [4][7] exo: `skills/edit-skills/references/description.md`
 - **State needed context in the delegation prompt.** A subagent starts blank. [5] exo: `hooks/session-rules.md`, `skills/build/implementer-prompt.md`
 - **Ask for every finding, then filter in a second pass.** Opus 5.5 reads "only high-severity" literally. [6] exo: gap
-- **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: gap
+- **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: lint caps them
 - **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: gap
 - **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`, `verify/checks/brief-grammar.mjs`
 - **Simplicity first: the least code that works.** [9][10] exo: `lib/references/lean.md`, `verify/checks/module-surface.mjs`

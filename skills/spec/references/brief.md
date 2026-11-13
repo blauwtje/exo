@@ -6,13 +6,13 @@ The brief is the decided outcome, written in fixed sections so a session can res
 
 In this order:
 
-- **Goal:** the observable result, in one sentence.
+- **Goal:** the observable result in one sentence.
 - **Decisions:** every bin-1 decision with its answer. The user, the code (with its settling path) or exo closes it, exo for a second "I don't know" or small work, and a choice exo made ends in `(exo decided)`.
 - **Non-goals:** what a reader would assume is included, one bullet each naming its paths. Omit it when there are none.
 - **Open points:** only an unanswered question for the user, one list item each. Plan-check flags a listed entry, and build refuses the brief.
 - **Assumptions:** each `code` or `assume` point.
-- **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does. Each item cites a task number, a `Data:` segment or the Success criterion, else it is a Manual check.
-- **Manual checks:** only checks that need the user's own eyes, hands or account, one line each, per `## Manual checks` below. The run report holds them, not the final message.
+- **Acceptance:** the observable checks and the highest seam that runs them. Each item cites a task number, a `Data:` segment or the Success criterion, else it is a Manual check.
+- **Manual checks:** only checks that need the user's own eyes, hands or account, one line each, per `## Manual checks`. The run report holds them, not the final message.
 - **Visual direction:** for a new visual surface only. It says whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions.
   - When the frontend-design skill returns, add the path of its `contract-selected.json` with the contract's `title` and `description`.
 - **Plan basis**, **Success criterion**, **Checkpoint**, **Tasks**, each as the task-list specification defines it.
@@ -24,7 +24,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Manual checks
 
-Each line is what to do, then what the user should see, in plain words a child follows and in the user's language.
+Each line says what to do, then what the user should see, in plain words in the user's language.
 
 ## The task list
 
@@ -43,6 +43,7 @@ Each line is what to do, then what the user should see, in plain words a child f
 
 Dispatch `exo:research-worker` (`Sources: repo`) on the brief, in the background.
 
+- It flags contradicting statements in the spec, brief and plan.
 - Skip it for a plan of at most 3 tasks whose Proofs are all static (no `App:`, no test run).
 - When it returns `Assumptions: <path>`, insert its `- ` bullets unread after the brief's `## Assumptions` line with the command below; with no such line, insert nothing.
 

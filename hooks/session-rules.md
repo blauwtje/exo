@@ -6,6 +6,7 @@
 - T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `Sources:` in the brief, verdict and file path back, from `exo:research-worker` for 1 worker or one `exo:orchestrator` for 2 or more.
 - T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
 - T4 steps that each need the previous result: one worker, never split.
-- Keep a long task's plan and progress in `.exo/<topic>/progress.md`, so a fresh context can resume.
+- Keep a long task's plan and progress in `.exo/<topic>/progress.md` with the brief path on its first line, so a fresh context can resume.
+- When the user has corrected the same work twice, offer a fresh session through exo:save-session that carries both corrections.
 - Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
 - Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess costs the user.
