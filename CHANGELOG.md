@@ -93,6 +93,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The lead write nudge counts the files the main session writes through Bash: a lead Bash call records the dirty working-tree files, and the next Bash, Write or Edit call adds the ones that changed. It stays a nudge and fires once.
 - A build request that states no size routes to `exo:build`: the session routing text now names a code restructure, a UI restyle or copy rewrite, a dependency major or swap, a security hardening and a change reaching every caller. Held-out build recall on the hook arm rose from 0.511 to 0.770 over 3 runs per prompt, with no false positive.
 - The `isolation-probe`, `lead-delegation-session`, `locate-recall`, `lean-gates` and `run` benchmarks remove their scratch folder with `removeScratch`, which retries while a child's descendants still write into it.
 - Benchmark sessions load only the plugins their `--plugin-dir` names when `CLAUDE_CONFIG_DIR` is set, and `node benchmarks/isolation-probe.mjs --plugins` checks that at no cost.
