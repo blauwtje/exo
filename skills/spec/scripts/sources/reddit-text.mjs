@@ -94,7 +94,7 @@ export function parseSearchPage(html) {
 
 function flattenReplies(children, depth, found) {
   for (const child of children) {
-    if (child.kind === 'more') found.moreIds.push(...moreIdsOf(child.data));
+    if (child.kind === 'more') found.more.push(stubOf(child.data));
     if (child.kind !== 't1') continue;
     const { author, score, body, replies } = child.data;
     found.comments.push({ id: child.data.id, author, score, depth, text: body });
@@ -102,15 +102,25 @@ function flattenReplies(children, depth, found) {
   }
 }
 
-function moreIdsOf({ children, parent_id: parentId }) {
-  if (children.length) return children;
-  return [parentId.replace(/^t\d_/, '')];
+function stubOf({ children, parent_id: parentId }) {
+  return { children, parentId };
+}
+
+export function parseMoreChildren(body) {
+  const things = body.json?.data?.things;
+  if (!Array.isArray(things)) throw new Error('morechildren answer has no things');
+  const found = { comments: [], more: [] };
+  for (const { kind, data: thing } of things) {
+    if (kind === 'more') found.more.push(stubOf(thing));
+    if (kind === 't1') found.comments.push({ id: thing.id, author: thing.author, score: thing.score, depth: thing.depth ?? 0, text: thing.body });
+  }
+  return found;
 }
 
 export function parseThread(listings) {
   const [postListing, commentListing] = listings;
   const { id, title, selftext, author, score, num_comments: commentCount } = postListing.data.children[0].data;
-  const found = { comments: [], moreIds: [] };
+  const found = { comments: [], more: [] };
   flattenReplies(commentListing.data.children, 0, found);
   return { post: { id, title, text: selftext, author, score, commentCount }, ...found };
 }

@@ -25,5 +25,5 @@ test('parseThread returns the post, flat comments with depth and more stub ids',
   const thread = parseThread(JSON.parse(fixture('reddit-thread.json')));
   assert.deepEqual(thread.post, { id: 'abc123', title: 'Example title', text: 'Post body', author: 'example_user', score: 10, commentCount: 4 });
   assert.deepEqual(thread.comments.map(({ id, depth, score }) => [id, depth, score]), [['c1', 0, 5], ['c2', 1, 2]]);
-  assert.deepEqual(thread.moreIds, ['c3', 'c4', 'c5']);
+  assert.deepEqual(thread.more, [{ children: ['c3', 'c4'], parentId: 't1_c1' }, { children: [], parentId: 't1_c5' }]);
 });

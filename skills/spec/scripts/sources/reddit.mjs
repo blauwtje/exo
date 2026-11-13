@@ -1,17 +1,17 @@
 import os from 'node:os';
+import { environmentMs } from '#script-flags';
 import { runDefaults } from '../../../build/scripts/run-config.mjs';
 import { createClient, threadWait } from './reddit-bucket.mjs';
-import { BlockedRoute } from './http.mjs';
 import { splitSubreddit } from './reddit-discover.mjs';
-import { commentsAsText, parseSearchPage, parseThread, searchUrl } from './reddit-text.mjs';
+import { commentsAsText, parseMoreChildren, parseSearchPage, parseThread, searchUrl } from './reddit-text.mjs';
 
 const WAIT_CAP_MS = 65_000;
-const MORE_CALLS = 5;
+const THREAD_MS = 45_000;
 const THREAD_PATH = /\/(?:r\/(\w+)\/)?(?:comments|posts)\/(\w+)/;
 
 function settingsOf(context) {
   const configured = context.defaults ?? runDefaults(os.homedir()).reddit ?? {};
-  return { concurrency: 3, capacity: 3, refillMs: 400, waitCapMs: WAIT_CAP_MS, moreCalls: MORE_CALLS, ...configured };
+  return { concurrency: 3, capacity: 3, refillMs: 400, waitCapMs: WAIT_CAP_MS, threadMs: environmentMs('EXO_REDDIT_THREAD_MS', THREAD_MS), now: context.now ?? Date.now, ...configured };
 }
 
 async function searchHits(client, { query, limit, subreddit, sort = 'new', time = 'all' }) {
@@ -27,36 +27,73 @@ function hitFromUrl(url) {
 
 function threadUrl(id, commentId = '') {
   const path = commentId ? `/comments/${id}/_/${commentId}` : `/comments/${id}`;
-  return `https://www.reddit.com${path}.json?limit=500&raw_json=1`;
+  return `https://www.reddit.com${path}.json?limit=500&depth=10&sort=top&raw_json=1`;
 }
 
-async function readThread(client, id, { wait, moreCalls }) {
-  const { post, comments, moreIds } = parseThread(JSON.parse(await client.get(threadUrl(id), { wait })));
-  const seen = new Set(comments.map((comment) => comment.id));
-  for (let followed = 0; followed < moreCalls && moreIds.length > 0; followed += 1) {
-    try {
-      const part = parseThread(JSON.parse(await client.get(threadUrl(id, moreIds.shift()), { wait })));
-      comments.push(...part.comments.filter((comment) => !seen.has(comment.id)));
-      part.comments.forEach((comment) => seen.add(comment.id));
-      moreIds.push(...part.moreIds);
-    } catch (error) {
-      if (!(error instanceof BlockedRoute)) throw error;
-      return { post, comments, truncated: error.message };
-    }
+const BATCH = 100;
+const MORE_URL = 'https://www.reddit.com/api/morechildren.json?api_type=json&limit_children=false&raw_json=1';
+
+function moreChildrenUrl(id, children) {
+  return `${MORE_URL}&link_id=t3_${id}&children=${children.join(',')}`;
+}
+
+function addStubs(state, stubs) {
+  for (const { children, parentId } of stubs) {
+    if (children.length > 0) state.ids.push(...children);
+    if (children.length === 0 && !parentId.startsWith('t3_')) state.parents.push(parentId.replace(/^t\d_/, ''));
   }
-  return { post, comments };
 }
 
-function signalsOf({ post, comments, truncated }) {
+function addComments(state, part) {
+  const fresh = part.comments.filter((comment) => !state.seen.has(comment.id));
+  fresh.forEach((comment) => state.seen.add(comment.id));
+  state.comments.push(...fresh);
+  addStubs(state, part.more);
+}
+
+async function readBatch(client, { id, wait }, state) {
+  const ids = state.ids.splice(0, BATCH);
+  try {
+    addComments(state, parseMoreChildren(JSON.parse(await client.get(moreChildrenUrl(id, ids), { wait }))));
+  } catch {
+    state.ids.unshift(...ids);
+    state.single = true;
+  }
+}
+
+async function readSingle(client, { id, wait }, state) {
+  const queue = state.ids.length > 0 ? state.ids : state.parents;
+  try {
+    addComments(state, parseThread(JSON.parse(await client.get(threadUrl(id, queue[0]), { wait }))));
+    queue.shift();
+  } catch (error) {
+    state.stopped = error.message;
+  }
+}
+
+async function readThread(client, id, { wait, budgetMs, now }) {
+  const { post, comments, more } = parseThread(JSON.parse(await client.get(threadUrl(id), { wait })));
+  const state = { comments, seen: new Set(comments.map((comment) => comment.id)), ids: [], parents: [], single: false };
+  addStubs(state, more);
+  const deadline = now() + budgetMs;
+  while (!state.stopped && now() < deadline && state.ids.length + state.parents.length > 0) {
+    const read = state.ids.length > 0 && !state.single ? readBatch : readSingle;
+    await read(client, { id, wait }, state);
+  }
+  return { post, comments, unread: state.ids.length + state.parents.length, truncated: state.stopped };
+}
+
+function signalsOf({ post, comments, truncated, unread }) {
   const read = `read ${comments.length} of ${post.commentCount} comments`;
-  return truncated ? `${read}; truncated: ${truncated}` : read;
+  const rest = unread > 0 ? `${read}; ${unread} ids unread` : read;
+  return truncated ? `${rest}; truncated: ${truncated}` : rest;
 }
 
 async function withComments(client, hit, settings) {
   const id = hit.url.match(THREAD_PATH)?.[2];
   if (!id) return hit;
   const wait = threadWait(client.capMs, client.pauseFor);
-  const read = await readThread(client, id, { wait, moreCalls: settings.moreCalls });
+  const read = await readThread(client, id, { wait, budgetMs: settings.threadMs, now: settings.now });
   return { ...hit, title: read.post.title, text: read.post.text, comments: commentsAsText(read.comments), signals: signalsOf(read) };
 }
 
