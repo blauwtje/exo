@@ -12,4 +12,4 @@ This page plans a measured Goal, so the result is a number that a paired run can
    - Skip Wilcoxon, because 5-8 tasks give it no power over the sign test.
 6. For failing trials, one delegate reads the raw failing transcripts that `readouts.mjs` lists and classes each failure into `.exo/<topic>/failures.md`. This session reads that file, not the transcripts.
    - Label each failure agent fault or case fault, a case fault being an ambiguous or unsolvable case, and send case faults to the user, because the agent cannot fix them.
-7. Pick a setting only when the score moves between the weakest and the strongest arm, checked with `node benchmarks/mde.mjs --rate <r> --n <n> --scores <arm scores>`; otherwise the ledger records "saturated, no ranking" and no setting changes, because a ceiling score cannot tell arms apart.
+7. Pick a setting only when `node benchmarks/mde.mjs --rate <r> --n <n> --scores <arm scores>` prints no `ceiling` line. When it prints one, every arm scores at or above 0.95, so the ledger records "at ceiling, no ranking" and no setting changes, because a ceiling score cannot tell arms apart.

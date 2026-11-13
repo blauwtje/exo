@@ -39,7 +39,6 @@ Ask the user nothing, because the user may be away. Read only each worker's retu
 - Inline bounds: edit nothing the scorer reads and add no special case for its cases.
 - Inline, with no idea left or on an interrupt, Stop. Run `node "${CLAUDE_SKILL_DIR}/scripts/round.mjs" --root <root> --tag <tag> --report`, then report the best kept score against the baseline, its `HOLDOUT` line, the branch, the worktree and the reason, and leave them and `.exo/improve/` in place.
 - The lead runs no score command, test or check of its own, before setup or after. `round.mjs` owns scoring, rows, keeps and resets.
-- After 2 rounds without gain, a delegate clusters the remaining failures and labels each cluster agent fault or case fault per measured-goal step 6. Send case-fault clusters to the user, not to the next round.
 - After a crash row, its idea may be retried with the cause its `OUT` lines name fixed.
 
 ## Judgment
@@ -48,3 +47,4 @@ Ask the user nothing, because the user may be away. Read only each worker's retu
 - A kept commit comes only from a `round.mjs` `keep` row. Edit no scorer and take no score from chat.
 - At an equal score the simpler commit wins. A removal that keeps the score is a win, and a tiny gain that adds much code is not worth it.
 - `round.mjs` reruns a noisy score up to `defaults.improve.maxRuns` times and keeps only when the lower bound of the gain's `keepZ` interval exceeds `keepFloor`. An exact score decides on one run.
+- After 2 rounds without gain, label each failing case in the last `CASES` lines agent fault or case fault per measured-goal step 6. The next idea targets only agent faults, and the Stop report lists the case faults.
