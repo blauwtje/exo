@@ -503,19 +503,19 @@ export async function runScore({ opts, cases, reply, judge, spend, baseline = re
   reportScore({ result, file, record: record() });
 }
 
-export async function runRescore({ opts, cases, judge, spend, baseline = readBaseline() }) {
-  const started = Date.now();
+export async function runRescore({ opts, cases, judge, spend, baseline }) {
+  const begun = Date.now();
   const log = readJson(opts.log);
   if (log.partial === true) throw new Error(`${opts.log} is a partial log; finish it with --resume first`);
   if (log.mode === 'quick') {
-    const judgeCall = limited(judge, JUDGE_CONCURRENCY);
-    const judgeOne = async (c, text) => (await judgeMissing({ c, texts: [text], judge: judgeCall, judgeModel: opts.judgeModel, spend }))[0];
+    const call = limited(judge, JUDGE_CONCURRENCY);
+    const judgeOne = async (c, text) => (await judgeMissing({ c, texts: [text], judge: call, judgeModel: opts.judgeModel, spend }))[0];
     const record = await rescoreQuick({ log, cases, file: opts.log, maxUsd: opts.maxUsd, judgeOne });
-    writeLog({ ...record, ...costRecord(spend), durationMs: Date.now() - started }, logPath(opts.logDir));
+    writeLog({ ...record, ...costRecord(spend), durationMs: Date.now() - begun }, logPath(opts.logDir));
     return printQuick(record);
   }
-  const result = await rescoreCases({ cases, baseline, log, judge, judgeModel: opts.judgeModel, spend });
-  reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - started, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
+  const result = await rescoreCases({ cases, baseline: baseline ?? readBaseline(), log, judge, judgeModel: opts.judgeModel, spend });
+  reportScore({ result, file: logPath(opts.logDir), record: { durationMs: Date.now() - begun, ablate: log.ablate ?? null, screen: opts.screen || (log.screen ?? false), cases: result.perCase.map((p) => p.id), rescoredFrom: opts.log, ...costRecord(spend) } });
 }
 
 export const concisePath = (model) => (model === REPLY_MODEL ? CONCISE : path.join(STORE, `concise.${model}.json`));

@@ -88,6 +88,27 @@ test('the mde script says the set is at the ceiling only when every score reache
   assert.doesNotMatch(out(), /ceiling/);
 });
 
+test('the mde script rejects a non-numeric ceiling with the usage line', () => {
+  const mde = path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs');
+  const run = spawnSync(process.execPath, [mde, '--rate', '0.5', '--n', '10', '--scores', '0.9', '--ceiling', 'abc'], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /usage/);
+});
+
+test('the mde script rejects a non-numeric score with the usage line', () => {
+  const mde = path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs');
+  const run = spawnSync(process.execPath, [mde, '--rate', '0.5', '--n', '10', '--scores', 'a,b'], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /usage/);
+});
+
+test('the mde script ranks no setting when every arm scores the same below the ceiling', () => {
+  const mde = path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs');
+  const out = (scores) => spawnSync(process.execPath, [mde, '--rate', '0.5', '--n', '10', '--scores', scores], { encoding: 'utf8' }).stdout;
+  assert.match(out('0.6,0.6'), /ranks no setting/);
+  assert.doesNotMatch(out('0.6,0.7'), /ranks no setting/);
+});
+
 test('minDetectableMeanEffect scales with spread and shrinks with runs', () => {
   assert.ok(Math.abs(minDetectableMeanEffect({ sd: 1, n: 2 }) - 2.84) < 1e-9);
   assert.ok(Math.abs(minDetectableMeanEffect({ sd: 0.5, n: 8 }) - 2.84 * 0.5 * 0.5) < 1e-9);

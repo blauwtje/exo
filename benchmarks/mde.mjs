@@ -8,7 +8,9 @@ const rate = Number(values.rate);
 const n = Number(values.n);
 const samples = Number(values.samples);
 const effect = values.effect === undefined ? undefined : Number(values.effect);
-if (!(rate > 0 && rate < 1) || !Number.isInteger(n) || n < 1 || !Number.isInteger(samples) || samples < 1 || !(effect === undefined || effect > 0)) {
+const ceiling = Number(values.ceiling);
+const scores = values.scores?.split(',').map((score) => (score.trim() === '' ? NaN : Number(score)));
+if (!(rate > 0 && rate < 1) || !(ceiling >= 0 && ceiling <= 1) || !Number.isInteger(n) || n < 1 || !Number.isInteger(samples) || samples < 1 || !(effect === undefined || effect > 0) || scores?.some((score) => !Number.isFinite(score))) {
   console.error('usage: mde.mjs --rate <0..1> --n <tasks per arm> [--samples <runs per task>] [--effect <target>] [--paired] [--scores <a,b,...> [--ceiling <0..1>]]');
   process.exit(2);
 }
@@ -23,9 +25,9 @@ if (uncapped > largest) {
 console.log(`sign test p, ${n} of ${n} pairs won: ${allWins.p.toPrecision(3)}`);
 console.log(powerLine({ tasks: n, samples, rate, paired: values.paired, effect }));
 if (values.scores !== undefined) {
-  const scores = values.scores.split(',').map(Number);
-  const ceiling = Number(values.ceiling);
   if (scores.every((score) => score >= ceiling)) {
     console.log(`ceiling: every score is at or above ${ceiling}, so the set ranks no setting`);
+  } else if (scores.every((score) => score === scores[0])) {
+    console.log(`no spread: every score is ${scores[0]}, so the set ranks no setting`);
   }
 }

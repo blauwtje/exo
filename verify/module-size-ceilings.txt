@@ -1,4 +1,4 @@
-39140 benchmarks/adhd-score.mjs
+39135 benchmarks/adhd-score.mjs
 11266 benchmarks/adhd/judges.mjs
 24340 benchmarks/agent-tier.mjs
 12055 benchmarks/agent-tier/estimate.mjs
@@ -41,10 +41,10 @@
 8978 benchmarks/session-stats.mjs
 9268 benchmarks/speed-ledger.mjs
 11631 benchmarks/sweep-cells.mjs
-17315 benchmarks/sweep-fixtures.mjs
+16566 benchmarks/sweep-fixtures.mjs
 11136 benchmarks/sweep-score.mjs
 26634 benchmarks/sweep.mjs
-10508 benchmarks/tasks.mjs
+8915 benchmarks/tasks.mjs
 9790 benchmarks/tbench/readouts.mjs
 15702 benchmarks/value.mjs
 10205 benchmarks/value/add-field-migration/check.mjs

@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- Two heavier build fixtures, `redirect` (open redirect) and `deep-merge` (prototype pollution), join the safe tasks the build cells run, so arms have more to separate on.
 - `usage.json` records a cache hit rate (`hitRate` = cache read / all prompt tokens) per cell and per agent role (`benchmarks/role-usage.mjs`).
 - `benchmarks/mde.mjs --scores <arm scores>` prints a `ceiling` line when every arm is at or above `--ceiling` (default 0.95).
 - The skill lint reports `scratchpad` as a ritual phrase.
@@ -54,6 +55,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The speed ledger records the plugin-arm cache hit rate gap (10.7 pp, n=22) as meeting its threshold, verdict `pass`, not `nog`.
 - `skills/spec/references/measured-goal.md` picks a setting only when `mde.mjs --scores` prints no `ceiling` line, and labels each failure agent fault or case fault; `skills/build/references/improve.md` labels the failing cases after 2 rounds without gain and lists case faults in the Stop report.
 - `node benchmarks/lead-delegation.mjs --history` has the first turn read 3 generated reference files, so the build turn starts at about 80k tokens of read history; a run that starts it under 50k prints `VOID`, and `--dry-run` prints the reference size and the floor.
 - The spec open-points step also checks the spec, brief and plan for contradicting statements, the find-cause skill reproduces as the reporter and races two fixers after failed rounds, and the run loop names `EXO_MAX_RUN_USD`.
@@ -99,6 +101,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `adhd-score --rescore` of a quick record no longer reads the gitignored baseline, so the paired rescore test passes in CI.
+- `benchmarks/mde.mjs --scores` prints a `no spread` line when every arm scores the same below the ceiling, so equal arms no longer read as rankable.
+- `benchmarks/mde.mjs` rejects a `--ceiling` outside 0 to 1, such as a non-numeric value, with the usage line and exit code 2.
 - `build` names the owner of every write over 2 files: the build skill body, the no-spec route and the critic fix round each send it to `exo:build-task`, where only the design-ui reference said so before.
 - The lead write nudge counts the files the main session writes through Bash: a lead Bash call records the dirty working-tree files, and the next Bash, Write or Edit call adds the ones that changed. It stays a nudge and fires once.
 - A build request that states no size routes to `exo:build`: the session routing text now names a code restructure, a UI restyle or copy rewrite, a dependency major or swap, a security hardening and a change reaching every caller. Held-out build recall on the hook arm rose from 0.511 to 0.770 over 3 runs per prompt, with no false positive.
@@ -157,6 +162,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A land that widens `Files:` commits that plan edit when git tracks the plan, so the next slot land is not refused with `NEWPATH`.
 - The covering-test lookup finds a test that names a module by a relative import or a `${root}` template.
 - A check and a land warn when the build report names a limit or an open `Unresolved:` line.
+- The `redirect` build fixture no longer counts a same-host `http` target as hostile, because its prompt names no scheme.
+- `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
 

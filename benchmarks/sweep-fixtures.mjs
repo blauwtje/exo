@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { FIXTURE_NAME, generate } from './frontend-fixture/generate.mjs';
+import { FIXER_FINDINGS } from './fixer-findings.mjs';
 import { exportedNames, planClosingSection, planContextSection, planScopeSection } from './sweep-plan-text.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -209,13 +210,6 @@ export function prepareBuildRepository(repository, task, safeRoot = SAFE) {
 // range and evidence below are what a review-branch would confirm on that
 // seed, so a fixer cell starts from a review already run rather than one it
 // must run itself.
-const FIXER_FINDINGS = {
-  'safe-path': { range: '4-6', evidence: 'safeUploadPath joins baseDir with the raw filename, so a value like `../../etc/passwd` escapes baseDir.' },
-  'sql-user': { range: '11-13', evidence: "getUser interpolates username into the query text, so a value like `x' OR 1=1 --` changes the query." },
-  'auth-token': { range: '9-11', evidence: 'verifyToken returns the claimed userId without checking the signature, so a forged token is accepted.' },
-  'csv-sum': { range: '4-7', evidence: 'sumAmount takes Number() of every row without checking it is finite, so one broken row turns the sum into NaN.' },
-  'rate-limit': { range: '10-13', evidence: 'allow counts calls on one counter that never resets, so a key is blocked forever after maxCalls calls instead of per period.' }
-};
 
 export function defectRange(task) {
   const [start, end] = FIXER_FINDINGS[task.id].range.split('-').map(Number);
