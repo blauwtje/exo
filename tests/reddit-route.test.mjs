@@ -57,9 +57,9 @@ test('a WebFetch to reddit.com points to the live search.mjs --url read', () => 
   assert.match(redditRouteDecision(fetchUrl('https://www.reddit.com/r/a/comments/x/y/')).deny, /search\.mjs --url/);
 });
 
-test('a Bash curl to reddit.com or arctic-shift is refused with search.mjs named', async () => {
+test('a Bash curl to reddit.com or redd.it is refused with search.mjs named', async () => {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
-  for (const command of ['curl -s https://www.reddit.com/r/a.json', 'curl https://arctic-shift.photon-reddit.com/api/posts/search']) {
+  for (const command of ['curl -s https://www.reddit.com/r/a.json', 'curl https://redd.it/abc']) {
     const out = await dispatchBash({ tool_name: 'Bash', tool_input: { command }, agent_id: 'a', agent_type: 'research-worker' });
     assert.match(JSON.stringify(out), /search\.mjs/);
   }
@@ -95,15 +95,15 @@ test('node fetch, wrapped curl and absolute-path curl to reddit are denied', () 
   }
 });
 
-test('WebFetch to arctic-shift and a trailing-dot reddit host are denied', () => {
-  assert.ok(redditRouteDecision(fetchUrl('https://arctic-shift.photon-reddit.com/api/posts/search')));
+test('WebFetch to redd.it and a trailing-dot reddit host are denied', () => {
+  assert.ok(redditRouteDecision(fetchUrl('https://redd.it/abc')));
   assert.ok(redditRouteDecision(fetchUrl('https://www.reddit.com./r/a')));
 });
 
-test('a reddit or arctic-shift fetch behind a wrapper or shell -c is denied', () => {
+test('a reddit fetch behind a wrapper or shell -c is denied', () => {
   const wrapped = [
     'bash -c "curl https://www.reddit.com/r/a.json"',
-    "sh -c 'curl -s https://arctic-shift.photon-reddit.com/api/posts/search'",
+    "sh -c 'curl -s https://old.reddit.com/r/a.json'",
     'zsh -c "echo x; wget https://redd.it/x"',
     'nice -n 5 curl https://www.reddit.com/r/a',
     'nohup curl https://www.reddit.com/r/a',

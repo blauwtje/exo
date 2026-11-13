@@ -72,3 +72,45 @@ export function commentsAsText(comments) {
     .map(({ author, score, depth, text }) => `${author} (score ${score}, depth ${depth}): ${text}`)
     .join('\n');
 }
+
+const SEARCH_ORIGIN = 'https://www.reddit.com';
+
+export function searchUrl({ query, sort = 'relevance', time = 'all', subreddit = '' }) {
+  const base = subreddit ? `/svc/shreddit/r/${subreddit}/search/` : '/svc/shreddit/search/';
+  const params = new URLSearchParams({ q: query, type: 'posts', sort, t: time });
+  return `${SEARCH_ORIGIN}${base}?${params}`;
+}
+
+export function parseSearchPage(html) {
+  const hits = new Map();
+  const anchors = html.matchAll(/<a\s[^>]*href="(\/r\/([^/"]+)\/comments\/([a-z0-9]+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi);
+  for (const [, href, subreddit, id, inner] of anchors) {
+    const title = htmlToText(inner);
+    if (hits.get(id)?.title || (!title && hits.has(id))) continue;
+    hits.set(id, { id, subreddit, url: `${SEARCH_ORIGIN}${decodeEntities(href)}`, title });
+  }
+  return [...hits.values()];
+}
+
+function flattenReplies(children, depth, found) {
+  for (const child of children) {
+    if (child.kind === 'more') found.moreIds.push(...moreIdsOf(child.data));
+    if (child.kind !== 't1') continue;
+    const { author, score, body, replies } = child.data;
+    found.comments.push({ id: child.data.id, author, score, depth, text: body });
+    flattenReplies(replies?.data?.children ?? [], depth + 1, found);
+  }
+}
+
+function moreIdsOf({ children, parent_id: parentId }) {
+  if (children.length) return children;
+  return [parentId.replace(/^t\d_/, '')];
+}
+
+export function parseThread(listings) {
+  const [postListing, commentListing] = listings;
+  const { id, title, selftext, author, score, num_comments: commentCount } = postListing.data.children[0].data;
+  const found = { comments: [], moreIds: [] };
+  flattenReplies(commentListing.data.children, 0, found);
+  return { post: { id, title, text: selftext, author, score, commentCount }, ...found };
+}

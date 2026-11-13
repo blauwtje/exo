@@ -5,6 +5,7 @@ import { limitLifetime, SPEC_SEARCH_LIFETIME_MS } from '#lifetime';
 import { excludeScratchIfGit, recordSource } from './ledger.mjs';
 import { BlockedRoute } from './sources/http.mjs';
 import { SOURCES } from './sources/index.mjs';
+import { loginBrowser } from './sources/reddit-browser.mjs';
 
 const DEFAULT_LIMIT = 5;
 
@@ -66,6 +67,11 @@ export function parseArgs(argv) {
   const values = {};
   let owner = null;
   for (const token of argv) {
+    if (token === '--login') {
+      values.login = true;
+      owner = null;
+      continue;
+    }
     if (token.startsWith('--')) {
       owner = token.slice(2);
       if (owner !== 'url' && !SINGLE_FLAGS.includes(owner)) throw new Error(`unknown flag ${token}`);
@@ -81,6 +87,16 @@ export function parseArgs(argv) {
   return values;
 }
 
+export async function loginReddit(open = loginBrowser) {
+  try {
+    await open();
+    return null;
+  } catch (error) {
+    if (!(error instanceof BlockedRoute)) throw error;
+    return failureLine('reddit', error);
+  }
+}
+
 async function main(argv) {
   limitLifetime('spec-search', SPEC_SEARCH_LIFETIME_MS);
   excludeScratchIfGit(process.cwd());
@@ -90,6 +106,17 @@ async function main(argv) {
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 2;
+    return;
+  }
+  if (args.login) {
+    if (args.source !== 'reddit') {
+      process.stderr.write('usage: search.mjs --source reddit --login\n');
+      process.exitCode = 2;
+      return;
+    }
+    const line = await loginReddit();
+    if (line) process.stdout.write(`${line}\n`);
+    if (line) process.exitCode = 1;
     return;
   }
   const hasInput = args.query || args.urls;

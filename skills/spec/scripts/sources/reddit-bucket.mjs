@@ -4,9 +4,8 @@ import { lifetimeMs, SPEC_SEARCH_LIFETIME_MS } from '#lifetime';
 import { BlockedRoute } from './http.mjs';
 import { sleep as pauseNow } from '#basics';
 import { createHostState } from './host-state.mjs';
+import { pageFetch } from './reddit-browser.mjs';
 
-const USER_AGENT = 'exo-research/1.0 (Claude Code plugin; +https://github.com/blauwtje/exo)';
-const FALLBACK_RESET_S = 10;
 const HOST = 'reddit.com';
 
 function searchLimitMs() {
@@ -53,8 +52,7 @@ export function threadWait(totalMs, pauseFor) {
 }
 
 function endpointOf(url) {
-  if (url.includes('/svc/shreddit/')) return `${HOST}/shreddit`;
-  return url.includes('.rss') ? `${HOST}/rss` : `${HOST}/page`;
+  return /\/svc\/shreddit\/(?:r\/\w+\/)?search\//.test(url) ? `${HOST}/search` : `${HOST}/thread`;
 }
 
 function createLimits(context, settings) {
@@ -76,47 +74,19 @@ function createLimits(context, settings) {
   return { capMs, hostState, bucketFor, now, pauseFor: sleep };
 }
 
-function recordBudget({ hostState, now }, endpoint, response) {
-  const remaining = Number.parseFloat(response.headers.get('x-ratelimit-remaining'));
-  const seconds = Number.parseFloat(response.headers.get('x-ratelimit-reset'));
-  if (!hostState || !Number.isFinite(remaining) || !Number.isFinite(seconds)) return;
-  hostState.recordBudget(endpoint, { remaining, resetAt: now() + seconds * 1000 });
-}
-
-async function waitForReset(limits, response, pause) {
-  const seconds = Number.parseFloat(response.headers.get('x-ratelimit-reset'));
-  const waitMs = (Number.isFinite(seconds) ? seconds : FALLBACK_RESET_S) * 1000;
-  if (waitMs > limits.capMs) throw new BlockedRoute(`rate limited for ${waitMs} ms, over EXO_REDDIT_WAIT_MS=${limits.capMs}`);
-  await (pause ?? limits.pauseFor)(waitMs);
-}
-
-async function request({ limits, fetchImpl }, url, { method = 'GET', wait, canRetry = true } = {}) {
+async function request({ limits, read }, url, { wait } = {}) {
   const endpoint = endpointOf(url);
   if (limits.hostState?.isOpen(endpoint)) throw new BlockedRoute('host breaker is open after repeated 429 or 5xx');
   await limits.bucketFor(endpoint).take(wait?.pause);
-  const headers = { 'user-agent': USER_AGENT, accept: 'text/html' };
-  const response = await fetchImpl(url, { method, headers, redirect: 'follow' });
-  limits.hostState?.recordStatus(endpoint, response.status);
-  recordBudget(limits, endpoint, response);
-  if (response.status === 429 && canRetry) {
-    await waitForReset(limits, response, wait?.pause);
-    return request({ limits, fetchImpl }, url, { method, wait, canRetry: false });
-  }
-  if (!response.ok) throw new BlockedRoute(`HTTP ${response.status}`);
-  return response.text();
-}
-
-function hasBudgetFor(limits, path) {
-  const endpoint = `${HOST}/${path}`;
-  return !limits.hostState || (limits.hostState.budgetWaitMs(endpoint) === 0 && !limits.hostState.isOpen(endpoint));
+  const { status, text } = await read(url);
+  limits.hostState?.recordStatus(endpoint, status);
+  if (status < 200 || status >= 300) throw new BlockedRoute(`HTTP ${status}`);
+  return text;
 }
 
 export function createClient(context, settings) {
-  const fetchImpl = context.fetchImpl ?? fetch;
+  const read = context.pageFetch ?? pageFetch;
   const limits = createLimits(context, settings);
-  const get = (url, options) => request({ limits, fetchImpl }, url, options);
-  const hasBudget = (path = 'rss') => hasBudgetFor(limits, path);
-  const budgetWaitMs = (path = 'rss') => limits.hostState?.budgetWaitMs(`${HOST}/${path}`) ?? 0;
-  const isOpen = (path = 'rss') => limits.hostState?.isOpen(`${HOST}/${path}`) ?? false;
-  return { get, hasBudget, budgetWaitMs, isOpen, pauseFor: limits.pauseFor, capMs: limits.capMs };
+  const get = (url, options) => request({ limits, read }, url, options);
+  return { get, pauseFor: limits.pauseFor, capMs: limits.capMs };
 }

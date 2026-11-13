@@ -1,0 +1,12 @@
+[
+  {"kind": "Listing", "data": {"children": [
+    {"kind": "t3", "data": {"id": "abc123", "title": "Example title", "selftext": "Post body", "author": "example_user", "score": 10, "num_comments": 4}}
+  ]}},
+  {"kind": "Listing", "data": {"children": [
+    {"kind": "t1", "data": {"id": "c1", "author": "example_user", "score": 5, "body": "Top comment", "replies": {"kind": "Listing", "data": {"children": [
+      {"kind": "t1", "data": {"id": "c2", "author": "example_other", "score": 2, "body": "Reply", "replies": ""}},
+      {"kind": "more", "data": {"children": ["c3", "c4"], "parent_id": "t1_c1"}}
+    ]}}}},
+    {"kind": "more", "data": {"children": [], "parent_id": "t1_c5"}}
+  ]}}
+]

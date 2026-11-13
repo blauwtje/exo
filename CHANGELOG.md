@@ -43,6 +43,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `search.mjs --source reddit` reads live Reddit through an exo-owned logged-in browser session (`--login` sets it up) and drops the archive and RSS; a missing login prints one `blocked` line naming the fix.
 - The facts judge passes a fact ending in "is named" when the reply names that part in one or two words matching the name or the part in parentheses.
 - The `adhd` output style bolds the label of every bullet, the one result figure and the closing action, ends a long list on an `Also:` bullet, and ends a choice on the question; a new `labels` gate fails a bullet without a bold label.
 - A hook rule denies a call only when its row names the harm it prevents, such as a subagent `git stash` or AI attribution in a commit message; every other rule adds a note once per session and lets the call run.

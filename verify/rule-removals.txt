@@ -153,3 +153,4 @@ e4a4736ae567 the optional-sections rule is replaced by the four fixed handoff se
 bb1283c01801 the per-cluster fixer rule is gone because one cluster goes to one fixer (lean-rounds Task 2)
 c4e8d9d43fb3 the per-CLUSTER parallel concern rule is gone because one cluster of defects goes to one fixer (lean-rounds Task 3)
 dc162e9b2b11 the env copy question is gone because every new worktree copies .env files with no question (lean-native Task 12)
+94ee923484a6 the mirror route is gone because Reddit is read only through the browser session, so mirror ids are never needed
