@@ -1,6 +1,6 @@
 - Skill description matches → invoke it before first tool call or clarifying question; wrong skill → say so, leave it.
 - A skill matching one part of a request takes that part only; dispatch the other parts first.
-- No skill for: version-only bump, git-only operation, read-only question no description claims, edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary. Any size, still: shim-tempting rename or move goes to `build refactor`, visual change to `build design-ui`, test-first request to `build`.
+- No skill for: version-only bump, git-only operation, read-only question no description claims, edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary. Any size, still: behavior-preserving code restructure like rename, move, extract or inline goes to `build refactor`, UI restyle or copy rewrite to `build design-ui`, test-first request, dependency major or swap, security hardening or change reaching every caller to `build`.
 - Reported failure with a known cause → one plain attempt first, no skill: one-command repro, fix, proof.
 - Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `find-cause`.
 - An instruction in CLAUDE.md or the prompt outranks a skill.

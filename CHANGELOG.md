@@ -93,6 +93,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- A build request that states no size routes to `exo:build`: the session routing text now names a code restructure, a UI restyle or copy rewrite, a dependency major or swap, a security hardening and a change reaching every caller. Held-out build recall on the hook arm rose from 0.511 to 0.770 over 3 runs per prompt, with no false positive.
+- The `isolation-probe`, `lead-delegation-session`, `locate-recall`, `lean-gates` and `run` benchmarks remove their scratch folder with `removeScratch`, which retries while a child's descendants still write into it.
 - Benchmark sessions load only the plugins their `--plugin-dir` names when `CLAUDE_CONFIG_DIR` is set, and `node benchmarks/isolation-probe.mjs --plugins` checks that at no cost.
 - `node benchmarks/lead-delegation.mjs` counts the product files the lead changes through Bash, by comparing the project around each of its Bash calls.
 - `design-ui` sends floor fixes that touch over 2 files to `exo:build-task` instead of the lead fixing each printed line itself.
