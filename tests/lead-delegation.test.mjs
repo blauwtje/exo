@@ -28,3 +28,10 @@ test('a .exo write is not counted', () => {
   const score = scoreStream([call('Agent', {}), write('/p/.exo/brief.md'), write('/p/a.css')]);
   assert.equal(score.writes, 1);
 });
+
+test('three product files changed through lead Bash count as writes', () => {
+  const bash = (...files) => ({ type: 'lead_bash_write', files });
+  const score = scoreStream([call('Agent', {}), bash('/p/a.css'), bash('/p/b.css', '/p/c.js'), bash('/p/a.css')]);
+  assert.equal(score.writes, 3);
+  assert.equal(score.pass, false);
+});

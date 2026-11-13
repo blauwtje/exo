@@ -9,6 +9,8 @@ import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 
 const FIXTURE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'lead-delegation-fixture');
 const PROMPT = 'Refactor the pipeline board visually in full: give every component in src/board (Board, Column, Card, Drawer, Toolbar) a new modern look with shared design tokens, a drawer that slides in, and drag styling on the cards. Decide everything yourself and ask nothing.';
+const HOOK = path.join(path.dirname(fileURLToPath(import.meta.url)), 'lead-delegation-hook.mjs');
+const SIDECAR = 'lead-bash-writes.jsonl';
 const SESSION_MS = 1_800_000;
 
 function git(directory, args) {
@@ -26,14 +28,24 @@ function freshProject() {
   return { base, project, tmp: path.join(base, 'tmp') };
 }
 
-function sessionArgs({ cell, budget, pluginDir }) {
-  const [model, effort] = cell.split(':');
-  return ['-p', PROMPT, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--max-budget-usd', String(budget), '--plugin-dir', pluginDir];
+function bashHooks(project, tmp) {
+  const entry = (phase) => [{ matcher: 'Bash', hooks: [{ type: 'command', command: `node ${HOOK} ${phase} ${project} ${tmp}` }] }];
+  return JSON.stringify({ hooks: { PreToolUse: entry('pre'), PostToolUse: entry('post') } });
 }
 
-export function runSession({ cell, budget, pluginDir, stream, home }) {
+function sessionArgs({ cell, budget, pluginDir, project, tmp, prompt = PROMPT }) {
+  const [model, effort] = cell.split(':');
+  return ['-p', prompt, '--model', model, '--effort', effort, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--max-budget-usd', String(budget), '--plugin-dir', pluginDir, '--settings', bashHooks(project, tmp)];
+}
+
+function appendBashWrites(stream, tmp) {
+  const sidecar = path.join(tmp, SIDECAR);
+  if (fs.existsSync(sidecar)) fs.appendFileSync(stream, fs.readFileSync(sidecar));
+}
+
+export function runSession({ cell, budget, pluginDir, stream, home, prompt }) {
   const { base, project, tmp } = freshProject();
-  const confined = confinedClaude({ args: sessionArgs({ cell, budget, pluginDir }), roots: [base], cwd: project, tmp });
+  const confined = confinedClaude({ args: sessionArgs({ cell, budget, pluginDir, project, tmp, prompt }), roots: [base], cwd: project, tmp });
   const run = withHome(confined, home);
   return new Promise((resolve) => {
     const output = fs.openSync(stream, 'w');
@@ -42,6 +54,7 @@ export function runSession({ cell, budget, pluginDir, stream, home }) {
     child.on('close', () => {
       clearTimeout(timer);
       fs.closeSync(output);
+      appendBashWrites(stream, tmp);
       fs.rmSync(base, { recursive: true, force: true });
       resolve();
     });

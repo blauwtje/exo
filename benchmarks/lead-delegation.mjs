@@ -54,11 +54,12 @@ export function scoreStream(events) {
     .filter((call) => WRITE_TOOLS.has(call.name))
     .map((call) => call.input?.file_path ?? call.input?.notebook_path)
     .filter((file) => typeof file === 'string' && isProductFile(file));
+  const bashed = events.filter((event) => event.type === 'lead_bash_write').flatMap((event) => event.files ?? []).filter(isProductFile);
   const designReads = calls.filter((call) => call.name === 'Read' && String(call.input?.file_path).endsWith(DESIGN_REFERENCE));
   const failedIds = new Set(leadBlocks(events, 'user').filter((block) => block.type === 'tool_result' && block.is_error).map((block) => block.tool_use_id));
   const result = events.find((event) => event.type === 'result');
   const agents = calls.filter((call) => AGENT_TOOLS.has(call.name)).length;
-  const writes = new Set(written).size;
+  const writes = new Set([...written, ...bashed]).size;
   return {
     agents,
     writes,

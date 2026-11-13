@@ -92,6 +92,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- Benchmark sessions load only the plugins their `--plugin-dir` names when `CLAUDE_CONFIG_DIR` is set, and `node benchmarks/isolation-probe.mjs --plugins` checks that at no cost.
+- `node benchmarks/lead-delegation.mjs` counts the product files the lead changes through Bash, by comparing the project around each of its Bash calls.
 - A change that writes 3 or more files, or a redesign, goes through `exo:build` instead of staying in the main session, and the design-ui mode hands the writing of more than 2 files to `exo:build-task`.
 - The `exo:adhd` style replies in the language of the user's latest message and translates English labels such as `Also` and the Recommended tag.
 - The reddit source reads every reachable comment of a thread: hidden replies load in batches of 100 through `morechildren` (one refetch per id when it fails) inside a per-thread budget of `EXO_REDDIT_THREAD_MS` (default 45 s), and `signals` names the ids left unread.
