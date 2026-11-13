@@ -18,6 +18,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The emphasis lint also scans agents, hooks and lib prompt text.
 - `npm run check` runs a shipped-text scan for credentials and override phrases.
 - `node benchmarks/lead-delegation.mjs` runs one session on a 5-component board refactor and passes when the lead starts at least 1 subagent and writes at most 2 files itself; `--dry-run` spends nothing, `--score <stream.jsonl>` scores a stored stream, and a run with a permission denial prints `VOID`.
+- `node benchmarks/lead-delegation.mjs --history` runs the session in two turns, pre-work first and the build second, scores only the second turn and prints the context size at its start.
 - A main session that writes its 3rd distinct file inline gets one note to hand the remaining writes to `exo:build`; subagent writes and `.exo/` paths are not counted, and `leadWriteNudge` in run.json `defaults` sets the count.
 - `adhd-score.mjs --prereg benchmarks/adhd/prereg.json` refuses a paired adhd run when a frozen file's hash changed or the planned cases fall below the cases the recorded spread needs, then runs the frozen cases, samples, arms, model and cap; the paired facts-kept count uses a t interval and prints `decided`, `no effect of 1` or `not decided`, and gate passes print on their own line.
 - `--rescore --log <quick record>` re-judges every stored answer of both arms with the current judge and no reply call, prints a projected judge cost and refuses over `--max-usd`; the paired record adds a `facts_share` interval (not preregistered).
@@ -99,6 +100,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - Benchmark sessions load only the plugins their `--plugin-dir` names when `CLAUDE_CONFIG_DIR` is set, and `node benchmarks/isolation-probe.mjs --plugins` checks that at no cost.
 - `node benchmarks/lead-delegation.mjs` counts the product files the lead changes through Bash, by comparing the project around each of its Bash calls.
+- `design-ui` sends floor fixes that touch over 2 files to `exo:build-task` instead of the lead fixing each printed line itself.
+- The session routing text names `build refactor` and `build design-ui` instead of two skills that no longer exist, and `npm run check` fails when it names a skill that does not exist.
+- `node benchmarks/routing.mjs` no longer crashes and loses its results when a stopped session still writes to its scratch folder.
+- `node benchmarks/lead-delegation.mjs` marks a session that died on an API error or left no result as VOID instead of FAIL.
 - A change that writes 3 or more files, or a redesign, goes through `exo:build` instead of staying in the main session, and the design-ui mode hands the writing of more than 2 files to `exo:build-task`.
 - The `exo:adhd` style replies in the language of the user's latest message and translates English labels such as `Also` and the Recommended tag.
 - The reddit source reads every reachable comment of a thread: hidden replies load in batches of 100 through `morechildren` (one refetch per id when it fails) inside a per-thread budget of `EXO_REDDIT_THREAD_MS` (default 45 s), and `signals` names the ids left unread.

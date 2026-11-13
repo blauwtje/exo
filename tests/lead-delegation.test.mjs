@@ -35,3 +35,33 @@ test('three product files changed through lead Bash count as writes', () => {
   assert.equal(score.writes, 3);
   assert.equal(score.pass, false);
 });
+
+const result = (extra = {}) => ({ type: 'result', total_cost_usd: 0.5, permission_denials: [], ...extra });
+const withId = (id, name, input) => ({ type: 'assistant', message: { content: [{ type: 'tool_use', id, name, input }] } });
+
+const bash = (id, file) => ({ type: 'lead_bash_write', tool_use_id: id, files: [file] });
+
+test('a history stream scores only turn 2, with bash writes placed by tool_use_id', () => {
+  const score = scoreStream([
+    call('Read', { file_path: '/p/a.css' }), result(),
+    call('Agent', {}), write('/p/a.css'), write('/p/b.css'), withId('b2', 'Bash', {}), result(),
+    bash('b2', '/p/d.css')
+  ]);
+  assert.equal(score.agents, 1);
+  assert.equal(score.writes, 3);
+  assert.equal(score.pass, false);
+  assert.equal(score.void, false);
+});
+
+test('a history stream with a product file written in turn 1 is void', () => {
+  const written = scoreStream([write('/p/a.css'), result(), call('Agent', {}), result()]);
+  const bashed = scoreStream([withId('b1', 'Bash', {}), result(), call('Agent', {}), result(), bash('b1', '/p/a.css')]);
+  assert.equal(written.void, true);
+  assert.equal(bashed.void, true);
+});
+
+test('a session that died on an API error or never produced a result is void', () => {
+  const errored = scoreStream([call('Read', {}), result({ is_error: true, api_error_status: 403, total_cost_usd: 0 })]);
+  assert.equal(errored.void, true);
+  assert.equal(scoreStream([call('Read', {})]).void, true);
+});

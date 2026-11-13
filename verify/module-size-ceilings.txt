@@ -35,7 +35,7 @@
 11206 benchmarks/replay/grade.mjs
 13076 benchmarks/replay/runner.mjs
 22441 benchmarks/review-replay.mjs
-20807 benchmarks/routing.mjs
+20771 benchmarks/routing.mjs
 26321 benchmarks/run.mjs
 33232 benchmarks/score.mjs
 8978 benchmarks/session-stats.mjs
