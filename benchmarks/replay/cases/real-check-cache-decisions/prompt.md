@@ -1,1 +1,0 @@
-The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: node lib/check-cache.mjs --query answers miss right after a recorded pass on an unchanged tree.

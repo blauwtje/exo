@@ -1,5 +1,0 @@
-[
-  { "path": "paging.js", "range": "3-3", "class": "off-by-one" },
-  { "path": "paging.js", "range": "7-7", "class": "off-by-one" },
-  { "path": "paging.js", "range": "11-11", "class": "off-by-one" }
-]

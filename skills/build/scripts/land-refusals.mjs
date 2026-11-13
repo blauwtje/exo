@@ -11,7 +11,6 @@ import { AlreadyLandedError, LandingError, UnfinishedMergeError } from './land-e
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { outsideFilesWarning, statedLimitWarning } from './land-paths.mjs';
 import { dropsOf } from './land-commit-block.mjs';
-import { countWords, parseDrops } from '../../../verify/checks/boundary-words.mjs';
 import { unfinishedMergeNote } from '#merge-state';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { landRefusal } from '../../../lib/refusal-handlers.mjs';
@@ -24,6 +23,20 @@ export function taskChangedPaths(root) {
     if (/[RC]/.test(entries[i].slice(0, 2))) paths.push(entries[++i]);
   }
   return paths;
+}
+
+const BOUNDARY_WORDS = ['only', 'not', 'no', 'never', 'every', 'each', 'all', 'full', 'except', 'unless'];
+
+function countWords(text) {
+  const counts = Object.fromEntries(BOUNDARY_WORDS.map((word) => [word, 0]));
+  for (const match of text.toLowerCase().matchAll(/[a-z]+/g)) {
+    if (match[0] in counts) counts[match[0]] += 1;
+  }
+  return counts;
+}
+
+function parseDrops(value) {
+  return value.split(',').map((entry) => entry.trim().replace(/\s+/g, ' ')).filter((entry) => / in /.test(entry));
 }
 
 const UNTAGGED_LOOKBACK = 20;

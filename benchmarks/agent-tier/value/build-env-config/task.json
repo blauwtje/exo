@@ -1,6 +1,0 @@
-{
-  "id": "value-build-env-config",
-  "claim": "build-task: config: environment variables read and validated with documented defaults",
-  "timeoutMinutes": 6,
-  "estimateUsd": 0.15
-}

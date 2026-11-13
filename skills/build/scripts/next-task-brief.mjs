@@ -4,7 +4,6 @@ import { relativeFor } from '#checkout';
 import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
-import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { driftOf, INPUT_UNREADABLE, inputPaths, isInputDrift } from '#plan-inputs';
 import { frameOf } from '#plan-frame';
@@ -50,6 +49,13 @@ function frameReport(frame) {
     ...bulletLines(frame.decisions),
     ...(frame.visualDirection === null ? ['Visual direction: none'] : ['Visual direction:', frame.visualDirection])
   ].join('\n')}\n`;
+}
+
+const RETURN_CAP = /\bat most (\d+|[a-z]+) lines\b/i;
+
+function reportCap(promptText) {
+  const cap = Number(RETURN_CAP.exec(promptText)?.[1]);
+  return Number.isInteger(cap) ? cap : null;
 }
 
 function reportCapLines() {

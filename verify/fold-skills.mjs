@@ -5,7 +5,6 @@ import { escapeRegExp } from '#basics';
 import { listFiles, loadFoldMap } from './checks/folded-names.mjs';
 
 const MAP_FILE = 'verify/fold-map.json';
-const ROWS_FILE = 'verify/reference-owner-rows.txt';
 const PLUGIN_ROOT = '${CLAUDE_PLUGIN_ROOT}';
 const SKILL_DIR = '${CLAUDE_SKILL_DIR}';
 
@@ -108,18 +107,9 @@ function insertRows(job, rows) {
   fs.writeFileSync(skillFile, lines.join('\n'));
 }
 
-function appendOwnerRows(job, rows) {
-  const text = rows.map(([file]) => `skills/${job.owner}/SKILL.md ${file}`).join('\n');
-  const rowsFile = path.join(job.root, ROWS_FILE);
-  const existing = fs.readFileSync(rowsFile, 'utf8');
-  const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
-  fs.writeFileSync(rowsFile, `${existing}${gap}${text}\n`);
-}
-
 function appendRows(job, body, extras) {
   const rows = [[body, `Request runs mode \`${job.name}\`.`], ...extras.map((file) => [file, `Mode \`${job.name}\` names it.`])];
   insertRows(job, rows);
-  appendOwnerRows(job, rows);
 }
 
 function flip(job, map) {

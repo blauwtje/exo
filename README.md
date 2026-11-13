@@ -103,13 +103,10 @@ Each "before" is plain Claude Code. Nothing here compares exo with other plugins
 | A task lands once Claude says the tests pass, even if the proof never failed. | A task lands only if its proof fails before the change and passes after; otherwise `no red proof`. | [tests/red-bound.test.mjs](tests/red-bound.test.mjs) |
 | A task lands even when the project's own check is red. | A failing Land gate is refused before anything commits. | [tests/land-task-land-gate.test.mjs](tests/land-task-land-gate.test.mjs) |
 
-On `value-test-pollution`, a suite that fails only in CI, plain Claude Code passed 0 of 5 runs and exo 2 of 5. Over all five benchmark tasks it was 18 of 25 against 20 of 25. That is 0.7 standard errors, so it does not separate them, and exo cost 1.38 times as much. See [the results](benchmarks/results/2026-10-21-h2h-baseline-exo.md).
-
 ## More
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): working on exo.
 - [ABOUT.md](ABOUT.md): the words exo uses for its own parts.
-- [benchmarks/README.md](benchmarks/README.md): paired runs of exo against a session without it.
 - [CHANGELOG.md](CHANGELOG.md): what changed in each release.
 
 [MIT](LICENSE) licensed.

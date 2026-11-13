@@ -1,1 +1,0 @@
-Release-note URLs keep underscores now: the title "Release_notes: v2" becomes `release_notes-v2` instead of `release-notes-v2`. `node test/slug.mjs` was passing a week ago. Can you work out which commit introduced this, tell me which one it is, and fix it in this checkout?

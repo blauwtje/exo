@@ -1,1 +1,0 @@
-The directory input/ holds the source files of a program as they stood before a defect was fixed. Find the defect behind the symptom below and say what it is, where it is and how to fix it. Symptom: When a branch deletes many files, the gate splits it into one DISPATCH Branch reviewer per deleted file instead of a few shards.

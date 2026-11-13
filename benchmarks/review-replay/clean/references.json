@@ -1,9 +1,0 @@
-{
-  "good": [],
-  "bad": [
-    {
-      "path": "total.js",
-      "range": "3-3"
-    }
-  ]
-}

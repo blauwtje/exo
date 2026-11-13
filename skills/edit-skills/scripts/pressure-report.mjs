@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { calibrationLines } from '../../../benchmarks/judge-calibration.mjs';
+import { calibrationLines } from './judge-calibration.mjs';
 import { aggregate } from './pressure-grade.mjs';
 
 export function gradeSummary(gradesByCell, options = {}) {

@@ -38,10 +38,6 @@ test('loaded prose naming the command or folder fails', () => {
   assert.match(detail({ 'skills/build/SKILL.md': 'Use .claude/worktrees/x.\n' }), /folder literal/);
 });
 
-test('the eval harness is not scanned', () => {
-  assert.equal(detail({ 'benchmarks/sweep.mjs': "run(['worktree', 'add', d]);\n" }), '');
-});
-
 test('only the guard-rules deny text may name the worktree folder', () => {
   const deny = "allowed: 'a worktree under `.claude/worktrees/<name>`'\n";
   assert.equal(detail({ 'lib/guard-rules.mjs': deny }), '');

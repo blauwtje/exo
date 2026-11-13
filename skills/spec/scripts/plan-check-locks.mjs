@@ -7,7 +7,6 @@ const LOCKS_AND_REGISTRIES = [
   'verify/budgets.mjs',
   'verify/model-kinds.mjs',
   'lib/model-kinds.json',
-  'verify/checks/reference-tables.mjs',
   'CONTRIBUTING.md'
 ];
 const REPO_PATH_ORIGIN = /import\.meta\.(?:url|dirname)/;

@@ -10,6 +10,8 @@ docs/*
 !docs/skills/
 !docs/codex.md
 !docs/settings.md
+!docs/failures.md
+!docs/scorecard.md
 benchmarks/fixtures/
 benchmarks/runs/
 benchmarks/replay/**/runs/
@@ -19,3 +21,4 @@ harnesses/codex/generated/
 __pycache__/
 benchmarks/results/*.runs/
 *.cpuprofile
+evals/results/

@@ -7,11 +7,28 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { sectionHeadings } from '../verify/checks/reference-shape.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const SKETCH = 'skills/spec/references/architecture-sketch.md';
+
+const FENCE = /^\s*(`{3,}|~{3,})/;
+
+function sectionHeadings(lines) {
+  const headings = [];
+  let fence = null;
+  lines.forEach((line, index) => {
+    const opener = FENCE.exec(line);
+    if (opener !== null) {
+      const marker = opener[1];
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      return;
+    }
+    if (fence === null && line.startsWith('## ')) headings.push({ text: line.slice(3).trim(), index });
+  });
+  return headings;
+}
 
 function section(text, heading) {
   const lines = text.split('\n');

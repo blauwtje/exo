@@ -5,10 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRepository } from '../verify/repository.mjs';
-import { checkInstructionDensity } from '../verify/checks/instruction-density.mjs';
 import { checkMarkdownReferences } from '../verify/checks/markdown-references.mjs';
 import { checkNameClash } from '../verify/checks/name-clash.mjs';
-import { checkPaidRuns } from '../verify/checks/paid-runs.mjs';
 import { checkPluginVersion } from '../verify/checks/plugin-version.mjs';
 import { checkProcessLifetime } from '../verify/checks/process-lifetime.mjs';
 
@@ -43,13 +41,6 @@ function git(root, ...args) {
   assert.equal(run.status, 0, run.stderr);
 }
 
-test('instruction density fails on a sentence past the word limit', () => {
-  const longSentence = `${Array.from({ length: 45 }, () => 'word').join(' ')}.`;
-  const root = tree({ 'skills/x/SKILL.md': `---\nname: x\n---\n- ${longSentence}\n` });
-  const [failure] = failures(checkInstructionDensity, root);
-  assert.match(failure.detail, /SKILL\.md:4/);
-});
-
 test('markdown references fails on a path that does not resolve', () => {
   const root = tree({ 'README.md': 'See [gone](docs/gone.md).\n', 'skills/.keep': '' });
   const [failure] = failures(checkMarkdownReferences, root);
@@ -63,11 +54,6 @@ test('name clash fails on a skill named like a bundled skill', () => {
   assert.match(failure.detail, /commit/);
 });
 
-test('paid runs fails on a skill line naming claude -p without the user', () => {
-  const root = tree({ 'skills/x/SKILL.md': '---\nname: x\n---\nRun claude -p for each case.\n' });
-  const [failure] = failures(checkPaidRuns, root);
-  assert.match(failure.detail, /skills\/x\/SKILL\.md:4/);
-});
 
 test('plugin version fails on a manifest that is not valid JSON', () => {
   const root = tree({

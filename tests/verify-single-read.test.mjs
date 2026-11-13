@@ -61,3 +61,8 @@ test('the check script registers the skill graph and validate differs from check
   assert.match(verifier, /checkSkillGraph\(report, repository\)/);
   assert.match(verifier, /checkWorktreePaths\(report, repository\)/);
 });
+
+test('the verifier registers the size cap check', () => {
+  const verifier = fs.readFileSync(path.join(ROOT, 'verify.mjs'), 'utf8');
+  assert.match(verifier, /checkSizeBudgets\(report, repository\)/);
+});

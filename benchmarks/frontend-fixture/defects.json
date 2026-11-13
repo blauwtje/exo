@@ -1,5 +1,0 @@
-[
-  { "id": "stale-effect-dep", "file": "src/features/Review.jsx", "lines": [8, 12], "matcher": "\\}, \\[\\]\\)" },
-  { "id": "unescaped-html", "file": "src/features/Review.jsx", "lines": [14, 18], "matcher": "dangerouslySetInnerHTML" },
-  { "id": "off-by-one-page", "file": "src/features/paginate.mjs", "lines": [1, 5], "matcher": "<= " }
-]

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { test } from 'node:test';
+import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { HOOK_WORK_LOCK } from '../verify/budgets.mjs';
 import { checkHookWork } from '../verify/checks/hook-budgets.mjs';
 import { HOOK_INPUTS, countHookWork } from '../verify/hook-work.mjs';
 import { createRepository } from '../verify/repository.mjs';
 import { tempDir } from './harness.mjs';
+import { localGitDefinitions } from '../verify/checks/git-helper.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const QUIET = 'process.stdin.resume();\nprocess.stdin.on("end", () => process.exit(0));\n';
@@ -78,4 +79,27 @@ test('a hook that exits non-zero fails', () => {
 test('a quiet hook script counts one module and no reads', () => {
   const work = countHookWork(workScript(QUIET), 'dispatch-bash.mjs');
   assert.equal(work.reads, 0);
+});
+
+const file = (relativePath, text) => ({ relativePath, text });
+
+test('a local function git definition fails', () => {
+  assert.deepEqual(localGitDefinitions([file('skills/x/scripts/a.mjs', 'function git(root, args) {}\n')]), ['skills/x/scripts/a.mjs']);
+});
+
+test('a const git arrow fails', () => {
+  assert.deepEqual(localGitDefinitions([file('verify/checks/a.mjs', 'export const git = (root) => root;\n')]), ['verify/checks/a.mjs']);
+});
+
+test('lib/git.mjs and imports pass', () => {
+  const files = [file('lib/git.mjs', 'export function git() {}\n'), file('lib/a.mjs', "import { git } from './git.mjs';\ngit(1, []);\n")];
+  assert.deepEqual(localGitDefinitions(files), []);
+});
+
+test('a differently named adapter passes', () => {
+  assert.deepEqual(localGitDefinitions([file('lib/a.mjs', 'function gitStrict() {}\n')]), []);
+});
+
+test('the allowed exceptions pass', () => {
+  assert.deepEqual(localGitDefinitions([file('skills/build/scripts/land-run.mjs', 'const git = () => 1;\n')]), []);
 });

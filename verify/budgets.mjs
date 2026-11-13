@@ -41,9 +41,6 @@ export const HOOK_WORK_LOCK = {
     'session-end.mjs': { modules: 13, reads: 2 }
   }
 };
-// Bytes of each tests/*.mjs file; verify/checks/test-size.mjs fails above it, so a
-// large test file is split before it lands.
-export const TEST_FILE_CAP = { bytes: 40 * 1024 };
 // Words every session loads before the first prompt: the session-start output,
 // each model-invocable skill's name and description, each agent's name and
 // description; verify/checks/hook-budgets.mjs fails above it.
@@ -120,3 +117,5 @@ export const MODULE_FILE_CAP = { bytes: 8 * 1024 };
 
 export const LOADED_PROSE_LOCK = { bytes: 317520 };
 export const LOADED_PROSE_ROOTS = ['skills', 'agents', 'hooks', 'lib/references', 'lib/agent-modes', 'output-styles'];
+
+export const SIZE_CAPS = { files: 1101, checkModules: 40, testFiles: 304, skillScripts: 248, evalCases: 20 };

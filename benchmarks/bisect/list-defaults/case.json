@@ -1,7 +1,0 @@
-{
-  "kind": "regression",
-  "tier": "full",
-  "repro": "node test/list.mjs",
-  "culprit": "refactor: destructure options once",
-  "timeoutMinutes": 15
-}

@@ -4,8 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { createReport } from '../verify/report.mjs';
-import { createRepository } from '../verify/repository.mjs';
 import { tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/spec/scripts/behaviour.mjs', import.meta.url));
@@ -100,21 +98,6 @@ test('--check names a missing, stale or extra file and exits 1, then 0 after a r
   run(root);
   assert.equal(run(root, '--check').status, 0);
   assert.equal(fs.existsSync(path.join(root, 'docs/behaviour/gone.md')), false);
-});
-
-test('the behaviour files check fails on a stale file and passes after a rebuild', async () => {
-  const { checkBehaviourCurrent } = await import('../verify/checks/behaviour-current.mjs');
-  const root = repo({ 'docs/specs/build.md': BUILD_BRIEF });
-  const statusOf = () => {
-    const lines = [];
-    const original = console.log;
-    console.log = (line) => lines.push(line);
-    try { checkBehaviourCurrent(createReport(), createRepository(root)); } finally { console.log = original; }
-    return lines.join('\n');
-  };
-  assert.match(statusOf(), /^\[FAIL\] behaviour files: .*node skills\/spec\/scripts\/behaviour\.mjs/);
-  run(root);
-  assert.match(statusOf(), /^\[PASS\] behaviour files/);
 });
 
 test('the shared reader returns each shipped brief with its tasks, decisions and acceptance lines', async () => {

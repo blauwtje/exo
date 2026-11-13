@@ -1,8 +1,0 @@
-{
-  "kind": "flaky",
-  "tier": "full",
-  "repro": "node test/batch.mjs",
-  "culprit": null,
-  "flakyRuns": 10,
-  "timeoutMinutes": 15
-}

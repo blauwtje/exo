@@ -1,9 +1,0 @@
-{
-  "name": "expenses",
-  "version": "1.4.0",
-  "description": "Summarize an expense CSV by category",
-  "private": true,
-  "type": "module",
-  "bin": { "expenses": "bin/expenses.mjs" },
-  "scripts": { "test": "node --test" }
-}

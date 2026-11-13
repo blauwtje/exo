@@ -1,7 +1,0 @@
-{
-  "kind": "plain",
-  "tier": "full",
-  "repro": "node --test test/wrap.test.mjs",
-  "culprit": null,
-  "timeoutMinutes": 15
-}

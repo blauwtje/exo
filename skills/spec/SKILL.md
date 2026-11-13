@@ -55,7 +55,6 @@ Shaping turns a request into a brief that settles what done means, so the build 
 | `references/step-rules.md` | Steps 1, 3, 4, mode `research`. |
 | `references/hand-off.md` | Step 5. |
 | `references/watching.md` | Step 5, run started. |
-| `references/measured-goal.md` | Goal is a measured score, cost or time. |
 | `references/research.md` | Mode `research`. |
 | `references/sources.md` | Mode `research`. |
 | `references/verification.md` | Mode `research`. |

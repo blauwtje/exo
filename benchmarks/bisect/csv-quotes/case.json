@@ -1,7 +1,0 @@
-{
-  "kind": "never-worked",
-  "tier": "quick",
-  "repro": "node test/quoted.mjs",
-  "culprit": null,
-  "timeoutMinutes": 15
-}

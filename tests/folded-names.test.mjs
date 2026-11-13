@@ -64,7 +64,6 @@ test('the fold script moves the body and scripts and rewrites names', () => {
     'skills/ideate/scripts/plan.mjs': 'export {};\n',
     'docs/skills/ideate.md': '# ideate\n',
     'README.md': 'use exo:ideate and skills/ideate/scripts/plan.mjs\n',
-    'verify/reference-owner-rows.txt': '',
   }, PENDING);
   const run = spawnSync('node', [FOLD_SCRIPT, '--root', root, '--from', 'ideate', '--into', 'spec'], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
@@ -75,6 +74,5 @@ test('the fold script moves the body and scripts and rewrites names', () => {
   assert.ok(!fs.existsSync(path.join(root, 'docs/skills/ideate.md')));
   assert.equal(fs.readFileSync(path.join(root, 'README.md'), 'utf8'), 'use exo:spec and skills/spec/scripts/plan.mjs\n');
   assert.match(fs.readFileSync(path.join(root, 'skills/spec/SKILL.md'), 'utf8'), /\| `references\/ideate\.md` \|/);
-  assert.match(fs.readFileSync(path.join(root, 'verify/reference-owner-rows.txt'), 'utf8'), /skills\/spec\/SKILL\.md references\/ideate\.md/);
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'verify/fold-map.json'), 'utf8')).skills.ideate.state, 'folded');
 });

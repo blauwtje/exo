@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `docs/scorecard.md` holds the release measures and `docs/failures.md` lists real-session failures; the contributor rules now cap size and run evals only before a release.
 - Two heavier build fixtures, `redirect` (open redirect) and `deep-merge` (prototype pollution), join the safe tasks the build cells run, so arms have more to separate on.
 - `usage.json` records a cache hit rate (`hitRate` = cache read / all prompt tokens) per cell and per agent role (`benchmarks/role-usage.mjs`).
 - `benchmarks/mde.mjs --scores <arm scores>` prints a `ceiling` line when every arm is at or above `--ceiling` (default 0.95).
@@ -101,6 +102,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The gate's review read coverage no longer counts files the branch deletes, so a branch that removes many files is not blocked.
 - `adhd-score --rescore` of a quick record no longer reads the gitignored baseline, so the paired rescore test passes in CI.
 - `benchmarks/mde.mjs --scores` prints a `no spread` line when every arm scores the same below the ceiling, so equal arms no longer read as rankable.
 - `benchmarks/mde.mjs` rejects a `--ceiling` outside 0 to 1, such as a non-numeric value, with the usage line and exit code 2.
@@ -167,6 +169,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- `benchmarks/` and 40 check modules that only guarded exo's own wording and process; a size-cap check keeps tracked files at 1,101 and check modules at 40.
 - The `deep` setting: the `hardest` and `review-deep` kinds now run on the model of the main session, each with the effort of its kind.
 - The fixed 4506-byte cap on command output; a hook now cuts output only when the agent's context room runs low.
 - The wide `find` timeout rule and the persisted-read rule, which repeat what Claude Code already enforces.

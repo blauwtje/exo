@@ -1,1 +1,0 @@
-Customer names with commas, like `Smith, Jane`, break the customers CSV export: the row gets an extra column when we open the file in Excel. Please fix `customersToCsv` in `src/exports/customers.mjs` so the columns line up.

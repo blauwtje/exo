@@ -1,3 +1,0 @@
-Expenses from data/2024-q3.csv (0 rows)
-
-No expenses match.

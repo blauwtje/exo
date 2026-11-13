@@ -5,11 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRepository } from '../verify/repository.mjs';
 import { checkQuestionOptions } from '../verify/checks/question-options.mjs';
-import { checkReturnCaps } from '../verify/checks/return-caps.mjs';
 import { checkScriptOutput } from '../verify/checks/script-output.mjs';
 import { checkSessionLoad } from '../verify/checks/session-load.mjs';
-import { checkSharedContracts } from '../verify/checks/shared-contracts.mjs';
-import { checkTestSize } from '../verify/checks/test-size.mjs';
 
 function recorder() {
   const results = [];
@@ -43,30 +40,6 @@ test('question options fails on an option list that skips a letter', () => {
   assert.match(failure.detail, /skills\/x\/SKILL\.md:5/);
 });
 
-test('return caps fails on an agent that states no line cap', () => {
-  const root = tree({ 'agents/a.md': '---\nname: a\n---\nReport freely.\n', 'skills/.keep': '' });
-  const [failure] = failures(checkReturnCaps, root);
-  assert.match(failure.detail, /agents\/a\.md/);
-});
-
-test('return caps accepts the contract pointer when the contract holds a line cap', () => {
-  const root = tree({
-    'agents/a.md': "---\nname: a\n---\nReturn within the contract's return cap.\n",
-    'harnesses/coordination-contract.json': '{"return":{"maxLines": 8}}\n',
-    'skills/.keep': ''
-  });
-  assert.deepEqual(failures(checkReturnCaps, root), []);
-});
-
-test('return caps fails on the contract pointer when the contract holds no line cap', () => {
-  const root = tree({
-    'agents/a.md': "---\nname: a\n---\nReturn within the contract's return cap.\n",
-    'harnesses/coordination-contract.json': '{}\n',
-    'skills/.keep': ''
-  });
-  assert.match(failures(checkReturnCaps, root)[0].detail, /agents\/a\.md/);
-});
-
 test('script output fails on a runner script that skips the script-output import', () => {
   const root = tree({
     'agents/task-runner.md': 'Run land-task.mjs.\n',
@@ -84,14 +57,3 @@ test('session load fails when the session-start hook cannot run', () => {
   assert.match(report.results[0].detail, /exited 3/);
 });
 
-test('shared contracts fails on a pinned sentence missing from its file', () => {
-  const root = tree({ 'skills/spec/SKILL.md': '---\nname: spec\n---\nBody.\n' });
-  const [failure] = failures(checkSharedContracts, root);
-  assert.match(failure.detail, /skills\/spec\/SKILL\.md: missing pinned shared sentence/);
-});
-
-test('test size fails on a test file over the byte cap', () => {
-  const root = tree({ 'tests/big.mjs': 'x'.repeat(41 * 1024) });
-  const [failure] = failures(checkTestSize, root);
-  assert.match(failure.detail, /tests\/big\.mjs/);
-});

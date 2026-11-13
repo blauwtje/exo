@@ -70,6 +70,22 @@ test('absolute Read: paths inside the checkout root count as read and paths outs
   assert.deepEqual(merged.coverage, { read: 3, total: 4, unread: ['c.js'] });
 });
 
+test('changedFiles leaves out a file the branch deletes', () => {
+  const root = tempDir('coverage-');
+  git(root, 'init', '-q', '-b', 'main');
+  fs.writeFileSync(path.join(root, 'gone.js'), 'old\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'init');
+  git(root, 'switch', '-q', '-c', 'feat/x');
+  git(root, 'rm', '-q', 'gone.js');
+  fs.writeFileSync(path.join(root, 'a.js'), 'x\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'feat: swap');
+  const changed = changedFiles(root, 'main');
+  assert.deepEqual(changed, ['a.js']);
+  assert.deepEqual(mergeReviews([{ name: 'review-branch', text: 'CLEAN\n\nRead: a.js\n' }], new Map(), changed).coverage, { read: 1, total: 1, unread: [] });
+});
+
 test('merge-reviews.mjs prints COVERAGE and one UNREAD-FILE line per changed file nobody read', () => {
   const root = tempDir('coverage-');
   git(root, 'init', '-q', '-b', 'main');

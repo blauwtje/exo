@@ -158,7 +158,7 @@ function coverageOf(reports, changed, root) {
 }
 
 export function changedFiles(root, base) {
-  const diff = spawnSync('git', ['-C', root, 'diff', '--name-only', `${base}...HEAD`], { encoding: 'utf8' });
+  const diff = spawnSync('git', ['-C', root, 'diff', '--name-only', '--diff-filter=d', `${base}...HEAD`], { encoding: 'utf8' });
   if (diff.status !== 0) throw new Error(`git diff ${base}...HEAD failed: ${diff.stderr.trim()}`);
   return diff.stdout.split('\n').filter(Boolean);
 }

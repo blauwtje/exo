@@ -1,9 +1,0 @@
-{
-  "name": "fieldbook",
-  "version": "1.4.2",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node --test"
-  }
-}

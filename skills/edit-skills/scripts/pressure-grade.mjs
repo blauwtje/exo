@@ -7,7 +7,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
-const JUDGE_PROMPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../benchmarks/pressure/judge.md');
+const JUDGE_PROMPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'references', 'pressure-judge.md');
 const CASE_HEADING = /^##\s+`?([^\s`]+\.txt)`?\s*$/;
 const BULLET = /^(?:[-*+]|\d+[.)])\s+/;
 const TAG = /`grade:\s*([^`]+)`\s*$/;

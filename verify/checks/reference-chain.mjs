@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { referenceTableEntries } from './reference-tables.mjs';
+
+const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
+
+function referenceTableEntries(content) {
+  return [...content.matchAll(TABLE_ROW)]
+    .map((match) => ({ path: match.groups.path, readWhen: match.groups.readWhen.trim() }));
+}
 
 function listFiles(directory) {
   if (!fs.existsSync(directory)) return [];
