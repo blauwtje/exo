@@ -23,7 +23,7 @@ function main(input) {
   const marker = path.join(tmp, `pre-${input.tool_use_id}`);
   if (phase === 'pre') return fs.writeFileSync(marker, treeOf());
   const files = changedFiles(fs.readFileSync(marker, 'utf8'), treeOf());
-  if (files.length) fs.appendFileSync(path.join(tmp, 'lead-bash-writes.jsonl'), `${JSON.stringify({ type: 'lead_bash_write', files })}\n`);
+  if (files.length) fs.appendFileSync(path.join(tmp, 'lead-bash-writes.jsonl'), `${JSON.stringify({ type: 'lead_bash_write', tool_use_id: input.tool_use_id, files })}\n`);
 }
 
 main(JSON.parse(fs.readFileSync(0, 'utf8')));

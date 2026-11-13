@@ -21,6 +21,7 @@ import { printStats } from './routing-spoken.mjs';
 import { WHOLE_FILE_HASHES } from '../lib/hashed-files.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
 import { VARIANTS, applyVariant } from './variants.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_MS = environmentMs('EXO_ROUTING_SESSION_MS', 120_000);
@@ -164,7 +165,7 @@ function claudeSession({ prompt, cell, arm, home, pluginDir }) {
       settled = true;
       clearTimeout(timer);
       child.kill('SIGKILL');
-      fs.rmSync(path.dirname(scratch), { recursive: true, force: true });
+      removeScratch(path.dirname(scratch));
       const cost_usd = line === undefined ? null : costOfLine(line);
       resolve({ ...(outcome !== null && typeof outcome === 'object' ? outcome : { pick: outcome }), cost_usd, durationMs: Date.now() - startedAt });
     };
@@ -363,8 +364,8 @@ async function main() {
     process.stdout.write(`wrote ${flags.out}\n`);
     printStats(result, flags.cells);
   } finally {
-    fs.rmSync(home, { recursive: true, force: true });
-    if (variantDir) fs.rmSync(path.dirname(variantDir), { recursive: true, force: true });
+    removeScratch(home);
+    if (variantDir) removeScratch(path.dirname(variantDir));
   }
 }
 
