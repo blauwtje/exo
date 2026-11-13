@@ -7,7 +7,7 @@
 8975 benchmarks/bisect/lib/pool.mjs
 8588 benchmarks/bisect/validate.mjs
 8364 benchmarks/build-phases.mjs
-9967 benchmarks/cell-usage.mjs
+9021 benchmarks/cell-usage.mjs
 20040 benchmarks/checkpoint-fork.mjs
 10863 benchmarks/delegation-readout.mjs
 12237 benchmarks/flow-report.mjs
@@ -40,7 +40,7 @@
 33232 benchmarks/score.mjs
 8978 benchmarks/session-stats.mjs
 9268 benchmarks/speed-ledger.mjs
-11977 benchmarks/sweep-cells.mjs
+11631 benchmarks/sweep-cells.mjs
 17315 benchmarks/sweep-fixtures.mjs
 11136 benchmarks/sweep-score.mjs
 26634 benchmarks/sweep.mjs

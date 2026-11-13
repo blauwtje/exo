@@ -105,3 +105,30 @@ test('usage.json keeps a context peak per hop, a coordinator file apart from wor
     else process.env.CLAUDE_CONFIG_DIR = previous;
   }
 });
+
+test('usage.json carries the cache hit rate beside the counts, null for no input', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cell-usage-'));
+  const previous = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = root;
+  try {
+    writeTranscripts(root);
+    const usage = { input_tokens: 100, output_tokens: 1, cache_read_input_tokens: 300, cache_creation_input_tokens: 100 };
+    const cached = JSON.stringify({ type: 'assistant', message: { id: 'm9', model: MODEL, content: [], usage } });
+    const subagents = path.join(root, 'projects', 'slug', 'session1', 'subagents');
+    fs.writeFileSync(path.join(subagents, 'agent-c.jsonl'), `${cached}\n`);
+    fs.writeFileSync(path.join(subagents, 'agent-c.meta.json'), JSON.stringify({ agentType: 'reader' }));
+    fs.writeFileSync(path.join(subagents, 'agent-d.meta.json'), JSON.stringify({ agentType: 'idle' }));
+    fs.writeFileSync(path.join(subagents, 'agent-d.jsonl'), '');
+    const cell = path.join(root, 'cell');
+    fs.mkdirSync(cell);
+    const written = writeCellUsage(cell, 'session1');
+    assert.equal(written.byRole.reader.hitRate, 0.6);
+    assert.equal(written.byRole.main.hitRate, 0);
+    assert.equal(written.byRole.idle.hitRate, null);
+    assert.equal(written.hitRate, 300 / 800);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(cell, 'usage.json'), 'utf8')).byRole.reader.hitRate, 0.6);
+  } finally {
+    if (previous === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = previous;
+  }
+});

@@ -85,7 +85,7 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/color.md': 764,
   'skills/build/references/design-ui.md': 1913,
-  'skills/build/references/improve.md': 1544,
+  'skills/build/references/improve.md': 1598,
   'skills/build/references/layout.md': 984,
   'skills/build/references/marketing.md': 908,
   'skills/build/references/refactor.md': 853,

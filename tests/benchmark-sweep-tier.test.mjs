@@ -4,6 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { QUICK_CELLS, parseArguments } from '../benchmarks/sweep.mjs';
+import { SWEEP_MODELS, selectCells, sweepCells } from '../benchmarks/sweep-cells.mjs';
+import { SAFE_TASKS } from '../benchmarks/tasks.mjs';
 
 const SWEEP = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'benchmarks', 'sweep.mjs');
 
@@ -47,4 +49,18 @@ test('--dry-run prints the quick cells and exits 0 without starting any', () => 
 test('without --confirm the quick tier exits 2', () => {
   const run = spawnSync(process.execPath, [SWEEP], { encoding: 'utf8', timeout: 60000 });
   assert.equal(run.status, 2);
+});
+
+test('build-grid holds four settings per safe task and leaves build and all alone', () => {
+  const cells = sweepCells();
+  const grid = selectCells(cells, ['build-grid']);
+  const settings = [['sonnet', 'low'], ['opus', 'high'], ['fable', 'low'], ['fable', 'xhigh']];
+  assert.equal(grid.length, SAFE_TASKS.length * settings.length);
+  for (const [model, effort] of settings) {
+    const matching = grid.filter((cell) => cell.model === SWEEP_MODELS[model] && cell.effort === effort);
+    assert.equal(matching.length, SAFE_TASKS.length);
+  }
+  assert.equal(new Set(grid.map((cell) => cell.id)).size, grid.length);
+  assert.equal(selectCells(cells, ['build']).length, SAFE_TASKS.length);
+  assert.equal(selectCells(cells, ['all']).length, cells.length - grid.length);
 });

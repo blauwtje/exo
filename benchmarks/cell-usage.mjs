@@ -11,7 +11,7 @@ import { sumCounts, usageCounts } from '#token-weights';
 import { COORDINATOR_TYPES } from '../lib/context-decisions.mjs';
 import { readJson } from './basics.mjs';
 import { subagentTypes } from './fix-round.mjs';
-import { countsCost } from './pricing.mjs';
+import { byRoleUsage, countsByModel, hitRate } from './role-usage.mjs';
 
 const SESSION_ID = /^[\w-]+$/;
 // The session hook's context holds its settings line while exo is loaded, after
@@ -112,34 +112,6 @@ function readResultTokens(transcriptPath) {
   return tokens;
 }
 
-function roleCost(calls) {
-  let total = 0;
-  for (const [model, counts] of Object.entries(countsByModel(calls))) {
-    const cost = countsCost(counts, model);
-    if (cost === null) return null;
-    total += cost;
-  }
-  return total;
-}
-
-function byRoleUsage(calls, readTokens) {
-  const grouped = {};
-  for (const call of Object.values(calls)) {
-    grouped[call.role] = grouped[call.role] ?? [];
-    grouped[call.role].push(call);
-  }
-  const byRole = {};
-  for (const role of new Set([...Object.keys(grouped), ...Object.keys(readTokens)])) {
-    const roleCalls = grouped[role] ?? [];
-    byRole[role] = {
-      counts: sumCounts(roleCalls),
-      costUsd: roleCost(roleCalls),
-      estimatedReadTokens: readTokens[role] ?? 0
-    };
-  }
-  return byRole;
-}
-
 // Whether the session hook handed the model exo's rules in this session.
 export function exoLoaded(sessionId) {
   const transcriptPath = findTranscript(sessionId);
@@ -157,16 +129,6 @@ export function exoLoaded(sessionId) {
     if (content.some((text) => typeof text === 'string' && EXO_MARKERS.some((marker) => text.includes(marker)))) return true;
   }
   return false;
-}
-
-function countsByModel(calls) {
-  const grouped = {};
-  for (const counts of Object.values(calls)) {
-    const model = counts.model ?? 'unknown';
-    grouped[model] = grouped[model] ?? [];
-    grouped[model].push(counts);
-  }
-  return Object.fromEntries(Object.entries(grouped).map(([model, list]) => [model, sumCounts(list)]));
 }
 
 function filePeakTokens(file) {
@@ -200,9 +162,11 @@ export function writeCellUsage(cellDirectory, sessionId) {
   const calls = transcriptCalls(transcript);
   const hopPeaks = hopPeakTokens(transcript);
   // sweep.mjs reads the transcript back for its flow checks, so its path rides along.
+  const counts = sumCounts(Object.values(calls));
   const usage = {
     transcript,
-    counts: sumCounts(Object.values(calls)),
+    counts,
+    hitRate: hitRate(counts),
     byModel: countsByModel(calls),
     byRole: byRoleUsage(calls, readResultTokens(transcript)),
     subagents: subagentTypes(transcript),
@@ -249,9 +213,11 @@ export function writeRunUsage(cellDirectory, ledgerFile) {
     subagents.push(...subagentTypes(transcript));
     for (const [role, tokens] of Object.entries(readResultTokens(transcript))) readTokens[role] = (readTokens[role] ?? 0) + tokens;
   }
+  const counts = missingTranscripts > 0 ? null : sumCounts(Object.values(calls));
   const usage = {
     transcript: null,
-    counts: missingTranscripts > 0 ? null : sumCounts(Object.values(calls)),
+    counts,
+    hitRate: counts === null ? null : hitRate(counts),
     byModel: countsByModel(calls),
     byRole: missingTranscripts > 0 ? null : byRoleUsage(calls, readTokens),
     subagents,
