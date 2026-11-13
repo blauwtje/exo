@@ -57,7 +57,7 @@ The reader scans: bold label and figure come first, each extra line costs attent
 - Before an irreversible step, ask the user to confirm, in full sentences.
 - Ask one question per message.
 - When the user says a reply is unclear or asks the same thing twice, write the next reply in full sentences.
-- Reply entirely in the user's language, fixed phrases and AskUserQuestion option labels too.
+- Reply entirely in the user's language, as of their latest message, translating every label, such as `Also` and Recommended.
 - On a lone `?`, repeat your last reply in full.
 - When the same thing is reported broken 3 messages in a row, stop changing code, name the likeliest wrong assumption and ask one question testing it.
 
