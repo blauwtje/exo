@@ -13,3 +13,4 @@ Each release appends one row and no row is rewritten. The releasing session runs
 | date | commit | tracked files | check modules | test files | check seconds | always-on tokens | build | gate | spec | find-cause | ship | eval score with / without | cost ratio | time ratio |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-11-13 | 720b6cb3e | 2744 | 79 | 455 | 110 | 836 | 0.40M | 3.2M | 0.18M | 0.07M | 0.03M | | | |
+| 2026-11-13 | 209aac095 | 1086 | 40 | 310 | 82 | 836 | 0.40M | 3.3M | 0.18M | 0.07M | 0.03M | 0.36 / 0.29, onvolledig: 14/20, Opus 5.5 effort medium | 2.17 | 1.99 |
