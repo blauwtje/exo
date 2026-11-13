@@ -67,3 +67,8 @@ test('emphasis in agents, hooks and lib prompt text is reported past two lines',
     assert.deepEqual(rules({ [name]: 'IMPORTANT a\nNEVER b\n', 'skills/build/SKILL.md': '' }), []);
   }
 });
+
+test('a scratchpad instruction is reported as a ritual phrase unless quoted', () => {
+  const text = 'Keep a scratchpad of notes.\nBan `scratchpad` here.\n';
+  assert.deepEqual(rules({ 'skills/build/SKILL.md': text }), ['ritual']);
+});

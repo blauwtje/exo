@@ -13,7 +13,7 @@ const UNSAFE = [
   { rule: 'claude-md-write', pattern: />>?\s*\S*CLAUDE\.md|\b(?:append|write)\w*\s+(?:\w+\s+){0,3}(?:to|into)\s+(?:the\s+)?`?(?:\S*\/)?CLAUDE\.md/i },
   { rule: 'user-prompt-submit', pattern: /["`]UserPromptSubmit["`]\s*:|\bregister\w*\b[^\n]*\bUserPromptSubmit\b/i }
 ];
-const RITUAL = /\b(?:double[- ]check|be maximally thorough|think step by step|think carefully)\b/i;
+const RITUAL = /\b(?:double[- ]check|be maximally thorough|think step by step|think carefully|scratchpad)\b/i;
 const QUOTED = /"[^"\n]*"|“[^”\n]*”|`[^`\n]*`/g;
 const AT_MOST = /((?:\S+\s+){0,2})at most (\d+) ([a-z][a-z-]*)/gi;
 
