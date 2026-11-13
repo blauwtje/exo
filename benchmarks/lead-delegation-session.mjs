@@ -6,6 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const FIXTURE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'lead-delegation-fixture');
 const PROMPT = 'Refactor the pipeline board visually in full: give every component in src/board (Board, Column, Card, Drawer, Toolbar) a new modern look with shared design tokens, a drawer that slides in, and drag styling on the cards. Decide everything yourself and ask nothing.';
@@ -87,7 +88,7 @@ export function runSession({ cell, budget, pluginDir, stream, home, prompt, hist
       clearTimeout(timer);
       fs.closeSync(output);
       appendBashWrites(stream, tmp);
-      fs.rmSync(base, { recursive: true, force: true });
+      removeScratch(base);
       resolve();
     });
   });
