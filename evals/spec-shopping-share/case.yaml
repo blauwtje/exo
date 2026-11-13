@@ -1,0 +1,31 @@
+schema_version: "1.1"
+name: spec-shopping-share
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
+  prompt: |
+    Let people share their shopping lists with family. Shape this with me before building.
+graders:
+  - name: criteria
+    type: llm
+    weight: 1
+    criteria: |
+      Pass only when all of these hold for each question the assistant sends:
+
+      - One message holds one question, or, when several open decisions wait on no other answer, all of them, numbered; the next comes only after the answer, and only while a question is still open.
+      - No later question repeats a point already asked or decided unless a reply opened a new costly point.
+      - Each question opens with a title line `**<title>**`, unnumbered outside a batch, a plain everyday question of about ten words at most.
+      - Each question has two short sentences of context at most, only what the user needs to choose.
+      - No file name the user need not open, setting or field name, flag, model name, token count, endpoint or other technical term in a title, an option or the recommendation.
+      - Two or three options, two only when no honest third route exists, each on its own line as `- **(A) Label**: what the user gets`, the label one to three words, the text one short plain clause on what the user gets or gives up.
+      - The options run in the order A, B, C, never moved or re-lettered; the recommendation may sit on any letter, no option is marked "(recommended)" and no other option carries a mark.
+      - The last line is `Recommended: (<letter>), because <why it beats the others>`, naming a shown letter, one plain clause, not inside an option line.
+      - The whole question stays under about 60 words outside the option labels.
+      - The options are text in the reply; no question tool, form or picker is used.
+
+      The run asks the question and writes no file and starts no build before the user answers.
+  - name: skill
+    type: tool_used
+    tool: Skill

@@ -90,7 +90,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 ## Evals
 
-`claude plugin eval` runs the suite under `evals/` (cases in `evals/<case>/`, graders in `graders/`); `evals/results/` is gitignored. Run it only before a release: `EXO_ROOT="$PWD" claude plugin eval --scaffold --allow-tools Bash Edit Write --json --max-cost-usd 20`.
+`claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/case.yaml` with its graders inline, or `prompt.md` with `graders/`; a scaffolded case adds a one-line `scaffold.sh` that calls `evals/scaffold.sh`); `evals/results/` is gitignored. Run it only before a release: `EXO_ROOT="$PWD" claude plugin eval --scaffold --allow-tools Bash Edit Write --json --max-cost-usd 20`.
 
 `docs/scorecard.md` lists the commands for each column and holds one table. Each release appends one row and no row is rewritten. `docs/failures.md` lists the failures seen in real sessions.
 

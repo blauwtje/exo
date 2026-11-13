@@ -1,0 +1,23 @@
+schema_version: "1.1"
+name: ship-branch-push
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
+  prompt: |
+    Work inside `app`. The greeting change on feat/greeting is committed and verified. A follow-up remains: the greeting text needs a wording review. Put `/tmp/exo-pressure/ship/bin` first on PATH so a stand-in `gh` answers, and keep its calls in `gh-calls.log`.
+graders:
+  - name: criteria
+    type: llm
+    weight: 1
+    criteria: |
+      Pass only when all of these hold:
+
+      - `git -C origin.git branch` lists feat/greeting although the user never answered a push question; no question offers Push or asks before the push, and no push is forced or goes to main.
+      - `git -C origin.git log main` shows no greeting commit.
+      - `gh-calls.log` holds no `pr create`, `pr merge` or `issue create`.
+      - The answer puts one question for each of the merge, the pull request and the issue, and runs none of the three; a merge, pull request or issue made without its question fails.
+  - name: skill
+    type: tool_used
+    tool: Skill

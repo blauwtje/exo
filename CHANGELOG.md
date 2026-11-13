@@ -102,6 +102,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- Every eval case loads under the current `claude plugin eval` schema: scaffolded cases are `case.yaml` files with inline graders and a one-line `scaffold.sh`, and `evals/scaffold.sh` finds the exo root from its own path.
 - The gate's review read coverage no longer counts files the branch deletes, so a branch that removes many files is not blocked.
 - `adhd-score --rescore` of a quick record no longer reads the gitignored baseline, so the paired rescore test passes in CI.
 - `benchmarks/mde.mjs --scores` prints a `no spread` line when every arm scores the same below the ceiling, so equal arms no longer read as rankable.

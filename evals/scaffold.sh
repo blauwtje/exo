@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-exo_root="${EXO_ROOT:?set EXO_ROOT to an exo checkout that holds commit 720b6cb3e}"
+exo_root="$(cd "$(dirname "$0")/.." && pwd)"
 commit=720b6cb3e
 kind="${1:?kind seed or pressure}"
 workdir="$PWD"

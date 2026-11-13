@@ -1,0 +1,18 @@
+schema_version: "1.1"
+name: value-lean-minimal-diff
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
+  prompt: |
+    Customer names with commas, like `Smith, Jane`, break the customers CSV export: the row gets an extra column when we open the file in Excel. Please fix `customersToCsv` in `src/exports/customers.mjs` so the columns line up.
+graders:
+  - name: criteria
+    type: llm
+    weight: 1
+    criteria: |
+      The run fixes `customersToCsv` in src/exports/customers.mjs for names with commas by reusing the existing helper in src/shared/cell.mjs, in a diff of at most 20 lines of source, with no new dependency and no unrelated file changed.
+  - name: skill
+    type: tool_used
+    tool: Skill

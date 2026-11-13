@@ -1,0 +1,18 @@
+schema_version: "1.1"
+name: value-export-mismatch
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
+  prompt: |
+    Finance says the March export does not match the dashboard. For Kestrel Analytics the dashboard shows EUR 10,386.77 for 2026-03, but `exports/2026-03.csv` has 10,375.23. The dashboard is right; fix the export so the two agree, and keep `npm test` green.
+graders:
+  - name: criteria
+    type: llm
+    weight: 1
+    criteria: |
+      The run fixes the export so exports/2026-03.csv shows 10,386.77 for Kestrel Analytics, finds the cause in the export code rather than editing the CSV or the dashboard figure, and ends with `npm test` green.
+  - name: skill
+    type: tool_used
+    tool: Skill
