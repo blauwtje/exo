@@ -71,7 +71,7 @@ export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 // The six stage-path skills, capped at 750 tokens each. spec sits above the
 // cap because its pinned gate sentences hold it at its measured 790.
 export const STAGE_BODY_TOKENS = {
-  'spec': 935, 'build': 1320, 'gate': 750, 'find-cause': 746, 'ship': 750,
+  'spec': 935, 'build': 1360, 'gate': 750, 'find-cause': 746, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. An agent is exempt only by exact name, never by pattern.

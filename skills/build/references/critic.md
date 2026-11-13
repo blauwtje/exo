@@ -45,6 +45,6 @@ Name no strengths.
 ## Acting on it
 
 - `ship`: no fix round; report the verdict.
-- `fix` (ledger kind `look`): make the three changes in one round of edits.
+- `fix` (ledger kind `look`): make the three changes in one round of edits, sent to `exo:build-task` over 2 files.
 - `rebuild`: rebuild the named area (the art module, the palette, the chrome) in that same round, keeping the rest.
 - A finding that conflicts with an explicit ask: the ask wins; note the conflict in the report.

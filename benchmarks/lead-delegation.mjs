@@ -10,7 +10,8 @@ import { UsageError, parseFlags, isMain } from '#script-flags';
 import { powerLine } from '../lib/eval-stats.mjs';
 import { makeCellHome } from './cell-home.mjs';
 import { runSession } from './lead-delegation-session.mjs';
-import { MAX_WRITES, parseStream, scoreStream, verdictOf } from './lead-delegation-turns.mjs';
+import { referenceFiles } from './lead-delegation-reference.mjs';
+import { CONTEXT_FLOOR, MAX_WRITES, parseStream, scoreStream, verdictOf } from './lead-delegation-turns.mjs';
 
 export { scoreStream };
 
@@ -19,11 +20,12 @@ const QUICK_CELLS = 'claude-fable-5-2:medium';
 const FULL_CELLS = 'claude-fable-5-2:medium,claude-fable-5-2:high,claude-opus-5-5:medium,claude-opus-5-5:high';
 const QUICK_RUNS = 1;
 const FULL_RUNS = 3;
+const CHARACTERS_PER_TOKEN = 2.2;
 const SESSION_BUDGET_USD = 2;
 const TOTAL_BUDGET_USD = 3;
 const USAGE = `usage: lead-delegation.mjs [--full] [--dry-run] [--cells <model:effort,...>] [--runs <n>] [--plugin-dir <checkout>] [--max-budget-usd <usd per session>] [--max-total-usd <usd>] [--out <dir>] [--history] [--score <stream.jsonl>]
 Default: cell ${QUICK_CELLS}, ${QUICK_RUNS} run. --full: claude-fable-5-2 and claude-opus-5-5 at medium and high, ${FULL_RUNS} runs each.
-A run passes when the lead starts at least one subagent and writes at most ${MAX_WRITES} product files itself. --history: one session, two turns; turn 1 explores and decides the design with no writes, turn 2 asks for the build, and only turn 2 is scored. A run with a permission denial, or a product file written in turn 1, is VOID. Exit 0 when every non-void run passes, 1 otherwise, 2 bad flag.`;
+A run passes when the lead starts at least one subagent and writes at most ${MAX_WRITES} product files itself. --history: one session, two turns; turn 1 explores and decides the design with no writes, turn 2 asks for the build, and only turn 2 is scored. A run with a permission denial, a product file written in turn 1, or a build turn that starts under ${CONTEXT_FLOOR} context tokens is VOID. Exit 0 when every non-void run passes, 1 otherwise, 2 bad flag.`;
 const SPEC = { full: 'boolean', 'dry-run': 'boolean', cells: 'string', runs: 'string', 'plugin-dir': 'string', 'max-budget-usd': 'string', 'max-total-usd': 'string', out: 'string', score: 'string', history: 'boolean' };
 
 function runLine({ cell, run, score, stream }) {
@@ -55,12 +57,18 @@ function planFrom(flags) {
   };
 }
 
+function referenceLine() {
+  const files = referenceFiles();
+  const characters = files.reduce((sum, file) => sum + file.text.length, 0);
+  return `reference files: ${files.length}; characters: ${characters}; estimated tokens: ${Math.round(characters / CHARACTERS_PER_TOKEN)}; VOID floor: ${CONTEXT_FLOOR} context tokens`;
+}
+
 function dryRun(plan) {
   const sessions = plan.cells.length * plan.runs;
   const projected = Math.min(sessions * plan.budget, plan.total);
   process.stdout.write(`cells: ${plan.cells.join(', ')}; runs per cell: ${plan.runs}; sessions: ${sessions}\n`);
   process.stdout.write(`projected cost: at most $${projected.toFixed(2)} (${sessions} x $${plan.budget} per session, stopping at $${plan.total} total)\n`);
-  if (plan.history) process.stdout.write('each session has two turns\n');
+  if (plan.history) process.stdout.write(`each session has two turns\n${referenceLine()}\n`);
   process.stdout.write(`${powerLine({ tasks: 1, samples: plan.runs, arms: plan.cells.length })}\n`);
 }
 

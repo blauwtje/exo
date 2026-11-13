@@ -65,3 +65,9 @@ test('a session that died on an API error or never produced a result is void', (
   assert.equal(errored.void, true);
   assert.equal(scoreStream([call('Read', {})]).void, true);
 });
+
+test('a history stream whose build turn starts under 50,000 context tokens is void', () => {
+  const sized = (tokens) => ({ type: 'assistant', message: { usage: { input_tokens: tokens }, content: [{ type: 'tool_use', id: 'a1', name: 'Agent', input: {} }] } });
+  assert.equal(scoreStream([call('Read', {}), result(), sized(19_500), result()]).void, true);
+  assert.equal(scoreStream([call('Read', {}), result(), sized(60_000), result()]).void, false);
+});

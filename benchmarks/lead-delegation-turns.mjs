@@ -1,6 +1,7 @@
 import { isExoPath } from '../lib/live-shells.mjs';
 
 export const MAX_WRITES = 2;
+export const CONTEXT_FLOOR = 50_000;
 const AGENT_TOOLS = new Set(['Agent', 'Task']);
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
 const DESIGN_REFERENCE = 'design-ui.md';
@@ -46,6 +47,8 @@ function contextSize(events) {
   return (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
 }
 
+const belowFloor = (context) => context !== null && context < CONTEXT_FLOOR;
+
 function splitTurns(events) {
   const cut = events.filter(isResult).length >= 2 ? events.findIndex(isResult) + 1 : 0;
   const early = events.slice(0, cut);
@@ -69,6 +72,7 @@ export function scoreStream(events) {
   const last = results.at(-1);
   const agents = calls.filter((call) => AGENT_TOOLS.has(call.name)).length;
   const writes = productWrites(calls, lateBash).size;
+  const context = history ? contextSize(late) : null;
   const denials = results.reduce((sum, result) => sum + (result.permission_denials?.length ?? 0), 0);
   return {
     agents,
@@ -77,8 +81,8 @@ export function scoreStream(events) {
     denials,
     cost: last?.total_cost_usd ?? 0,
     capped: last?.subtype === 'error_max_budget_usd',
-    context: history ? contextSize(late) : null,
-    void: denials > 0 || results.length === 0 || results.some((item) => item.api_error_status) || productWrites(early.calls, early.bash).size > 0,
+    context,
+    void: belowFloor(context) || denials > 0 || results.length === 0 || results.some((item) => item.api_error_status) || productWrites(early.calls, early.bash).size > 0,
     pass: agents >= 1 && writes <= MAX_WRITES
   };
 }

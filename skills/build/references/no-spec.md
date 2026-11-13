@@ -17,8 +17,8 @@ A decided change with no plan file runs these steps instead of the loop, so a sm
    - For a multi-file change, confirm a clean working tree or name its pre-existing changed paths.
 4. **Build.**
    - Report a required edit outside the oriented paths before touching it.
-   - Edit in dependency order and ask nothing between files in scope.
-   - Replace a hand edit repeated across many files with one script.
+   - Over 2 files, send each independent part to `exo:build-task`, in dependency order; otherwise edit in dependency order and ask nothing between files in scope.
+   - Replace a hand edit repeated across many files with one script, which a `build-task` runs.
    - Keep every mutating edit idempotent, so retries land the same state.
    - When a hook reports the context budget crossed, write landed and open edits to `<scratch>/implement-next.md` at a green state and report that a clear comes next.
 5. **Prove.**
