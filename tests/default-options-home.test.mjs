@@ -13,11 +13,15 @@ import { tempDir } from './harness.mjs';
 
 function withHome(home, body) {
   const before = process.env.HOME;
+  const beforeConfig = process.env.CLAUDE_CONFIG_DIR;
   process.env.HOME = home;
+  process.env.CLAUDE_CONFIG_DIR = path.join(home, '.claude');
   try {
     return body();
   } finally {
     process.env.HOME = before;
+    if (beforeConfig === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = beforeConfig;
   }
 }
 
@@ -143,6 +147,31 @@ test('the pressure home turns off every installed plugin', () => {
     const settings = JSON.parse(fs.readFileSync(path.join(mirror, '.claude', 'settings.json'), 'utf8'));
     assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'tokeneconomizer@tokeneconomizer': false });
   } finally {
+    if (mirror) fs.rmSync(mirror, { recursive: true, force: true });
+  }
+});
+
+test('under CLAUDE_CONFIG_DIR the mirror comes from that directory and the child env drops it', () => {
+  const home = tempDir('default-options-home-test-');
+  const config = tempDir('default-options-home-config-');
+  const before = process.env.CLAUDE_CONFIG_DIR;
+  let mirror;
+  try {
+    fs.mkdirSync(path.join(home, '.claude'));
+    fs.writeFileSync(path.join(config, 'settings.json'), JSON.stringify({ enabledPlugins: { 'other@x': true } }));
+    mirror = withHome(home, () => {
+      process.env.CLAUDE_CONFIG_DIR = config;
+      return pressureHome();
+    });
+    const settings = JSON.parse(fs.readFileSync(path.join(mirror, '.claude', 'settings.json'), 'utf8'));
+    assert.deepEqual(settings.enabledPlugins, { 'other@x': false });
+    const run = withPressureHome({ env: { A: '1' } }, mirror);
+    assert.equal(run.env.HOME, mirror);
+    assert.equal(run.env.CLAUDE_CONFIG_DIR, undefined);
+    assert.equal('CLAUDE_CONFIG_DIR' in run.env, true);
+  } finally {
+    if (before === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = before;
     if (mirror) fs.rmSync(mirror, { recursive: true, force: true });
   }
 });

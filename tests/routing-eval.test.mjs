@@ -239,16 +239,20 @@ test('--skill runs only the prompts of that skill, or of no skill for none, and 
 test('the routing home turns off every installed plugin', () => {
   const home = tempDir('routing-home-test-');
   const before = process.env.HOME;
+  const beforeConfig = process.env.CLAUDE_CONFIG_DIR;
   let mirror;
   try {
     mkdirSync(join(home, '.claude'), { recursive: true });
     writeFileSync(join(home, '.claude', 'settings.json'), JSON.stringify({ enabledPlugins: { 'exo@blauwtje': true, 'tokeneconomizer@tokeneconomizer': true } }));
     process.env.HOME = home;
+    process.env.CLAUDE_CONFIG_DIR = join(home, '.claude');
     mirror = routingHome();
     const settings = JSON.parse(readFileSync(join(mirror, '.claude', 'settings.json'), 'utf8'));
     assert.deepEqual(settings.enabledPlugins, { 'exo@blauwtje': false, 'tokeneconomizer@tokeneconomizer': false });
   } finally {
     process.env.HOME = before;
+    if (beforeConfig === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = beforeConfig;
     if (mirror) rmSync(mirror, { recursive: true, force: true });
   }
 });

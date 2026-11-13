@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { gradeStream } from '../benchmarks/isolation-probe.mjs';
+import { gradeStream, leakedPlugins } from '../benchmarks/isolation-grade.mjs';
 
 const MARKER = 'marker-1234';
 const dispatch = (agent, id, prompt = 'Reply with your parent marker, or UNKNOWN.') => ({
@@ -70,4 +70,8 @@ test('a background dispatch is not run, by input or by the async result', () => 
 test('an errored dispatch is not run', () => {
   const refused = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'a', is_error: true, content: 'refused' }] } };
   assert.deepEqual(gradeStream(stream(...BOTH, refused, reply('b', 'UNKNOWN'), done), MARKER), { verdict: 'UNRUN', cause: 'review-branch errored' });
+});
+
+test('leakedPlugins returns an init plugin the plugin dir does not name', () => {
+  assert.deepEqual(leakedPlugins({ plugins: [{ name: 'exo' }, { name: 'other' }] }, ['exo']), ['other']);
 });

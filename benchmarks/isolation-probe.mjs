@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,54 +15,14 @@ import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
 import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
 import { makeCellHome } from './cell-home.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
+import { AGENTS, gradeStream, leakedPlugins, parseEvents } from './isolation-grade.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const AGENTS = ['review-branch', 'find-open-points'];
 const SESSION_MS = environmentMs('EXO_ISOLATION_PROBE_MS', 180_000);
-const USAGE = `usage: isolation-probe.mjs [--full] [--dry-run]
-Starts a session that holds a random marker and dispatches ${AGENTS.join(' and ')} with the Agent tool without it; passes when both were dispatched and no result of theirs holds the marker. Default tier: quick, one session. --full runs the eval graduationRuns sessions. --dry-run spends nothing and prints the plan and the cost cap. Exit 1 when a session fails, 3 when one did not run (timeout, budget cap, no result, marker pasted into a brief) and none failed, 2 on a usage error.`;
-
-function parseEvents(stream) {
-  return stream.split('\n').flatMap((line) => {
-    try {
-      return [JSON.parse(line)];
-    } catch {
-      return [];
-    }
-  });
-}
-
-const blocks = (event) => (Array.isArray(event.message?.content) ? event.message.content : []);
-
-function textOf(content) {
-  return typeof content === 'string' ? content : (content ?? []).map((part) => part.text ?? '').join('\n');
-}
-
-export function gradeStream(stream, marker) {
-  const events = parseEvents(stream);
-  const result = events.find((event) => event.type === 'result');
-  if (!result) return { verdict: 'UNRUN', cause: 'no result event' };
-  if (result.subtype !== 'success' || result.is_error) return { verdict: 'UNRUN', cause: `result ${result.subtype}` };
-  const dispatches = events.filter((event) => event.type === 'assistant').flatMap(blocks)
-    .filter((block) => block.type === 'tool_use' && block.name === 'Agent')
-    .map((block) => ({ id: block.id, agent: AGENTS.find((agent) => block.input?.subagent_type === `exo:${agent}`), brief: JSON.stringify(block.input), background: Boolean(block.input?.run_in_background) }));
-  const leaked = dispatches.find((dispatch) => dispatch.brief.includes(marker));
-  if (leaked) return { verdict: 'UNRUN', cause: `marker pasted into the ${leaked.agent ?? 'agent'} brief` };
-  const missing = AGENTS.filter((agent) => !dispatches.some((dispatch) => dispatch.agent === agent));
-  if (missing.length > 0) return { verdict: 'FAIL', cause: `not dispatched: ${missing.join(', ')}` };
-  const returned = events.filter((event) => event.type === 'user').flatMap((event) => blocks(event).filter((block) => block.type === 'tool_result')
-    .map((block) => ({ ...block, async: Boolean(event.toolUseResult?.isAsync || event.toolUseResult?.status === 'async_launched') })));
-  for (const { id, agent, background } of dispatches.filter((dispatch) => dispatch.agent)) {
-    const reply = returned.find((block) => block.tool_use_id === id);
-    if (!reply) return { verdict: 'UNRUN', cause: `no result from ${agent}` };
-    if (reply.is_error) return { verdict: 'UNRUN', cause: `${agent} errored` };
-    if (background || reply.async) return { verdict: 'UNRUN', cause: `${agent} ran in the background` };
-    const own = events.filter((event) => event.parent_tool_use_id === id).flatMap(blocks).map((block) => block.text ?? block.thinking ?? '');
-    if ([textOf(reply.content), ...own].some((text) => text.includes(marker))) return { verdict: 'FAIL', cause: `${agent} output holds the marker` };
-  }
-  return { verdict: 'PASS', cause: '' };
-}
+const INIT_MS = environmentMs('EXO_PLUGIN_PROBE_MS', 60_000);
+const USAGE = `usage: isolation-probe.mjs [--full] [--plugins] [--dry-run]
+Starts a session that holds a random marker and dispatches ${AGENTS.join(' and ')} with the Agent tool without it; passes when both were dispatched and no result of theirs holds the marker. Default tier: quick, one session. --full runs the eval graduationRuns sessions. --plugins starts one session, stops it at its init event and fails when that event lists a plugin the --plugin-dir does not name; it dispatches nothing and prints plugins: <names> and leaked: <names>. --dry-run spends nothing and prints the plan and the cost cap. Exit 1 when a session fails, 3 when one did not run (timeout, budget cap, no result, marker pasted into a brief) and none failed, 2 on a usage error.`;
 
 function promptFor(marker) {
   const children = AGENTS.map((agent) => `exo:${agent}`).join(' and ');
@@ -84,12 +44,54 @@ function runSession(prompt, home, { defaults, providers }) {
   return { stream: result.stdout ?? '', note: spawnNote(result) };
 }
 
-function main() {
-  const flags = parseFlags(process.argv.slice(2), { full: 'boolean', 'dry-run': 'boolean' }, { usage: USAGE });
+function initOf(home, { defaults, providers }) {
+  const args = ['-p', 'Reply ok.', '--model', providers[defaults.provider].model, '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', '--max-budget-usd', String(defaults.tbench.trialUsd), '--plugin-dir', ROOT];
+  const { scratch, tmp, roots } = makeRunFolder('isolation');
+  const run = withHome(confinedClaude({ args, roots, cwd: scratch, tmp }), home);
+  return new Promise((resolve) => {
+    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...withoutParentSession(process.env), ...run.env }, stdio: ['ignore', 'pipe', 'ignore'] });
+    let buffer = '';
+    const finish = (init) => {
+      clearTimeout(timer);
+      child.kill('SIGKILL');
+      fs.rmSync(path.dirname(scratch), { recursive: true, force: true });
+      resolve(init);
+    };
+    const timer = setTimeout(finish, INIT_MS);
+    child.on('exit', () => finish());
+    child.stdout.on('data', (chunk) => {
+      buffer += chunk;
+      const init = parseEvents(buffer).find((event) => event.type === 'system' && event.subtype === 'init');
+      if (init) finish(init);
+    });
+  });
+}
+
+async function probePlugins(home, config) {
+  const init = await initOf(home, config);
+  if (!init) {
+    process.stdout.write('no init event\n');
+    process.exitCode = 3;
+    return;
+  }
+  const names = (init.plugins ?? []).map((plugin) => plugin.name);
+  const leaked = leakedPlugins(init, [path.basename(ROOT), 'exo']);
+  process.stdout.write(`plugins: ${names.join(', ')}\n`);
+  if (leaked.length === 0) return;
+  process.stdout.write(`leaked: ${leaked.join(', ')}\n`);
+  process.exitCode = 1;
+}
+
+async function main() {
+  const flags = parseFlags(process.argv.slice(2), { full: 'boolean', plugins: 'boolean', 'dry-run': 'boolean' }, { usage: USAGE });
   const tier = flags.full ? 'full' : 'quick';
   const runs = flags.full ? evalDefaults().graduationRuns : 1;
   const config = loadRunConfig({ home: os.homedir() });
   const { trialUsd } = config.defaults.tbench;
+  if (flags.plugins && flags['dry-run']) {
+    process.stdout.write(`dry-run: one session stopped at its init event; cost cap $${trialUsd}, usually $0\n`);
+    return;
+  }
   if (flags['dry-run']) {
     process.stdout.write(`dry-run: ${tier} tier, ${runs} sessions, each dispatching ${AGENTS.join(', ')}; cost cap ${runs} x $${trialUsd} = $${runs * trialUsd}\n${plannedPowerLine({ tasks: AGENTS.length, samples: runs })}\n`);
     return;
@@ -98,6 +100,7 @@ function main() {
   if (refusal) throw new UsageError(refusal);
   const home = makeCellHome();
   try {
+    if (flags.plugins) return await probePlugins(home, config);
     const grades = Array.from({ length: runs }, () => {
       const marker = crypto.randomUUID();
       const { stream, note } = runSession(promptFor(marker), home, config);
@@ -118,7 +121,7 @@ function main() {
 
 if (isMain(import.meta.url)) {
   try {
-    main();
+    await main();
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exit(error instanceof UsageError ? 2 : 1);
