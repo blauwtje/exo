@@ -3,13 +3,13 @@ import { parseArgs } from 'node:util';
 import { powerLine } from '../lib/eval-stats.mjs';
 import { minDetectableEffect, signTest } from './statistics.mjs';
 
-const { values } = parseArgs({ options: { rate: { type: 'string' }, n: { type: 'string' }, samples: { type: 'string', default: '1' }, effect: { type: 'string' }, paired: { type: 'boolean', default: false } } });
+const { values } = parseArgs({ options: { rate: { type: 'string' }, n: { type: 'string' }, samples: { type: 'string', default: '1' }, effect: { type: 'string' }, paired: { type: 'boolean', default: false }, scores: { type: 'string' }, saturation: { type: 'string', default: '0.95' } } });
 const rate = Number(values.rate);
 const n = Number(values.n);
 const samples = Number(values.samples);
 const effect = values.effect === undefined ? undefined : Number(values.effect);
 if (!(rate > 0 && rate < 1) || !Number.isInteger(n) || n < 1 || !Number.isInteger(samples) || samples < 1 || !(effect === undefined || effect > 0)) {
-  console.error('usage: mde.mjs --rate <0..1> --n <tasks per arm> [--samples <runs per task>] [--effect <target>] [--paired]');
+  console.error('usage: mde.mjs --rate <0..1> --n <tasks per arm> [--samples <runs per task>] [--effect <target>] [--paired] [--scores <a,b,...> [--saturation <0..1>]]');
   process.exit(2);
 }
 const allWins = signTest(Array.from({ length: n }, () => [0, 1]));
@@ -22,3 +22,10 @@ if (uncapped > largest) {
 }
 console.log(`sign test p, ${n} of ${n} pairs won: ${allWins.p.toPrecision(3)}`);
 console.log(powerLine({ tasks: n, samples, rate, paired: values.paired, effect }));
+if (values.scores !== undefined) {
+  const scores = values.scores.split(',').map(Number);
+  const saturation = Number(values.saturation);
+  if (scores.every((score) => score >= saturation)) {
+    console.log(`saturated: every score is at or above ${saturation}, so the set ranks no setting`);
+  }
+}

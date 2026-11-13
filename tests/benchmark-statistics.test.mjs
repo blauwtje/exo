@@ -79,6 +79,15 @@ test('the mde script prints undetectable, not the cap, when the uncapped effect 
   assert.doesNotMatch(out('100'), /undetectable/);
 });
 
+test('the mde script says the set is saturated only when every score reaches the threshold', () => {
+  const mde = path.join(import.meta.dirname, '..', 'benchmarks', 'mde.mjs');
+  const out = (...extra) => spawnSync(process.execPath, [mde, '--rate', '0.5', '--n', '10', ...extra], { encoding: 'utf8' }).stdout;
+  assert.match(out('--scores', '0.97,1,0.95'), /saturated/);
+  assert.doesNotMatch(out('--scores', '0.97,0.6'), /saturated/);
+  assert.match(out('--scores', '0.9,0.92', '--saturation', '0.9'), /saturated/);
+  assert.doesNotMatch(out(), /saturated/);
+});
+
 test('minDetectableMeanEffect scales with spread and shrinks with runs', () => {
   assert.ok(Math.abs(minDetectableMeanEffect({ sd: 1, n: 2 }) - 2.84) < 1e-9);
   assert.ok(Math.abs(minDetectableMeanEffect({ sd: 0.5, n: 8 }) - 2.84 * 0.5 * 0.5) < 1e-9);
