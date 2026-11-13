@@ -10,7 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - `usage.json` records a cache hit rate (`hitRate` = cache read / all prompt tokens) per cell and per agent role (`benchmarks/role-usage.mjs`).
-- `benchmarks/mde.mjs --scores <arm scores>` reports a set as saturated when every arm is at or above `--saturation` (default 0.95).
+- `benchmarks/mde.mjs --scores <arm scores>` prints a `ceiling` line when every arm is at or above `--ceiling` (default 0.95).
 - The skill lint reports `scratchpad` as a ritual phrase.
 - An opt-in `build-grid` sweep set (`--set build-grid`: sonnet low, opus high, fable low, fable xhigh on the build fixtures); `--set build` and `all` are unchanged.
 - The session rules re-inject the brief path and offer a fresh session after two corrections, and a test keeps the rules part free of timestamps, shas and run ids.
@@ -54,7 +54,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
-- `skills/spec/references/measured-goal.md` picks a setting only when the score moves between the weakest and the strongest arm, and labels each failure agent fault or case fault; `skills/build/references/improve.md` clusters the remaining failures after 2 rounds without gain and sends case-fault clusters to the user.
+- `skills/spec/references/measured-goal.md` picks a setting only when `mde.mjs --scores` prints no `ceiling` line, and labels each failure agent fault or case fault; `skills/build/references/improve.md` labels the failing cases after 2 rounds without gain and lists case faults in the Stop report.
 - The spec open-points step also checks the spec, brief and plan for contradicting statements, the find-cause skill reproduces as the reporter and races two fixers after failed rounds, and the run loop names `EXO_MAX_RUN_USD`.
 - `search.mjs --source reddit` reads live Reddit through an exo-owned logged-in browser session (`--login` sets it up) and drops the archive and RSS; a missing login prints one `blocked` line naming the fix.
 - The facts judge passes a fact ending in "is named" when the reply names that part in one or two words matching the name or the part in parentheses.
