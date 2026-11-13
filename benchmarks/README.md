@@ -401,3 +401,15 @@ A ledger verdict is `worse`, `not-shown` or `better`, and a `not-shown` verdict 
 `benchmarks/improve-speed.mjs` routes an idea by its step. A step in the pooled flow cell runs on the pool, with the run count from the measured pool noise through `powerLine`. A step only in the frontend fixture (`--step flaky-test`, for example) is screened on `flow-web` at n=5 per arm, paired by seed, on proxy counts: the base arm runs from `--base-checkout` (default: the main checkout of the repository) and the candidate from the given checkout. The pair cost estimate and the power line come from the costs of past `flow-web` records under `benchmarks/runs`; with no past cost the screen does not start (`stopped: no-estimate`). A screen whose estimate passes `ideaScreenCapUsd` (20, in `defaults.eval` of `lib/run-providers.json`) does not start, a screen whose real spend reaches the cap stops between pairs, and both return `not-shown`; a candidate arm that fails its checks makes the screen `worse`. A cap of 0 turns the route off. The n=10 wall and cost confirmation after a `better` screen is not automated: run it by hand with `--full`, within `ideaConfirmCapUsd` (100).
 
 `node benchmarks/effort-probe.mjs <subagents-dir> <passed-effort>` reads the subagent `.meta.json` files of one dispatch and says whether the effort shown matches the effort passed; run it before the effort re-sweep.
+
+## Lead delegation
+
+`node benchmarks/lead-delegation.mjs` measures whether the lead session hands a multi-file change to subagents. Each run copies the 11-file fixture of `benchmarks/lead-delegation-fixture/` into a fresh git repository and runs one confined `claude -p` session (bypassed permissions, writes limited to that folder) with a fixed board-redesign prompt. A run passes when the lead starts at least one Agent and writes at most 2 product files; a run with a permission denial prints VOID, and one that hit its budget prints CAPPED. The run is paid and local.
+
+```bash
+node benchmarks/lead-delegation.mjs --dry-run           # no session: prints cells, runs, projected cost and the power line
+node benchmarks/lead-delegation.mjs                     # quick: claude-fable-5-2:medium, 1 run, at most $2 per session and $3 in total
+node benchmarks/lead-delegation.mjs --full              # claude-fable-5-2 and claude-opus-5-5 at medium and high, 3 runs each
+node benchmarks/lead-delegation.mjs --plugin-dir <checkout>   # measure a worktree before it lands
+node benchmarks/lead-delegation.mjs --score <stream.jsonl>    # score a kept stream, no model call
+```

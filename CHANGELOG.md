@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `node benchmarks/lead-delegation.mjs` runs one session on a 5-component board refactor and passes when the lead starts at least 1 subagent and writes at most 2 files itself; `--dry-run` spends nothing, `--score <stream.jsonl>` scores a stored stream, and a run with a permission denial prints `VOID`.
 - A main session that writes its 3rd distinct file inline gets one note to hand the remaining writes to `exo:build`; subagent writes and `.exo/` paths are not counted, and `leadWriteNudge` in run.json `defaults` sets the count.
 - `adhd-score.mjs --prereg benchmarks/adhd/prereg.json` refuses a paired adhd run when a frozen file's hash changed or the planned cases fall below the cases the recorded spread needs, then runs the frozen cases, samples, arms, model and cap; the paired facts-kept count uses a t interval and prints `decided`, `no effect of 1` or `not decided`, and gate passes print on their own line.
 - `--rescore --log <quick record>` re-judges every stored answer of both arms with the current judge and no reply call, prints a projected judge cost and refuses over `--max-usd`; the paired record adds a `facts_share` interval (not preregistered).
