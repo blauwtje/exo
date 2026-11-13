@@ -12,7 +12,7 @@
       "hook": {
         "held-out": {
           "build": {
-            "recall": 0.4222222222222222,
+            "recall": 0.7555555555555555,
             "falseTrigger": 0
           },
           "edit-skills": {
@@ -32,7 +32,7 @@
             "falseTrigger": 0
           },
           "ship": {
-            "recall": 1,
+            "recall": 0.9333333333333333,
             "falseTrigger": 0
           },
           "spec": {
@@ -52,7 +52,7 @@
       "no-hook": {
         "held-out": {
           "build": {
-            "recall": 0.13333333333333333,
+            "recall": 0.15555555555555556,
             "falseTrigger": 0
           },
           "edit-skills": {
@@ -60,11 +60,11 @@
             "falseTrigger": 0
           },
           "find-cause": {
-            "recall": 0.5333333333333333,
+            "recall": 0.6,
             "falseTrigger": 0
           },
           "gate": {
-            "recall": 0.8666666666666667,
+            "recall": 0.9333333333333333,
             "falseTrigger": 0
           },
           "save-session": {
@@ -72,7 +72,7 @@
             "falseTrigger": 0
           },
           "ship": {
-            "recall": 0.8666666666666667,
+            "recall": 0.9333333333333333,
             "falseTrigger": 0
           },
           "spec": {
@@ -107,8 +107,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147712,
-      "durationMs": 2617,
+      "cost_usd": 0.0148412,
+      "durationMs": 5279,
       "pick": "build"
     },
     {
@@ -120,8 +120,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149087,
-      "durationMs": 2423,
+      "cost_usd": 0.0150112,
+      "durationMs": 4926,
       "pick": "build"
     },
     {
@@ -133,9 +133,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014808700000000001,
-      "durationMs": 2735,
-      "pick": "build"
+      "cost_usd": 0.0149937,
+      "durationMs": 5034,
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -146,9 +146,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147937,
-      "durationMs": 3685,
-      "pick": null
+      "cost_usd": 0.014876200000000001,
+      "durationMs": 5814,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -159,9 +159,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147787,
-      "durationMs": 4256,
-      "pick": null
+      "cost_usd": 0.0148587,
+      "durationMs": 4611,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -172,8 +172,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147712,
-      "durationMs": 3958,
+      "cost_usd": 0.014888700000000001,
+      "durationMs": 3630,
       "pick": "build"
     },
     {
@@ -185,9 +185,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147662,
-      "durationMs": 3576,
-      "pick": null
+      "cost_usd": 0.014838700000000002,
+      "durationMs": 3921,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -198,9 +198,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014808700000000001,
-      "durationMs": 4064,
-      "pick": null
+      "cost_usd": 0.0148962,
+      "durationMs": 4112,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -211,8 +211,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147562,
-      "durationMs": 3084,
+      "cost_usd": 0.0148587,
+      "durationMs": 4462,
       "pick": "find-cause"
     },
     {
@@ -224,8 +224,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148062,
-      "durationMs": 2905,
+      "cost_usd": 0.0149012,
+      "durationMs": 3823,
       "pick": "find-cause"
     },
     {
@@ -237,8 +237,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148237,
-      "durationMs": 2929,
+      "cost_usd": 0.0149312,
+      "durationMs": 3999,
       "pick": "find-cause"
     },
     {
@@ -250,8 +250,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014781200000000001,
-      "durationMs": 3191,
+      "cost_usd": 0.0149187,
+      "durationMs": 5010,
       "pick": "find-cause"
     },
     {
@@ -263,8 +263,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148637,
-      "durationMs": 2520,
+      "cost_usd": 0.014973700000000001,
+      "durationMs": 4332,
       "pick": "ship"
     },
     {
@@ -276,8 +276,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014731200000000002,
-      "durationMs": 2709,
+      "cost_usd": 0.0148337,
+      "durationMs": 4878,
       "pick": "ship"
     },
     {
@@ -289,8 +289,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148687,
-      "durationMs": 2389,
+      "cost_usd": 0.0148362,
+      "durationMs": 4632,
       "pick": "ship"
     },
     {
@@ -302,8 +302,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147562,
-      "durationMs": 2731,
+      "cost_usd": 0.0149837,
+      "durationMs": 3586,
       "pick": "ship"
     },
     {
@@ -315,9 +315,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149012,
-      "durationMs": 3020,
-      "pick": null
+      "cost_usd": 0.0148912,
+      "durationMs": 3744,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -328,8 +328,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147887,
-      "durationMs": 3642,
+      "cost_usd": 0.014883700000000001,
+      "durationMs": 5975,
       "pick": "build"
     },
     {
@@ -341,9 +341,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147487,
-      "durationMs": 4256,
-      "pick": null
+      "cost_usd": 0.0148962,
+      "durationMs": 5843,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -354,9 +354,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014768700000000001,
-      "durationMs": 4450,
-      "pick": null
+      "cost_usd": 0.014916200000000001,
+      "durationMs": 5456,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -367,8 +367,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014786200000000001,
-      "durationMs": 2697,
+      "cost_usd": 0.0148912,
+      "durationMs": 4285,
       "pick": "spec"
     },
     {
@@ -380,8 +380,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147512,
-      "durationMs": 2812,
+      "cost_usd": 0.014911200000000001,
+      "durationMs": 5390,
       "pick": "spec"
     },
     {
@@ -393,8 +393,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147962,
-      "durationMs": 2610,
+      "cost_usd": 0.0148687,
+      "durationMs": 6580,
       "pick": "spec"
     },
     {
@@ -406,8 +406,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014781200000000001,
-      "durationMs": 3215,
+      "cost_usd": 0.0148812,
+      "durationMs": 7658,
       "pick": "spec"
     },
     {
@@ -419,8 +419,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148812,
-      "durationMs": 2575,
+      "cost_usd": 0.0149937,
+      "durationMs": 5288,
       "pick": "gate"
     },
     {
@@ -432,8 +432,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014876200000000001,
-      "durationMs": 2323,
+      "cost_usd": 0.014978700000000001,
+      "durationMs": 6968,
       "pick": "gate"
     },
     {
@@ -445,8 +445,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147562,
-      "durationMs": 2689,
+      "cost_usd": 0.0148587,
+      "durationMs": 4396,
       "pick": "gate"
     },
     {
@@ -458,8 +458,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148912,
-      "durationMs": 2210,
+      "cost_usd": 0.0149987,
+      "durationMs": 4814,
       "pick": "gate"
     },
     {
@@ -471,8 +471,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148137,
-      "durationMs": 2813,
+      "cost_usd": 0.0149212,
+      "durationMs": 7181,
       "pick": "save-session"
     },
     {
@@ -484,8 +484,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148737,
-      "durationMs": 2324,
+      "cost_usd": 0.014978700000000001,
+      "durationMs": 4387,
       "pick": "save-session"
     },
     {
@@ -497,8 +497,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014753700000000002,
-      "durationMs": 4332,
+      "cost_usd": 0.014866200000000001,
+      "durationMs": 5064,
       "pick": "save-session"
     },
     {
@@ -510,8 +510,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148462,
-      "durationMs": 3614,
+      "cost_usd": 0.0149487,
+      "durationMs": 3921,
       "pick": "save-session"
     },
     {
@@ -523,8 +523,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148737,
-      "durationMs": 2775,
+      "cost_usd": 0.0148587,
+      "durationMs": 4921,
       "pick": "write-docs"
     },
     {
@@ -536,8 +536,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014861200000000001,
-      "durationMs": 3084,
+      "cost_usd": 0.014826200000000001,
+      "durationMs": 4787,
       "pick": "write-docs"
     },
     {
@@ -549,8 +549,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148687,
-      "durationMs": 2588,
+      "cost_usd": 0.0149812,
+      "durationMs": 4249,
       "pick": "write-docs"
     },
     {
@@ -562,8 +562,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147212,
-      "durationMs": 3450,
+      "cost_usd": 0.0149712,
+      "durationMs": 3866,
       "pick": "write-docs"
     },
     {
@@ -575,8 +575,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014861200000000001,
-      "durationMs": 2548,
+      "cost_usd": 0.014961200000000001,
+      "durationMs": 2841,
       "pick": "edit-skills"
     },
     {
@@ -588,8 +588,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014776200000000001,
-      "durationMs": 3206,
+      "cost_usd": 0.0148462,
+      "durationMs": 5554,
       "pick": "edit-skills"
     },
     {
@@ -601,8 +601,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147937,
-      "durationMs": 2849,
+      "cost_usd": 0.014991200000000001,
+      "durationMs": 4683,
       "pick": "edit-skills"
     },
     {
@@ -614,8 +614,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014731200000000002,
-      "durationMs": 2760,
+      "cost_usd": 0.0148412,
+      "durationMs": 5550,
       "pick": "edit-skills"
     },
     {
@@ -627,8 +627,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014853700000000001,
-      "durationMs": 2638,
+      "cost_usd": 0.014951200000000001,
+      "durationMs": 3123,
       "pick": null
     },
     {
@@ -640,8 +640,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2375,
+      "cost_usd": 0.0149662,
+      "durationMs": 4099,
       "pick": null
     },
     {
@@ -654,7 +654,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4023,
+      "durationMs": 4809,
       "pick": null
     },
     {
@@ -666,8 +666,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014853700000000001,
-      "durationMs": 2864,
+      "cost_usd": 0.014961200000000001,
+      "durationMs": 3894,
       "pick": null
     },
     {
@@ -679,8 +679,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014916200000000001,
-      "durationMs": 3380,
+      "cost_usd": 0.0150212,
+      "durationMs": 3479,
       "pick": null
     },
     {
@@ -692,8 +692,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014933700000000001,
-      "durationMs": 2798,
+      "cost_usd": 0.0150387,
+      "durationMs": 2754,
       "pick": null
     },
     {
@@ -705,8 +705,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.015063700000000001,
-      "durationMs": 2539,
+      "cost_usd": 0.015131200000000001,
+      "durationMs": 3067,
       "pick": null
     },
     {
@@ -718,8 +718,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014928700000000001,
-      "durationMs": 3044,
+      "cost_usd": 0.015041200000000001,
+      "durationMs": 4135,
       "pick": null
     },
     {
@@ -732,7 +732,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4487,
+      "durationMs": 5432,
       "pick": null
     },
     {
@@ -745,7 +745,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3795,
+      "durationMs": 4368,
       "pick": null
     },
     {
@@ -758,7 +758,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4142,
+      "durationMs": 4296,
       "pick": null
     },
     {
@@ -771,7 +771,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3481,
+      "durationMs": 3589,
       "pick": null
     },
     {
@@ -783,8 +783,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014731200000000002,
-      "durationMs": 3072,
+      "cost_usd": 0.014861200000000001,
+      "durationMs": 3336,
       "pick": "build"
     },
     {
@@ -796,8 +796,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148337,
-      "durationMs": 3252,
+      "cost_usd": 0.014938700000000001,
+      "durationMs": 3537,
       "pick": "build"
     },
     {
@@ -809,8 +809,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147887,
-      "durationMs": 3118,
+      "cost_usd": 0.014956200000000001,
+      "durationMs": 3245,
       "pick": "build"
     },
     {
@@ -822,8 +822,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147162,
-      "durationMs": 3785,
+      "cost_usd": 0.0148237,
+      "durationMs": 3310,
       "pick": null
     },
     {
@@ -835,8 +835,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014758700000000001,
-      "durationMs": 3953,
+      "cost_usd": 0.014888700000000001,
+      "durationMs": 3025,
       "pick": null
     },
     {
@@ -848,8 +848,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147937,
-      "durationMs": 4108,
+      "cost_usd": 0.0148912,
+      "durationMs": 3993,
       "pick": "build"
     },
     {
@@ -861,8 +861,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014826200000000001,
-      "durationMs": 4118,
+      "cost_usd": 0.014923700000000002,
+      "durationMs": 4046,
       "pick": "build"
     },
     {
@@ -874,8 +874,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147937,
-      "durationMs": 3730,
+      "cost_usd": 0.0149212,
+      "durationMs": 2558,
       "pick": "build"
     },
     {
@@ -887,9 +887,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148112,
-      "durationMs": 3001,
-      "pick": null
+      "cost_usd": 0.0148587,
+      "durationMs": 4515,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -900,8 +900,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014786200000000001,
-      "durationMs": 3198,
+      "cost_usd": 0.0148787,
+      "durationMs": 3615,
       "pick": null
     },
     {
@@ -913,8 +913,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014861200000000001,
-      "durationMs": 3066,
+      "cost_usd": 0.014866200000000001,
+      "durationMs": 2476,
       "pick": "build"
     },
     {
@@ -926,8 +926,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147937,
-      "durationMs": 4619,
+      "cost_usd": 0.0148962,
+      "durationMs": 4166,
       "pick": null
     },
     {
@@ -939,8 +939,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014786200000000001,
-      "durationMs": 4124,
+      "cost_usd": 0.0148987,
+      "durationMs": 4139,
       "pick": "build"
     },
     {
@@ -952,9 +952,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147887,
-      "durationMs": 3490,
-      "pick": null
+      "cost_usd": 0.0149137,
+      "durationMs": 4941,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -965,8 +965,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148787,
-      "durationMs": 3125,
+      "cost_usd": 0.014883700000000001,
+      "durationMs": 4149,
       "pick": "build"
     },
     {
@@ -978,8 +978,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147887,
-      "durationMs": 3721,
+      "cost_usd": 0.014843700000000001,
+      "durationMs": 3892,
       "pick": null
     },
     {
@@ -991,8 +991,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148062,
-      "durationMs": 2998,
+      "cost_usd": 0.0149262,
+      "durationMs": 7012,
       "pick": "build"
     },
     {
@@ -1004,8 +1004,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147712,
-      "durationMs": 3592,
+      "cost_usd": 0.0148362,
+      "durationMs": 3986,
       "pick": null
     },
     {
@@ -1017,8 +1017,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148862,
-      "durationMs": 2711,
+      "cost_usd": 0.014996200000000001,
+      "durationMs": 2522,
       "pick": null
     },
     {
@@ -1030,8 +1030,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147712,
-      "durationMs": 4321,
+      "cost_usd": 0.0148962,
+      "durationMs": 3716,
       "pick": "build"
     },
     {
@@ -1043,8 +1043,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014791200000000001,
-      "durationMs": 3847,
+      "cost_usd": 0.015013700000000001,
+      "durationMs": 5607,
       "pick": null
     },
     {
@@ -1056,8 +1056,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014781200000000001,
-      "durationMs": 3672,
+      "cost_usd": 0.0148362,
+      "durationMs": 3163,
       "pick": null
     },
     {
@@ -1069,8 +1069,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149137,
-      "durationMs": 2991,
+      "cost_usd": 0.015013700000000001,
+      "durationMs": 2628,
       "pick": "edit-skills"
     },
     {
@@ -1082,8 +1082,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014798700000000001,
-      "durationMs": 2885,
+      "cost_usd": 0.0148587,
+      "durationMs": 3152,
       "pick": "edit-skills"
     },
     {
@@ -1095,8 +1095,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014753700000000002,
-      "durationMs": 3462,
+      "cost_usd": 0.014843700000000001,
+      "durationMs": 3322,
       "pick": "update-config"
     },
     {
@@ -1108,8 +1108,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147887,
-      "durationMs": 3123,
+      "cost_usd": 0.014888700000000001,
+      "durationMs": 6827,
       "pick": "edit-skills"
     },
     {
@@ -1121,8 +1121,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014808700000000001,
-      "durationMs": 3128,
+      "cost_usd": 0.0149362,
+      "durationMs": 3276,
       "pick": "edit-skills"
     },
     {
@@ -1134,8 +1134,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147562,
-      "durationMs": 2901,
+      "cost_usd": 0.014876200000000001,
+      "durationMs": 3469,
       "pick": "edit-skills"
     },
     {
@@ -1147,8 +1147,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149137,
-      "durationMs": 2465,
+      "cost_usd": 0.015018700000000001,
+      "durationMs": 3464,
       "pick": null
     },
     {
@@ -1160,8 +1160,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014803700000000001,
-      "durationMs": 2790,
+      "cost_usd": 0.0149087,
+      "durationMs": 3422,
       "pick": "edit-skills"
     },
     {
@@ -1173,8 +1173,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147487,
-      "durationMs": 3380,
+      "cost_usd": 0.014853700000000001,
+      "durationMs": 3267,
       "pick": "update-config"
     },
     {
@@ -1186,8 +1186,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148862,
-      "durationMs": 2778,
+      "cost_usd": 0.014848700000000001,
+      "durationMs": 4035,
       "pick": null
     },
     {
@@ -1199,8 +1199,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148737,
-      "durationMs": 3270,
+      "cost_usd": 0.0149712,
+      "durationMs": 3196,
       "pick": "edit-skills"
     },
     {
@@ -1212,8 +1212,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148012,
-      "durationMs": 2756,
+      "cost_usd": 0.014906200000000001,
+      "durationMs": 2596,
       "pick": "find-cause"
     },
     {
@@ -1225,8 +1225,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148012,
-      "durationMs": 2935,
+      "cost_usd": 0.014906200000000001,
+      "durationMs": 10917,
       "pick": null
     },
     {
@@ -1238,8 +1238,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014808700000000001,
-      "durationMs": 2861,
+      "cost_usd": 0.0149412,
+      "durationMs": 2674,
       "pick": "find-cause"
     },
     {
@@ -1251,8 +1251,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148112,
-      "durationMs": 2559,
+      "cost_usd": 0.0149212,
+      "durationMs": 2715,
       "pick": "find-cause"
     },
     {
@@ -1264,8 +1264,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014781200000000001,
-      "durationMs": 2644,
+      "cost_usd": 0.0148912,
+      "durationMs": 2780,
       "pick": "find-cause"
     },
     {
@@ -1277,8 +1277,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147662,
-      "durationMs": 2777,
+      "cost_usd": 0.0149037,
+      "durationMs": 2764,
       "pick": "find-cause"
     },
     {
@@ -1290,8 +1290,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014758700000000001,
-      "durationMs": 2666,
+      "cost_usd": 0.014861200000000001,
+      "durationMs": 3176,
       "pick": "find-cause"
     },
     {
@@ -1303,8 +1303,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014816200000000002,
-      "durationMs": 2647,
+      "cost_usd": 0.0149012,
+      "durationMs": 3717,
       "pick": "find-cause"
     },
     {
@@ -1316,8 +1316,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148012,
-      "durationMs": 2767,
+      "cost_usd": 0.0148562,
+      "durationMs": 4382,
       "pick": "find-cause"
     },
     {
@@ -1329,8 +1329,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148112,
-      "durationMs": 2605,
+      "cost_usd": 0.0148862,
+      "durationMs": 4578,
       "pick": "find-cause"
     },
     {
@@ -1342,8 +1342,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014816200000000002,
-      "durationMs": 3727,
+      "cost_usd": 0.0148512,
+      "durationMs": 4459,
       "pick": "find-cause"
     },
     {
@@ -1355,8 +1355,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148737,
-      "durationMs": 2405,
+      "cost_usd": 0.014978700000000001,
+      "durationMs": 3480,
       "pick": "gate"
     },
     {
@@ -1368,8 +1368,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147562,
-      "durationMs": 2824,
+      "cost_usd": 0.014861200000000001,
+      "durationMs": 4349,
       "pick": "gate"
     },
     {
@@ -1381,8 +1381,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2285,
+      "cost_usd": 0.014978700000000001,
+      "durationMs": 3249,
       "pick": "gate"
     },
     {
@@ -1394,8 +1394,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148637,
-      "durationMs": 3081,
+      "cost_usd": 0.0149712,
+      "durationMs": 3434,
       "pick": "gate"
     },
     {
@@ -1407,8 +1407,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148787,
-      "durationMs": 3322,
+      "cost_usd": 0.0149037,
+      "durationMs": 4165,
       "pick": "gate"
     },
     {
@@ -1420,8 +1420,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148737,
-      "durationMs": 3908,
+      "cost_usd": 0.0149837,
+      "durationMs": 3833,
       "pick": "gate"
     },
     {
@@ -1433,8 +1433,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014883700000000001,
-      "durationMs": 2568,
+      "cost_usd": 0.014996200000000001,
+      "durationMs": 3680,
       "pick": "gate"
     },
     {
@@ -1446,8 +1446,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148362,
-      "durationMs": 2338,
+      "cost_usd": 0.014946200000000001,
+      "durationMs": 3470,
       "pick": "gate"
     },
     {
@@ -1459,8 +1459,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148787,
-      "durationMs": 2511,
+      "cost_usd": 0.014991200000000001,
+      "durationMs": 3299,
       "pick": "gate"
     },
     {
@@ -1472,8 +1472,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014893700000000001,
-      "durationMs": 3399,
+      "cost_usd": 0.0149987,
+      "durationMs": 5055,
       "pick": "gate"
     },
     {
@@ -1485,8 +1485,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147337,
-      "durationMs": 2878,
+      "cost_usd": 0.0149662,
+      "durationMs": 3244,
       "pick": "gate"
     },
     {
@@ -1498,8 +1498,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014791200000000001,
-      "durationMs": 3242,
+      "cost_usd": 0.014916200000000001,
+      "durationMs": 3336,
       "pick": "build"
     },
     {
@@ -1511,8 +1511,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148012,
-      "durationMs": 3948,
+      "cost_usd": 0.0148962,
+      "durationMs": 4225,
       "pick": "build"
     },
     {
@@ -1524,9 +1524,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014888700000000001,
-      "durationMs": 2824,
-      "pick": null
+      "cost_usd": 0.0148787,
+      "durationMs": 4290,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1537,9 +1537,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014803700000000001,
-      "durationMs": 3071,
-      "pick": null
+      "cost_usd": 0.0148912,
+      "durationMs": 3887,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1550,8 +1550,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147962,
-      "durationMs": 2858,
+      "cost_usd": 0.0149037,
+      "durationMs": 2865,
       "pick": "build"
     },
     {
@@ -1563,9 +1563,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148812,
-      "durationMs": 2700,
-      "pick": null
+      "cost_usd": 0.014861200000000001,
+      "durationMs": 2947,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1576,8 +1576,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014906200000000001,
-      "durationMs": 2653,
+      "cost_usd": 0.014916200000000001,
+      "durationMs": 3557,
       "pick": null
     },
     {
@@ -1589,9 +1589,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149362,
-      "durationMs": 2486,
-      "pick": null
+      "cost_usd": 0.0149662,
+      "durationMs": 4159,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1602,9 +1602,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148062,
-      "durationMs": 3248,
-      "pick": null
+      "cost_usd": 0.0148912,
+      "durationMs": 3102,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1615,9 +1615,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014753700000000002,
-      "durationMs": 3269,
-      "pick": null
+      "cost_usd": 0.0148912,
+      "durationMs": 7313,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1629,8 +1629,8 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0149037,
-      "durationMs": 2507,
-      "pick": null
+      "durationMs": 5052,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -1641,8 +1641,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014893700000000001,
-      "durationMs": 2270,
+      "cost_usd": 0.0150037,
+      "durationMs": 3489,
       "pick": "save-session"
     },
     {
@@ -1654,8 +1654,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014871200000000001,
-      "durationMs": 2382,
+      "cost_usd": 0.0149762,
+      "durationMs": 2559,
       "pick": "save-session"
     },
     {
@@ -1667,8 +1667,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014861200000000001,
-      "durationMs": 2565,
+      "cost_usd": 0.014961200000000001,
+      "durationMs": 4861,
       "pick": "save-session"
     },
     {
@@ -1680,8 +1680,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2476,
+      "cost_usd": 0.0149712,
+      "durationMs": 5482,
       "pick": "save-session"
     },
     {
@@ -1693,8 +1693,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014888700000000001,
-      "durationMs": 2589,
+      "cost_usd": 0.014991200000000001,
+      "durationMs": 4129,
       "pick": "save-session"
     },
     {
@@ -1706,8 +1706,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148562,
-      "durationMs": 2720,
+      "cost_usd": 0.0149637,
+      "durationMs": 3312,
       "pick": "save-session"
     },
     {
@@ -1719,8 +1719,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148687,
-      "durationMs": 2495,
+      "cost_usd": 0.0149812,
+      "durationMs": 2494,
       "pick": "save-session"
     },
     {
@@ -1732,8 +1732,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148362,
-      "durationMs": 2268,
+      "cost_usd": 0.0149437,
+      "durationMs": 4316,
       "pick": "save-session"
     },
     {
@@ -1745,8 +1745,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148912,
-      "durationMs": 2289,
+      "cost_usd": 0.0149987,
+      "durationMs": 3473,
       "pick": "save-session"
     },
     {
@@ -1758,8 +1758,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148587,
-      "durationMs": 2267,
+      "cost_usd": 0.0149637,
+      "durationMs": 3166,
       "pick": "save-session"
     },
     {
@@ -1771,8 +1771,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148687,
-      "durationMs": 2535,
+      "cost_usd": 0.0149762,
+      "durationMs": 3967,
       "pick": "save-session"
     },
     {
@@ -1784,8 +1784,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014838700000000002,
-      "durationMs": 2248,
+      "cost_usd": 0.0149487,
+      "durationMs": 3835,
       "pick": "ship"
     },
     {
@@ -1797,8 +1797,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147337,
-      "durationMs": 2395,
+      "cost_usd": 0.0148462,
+      "durationMs": 3330,
       "pick": "ship"
     },
     {
@@ -1810,8 +1810,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2407,
+      "cost_usd": 0.0149637,
+      "durationMs": 2754,
       "pick": "ship"
     },
     {
@@ -1823,8 +1823,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014736200000000001,
-      "durationMs": 2679,
+      "cost_usd": 0.0148362,
+      "durationMs": 3038,
       "pick": "ship"
     },
     {
@@ -1836,8 +1836,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2318,
+      "cost_usd": 0.0149712,
+      "durationMs": 4149,
       "pick": "ship"
     },
     {
@@ -1849,8 +1849,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148812,
-      "durationMs": 2187,
+      "cost_usd": 0.0149087,
+      "durationMs": 8526,
       "pick": "ship"
     },
     {
@@ -1862,8 +1862,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148812,
-      "durationMs": 2628,
+      "cost_usd": 0.0148512,
+      "durationMs": 4589,
       "pick": "ship"
     },
     {
@@ -1875,9 +1875,9 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147887,
-      "durationMs": 3564,
-      "pick": "ship"
+      "cost_usd": 0.0148962,
+      "durationMs": 4293,
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -1888,8 +1888,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148287,
-      "durationMs": 2595,
+      "cost_usd": 0.0148112,
+      "durationMs": 3001,
       "pick": "ship"
     },
     {
@@ -1901,8 +1901,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014871200000000001,
-      "durationMs": 2676,
+      "cost_usd": 0.0149637,
+      "durationMs": 2552,
       "pick": "ship"
     },
     {
@@ -1914,8 +1914,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014776200000000001,
-      "durationMs": 2912,
+      "cost_usd": 0.014853700000000001,
+      "durationMs": 3959,
       "pick": "ship"
     },
     {
@@ -1927,8 +1927,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148012,
-      "durationMs": 2786,
+      "cost_usd": 0.0148637,
+      "durationMs": 3347,
       "pick": "spec"
     },
     {
@@ -1940,8 +1940,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014776200000000001,
-      "durationMs": 3433,
+      "cost_usd": 0.0148912,
+      "durationMs": 4801,
       "pick": "spec"
     },
     {
@@ -1953,8 +1953,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014753700000000002,
-      "durationMs": 3281,
+      "cost_usd": 0.0148862,
+      "durationMs": 3733,
       "pick": "spec"
     },
     {
@@ -1966,8 +1966,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014781200000000001,
-      "durationMs": 3042,
+      "cost_usd": 0.0148787,
+      "durationMs": 3334,
       "pick": "spec"
     },
     {
@@ -1979,8 +1979,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147562,
-      "durationMs": 6195,
+      "cost_usd": 0.014876200000000001,
+      "durationMs": 3576,
       "pick": "spec"
     },
     {
@@ -1992,8 +1992,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147737,
-      "durationMs": 5684,
+      "cost_usd": 0.014911200000000001,
+      "durationMs": 3323,
       "pick": "spec"
     },
     {
@@ -2005,8 +2005,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014803700000000001,
-      "durationMs": 5188,
+      "cost_usd": 0.0149187,
+      "durationMs": 4254,
       "pick": "spec"
     },
     {
@@ -2018,8 +2018,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014876200000000001,
-      "durationMs": 4086,
+      "cost_usd": 0.0149837,
+      "durationMs": 3253,
       "pick": "spec"
     },
     {
@@ -2031,8 +2031,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147787,
-      "durationMs": 3147,
+      "cost_usd": 0.0148862,
+      "durationMs": 5258,
       "pick": "spec"
     },
     {
@@ -2044,8 +2044,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148012,
-      "durationMs": 3178,
+      "cost_usd": 0.0148787,
+      "durationMs": 4144,
       "pick": "spec"
     },
     {
@@ -2057,8 +2057,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014776200000000001,
-      "durationMs": 2920,
+      "cost_usd": 0.0148862,
+      "durationMs": 3635,
       "pick": "spec"
     },
     {
@@ -2070,8 +2070,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2611,
+      "cost_usd": 0.0149812,
+      "durationMs": 3446,
       "pick": "write-docs"
     },
     {
@@ -2083,8 +2083,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147287,
-      "durationMs": 3171,
+      "cost_usd": 0.0148412,
+      "durationMs": 4862,
       "pick": "write-docs"
     },
     {
@@ -2096,8 +2096,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014888700000000001,
-      "durationMs": 2421,
+      "cost_usd": 0.0149812,
+      "durationMs": 6275,
       "pick": "write-docs"
     },
     {
@@ -2109,8 +2109,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014723700000000001,
-      "durationMs": 3195,
+      "cost_usd": 0.0149662,
+      "durationMs": 6004,
       "pick": "write-docs"
     },
     {
@@ -2122,8 +2122,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147937,
-      "durationMs": 3939,
+      "cost_usd": 0.0148637,
+      "durationMs": 6790,
       "pick": "write-docs"
     },
     {
@@ -2135,8 +2135,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148737,
-      "durationMs": 2821,
+      "cost_usd": 0.0149862,
+      "durationMs": 3136,
       "pick": "write-docs"
     },
     {
@@ -2148,8 +2148,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147287,
-      "durationMs": 3090,
+      "cost_usd": 0.014978700000000001,
+      "durationMs": 2310,
       "pick": "write-docs"
     },
     {
@@ -2161,8 +2161,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147262,
-      "durationMs": 3253,
+      "cost_usd": 0.0148812,
+      "durationMs": 2895,
       "pick": "write-docs"
     },
     {
@@ -2174,8 +2174,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148812,
-      "durationMs": 2648,
+      "cost_usd": 0.0149037,
+      "durationMs": 3387,
       "pick": "write-docs"
     },
     {
@@ -2187,8 +2187,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014746200000000001,
-      "durationMs": 3434,
+      "cost_usd": 0.014853700000000001,
+      "durationMs": 4890,
       "pick": "write-docs"
     },
     {
@@ -2200,8 +2200,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014718700000000001,
-      "durationMs": 2938,
+      "cost_usd": 0.0148287,
+      "durationMs": 4751,
       "pick": "write-docs"
     },
     {
@@ -2214,7 +2214,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 6839,
+      "durationMs": 5854,
       "pick": null
     },
     {
@@ -2226,8 +2226,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014883700000000001,
-      "durationMs": 2477,
+      "cost_usd": 0.0149812,
+      "durationMs": 2731,
       "pick": null
     },
     {
@@ -2239,8 +2239,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014853700000000001,
-      "durationMs": 2387,
+      "cost_usd": 0.0149537,
+      "durationMs": 3674,
       "pick": null
     },
     {
@@ -2253,7 +2253,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3626,
+      "durationMs": 4118,
       "pick": null
     },
     {
@@ -2266,7 +2266,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4612,
+      "durationMs": 4894,
       "pick": null
     },
     {
@@ -2278,8 +2278,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014866200000000001,
-      "durationMs": 2534,
+      "cost_usd": 0.0149712,
+      "durationMs": 2329,
       "pick": null
     },
     {
@@ -2291,8 +2291,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149012,
-      "durationMs": 2856,
+      "cost_usd": 0.015013700000000001,
+      "durationMs": 3340,
       "pick": "watch"
     },
     {
@@ -2304,8 +2304,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149262,
-      "durationMs": 2670,
+      "cost_usd": 0.0150212,
+      "durationMs": 3344,
       "pick": "watch"
     },
     {
@@ -2317,8 +2317,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149487,
-      "durationMs": 3005,
+      "cost_usd": 0.015053700000000001,
+      "durationMs": 3394,
       "pick": "watch"
     },
     {
@@ -2330,8 +2330,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149712,
-      "durationMs": 2979,
+      "cost_usd": 0.0150737,
+      "durationMs": 3865,
       "pick": "watch"
     },
     {
@@ -2343,8 +2343,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148912,
-      "durationMs": 2557,
+      "cost_usd": 0.0150112,
+      "durationMs": 3206,
       "pick": "watch"
     },
     {
@@ -2356,8 +2356,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148962,
-      "durationMs": 2559,
+      "cost_usd": 0.015018700000000001,
+      "durationMs": 3242,
       "pick": "watch"
     },
     {
@@ -2369,8 +2369,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149312,
-      "durationMs": 2606,
+      "cost_usd": 0.0150512,
+      "durationMs": 3205,
       "pick": "watch"
     },
     {
@@ -2382,8 +2382,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149037,
-      "durationMs": 3294,
+      "cost_usd": 0.0150162,
+      "durationMs": 2840,
       "pick": "watch"
     },
     {
@@ -2395,8 +2395,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014928700000000001,
-      "durationMs": 4217,
+      "cost_usd": 0.015031200000000002,
+      "durationMs": 3857,
       "pick": "watch"
     },
     {
@@ -2408,8 +2408,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.015008700000000002,
-      "durationMs": 3976,
+      "cost_usd": 0.0151112,
+      "durationMs": 3241,
       "pick": "watch"
     },
     {
@@ -2421,8 +2421,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.014961200000000001,
-      "durationMs": 3579,
+      "cost_usd": 0.0150737,
+      "durationMs": 3564,
       "pick": "watch"
     },
     {
@@ -2434,8 +2434,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149012,
-      "durationMs": 2505,
+      "cost_usd": 0.0150212,
+      "durationMs": 3056,
       "pick": "watch"
     },
     {
@@ -2447,8 +2447,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149137,
-      "durationMs": 3061,
+      "cost_usd": 0.0150287,
+      "durationMs": 3002,
       "pick": "watch"
     },
     {
@@ -2460,8 +2460,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0148962,
-      "durationMs": 2928,
+      "cost_usd": 0.015001200000000001,
+      "durationMs": 2533,
       "pick": "watch"
     },
     {
@@ -2473,8 +2473,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0149412,
-      "durationMs": 3465,
+      "cost_usd": 0.0150437,
+      "durationMs": 5680,
       "pick": "watch"
     },
     {
@@ -2487,7 +2487,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 5454,
+      "durationMs": 4690,
       "pick": null
     },
     {
@@ -2499,8 +2499,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0147612,
-      "durationMs": 4554,
+      "cost_usd": 0.014906200000000001,
+      "durationMs": 4210,
       "pick": null
     },
     {
@@ -2512,8 +2512,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127437,
-      "durationMs": 2316,
+      "cost_usd": 0.0125862,
+      "durationMs": 3063,
       "pick": "build"
     },
     {
@@ -2526,7 +2526,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127662,
-      "durationMs": 2528,
+      "durationMs": 3407,
       "pick": "build"
     },
     {
@@ -2538,8 +2538,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127887,
-      "durationMs": 2607,
+      "cost_usd": 0.0127387,
+      "durationMs": 3879,
       "pick": "build"
     },
     {
@@ -2552,7 +2552,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0126437,
-      "durationMs": 3001,
+      "durationMs": 5136,
       "pick": null
     },
     {
@@ -2564,8 +2564,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 2814,
+      "cost_usd": 0.012723700000000001,
+      "durationMs": 4597,
       "pick": null
     },
     {
@@ -2578,7 +2578,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127337,
-      "durationMs": 3880,
+      "durationMs": 5513,
       "pick": null
     },
     {
@@ -2590,8 +2590,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2896,
+      "cost_usd": 0.012718700000000001,
+      "durationMs": 4723,
       "pick": null
     },
     {
@@ -2603,8 +2603,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 2633,
+      "cost_usd": 0.0127337,
+      "durationMs": 3929,
       "pick": null
     },
     {
@@ -2616,8 +2616,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127337,
-      "durationMs": 2416,
+      "cost_usd": 0.012741200000000001,
+      "durationMs": 4224,
       "pick": null
     },
     {
@@ -2629,8 +2629,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 2574,
+      "cost_usd": 0.012768700000000001,
+      "durationMs": 7914,
       "pick": null
     },
     {
@@ -2642,8 +2642,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012741200000000001,
-      "durationMs": 2465,
+      "cost_usd": 0.012731200000000002,
+      "durationMs": 3156,
       "pick": "find-cause"
     },
     {
@@ -2655,8 +2655,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012611200000000001,
-      "durationMs": 2851,
+      "cost_usd": 0.012583700000000001,
+      "durationMs": 3556,
       "pick": null
     },
     {
@@ -2668,8 +2668,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127062,
-      "durationMs": 2549,
+      "cost_usd": 0.0127037,
+      "durationMs": 2832,
       "pick": "ship"
     },
     {
@@ -2681,8 +2681,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012736200000000001,
-      "durationMs": 2591,
+      "cost_usd": 0.012731200000000002,
+      "durationMs": 2396,
       "pick": "ship"
     },
     {
@@ -2694,8 +2694,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127112,
-      "durationMs": 2507,
+      "cost_usd": 0.0127212,
+      "durationMs": 2443,
       "pick": "ship"
     },
     {
@@ -2707,8 +2707,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012736200000000001,
-      "durationMs": 2626,
+      "cost_usd": 0.012731200000000002,
+      "durationMs": 2518,
       "pick": "ship"
     },
     {
@@ -2720,8 +2720,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 2876,
+      "cost_usd": 0.0127337,
+      "durationMs": 2975,
       "pick": null
     },
     {
@@ -2734,7 +2734,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012651200000000001,
-      "durationMs": 2767,
+      "durationMs": 3558,
       "pick": null
     },
     {
@@ -2746,8 +2746,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0125862,
-      "durationMs": 2783,
+      "cost_usd": 0.012588700000000001,
+      "durationMs": 2707,
       "pick": null
     },
     {
@@ -2759,8 +2759,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127287,
-      "durationMs": 2693,
+      "cost_usd": 0.0127437,
+      "durationMs": 2850,
       "pick": null
     },
     {
@@ -2772,8 +2772,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126037,
-      "durationMs": 2883,
+      "cost_usd": 0.012611200000000001,
+      "durationMs": 2461,
       "pick": "spec"
     },
     {
@@ -2785,8 +2785,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012593700000000001,
-      "durationMs": 2985,
+      "cost_usd": 0.012628700000000001,
+      "durationMs": 4030,
       "pick": "spec"
     },
     {
@@ -2798,8 +2798,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012656200000000001,
-      "durationMs": 2774,
+      "cost_usd": 0.0126212,
+      "durationMs": 3773,
       "pick": "spec"
     },
     {
@@ -2811,8 +2811,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012633700000000001,
-      "durationMs": 3467,
+      "cost_usd": 0.012638700000000001,
+      "durationMs": 3228,
       "pick": null
     },
     {
@@ -2825,7 +2825,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012736200000000001,
-      "durationMs": 2498,
+      "durationMs": 2992,
       "pick": "gate"
     },
     {
@@ -2837,8 +2837,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127212,
-      "durationMs": 2760,
+      "cost_usd": 0.012723700000000001,
+      "durationMs": 2366,
       "pick": "gate"
     },
     {
@@ -2850,9 +2850,9 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126212,
-      "durationMs": 3801,
-      "pick": null
+      "cost_usd": 0.0126037,
+      "durationMs": 4096,
+      "pick": "gate"
     },
     {
       "cell": "sonnet:low",
@@ -2863,8 +2863,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012736200000000001,
-      "durationMs": 2501,
+      "cost_usd": 0.0127437,
+      "durationMs": 2963,
       "pick": "gate"
     },
     {
@@ -2876,8 +2876,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127287,
-      "durationMs": 2714,
+      "cost_usd": 0.012731200000000002,
+      "durationMs": 3052,
       "pick": "save-session"
     },
     {
@@ -2889,8 +2889,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127162,
-      "durationMs": 2389,
+      "cost_usd": 0.012723700000000001,
+      "durationMs": 3332,
       "pick": "save-session"
     },
     {
@@ -2902,8 +2902,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126537,
-      "durationMs": 3124,
+      "cost_usd": 0.0126487,
+      "durationMs": 4397,
       "pick": "save-session"
     },
     {
@@ -2915,8 +2915,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127062,
-      "durationMs": 2401,
+      "cost_usd": 0.012701200000000001,
+      "durationMs": 2436,
       "pick": "save-session"
     },
     {
@@ -2929,7 +2929,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127212,
-      "durationMs": 2204,
+      "durationMs": 2769,
       "pick": "write-docs"
     },
     {
@@ -2941,8 +2941,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2981,
+      "cost_usd": 0.0127162,
+      "durationMs": 6756,
       "pick": null
     },
     {
@@ -2954,8 +2954,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 3145,
+      "cost_usd": 0.012718700000000001,
+      "durationMs": 6777,
       "pick": "write-docs"
     },
     {
@@ -2967,9 +2967,9 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012561200000000002,
-      "durationMs": 3414,
-      "pick": null
+      "cost_usd": 0.0127512,
+      "durationMs": 2876,
+      "pick": "write-docs"
     },
     {
       "cell": "sonnet:low",
@@ -2980,8 +2980,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 3500,
+      "cost_usd": 0.0127162,
+      "durationMs": 2877,
       "pick": "edit-skills"
     },
     {
@@ -2993,8 +2993,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012633700000000001,
-      "durationMs": 3231,
+      "cost_usd": 0.0125862,
+      "durationMs": 5189,
       "pick": null
     },
     {
@@ -3006,8 +3006,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012593700000000001,
-      "durationMs": 2835,
+      "cost_usd": 0.0126212,
+      "durationMs": 4060,
       "pick": "edit-skills"
     },
     {
@@ -3019,8 +3019,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012588700000000001,
-      "durationMs": 2889,
+      "cost_usd": 0.0126187,
+      "durationMs": 4892,
       "pick": null
     },
     {
@@ -3033,7 +3033,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012701200000000001,
-      "durationMs": 2522,
+      "durationMs": 4395,
       "pick": null
     },
     {
@@ -3045,8 +3045,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2446,
+      "cost_usd": 0.0127062,
+      "durationMs": 3013,
       "pick": null
     },
     {
@@ -3059,7 +3059,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3562,
+      "durationMs": 4656,
       "pick": null
     },
     {
@@ -3071,8 +3071,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126987,
-      "durationMs": 2598,
+      "cost_usd": 0.0127062,
+      "durationMs": 3899,
       "pick": null
     },
     {
@@ -3084,8 +3084,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012763700000000001,
-      "durationMs": 2568,
+      "cost_usd": 0.0127662,
+      "durationMs": 3821,
       "pick": null
     },
     {
@@ -3097,8 +3097,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127737,
-      "durationMs": 2543,
+      "cost_usd": 0.012776200000000001,
+      "durationMs": 3633,
       "pick": null
     },
     {
@@ -3110,8 +3110,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012871200000000001,
-      "durationMs": 2649,
+      "cost_usd": 0.012866200000000001,
+      "durationMs": 5796,
       "pick": null
     },
     {
@@ -3123,8 +3123,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127887,
-      "durationMs": 2653,
+      "cost_usd": 0.012781200000000001,
+      "durationMs": 4167,
       "pick": null
     },
     {
@@ -3137,7 +3137,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4509,
+      "durationMs": 5237,
       "pick": null
     },
     {
@@ -3150,7 +3150,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4120,
+      "durationMs": 6636,
       "pick": null
     },
     {
@@ -3163,7 +3163,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4124,
+      "durationMs": 6899,
       "pick": null
     },
     {
@@ -3176,7 +3176,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3975,
+      "durationMs": 3952,
       "pick": null
     },
     {
@@ -3188,9 +3188,9 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012583700000000001,
-      "durationMs": 3180,
-      "pick": null
+      "cost_usd": 0.012588700000000001,
+      "durationMs": 3025,
+      "pick": "build"
     },
     {
       "cell": "sonnet:low",
@@ -3201,8 +3201,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012758700000000001,
-      "durationMs": 2337,
+      "cost_usd": 0.012753700000000001,
+      "durationMs": 3818,
       "pick": "build"
     },
     {
@@ -3215,7 +3215,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0126437,
-      "durationMs": 3497,
+      "durationMs": 3230,
       "pick": "build"
     },
     {
@@ -3228,7 +3228,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012571200000000001,
-      "durationMs": 3309,
+      "durationMs": 3024,
       "pick": null
     },
     {
@@ -3240,8 +3240,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127562,
-      "durationMs": 2481,
+      "cost_usd": 0.0127512,
+      "durationMs": 2737,
       "pick": null
     },
     {
@@ -3253,8 +3253,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126537,
-      "durationMs": 3476,
+      "cost_usd": 0.0126437,
+      "durationMs": 3886,
       "pick": null
     },
     {
@@ -3266,8 +3266,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126362,
-      "durationMs": 2688,
+      "cost_usd": 0.0126437,
+      "durationMs": 3509,
       "pick": null
     },
     {
@@ -3279,8 +3279,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127787,
-      "durationMs": 3018,
+      "cost_usd": 0.0127837,
+      "durationMs": 3595,
       "pick": null
     },
     {
@@ -3292,8 +3292,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012741200000000001,
-      "durationMs": 2707,
+      "cost_usd": 0.0127437,
+      "durationMs": 3326,
       "pick": null
     },
     {
@@ -3305,8 +3305,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127487,
-      "durationMs": 2797,
+      "cost_usd": 0.012741200000000001,
+      "durationMs": 3161,
       "pick": null
     },
     {
@@ -3318,8 +3318,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127062,
-      "durationMs": 2331,
+      "cost_usd": 0.0127112,
+      "durationMs": 2764,
       "pick": "build"
     },
     {
@@ -3331,8 +3331,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012741200000000001,
-      "durationMs": 2714,
+      "cost_usd": 0.0127437,
+      "durationMs": 3839,
       "pick": null
     },
     {
@@ -3344,8 +3344,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127337,
-      "durationMs": 2540,
+      "cost_usd": 0.0127387,
+      "durationMs": 2746,
       "pick": null
     },
     {
@@ -3357,8 +3357,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012746200000000001,
-      "durationMs": 2598,
+      "cost_usd": 0.0127512,
+      "durationMs": 3082,
       "pick": null
     },
     {
@@ -3370,8 +3370,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127287,
-      "durationMs": 3164,
+      "cost_usd": 0.012741200000000001,
+      "durationMs": 3231,
       "pick": null
     },
     {
@@ -3383,8 +3383,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012731200000000002,
-      "durationMs": 3189,
+      "cost_usd": 0.0127337,
+      "durationMs": 3109,
       "pick": null
     },
     {
@@ -3396,8 +3396,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012623700000000002,
-      "durationMs": 3459,
+      "cost_usd": 0.012616200000000001,
+      "durationMs": 4017,
       "pick": null
     },
     {
@@ -3409,8 +3409,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 2712,
+      "cost_usd": 0.0127212,
+      "durationMs": 2913,
       "pick": null
     },
     {
@@ -3422,8 +3422,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127212,
-      "durationMs": 2370,
+      "cost_usd": 0.0127287,
+      "durationMs": 2676,
       "pick": null
     },
     {
@@ -3435,8 +3435,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127212,
-      "durationMs": 2692,
+      "cost_usd": 0.0127287,
+      "durationMs": 3004,
       "pick": null
     },
     {
@@ -3448,8 +3448,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012746200000000001,
-      "durationMs": 2430,
+      "cost_usd": 0.012741200000000001,
+      "durationMs": 3018,
       "pick": null
     },
     {
@@ -3461,8 +3461,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 3303,
+      "cost_usd": 0.0127337,
+      "durationMs": 3842,
       "pick": null
     },
     {
@@ -3474,8 +3474,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127662,
-      "durationMs": 2879,
+      "cost_usd": 0.012753700000000001,
+      "durationMs": 3192,
       "pick": "edit-skills"
     },
     {
@@ -3487,8 +3487,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126087,
-      "durationMs": 3447,
+      "cost_usd": 0.012638700000000001,
+      "durationMs": 2902,
       "pick": "edit-skills"
     },
     {
@@ -3500,8 +3500,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012736200000000001,
-      "durationMs": 3854,
+      "cost_usd": 0.0127162,
+      "durationMs": 2896,
       "pick": "update-config"
     },
     {
@@ -3513,8 +3513,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126587,
-      "durationMs": 3537,
+      "cost_usd": 0.0127337,
+      "durationMs": 2609,
       "pick": "edit-skills"
     },
     {
@@ -3526,8 +3526,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012753700000000001,
-      "durationMs": 2662,
+      "cost_usd": 0.012758700000000001,
+      "durationMs": 4007,
       "pick": "edit-skills"
     },
     {
@@ -3539,8 +3539,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126012,
-      "durationMs": 2772,
+      "cost_usd": 0.012633700000000001,
+      "durationMs": 3374,
       "pick": "edit-skills"
     },
     {
@@ -3552,8 +3552,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127612,
-      "durationMs": 2184,
+      "cost_usd": 0.0127662,
+      "durationMs": 2505,
       "pick": null
     },
     {
@@ -3565,8 +3565,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012633700000000001,
-      "durationMs": 2934,
+      "cost_usd": 0.012673700000000001,
+      "durationMs": 3182,
       "pick": "edit-skills"
     },
     {
@@ -3578,8 +3578,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012736200000000001,
-      "durationMs": 2964,
+      "cost_usd": 0.0127387,
+      "durationMs": 2814,
       "pick": null
     },
     {
@@ -3591,8 +3591,8 @@
       "expect": "edit-skills",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 2503,
+      "cost_usd": 0.012718700000000001,
+      "durationMs": 2877,
       "pick": null
     },
     {
@@ -3605,7 +3605,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127062,
-      "durationMs": 2398,
+      "durationMs": 2097,
       "pick": "edit-skills"
     },
     {
@@ -3617,8 +3617,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012593700000000001,
-      "durationMs": 2493,
+      "cost_usd": 0.012753700000000001,
+      "durationMs": 2359,
       "pick": "find-cause"
     },
     {
@@ -3630,8 +3630,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012593700000000001,
-      "durationMs": 3305,
+      "cost_usd": 0.0126537,
+      "durationMs": 2778,
       "pick": null
     },
     {
@@ -3643,9 +3643,9 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012611200000000001,
-      "durationMs": 3189,
-      "pick": null
+      "cost_usd": 0.012628700000000001,
+      "durationMs": 5359,
+      "pick": "find-cause"
     },
     {
       "cell": "sonnet:low",
@@ -3656,8 +3656,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127912,
-      "durationMs": 3027,
+      "cost_usd": 0.0127937,
+      "durationMs": 3843,
       "pick": null
     },
     {
@@ -3669,8 +3669,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127287,
-      "durationMs": 2366,
+      "cost_usd": 0.0127337,
+      "durationMs": 2403,
       "pick": "find-cause"
     },
     {
@@ -3682,9 +3682,9 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012616200000000001,
-      "durationMs": 3538,
-      "pick": null
+      "cost_usd": 0.012623700000000002,
+      "durationMs": 6722,
+      "pick": "find-cause"
     },
     {
       "cell": "sonnet:low",
@@ -3696,7 +3696,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012606200000000001,
-      "durationMs": 2836,
+      "durationMs": 3366,
       "pick": "find-cause"
     },
     {
@@ -3708,9 +3708,9 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012583700000000001,
-      "durationMs": 2542,
-      "pick": "find-cause"
+      "cost_usd": 0.0126437,
+      "durationMs": 3255,
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -3721,8 +3721,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012741200000000001,
-      "durationMs": 2363,
+      "cost_usd": 0.0126587,
+      "durationMs": 3239,
       "pick": "find-cause"
     },
     {
@@ -3734,8 +3734,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012731200000000002,
-      "durationMs": 2359,
+      "cost_usd": 0.0127337,
+      "durationMs": 2776,
       "pick": "find-cause"
     },
     {
@@ -3747,8 +3747,8 @@
       "expect": "find-cause",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0125962,
-      "durationMs": 2486,
+      "cost_usd": 0.012598700000000001,
+      "durationMs": 2679,
       "pick": "find-cause"
     },
     {
@@ -3760,8 +3760,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012723700000000001,
-      "durationMs": 2420,
+      "cost_usd": 0.0127262,
+      "durationMs": 2444,
       "pick": "gate"
     },
     {
@@ -3773,8 +3773,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126087,
-      "durationMs": 3933,
+      "cost_usd": 0.012611200000000001,
+      "durationMs": 3218,
       "pick": null
     },
     {
@@ -3786,8 +3786,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012731200000000002,
-      "durationMs": 2203,
+      "cost_usd": 0.012713700000000001,
+      "durationMs": 2307,
       "pick": "gate"
     },
     {
@@ -3799,8 +3799,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2215,
+      "cost_usd": 0.0127112,
+      "durationMs": 2352,
       "pick": "gate"
     },
     {
@@ -3812,8 +3812,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012606200000000001,
-      "durationMs": 3324,
+      "cost_usd": 0.0126037,
+      "durationMs": 3278,
       "pick": "gate"
     },
     {
@@ -3825,8 +3825,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127287,
-      "durationMs": 2890,
+      "cost_usd": 0.0127262,
+      "durationMs": 3635,
       "pick": "gate"
     },
     {
@@ -3838,8 +3838,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 2697,
+      "cost_usd": 0.012741200000000001,
+      "durationMs": 2766,
       "pick": "gate"
     },
     {
@@ -3852,7 +3852,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0126937,
-      "durationMs": 3055,
+      "durationMs": 2677,
       "pick": "gate"
     },
     {
@@ -3864,8 +3864,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 2936,
+      "cost_usd": 0.012723700000000001,
+      "durationMs": 2467,
       "pick": "gate"
     },
     {
@@ -3877,8 +3877,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 2366,
+      "cost_usd": 0.012741200000000001,
+      "durationMs": 3240,
       "pick": "gate"
     },
     {
@@ -3890,8 +3890,8 @@
       "expect": "gate",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126262,
-      "durationMs": 2969,
+      "cost_usd": 0.012628700000000001,
+      "durationMs": 3500,
       "pick": "gate"
     },
     {
@@ -3903,8 +3903,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127487,
-      "durationMs": 2693,
+      "cost_usd": 0.0127512,
+      "durationMs": 3955,
       "pick": null
     },
     {
@@ -3916,8 +3916,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127437,
-      "durationMs": 3669,
+      "cost_usd": 0.0127387,
+      "durationMs": 4699,
       "pick": null
     },
     {
@@ -3929,8 +3929,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127212,
-      "durationMs": 3302,
+      "cost_usd": 0.0127262,
+      "durationMs": 3488,
       "pick": null
     },
     {
@@ -3943,7 +3943,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012741200000000001,
-      "durationMs": 3105,
+      "durationMs": 3381,
       "pick": null
     },
     {
@@ -3955,8 +3955,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012736200000000001,
-      "durationMs": 2775,
+      "cost_usd": 0.0127387,
+      "durationMs": 2665,
       "pick": null
     },
     {
@@ -3968,8 +3968,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127337,
-      "durationMs": 2844,
+      "cost_usd": 0.012736200000000001,
+      "durationMs": 2872,
       "pick": null
     },
     {
@@ -3981,8 +3981,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127487,
-      "durationMs": 3104,
+      "cost_usd": 0.0127512,
+      "durationMs": 2676,
       "pick": null
     },
     {
@@ -3994,8 +3994,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127662,
-      "durationMs": 2721,
+      "cost_usd": 0.0127712,
+      "durationMs": 2779,
       "pick": null
     },
     {
@@ -4007,8 +4007,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127437,
-      "durationMs": 2996,
+      "cost_usd": 0.0127387,
+      "durationMs": 2628,
       "pick": null
     },
     {
@@ -4020,8 +4020,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 2251,
+      "cost_usd": 0.012736200000000001,
+      "durationMs": 2619,
       "pick": null
     },
     {
@@ -4033,8 +4033,8 @@
       "expect": "build",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012741200000000001,
-      "durationMs": 2628,
+      "cost_usd": 0.012746200000000001,
+      "durationMs": 2722,
       "pick": null
     },
     {
@@ -4046,8 +4046,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 2241,
+      "cost_usd": 0.0127437,
+      "durationMs": 2850,
       "pick": "save-session"
     },
     {
@@ -4059,8 +4059,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 2387,
+      "cost_usd": 0.0127287,
+      "durationMs": 2834,
       "pick": "save-session"
     },
     {
@@ -4072,8 +4072,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2541,
+      "cost_usd": 0.012718700000000001,
+      "durationMs": 4942,
       "pick": "save-session"
     },
     {
@@ -4085,8 +4085,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 2310,
+      "cost_usd": 0.0127262,
+      "durationMs": 3870,
       "pick": "save-session"
     },
     {
@@ -4098,8 +4098,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127387,
-      "durationMs": 3723,
+      "cost_usd": 0.012746200000000001,
+      "durationMs": 4301,
       "pick": "save-session"
     },
     {
@@ -4112,7 +4112,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012708700000000002,
-      "durationMs": 2915,
+      "durationMs": 3937,
       "pick": "save-session"
     },
     {
@@ -4124,8 +4124,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127162,
-      "durationMs": 2284,
+      "cost_usd": 0.012713700000000001,
+      "durationMs": 3153,
       "pick": "save-session"
     },
     {
@@ -4138,7 +4138,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0126887,
-      "durationMs": 3320,
+      "durationMs": 2891,
       "pick": "save-session"
     },
     {
@@ -4150,8 +4150,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127337,
-      "durationMs": 2641,
+      "cost_usd": 0.012736200000000001,
+      "durationMs": 4119,
       "pick": "save-session"
     },
     {
@@ -4163,8 +4163,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127112,
-      "durationMs": 2643,
+      "cost_usd": 0.0127037,
+      "durationMs": 4277,
       "pick": "save-session"
     },
     {
@@ -4176,8 +4176,8 @@
       "expect": "save-session",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 2179,
+      "cost_usd": 0.012723700000000001,
+      "durationMs": 2703,
       "pick": "save-session"
     },
     {
@@ -4190,7 +4190,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0126862,
-      "durationMs": 2217,
+      "durationMs": 2953,
       "pick": "ship"
     },
     {
@@ -4202,8 +4202,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 3184,
+      "cost_usd": 0.0127262,
+      "durationMs": 3133,
       "pick": "ship"
     },
     {
@@ -4215,8 +4215,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012701200000000001,
-      "durationMs": 3085,
+      "cost_usd": 0.0127112,
+      "durationMs": 2986,
       "pick": "ship"
     },
     {
@@ -4228,8 +4228,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 2555,
+      "cost_usd": 0.012718700000000001,
+      "durationMs": 3281,
       "pick": "ship"
     },
     {
@@ -4241,8 +4241,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127262,
-      "durationMs": 2385,
+      "cost_usd": 0.0127112,
+      "durationMs": 2956,
       "pick": "ship"
     },
     {
@@ -4254,8 +4254,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 2362,
+      "cost_usd": 0.0127287,
+      "durationMs": 3091,
       "pick": "ship"
     },
     {
@@ -4268,7 +4268,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127337,
-      "durationMs": 2984,
+      "durationMs": 3263,
       "pick": "ship"
     },
     {
@@ -4280,8 +4280,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2979,
+      "cost_usd": 0.012758700000000001,
+      "durationMs": 3452,
       "pick": null
     },
     {
@@ -4293,8 +4293,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012696200000000001,
-      "durationMs": 2793,
+      "cost_usd": 0.0126862,
+      "durationMs": 3448,
       "pick": "ship"
     },
     {
@@ -4306,8 +4306,8 @@
       "expect": "ship",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2282,
+      "cost_usd": 0.012723700000000001,
+      "durationMs": 3521,
       "pick": "ship"
     },
     {
@@ -4320,8 +4320,8 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012731200000000002,
-      "durationMs": 2830,
-      "pick": null
+      "durationMs": 3384,
+      "pick": "ship"
     },
     {
       "cell": "sonnet:low",
@@ -4332,8 +4332,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126087,
-      "durationMs": 3272,
+      "cost_usd": 0.012616200000000001,
+      "durationMs": 3121,
       "pick": "spec"
     },
     {
@@ -4345,8 +4345,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012638700000000001,
-      "durationMs": 11393,
+      "cost_usd": 0.012673700000000001,
+      "durationMs": 4134,
       "pick": null
     },
     {
@@ -4358,8 +4358,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126087,
-      "durationMs": 3621,
+      "cost_usd": 0.0126362,
+      "durationMs": 3775,
       "pick": null
     },
     {
@@ -4371,8 +4371,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012661200000000001,
-      "durationMs": 3316,
+      "cost_usd": 0.012656200000000001,
+      "durationMs": 3557,
       "pick": "spec"
     },
     {
@@ -4384,8 +4384,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126412,
-      "durationMs": 3418,
+      "cost_usd": 0.0126012,
+      "durationMs": 4570,
       "pick": "spec"
     },
     {
@@ -4397,9 +4397,9 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012661200000000001,
-      "durationMs": 4218,
-      "pick": "spec"
+      "cost_usd": 0.0126587,
+      "durationMs": 3967,
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -4410,8 +4410,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126662,
-      "durationMs": 5121,
+      "cost_usd": 0.0126637,
+      "durationMs": 3362,
       "pick": null
     },
     {
@@ -4423,8 +4423,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012731200000000002,
-      "durationMs": 2859,
+      "cost_usd": 0.012713700000000001,
+      "durationMs": 2826,
       "pick": "spec"
     },
     {
@@ -4436,9 +4436,9 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0125962,
-      "durationMs": 3267,
-      "pick": null
+      "cost_usd": 0.012583700000000001,
+      "durationMs": 3265,
+      "pick": "spec"
     },
     {
       "cell": "sonnet:low",
@@ -4450,7 +4450,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 8080,
+      "durationMs": 8848,
       "pick": null
     },
     {
@@ -4462,8 +4462,8 @@
       "expect": "spec",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0125812,
-      "durationMs": 2309,
+      "cost_usd": 0.012583700000000001,
+      "durationMs": 3075,
       "pick": "spec"
     },
     {
@@ -4476,7 +4476,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012708700000000002,
-      "durationMs": 1953,
+      "durationMs": 2556,
       "pick": "write-docs"
     },
     {
@@ -4488,8 +4488,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012723700000000001,
-      "durationMs": 2326,
+      "cost_usd": 0.0126037,
+      "durationMs": 2966,
       "pick": null
     },
     {
@@ -4501,9 +4501,9 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012731200000000002,
-      "durationMs": 1920,
-      "pick": "write-docs"
+      "cost_usd": 0.0127787,
+      "durationMs": 4540,
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -4514,9 +4514,9 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012718700000000001,
-      "durationMs": 2403,
-      "pick": "write-docs"
+      "cost_usd": 0.0125687,
+      "durationMs": 5087,
+      "pick": null
     },
     {
       "cell": "sonnet:low",
@@ -4527,8 +4527,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0126012,
-      "durationMs": 3572,
+      "cost_usd": 0.012588700000000001,
+      "durationMs": 9254,
       "pick": null
     },
     {
@@ -4540,8 +4540,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012723700000000001,
-      "durationMs": 2074,
+      "cost_usd": 0.0127287,
+      "durationMs": 4543,
       "pick": "write-docs"
     },
     {
@@ -4553,9 +4553,9 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012763700000000001,
-      "durationMs": 2838,
-      "pick": null
+      "cost_usd": 0.0127212,
+      "durationMs": 5473,
+      "pick": "write-docs"
     },
     {
       "cell": "sonnet:low",
@@ -4567,7 +4567,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0126087,
-      "durationMs": 3066,
+      "durationMs": 5446,
       "pick": null
     },
     {
@@ -4579,8 +4579,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012741200000000001,
-      "durationMs": 2387,
+      "cost_usd": 0.0127287,
+      "durationMs": 5600,
       "pick": "write-docs"
     },
     {
@@ -4593,7 +4593,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3937,
+      "durationMs": 6711,
       "pick": null
     },
     {
@@ -4605,8 +4605,8 @@
       "expect": "write-docs",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012708700000000002,
-      "durationMs": 3036,
+      "cost_usd": 0.0127037,
+      "durationMs": 6318,
       "pick": null
     },
     {
@@ -4619,7 +4619,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 5244,
+      "durationMs": 9935,
       "pick": null
     },
     {
@@ -4632,7 +4632,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127387,
-      "durationMs": 2417,
+      "durationMs": 5078,
       "pick": null
     },
     {
@@ -4645,7 +4645,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012696200000000001,
-      "durationMs": 2657,
+      "durationMs": 5903,
       "pick": null
     },
     {
@@ -4658,7 +4658,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4133,
+      "durationMs": 5972,
       "pick": null
     },
     {
@@ -4671,7 +4671,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 4656,
+      "durationMs": 6371,
       "pick": null
     },
     {
@@ -4683,8 +4683,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012713700000000001,
-      "durationMs": 2714,
+      "cost_usd": 0.012708700000000002,
+      "durationMs": 4535,
       "pick": null
     },
     {
@@ -4696,8 +4696,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127662,
-      "durationMs": 2731,
+      "cost_usd": 0.0127562,
+      "durationMs": 5659,
       "pick": "watch"
     },
     {
@@ -4709,8 +4709,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127612,
-      "durationMs": 3127,
+      "cost_usd": 0.012768700000000001,
+      "durationMs": 5580,
       "pick": "watch"
     },
     {
@@ -4722,8 +4722,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012798700000000001,
-      "durationMs": 2984,
+      "cost_usd": 0.0127962,
+      "durationMs": 5623,
       "pick": "watch"
     },
     {
@@ -4735,8 +4735,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012808700000000001,
-      "durationMs": 2954,
+      "cost_usd": 0.012821200000000001,
+      "durationMs": 5481,
       "pick": "watch"
     },
     {
@@ -4748,8 +4748,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012746200000000001,
-      "durationMs": 2772,
+      "cost_usd": 0.0127437,
+      "durationMs": 7828,
       "pick": "watch"
     },
     {
@@ -4761,8 +4761,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127512,
-      "durationMs": 2669,
+      "cost_usd": 0.012746200000000001,
+      "durationMs": 7845,
       "pick": "watch"
     },
     {
@@ -4774,8 +4774,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012786200000000001,
-      "durationMs": 2887,
+      "cost_usd": 0.0127887,
+      "durationMs": 5704,
       "pick": "watch"
     },
     {
@@ -4787,8 +4787,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012758700000000001,
-      "durationMs": 2676,
+      "cost_usd": 0.0127487,
+      "durationMs": 5778,
       "pick": "watch"
     },
     {
@@ -4800,8 +4800,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127737,
-      "durationMs": 2513,
+      "cost_usd": 0.012763700000000001,
+      "durationMs": 7201,
       "pick": "watch"
     },
     {
@@ -4813,8 +4813,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012861200000000001,
-      "durationMs": 2633,
+      "cost_usd": 0.012853700000000001,
+      "durationMs": 7442,
       "pick": "watch"
     },
     {
@@ -4826,8 +4826,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0128137,
-      "durationMs": 2702,
+      "cost_usd": 0.0128112,
+      "durationMs": 6479,
       "pick": "watch"
     },
     {
@@ -4840,7 +4840,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.0127562,
-      "durationMs": 2723,
+      "durationMs": 6620,
       "pick": "watch"
     },
     {
@@ -4853,7 +4853,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": 0.012768700000000001,
-      "durationMs": 2927,
+      "durationMs": 5519,
       "pick": "watch"
     },
     {
@@ -4865,8 +4865,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127562,
-      "durationMs": 2397,
+      "cost_usd": 0.0127612,
+      "durationMs": 5927,
       "pick": "watch"
     },
     {
@@ -4878,8 +4878,8 @@
       "expect": "watch",
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.0127962,
-      "durationMs": 2460,
+      "cost_usd": 0.0127912,
+      "durationMs": 7089,
       "pick": "watch"
     },
     {
@@ -4892,7 +4892,7 @@
       "split": "held-out",
       "spoken": false,
       "cost_usd": null,
-      "durationMs": 3685,
+      "durationMs": 7537,
       "pick": null
     },
     {
@@ -4904,8 +4904,8 @@
       "expect": null,
       "split": "held-out",
       "spoken": false,
-      "cost_usd": 0.012803700000000001,
-      "durationMs": 2595,
+      "cost_usd": 0.0128012,
+      "durationMs": 5506,
       "pick": null
     }
   ],
@@ -5107,6 +5107,6 @@
     "spec": "d23f69b543e162c25fe4395a1998278f1c3c5e3891d603b613f3e9c45499ea64",
     "watch": "afece7228ddc3f46c45d3fbfb40c4039bc32591e70233a8e50506a295d2d4c7f",
     "write-docs": "2ecb327eadeaa099d3284a62bea1f4a48d08e264bdf65dc2cf7a13a54603edf8",
-    "session-routing": "e1f03b087a5067dac9bc5430d9259b8fcafc279069d220a84de2f8808fad2d73"
+    "session-routing": "6f59acfc16e28eed1ab50586259d01721cb8619a7785dda2ba65fa9cbd697e23"
   }
 }

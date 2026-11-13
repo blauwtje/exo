@@ -21,8 +21,8 @@
 15231 benchmarks/improve-vs-goal.mjs
 12174 benchmarks/judge-calibration.mjs
 44290 benchmarks/lean-gates-metrics.mjs
-23490 benchmarks/lean-gates.mjs
-16372 benchmarks/locate-recall.mjs
+23514 benchmarks/lean-gates.mjs
+16396 benchmarks/locate-recall.mjs
 20844 benchmarks/replay/arm1/audit.mjs
 10095 benchmarks/replay/cases/real-bisect-git256/input/skills/find-cause/scripts/bisect.mjs
 9716 benchmarks/replay/cases/real-bisect-past-32/input/skills/find-cause/scripts/bisect.mjs
@@ -36,7 +36,7 @@
 13076 benchmarks/replay/runner.mjs
 22441 benchmarks/review-replay.mjs
 20771 benchmarks/routing.mjs
-26321 benchmarks/run.mjs
+26315 benchmarks/run.mjs
 33232 benchmarks/score.mjs
 8978 benchmarks/session-stats.mjs
 9268 benchmarks/speed-ledger.mjs

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -152,4 +153,18 @@ test('a background start counts only in the first line of a Bash result', () => 
     assert.equal(liveShells(transcript([start('t1'), result])).length, row.live ? 1 : 0, row.result);
     assert.deepEqual(liveShells(transcript([start('t1'), quoted])), []);
   }
+});
+
+test('three product files a lead Bash command wrote draw the write nudge on the next lead Bash call', async () => {
+  const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
+  const repo = tempDir('exo-lead-bash-');
+  execFileSync('git', ['init', '-q', repo]);
+  const bash = { session_id: `lead-bash-${process.pid}-${Math.random()}`, tool_name: 'Bash', cwd: repo, tool_input: { command: 'python3 edit.py' } };
+  const context = async () => (await dispatchBash(bash))?.hookSpecificOutput?.additionalContext ?? '';
+  assert.doesNotMatch(await context(), /files inline/);
+  fs.mkdirSync(path.join(repo, '.exo'));
+  for (const name of ['a.css', 'b.css', 'c.css', '.exo/look.png']) fs.writeFileSync(path.join(repo, name), 'x');
+  assert.match(await context(), /files inline/);
+  assert.doesNotMatch(await context(), /files inline/);
+  assert.doesNotMatch(fs.readFileSync(path.join(os.tmpdir(), `exo-writes-${bash.session_id.replace(/[^\w-]/g, '_')}`), 'utf8'), /look\.png/);
 });

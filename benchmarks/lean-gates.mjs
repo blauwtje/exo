@@ -50,6 +50,7 @@ import { plannedPowerLine } from './power-plan.mjs';
 import { medianCost } from './routing.mjs';
 import { meanCi } from '../lib/eval-stats.mjs';
 import { readJsonOrNull } from './basics.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BENCH = path.join(ROOT, 'benchmarks', 'lean-gates');
@@ -375,7 +376,7 @@ function runClaude(argv, cwd, env, runDirectory, timeoutMs) {
       process.off('SIGTERM', forward);
       fs.closeSync(stdout);
       fs.closeSync(stderr);
-      fs.rmSync(tmp, { recursive: true, force: true });
+      removeScratch(tmp);
       resolve({ exitCode, signal, timedOut, wallMs: Date.now() - started });
     });
   });

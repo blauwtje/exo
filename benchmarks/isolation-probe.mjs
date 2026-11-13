@@ -17,6 +17,7 @@ import { makeCellHome } from './cell-home.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { AGENTS, gradeStream, leakedPlugins, parseEvents } from './isolation-grade.mjs';
 import { plannedPowerLine } from './power-plan.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_MS = environmentMs('EXO_ISOLATION_PROBE_MS', 180_000);
@@ -40,7 +41,7 @@ function runSession(prompt, home, { defaults, providers }) {
   const { scratch, tmp, roots } = makeRunFolder('isolation');
   const run = withHome(confinedClaude({ args, roots, cwd: scratch, tmp }), home);
   const result = spawnSync(run.command, run.args, { cwd: run.cwd, env: { ...withoutParentSession(process.env), ...run.env }, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', timeout: SESSION_MS, maxBuffer: Infinity });
-  fs.rmSync(path.dirname(scratch), { recursive: true, force: true });
+  removeScratch(path.dirname(scratch));
   return { stream: result.stdout ?? '', note: spawnNote(result) };
 }
 
@@ -54,7 +55,7 @@ function initOf(home, { defaults, providers }) {
     const finish = (init) => {
       clearTimeout(timer);
       child.kill('SIGKILL');
-      fs.rmSync(path.dirname(scratch), { recursive: true, force: true });
+      removeScratch(path.dirname(scratch));
       resolve(init);
     };
     const timer = setTimeout(finish, INIT_MS);

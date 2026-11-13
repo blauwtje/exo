@@ -17,7 +17,7 @@ import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
-import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, refuse } from '../lib/lazy-steps.mjs';
+import { COMMIT_ATTRIBUTION_STEP, LEAD_WRITES_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, refuse } from '../lib/lazy-steps.mjs';
 
 const contextStep = (name, decide) => ({
   name,
@@ -113,7 +113,7 @@ function firstRewrite(outputs) {
   return (rewrites.find((output) => output.capped) ?? rewrites[0])?.updatedInput;
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, REDDIT_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SHELL_STOP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, LEAD_WRITES_STEP, REDDIT_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SHELL_STOP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
     try {

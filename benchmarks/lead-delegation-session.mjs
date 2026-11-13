@@ -6,10 +6,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { confinedClaude } from '#confine-claude';
 import { withHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
+import { referenceFiles } from './lead-delegation-reference.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const FIXTURE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'lead-delegation-fixture');
 const PROMPT = 'Refactor the pipeline board visually in full: give every component in src/board (Board, Column, Card, Drawer, Toolbar) a new modern look with shared design tokens, a drawer that slides in, and drag styling on the cards. Decide everything yourself and ask nothing.';
-const PRE_WORK = 'Read every component in src/board (Board, Column, Card, Drawer, Toolbar) and decide the new modern look: shared design tokens, a drawer that slides in, and drag styling on the cards. Write no file and start no build yet. Reply with the design in short. Decide everything yourself and ask nothing.';
+const preWork = () => `Read every component in src/board (Board, Column, Card, Drawer, Toolbar) and every reference file in docs/ (${referenceFiles().map((file) => file.name).join(', ')}) in full, in this session, with the Read tool and not through a subagent, then decide the new modern look: shared design tokens, a drawer that slides in, and drag styling on the cards. Write no file and start no build yet. Reply with the design in short. Decide everything yourself and ask nothing.`;
 const BUILD = 'Now build it for every component in src/board. Decide everything yourself and ask nothing.';
 const HOOK = path.join(path.dirname(fileURLToPath(import.meta.url)), 'lead-delegation-hook.mjs');
 const SIDECAR = 'lead-bash-writes.jsonl';
@@ -19,10 +21,17 @@ function git(directory, args) {
   execFileSync('git', ['-C', directory, ...args], { stdio: 'ignore' });
 }
 
-function freshProject() {
+function addReferences(project) {
+  const docs = path.join(project, 'docs');
+  fs.mkdirSync(docs);
+  for (const { name, text } of referenceFiles()) fs.writeFileSync(path.join(docs, name), text);
+}
+
+function freshProject(history) {
   const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-lead-delegation-')));
   const project = path.join(base, 'project');
   fs.cpSync(FIXTURE, project, { recursive: true });
+  if (history) addReferences(project);
   fs.mkdirSync(path.join(base, 'tmp'));
   git(project, ['init', '-q']);
   git(project, ['add', '-A']);
@@ -73,8 +82,8 @@ function feedTurns(child, output, turns) {
   });
 }
 
-export function runSession({ cell, budget, pluginDir, stream, home, prompt, history, turns = [PRE_WORK, BUILD] }) {
-  const { base, project, tmp } = freshProject();
+export function runSession({ cell, budget, pluginDir, stream, home, prompt, history, turns = [preWork(), BUILD] }) {
+  const { base, project, tmp } = freshProject(history);
   const confined = confinedClaude({ args: sessionArgs({ cell, budget, pluginDir, project, tmp, prompt, history }), roots: [base], cwd: project, tmp });
   const run = withHome(confined, home);
   return new Promise((resolve) => {
@@ -87,7 +96,7 @@ export function runSession({ cell, budget, pluginDir, stream, home, prompt, hist
       clearTimeout(timer);
       fs.closeSync(output);
       appendBashWrites(stream, tmp);
-      fs.rmSync(base, { recursive: true, force: true });
+      removeScratch(base);
       resolve();
     });
   });

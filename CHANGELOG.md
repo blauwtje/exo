@@ -55,6 +55,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `skills/spec/references/measured-goal.md` picks a setting only when `mde.mjs --scores` prints no `ceiling` line, and labels each failure agent fault or case fault; `skills/build/references/improve.md` labels the failing cases after 2 rounds without gain and lists case faults in the Stop report.
+- `node benchmarks/lead-delegation.mjs --history` has the first turn read 3 generated reference files, so the build turn starts at about 80k tokens of read history; a run that starts it under 50k prints `VOID`, and `--dry-run` prints the reference size and the floor.
 - The spec open-points step also checks the spec, brief and plan for contradicting statements, the find-cause skill reproduces as the reporter and races two fixers after failed rounds, and the run loop names `EXO_MAX_RUN_USD`.
 - `search.mjs --source reddit` reads live Reddit through an exo-owned logged-in browser session (`--login` sets it up) and drops the archive and RSS; a missing login prints one `blocked` line naming the fix.
 - The facts judge passes a fact ending in "is named" when the reply names that part in one or two words matching the name or the part in parentheses.
@@ -98,6 +99,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `build` names the owner of every write over 2 files: the build skill body, the no-spec route and the critic fix round each send it to `exo:build-task`, where only the design-ui reference said so before.
+- The lead write nudge counts the files the main session writes through Bash: a lead Bash call records the dirty working-tree files, and the next Bash, Write or Edit call adds the ones that changed. It stays a nudge and fires once.
+- A build request that states no size routes to `exo:build`: the session routing text now names a code restructure, a UI restyle or copy rewrite, a dependency major or swap, a security hardening and a change reaching every caller. Held-out build recall on the hook arm rose from 0.511 to 0.770 over 3 runs per prompt, with no false positive.
+- The `isolation-probe`, `lead-delegation-session`, `locate-recall`, `lean-gates` and `run` benchmarks remove their scratch folder with `removeScratch`, which retries while a child's descendants still write into it.
 - Benchmark sessions load only the plugins their `--plugin-dir` names when `CLAUDE_CONFIG_DIR` is set, and `node benchmarks/isolation-probe.mjs --plugins` checks that at no cost.
 - `node benchmarks/lead-delegation.mjs` counts the product files the lead changes through Bash, by comparing the project around each of its Bash calls.
 - `design-ui` sends floor fixes that touch over 2 files to `exo:build-task` instead of the lead fixing each printed line itself.

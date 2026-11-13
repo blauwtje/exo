@@ -40,6 +40,7 @@ import { modeSummary, quickStock, quickSummary, readStock, stockRows, stockStore
 import { cellFits, cellSpend, checkoutPlanBranch, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, newestRunLedger, planFileOf, prepareValueRepo, projectCost, projectedTimeLine, projectTime, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 import { readJson } from './basics.mjs';
 import { filesNamed } from './tree-files.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -278,8 +279,8 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
     fs.writeFileSync(path.join(cellDirectory, 'checks.json'), `${JSON.stringify(checks, null, 2)}\n`);
     return checks;
   } finally {
-    fs.rmSync(cellRoot, { recursive: true, force: true });
-    fs.rmSync(tmp, { recursive: true, force: true });
+    removeScratch(cellRoot);
+    removeScratch(tmp);
   }
 }
 

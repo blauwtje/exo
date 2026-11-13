@@ -14,6 +14,7 @@ import { clusteredMeanCi } from '../lib/eval-stats.mjs';
 import { intervalText, knownMean, pairedArms, pairedByCase, verdictWord } from './interval-text.mjs';
 import { plannedPowerLine, scoresByTask } from './power-plan.mjs';
 import { readJson } from './basics.mjs';
+import { removeScratch } from './remove-scratch.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_FILE = path.join(ROOT, 'benchmarks/locate-recall/briefs.json');
@@ -235,7 +236,7 @@ export async function claudeSession({ prompt, model, flags, commit, home }) {
   const { folder, scratch, tmp } = makeScratch(commit);
   const outcome = await runAgent({ prompt, agent: flags.agent, model, effort: flags.effort, cwd: scratch, roots: [scratch, tmp], tmp, home });
   const reports = reportTexts(scratch);
-  fs.rmSync(folder, { recursive: true, force: true });
+  removeScratch(folder);
   return { ...outcome, reports };
 }
 
