@@ -84,7 +84,7 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/color.md': 764,
-  'skills/build/references/design-ui.md': 1891,
+  'skills/build/references/design-ui.md': 1890,
   'skills/build/references/improve.md': 1544,
   'skills/build/references/layout.md': 984,
   'skills/build/references/marketing.md': 908,

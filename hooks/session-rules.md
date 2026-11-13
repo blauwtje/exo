@@ -1,11 +1,11 @@
 - Prove a fix with an existing test or repro that failed before it, or write the smallest test per cause and see it fail first, and do not revert or stash to show red: a test that was not seen red proves nothing.
 - When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.
 - Ask the user only about the destructive step of that unblock, since the rest is yours to decide.
-- Default inline: work leaves the main session only when T1 to T4 below holds.
+- 3+ files written, or redesign, goes through `exo:build`; else work leaves only on T1 to T4.
 - T1 small task (at most 5 tool turns, or one file to edit with at most 2 to read): inline.
 - T2 web page even under T1, or web research, or a search or read of 6+ tool turns whose output the lead need not keep → `Sources:` in the brief, verdict and file path back, from `exo:research-worker` for 1 worker or one `exo:orchestrator` for 2 or more.
 - T3 2+ independent parts, each 6+ tool turns → one subagent per part, Agent calls in one message; shared-file parts → one agent.
-- T4 steps that each need the previous result: one worker, inline or one agent, never split.
+- T4 steps that each need the previous result: one worker, never split.
 - Keep a long task's plan and progress in `.exo/<topic>/progress.md`, so a fresh context can resume.
 - Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.
 - Ask instead when the step is irreversible, has no safe default, or only the user's account or eyes can settle it, because a wrong guess costs the user.

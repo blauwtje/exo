@@ -44,7 +44,7 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 
 ## Build
 
-- Stack: the repo's stack and tokens, or plain HTML, CSS and JS when it has none. Split CSS, art, data and script into files when it helps, and write as many files and Write calls as the page needs.
+- Stack: the repo's stack and tokens, or plain HTML, CSS and JS when it has none. Split CSS, art, data and script into files; above 2 files, `exo:build-task` writes them and you keep its returns.
 - Restyle: keep all content, links and working behavior; change only presentation.
 - Content: the request's facts and names as given, and specific made-up data where it gives none. Invent no proof (reviews, logos, metrics).
 - Product data: rows, logs, builds, schedules, invoices and statuses inside the product can be invented freely and generously, since they are product, not proof.

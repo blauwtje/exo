@@ -11,8 +11,8 @@ This session reads the state only, and leaves the plan's `## Visual direction` a
   - Call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.
   - Its one-line return routes as a unit's does.
   - It stops before landing (no return line, or a context-limit handover) → dispatch one finish delegate, same prompt shape, naming the on-disk diff and `<checkout>/.exo/implementer-<n>.md` if it exists; it runs `## The delegate` from step 2 and rebuilds nothing.
-- **`direction pending at rung <n>`.** Build the task in this session under `design-ui`; this session can ask the user.
-- **`direction none`.** Build the task in this session under `design-ui`, same reason.
+- **`direction pending at rung <n>`.** Build the task in this session under `design-ui`; this session can ask the user, and dispatches the writing per its Build rules.
+- **`direction none`.** Build the task in this session under `design-ui`, same reason and same dispatch.
 
 ## The delegate
 
