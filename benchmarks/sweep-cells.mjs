@@ -8,7 +8,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
 import { FLOW_BRANCH, FLOW_PLAN, FLOW_REQUEST } from './sweep-fixtures.mjs';
-import { NO_RUN, ROOT, SAFE_TASKS } from './tasks.mjs';
+import { ROOT, SAFE_TASKS } from './tasks.mjs';
+import { buildCells, buildGridCells } from './build-cells.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 
 export const SWEEP_MODELS = {
@@ -19,7 +20,7 @@ export const SWEEP_MODELS = {
 
 export const REVIEW_EFFORTS = ['low', 'medium', 'high'];
 
-export const CELL_SETS = ['review', 'build', 'fixer', 'plan', 'flow', 'replay'];
+export const CELL_SETS = ['review', 'build', 'fixer', 'plan', 'flow', 'replay', 'build-grid'];
 
 const REVIEW_SOURCES = { seeded: 'seed', control: 'solution' };
 
@@ -112,25 +113,6 @@ function reviewCells(reviewer) {
     }
   }
   return [...cells, ...greenFirstCells(reviewer)];
-}
-
-// A build cell repeats the safe tier of run.mjs on Sonnet 5 at high: the same
-// prompt, the same no-run instruction and no Bash, so its check verdict compares.
-function buildCells() {
-  return SAFE_TASKS.map((task) => ({
-    id: `build-${task.id}`,
-    kind: 'build',
-    task,
-    variant: null,
-    source: null,
-    model: SWEEP_MODELS.sonnet,
-    effort: 'high',
-    prompt: task.prompt,
-    appendSystemPrompt: NO_RUN,
-    disallowedTools: ['Bash'],
-    budgetUsd: '3',
-    timeoutMs: 20 * MINUTE_MS
-  }));
 }
 
 // review-fixer-prompt.md's fenced block is the whole dispatch a sonnet
@@ -248,7 +230,7 @@ export function replayCells(cases, { models = ['opus'], repeat = 1 } = {}) {
 }
 
 export function sweepCells() {
-  return [...reviewCells(reviewerPrompt()), ...buildCells(), ...fixerCells(), ...planCells(), ...flowCells()];
+  return [...reviewCells(reviewerPrompt()), ...buildCells(SWEEP_MODELS), ...buildGridCells(SWEEP_MODELS), ...fixerCells(), ...planCells(), ...flowCells()];
 }
 
 export function judgeCells(cells, bodies) {
@@ -260,8 +242,8 @@ export function selectCells(cells, setNames) {
   for (const name of setNames) {
     if (name !== 'all' && !CELL_SETS.includes(name)) throw new Error(`unknown cell set ${name}; one of all, ${CELL_SETS.join(', ')}`);
   }
-  if (setNames.includes('all')) return cells;
-  return cells.filter((cell) => setNames.includes(cell.kind));
+  if (setNames.includes('all')) return cells.filter((cell) => cell.set !== 'build-grid');
+  return cells.filter((cell) => setNames.includes(cell.set ?? cell.kind));
 }
 
 // Each plugin variant the cells load, once, so a sweep makes one copy per
