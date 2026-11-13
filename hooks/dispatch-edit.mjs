@@ -4,13 +4,14 @@ import { inSidecall, readHookText } from '#hook-input';
 import { editRuleFields } from '../lib/edit-code-rules.mjs';
 import { impactFields } from '../lib/edit-impact.mjs';
 import { contextDecision, contextFields } from '../lib/context-decisions.mjs';
-import { shellStopFields } from '../lib/live-shells.mjs';
+import { shellStopFields, leadWriteFields } from '../lib/live-shells.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
 
 const STEPS = [
   { name: 'context-limit', run: (hookInput) => contextFields(contextDecision(hookInput), hookInput) },
+  { name: 'lead-writes', run: leadWriteFields },
   { name: 'shell-stop', run: shellStopFields },
   { name: 'code-rules', run: editRuleFields },
   { name: 'edit-impact', run: impactFields }

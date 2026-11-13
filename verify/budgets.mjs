@@ -35,7 +35,7 @@ export const HOOK_WORK_LOCK = {
     'session-start.mjs': { modules: 28, reads: 9 },
     'dispatch-bash.mjs': { modules: 43, reads: 5 },
     'agent-effort.mjs': { modules: 46, reads: 45 },
-    'dispatch-edit.mjs': { modules: 51, reads: 5 },
+    'dispatch-edit.mjs': { modules: 51, reads: 8 },
     'context-limit.mjs': { modules: 34, reads: 5 },
     'run-no-wait.mjs': { modules: 19, reads: 3 },
     'session-end.mjs': { modules: 13, reads: 2 }
