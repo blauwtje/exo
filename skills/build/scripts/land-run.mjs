@@ -18,7 +18,7 @@ const LAND_ANYWAY = 'land anyway';
 const USAGE = [
   'usage: land-run.mjs --root <checkout> --run-root <build checkout> --branch <name>',
   '  --mode <local|push-main|pr> --run-dir <dir> [--success <text>]',
-  '  [--commit <subject>] --started-at <ISO time>',
+  '  [--commit <subject>]',
   'Prints one line; exit 0 landed, 3 parked, 2 bad argument.',
 ].join('\n');
 
@@ -226,14 +226,14 @@ function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit =
 
 function main(argv) {
   const f = parseFlags(argv, {
-    root: 'value', 'run-root': 'value', branch: 'value', mode: 'value', 'run-dir': 'value', success: 'value', commit: 'value', 'started-at': 'value',
+    root: 'value', 'run-root': 'value', branch: 'value', mode: 'value', 'run-dir': 'value', success: 'value', commit: 'value',
   }, { usage: USAGE });
-  for (const k of ['root', 'run-root', 'branch', 'mode', 'run-dir', 'started-at']) {
+  for (const k of ['root', 'run-root', 'branch', 'mode', 'run-dir']) {
     if (f[k] === undefined) throw new UsageError(`flag '--${k}' is required`);
   }
   const r = landRun({
     root: f.root, runRoot: f['run-root'], branch: f.branch, mode: f.mode, runDir: f['run-dir'],
-    success: f.success ?? '', commit: f.commit ?? '', startedAt: f['started-at'],
+    success: f.success ?? '', commit: f.commit ?? '',
   });
   const detail = r.phase === 'landed'
     ? [r.range, r.pushed && `pushed ${r.pushed}`, r.prUrl, r.cleanup].filter(Boolean).join(' | ')

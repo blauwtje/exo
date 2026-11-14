@@ -38,13 +38,12 @@ function fixture({ origin = true } = {}) {
   write(root, 'b.txt', 'b\n');
   git(root, 'add', '.');
   git(root, 'commit', '-qm', 'feat');
-  const startedAt = new Date(Date.now() - 5000).toISOString();
   const runDir = path.join(root, '.exo', 'run', 'r1');
   fs.mkdirSync(runDir, { recursive: true });
   const stubs = path.join(dir, 'bin');
   write(stubs, 'gh', '#!/bin/sh\necho "$@" >> "$GH_LOG"\n[ -n "$GH_FAIL" ] && { echo boom >&2; exit 1; }\necho https://example.test/pr/1\n');
   fs.chmodSync(path.join(stubs, 'gh'), 0o755);
-  const opts = { root, runRoot: root, branch: 'feat', mode: 'local', commit: 'feat(x): add x', runDir, success: '`true`', startedAt };
+  const opts = { root, runRoot: root, branch: 'feat', mode: 'local', commit: 'feat(x): add x', runDir, success: '`true`' };
   const land = (patch = {}) => {
     const saved = { PATH: process.env.PATH, GH_LOG: process.env.GH_LOG, GH_FAIL: process.env.GH_FAIL };
     process.env.PATH = `${stubs}${path.delimiter}${saved.PATH}`;
@@ -323,7 +322,7 @@ test('a .worktrees run parks when the main checkout is not on the default branch
 test('the CLI prints one line and exits 0 landed, 3 parked', () => {
   const f = fixture();
   const args = ['--root', f.root, '--run-root', f.root, '--branch', 'feat', '--mode', 'local', '--run-dir', f.runDir,
-    '--commit', 'feat(x): add x', '--success', '`true`', '--started-at', f.opts.startedAt];
+    '--commit', 'feat(x): add x', '--success', '`true`'];
   const ok = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' });
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /^land-run: landed \| .*\n$/);

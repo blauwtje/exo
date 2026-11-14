@@ -5,6 +5,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
 
+## dead-started-at
+- Task 1: `skills/build/scripts/land-run.mjs` names no `started-at` and no `startedAt`, and `tests/land-run.test.mjs` passes without passing one.
+
 ## plan
 - A run-plan child for a mechanical kind starts with the output cap, or the results file says the harness has no support (Task 4).
 - `exo claude --provider deepseek` at a peak time prints the off-peak notice (Task 5).

@@ -112,6 +112,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `land-run.mjs` no longer requires `--started-at`, a start time nothing read since the landing stopped checking a branch review file.
 - A TikTok page caption track carries its real language and auto status instead of a fixed `tiktok:eng`.
 - whisper.node runs in one worker child per batch, so a timeout or crash replaces that child instead of stopping the batch.
 - The `gate-red-check` eval case asks for the next step and to change nothing yet, so its "no file was changed" criterion grades the gate's stop instead of the calling session's own fix.

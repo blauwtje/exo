@@ -12,7 +12,7 @@
 9926 lib/red-green.mjs
 9701 lib/statusline.mjs
 14892 lib/worker-size.mjs
-12827 skills/build/scripts/land-run.mjs
+12232 skills/build/scripts/land-run.mjs
 9405 skills/build/scripts/remove-worktree.mjs
 24978 skills/build/scripts/run-plan.mjs
 9464 skills/build/scripts/run-report.mjs

@@ -19,8 +19,8 @@ Evidence root: `.exo/karpathy-level/` in the main checkout (gate-compare.md, gat
 - [code] `skills/gate/SKILL.md` and `skills/build/references/tail.md` have room under their caps in `verify/budgets.mjs` once the new text replaces the old level clause; no cap is raised.
 
 ## Acceptance
-- Task 1: `skills/gate/SKILL.md` step 3 names `low` for a one-task plan with no `Risk:` line and `medium` otherwise, and the `--since <rev>` re-review at `low` with no second hand-back.
-- Task 1: `skills/build/references/tail.md` reruns `gate` with `--since <rev>` after the one fix round.
+- Task 1: `skills/gate/SKILL.md` step 3 names `low` for a one-task plan that names no `Risk:` and `medium` otherwise, hands a finding back with the `Then:` rerun command, and the `--since <rev>` re-review at `low` is final.
+- Task 1: `skills/build/references/tail.md` runs the rerun its `Then:` line names (`gate` with `--since <rev>`) after the one fix round, and that report is final.
 - Before: level `low` unless a `Risk:` line; a re-review repeats the whole-branch review. After: measured in Manual checks.
 
 ## Manual checks
