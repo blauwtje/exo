@@ -21,8 +21,8 @@ export function findDone(out, key) {
   return entry;
 }
 
-export function markDone(out, key, { line, transcript }) {
+export function markDone(out, key, { line, transcript, route, timings }) {
   fs.mkdirSync(out, { recursive: true });
-  const entry = { key, transcript: path.relative(out, transcript), line };
+  const entry = { key, transcript: path.relative(out, transcript), line, route, timings };
   fs.appendFileSync(path.join(out, LEDGER), `${JSON.stringify(entry)}\n`);
 }

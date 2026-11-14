@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -8,24 +9,23 @@ import { detectSpeech, windowOf } from './whisper-vad.mjs';
 const PACKAGE = '@fugood/whisper.node';
 const VERSION = '1.1.3';
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const CHILD = `
-const [entry, model, file, language, offset, duration] = process.argv.slice(1);
+const WORKER = `
+const [entry, model] = process.argv.slice(1);
 const { initWhisper } = require(entry);
-const transcribe = async () => {
-  const context = await initWhisper({ filePath: model });
-  const settings = { language: language || 'auto' };
-  if (duration) Object.assign(settings, { offset: Number(offset), duration: Number(duration) });
-  const { promise } = context.transcribeFile(file, settings);
-  const { language: detected, segments } = await promise;
-  await context.release();
-  const line = JSON.stringify({ language: detected, segments }) + '\\n';
-  process.stdout.write(line, () => process.exit(0));
-};
-transcribe().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
+let loading;
+process.on('disconnect', () => process.exit(0));
+process.on('message', async ({ file, settings }) => {
+  try {
+    loading ??= initWhisper({ filePath: model });
+    const context = await loading;
+    const { language, segments } = await context.transcribeFile(file, settings).promise;
+    process.send({ language, segments });
+  } catch (error) {
+    process.send({ error: error.message });
+  }
 });
 `;
+const workers = new Map();
 
 function packageFolder(prefix) {
   return path.join(prefix, 'node_modules', PACKAGE);
@@ -48,21 +48,50 @@ async function install(prefix, options) {
   return { failure: `installing whisper.node failed: ${toolReason(run, options)}` };
 }
 
-function lastJson(stdout) {
-  const line = stdout.trim().split('\n').pop();
-  try {
-    return JSON.parse(line);
-  } catch {
-    return null;
-  }
+function startWorker(prefix, model) {
+  const child = spawn(process.execPath, ['-e', WORKER, packageFolder(prefix), model], { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  child.unref();
+  child.channel?.unref();
+  child.once('exit', () => {
+    if (workers.get(model) === child) workers.delete(model);
+  });
+  return child;
+}
+
+function workerFor(prefix, model) {
+  if (!workers.has(model)) workers.set(model, startWorker(prefix, model));
+  return workers.get(model);
+}
+
+function retire(model) {
+  workers.get(model)?.kill('SIGKILL');
+  workers.delete(model);
+}
+
+function ask(child, request, options) {
+  return new Promise((resolve) => {
+    const finish = (reply) => {
+      clearTimeout(timer);
+      child.off('message', finish).off('exit', crashed).off('error', failed);
+      resolve(reply);
+    };
+    const crashed = (code, signal) => finish({ error: `it exited with ${signal ?? `code ${code}`}` });
+    const failed = (error) => finish({ error: error.message });
+    const timer = setTimeout(() => finish({ error: `did not finish within ${options.transcribeMs / 1000} s` }), options.transcribeMs);
+    child.on('message', finish).on('exit', crashed).on('error', failed);
+    child.send(request);
+  });
 }
 
 async function recognise({ prefix, model, file, language, window }, options) {
-  const args = ['-e', CHILD, packageFolder(prefix), model, file, language ?? '', String(window?.offset ?? ''), String(window?.duration ?? '')];
-  const run = await options.runTool(process.execPath, args, options.transcribeMs);
-  if (run.error) return { failure: `whisper.node failed: ${toolReason(run, options)}` };
-  const heard = lastJson(run.stdout);
-  if (!Array.isArray(heard?.segments)) return { failure: 'whisper.node failed: it printed no segments' };
+  const settings = { language: language || 'auto' };
+  if (window) Object.assign(settings, { offset: window.offset, duration: window.duration });
+  const heard = await ask(workerFor(prefix, model), { file, settings }, options);
+  if (heard.error) {
+    retire(model);
+    return { failure: `whisper.node failed: ${heard.error}` };
+  }
+  if (!Array.isArray(heard.segments)) return { failure: 'whisper.node failed: it printed no segments' };
   return { segments: heard.segments, language: heard.language };
 }
 

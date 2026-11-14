@@ -24,6 +24,10 @@ function missingTool(id, reason) {
   return { failure: `${id}: missing tool: ${reason}` };
 }
 
+function routed(result, route) {
+  return result.transcript ? { ...result, route } : result;
+}
+
 async function watchBySpeech({ label, url, dir, head, details, why }, options) {
   const speech = await transcribe(url, dir, { ...options, runYtDlp: runYtDlpWithRuntime, ytDlpReason, ytDlpNeed });
   const lead = why ? `${why}; ` : '';
@@ -32,7 +36,7 @@ async function watchBySpeech({ label, url, dir, head, details, why }, options) {
   const cues = parseVtt(fs.readFileSync(speech.vtt, 'utf8'));
   const duration = details.duration > 0 ? details.duration : Math.ceil(cues.at(-1)?.start ?? 0);
   const chapters = details.chapters(duration);
-  return writeOutputs({ dir, cues, duration, chapters, head, captions: `speech:${speech.engine}` }, options);
+  return routed(writeOutputs({ dir, cues, duration, chapters, head, captions: `speech:${speech.engine}` }, options), 'speech');
 }
 
 async function watchDirect(id, options, fetchFn) {
@@ -52,7 +56,7 @@ async function watchDirect(id, options, fetchFn) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'raw.xml'), xml);
   const captions = `${track.auto ? 'auto' : 'manual'}:${track.code}`;
-  return writeOutputs({ dir, cues, duration, chapters: chaptersFromHtml(page, duration), head, captions }, options);
+  return routed(writeOutputs({ dir, cues, duration, chapters: chaptersFromHtml(page, duration), head, captions }, options), 'page-captions');
 }
 
 function ytDlpFailure(why, reason) {
@@ -88,7 +92,7 @@ async function watchWithYtDlp({ id, url }, options, why) {
   fs.renameSync(path.join(dir, vttName), raw);
   const cues = parseVtt(fs.readFileSync(raw, 'utf8'), { auto: picked.source === 'auto' });
   const duration = info.duration ?? Math.ceil(cues.at(-1)?.start ?? 0);
-  return writeOutputs({ dir, cues, duration, chapters: chaptersOf(info), head: headOf(folder, info.title), captions: `${picked.source}:${picked.key}` }, options);
+  return routed(writeOutputs({ dir, cues, duration, chapters: chaptersOf(info), head: headOf(folder, info.title), captions: `${picked.source}:${picked.key}` }, options), 'ytdlp-captions');
 }
 
 async function watchTikTok({ url }, options, fetchFn) {
@@ -100,7 +104,7 @@ async function watchTikTok({ url }, options, fetchFn) {
   const duration = read.duration > 0 ? read.duration : Math.ceil(read.cues.at(-1)?.start ?? 0);
   const dir = path.join(options.out, id);
   fs.mkdirSync(dir, { recursive: true });
-  return writeOutputs({ dir, cues: read.cues, duration, chapters: [], head: headOf(id, read.title), captions: 'tiktok:eng' }, options);
+  return routed(writeOutputs({ dir, cues: read.cues, duration, chapters: [], head: headOf(id, read.title), captions: read.captions }, options), 'page-captions');
 }
 
 async function watchSite({ url, host }, options) {
@@ -125,8 +129,12 @@ async function watchSource(source, options, fetchFn) {
 export async function watchOne(input, options, fetchFn = globalThis.fetch) {
   const source = sourceOf(input);
   if (!source) return { failure: `${input}: not a video url or an 11-character YouTube id` };
+  const readStart = Date.now();
   const result = await watchSource(source, options, fetchFn);
-  return withKeyframes(result, source.id ? `${WATCH_URL}${source.id}` : source.url, options);
+  const keyframesStart = Date.now();
+  const framed = await withKeyframes(result, source.id ? `${WATCH_URL}${source.id}` : source.url, options);
+  if (!framed.transcript) return framed;
+  return { ...framed, timings: { read: keyframesStart - readStart, keyframes: Date.now() - keyframesStart } };
 }
 
 export function watchGuarded(input, options, fetchFn = globalThis.fetch) {

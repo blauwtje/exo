@@ -50,6 +50,13 @@ export function writeOutputs({ dir, cues: heard, duration, chapters, head, capti
   return { line: summaryLine(fields), transcript, words, duration, dir };
 }
 
+export function writeMerged(out, entries) {
+  const sections = entries.map(({ id, transcript }) => `# ${id}\n\n${fs.readFileSync(path.join(out, transcript), 'utf8')}`);
+  const merged = path.join(out, 'transcripts.txt');
+  fs.writeFileSync(merged, sections.join('\n'));
+  return merged;
+}
+
 export function headOf(id, title) {
   return { id, title: JSON.stringify(String(title ?? '').replace(/\s+/g, ' ').trim()) };
 }

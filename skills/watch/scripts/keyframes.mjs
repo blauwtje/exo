@@ -27,8 +27,14 @@ async function grabFrames({ url, dir, duration }, options) {
   }
 }
 
+function isQuiet(result, options) {
+  if (!result.transcript || !(result.duration > 0)) return false;
+  const inBatch = options.urls?.length > 1;
+  return result.words < (inBatch ? 1 : FEW_WORDS);
+}
+
 export async function withKeyframes(result, url, options) {
-  const quiet = result.transcript && result.words < FEW_WORDS && result.duration > 0;
+  const quiet = isQuiet(result, options);
   if (!quiet) return result;
   try {
     const frames = await grabFrames({ url, dir: result.dir, duration: result.duration }, options);

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import './watch-gate-env.mjs';
-import { readTikTok, isTikTokUrl } from '../skills/watch/scripts/tiktok.mjs';
+import { readTikTok, isTikTokUrl, prefetchTikTok } from '../skills/watch/scripts/tiktok.mjs';
 import { watchOne } from '../skills/watch/scripts/watch.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -76,6 +76,13 @@ test('the watch entry point reads a TikTok link with the TikTok reader and write
   assert.match(fs.readFileSync(result.transcript, 'utf8'), /Hello there/);
 });
 
+test('a machine-made page caption track is labelled auto with its own language', async () => {
+  const subtitle = [{ LanguageCodeName: 'fra-FR', Source: 'ASR', Format: 'webvtt', Url: 'https://v16.tiktokcdn.com/sub.vtt' }];
+  const fetchFn = fetchStub({ [VIDEO_URL]: pageWith(subtitle), 'https://v16.tiktokcdn.com/sub.vtt': VTT });
+  const result = await watchOne(VIDEO_URL, routeOptions(), fetchFn);
+  assert.match(result.line, /captions=auto:fra( |$)/);
+});
+
 test('a TikTok page the reader cannot read goes to yt-dlp when it is on PATH', async () => {
   const dir = fs.realpathSync(tempDir('watch-tiktok-ytdlp-'));
   const bin = path.join(dir, 'bin');
@@ -112,4 +119,27 @@ test('a readable TikTok page with no captions goes to yt-dlp for speech when it 
 test('without yt-dlp the speech and keyframes request is a gap naming what was not done and downloads nothing', async () => {
   const result = await withPath('', () => watchOne(VIDEO_URL, routeOptions(), fetchStub({ [VIDEO_URL]: pageWith([]) })));
   assert.match(result.failure, /speech-to-text and keyframes were not done: yt-dlp is not on PATH/);
+});
+
+test('prefetching page reads runs at most the given number at once and readTikTok takes each result once', async () => {
+  const subtitle = [{ LanguageCodeName: 'eng-US', Format: 'webvtt', Url: 'https://v16.tiktokcdn.com/sub.vtt' }];
+  const urls = [1, 2, 3, 4, 5].map((n) => `https://www.tiktok.com/@jane/video/${n}`);
+  let flying = 0;
+  let peak = 0;
+  let pages = 0;
+  const fetchFn = async (url) => {
+    flying += 1;
+    peak = Math.max(peak, flying);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    flying -= 1;
+    if (url.endsWith('.vtt')) return { ok: true, text: async () => VTT };
+    pages += 1;
+    return { ok: true, text: async () => pageWith(subtitle) };
+  };
+  const pageReads = prefetchTikTok(urls, { fetchMs: 1000, parallel: 2 }, fetchFn);
+  const reads = await Promise.all(urls.map((url) => readTikTok(url, { fetchMs: 1000, pageReads }, fetchFn)));
+  assert.ok(peak <= 2 && peak > 1, `peak ${peak}`);
+  assert.equal(pages, 5);
+  assert.equal(reads.every((read) => read.cues.length === 2), true);
+  assert.equal(pageReads.size, 0);
 });

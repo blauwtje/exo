@@ -1,17 +1,28 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { sleep } from '#basics';
+import { environmentMs } from '#script-flags';
 import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
 import { sourceOf } from './video-url.mjs';
+import { DEFAULTS } from './defaults.mjs';
+import { prefetchTikTok } from './tiktok.mjs';
 import { watchGuarded } from './watch.mjs';
 import { findDone, markDone } from './done-ledger.mjs';
+import { writeMerged } from './outputs.mjs';
 
 function keyOf(input) {
   const source = sourceOf(input);
   return source?.id ?? source?.url ?? null;
 }
 
+function doneOf(input, options) {
+  const key = keyOf(input);
+  return key && !options.force ? findDone(options.out, key) : null;
+}
+
 async function runOne(input, options, fetchFn) {
   const key = keyOf(input);
-  const done = key && !options.force ? findDone(options.out, key) : null;
+  const done = doneOf(input, options);
   if (done) return { status: 'skipped', line: `skipped ${done.line}` };
   const result = await watchGuarded(input, options, fetchFn);
   if (result.failure) return { status: 'failed', failure: result.failure };
@@ -52,21 +63,45 @@ async function tripAndProbe(input, options, fetchFn) {
   return probeUntilOpen(input, options, fetchFn);
 }
 
-export async function watchBatch(options, report, fetchFn = globalThis.fetch) {
+function isChunked(out, done) {
+  return fs.existsSync(path.join(out, path.dirname(done.transcript), 'chunks'));
+}
+
+function mergeFinished(options) {
+  const entries = options.urls.flatMap((input) => {
+    const key = keyOf(input);
+    const done = key ? findDone(options.out, key) : null;
+    if (!done || isChunked(options.out, done)) return [];
+    return [{ id: path.dirname(done.transcript), transcript: done.transcript }];
+  });
+  if (entries.length < 2) return;
+  note(`merged transcripts ${writeMerged(options.out, entries)}`);
+}
+
+export async function watchBatch(batchOptions, report, fetchFn = globalThis.fetch) {
+  const parallel = environmentMs('EXO_WATCH_PAGE_PARALLEL', DEFAULTS.pageParallel);
+  const cutoff = new AbortController();
+  const unread = batchOptions.urls.filter((input) => !doneOf(input, batchOptions));
+  const options = { ...batchOptions, pageReads: prefetchTikTok(unread, { ...batchOptions, parallel, signal: cutoff.signal }, fetchFn) };
   const outcomes = [];
   const guarded = options.urls.length > 1;
   for (const [index, input] of options.urls.entries()) {
     let outcome = await runOne(input, options, fetchFn);
-    if (guarded && isRateLimited(outcome)) outcome = await tripAndProbe(input, options, fetchFn);
+    if (guarded && isRateLimited(outcome)) {
+      cutoff.abort();
+      outcome = await tripAndProbe(input, options, fetchFn);
+    }
     if (!outcome) {
       const open = options.urls.slice(index);
       const restart = options.restart(open);
       outcomes.push(...open.map(() => ({ status: 'open', restart })));
+      mergeFinished(options);
       return outcomes;
     }
     outcomes.push(outcome);
     report(outcome);
   }
+  mergeFinished(options);
   return outcomes;
 }
 

@@ -3,8 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
+import process from 'node:process';
 import { tempDir } from './harness.mjs';
 import './watch-gate-env.mjs';
+import { watchBatch } from '../skills/watch/scripts/batch.mjs';
+import { readOptions } from '../skills/watch/scripts/options.mjs';
 
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
 const VTT = 'WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nHello there\n\n00:00:03.000 --> 00:00:06.000\nsecond line\n';
@@ -51,7 +54,24 @@ function batch(replies, rateWaitMs = '0') {
     return path.join(dir, name);
   };
   const rerun = (command) => spawnSync('/bin/sh', ['-c', command], { encoding: 'utf8', env: { ...env, PATH: `${bin}:${path.dirname(process.execPath)}` }, input: '' });
-  return { dir, out, run, rerun, calls, metadataCalls, write };
+  return { dir, out, env, run, rerun, calls, metadataCalls, write };
+}
+
+function restoreEnvironment(saved) {
+  for (const [name, value] of Object.entries(saved)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
+
+async function withEnvironment(values, task) {
+  const saved = Object.fromEntries(Object.keys(values).map((name) => [name, process.env[name]]));
+  Object.assign(process.env, values);
+  try {
+    return await task();
+  } finally {
+    restoreEnvironment(saved);
+  }
 }
 
 const lines = (text) => text.split('\n').filter(Boolean);
@@ -186,6 +206,29 @@ test('the restart command of a stdin batch lists the open videos and starts them
   assert.ok(metadataCalls().slice(before).some((call) => call.url === urlOf('222')));
 });
 
+test('the page prefetch of a batch reads no done video and starts no page read after the rate limit', async () => {
+  const { out, env } = batch({ 111: infoOf('111'), 222: RATE_LIMITED, 333: infoOf('333'), 444: infoOf('444') });
+  const pages = [];
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const fetchFn = async (url) => {
+    if (url.startsWith(urlOf(''))) pages.push(url);
+    if (url === urlOf('333')) await held;
+    return { ok: false, status: 404, text: async () => '' };
+  };
+  const watch = (ids) => watchBatch({ ...readOptions({ url: ids.map(urlOf), out }), restart: () => 'restart' }, () => {}, fetchFn);
+  await withEnvironment({ ...env, EXO_YTDLP: path.join(env.PATH, 'yt-dlp'), EXO_WATCH_PAGE_PARALLEL: '1' }, async () => {
+    await watch(['111']);
+    pages.length = 0;
+    await watch(['111', '222', '333', '444']);
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+  assert.deepEqual(pages, [urlOf('222'), urlOf('333')]);
+});
+
 test('a probe that succeeds resumes the batch', () => {
   const { run } = batch({ 111: { ...infoOf('111'), until: 1500 }, 222: infoOf('222') }, '5000');
   const result = run(urlArgs('111', '222'));
@@ -199,4 +242,34 @@ test('a 403 does not trip the breaker', () => {
   const result = run(urlArgs('111', '222'));
   assert.equal(result.status, 0);
   assert.match(lines(result.stdout).at(-1), /^batch done=1 skipped=0 failed=1 \| /);
+});
+
+test('each done row records the route taken and the ms per stage', () => {
+  const { run, out } = batch({ 111: infoOf('111') });
+  const result = run(urlArgs('111'));
+  assert.equal(result.status, 0, result.stderr);
+  const [row] = lines(fs.readFileSync(path.join(out, 'done.jsonl'), 'utf8')).map((line) => JSON.parse(line));
+  assert.equal(row.route, 'ytdlp-captions');
+  assert.deepEqual(Object.keys(row.timings), ['read', 'keyframes']);
+  assert.ok(Object.values(row.timings).every((ms) => Number.isInteger(ms) && ms >= 0));
+});
+
+test('a batch writes one merged transcripts file with an id header per video', () => {
+  const batchRun = batch({ 111: infoOf('111'), 222: infoOf('222') });
+  const result = batchRun.run(urlArgs('111', '222'));
+  assert.equal(result.status, 0);
+  const merged = fs.readFileSync(path.join(batchRun.out, 'transcripts.txt'), 'utf8');
+  assert.ok(merged.indexOf('# tiktok-111\n') >= 0 && merged.indexOf('# tiktok-111\n') < merged.indexOf('# tiktok-222\n'));
+  assert.equal(merged.split('Hello there').length - 1, 2);
+});
+
+test('the merged transcripts file holds only the short videos, not one that gets chunks', () => {
+  const long = infoOf('333');
+  long.info.duration = 7200;
+  const batchRun = batch({ 111: infoOf('111'), 222: infoOf('222'), 333: long });
+  const result = batchRun.run(urlArgs('111', '222', '333'));
+  assert.equal(result.status, 0, result.stderr);
+  const merged = fs.readFileSync(path.join(batchRun.out, 'transcripts.txt'), 'utf8');
+  assert.match(merged, /# tiktok-222\n/);
+  assert.doesNotMatch(merged, /# tiktok-333\n/);
 });

@@ -37,7 +37,7 @@ fs.writeFileSync(args[args.indexOf('-of') + 1] + '.vtt', process.env.FAKE_VTT);
 `,
 };
 
-function setup(vtt, more = {}) {
+function setup(vtt, more = {}, extraArgs = []) {
   const dir = fs.realpathSync(tempDir('keyframes-'));
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin);
@@ -47,7 +47,7 @@ function setup(vtt, more = {}) {
   const log = path.join(dir, 'calls.log');
   const env = { ...process.env, PATH: bin, FAKE_LOG: log, FAKE_INFO: JSON.stringify(INFO), FAKE_VTT: vtt, ...more };
   const out = path.join(dir, 'out');
-  const result = spawnSync(process.execPath, [script, '--url', URL_, '--out', out, '--model', model], { encoding: 'utf8', env });
+  const result = spawnSync(process.execPath, [script, '--url', URL_, '--out', out, '--model', model, ...extraArgs], { encoding: 'utf8', env });
   const calls = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)) : [];
   return { result, calls, folder: path.join(out, ID) };
 }
@@ -69,6 +69,16 @@ test('a video with no speech at all also gets keyframes', () => {
   const site = setup(MUSIC);
   assert.equal(fs.readFileSync(path.join(site.folder, 'transcript.txt'), 'utf8'), 'no speech in this video\n');
   assert.match(site.result.stdout, / words=0 .* frames=.*\/frames \(6 files\)\n$/);
+});
+
+test('a batch fetches keyframes only for a video with no speech at all', () => {
+  const extra = ['--url', 'https://www.tiktok.com/@u/video/7301234567890123457'];
+  const few = setup(SHORT, {}, extra);
+  assert.equal(few.result.status, 0, few.result.stderr);
+  assert.doesNotMatch(few.result.stdout, /frames=/);
+  assert.ok(!few.calls.some((args) => args.includes('bv*/b')));
+  const none = setup(MUSIC, {}, extra);
+  assert.match(none.result.stdout, / words=0 .* frames=/);
 });
 
 test('a transcript of 15 words or more fetches no video', () => {

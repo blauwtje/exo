@@ -50,7 +50,15 @@ async function cuesOf(fetchFn, subtitle, options) {
   return vtt ? parseVtt(vtt) : [];
 }
 
-export async function readTikTok(url, options, fetchFn = globalThis.fetch) {
+const MACHINE_SOURCES = new Set(['ASR', 'MT']);
+
+function captionsLabelOf(subtitle) {
+  const language = (subtitle.LanguageCodeName ?? 'eng').split('-')[0];
+  const origin = MACHINE_SOURCES.has(subtitle.Source) ? 'auto' : 'tiktok';
+  return `${origin}:${language}`;
+}
+
+async function readPage(url, options, fetchFn) {
   const item = itemOf(await getText(fetchFn, url, options));
   if (!item) {
     const meta = await oembedOf(fetchFn, url, options);
@@ -61,7 +69,33 @@ export async function readTikTok(url, options, fetchFn = globalThis.fetch) {
   const subtitle = subtitleOf(item);
   const cues = subtitle ? await cuesOf(fetchFn, subtitle, options) : [];
   if (cues.length === 0) return { ...base, silent: true, gap: `no captions: ${url} has no caption track` };
-  return { ...base, cues };
+  return { ...base, cues, captions: captionsLabelOf(subtitle) };
+}
+
+export function prefetchTikTok(urls, { parallel, signal, ...options }, fetchFn = globalThis.fetch) {
+  const reads = new Map();
+  const waiting = new Set();
+  const lanes = Array.from({ length: parallel }, () => Promise.resolve());
+  const startRead = (url) => {
+    if (signal?.aborted) return null;
+    waiting.delete(url);
+    return readPage(url, options, fetchFn);
+  };
+  for (const [index, url] of urls.filter(isTikTokUrl).entries()) {
+    const lane = index % parallel;
+    lanes[lane] = lanes[lane].then(() => startRead(url));
+    waiting.add(url);
+    reads.set(url, lanes[lane]);
+  }
+  signal?.addEventListener('abort', () => waiting.forEach((url) => reads.delete(url)));
+  return reads;
+}
+
+export function readTikTok(url, options, fetchFn = globalThis.fetch) {
+  const prefetched = options.pageReads?.get(url);
+  if (!prefetched) return readPage(url, options, fetchFn);
+  options.pageReads.delete(url);
+  return prefetched;
 }
 
 export function tiktokIdOf(url) {

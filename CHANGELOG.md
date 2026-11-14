@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- Each `watch` `done.jsonl` row records its route and ms per stage, and a batch writes the short transcripts to one `transcripts.txt` with a `# <id>` header each.
 - `docs/scorecard.md` holds the release measures and `docs/failures.md` lists real-session failures; the contributor rules now cap size and run evals only before a release.
 - Two heavier build fixtures, `redirect` (open redirect) and `deep-merge` (prototype pollution), join the safe tasks the build cells run, so arms have more to separate on.
 - `usage.json` records a cache hit rate (`hitRate` = cache read / all prompt tokens) per cell and per agent role (`benchmarks/role-usage.mjs`).
@@ -54,6 +55,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- A `watch` batch loads the whisper model once, runs keyframes only for 0-word videos, and prefetches unfinished TikTok pages in parallel (`EXO_WATCH_PAGE_PARALLEL`, default 4); 20 videos took 77.6 s -> 66.3 s.
 - The claim judge in spec research runs on Sonnet at low effort instead of Haiku.
 - Build tasks run at medium effort instead of low; a retry still steps up to Opus at high.
 - The improve reference states the scorer contract: one `SCORE`, none on a broken run, `ITEM` lines only from 8 cases up, and for a paid score a spend cap and a $0 replay of a saved result.
@@ -104,6 +106,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- A TikTok page caption track carries its real language and auto status instead of a fixed `tiktok:eng`.
+- whisper.node runs in one worker child per batch, so a timeout or crash replaces that child instead of stopping the batch.
 - The `gate-red-check` eval case asks for the next step and to change nothing yet, so its "no file was changed" criterion grades the gate's stop instead of the calling session's own fix.
 - `evals/scaffold.sh` gives each scaffold run its own copy of the `/tmp/exo-pressure` fixture root, so parallel gate and spec case runs no longer delete each other's fixture.
 - An orchestrator reads a worker Result file `.exo/**/*.md` whole when it merges, because the intake bound no longer cuts that read for the coordinator role.

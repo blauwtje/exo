@@ -210,3 +210,64 @@ test('a rate-limited caption download falls back to transcribing the audio', () 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /captions=speech:whisper\.cpp/);
 });
+
+async function nodeWhisper(prefix, transcribeMs = 20000) {
+  const { createHash } = await import('node:crypto');
+  const bytes = Buffer.from('fake ggml model bytes');
+  const pin = { file: 'ggml-once.bin', url: 'https://models.example.com/ggml-once.bin', size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
+  const dir = fs.realpathSync(tempDir(prefix));
+  const folder = path.join(dir, 'cache', 'npm', 'whisper', 'node_modules', '@fugood', 'whisper.node');
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(path.join(folder, 'package.json'), JSON.stringify({ name: '@fugood/whisper.node', version: '1.1.3', main: 'index.js' }));
+  fs.writeFileSync(path.join(folder, 'index.js'), `
+const fs = require('node:fs');
+const path = require('node:path');
+const hear = (file) => {
+  const name = path.basename(path.dirname(file));
+  if (name === 'hang') return new Promise(() => {});
+  if (name === 'crash') process.exit(70);
+  return Promise.resolve({ language: 'en', segments: [{ text: ' hi', t0: 0, t1: 900 }] });
+};
+exports.initWhisper = async () => {
+  fs.appendFileSync(path.join(__dirname, 'loads.log'), 'load\\n');
+  return { transcribeFile: (file) => ({ promise: hear(file) }), release: async () => {} };
+};
+exports.initWhisperVad = async () => ({ detectSpeechFile: async () => [{ t0: 0, t1: 90 }], release: async () => {} });
+`);
+  const options = {
+    env: { CLAUDE_PLUGIN_DATA: path.join(dir, 'cache'), PATH: path.join(dir, 'none') },
+    home: dir,
+    ytDlpNeed: async () => null,
+    ytDlpMs: 1000,
+    transcribeMs,
+    fetchFn: async () => new Response(bytes, { status: 200 }),
+    modelPin: pin,
+    vadPin: undefined,
+    runYtDlp: async (args) => {
+      fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], 'audio.mp3'), 'audio');
+      return { error: null, stdout: '', stderr: '' };
+    },
+    runTool: async () => ({ error: new Error('no child process expected'), stdout: '', stderr: '' }),
+  };
+  const { transcribe } = await import('../skills/watch/scripts/speech.mjs');
+  const run = (name) => transcribe('https://example.com/v', path.join(dir, 'out', name), options);
+  const loads = () => fs.readFileSync(path.join(folder, 'loads.log'), 'utf8').split('\n').filter(Boolean).length;
+  return { run, loads };
+}
+
+test('whisper.node loads its model once for every video of a run', async () => {
+  const whisper = await nodeWhisper('model-once-');
+  for (const name of ['one', 'two', 'three']) {
+    const result = await whisper.run(name);
+    assert.equal(result.failure, undefined);
+  }
+  assert.equal(whisper.loads(), 1);
+});
+
+test('a whisper.node run that hangs or crashes fails only its own video and the next one gets a fresh model', async () => {
+  const whisper = await nodeWhisper('model-fresh-', 1000);
+  assert.match((await whisper.run('hang')).failure, /whisper\.node failed: did not finish within 1 s/);
+  assert.match((await whisper.run('crash')).failure, /whisper\.node failed: /);
+  assert.equal((await whisper.run('after')).failure, undefined);
+  assert.equal(whisper.loads(), 3);
+});
