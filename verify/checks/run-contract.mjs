@@ -11,7 +11,7 @@ const DIRECT_CHECK_OWNERS = new Map([
 const PROSE_PAGES = ['skills/build/references/run-loop.md'];
 const FULL_REVIEW_START = /`DISPATCH Branch/;
 const SECOND_REVIEW_PROSE = /redispatch|round 2 or later/;
-const GATE_PROSE = /^(skills\/gate\/.*\.md|agents\/review-branch\.md)$/;
+const GATE_PROSE = /^skills\/gate\/.*\.md$/;
 const TABLE_POINTER = 'lib/run-outcomes.mjs';
 
 function offendingLines(text, pattern) {
@@ -26,7 +26,7 @@ function scriptFindings(repository, files) {
   for (const file of files.filter((name) => RUN_SCRIPTS.test(name))) {
     const text = repository.text(repository.join(file));
     const reviewStarts = offendingLines(text, FULL_REVIEW_START);
-    for (const number of reviewStarts) findings.push(`${file}:${number} starts a full review outside exo:review-branch`);
+    for (const number of reviewStarts) findings.push(`${file}:${number} starts a full review outside the built-in code-review`);
     for (const number of offendingLines(text, TURN_ENDING)) findings.push(`${file}:${number} prints a stop line outside the outcome table`);
     if (DIRECT_CHECK_OWNERS.has(file)) continue;
     for (const number of offendingLines(text, CHECK_SPAWN)) findings.push(`${file}:${number} runs a check outside the check entry`);

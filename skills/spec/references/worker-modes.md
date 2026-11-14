@@ -17,7 +17,7 @@
 - Take at most 5 check-worthy claims from a video, each rewritten as a self-contained query.
 - Log a blocked route as a gap. Scrape no logged-in site and make no account.
 - Record each finding under the research folder the dispatch names.
-- Return at most 1,500 tokens and at most 40 lines: the claim ids you stored, one line each, then the gaps. Leave out page text.
+- Return at most 1,500 tokens and at most 10 lines: the claim ids you stored, one line each, then the gaps, ending on `Result: <path>`. Leave out page text; findings stay in the result file.
 
 ## Docs
 

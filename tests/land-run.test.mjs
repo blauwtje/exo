@@ -17,7 +17,7 @@ const write = (dir, file, text) => {
 };
 
 // A bare origin, a main checkout on `main` and a run branch `feat` with one commit.
-function fixture({ review = 'CLEAN\n\nCount: defect=0 concern=0 question=0 fix=0\n', origin = true } = {}) {
+function fixture({ origin = true } = {}) {
   const dir = tempDir('land-run-');
   const bare = path.join(dir, 'origin.git');
   const root = path.join(dir, 'work');
@@ -39,7 +39,6 @@ function fixture({ review = 'CLEAN\n\nCount: defect=0 concern=0 question=0 fix=0
   git(root, 'add', '.');
   git(root, 'commit', '-qm', 'feat');
   const startedAt = new Date(Date.now() - 5000).toISOString();
-  if (review !== null) write(root, '.exo/branch-review.md', review);
   const runDir = path.join(root, '.exo', 'run', 'r1');
   fs.mkdirSync(runDir, { recursive: true });
   const stubs = path.join(dir, 'bin');
@@ -244,57 +243,6 @@ test('a branch rebased by hand after its last criterion pass reruns the re-check
   assert.equal(git(f.root, 'rev-parse', 'main'), git(f.root, 'rev-parse', 'origin/main~1'));
 });
 
-test('review: FINDINGS with fix=0 lands; fix>=1, BLOCKED, missing and stale park', () => {
-  const cases = [
-    ['FINDINGS\n\nCount: defect=0 concern=1 question=0 fix=0\n', 'landed'],
-    ['FINDINGS\n\nCount: defect=1 concern=0 question=0 fix=1\n', 'parked'],
-    ['BLOCKED\n', 'parked'],
-    [null, 'parked'],
-  ];
-  for (const [review, phase] of cases) {
-    const f = fixture({ review });
-    const r = f.land();
-    assert.equal(r.phase, phase, String(review));
-    if (phase === 'parked') {
-      assert.match(r.gate, /^review not clean/);
-      assert.ok(!fs.existsSync(path.join(f.root, 'b.txt')) || git(f.root, 'symbolic-ref', '--short', 'HEAD') === 'feat');
-    }
-  }
-  const stale = fixture();
-  const r = stale.land({ startedAt: new Date(Date.now() + 60000).toISOString() });
-  assert.equal(r.phase, 'parked');
-  assert.match(r.gate, /older than the run/);
-});
-
-test('review: a landed review fix with a clean fix review lands; a fix-bearing, BLOCKED or older one parks', () => {
-  const branchReview = 'FINDINGS\n\nCount: defect=1 concern=0 question=0 fix=1\n';
-  const cases = [
-    ['CLEAN\n', 1, 'landed'],
-    ['FINDINGS\n\n- concern: x.txt:1 stale name; defer\n', 1, 'landed'],
-    ['FINDINGS\n\n- defect: x.txt:1 wrong value; fix\n', 1, 'parked'],
-    ['BLOCKED\n', 1, 'parked'],
-    ['CLEAN\n', -2, 'parked'],
-  ];
-  for (const [fixReview, offsetSeconds, phase] of cases) {
-    const f = fixture({ review: branchReview });
-    const file = path.join(f.root, '.exo', 'fix-review.md');
-    write(f.root, '.exo/fix-review.md', fixReview);
-    const at = fs.statSync(path.join(f.root, '.exo', 'branch-review.md')).mtimeMs / 1000 + offsetSeconds;
-    fs.utimesSync(file, at, at);
-    const r = f.land();
-    assert.equal(r.phase, phase, `${fixReview.trim()} at ${offsetSeconds}s: ${r.gate}`);
-    if (phase === 'parked') assert.match(r.gate, /^review not clean: branch review is FINDINGS with fix=1/);
-  }
-});
-
-test('an approved land anyway gate skips the review once', () => {
-  const f = fixture({ review: 'BLOCKED\n' });
-  assert.equal(f.land().phase, 'parked');
-  approveGates(f.runDir);
-  assert.equal(f.land().phase, 'landed');
-  assert.equal(readGates(f.runDir)[0].status, 'used');
-});
-
 test('tracked changes park as worktree dirty; no branch parks as no branch', () => {
   const f = fixture();
   write(f.root, 'a.txt', 'changed\n');
@@ -354,7 +302,6 @@ test('a .worktrees run lands in the main checkout and removes its worktree', () 
   git(f.root, 'switch', '-q', 'main');
   const wt = path.join(f.root, '.worktrees', 'feat');
   git(f.root, 'worktree', 'add', '-q', wt, 'feat');
-  write(wt, '.exo/branch-review.md', 'CLEAN\n\nCount: defect=0 concern=0 question=0 fix=0\n');
   const r = f.land({ runRoot: wt });
   assert.equal(r.phase, 'landed', r.gate);
   assert.ok(!fs.existsSync(wt));
@@ -367,7 +314,6 @@ test('a .worktrees run parks when the main checkout is not on the default branch
   git(f.root, 'switch', '-q', 'main');
   const wt = path.join(f.root, '.worktrees', 'feat');
   git(f.root, 'worktree', 'add', '-q', wt, 'feat');
-  write(wt, '.exo/branch-review.md', 'CLEAN\n');
   git(f.root, 'switch', '-q', '-c', 'other');
   const r = f.land({ runRoot: wt });
   assert.equal(r.phase, 'parked');
@@ -381,10 +327,11 @@ test('the CLI prints one line and exits 0 landed, 3 parked', () => {
   const ok = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' });
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /^land-run: landed \| .*\n$/);
-  const g = fixture({ review: 'BLOCKED\n' });
+  const g = fixture();
+  write(g.root, 'a.txt', 'changed\n');
   const parked = spawnSync(process.execPath, [SCRIPT, ...args.map((a) => (a === f.root ? g.root : a === f.runDir ? g.runDir : a))], { encoding: 'utf8' });
   assert.equal(parked.status, 3);
-  assert.match(parked.stdout, /^land-run: parked \| gate: review not clean/);
+  assert.match(parked.stdout, /^land-run: parked \| gate: worktree dirty/);
   assert.equal(spawnSync(process.execPath, [SCRIPT], { encoding: 'utf8' }).status, 2);
 });
 

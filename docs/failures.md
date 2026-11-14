@@ -20,3 +20,7 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-14 agent review: 6 of 20 evals went unscored because the cost ceiling ended the run (user request).
 - 2026-11-14 watch: a TikTok page caption track was always labelled `tiktok:eng`, so a machine-made or non-English track never showed as auto and the `auto` rule in `skills/watch/SKILL.md:59` could not fire (`skills/watch/scripts/watch.mjs:103`).
 - 2026-11-14 replies: final messages to the user used exo run words (gate, brief, wave, LANDED, BLOCKED) and machine text (commit hashes, check summary lines, branch names, file paths, raw seconds) that a scanning reader cannot use (user request).
+- 2026-11-14 gate review: the branch review cost 278k tokens median and 5 of 8 runs led to no fix, while the built-in `code-review` found every defect that got a fix commit; on the same head it took 53,156 tokens at `low` and 102,899 at `medium` against 187,929 for the branch reviewer (8 gate runs, user request).
+- 2026-11-14 gate review: re-review rounds 2 and 4 of watch-tiktok-speed cost 0.4 to 0.7M tokens with no code commit (1 branch, user request).
+- 2026-11-14 subagents: subagent returns took 15% of the context at the first compaction (7 spec sessions, user request).
+- 2026-11-14 gate review: after the branch review was removed, `land-run.mjs` still required `.exo/branch-review.md` and the review-fixer prompt still expected a findings file with `fix` marks (1 gate run).

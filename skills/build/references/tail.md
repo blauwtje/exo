@@ -6,5 +6,5 @@
    - The `Proof:` lines and the brief's `## Manual checks` stay out of this turn's message: the `REPORT` file's `## Proofs` and `## Manual checks` hold them, however `gate` ends, a failed `gate` included.
    - The message gives the result and next step in plain words, and names that file only as a file the user opens.
    - Never rerun a proof or read the plan, a test or a script to name one.
-   - Their `Decisions:` line goes in the report as a path, unread; the branch reviewer reads that log.
+   - Their `Decisions:` line goes in the report as a path, unread.
    - Change line → run `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after build --artifact <plan>`; print its output above `ship`'s question, else as the last line.

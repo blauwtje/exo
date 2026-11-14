@@ -44,12 +44,6 @@
     "review": {
       "on": { "tier": "strong", "effort": "medium" }
     },
-    "review-deep": {
-      "on": { "tier": "deep", "effort": "high" }
-    },
-    "review-branch": {
-      "on": { "tier": "strong", "effort": "medium" }
-    },
     "fix-review": {
       "on": { "tier": "standard", "effort": "low" }
     },
@@ -90,7 +84,7 @@
     "agents/build-task.md": { "kind": "build-task", "labels": ["fix-review", "hardest", "build-repair"] },
     "agents/orchestrator.md": { "kind": "orchestrator" },
     "agents/research-worker.md": { "kind": "research" },
-    "agents/review-branch.md": { "kind": "review-branch", "labels": ["review-deep", "judge"] }
+    "agents/review-branch.md": { "kind": "judge" }
   },
   "skills": {
     "skills/gate/SKILL.md": "orchestrator",

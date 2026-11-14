@@ -41,13 +41,13 @@ test('a job word naming an unknown kind is rejected', () => {
 });
 
 test('an agents entry whose labels is a string is rejected', () => {
-  const file = tableWith((table) => { table.agents['agents/review-branch.md'].labels = 'review-deep'; });
-  assert.throws(() => readKindTable(file), /agents\/review-branch\.md: labels must be an array of kind names/);
+  const file = tableWith((table) => { table.agents['agents/build-task.md'].labels = 'hardest'; });
+  assert.throws(() => readKindTable(file), /agents\/build-task\.md: labels must be an array of kind names/);
 });
 
 test('an agents entry whose labels names an unknown kind is rejected', () => {
-  const file = tableWith((table) => { table.agents['agents/review-branch.md'].labels = ['no-such-kind']; });
-  assert.throws(() => readKindTable(file), /agents\/review-branch\.md: unknown kind no-such-kind/);
+  const file = tableWith((table) => { table.agents['agents/build-task.md'].labels = ['no-such-kind']; });
+  assert.throws(() => readKindTable(file), /agents\/build-task\.md: unknown kind no-such-kind/);
 });
 
 test('labels on an entry outside agents is rejected', () => {
@@ -135,7 +135,7 @@ test('the judge kind runs on the standard tier at low effort and the research ag
   const { kinds, agents } = readKindTable();
   assert.equal(kinds.judge.effort, 'low');
   assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds.judge.model, 'sonnet');
-  assert.ok(agents['agents/review-branch.md'].labels.includes('judge'));
+  assert.equal(agents['agents/review-branch.md'].kind, 'judge');
   assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest', 'build-repair']);
   assert.equal(agents['agents/research-worker.md'].kind, 'research');
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');

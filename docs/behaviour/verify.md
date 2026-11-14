@@ -33,6 +33,12 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.
 - The Success criterion passes on the branch rebased onto `origin/main`.
 
+## karpathy-level
+- Wish 2, gate: before median 422k tokens, 14 tool calls, 271 s per gate run; review step 278k tokens, 85 s. Target: review step under 60k, whole gate under 250k, measured in Manual checks.
+- Wish 4, context: worker return cap 40 -> 10 lines (Task 3); spec research workers 8 -> 4 (Task 3); subagent returns 25.3k tokens per spec session (15.0%) before, measured after with `measure-context.mjs` on the first spec session that runs the new exo.
+- Wish 1, ideas: 18 open -> 4 adopted in 3 rule edits (Task 4), 1 open (2/12), 13 closed with a named reason.
+- All: Success criterion; before `PASS=51 FAIL=0 WARN=0 UNRUN=0` (`.exo/check-karpathy-level-before.log`).
+
 ## lean-open
 - Task 1: the dead file, `repairOrBlock`, the `code rule` kind and the `no red proof` prompt line are gone and the tests pass.
 - Task 6: plan-check says land warns.

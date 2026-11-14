@@ -18,7 +18,7 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - The lead runs `npm run check` once, in the background, to a log, and a delegate runs only its proof.
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
 - When a mistake recurs, fix or delete its code path; add a check only by replacing one, because every check is upkeep.
-- Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `docs/failures.md` first.
+- Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `docs/failures.md` first, after you grep the session transcripts for it and record the count.
 - Raise no cap in `verify/budgets.mjs`: remove something or ask the user.
 - Raise an eval score or cut eval cost only through `exo:build improve`: one frozen scorer, one change per round, keep only a round.mjs keep row, no fixed targets.
 

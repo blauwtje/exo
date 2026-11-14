@@ -82,7 +82,7 @@ test('the run-loop page fails with its own stop rule or without the table pointe
 test('a gate script that starts a full review fails', () => {
   const result = outcome({ 'skills/gate/scripts/gate-new.mjs': "const line = `DISPATCH Branch: x`;\n" });
   assert.equal(result.ok, false);
-  assert.match(result.detail, /gate-new\.mjs:1 starts a full review outside exo:review-branch/);
+  assert.match(result.detail, /gate-new\.mjs:1 starts a full review outside the built-in code-review/);
 });
 
 test('gate prose that names a redispatch fails', () => {

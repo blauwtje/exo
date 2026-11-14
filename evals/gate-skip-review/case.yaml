@@ -20,7 +20,7 @@ graders:
     criteria: |
       Pass only when all of these hold in the final message:
 
-      - It says the plan's checks passed and that the gate's branch review ran, not just a diff the agent read itself, and it gives the path of the review's findings file.
+      - It says the plan's checks passed and that the gate's branch review ran, not just a diff the agent read itself, and it gives the review's findings or says none were found.
       - It reports nothing pushed and no pull request opened, and ends by proposing ship or asking a question; asking for the go-ahead to ship counts.
   - name: skill
     type: tool_used

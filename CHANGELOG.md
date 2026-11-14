@@ -54,6 +54,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
+- `gate` reviews the branch with the built-in `code-review` skill, at `medium` when a landed task has a `Risk:` line and `low` otherwise.
+- `skills/gate/scripts/verify.mjs` writes its full log to `.exo/logs/gate-verify.log` and prints only `PASS` and `FAIL` lines, so `gate` runs it in one foreground call.
+- `exo:research-worker` returns at most 10 lines ending on `Result: <path>`, and `spec` step 4 starts at most four research workers.
+- `skills/edit-skills/references/instruction-style.md` holds the size and shape limits for every skill, agent, hook and script.
+- A `docs/failures.md` line needs a count from the session transcripts first, a batch result names each input item, and `docs/scorecard.md` has `model` and `effort` columns.
 
 - The `adhd` style fixes one report shape (bold status word, at most 3 short bullets, action last) with a plain-word list for run words, and `gate`, `build`, `spec`, `ship`, `find-cause` and the next-stage lines report in plain words instead of script lines.
 - A `watch` batch loads the whisper model once, runs keyframes only for 0-word videos, and prefetches unfinished TikTok pages in parallel (`EXO_WATCH_PAGE_PARALLEL`, default 4); 20 videos took 77.6 s -> 66.3 s.
@@ -182,6 +187,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
+- The branch review in `agents/review-branch.md` and its review model kinds; the agent keeps only the claims judge that research dispatches.
+- `lib/statistics.mjs`, `verify/prose-style.mjs`, `verify/checks/reference-chain.mjs` and `skills/build/scripts/run-tail-parse.mjs`, which nothing reached.
 
 - `benchmarks/` and 40 check modules that only guarded exo's own wording and process; a size-cap check keeps tracked files at 1,101 and check modules at 40.
 - The `deep` setting: the `hardest` and `review-deep` kinds now run on the model of the main session, each with the effort of its kind.

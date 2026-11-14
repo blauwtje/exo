@@ -27,3 +27,4 @@
 - A timeout is `Status: unknown` with its cause on `Not done`.
 - A number or date in `Did` names, on `Evidence`, the command that derived it from the source.
 - A delegate's or batch's empty or partial returned output is `Status: unknown` with the gap on `Not done`, never `done`.
+- A batch result names each input item, and the lead compares those names with the input list.

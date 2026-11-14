@@ -26,4 +26,4 @@ The `Sources:` line picks the mode. Without it, take `web`.
 
 Read a cited page whole; shorten none with `head -c`, `cut` or `grep`. Fetch one GitHub README per `fetch.mjs` call, save it whole and read it in ranges. Count it read in full only when the bytes read equal the saved count.
 
-Stay inside each call budget the dispatch names, and return by your 20th turn. Return at most 40 lines unless the mode names a smaller cap, without page text.
+Stay inside each call budget the dispatch names, and return by your 20th turn. Return at most 10 lines unless the mode names a smaller cap, ending on `Result: <path>`, without page text; findings stay in the result file.

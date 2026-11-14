@@ -37,38 +37,6 @@ function passedOnTree(runRoot, check) {
   }
 }
 
-function fixLanded(runRoot, branchMtime) {
-  const file = path.join(runRoot, '.exo', 'fix-review.md');
-  let text;
-  try {
-    if (fs.statSync(file).mtimeMs < branchMtime) return false;
-    text = fs.readFileSync(file, 'utf8');
-  } catch {
-    return false;
-  }
-  const verdict = /\b(CLEAN|FINDINGS|BLOCKED)\b/.exec(text)?.[1];
-  return verdict === 'CLEAN' || (verdict === 'FINDINGS' && !/;\s*fix\s*$/m.test(text));
-}
-
-function reviewProblem(runRoot, startedAt) {
-  const file = path.join(runRoot, '.exo', 'branch-review.md');
-  let text;
-  let mtime;
-  try {
-    text = fs.readFileSync(file, 'utf8');
-    mtime = fs.statSync(file).mtimeMs;
-  } catch {
-    return 'no branch review';
-  }
-  if (!(mtime >= Date.parse(startedAt))) return 'branch review is older than the run';
-  const verdict = /^\s*(CLEAN|FINDINGS|BLOCKED)\b/.exec(text.split('\n')[0])?.[1];
-  if (verdict === 'CLEAN') return null;
-  const fix = [...text.matchAll(/^Count:.*\bfix=(\d+)/gm)].at(-1)?.[1];
-  if (verdict === 'FINDINGS' && fix === '0') return null;
-  if (verdict === 'FINDINGS' && fixLanded(runRoot, mtime)) return null;
-  return `branch review is ${verdict ?? 'unreadable'}${fix ? ` with fix=${fix}` : ''}`;
-}
-
 function plannedPaths(root, runDir) {
   const state = JSON.parse(fs.readFileSync(path.join(runDir, 'state.json'), 'utf8'));
   const { tasks } = parsePlan(fs.readFileSync(path.resolve(root, state.plan), 'utf8'));
@@ -148,7 +116,7 @@ export function landRun(args) {
   }
 }
 
-function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit = '', startedAt }) {
+function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit = '' }) {
   const parked = (action, reason) => {
     openGate(runDir, { source: 'land', action, reason });
     return { phase: 'parked', gate: reason, range: null, pushed: null, prUrl: null, cleanup: null };
@@ -170,9 +138,6 @@ function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit =
     return parked(`commit or discard the tracked changes in ${runRoot}`, 'worktree dirty');
   }
   if (!hasOrigin && mode !== 'local') return parked('add an origin remote', 'no origin remote');
-
-  const problem = reviewProblem(runRoot, startedAt);
-  if (problem && !takeApproved(runDir, LAND_ANYWAY)) return parked(LAND_ANYWAY, `review not clean: ${problem}`);
 
   let target = base;
   {

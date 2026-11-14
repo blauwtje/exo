@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
 
-const DEEP_KINDS = ['hardest', 'review-deep'];
+const DEEP_KINDS = ['hardest'];
 
 test('the deep kinds inherit the session model on claude at high effort', () => {
   const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude' });

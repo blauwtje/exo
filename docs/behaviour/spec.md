@@ -9,6 +9,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `ls skills/*/SKILL.md | wc -l` prints 9, `ls -d skills/*/ | wc -l` prints 9 and `ls agents | wc -l` prints 5 (Tasks 2 to 10).
 - Skill plus agent bytes always loaded shrink against main and `npm run check` holds (Success criterion).
 
+## karpathy-level
+- Wish 4, context: worker return cap 40 -> 10 lines (Task 3); spec research workers 8 -> 4 (Task 3); subagent returns 25.3k tokens per spec session (15.0%) before, measured after with `measure-context.mjs` on the first spec session that runs the new exo.
+
 ## lean-open-2
 - Task 3: after the criterion timeout no child of the criterion command is alive, and `EXO_CRITERION_TIMEOUT_MS` is read through `environmentMs`.
 

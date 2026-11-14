@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import path from 'node:path';
 import { test } from 'node:test';
 import { findingsDigest } from '../lib/fixer-mark.mjs';
-import { unprovenRisks } from '../skills/build/scripts/run-tail-parse.mjs';
-import { tempDir } from './harness.mjs';
 
 const PROMPT = fs.readFileSync(new URL('../skills/build/review-fixer-prompt.md', import.meta.url), 'utf8');
 
@@ -54,13 +51,6 @@ test('the fixer agent sends a defect already absent to reported, not fixed', () 
 
 test('findingsDigest of a fixer-written file equals the merged file', () => {
   assert.equal(findingsDigest(FIXER_WRITTEN), findingsDigest(MERGED));
-});
-
-test('unprovenRisks names a reported-unproven concern without its mark', () => {
-  const dir = tempDir('fixer-mark-');
-  const file = path.join(dir, 'branch-review.md');
-  fs.writeFileSync(file, FIXER_WRITTEN);
-  assert.deepEqual(unprovenRisks(file), ['hooks/task-runner.md:29; concern; plan fit; a red Proof goes to SendMessage first; report']);
 });
 
 test('the fixer prompt shows each Guard form as its own line, not alternatives joined by a bar', () => {

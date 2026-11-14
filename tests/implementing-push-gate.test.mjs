@@ -57,7 +57,7 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(tailStep.includes('End this loop on `gate`'));
   assert.ok(GATE.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
   assert.ok(GATE.includes('scripts/verify.mjs" --plan <plan path> --root <checkout>`'), 'verify runs the one script');
-  assert.ok(GATE.includes('dispatch `exo:review-branch` once'), 'the review follows only all PASS');
+  assert.ok(GATE.includes('`code-review` skill'), 'the review follows only all PASS');
   assert.ok(!GATE.includes('git push'), 'the gate runs no push');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');

@@ -17,25 +17,26 @@ function runVerify(args, plan) {
   const planPath = path.join(dir, 'plan.md');
   if (plan !== undefined) fs.writeFileSync(planPath, plan);
   const run = spawnSync(process.execPath, [VERIFY, '--plan', planPath, '--root', dir, ...args], { encoding: 'utf8', timeout: 50000 });
-  return { status: run.status, lines: run.stdout.trim().split('\n') };
+  return { dir, status: run.status, lines: run.stdout.trim().split('\n') };
 }
 
-test('all green prints PASS lines and the reviewer', () => {
+test('all green prints only PASS lines', () => {
   const { status, lines } = runVerify([], planWith(['true', 'true'], 'true'));
   assert.equal(status, 0);
-  assert.deepEqual(lines, ['PASS Task 1', 'PASS Task 2', 'PASS criterion', 'REVIEWER: review-branch']);
+  assert.deepEqual(lines, ['PASS Task 1', 'PASS Task 2', 'PASS criterion']);
 });
 
-test('a failing proof prints FAIL and hands back to build', () => {
-  const { status, lines } = runVerify([], planWith(['true', 'echo boom; false'], 'true'));
+test('a failing proof prints FAIL and keeps its output in the log', () => {
+  const { dir, status, lines } = runVerify([], planWith(['true', 'echo boom; false'], 'true'));
   assert.equal(status, 1);
-  assert.deepEqual(lines, ['PASS Task 1', 'FAIL Task 2', 'boom', 'PASS criterion', 'NEXT: exo:build']);
+  assert.deepEqual(lines, ['PASS Task 1', 'FAIL Task 2 (output in .exo/logs/gate-verify.log)', 'PASS criterion']);
+  assert.match(fs.readFileSync(path.join(dir, '.exo', 'logs', 'gate-verify.log'), 'utf8'), /FAIL Task 2\nboom/);
 });
 
-test('a failing criterion alone hands back to build', () => {
+test('a failing criterion alone prints FAIL', () => {
   const { status, lines } = runVerify([], planWith(['true'], 'false'));
   assert.equal(status, 1);
-  assert.deepEqual(lines, ['PASS Task 1', 'FAIL criterion', 'NEXT: exo:build']);
+  assert.deepEqual(lines, ['PASS Task 1', 'FAIL criterion (output in .exo/logs/gate-verify.log)']);
 });
 
 test('no plan file prints FAIL no-plan', () => {
@@ -49,5 +50,5 @@ test('a plan path relative to --root is found from another cwd', () => {
   fs.writeFileSync(path.join(dir, 'plan.md'), planWith(['true'], 'true'));
   const run = spawnSync(process.execPath, [VERIFY, '--plan', 'plan.md', '--root', dir], { cwd: os.tmpdir(), encoding: 'utf8', timeout: 50000 });
   assert.equal(run.status, 0);
-  assert.deepEqual(run.stdout.trim().split('\n'), ['PASS Task 1', 'PASS criterion', 'REVIEWER: review-branch']);
+  assert.deepEqual(run.stdout.trim().split('\n'), ['PASS Task 1', 'PASS criterion']);
 });

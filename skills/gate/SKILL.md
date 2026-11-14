@@ -15,10 +15,11 @@ The gate readies a branch for a pull request.
 ## The loop
 
 1. **Find the plan.** No plan file → end the turn: ask for its path and name `build`'s no-plan route; run no check by hand.
-2. **Run the checks.** `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout>` once, in the background, to a log; read only its `PASS` and `FAIL` lines.
+2. **Run the checks.** `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout>` once, in one foreground call with Bash timeout 600000; it appends each check's output to `.exo/logs/gate-verify.log` and prints only `PASS` and `FAIL` lines, each `FAIL` naming that log.
    - On any `FAIL` line, edit nothing, rerun nothing: end the turn with the `FAIL` lines and hand back to `exo:build`.
-3. **Review the branch.** Only with all `PASS`, dispatch `exo:review-branch` once and read its findings file.
-   - A `defect` finding goes back to `exo:build`, never fixed in the gate.
+3. **Review the branch.** Only with all `PASS`, call the built-in `code-review` skill once through the Skill tool with args `<level> <branch>`: `medium` when a landed task has a `Risk:` line, else `low`; the branch is required.
+   - A finding goes back to `exo:build`, never fixed in the gate.
+   - With no `code-review` skill listed, say no review ran and still offer `ship`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
    - `--land` → pass `--land` to `ship`.
 
@@ -28,4 +29,4 @@ The gate readies a branch for a pull request.
 |---|---|
 | `../../lib/references/closing.md` | Final message. |
 
-Report: the report rule in plain words: whether the branch is ready, any open `question` findings, and what the user does next.
+Report: the report rule in plain words: whether the branch is ready, the review findings, and what the user does next.
