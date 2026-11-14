@@ -20,15 +20,17 @@ function documentedModes(root) {
 export function unroutableTargets(root) {
   const known = new Set([...names(root, 'skills', ''), ...names(root, 'agents', /\.md$/)]);
   const modes = new Set(documentedModes(root));
-  const missing = [];
-  for (const file of ROUTING_FILES) {
+  const missing = ROUTING_FILES.flatMap((file) => {
     const text = fs.readFileSync(path.join(root, file), 'utf8');
-    for (const match of text.matchAll(BUILD_MODE)) if (!modes.has(match[1])) missing.push(`${file}: build ${match[1]}`);
-    for (const match of text.replace(BUILD_MODE, '').matchAll(ROUTED)) {
-      const name = match[1] ?? match[2];
-      if (!known.has(name)) missing.push(`${file}: ${name}`);
-    }
-  }
+    const badModes = [...text.matchAll(BUILD_MODE)]
+      .filter((match) => !modes.has(match[1]))
+      .map((match) => `${file}: build ${match[1]}`);
+    const badTargets = [...text.replace(BUILD_MODE, '').matchAll(ROUTED)]
+      .map((match) => match[1] ?? match[2])
+      .filter((name) => !known.has(name))
+      .map((name) => `${file}: ${name}`);
+    return [...badModes, ...badTargets];
+  });
   return [...new Set(missing)];
 }
 
@@ -37,7 +39,6 @@ export function checkRoutingTargets(report, repository) {
   report.assert(
     missing.length === 0,
     'routing targets',
-    'every skill the session hooks route to is a skill directory, an agent or a build mode',
-    `no such target: ${missing.join(', ')}`
+    { pass: 'every skill the session hooks route to is a skill directory, an agent or a build mode', fail: `no such target: ${missing.join(', ')}` }
   );
 }

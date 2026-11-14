@@ -1,6 +1,6 @@
 
 import { execFile, execFileSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,6 +10,35 @@ import { fileURLToPath } from 'node:url';
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const temporaryDirectories = [];
+
+export function restoreEnv(saved) {
+  for (const [name, value] of Object.entries(saved)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
+
+export function hookEntries() {
+  const { hooks } = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, 'hooks', 'hooks.json'), 'utf8'));
+  const groups = Object.entries(hooks).flatMap(([event, eventGroups]) => eventGroups.map((group) => ({ event, group })));
+  return groups.flatMap(({ event, group }) => group.hooks.map((hook) => ({ event, matcher: group.matcher, hook })));
+}
+
+export function readAgents() {
+  const agentsRoot = path.join(REPOSITORY_ROOT, 'agents');
+  return readdirSync(agentsRoot).filter((fileName) => fileName.endsWith('.md')).map((fileName) => {
+    const lines = readFileSync(path.join(agentsRoot, fileName), 'utf8').split('\n');
+    const closing = lines.indexOf('---', 1);
+    if (lines[0] !== '---' || closing < 1) throw new Error(`${fileName} has no frontmatter block`);
+    const frontmatter = {};
+    for (const line of lines.slice(1, closing)) {
+      const separator = line.indexOf(': ');
+      if (separator < 1) throw new Error(`${fileName} has an unreadable frontmatter line: ${line}`);
+      frontmatter[line.slice(0, separator)] = line.slice(separator + 2);
+    }
+    return { fileName, frontmatter, body: lines.slice(closing + 1).join('\n') };
+  });
+}
 
 export function tempDir(prefix = 'exo-test-') {
   const directory = mkdtempSync(path.join(os.tmpdir(), prefix));

@@ -89,9 +89,9 @@ export async function writeReport(root, text) {
   await fs.writeFile(path.join(root, '.exo/implementer-1.md'), text);
 }
 
-export async function assertRefused(root, planPath, extraArgs, stderrPattern) {
+export async function assertRefused(root, planPath, stderrPattern) {
   const head = git(root, 'rev-parse', 'HEAD');
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, ...extraArgs], { cwd: root });
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 1, result.stderr);
   assert.equal(result.stdout, '');
   assert.match(result.stderr, stderrPattern);

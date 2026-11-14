@@ -83,7 +83,7 @@
   "agents": {
     "agents/build-task.md": { "kind": "build-task", "labels": ["fix-review", "hardest", "build-repair"] },
     "agents/orchestrator.md": { "kind": "orchestrator" },
-    "agents/research-worker.md": { "kind": "research" },
+    "agents/research-worker.md": { "kind": "research", "labels": ["hardest", "review"] },
     "agents/review-branch.md": { "kind": "judge" }
   },
   "skills": {

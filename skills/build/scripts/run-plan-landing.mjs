@@ -26,7 +26,7 @@ export function sayIdle(ctx, started) {
   if (line !== null) ctx.say(line);
 }
 
-export function markLanded(ctx, n, record, startedTask) {
+export function markLanded({ ctx, n, record, startedTask }) {
   const { root, say, run, plan, passes } = ctx;
   ctx.lastLandOutput = '';
   ctx.fingerprints.delete(n);
@@ -86,11 +86,11 @@ export function failedAttemptNote({ root, task, last, proofEnd, log, fallback })
   return `\n${lines.join('\n')}`;
 }
 
-export function landInOrder(ctx, numbers, record, started) {
+export function landInOrder({ ctx, numbers, record, started }) {
   for (const n of numbers) {
     const attempt = landedTasks(ctx.plan.tasks, ctx.root, ctx.planId).includes(n) ? { landed: true } : landByScript(ctx, n);
     if (attempt.landed) {
-      markLanded(ctx, n, record, started);
+      markLanded({ ctx, n, record, startedTask: started });
       continue;
     }
     ctx.say(`task ${n} not landed by the script: ${clip(failingLine(attempt.output), 80)}`);

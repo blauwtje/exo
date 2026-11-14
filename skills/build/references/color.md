@@ -17,7 +17,7 @@ Color is a system, not an accent. Build it from the direction's world: the mater
 - Ink: a tinted dark or light from the same hue family, not neutral gray, so text belongs to its ground.
   - Good: a warm brown ink on a paper ground. Bad: `#666` gray on the same paper.
 - Small accent text: its own darker or lighter token, apart from the fill, because a fill that works as a button rarely passes as text.
-- Contrast: each text and ground token pair carries its computed ratio in a CSS comment; look.mjs `CONTRAST` lines decide, not the eye.
+- Contrast: each text and ground token pair carries its computed ratio in a CSS comment.
 - Non-text contrast: borders of inputs, icons and focus rings at 3:1 or more against their ground, so controls stay findable.
 - Body text on dark: a tinted off-white, not pure `#FFF`, which halates on a dark ground and tires the eye.
   - Good: `color: #E9E4D8` on a deep green ground. Bad: `color: #FFFFFF` on the same ground.
@@ -29,6 +29,5 @@ Flat panels on a flat ground read as a wireframe. Give surfaces the finish of th
 - Light: one light source; layered shadows (a tight contact shadow plus a soft long one) that agree with it.
 - Gradients: gentle value shifts that model a surface (lit chrome, a glowing hero, a curved bezel), not purple-to-blue decoration.
 - Inset and edge: inner highlights, recessed wells for inputs, bevels where the material has them.
-- Large grounds: any ground over about 40% of the viewport gets a surface treatment in the world's terms (grain, halftone, weave, a gradient of light across it); reading surfaces sit on it as sheets. One flat value over a large area reads as unfinished.
-- Texture: SVG noise or a printed pattern in the world's terms (paper grain, enamel, woven cloth), at low contrast and not under body text.
+- Large grounds: any ground over about 40% of the viewport gets a surface treatment in the world's terms (grain, halftone, weave, SVG noise, a gradient of light) at low contrast and not under body text; reading surfaces sit on it as sheets. One flat value over a large area reads as unfinished.
 - Shape: one radius, border and shadow rule across cards and controls, taken from the direction.

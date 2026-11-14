@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { defaultBranch, gitLine } from '#git';
 import { readDecisions } from '#run-decision';
+import { Refusal } from './cli-refusal.mjs';
 import { planFrame } from './plan-file.mjs';
 import { readGates, readState, runDir } from './run-state.mjs';
 
@@ -20,7 +21,8 @@ export function writeReport(root, id, { phase, result, reason }) {
   let land = null;
   try {
     land = planFrame(state.plan).land;
-  } catch {
+  } catch (error) {
+    if (!(error instanceof Refusal)) throw error;
   }
   const dir = runDir(root, id);
   const open = readGates(dir).filter((gate) => gate.status === 'open');

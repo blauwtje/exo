@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { writeAtomic } from '../../lib/basics.mjs';
-import { isPlain, readRecord, sameInstall } from '../install-files.mjs';
+import { isPlain, readRecord, sameInstall, tryRmdir } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 
 export const name = 'claude';
@@ -37,10 +37,7 @@ function readInstalls(file) {
 function writeInstalls(file, installs) {
   if (installs.length === 0) {
     fs.rmSync(file, { force: true });
-    try {
-      fs.rmdirSync(path.dirname(file));
-    } catch {
-    }
+    tryRmdir(path.dirname(file));
     return;
   }
   writeAtomic(file, `${JSON.stringify({ version: 2, installs }, null, 2)}\n`);

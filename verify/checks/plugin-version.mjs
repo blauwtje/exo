@@ -35,96 +35,86 @@ function changelogText(repository) {
   return fs.existsSync(file) ? repository.text(file) : '';
 }
 
-export function checkPluginVersion(report, repository, { strict = false } = {}) {
-  const name = 'plugin version';
+function readManifests(repository) {
   const manifests = [PACKAGE_FILE, PLUGIN_FILE, MARKETPLACE_FILE];
   if (!manifests.every((manifest) => fs.existsSync(repository.join(manifest)))) {
-    report.result('UNRUN', name, 'the repository root carries no plugin manifests');
-    return;
+    return { verdict: ['UNRUN', 'the repository root carries no plugin manifests'] };
   }
-
-  let parsed;
   try {
-    parsed = manifests.map((manifest) => JSON.parse(repository.text(repository.join(manifest))));
+    const [packageManifest, plugin, marketplace] = manifests.map((manifest) => JSON.parse(repository.text(repository.join(manifest))));
+    return { packageManifest, plugin, marketplace };
   } catch (error) {
-    report.result('FAIL', name, `a plugin manifest is not valid JSON: ${error.message}`);
-    return;
+    return { verdict: ['FAIL', `a plugin manifest is not valid JSON: ${error.message}`] };
   }
-  const [packageManifest, plugin, marketplace] = parsed;
+}
 
+function disagreementVerdict({ packageManifest, plugin, marketplace }) {
   const declared = plugin.version;
   if (!THREE_FIELDS.test(declared ?? '')) {
-    report.result('FAIL', name, `${PLUGIN_FILE} carries ${declared ?? 'no version'}, not a three-field version`);
-    return;
+    return ['FAIL', `${PLUGIN_FILE} carries ${declared ?? 'no version'}, not a three-field version`];
   }
-
-  const elsewhere = {
-    [PACKAGE_FILE]: packageManifest.version,
-    [MARKETPLACE_FILE]: marketplaceEntry(marketplace, plugin.name)?.version ?? null
-  };
+  const entry = marketplaceEntry(marketplace, plugin.name);
+  const elsewhere = { [PACKAGE_FILE]: packageManifest.version, [MARKETPLACE_FILE]: entry?.version ?? null };
   const disagreeing = Object.entries(elsewhere).filter(([, version]) => version !== declared);
   if (disagreeing.length > 0) {
     const lagging = disagreeing.map(([file, version]) => `${file} carries ${version ?? 'no version'}`);
-    report.result('FAIL', name, `${PLUGIN_FILE} carries ${declared} but ${lagging.join(' and ')}`);
-    return;
+    return ['FAIL', `${PLUGIN_FILE} carries ${declared} but ${lagging.join(' and ')}`];
   }
-
-  const described = {
-    [PACKAGE_FILE]: packageManifest.description,
-    [MARKETPLACE_FILE]: marketplaceEntry(marketplace, plugin.name)?.description
-  };
+  const described = { [PACKAGE_FILE]: packageManifest.description, [MARKETPLACE_FILE]: entry?.description };
   const differing = Object.entries(described).filter(([, description]) => description !== plugin.description);
   if (differing.length > 0) {
-    report.result('FAIL', name, `${differing.map(([file]) => file).join(' and ')} describe the plugin differently from ${PLUGIN_FILE}`);
-    return;
+    return ['FAIL', `${differing.map(([file]) => file).join(' and ')} describe the plugin differently from ${PLUGIN_FILE}`];
   }
+  return null;
+}
 
-  const shown = git(repository.root, ['show', `${BASE_REF}:${PLUGIN_FILE}`]);
-  if (shown.status !== 0) {
-    report.result('UNRUN', name, `every manifest carries ${declared}; ${BASE_REF} is not available to compare against`);
-    return;
+function belowBaseVerdict(repository, declared, baseVersion) {
+  const mergeBase = git(repository.root, ['merge-base', 'HEAD', BASE_REF]).stdout.trim();
+  const forked = mergeBase === '' ? { status: 1 } : git(repository.root, ['show', `${mergeBase}:${PLUGIN_FILE}`]);
+  if (forked.status === 0 && JSON.parse(forked.stdout).version === declared) {
+    return ['WARN', `every manifest carries ${declared}, as at the fork point; ${BASE_REF} moved ahead to ${baseVersion} with a release: rebase onto ${BASE_REF}`];
   }
+  return ['FAIL', `every manifest carries ${declared}, below ${BASE_REF} at ${baseVersion}`];
+}
 
-  const baseVersion = JSON.parse(shown.stdout).version;
-  const order = compareVersions(declared, baseVersion);
-  if (order < 0) {
-    const mergeBase = git(repository.root, ['merge-base', 'HEAD', BASE_REF]).stdout.trim();
-    const forked = mergeBase === '' ? { status: 1 } : git(repository.root, ['show', `${mergeBase}:${PLUGIN_FILE}`]);
-    if (forked.status === 0 && JSON.parse(forked.stdout).version === declared) {
-      report.result('WARN', name, `every manifest carries ${declared}, as at the fork point; ${BASE_REF} moved ahead to ${baseVersion} with a release: rebase onto ${BASE_REF}`);
-      return;
-    }
-    report.result('FAIL', name, `every manifest carries ${declared}, below ${BASE_REF} at ${baseVersion}`);
-    return;
+function aboveBaseVerdict(changelog, declared, baseVersion) {
+  if (releaseHeading(changelog, declared) !== undefined) {
+    return ['PASS', `every manifest carries ${declared}, above ${BASE_REF} at ${baseVersion}`];
   }
+  return ['FAIL', `the version rose to ${declared} but ${CHANGELOG_FILE} has no "## ${declared} - <date>" section: raise it with npm run bump`];
+}
 
-  const changelog = changelogText(repository);
-  if (order > 0) {
-    const dated = releaseHeading(changelog, declared) !== undefined;
-    report.assert(
-      dated,
-      name,
-      `every manifest carries ${declared}, above ${BASE_REF} at ${baseVersion}`,
-      `the version rose to ${declared} but ${CHANGELOG_FILE} has no "## ${declared} - <date>" section: raise it with npm run bump`
-    );
-    return;
-  }
-
-  if (!treeDiffers(repository)) {
-    report.result('PASS', name, `every manifest carries ${declared}, matching an unchanged ${BASE_REF}`);
-    return;
-  }
-
+function unreleasedVerdict(repository, changelog, { declared, strict }) {
+  if (!treeDiffers(repository)) return ['PASS', `every manifest carries ${declared}, matching an unchanged ${BASE_REF}`];
   const unreleased = sectionBody(changelog, UNRELEASED_HEADING);
   if (unreleased !== null && unreleased !== '') {
-    report.result('PASS', name, `every manifest carries ${declared}; the changes since ${BASE_REF} wait under ${UNRELEASED_HEADING}`);
-    return;
+    return ['PASS', `every manifest carries ${declared}; the changes since ${BASE_REF} wait under ${UNRELEASED_HEADING}`];
   }
-  const missing = `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`;
   const branch = git(repository.root, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
   if (!strict && branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
-    report.result('PASS', name, `every manifest carries ${declared}; the tree differs from ${BASE_REF} and the lead writes the ${UNRELEASED_HEADING} line at landing`);
-    return;
+    return ['PASS', `every manifest carries ${declared}; the tree differs from ${BASE_REF} and the lead writes the ${UNRELEASED_HEADING} line at landing`];
   }
-  report.result('FAIL', name, missing);
+  return ['FAIL', `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`];
+}
+
+function baseVerdict(repository, declared, strict) {
+  const shown = git(repository.root, ['show', `${BASE_REF}:${PLUGIN_FILE}`]);
+  if (shown.status !== 0) {
+    return ['UNRUN', `every manifest carries ${declared}; ${BASE_REF} is not available to compare against`];
+  }
+  const baseVersion = JSON.parse(shown.stdout).version;
+  const order = compareVersions(declared, baseVersion);
+  if (order < 0) return belowBaseVerdict(repository, declared, baseVersion);
+  const changelog = changelogText(repository);
+  if (order > 0) return aboveBaseVerdict(changelog, declared, baseVersion);
+  return unreleasedVerdict(repository, changelog, { declared, strict });
+}
+
+export function checkPluginVersion(report, repository, { strict = false } = {}) {
+  const name = 'plugin version';
+  const manifests = readManifests(repository);
+  const [status, detail] = manifests.verdict
+    ?? disagreementVerdict(manifests)
+    ?? baseVerdict(repository, manifests.plugin.version, strict);
+  report.result(status, name, detail);
 }

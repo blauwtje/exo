@@ -7,7 +7,7 @@ import { isFileOnDisk } from './run-session-claude.mjs';
 import { gitOut } from './run-worktree.mjs';
 import { ledgerDirOf } from './run-state.mjs';
 
-export function recordAttempt(ctx, n, check, line) {
+export function recordAttempt({ ctx, n, check, line }) {
   const seen = ctx.fingerprints.get(n) ?? new Set();
   const paths = (gitOut(ctx.root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean).map((entry) => entry.slice(3)).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
   const fingerprint = attemptFingerprint({ check, line, paths });

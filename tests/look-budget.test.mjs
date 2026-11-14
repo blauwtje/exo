@@ -30,12 +30,12 @@ test('look ends at the wall timeout and keeps earlier fail lines', async (t) => 
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   t.after(() => server.closeAllConnections() || server.close());
   const script = fileURLToPath(new URL('../skills/build/scripts/look.mjs', import.meta.url));
-  const env = { ...process.env, EXO_LOOP_LOOK_WALL_MS: '4000' };
+  const env = { ...process.env, EXO_LOOP_LOOK_WALL_MS: '1500' };
   const run = await promisify(execFile)('node', [script, `http://127.0.0.1:${server.address().port}/`, '--out', fs.mkdtempSync(join(tmpdir(), 'look-')), '--no-shots'], { env, timeout: 30000 }).catch((e) => e);
   if (run.code === 2) return t.skip('playwright missing');
   assert.equal(run.code, 1);
   assert.match(run.stdout, /^CONSOLE /m);
-  assert.match(run.stdout, /LOOK timeout 4000ms\nLOOK fail=\d+/);
+  assert.match(run.stdout, /LOOK timeout 1500ms\nLOOK fail=\d+/);
 });
 
 test('design prose names the ledger kinds', () => {

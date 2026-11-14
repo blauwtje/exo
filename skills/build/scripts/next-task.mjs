@@ -1,19 +1,52 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { forCaller } from '#script-output';
+import { forCaller, keepLines } from '#script-output';
 import { resolvePlanPath } from '#checkout';
 import { unfinishedMergeNote } from '#merge-state';
-import { proofsReport } from '#proofs-report';
+import { proofsReport, proofLines } from '#proofs-report';
 import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { landedTasks, planIdOf } from '#plan-landed';
+import { frameOf } from '#plan-frame';
+import { nextBlock, planRoute, routeLine, waveLine } from '#plan-waves';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { parsePin } from './land-pin.mjs';
 import { RefusedError } from './land-errors.mjs';
 import { frameOnlyReport } from './next-task-brief.mjs';
-import { chainedForCaller } from './next-task-caller.mjs';
-import { nextTaskReport } from './next-task-report.mjs';
-import { blockReport } from './next-task-block.mjs';
+import { nextTaskReport, parseTasks } from './next-task-report.mjs';
+
+const KNOWN_TO_RUNNER = /^(?:Plan|Repository|Branch|Base|Baseline|Proof|Run): |^Drift: none$/;
+
+export function chainedForCaller(text) {
+  if (/^Inline: /m.test(text)) return text;
+  return keepLines(text, (line) => !KNOWN_TO_RUNNER.test(line) && !(line.startsWith('Brief: ') && text.includes(`Read your brief at ${line.slice(7)}.`)));
+}
+
+function directionOf(visualDirection) {
+  const pending = visualDirection?.match(/Direction: (pending at rung \d+)/);
+  if (pending) return pending[1];
+  return /Contract: /.test(visualDirection ?? '') ? 'named' : 'none';
+}
+
+function blockLine(block, visualDirection) {
+  if (block.length === 0) return waveLine(block);
+  if (block[0].design) return `Design: Task ${block[0].number}, direction ${directionOf(visualDirection)}`;
+  return `Block: ${block.map((task) => `Task ${task.number}`).join(', ')}`;
+}
+
+export function blockReport({ planPath, planText, root }) {
+  const plan = parseTasks(planPath, planText);
+  if (planRoute(plan.tasks).route === 'inline') return nextTaskReport({ planPath, planText, root });
+  const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
+  const block = nextBlock(plan.tasks, landed);
+  return `${[
+    `Plan: ${planPath}`,
+    `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
+    routeLine(planRoute(plan.tasks)),
+    blockLine(block, frameOf(plan.frame).visualDirection),
+    ...(landed.length === 0 || block.length === 0 ? [] : proofLines(planPath, landed, root))
+  ].join('\n')}\n`;
+}
 
 export function refreshProgress({ planPath, planText, root }) {
   const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
@@ -81,18 +114,24 @@ function main(argv) {
   refreshProgress({ planPath: plan, planText, root });
 }
 
+function reportFailure(error) {
+  if (error instanceof UsageError) {
+    process.stderr.write(`next-task: ${error.message}\n`);
+    process.exitCode = 2;
+    return;
+  }
+  if (error instanceof PlanError) {
+    process.stderr.write(`next-task: ${error.message}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  throw error;
+}
+
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    if (error instanceof UsageError) {
-      process.stderr.write(`next-task: ${error.message}\n`);
-      process.exitCode = 2;
-    } else if (error instanceof PlanError) {
-      process.stderr.write(`next-task: ${error.message}\n`);
-      process.exitCode = 1;
-    } else {
-      throw error;
-    }
+    reportFailure(error);
   }
 }

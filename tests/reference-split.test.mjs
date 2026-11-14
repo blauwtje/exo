@@ -4,6 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { checkReferenceSplit } from '../verify/checks/reference-split.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { checkOutcome } from './check-outcome.mjs';
 import { tempDir } from './harness.mjs';
 
 const MOVED = 'This long line of moved guidance belongs to exactly one place only.';
@@ -16,9 +17,7 @@ function run(skillText, references) {
   for (const [name, text] of Object.entries(references)) {
     fs.writeFileSync(path.join(folder, 'references', name), text);
   }
-  const results = [];
-  checkReferenceSplit({ assert: (ok, name, pass, fail) => results.push({ ok, detail: ok ? pass : fail }) }, createRepository(root));
-  return results[0];
+  return checkOutcome(checkReferenceSplit, createRepository(root));
 }
 
 test('a pointer to an existing, named reference passes', () => {

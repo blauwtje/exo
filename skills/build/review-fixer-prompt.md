@@ -11,7 +11,7 @@ Before the first edit read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md`.
 A fix leaves no residue: what it makes constant or unused goes too; a removed `catch` lets errors propagate.
 
 Each fix → `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
-Edit only paths `git diff --name-only <base>...HEAD` lists and a guard; a fix needing another path is reported, not made.
+Edit the paths `git diff --name-only <base>...HEAD` lists and a guard; edit any other path the fix needs and list it in the report.
 Then run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited via `run-check.mjs` as below. Find them with unanchored `grep -nE 'Files:|Proof:|Run:' <plan>`: a compact task puts them mid-line.
 Under each `fixed` finding write `  Probe: <command failing before its edit, passing after>`, exiting 0. Run it first, write `  Before: pass|fail`.
 Fix only what a finding names, with at most one new test per cause and no sweep of other hits unless a failing check proves that hit.

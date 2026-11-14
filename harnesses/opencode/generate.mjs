@@ -27,41 +27,45 @@ function modelLine(config, effort) {
   return [`model: ${variant ? `${model}#${variant}` : model}`];
 }
 
-function addSkills(root, exoRoot, files) {
-  const skillsRoot = path.join(root, 'skills');
-  for (const entry of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
-    const directory = path.join(skillsRoot, entry.name);
-    if (!entry.isDirectory() || !fs.existsSync(path.join(directory, 'SKILL.md'))) continue;
-    const skillDir = `${exoRoot}/skills/${entry.name}`;
-    for (const location of listFiles(directory)) {
-      if (location.endsWith('.mjs')) continue;
+function skillFiles(root, exoRoot, name) {
+  const directory = path.join(root, 'skills', name);
+  const skillDir = `${exoRoot}/skills/${name}`;
+  return listFiles(directory)
+    .filter((location) => !location.endsWith('.mjs'))
+    .map((location) => {
       const text = fs.readFileSync(location, 'utf8');
       const rewritten = location.endsWith('.md') ? withRoots(text, exoRoot, skillDir) : text;
-      files.set(posix(path.relative(root, location)), rewritten);
-    }
-  }
+      return [posix(path.relative(root, location)), rewritten];
+    });
 }
 
-function addAgents(root, exoRoot, config, files) {
+function skillEntries(root, exoRoot) {
+  const skillsRoot = path.join(root, 'skills');
+  return fs.readdirSync(skillsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(skillsRoot, entry.name, 'SKILL.md')))
+    .flatMap((entry) => skillFiles(root, exoRoot, entry.name));
+}
+
+function agentText({ root, exoRoot, config, table }, [file, entry]) {
+  const source = fs.readFileSync(path.join(root, entry.generatedFrom ?? file), 'utf8');
+  const own = splitFrontmatter(fs.readFileSync(path.join(root, file), 'utf8')).fields;
+  const { body } = splitFrontmatter(source);
+  const { effort } = table.kinds[entry.kind];
+  const header = [
+    'mode: subagent',
+    `description: ${JSON.stringify(entry.description ?? own.description)}`,
+    ...modelLine(config, effort === INHERIT ? null : effort)
+  ];
+  const text = `---\n${header.join('\n')}\n---\n${preambleWithBrief(root, own, 'opencode')}${withRoots(body.replace(/^\n+/, ''), exoRoot, '(the skill folder path the dispatch passes)')}`;
+  return [`agents/exo-${path.basename(file)}`, text];
+}
+
+function agentEntries(root, exoRoot, config) {
   const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'), { provider: 'claude' });
-  for (const [file, entry] of Object.entries(table.agents)) {
-    const source = fs.readFileSync(path.join(root, entry.generatedFrom ?? file), 'utf8');
-    const own = splitFrontmatter(fs.readFileSync(path.join(root, file), 'utf8')).fields;
-    const { body } = splitFrontmatter(source);
-    const { effort } = table.kinds[entry.kind];
-    const header = [
-      'mode: subagent',
-      `description: ${JSON.stringify(entry.description ?? own.description)}`,
-      ...modelLine(config, effort === INHERIT ? null : effort)
-    ];
-    const text = `---\n${header.join('\n')}\n---\n${preambleWithBrief(root, own, 'opencode')}${withRoots(body.replace(/^\n+/, ''), exoRoot, '(the skill folder path the dispatch passes)')}`;
-    files.set(`agents/exo-${path.basename(file)}`, text);
-  }
+  const context = { root, exoRoot, config, table };
+  return Object.entries(table.agents).map((agent) => agentText(context, agent));
 }
 
 export function generateOpenCodeTree(root = ROOT, { exoRoot = root, config = readOpenCodeConfig() } = {}) {
-  const files = new Map();
-  addSkills(root, exoRoot, files);
-  addAgents(root, exoRoot, config, files);
-  return files;
+  return new Map([...skillEntries(root, exoRoot), ...agentEntries(root, exoRoot, config)]);
 }

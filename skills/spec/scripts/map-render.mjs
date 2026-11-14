@@ -94,7 +94,7 @@ function headerLines(heading, tracked, named) {
   ];
 }
 
-function layOut(folders, opened, filesCounted, heading) {
+function layOut(folders, { opened, filesCounted }, heading) {
   const lines = [];
   const namedPaths = [];
   const visit = (folderPath) => {
@@ -148,12 +148,7 @@ export function renderMap({ commit, cap, files }) {
   };
   let level = [ROOT];
   while (level.length > 0) {
-    const nextLevel = [];
-    for (const folderPath of bestValueFirst(folders, level)) {
-      if (!opens(folderPath)) continue;
-      for (const subfolder of folders.get(folderPath).subfolders) nextLevel.push(subfolder);
-    }
-    level = nextLevel;
+    level = bestValueFirst(folders, level).filter(opens).flatMap((folderPath) => folders.get(folderPath).subfolders);
   }
-  return layOut(folders, opened, filesCounted, { commit, cap });
+  return layOut(folders, { opened, filesCounted }, { commit, cap });
 }

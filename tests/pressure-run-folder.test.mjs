@@ -11,7 +11,7 @@ import { dryRunReport, recordRun, recordedRuns } from '../skills/edit-skills/scr
 import { regradeFolder } from '../skills/edit-skills/scripts/pressure-regrade.mjs';
 import { writeGrades } from '../skills/edit-skills/scripts/pressure-report.mjs';
 import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
-import { tempDir } from './harness.mjs';
+import { restoreEnv, tempDir } from './harness.mjs';
 
 function readFlags(argv) {
   return optionsFrom(parseFlags(argv, SPEC, { usage: USAGE }));
@@ -29,7 +29,7 @@ function removeAll(paths) {
 
 test('a host without a git identity commits as the plan placeholder', () => {
   const emptyHome = tempDir('pressure-run-folder-home-');
-  const saved = { HOME: process.env.HOME, XDG: process.env.XDG_CONFIG_HOME, NOSYSTEM: process.env.GIT_CONFIG_NOSYSTEM };
+  const saved = { HOME: process.env.HOME, XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, GIT_CONFIG_NOSYSTEM: process.env.GIT_CONFIG_NOSYSTEM };
   let folder;
   try {
     process.env.HOME = emptyHome;
@@ -38,10 +38,7 @@ test('a host without a git identity commits as the plan placeholder', () => {
     folder = makeRunFolder('with', undefined);
     assert.equal(git(folder.scratch, emptyHome, ['log', '-1', '--format=%an <%ae>']), 'pressure <pressure@localhost>');
   } finally {
-    for (const [key, value] of [['HOME', saved.HOME], ['XDG_CONFIG_HOME', saved.XDG], ['GIT_CONFIG_NOSYSTEM', saved.NOSYSTEM]]) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
+    restoreEnv(saved);
     removeAll([folder && path.dirname(folder.scratch)]);
   }
 });

@@ -54,16 +54,21 @@ function dropStaleLock(lock) {
   }
 }
 
+function claimLock(lock) {
+  try {
+    fs.closeSync(fs.openSync(lock, 'wx'));
+    return true;
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    return false;
+  }
+}
+
 function acquire(lock) {
   for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt += 1) {
-    try {
-      fs.closeSync(fs.openSync(lock, 'wx'));
-      return;
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      dropStaleLock(lock);
-      pause(LOCK_RETRY_MS);
-    }
+    if (claimLock(lock)) return;
+    dropStaleLock(lock);
+    pause(LOCK_RETRY_MS);
   }
   throw new Error(`host state lock ${lock} stayed held`);
 }

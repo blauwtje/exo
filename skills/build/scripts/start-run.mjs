@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { blockReport } from './next-task-block.mjs';
+import { blockReport } from './next-task.mjs';
 import { runRules } from './next-task-brief.mjs';
 import { planCheckReport } from '../../spec/scripts/plan-check.mjs';
 import { landedTasks, planIdOf } from '#plan-landed';
@@ -17,6 +17,7 @@ import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { gitText } from '../../../lib/git.mjs';
 import { commitPreexistingWork } from './pre-run-commit.mjs';
+import { Refusal } from './cli-refusal.mjs';
 import { setupRefusal } from './setup-commands.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
 
@@ -31,8 +32,6 @@ const HELP = [
   'The starting call prints one `run started` line naming the plan, checkout and branch, then `next-task.mjs --block` output when the checkout is on the plan\'s Branch: or the plan names none.',
   'A refusal (zero or several plans, a --checkout that is not a checkout, a plan failing plan-check --loop --run) exits 1 with one line naming the cause and the next command.',
 ].join('\n');
-
-class RefusalError extends Error {}
 
 function markdownFiles(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -67,11 +66,11 @@ function resolvePlan(root) {
   const branch = gitText(root, ['branch', '--show-current']);
   const candidates = candidatePlans(root, repository);
   if (candidates.length === 0) {
-    throw new RefusalError(`no plan under docs/plans/, docs/specs/ or ~/.claude/plans/ names Repository: ${repository}. Next: rerun with --plan <path> naming the plan.`);
+    throw new Refusal(`no plan under docs/plans/, docs/specs/ or ~/.claude/plans/ names Repository: ${repository}. Next: rerun with --plan <path> naming the plan.`);
   }
   const picked = pickPlans(candidates, branch);
   if (picked.length > 1) {
-    throw new RefusalError(`${picked.length} plans name Repository: ${repository}: ${picked.map((plan) => plan.file).join(', ')}. Next: ask which plan runs, then rerun with --plan <that path>.`);
+    throw new Refusal(`${picked.length} plans name Repository: ${repository}: ${picked.map((plan) => plan.file).join(', ')}. Next: ask which plan runs, then rerun with --plan <that path>.`);
   }
   return picked[0].file;
 }
@@ -87,14 +86,14 @@ async function main(argv) {
   }
   const open = planFrame(planPath) === null ? [] : openPoints(fs.readFileSync(planPath, 'utf8'));
   if (open.length > 0) {
-    throw new RefusalError(`${planPath} has ${open.length} unanswered '## Open points': ${open.join('; ')}. Next: ask the user each one, record the answers in the brief, then rerun.`);
+    throw new Refusal(`${planPath} has ${open.length} unanswered '## Open points': ${open.join('; ')}. Next: ask the user each one, record the answers in the brief, then rerun.`);
   }
   const checkout = flags.checkout ?? root;
   const branch = checkoutBranch(checkout);
   if (planFrame(planPath) !== null) requirePlanCheck(planPath, checkout);
   requireServices(checkout);
   const setupMessage = await setupRefusal(planPath, checkout);
-  if (setupMessage !== null) throw new RefusalError(setupMessage);
+  if (setupMessage !== null) throw new Refusal(setupMessage);
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   const frame = planFrame(planPath);
   if (frame !== null) fs.writeFileSync(scratchPath(checkout, 'run-rules.md'), runRules(frame));
@@ -136,20 +135,20 @@ function firstBlock(planPath, checkout) {
 function requirePlanCheck(planPath, checkout) {
   const report = planCheckReport(fs.readFileSync(planPath, 'utf8'), { root: checkout, loop: true, planPath, run: true });
   if (report.ok) return;
-  throw new RefusalError(`plan-check --loop --run fails on ${planPath}:\n${report.lines.join('\n')}\nNext: fix the plan, confirm with \`node ${PLAN_CHECK} --loop --run --plan ${planPath} --root ${checkout}\`, then rerun start-run.`);
+  throw new Refusal(`plan-check --loop --run fails on ${planPath}:\n${report.lines.join('\n')}\nNext: fix the plan, confirm with \`node ${PLAN_CHECK} --loop --run --plan ${planPath} --root ${checkout}\`, then rerun start-run.`);
 }
 
 function requireServices(checkout) {
   const status = ensureServices(path.resolve(checkout));
   if (status === 'up') return;
-  throw new RefusalError(`${status}. Next: bring the service up, then rerun start-run.`);
+  throw new Refusal(`${status}. Next: bring the service up, then rerun start-run.`);
 }
 
 function checkoutBranch(checkout) {
   try {
     return execFileSync('git', ['-C', checkout, 'branch', '--show-current'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch {
-    throw new RefusalError(`--checkout ${checkout} is not a git checkout. Next: create it as the workspace answer says, then rerun with --checkout <that path>.`);
+    throw new Refusal(`--checkout ${checkout} is not a git checkout. Next: create it as the workspace answer says, then rerun with --checkout <that path>.`);
   }
 }
 
@@ -162,18 +161,20 @@ function branchExists(checkout, branch) {
   }
 }
 
-if (isMain(import.meta.url)) {
+function failureOf(error) {
+  if (error instanceof UsageError) return { exitCode: 2, tail: USAGE };
+  if (error instanceof Refusal) return { exitCode: 1, tail: refusalHandler('start stop') };
+  throw error;
+}
+
+async function runMain(argv) {
   try {
-    await main(process.argv.slice(2));
+    await main(argv);
   } catch (error) {
-    if (error instanceof UsageError) {
-      process.stderr.write(`start-run: ${error.message}\n${USAGE}\n`);
-      process.exitCode = 2;
-    } else if (error instanceof RefusalError) {
-      process.stderr.write(`start-run: ${error.message}\n${refusalHandler('start stop')}\n`);
-      process.exitCode = 1;
-    } else {
-      throw error;
-    }
+    const { exitCode, tail } = failureOf(error);
+    process.stderr.write(`start-run: ${error.message}\n${tail}\n`);
+    process.exitCode = exitCode;
   }
 }
+
+if (isMain(import.meta.url)) await runMain(process.argv.slice(2));

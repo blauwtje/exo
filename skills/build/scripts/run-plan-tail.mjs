@@ -12,14 +12,14 @@ import { planBreach, spawnOne } from './run-plan-session.mjs';
 import { budgetStop, parkedStop, takeParked } from './run-plan-stops.mjs';
 
 export async function runTailSession(ctx, { kind, task = null, model: asked = null, prompt }) {
-  const { run, root, branch, provider, model, tailAllow, tailSettings, timeoutMs, logDir } = ctx;
+  const { run, root, branch, provider, tailAllow, tailSettings, timeoutMs, logDir } = ctx;
   const budget = budgetStop(ctx);
   if (budget !== null) return { stop: { ...budget, gate: 'FAIL' } };
   ctx.tailSessions += 1;
   ctx.iteration += 1;
   const number = ctx.iteration;
   const log = path.join(logDir, `tail-${ctx.tailSessions}-${kind}.log`);
-  const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
+  const sessionModel = asked !== null && provider.name === 'claude' ? asked : provider.model;
   const { before, outcome, parsed } = await spawnOne(ctx, { prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel, limitMs: timeoutMs });
   const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
   run.records.push({ iteration: number, task: null, kind, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, denied: [], refused: [] });
@@ -27,7 +27,7 @@ export async function runTailSession(ctx, { kind, task = null, model: asked = nu
   const parked = breach === null ? takeParked('tail') : null;
   const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
   if (breach !== null) return { stop: { kind: 'breach', line: `breach in iteration ${number}: ${breach}`, why: `The final review or fix session breached a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
-  if (parked !== null) return { stop: { ...parkedStop(parked, log), gate: 'FAIL' } };
+  if (parked !== null) return { stop: { ...parkedStop({ line: parked, log }), gate: 'FAIL' } };
   if (notLoaded !== null) return { stop: { kind: 'setup', line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
   return { resultText: outcome.timedOut ? '' : parsed.resultText, model: parsed.model, sessionId: parsed.sessionId, timedOut: Boolean(outcome.timedOut) };
 }

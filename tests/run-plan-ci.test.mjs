@@ -92,7 +92,7 @@ test('the agent result bundles as one ref the push job can fetch', () => {
   git('switch', '-c', 'feature');
   git('commit', '--allow-empty', '-m', 'work');
   const out = path.join(tempDir('exo-ci-out-'), 'result');
-  return import(path.join(SCRIPTS, 'ci-bundle.mjs')).then(({ bundleResult }) => {
+  return import(path.join(SCRIPTS, 'ci-run.mjs')).then(({ bundleResult }) => {
     assert.equal(bundleResult(root, base, out).branch, 'feature');
     const target = tempDir('exo-ci-fetch-');
     spawnSync('git', ['init', '-b', 'main', target]);

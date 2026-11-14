@@ -16,7 +16,7 @@ test('no green commit means no narrowing', async () => {
 
 test('only test files changed since the last full green are listed', async () => {
   const { root } = await landingCheckout();
-  recordPass(root, 'node --test', 5, undefined, PASS);
+  recordPass(root, 'node --test', { ms: 5, output: PASS });
   assert.match(greenCommit(root, 'node --test'), /^[0-9a-f]{40}$/);
   assert.deepEqual(changedTestFiles(root, 'node --test'), []);
   await fs.mkdir(path.join(root, 'tests'), { recursive: true });
@@ -27,7 +27,7 @@ test('only test files changed since the last full green are listed', async () =>
 
 test('an untrusted log does not set the green commit', async () => {
   const { root } = await landingCheckout();
-  recordPass(root, 'node --test', 5, undefined, 'unknown');
+  recordPass(root, 'node --test', { ms: 5, output: 'unknown' });
   assert.equal(greenCommit(root, 'node --test'), null);
 });
 
@@ -41,7 +41,7 @@ test('the shadow log keeps narrowed-versus-full outcomes', async () => {
 
 test('a later verdict without a log keeps the earlier green commit', async () => {
   const { root } = await landingCheckout();
-  recordPass(root, 'node --test', 5, undefined, PASS);
+  recordPass(root, 'node --test', { ms: 5, output: PASS });
   const green = greenCommit(root, 'node --test');
   await fs.writeFile(path.join(root, 'src/app.js'), 'z\n');
   recordReview(root, 'node --test', { verdict: 'CLEAN' });

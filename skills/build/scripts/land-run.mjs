@@ -107,120 +107,152 @@ function squashRun({ runRoot, target, commit, override }) {
 }
 
 export function landRun(args) {
+  const ledger = { root: args.root, id: path.basename(args.runDir), label: 'land' };
   const before = snapshotRefs(args.root);
   try {
-    return landSteps(args);
+    return landSteps(args, ledger);
   } finally {
-    recordRefDiff(args.root, path.basename(args.runDir), before, 'land');
+    recordRefDiff(ledger, before);
   }
 }
 
-function landSteps({ root, runRoot, branch, mode, runDir, success = '', commit = '' }) {
-  const parked = (action, reason) => {
-    openGate(runDir, { source: 'land', action, reason });
-    return { phase: 'parked', gate: reason, range: null, pushed: null, prUrl: null, cleanup: null };
-  };
-  if (!branch) return parked('set Branch: in the plan', 'no branch');
-  if (!['local', 'push-main', 'pr'].includes(mode)) return parked('set Land: in the plan', `unknown Land mode ${mode}`);
-  if (mode !== 'pr') {
-    if (!commit) return parked('set Commit: in the plan', 'no Commit: line');
-    if (subjectProblem(commit)) return parked('set Commit: in the plan', 'bad Commit: line');
-  }
-  const base = defaultBranch(root);
-  if (!base) return parked('create a default branch', 'no default branch');
-  const inPlace = path.resolve(runRoot) === path.resolve(root);
-  const hasOrigin = git(root, 'remote', 'get-url', 'origin').ok;
+const problem = (action, reason) => ({ action, reason });
+const shortSha = (sha) => sha.slice(0, 7);
+const landedResult = (extra) => ({ phase: 'landed', gate: null, range: null, pushed: null, prUrl: null, cleanup: null, ...extra });
 
+function parkedResult(runDir, { action, reason }) {
+  openGate(runDir, { source: 'land', action, reason });
+  return { phase: 'parked', gate: reason, range: null, pushed: null, prUrl: null, cleanup: null };
+}
+
+function planProblem({ branch, mode, commit }) {
+  if (!branch) return problem('set Branch: in the plan', 'no branch');
+  if (!['local', 'push-main', 'pr'].includes(mode)) return problem('set Land: in the plan', `unknown Land mode ${mode}`);
+  if (mode === 'pr') return null;
+  if (!commit) return problem('set Commit: in the plan', 'no Commit: line');
+  if (subjectProblem(commit)) return problem('set Commit: in the plan', 'bad Commit: line');
+  return null;
+}
+
+function checkoutProblem({ root, runRoot, runDir, mode }, hasOrigin) {
   const docsProblem = commitPlanDocs(root, runRoot, runDir);
-  if (docsProblem) return parked(`restore the plan named in ${path.join(runDir, 'state.json')}`, docsProblem);
+  if (docsProblem) return problem(`restore the plan named in ${path.join(runDir, 'state.json')}`, docsProblem);
   if (git(runRoot, 'status', '--porcelain', '--untracked-files=no').out) {
-    return parked(`commit or discard the tracked changes in ${runRoot}`, 'worktree dirty');
+    return problem(`commit or discard the tracked changes in ${runRoot}`, 'worktree dirty');
   }
-  if (!hasOrigin && mode !== 'local') return parked('add an origin remote', 'no origin remote');
+  if (!hasOrigin && mode !== 'local') return problem('add an origin remote', 'no origin remote');
+  return null;
+}
 
+function localIsAhead(root, base) {
+  return git(root, 'merge-base', '--is-ancestor', `origin/${base}`, base).ok
+    && git(root, 'rev-parse', base).out !== git(root, 'rev-parse', `origin/${base}`).out;
+}
+
+function rebaseOntoBase({ root, runRoot, branch, base }, hasOrigin) {
   let target = base;
-  {
-    if (hasOrigin) {
-      const fetch = git(runRoot, 'fetch', 'origin');
-      if (!fetch.ok) return parked('git fetch origin', `fetch failed: ${fetch.err.split('\n')[0]}`);
-      const localAhead = git(root, 'merge-base', '--is-ancestor', `origin/${base}`, base).ok
-        && git(root, 'rev-parse', base).out !== git(root, 'rev-parse', `origin/${base}`).out;
-      if (!localAhead) target = `origin/${base}`;
-    }
-    const before = git(runRoot, 'rev-parse', 'HEAD').out;
-    if (!git(runRoot, 'rebase', target).ok) {
-      git(runRoot, 'rebase', '--abort');
-      return parked(`rebase ${branch} onto ${target} yourself in ${runRoot}`, 'rebase conflict');
-    }
-    const check = /`([^`]+)`/.exec(success)?.[1]?.replace(/^mcp:.*/s, '');
-    const moved = git(runRoot, 'rev-parse', 'HEAD').out !== before;
-    const pending = readGates(runDir).some((g) => g.source === 'land' && g.status !== 'used' && g.reason.startsWith('re-check failed'));
-    if (check && (moved || pending || !passedOnTree(runRoot, check)) && !run(runRoot, 'sh', ['-c', check]).ok
-      && !takeApproved(runDir, LAND_ANYWAY)) {
-      return parked(LAND_ANYWAY, `re-check failed after rebase: ${check}`);
-    }
+  if (hasOrigin) {
+    const fetch = git(runRoot, 'fetch', 'origin');
+    if (!fetch.ok) return { problem: problem('git fetch origin', `fetch failed: ${fetch.err.split('\n')[0]}`) };
+    if (!localIsAhead(root, base)) target = `origin/${base}`;
   }
-
-  if (mode !== 'pr') {
-    const squashed = squashRun({ runRoot, target, commit, override: overrideTrailer(root, runDir) });
-    if (squashed) return parked(`squash ${branch} onto ${target} yourself in ${runRoot}`, squashed);
+  const before = git(runRoot, 'rev-parse', 'HEAD').out;
+  if (!git(runRoot, 'rebase', target).ok) {
+    git(runRoot, 'rebase', '--abort');
+    return { problem: problem(`rebase ${branch} onto ${target} yourself in ${runRoot}`, 'rebase conflict') };
   }
+  return { target, moved: git(runRoot, 'rev-parse', 'HEAD').out !== before };
+}
 
-  const head = git(runRoot, 'rev-parse', 'HEAD').out;
-  const short = (sha) => sha.slice(0, 7);
-  const landed = (extra) => ({ phase: 'landed', gate: null, range: null, pushed: null, prUrl: null, cleanup: null, ...extra });
-
-  if (mode === 'pr') {
-    const forceAction = `git push --force-with-lease origin ${branch}`;
-    const forced = takeApproved(runDir, forceAction);
-    const push = git(runRoot, 'push', '-u', ...(forced ? ['--force-with-lease'] : []), 'origin', branch);
-    if (!push.ok) {
-      const diverged = /rejected|non-fast-forward|fetch first/.test(push.err);
-      return parked(diverged ? forceAction : `git push -u origin ${branch}`, `push of ${branch} failed${diverged ? ': remote branch diverged' : ''}`);
-    }
-    recordPush(root, path.basename(runDir), 'land', 'origin', branch, head);
-    const ghArgs = ['pr', 'create', '--base', base, '--head', branch, '--fill'];
-    const gh = run(runRoot, 'gh', ghArgs);
-    if (!gh.ok) return parked(`gh ${ghArgs.join(' ')}`, `gh failed: ${gh.err.split('\n')[0]}`);
-    const range = `${short(git(root, 'rev-parse', `origin/${base}`).out)}..${short(head)}`;
-    const notes = [];
-    if (!inPlace) {
-      const rm = run(root, process.execPath, [REMOVE_WORKTREE, '--kept', '--worktree', runRoot, '--run', root]);
-      notes.push(rm.ok ? 'worktree removed' : `worktree kept: ${(rm.err || rm.out).split('\n')[0]}`);
-    }
-    return landed({ range, pushed: `origin/${branch}`, prUrl: gh.out.split('\n').pop(), cleanup: [...notes, 'branch kept'].join('; ') });
+function recheckProblem({ runRoot, runDir }, success, moved) {
+  const check = /`([^`]+)`/.exec(success)?.[1]?.replace(/^mcp:.*/s, '');
+  const pending = readGates(runDir).some((g) => g.source === 'land' && g.status !== 'used' && g.reason.startsWith('re-check failed'));
+  if (check && (moved || pending || !passedOnTree(runRoot, check)) && !run(runRoot, 'sh', ['-c', check]).ok
+    && !takeApproved(runDir, LAND_ANYWAY)) {
+    return problem(LAND_ANYWAY, `re-check failed after rebase: ${check}`);
   }
+  return null;
+}
 
+function removeKeptWorktree({ root, runRoot }) {
+  const rm = run(root, process.execPath, [REMOVE_WORKTREE, '--kept', '--worktree', runRoot, '--run', root]);
+  return { ok: rm.ok, note: rm.ok ? 'worktree removed' : `worktree kept: ${(rm.err || rm.out).split('\n')[0]}` };
+}
+
+function openPullRequest(land, head) {
+  const { root, runRoot, branch, runDir, base, inPlace, ledger } = land;
+  const park = (action, reason) => parkedResult(runDir, problem(action, reason));
+  const forceAction = `git push --force-with-lease origin ${branch}`;
+  const forced = takeApproved(runDir, forceAction);
+  const push = git(runRoot, 'push', '-u', ...(forced ? ['--force-with-lease'] : []), 'origin', branch);
+  if (!push.ok) {
+    const diverged = /rejected|non-fast-forward|fetch first/.test(push.err);
+    return park(diverged ? forceAction : `git push -u origin ${branch}`, `push of ${branch} failed${diverged ? ': remote branch diverged' : ''}`);
+  }
+  recordPush(ledger, { remote: 'origin', ref: branch, sha: head });
+  const ghArgs = ['pr', 'create', '--base', base, '--head', branch, '--fill'];
+  const gh = run(runRoot, 'gh', ghArgs);
+  if (!gh.ok) return park(`gh ${ghArgs.join(' ')}`, `gh failed: ${gh.err.split('\n')[0]}`);
+  const range = `${shortSha(git(root, 'rev-parse', `origin/${base}`).out)}..${shortSha(head)}`;
+  const notes = inPlace ? [] : [removeKeptWorktree(land).note];
+  return landedResult({ range, pushed: `origin/${branch}`, prUrl: gh.out.split('\n').pop(), cleanup: [...notes, 'branch kept'].join('; ') });
+}
+
+function mergeLocally(land) {
+  const { root, runRoot, branch, mode, runDir, base, inPlace, ledger } = land;
+  const park = (action, reason) => parkedResult(runDir, problem(action, reason));
   const mainDirty = git(root, 'status', '--porcelain', '--untracked-files=no').out;
   if (!inPlace && (mainDirty || git(root, 'symbolic-ref', '-q', '--short', 'HEAD').out !== base)) {
-    return parked(`clean ${root} and switch it to ${base}`, 'main checkout dirty or not on the default branch');
+    return park(`clean ${root} and switch it to ${base}`, 'main checkout dirty or not on the default branch');
   }
   const old = git(root, 'rev-parse', base).out;
-  if (inPlace && !git(root, 'switch', base).ok) return parked(`switch ${root} to ${base}`, `cannot switch to ${base}`);
-  const parkedOnBranch = (action, reason) => {
+  if (inPlace && !git(root, 'switch', base).ok) return park(`switch ${root} to ${base}`, `cannot switch to ${base}`);
+  const parkOnBranch = (action, reason) => {
     if (inPlace) git(root, 'switch', branch);
-    return parked(action, reason);
+    return park(action, reason);
   };
   if (!git(root, 'merge', '--ff-only', branch).ok) {
-    return parkedOnBranch(`rebase ${branch} onto ${base} yourself in ${runRoot}`, `${base} cannot fast-forward to ${branch}`);
+    return parkOnBranch(`rebase ${branch} onto ${base} yourself in ${runRoot}`, `${base} cannot fast-forward to ${branch}`);
   }
-  const range = `${short(old)}..${short(git(root, 'rev-parse', base).out)}`;
+  const range = `${shortSha(old)}..${shortSha(git(root, 'rev-parse', base).out)}`;
   let pushed = null;
   if (mode === 'push-main') {
     const push = git(root, 'push', 'origin', base);
-    if (!push.ok) return parkedOnBranch(`fetch origin and rebase ${base} yourself in ${root}`, `push of ${base} failed: ${push.err.split('\n')[0]}`);
-    recordPush(root, path.basename(runDir), 'land', 'origin', base, git(root, 'rev-parse', base).out);
+    if (!push.ok) return parkOnBranch(`fetch origin and rebase ${base} yourself in ${root}`, `push of ${base} failed: ${push.err.split('\n')[0]}`);
+    recordPush(ledger, { remote: 'origin', ref: base, sha: git(root, 'rev-parse', base).out });
     pushed = `origin/${base}`;
   }
   const notes = [];
   if (!inPlace) {
-    const rm = run(root, process.execPath, [REMOVE_WORKTREE, '--kept', '--worktree', runRoot, '--run', root]);
-    notes.push(rm.ok ? 'worktree removed' : `worktree kept: ${(rm.err || rm.out).split('\n')[0]}`);
-    if (!rm.ok) return landed({ range, pushed, cleanup: `${notes.join('; ')}; branch kept` });
+    const removed = removeKeptWorktree(land);
+    notes.push(removed.note);
+    if (!removed.ok) return landedResult({ range, pushed, cleanup: `${notes.join('; ')}; branch kept` });
   }
   const del = git(root, 'branch', '-d', branch);
   notes.push(del.ok ? 'branch deleted' : `branch kept: ${del.err.split('\n')[0]}`);
-  return landed({ range, pushed, cleanup: notes.join('; ') });
+  return landedResult({ range, pushed, cleanup: notes.join('; ') });
+}
+
+function landSteps(args, ledger) {
+  const { root, runRoot, branch, mode, runDir, success = '', commit = '' } = args;
+  const early = planProblem({ branch, mode, commit });
+  if (early) return parkedResult(runDir, early);
+  const base = defaultBranch(root);
+  if (!base) return parkedResult(runDir, problem('create a default branch', 'no default branch'));
+  const land = { root, runRoot, branch, mode, runDir, base, inPlace: path.resolve(runRoot) === path.resolve(root), ledger };
+  const hasOrigin = git(root, 'remote', 'get-url', 'origin').ok;
+  const unready = checkoutProblem(land, hasOrigin);
+  if (unready) return parkedResult(runDir, unready);
+  const rebased = rebaseOntoBase(land, hasOrigin);
+  if (rebased.problem) return parkedResult(runDir, rebased.problem);
+  const stale = recheckProblem(land, success, rebased.moved);
+  if (stale) return parkedResult(runDir, stale);
+  if (mode !== 'pr') {
+    const squashed = squashRun({ runRoot, target: rebased.target, commit, override: overrideTrailer(root, runDir) });
+    if (squashed) return parkedResult(runDir, problem(`squash ${branch} onto ${rebased.target} yourself in ${runRoot}`, squashed));
+  }
+  if (mode === 'pr') return openPullRequest(land, git(runRoot, 'rev-parse', 'HEAD').out);
+  return mergeLocally(land);
 }
 
 function main(argv) {
@@ -241,12 +273,14 @@ function main(argv) {
   process.exitCode = r.phase === 'landed' ? 0 : 3;
 }
 
-if (isMain(import.meta.url)) {
+function runMain(argv) {
   try {
-    main(process.argv.slice(2));
+    main(argv);
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 2;
   }
 }
+
+if (isMain(import.meta.url)) runMain(process.argv.slice(2));

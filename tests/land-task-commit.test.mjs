@@ -61,40 +61,38 @@ test('a failing block reports the failure', async () => {
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
 });
 
-test('outside files warns and the task lands', async () => {
+test('a path outside Files lands with the task and no refusal or amend', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
   const output = landTask({ planPath, planText: PLAN, number: 1, root });
-  assert.match(output, /^\[WARN\] Task 1 changed a path outside Files: `src\/extra\.js`$/m);
+  assert.doesNotMatch(output, /outside Files|AMEND/);
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(git(root, 'show', '--name-only', '--format=', 'HEAD'), /src\/extra\.js/);
 });
 
-test('an out-of-scope protected path outside Files is warned about and left out of the derived commit', async () => {
+test('a protected path outside Files lands with the task', async () => {
   const { root, planPath } = await compactCheckout();
   await fs.mkdir(path.join(root, 'lib'));
   await fs.writeFile(path.join(root, 'lib/guard-rules.mjs'), 'export {};\n');
   const output = landTask({ planPath, planText: await fs.readFile(planPath, 'utf8'), number: 1, root, reportText: PASS_REPORT });
-  assert.match(output, /^\[WARN\] Task 1 changed a path outside Files: `lib\/guard-rules\.mjs`; not committed: /m);
-  assert.doesNotMatch(git(root, 'show', '--name-only', '--format=', 'HEAD'), /guard-rules/);
-  assert.match(git(root, 'status', '--short'), /lib\//);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(git(root, 'show', '--name-only', '--format=', 'HEAD'), /lib\/guard-rules\.mjs/);
 });
 
-test('a same-stem companion of a listed file is not a stray, a prefix-sharing sibling and a different directory still warn', async () => {
+test('strays beside the listed files raise no check warning and land', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  for (const stray of ['src/apple.js', 'src/app', 'lib/app.test.js']) {
+  for (const stray of ['src/apple.js', 'lib/app.test.js']) {
     await fs.mkdir(path.dirname(path.join(root, stray)), { recursive: true });
     await fs.writeFile(path.join(root, stray), 'x\n');
-    assert.ok(checkTask({ planPath, planText: PLAN, number: 1, root }).includes(`[WARN] Task 1 changed a path outside Files: \`${stray}\``));
-    await fs.rm(path.join(root, stray));
-    await fs.rm(path.join(root, '.exo/refusals'), { recursive: true, force: true });
   }
-  await fs.writeFile(path.join(root, 'src/app.test.js'), 'export const spec = 1;\n');
+  assert.doesNotMatch(checkTask({ planPath, planText: PLAN, number: 1, root }), /outside Files/);
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(git(root, 'show', '--name-only', '--format=', 'HEAD'), /src\/apple\.js/);
 });
 
-test('a git worktree nested in the checkout is skipped, a plain untracked directory beside it still warns', async () => {
+test('a git worktree nested in the checkout is skipped, a plain untracked directory beside it lands', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'agents', 'agent-1'));
@@ -103,10 +101,10 @@ test('a git worktree nested in the checkout is skipped, a plain untracked direct
   await fs.mkdir(path.join(root, 'stray'));
   await fs.writeFile(path.join(root, 'stray', 'file.txt'), 'x\n');
   const checked = checkTask({ planPath, planText: PLAN, number: 1, root });
-  assert.match(checked, /changed a path outside Files: `stray\/file\.txt`/);
-  assert.doesNotMatch(checked, /agent-1/);
-  await fs.rm(path.join(root, 'stray'), { recursive: true });
+  assert.doesNotMatch(checked, /outside Files|agent-1/);
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
+  const committed = git(root, 'show', '--name-only', '--format=', 'HEAD');
+  assert.match(committed, /stray\/file\.txt/);
 });
 
 test('a task whose changes match every Files: path lands clean', async () => {
@@ -257,7 +255,7 @@ const literalPlan = (data, escape = '') => compactPlanFixture({ tasks: [
 test('a Data literal found nowhere in the change or the tree is refused, naming the string and the escape', async () => {
   const { root, planPath } = await compactCheckout(literalPlan('names `zzqq_absent_literal` and `greet`'));
   await writeReport(root, PASS_REPORT);
-  await assertRefused(root, planPath, [], /Data: names `zzqq_absent_literal`, .*Literals: none \(<reason>\)/);
+  await assertRefused(root, planPath, /Data: names `zzqq_absent_literal`, .*Literals: none \(<reason>\)/);
 });
 
 test('a Data literal that is present, a path with a line suffix, a placeholder form or an escaped task lands', async () => {
@@ -275,7 +273,7 @@ test('a test-first task whose change touches no test file is refused before anyt
   ] });
   const { root, planPath } = await compactCheckout(plan);
   await writeReport(root, PASS_REPORT);
-  await assertRefused(root, planPath, [], /Task 1 is test-first, but its change adds or changes no test file/);
+  await assertRefused(root, planPath, /Task 1 is test-first, but its change adds or changes no test file/);
 });
 
 test('a compact task whose Evidence field is free text is refused before it lands', async () => {
@@ -373,20 +371,16 @@ test('a --fix commit body whose Evidence line is not a result path or none (<rea
   assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Evidence: benchmarks/results/x.md, findings (a)' }), /commit text refused: Evidence:/);
 });
 
-test('a file the block stages outside Files warns and lands, a security-boundary one is refused', async () => {
-  for (const [generated, landed] of [['src/gen.js', true], ['hooks/gen.js', false]]) {
+test('a file the block stages outside Files lands, a security-boundary one lands with a warning', async () => {
+  for (const [generated, warned] of [['src/gen.js', false], ['hooks/gen.js', true]]) {
     const { root, planPath } = await landingCheckout();
     const planText = PLAN.replace('git add .', `mkdir -p $(dirname ${generated}) && echo x > ${generated} && git add .`);
     await fs.writeFile(planPath, planText);
     git(root, 'commit', '-qam', 'plan');
     await editApp(root);
     const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-    if (landed) {
-      assert.match(result.stdout, /^Committed: [0-9a-f]+ Task 1$/m);
-      assert.match(result.stderr, /Warning: the commit of Task 1 holds a path outside Files: `src\/gen\.js`/);
-      continue;
-    }
-    assert.match(result.stderr, /security-boundary path outside Files: `hooks\/gen\.js`/);
+    assert.match(result.stdout, /^Committed: [0-9a-f]+ Task 1$/m);
+    assert.equal(/\[WARN\] Task 1 committed a security-boundary path: `hooks\/gen\.js`/.test(result.stderr), warned);
   }
 });
 

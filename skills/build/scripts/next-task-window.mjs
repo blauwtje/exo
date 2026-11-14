@@ -5,7 +5,7 @@ import { scriptPath } from './next-task-paths.mjs';
 import { taskLines } from './next-task-brief.mjs';
 import { appendTimeline } from '../../../lib/timeline.mjs';
 
-function promptLines(task, frame, planPath, checkout, briefPath) {
+function promptLines({ task, frame, planPath, checkout, briefPath }) {
   return [
     'Prompt:',
     `Task ${task.number} of ${planPath}, branch ${frame.branch ?? 'none'}, checkout ${checkout}.`,
@@ -22,8 +22,8 @@ function dispatchable(task, frame, root) {
 
 export function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
-  appendTimeline(checkout, 'dispatched', task.number);
-  return [`Dispatch: exo:build-task`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
+  appendTimeline(checkout, { event: 'dispatched', task: task.number });
+  return [`Dispatch: exo:build-task`, `Since: ${since}`, ...promptLines({ task, frame, planPath, checkout, briefPath })];
 }
 
 export function windowLines({ planPath, root, records, running, unlanded = null, only = null }) {
@@ -47,7 +47,7 @@ export function openedLines({ wave, frame, planPath, root, inFlight, briefDirect
   for (const task of wave) {
     const slot = slotOf(opened.toplevel, task.number);
     const brief = path.join(briefDirectory, `task-${task.number}.md`);
-    lines.push('', ...taskLines(task, frame, root, briefDirectory), `Slot: ${slot}`, `Slot env: ${slotEnvLine(opened.records[task.number])} (run '. .exo/slot.env' before a proof that binds a port or writes state)`, ...(dispatchable(task, frame, root) ? promptLines(task, frame, planPath, slot, brief) : []));
+    lines.push('', ...taskLines({ task, frame, root, briefDirectory }), `Slot: ${slot}`, `Slot env: ${slotEnvLine(opened.records[task.number])} (run '. .exo/slot.env' before a proof that binds a port or writes state)`, ...(dispatchable(task, frame, root) ? promptLines({ task, frame, planPath, checkout: slot, briefPath: brief }) : []));
   }
   const running = [...inFlight, ...wave.map((task) => task.number)];
   return { reason: undefined, lines: [...lines, '', ...windowLines({ planPath, root: opened.toplevel, records: opened.records, running, unlanded, only })] };

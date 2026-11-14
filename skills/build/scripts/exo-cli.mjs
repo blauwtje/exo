@@ -12,41 +12,43 @@ import { statusCommand, waitCommand } from './watch-commands.mjs';
 
 const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo wait <id> | exo undo <id> [--apply] | exo run config [<key> <value>] | exo key set <provider> | exo claude [--provider <name>] [--effort <level>] [-- <claude args>] | exo setup';
 
+const EXIT_CODE_COMMANDS = {
+  undo: undoCommand,
+  approve: approveCommand,
+  wait: waitCommand,
+  run: runCommand
+};
+
+function refuseInsideClaudeCode(command, rest) {
+  const guarded = command === 'run' || command === 'approve' || (command === 'undo' && rest.includes('--apply'));
+  if (guarded && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
+}
+
 async function dispatch(command, rest) {
   if (command === 'setup') return setupCommand();
   if (command === 'key') return keyCommand(rest);
   if (command === 'claude') return claudeCommand(rest);
   if (command === 'run' && rest[0] === 'config') return configCommand(rest.slice(1));
-  if ((command === 'run' || command === 'approve') && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
-  if (command === 'undo' && rest.includes('--apply') && insideClaudeCode()) throw new Refusal(`refused: ${SESSION_REFUSAL}`);
-  if (command === 'undo') {
-    process.exitCode = undoCommand(rest);
-    return;
-  }
-  if (command === 'approve') {
-    process.exitCode = await approveCommand(rest);
-    return;
-  }
+  refuseInsideClaudeCode(command, rest);
   if (command === 'status') return statusCommand(rest);
-  if (command === 'wait') {
-    process.exitCode = await waitCommand(rest);
-    return;
-  }
-  if (command === 'run') {
-    process.exitCode = await runCommand(rest);
-    return;
-  }
   if (command === '--help') return process.stdout.write(`${USAGE}\n`);
-  throw new Refusal(USAGE);
+  if (!Object.hasOwn(EXIT_CODE_COMMANDS, command)) throw new Refusal(USAGE);
+  process.exitCode = await EXIT_CODE_COMMANDS[command](rest);
 }
 
-if (isMain(import.meta.url)) {
+async function main() {
   const [command, ...rest] = process.argv.slice(2);
   try {
     await dispatch(command, rest);
   } catch (error) {
-    if (!(error instanceof Refusal)) throw error;
-    process.stderr.write(`exo: ${error.message}\n`);
-    process.exitCode = 2;
+    reportRefusal(error);
   }
 }
+
+function reportRefusal(error) {
+  if (!(error instanceof Refusal)) throw error;
+  process.stderr.write(`exo: ${error.message}\n`);
+  process.exitCode = 2;
+}
+
+if (isMain(import.meta.url)) await main();

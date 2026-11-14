@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- The code standard gains deep modules, a functional core with no parameter mutation, no behavior-picking boolean flags, one concern per change, logic-free tests, thrown errors that name the operation and value, and measured-only optimization; a fresh review merged it from 29 to 22 rules, and `lib/code-rules.mjs` now fails on `eqeqeq` and `no-implicit-coercion`, checks `no-else-return` without `else if` and warns on `no-param-reassign` (props) and `prefer-const`.
 - `evals/size.mjs` scores the bytes of the shipped files, and `evals/value.md` stores the exo-arm pass counts per part as evidence, not as a removal list.
 - Each `watch` `done.jsonl` row records its route and ms per stage, and a batch writes the short transcripts to one `transcripts.txt` with a `# <id>` header each.
 - `docs/scorecard.md` holds the release measures and `docs/failures.md` lists real-session failures; the contributor rules now cap size and run evals only before a release.
@@ -55,6 +56,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
+- The whole codebase meets the code rules (328 failing findings to 1 deliberate fixture), single-use modules live in their only importer (30 fewer files), `run-command.mjs` is split by concern into itself and `run-stages.mjs`, and each limit, refusal class and gh error has one owner.
+- Session-start, dispatch and skill text say each rule once, about 3,000 tokens shorter in total; an `exo:research-worker` brief opening `exo-kind: hardest` or `exo-kind: review` now runs on that kind's model.
 - `gate --recheck` replaces `gate --since <rev>`: after the one fix round the gate reruns only the plan's checks and runs no second review, and its report is final.
 - Unused exports, constants and modules are gone and no script or test carries a code comment, cutting the shipped files from 1,805,021 to 1,749,086 bytes (`node evals/size.mjs`).
 - `gate` reviews the branch with the built-in `code-review` skill, at `low` when the plan has one task and names no `Risk:` and at `medium` otherwise; a finding comes back with the rerun command.
@@ -191,6 +194,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
+- The topic-switch and lead-write nudges, `lib/map.mjs`, the unused context-peak report, 11 tests that reran repo checks and 6 tests that pinned code shape.
 - The branch review in `agents/review-branch.md` and its review model kinds; the agent keeps only the claims judge that research dispatches.
 - The `dispatch-edit` hook, its Edit and Write guards, `lib/edit-impact.mjs` and the removal mode of `evals/value.mjs`, after the frozen cases showed the hook did harm.
 - `lib/statistics.mjs`, `verify/prose-style.mjs`, `verify/checks/reference-chain.mjs` and `skills/build/scripts/run-tail-parse.mjs`, which nothing reached.
@@ -215,12 +219,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- Landing commits every path a task changed: a path outside `Files:` no longer refuses, amends the plan or drops from the commit, a security-boundary path only prints one warning, and changed callers outside `Files:` no longer stop the run.
+- Plan checks no longer refuse a plan because a test, lock, data path or `git add` line is missing from `Files:`.
 - The build skill runs in the main session without the fork: the main session dispatches `exo:task-runner`, which dispatches `exo:build-task`.
 - The `main` `contextBudget` in `harnesses/coordination-contract.json` is 31709, the re-measured main peak of the `nofork` route.
 - The hook prose, the agent prose and the model-kinds docs state each contract rule once, as a pointer line to its data file.
 
 ### Removed
 
+- `land-amend.mjs` and the `outside Files` refusal kind, since landing no longer checks paths against `Files:`.
 - The `flow-direct` benchmark arm and the leftovers of the build fork layer.
 - The `flow-nofork` benchmark arm and its `no-fork-build` variant, which measured the same tree as `flow-unit`.
 

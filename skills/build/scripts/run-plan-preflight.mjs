@@ -14,7 +14,7 @@ import { isFileOnDisk, resolveClaude } from './run-session-claude.mjs';
 import { SCRIPT } from './run-session-paths.mjs';
 import { gitOut } from './run-worktree.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
-import { Refusal } from './run-plan-errors.mjs';
+import { Refusal } from './cli-refusal.mjs';
 
 export const lastLine = (text) => text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).at(-1) ?? '';
 
@@ -33,6 +33,45 @@ export function utcStamp(date = new Date()) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
 }
 
+function readPlan(planPath) {
+  try {
+    return parsePlan(fs.readFileSync(planPath, 'utf8'));
+  } catch (error) {
+    throw new Refusal(`the plan does not parse: ${error.message}`);
+  }
+}
+
+function refuseWrongBranch(root, plan) {
+  const branch = gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD']);
+  const wanted = frameOf(plan.frame).branch?.trim() ?? null;
+  if (wanted === null) throw new Refusal("the plan's '## Plan basis' names no Branch:");
+  if (branch !== wanted) {
+    const exists = gitOut(root, ['show-ref', '--verify', '--quiet', `refs/heads/${wanted}`]) !== null;
+    throw new Refusal(`the checkout is on branch ${branch ?? '(detached)'}, not the plan's Branch: ${wanted}; run git switch ${exists ? '' : '-c '}${wanted}`);
+  }
+  if (wanted === defaultBranch(root)) throw new Refusal(`Branch: ${wanted} is the default branch`);
+  return branch;
+}
+
+function refuseTrackedChange(root) {
+  const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
+  if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
+}
+
+function ensurePlanCheck(root, planPath) {
+  const passFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planIdOf(planPath), 'plan-check-ok');
+  const sha = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  const passKey = `${sha(planPath)} ${gitOut(root, ['rev-parse', 'HEAD'])} ${sha(SCRIPT.planCheck)}\n`;
+  if (isFileOnDisk(passFile) && fs.readFileSync(passFile, 'utf8') === passKey) return;
+  const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
+  if (check.status !== 0) {
+    const lines = `${check.stdout}\n${check.stderr}`.split('\n').filter((line) => line.trim() !== '');
+    throw new Refusal(`plan-check --loop fails: ${lines.find((line) => line.startsWith('loop: ')) ?? lines[0] ?? `exit ${check.status}`}`);
+  }
+  fs.mkdirSync(path.dirname(passFile), { recursive: true });
+  fs.writeFileSync(passFile, passKey);
+}
+
 export function preflight(planArgument, flags) {
   const claude = resolveClaude({ flag: flags.claude });
   if (claude.refused !== undefined) throw new Refusal(claude.refused);
@@ -40,35 +79,10 @@ export function preflight(planArgument, flags) {
   if (!isFileOnDisk(planPath)) throw new Refusal(`no plan at ${planArgument}`);
   const root = gitOut(path.resolve(flags.root ?? '.'), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${flags.root ?? process.cwd()} is not inside a git repository`);
-  let plan;
-  try {
-    plan = parsePlan(fs.readFileSync(planPath, 'utf8'));
-  } catch (error) {
-    throw new Refusal(`the plan does not parse: ${error.message}`);
-  }
-  const basis = frameOf(plan.frame);
-  const branch = gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD']);
-  const wanted = basis.branch?.trim() ?? null;
-  if (wanted === null) throw new Refusal("the plan's '## Plan basis' names no Branch:");
-  if (branch !== wanted) {
-    const exists = gitOut(root, ['show-ref', '--verify', '--quiet', `refs/heads/${wanted}`]) !== null;
-    throw new Refusal(`the checkout is on branch ${branch ?? '(detached)'}, not the plan's Branch: ${wanted}; run git switch ${exists ? '' : '-c '}${wanted}`);
-  }
-  if (wanted === defaultBranch(root)) throw new Refusal(`Branch: ${wanted} is the default branch`);
-  const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
-  if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
-  const passFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planIdOf(planPath), 'plan-check-ok');
-  const sha = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-  const passKey = `${sha(planPath)} ${gitOut(root, ['rev-parse', 'HEAD'])} ${sha(SCRIPT.planCheck)}\n`;
-  if (!(isFileOnDisk(passFile) && fs.readFileSync(passFile, 'utf8') === passKey)) {
-    const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
-    if (check.status !== 0) {
-      const lines = `${check.stdout}\n${check.stderr}`.split('\n').filter((line) => line.trim() !== '');
-      throw new Refusal(`plan-check --loop fails: ${lines.find((line) => line.startsWith('loop: ')) ?? lines[0] ?? `exit ${check.status}`}`);
-    }
-    fs.mkdirSync(path.dirname(passFile), { recursive: true });
-    fs.writeFileSync(passFile, passKey);
-  }
+  const plan = readPlan(planPath);
+  const branch = refuseWrongBranch(root, plan);
+  refuseTrackedChange(root);
+  ensurePlanCheck(root, planPath);
   const services = ensureServices(root);
   if (services !== 'up') throw new Refusal(services);
   return { claude, planPath, root, plan, branch };

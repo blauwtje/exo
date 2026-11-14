@@ -29,7 +29,6 @@ export function checkProcessLifetime(report, repository) {
   report.assert(
     unguarded.length === 0,
     'process lifetime',
-    `${entrypoints.length} skill script entrypoints that fetch, spawn a non-git child or poll call limitLifetime or exitWithParent`,
-    `${unguarded.join(', ')} fetch, spawn a non-git child or poll without limitLifetime or exitWithParent from #lifetime`
+    { pass: `${entrypoints.length} skill script entrypoints that fetch, spawn a non-git child or poll call limitLifetime or exitWithParent`, fail: `${unguarded.join(', ')} fetch, spawn a non-git child or poll without limitLifetime or exitWithParent from #lifetime` }
   );
 }

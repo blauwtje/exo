@@ -32,5 +32,4 @@
 9864 skills/spec/scripts/plan-check-frame.mjs
 8870 skills/spec/scripts/plan-template.mjs
 8310 verify/checks/name-clash.mjs
-8204 verify/instruction-density.mjs
 8466 skills/edit-skills/scripts/judge-calibration.mjs

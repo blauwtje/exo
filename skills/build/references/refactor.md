@@ -18,7 +18,7 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 4. **Migrate every caller, then delete the old API, in the same change.** No shim, deprecated wrapper, both-shapes signature or re-export stays, because nothing then forces the last caller over. Search strings, docs, scripts and tests too; renames miss usages there.
 5. **Build no seam for a future caller.** No base class, registry, factory or flag with one implementation; a seam arrives with its second adapter. Drop unused sketch code instead of finishing it.
 6. **Prove equality on the real code.** Rerun the pin against old and new versions, quote the comparison; "it compiles" or a green suite that never covered the moved code proves nothing.
-7. **Keep it only if reading got easier.** Revert a step that raises `git diff --stat` lines or the files to trace.
+7. **Keep it only if reading got easier.** Revert a step that adds net lines without removing a branch, layer or state, or that adds a file to trace.
 8. **Report.** The report rule in the closing reference; equality evidence, line counts and reverted changes go behind the pointer.
 
 ## Red flags

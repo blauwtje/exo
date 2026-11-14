@@ -8,6 +8,48 @@ const AMBIGUOUS_COLON = /:\s/;
 const AMBIGUOUS_COMMENT = /\s#/;
 const RESERVED_SCALAR = /^(null|true|false|~|[-+]?\d+(\.\d+)?)$/i;
 
+function parseValue(key, valueText) {
+  if (BOOLEAN_KEYS.includes(key)) {
+    return valueText === 'true' || valueText === 'false' ? { value: valueText } : { error: `${key} must be true or false` };
+  }
+  if (valueText.startsWith('"')) return parseQuoted(key, valueText);
+  const ambiguous = AMBIGUOUS_START.test(valueText)
+    || AMBIGUOUS_COLON.test(valueText)
+    || AMBIGUOUS_COMMENT.test(valueText)
+    || RESERVED_SCALAR.test(valueText);
+  return ambiguous ? { error: `${key} uses an ambiguous plain YAML scalar` } : { value: valueText };
+}
+
+function parseQuoted(key, valueText) {
+  let decoded;
+  try {
+    decoded = JSON.parse(valueText);
+  } catch {
+    return { error: `${key} has invalid quoted YAML/JSON syntax` };
+  }
+  return typeof decoded === 'string' ? { value: decoded } : { error: `${key} must decode to a string` };
+}
+
+function parseLine(line, values) {
+  const match = KEY_LINE.exec(line);
+  if (!match) return { error: `unsupported frontmatter line: ${line}` };
+  const { key, value } = match.groups;
+  if (values.has(key)) return { error: `duplicate frontmatter key: ${key}` };
+  return { key, ...parseValue(key, value) };
+}
+
+function schemaErrors(values) {
+  const errors = [];
+  if (!values.has('name') || !values.has('description')) errors.push('frontmatter must contain name and description');
+  if (values.has('effort') && !ALLOWED_EFFORT.includes(values.get('effort'))) {
+    errors.push(`effort must be one of ${ALLOWED_EFFORT.join(', ')}`);
+  }
+  if (values.has('model') && !ALLOWED_MODEL.includes(values.get('model'))) {
+    errors.push(`model must be one of ${ALLOWED_MODEL.join(', ')}`);
+  }
+  return errors;
+}
+
 export function readFrontmatter(lines) {
   const values = new Map();
   const errors = [];
@@ -24,54 +66,10 @@ export function readFrontmatter(lines) {
   }
 
   for (const line of lines.slice(1, closing)) {
-    const match = KEY_LINE.exec(line);
-    if (!match) {
-      errors.push(`unsupported frontmatter line: ${line}`);
-      continue;
-    }
-    const { key, value: valueText } = match.groups;
-    if (values.has(key)) {
-      errors.push(`duplicate frontmatter key: ${key}`);
-      continue;
-    }
-    if (BOOLEAN_KEYS.includes(key)) {
-      if (valueText === 'true' || valueText === 'false') values.set(key, valueText);
-      else errors.push(`${key} must be true or false`);
-      continue;
-    }
-    if (valueText.startsWith('"')) {
-      let decoded;
-      try {
-        decoded = JSON.parse(valueText);
-      } catch {
-        errors.push(`${key} has invalid quoted YAML/JSON syntax`);
-        continue;
-      }
-      if (typeof decoded !== 'string') {
-        errors.push(`${key} must decode to a string`);
-        continue;
-      }
-      values.set(key, decoded);
-      continue;
-    }
-    if (AMBIGUOUS_START.test(valueText)
-      || AMBIGUOUS_COLON.test(valueText)
-      || AMBIGUOUS_COMMENT.test(valueText)
-      || RESERVED_SCALAR.test(valueText)) {
-      errors.push(`${key} uses an ambiguous plain YAML scalar`);
-      continue;
-    }
-    values.set(key, valueText);
+    const parsed = parseLine(line, values);
+    if (parsed.error) errors.push(parsed.error);
+    else values.set(parsed.key, parsed.value);
   }
-
-  if (!values.has('name') || !values.has('description')) {
-    errors.push('frontmatter must contain name and description');
-  }
-  if (values.has('effort') && !ALLOWED_EFFORT.includes(values.get('effort'))) {
-    errors.push(`effort must be one of ${ALLOWED_EFFORT.join(', ')}`);
-  }
-  if (values.has('model') && !ALLOWED_MODEL.includes(values.get('model'))) {
-    errors.push(`model must be one of ${ALLOWED_MODEL.join(', ')}`);
-  }
+  errors.push(...schemaErrors(values));
   return { values, errors };
 }

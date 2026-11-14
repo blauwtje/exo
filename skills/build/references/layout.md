@@ -15,13 +15,12 @@ A page reads as blank when a region holds nothing, not when it has space. Squint
 
 - Panes: every pane fills its height at 1440x900. A rail that ends early gets a second module that belongs there (recent activity, upcoming items, a live stat, a mini chart), not a stretched gap above its footer chip.
 - Wide pane with a narrow column: widen the column to the pane, or use the side margins for context (filters, a summary, related items). Two bands of flat ground beside a centred column read as an unfinished page.
-- Line length: the 75ch cap applies to body text only, not to the column, the feed or the art.
 - Information per viewport: the first screen of an app shows several items of the primary object, not one item below a large empty composer or greeting.
 
 ## Documents
 
 - One message per screen, shown through a product artifact rather than copy alone.
-- Explicit asks stay high on the page; look.mjs prints `BELOW` for an `--expect` text past 3000px, because readers leave before they get there.
+- Explicit asks stay high on the page; an `--expect` text past 3000px fails, because readers leave before they get there.
 
 ## Hierarchy
 
@@ -31,7 +30,6 @@ A page reads as blank when a region holds nothing, not when it has space. Squint
 - Rhythm: spacing from a 4/8 scale; one gap for items in a list, a larger one between sections.
 - Feed: posts as open bands on the ground with a moderate gap, each image post with full-width art as its largest element, not a thumbnail beside text.
 - Asymmetry: a dominant pane or tile beside smaller ones reads as designed; equal columns of equal cards read as a template.
-  - Good: one wide tile for the lead story beside two small ones. Bad: three equal cards in a row.
 
 ## Density and text
 

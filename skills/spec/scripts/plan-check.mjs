@@ -6,9 +6,8 @@ import { parsePlan, PlanError } from '#plan-tasks';
 import { frameOf, openPoints } from '#plan-frame';
 import { taskSize } from '#plan-waves';
 import { checkCommit, checkCompactFields, checkDerivedNames, checkEvidence, checkGitAdd, checkPlaceholders, checkSize, checkSteps } from './plan-check-text.mjs';
-import { dataLiteralsCheck } from './plan-check-literals.mjs';
 import { checkContextSize, forkPointOf, sizeLines, warnNearCap, warnTinyTasks } from './plan-check-size.mjs';
-import { checkFilesExist, checkProofTestsListed, checkSharedFiles, checkUnlistedTests, warnProofAndData } from './plan-check-files.mjs';
+import { checkFilesExist, checkProofOnPath, checkSharedFiles, dataLiteralsCheck } from './plan-check-files.mjs';
 import { checkAcceptanceCitations, checkFrame, checkLandGate, checkParallelDisjoint, checkParallelForm, checkPlanBasis, checkProductRun, checkRedGreen, checkWorktreeSetup } from './plan-check-frame.mjs';
 import { checkLoop, checkNestedClaude, checkRunCommands } from './plan-check-loop.mjs';
 
@@ -35,8 +34,7 @@ const PLAN_CHECKS = [
   { check: classicOnly(({ plan }) => eachTask(plan.tasks, (task) => [...checkCommit(task), ...checkGitAdd(task), ...checkSteps(task), ...checkPlaceholders(task), ...checkSize(task)])), warn: true },
   { check: classicOnly(({ plan, root, byNumber }) => eachTask(plan.tasks, (task) => checkFilesExist(task, root, byNumber))), warn: true },
   { check: ({ unlanded, root, forkPoint }) => eachTask(unlanded, (task) => checkContextSize(task, root, forkPoint)), warn: true },
-  { check: ({ plan, root, byNumber }) => eachTask(plan.tasks, (task) => checkUnlistedTests(task, root, byNumber)), warn: true },
-  { check: ({ unlanded, root, byNumber }) => eachTask(unlanded, (task) => checkProofTestsListed(task, root, byNumber)), warn: true, hardWhen: PROOF_NOT_ON_PATH },
+  { check: ({ unlanded, root }) => eachTask(unlanded, (task) => checkProofOnPath(task, root)), warn: true, hardWhen: PROOF_NOT_ON_PATH },
   { check: dataLiteralsCheck, warn: true },
   { check: ({ planText, root }) => checkDerivedNames(planText, root), warn: true },
   { check: ({ plan }) => checkSharedFiles(plan.tasks), warn: true },
@@ -46,7 +44,6 @@ const PLAN_CHECKS = [
   { check: ({ plan, root }) => checkNestedClaude(plan, root) },
   { check: ({ plan }) => checkRunCommands(plan) },
   { check: ({ plan, root, planPath, loop }) => (loop ? checkLoop(plan, root, planPath) : []), warn: true, hardWhen: HARD_LOOP },
-  { check: ({ unlanded, root, byNumber }) => eachTask(unlanded, (task) => warnProofAndData(task, root, byNumber)), warn: true },
   { check: ({ plan, root, forkPoint, landed }) => warnTinyTasks(plan.tasks, { root, forkPoint, landed }), warn: true },
   { check: ({ plan, root, landed }) => warnNearCap(plan.tasks, root, landed), warn: true }
 ];
@@ -104,18 +101,16 @@ export function main(argv) {
   if (!report.ok) process.exitCode = 1;
 }
 
+function reportFailure(error) {
+  if (!(error instanceof UsageError || error instanceof PlanError)) throw error;
+  process.stderr.write(`plan-check: ${error.message}\n`);
+  process.exitCode = error instanceof UsageError ? 2 : 1;
+}
+
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    if (error instanceof UsageError) {
-      process.stderr.write(`plan-check: ${error.message}\n`);
-      process.exitCode = 2;
-    } else if (error instanceof PlanError) {
-      process.stderr.write(`plan-check: ${error.message}\n`);
-      process.exitCode = 1;
-    } else {
-      throw error;
-    }
+    reportFailure(error);
   }
 }

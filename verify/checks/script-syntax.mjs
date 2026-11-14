@@ -24,7 +24,6 @@ export function checkScriptSyntax(report, repository) {
   report.assert(
     javascriptErrors.length === 0,
     'javascript syntax',
-    'every JavaScript module parses',
-    javascriptErrors.join('; ')
+    { pass: 'every JavaScript module parses', fail: javascriptErrors.join('; ') }
   );
 }

@@ -9,7 +9,7 @@ const TIMED_TEXT_FORMATS = [
   { pattern: /<text\s([^>]*[^>/])>([\s\S]*?)<\/text>/g, start: /\bstart="(\d+(?:\.\d+)?)"/, perSecond: 1 },
 ];
 
-function decodeEntity(match, name, decimal, hex) {
+function decodeEntity(match, ...[name, decimal, hex]) {
   if (name) return ENTITIES[`&${name};`] ?? match;
   const code = decimal ? Number(decimal) : parseInt(hex, 16);
   return code > 0 && code <= LAST_CODE_POINT ? String.fromCodePoint(code) : match;
@@ -39,6 +39,20 @@ function cleanLine(line) {
   return decodeEntities(line.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim();
 }
 
+function blockCues(lines, { auto, previous }) {
+  const cues = [];
+  let speaker = null;
+  let last = previous;
+  for (const raw of lines) {
+    speaker = speakerOf(raw) ?? speaker;
+    const line = cleanLine(raw.replace(DIARIZED_PREFIX, ''));
+    if (line === '' || (auto && line === last)) continue;
+    cues.push(speaker ? { start: null, text: line, speaker } : { start: null, text: line });
+    last = line;
+  }
+  return cues;
+}
+
 export function parseVtt(vtt, { auto = false } = {}) {
   const cues = [];
   let previous = '';
@@ -47,13 +61,9 @@ export function parseVtt(vtt, { auto = false } = {}) {
     const timingAt = lines.findIndex((line) => line.includes('-->'));
     const start = timingAt < 0 ? null : cueStart(lines[timingAt]);
     if (start === null) continue;
-    let speaker = null;
-    for (const raw of lines.slice(timingAt + 1)) {
-      speaker = speakerOf(raw) ?? speaker;
-      const line = cleanLine(raw.replace(DIARIZED_PREFIX, ''));
-      if (line === '' || (auto && line === previous)) continue;
-      cues.push(speaker ? { start, text: line, speaker } : { start, text: line });
-      previous = line;
+    for (const cue of blockCues(lines.slice(timingAt + 1), { auto, previous })) {
+      cues.push({ ...cue, start });
+      previous = cue.text;
     }
   }
   return cues;

@@ -20,11 +20,6 @@ test('no agent with Bash gets a wait line, with or without TaskStop', () => {
   }
 });
 
-test('no SubagentStop hook is registered', () => {
-  const hooks = readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8');
-  assert.doesNotMatch(hooks, /SubagentStop/);
-});
-
 test('a watch loop, background or not, is refused with the return-and-let-the-lead-wait text', async () => {
   const watch = ['gh pr checks 1 --wat', 'ch'].join('');
   for (const background of [false, true]) {

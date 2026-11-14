@@ -8,7 +8,7 @@ allowed-tools: Bash(node *settings.mjs*), Bash(git remote get-url origin), Bash(
 
 # Settings
 
-Change exo's settings only through its own scripts, one named setting or every setting in one walk. The enemy is a value the user never picked: a walk that writes before its review. The overcorrection is a walk through every setting when the request named one.
+Change exo's settings only through its own scripts, one named setting or every setting in one walk. The enemy is a value the user never picked: a walk that writes before its review.
 
 ## When to use
 

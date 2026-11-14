@@ -2,15 +2,11 @@
 
 ## Step 3, ask rules
 
-This page holds the recommendation and `Land:` rules of step 3 in `spec`, so each question carries a recommendation and the mode is asked only when open.
-
    - Recommend a loaded skill's pattern over one it rules out; when two loaded skills disagree, take the one the request names.
    - Plan approval approves only the `Land:` mode, so ask about it only when `ship` is `ask`.
    - With no git repo or no `origin`, write `Land: local` and ask nothing.
 
 ## Step 4, locate and fetch
-
-This page holds the dispatch rules of step 4 in `spec`, so ranges the map omits and outside facts are found in one background round.
 
    - In one background message dispatch up to four `exo:research-worker` agents (`Sources: repo`) for ranges the map omits and one `exo:research-worker` round (`Sources: docs`) for outside facts. Read none of their output, fill no gap; use results on each completion, no polling or sleep.
    - Search the map with `grep -n`; never read it.

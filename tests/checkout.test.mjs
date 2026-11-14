@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { existsSync } from 'node:fs';
-import { commonDir, createWorktree, isWorktreePath, mainCheckout, relativeFor, seedCaches, worktreePath } from '../lib/checkout.mjs';
+import { addWorktree, commonDir, createWorktree, isWorktreePath, mainCheckout, relativeFor, seedCaches, worktreePath } from '../lib/checkout.mjs';
 import { withLandLock } from '../lib/land-lock.mjs';
 import { applyPick } from '../lib/workspace.mjs';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
@@ -76,7 +76,7 @@ test('createWorktree reports a failed git worktree add', async () => {
 
 test('createWorktree with env false copies no .env', async () => {
   const { root, where } = await envRepository();
-  const done = createWorktree(root, where, ['-q', '--detach', where, 'HEAD'], { env: false });
+  const done = addWorktree(root, where, ['-q', '--detach', where, 'HEAD']);
   assert.equal(done.ok, true);
   await assert.rejects(fs.access(path.join(where, '.env')));
 });

@@ -22,7 +22,6 @@ export function checkBackgroundStops(report, repository) {
   report.assert(
     leaking.length === 0,
     'background stops',
-    'every agent that can start a Monitor can stop it',
-    `${leaking.join(', ')} can start a Monitor and hold no TaskStop with a TaskStop instruction`
+    { pass: 'every agent that can start a Monitor can stop it', fail: `${leaking.join(', ')} can start a Monitor and hold no TaskStop with a TaskStop instruction` }
   );
 }

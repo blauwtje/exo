@@ -18,42 +18,50 @@ const BUILTIN_COMMANDS = [
 const MINIMUM_PREFIX = 3;
 const MAXIMUM_DEPTH = 6;
 
+function commandNames(full, source) {
+  return fs.readdirSync(full)
+    .filter((file) => file.endsWith('.md'))
+    .map((file) => ({ name: file.slice(0, -3), source: `${source} command` }));
+}
+
+function skillEntries(full, source) {
+  return fs.readdirSync(full, { withFileTypes: true })
+    .filter((skill) => skill.isDirectory() && fs.existsSync(path.join(full, skill.name, 'SKILL.md')))
+    .map((skill) => ({ name: skill.name, source: `${source} skill` }));
+}
+
 function marketplaceNames(folder) {
   const found = [];
   const relative = (directory) => path.relative(folder, directory).split(path.sep).join('/') || path.basename(folder);
+  function visitEntry(directory, entry, depth) {
+    const full = path.join(directory, entry.name);
+    if (entry.name === 'commands') found.push(...commandNames(full, relative(directory)));
+    else if (entry.name === 'skills') found.push(...skillEntries(full, relative(directory)));
+    else visit(full, depth + 1);
+  }
   function visit(directory, depth) {
     if (depth > MAXIMUM_DEPTH || !fs.existsSync(directory)) return;
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      if (!entry.isDirectory() || entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      const full = path.join(directory, entry.name);
-      if (entry.name === 'commands') {
-        for (const file of fs.readdirSync(full)) if (file.endsWith('.md')) found.push({ name: file.slice(0, -3), source: `${relative(directory)} command` });
-      } else if (entry.name === 'skills') {
-        for (const skill of fs.readdirSync(full, { withFileTypes: true })) {
-          if (skill.isDirectory() && fs.existsSync(path.join(full, skill.name, 'SKILL.md'))) found.push({ name: skill.name, source: `${relative(directory)} skill` });
-        }
-      } else {
-        visit(full, depth + 1);
-      }
-    }
+    fs.readdirSync(directory, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name !== 'node_modules' && !entry.name.startsWith('.'))
+      .forEach((entry) => visitEntry(directory, entry, depth));
   }
   visit(folder, 0);
   const seen = new Set();
   return found.filter((entry) => !/(^|\/)exo\//.test(entry.source) && !seen.has(`${entry.name} ${entry.source}`) && seen.add(`${entry.name} ${entry.source}`));
 }
 
-function findNameClashes(ownNames, others) {
-  const clashes = [];
-  const shadows = [];
-  for (const own of ownNames) {
-    for (const other of others) {
-      if (own === other.name) clashes.push({ name: own, with: other.source });
-      else if (other.name.length >= MINIMUM_PREFIX && own.startsWith(other.name)) {
-        shadows.push({ name: own, with: `${other.name} (${other.source})` });
-      }
-    }
+function clashOf(own, other) {
+  if (own === other.name) return { kind: 'clash', name: own, with: other.source };
+  if (other.name.length >= MINIMUM_PREFIX && own.startsWith(other.name)) {
+    return { kind: 'shadow', name: own, with: `${other.name} (${other.source})` };
   }
-  return { clashes, shadows };
+  return null;
+}
+
+function findNameClashes(ownNames, others) {
+  const found = ownNames.flatMap((own) => others.map((other) => clashOf(own, other)).filter(Boolean));
+  const pick = (kind) => found.filter((item) => item.kind === kind).map(({ name, with: source }) => ({ name, with: source }));
+  return { clashes: pick('clash'), shadows: pick('shadow') };
 }
 
 function skillNames(root) {
@@ -81,6 +89,12 @@ const keyOf = (item) => `${item.name} ~ ${item.with}`;
 const describe = (items) => items.map(keyOf).join('; ');
 const PINNED_SOURCE = /^(Claude Code |[\w-]+ \(Claude Code )/;
 
+function unacceptedItems(items, accepted) {
+  const open = items.filter((item) => !accepted(item));
+  const failing = open.filter((item) => PINNED_SOURCE.test(item.with));
+  return { open, failing, noted: open.filter((item) => !failing.includes(item)) };
+}
+
 export function checkNameClash(report, repository, { strict = false, marketplaces = path.join(configDirectory(), 'plugins', 'marketplaces') } = {}) {
   const others = [
     ...BUNDLED_SKILLS.map((name) => ({ name, source: 'Claude Code bundled skill' })),
@@ -89,12 +103,8 @@ export function checkNameClash(report, repository, { strict = false, marketplace
   ];
   const { clashes, shadows } = findNameClashes(skillNames(repository.root), others);
   const accepted = (item) => !strict && BASELINE.has(keyOf(item));
-  const unaccepted = clashes.filter((item) => !accepted(item));
-  const newClashes = unaccepted.filter((item) => PINNED_SOURCE.test(item.with));
-  const notedClashes = unaccepted.filter((item) => !newClashes.includes(item));
-  const newShadows = shadows.filter((item) => !accepted(item));
-  const failingShadows = newShadows.filter((item) => PINNED_SOURCE.test(item.with));
-  const noted = newShadows.filter((item) => !failingShadows.includes(item));
+  const { open: unaccepted, failing: newClashes, noted: notedClashes } = unacceptedItems(clashes, accepted);
+  const { open: newShadows, failing: failingShadows, noted } = unacceptedItems(shadows, accepted);
   const counted = `${clashes.length - unaccepted.length} exact and ${shadows.length - newShadows.length} prefix accepted in BASELINE, ${others.length} names scanned`;
   if (newClashes.length === 0) report.result('PASS', 'name clash', `no new exo skill name equals a bundled, built-in or marketplace name; ${counted}`);
   else report.result('FAIL', 'name clash', `${newClashes.length} new exact: ${describe(newClashes)}; rename the exo skill, or accept it in BASELINE with a reason`);

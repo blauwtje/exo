@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeAtomic } from '../../lib/basics.mjs';
-import { hashOf, plainChain, statOf } from '../install-files.mjs';
+import { hashOf, plainChain, statOf, tryRmdir } from '../install-files.mjs';
 
 export function planFile({ target, relative, text, recorded, plan }) {
   const file = path.join(target, ...relative.split('/'));
@@ -19,14 +19,6 @@ export function planFile({ target, relative, text, recorded, plan }) {
   }
   if (currentHash !== sha256) plan.writes.push(() => writeAtomic(file, text));
   return sha256;
-}
-
-export function tryRmdir(folder) {
-  try {
-    fs.rmdirSync(folder);
-  } catch {
-    return;
-  }
 }
 
 export function releaseFiles({ target, entries, plan }) {

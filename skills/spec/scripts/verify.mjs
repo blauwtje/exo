@@ -29,7 +29,7 @@ function numbersIn(text) {
   return (text.match(NUMBER) ?? []).map((number) => number.replace(/,/g, ''));
 }
 
-function footnoteProblem(sentence, rows, sentenceRows, hostByRef) {
+function footnoteProblem(sentence, rows, { sentenceRows, hostByRef }) {
   if (rows.length === 0) return 'no stored claim';
   const quotes = foldText(rows.map((row) => row.quote).join(' ')).replace(/(\d),(?=\d)/g, '$1');
   const quoteNumbers = new Set(numbersIn(quotes));
@@ -47,7 +47,7 @@ function sentenceFailures(sentence, claims, hostByRef) {
   const sentenceRows = claims.filter((row) => ids.has(row.id));
   for (const id of ids) {
     const rows = claims.filter((row) => row.id === id);
-    const problem = footnoteProblem(sentence, rows, sentenceRows, hostByRef);
+    const problem = footnoteProblem(sentence, rows, { sentenceRows, hostByRef });
     if (problem) failures.push(`[^${id}]\t${problem}`);
   }
   return failures;

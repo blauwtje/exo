@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { GhError, ghJson } from './gh-run.mjs';
 
 export const GH_ERROR_EXIT = 3;
 const USAGE = 'usage: pr-comment-tasks.mjs --pr <number> --root <checkout> [--repo <owner/repo>]';
@@ -12,18 +13,7 @@ const PR_NUMBER = /^[1-9][0-9]*$/;
 const EVIDENCE_LIMIT = 160;
 const TASK_DIR = path.join('.exo', 'pr-comments');
 
-class GhError extends Error {}
-
 const THREADS_QUERY = 'query($owner:String!,$name:String!,$pr:Int!){repository(owner:$owner,name:$name){pullRequest(number:$pr){reviewThreads(first:100){nodes{isResolved isOutdated comments(first:100){nodes{databaseId}}}}}}}';
-
-function ghJson(args) {
-  try {
-    return JSON.parse(execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
-  } catch (error) {
-    const errorText = `${error.stderr ?? ''}`.trim() || error.message;
-    throw new GhError((errorText.split('\n').find((line) => line.trim() !== '') ?? 'no output').trim());
-  }
-}
 
 function fetchComments(pr, repo) {
   const slug = repo ?? '{owner}/{repo}';
@@ -81,7 +71,7 @@ function findingFor(comment, quote) {
   ].join('\n');
 }
 
-function planTasks(comments, root, pr, threadStates = new Map()) {
+function planTasks(comments, threadStates, { root, pr }) {
   const tasks = [];
   const skipped = [];
   for (const comment of comments) {
@@ -124,7 +114,7 @@ function main() {
   }
   try {
     const root = path.resolve(flags.root);
-    const { tasks, skipped } = planTasks(fetchComments(flags.pr, flags.repo), root, flags.pr, fetchThreadStates(flags.pr, flags.repo));
+    const { tasks, skipped } = planTasks(fetchComments(flags.pr, flags.repo), fetchThreadStates(flags.pr, flags.repo), { root, pr: flags.pr });
     fs.mkdirSync(path.join(root, TASK_DIR), { recursive: true });
     for (const task of tasks) {
       fs.writeFileSync(task.file, task.text);

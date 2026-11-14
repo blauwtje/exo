@@ -53,7 +53,6 @@ export function checkReferenceSplit(report, repository) {
   report.assert(
     errors.length === 0,
     'Reference split',
-    'every selector pointer resolves, every reference is named and no moved line is repeated',
-    errors.join('; ')
+    { pass: 'every selector pointer resolves, every reference is named and no moved line is repeated', fail: errors.join('; ') }
   );
 }

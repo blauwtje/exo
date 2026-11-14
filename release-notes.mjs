@@ -71,27 +71,29 @@ function mergesBringing(sha) {
   return merges.filter((merge) => mainLine.has(merge.hash)).concat(merges.filter((merge) => !mainLine.has(merge.hash)));
 }
 
-function source(line) {
-  let added;
+function addingCommit(line) {
   try {
-    added = gitText(root, ['log', '--reverse', '--format=%H%x09%h%x09%s', `-S${line}`, range, '--', 'CHANGELOG.md']).split('\n')[0];
+    return gitText(root, ['log', '--reverse', '--format=%H%x09%h%x09%s', `-S${line}`, range, '--', 'CHANGELOG.md']).split('\n')[0];
   } catch {
     return undefined;
   }
+}
+
+function mergeSource(sha) {
+  const merges = mergesBringing(sha);
+  const pull = merges.map((merge) => merge.subject.match(PULL_REQUEST_MERGE)).find(Boolean);
+  if (pull) return `#${pull[1]}`;
+  const branch = merges.map((merge) => merge.subject.match(BRANCH_MERGE)).find(Boolean);
+  return branch ? `branch \`${branch[1]}\`` : undefined;
+}
+
+function source(line) {
+  const added = addingCommit(line);
   if (!added) return undefined;
   const [sha, short, subject] = added.split('\t');
   const squash = subject.match(SQUASH_SUBJECT);
   if (squash) return `#${squash[1]}`;
-  const merges = mergesBringing(sha);
-  for (const merge of merges) {
-    const match = merge.subject.match(PULL_REQUEST_MERGE);
-    if (match) return `#${match[1]}`;
-  }
-  for (const merge of merges) {
-    const match = merge.subject.match(BRANCH_MERGE);
-    if (match) return `branch \`${match[1]}\``;
-  }
-  return `[\`${short}\`](${repositoryUrl}/commit/${sha})`;
+  return mergeSource(sha) ?? `[\`${short}\`](${repositoryUrl}/commit/${sha})`;
 }
 
 function attributed(text) {

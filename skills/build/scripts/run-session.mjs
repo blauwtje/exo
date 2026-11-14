@@ -19,64 +19,82 @@ export function appendLog(file, text, write = fs.appendFileSync) {
   }
 }
 
+const EXIT_CODES = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 };
+
+function endTree(child, signal) {
+  try {
+    if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
+    else process.kill(-child.pid, signal);
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+function terminateOnSignal(child) {
+  const onSignal = (signal) => {
+    const leave = () => {
+      endTree(child, 'SIGKILL');
+      process.exit(EXIT_CODES[signal]);
+    };
+    endTree(child, 'SIGTERM');
+    if (child.exitCode !== null || child.signalCode !== null) leave();
+    else {
+      child.once('exit', leave);
+      setTimeout(leave, KILL_GRACE_MS);
+    }
+  };
+  const signals = Object.keys(EXIT_CODES);
+  for (const signal of signals) process.on(signal, onSignal);
+  const parentPid = process.ppid;
+  const parentWatch = new AbortController();
+  pollUntil(() => process.ppid !== parentPid, { intervalMs: PARENT_POLL_MS, wallMs: Infinity, unref: true, signal: parentWatch.signal })
+    .then((parentGone) => parentGone && onSignal('SIGHUP'));
+  return () => {
+    parentWatch.abort();
+    for (const signal of signals) process.off(signal, onSignal);
+  };
+}
+
+function initWatcher() {
+  let initSeen = false;
+  let partial = '';
+  return (chunk) => {
+    if (initSeen) return null;
+    const lines = (partial + chunk).split('\n');
+    partial = lines.pop();
+    const init = parseStream(lines.join('\n')).init;
+    if (init === null) return null;
+    initSeen = true;
+    return init;
+  };
+}
+
 function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {
   return new Promise((resolve) => {
     let text = '';
     let timedOut = false;
     let aborted = false;
-    let initSeen = false;
-    let partial = '';
     let settled = false;
     let graceTimer = null;
     const child = spawn(claude.command, [...claude.prefix, ...args], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
-    const endTree = (signal) => {
-      try {
-        if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
-        else process.kill(-child.pid, signal);
-      } catch {
-      }
-    };
-    const exitCodes = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 };
-    const onSignal = (signal) => {
-      const leave = () => {
-        endTree('SIGKILL');
-        process.exit(exitCodes[signal]);
-      };
-      endTree('SIGTERM');
-      if (child.exitCode !== null || child.signalCode !== null) leave();
-      else {
-        child.once('exit', leave);
-        setTimeout(leave, KILL_GRACE_MS);
-      }
-    };
-    const signals = Object.keys(exitCodes);
-    for (const signal of signals) process.on(signal, onSignal);
-    const parentPid = process.ppid;
-    const parentWatch = new AbortController();
-    pollUntil(() => process.ppid !== parentPid, { intervalMs: PARENT_POLL_MS, wallMs: Infinity, unref: true, signal: parentWatch.signal })
-      .then((parentGone) => parentGone && onSignal('SIGHUP'));
+    const stopWatching = terminateOnSignal(child);
+    const watchInit = initWatcher();
     const settle = (code, signal) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       clearTimeout(graceTimer);
-      parentWatch.abort();
-      for (const signal of signals) process.off(signal, onSignal);
+      stopWatching();
       resolve({ text, code, signal, timedOut, aborted });
     };
     const record = (chunk) => {
       text += chunk;
       appendLog(log, chunk);
-      if (initSeen) return;
-      const lines = (partial + chunk).split('\n');
-      partial = lines.pop();
-      const init = parseStream(lines.join('\n')).init;
-      if (init === null) return;
-      initSeen = true;
-      if (refuseInit(init) !== null) {
-        aborted = true;
-        endTree('SIGKILL');
-      }
+      const init = watchInit(chunk);
+      if (init === null || refuseInit(init) === null) return;
+      aborted = true;
+      endTree(child, 'SIGKILL');
     };
     child.stdout.setEncoding('utf8').on('data', record);
     child.stderr.setEncoding('utf8').on('data', record);
@@ -90,20 +108,20 @@ function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit 
       if (!timedOut && !aborted) {
         clearTimeout(graceTimer);
         graceTimer = setTimeout(() => {
-          endTree('SIGKILL');
+          endTree(child, 'SIGKILL');
           settle(code, signal);
         }, KILL_GRACE_MS);
         return;
       }
-      endTree('SIGKILL');
+      endTree(child, 'SIGKILL');
       settle(code, signal);
     });
     child.on('close', settle);
     const timer = setTimeout(() => {
       timedOut = true;
-      endTree('SIGTERM');
+      endTree(child, 'SIGTERM');
       graceTimer = setTimeout(() => {
-        endTree('SIGKILL');
+        endTree(child, 'SIGKILL');
         settle(null, 'SIGKILL');
       }, KILL_GRACE_MS);
     }, timeoutMs);
@@ -137,7 +155,7 @@ function withModel(args, model) {
   return at < 0 ? [...args, '--model', model] : args.with(at + 1, model);
 }
 
-async function spawnOnFallback(claude, args, options, outcome) {
+async function spawnOnFallback({ claude, args, options, outcome }) {
   const from = primaryModel(args);
   const to = fallbackModel(from);
   if (to === null) return outcome;
@@ -154,5 +172,5 @@ export async function spawnClaude(claude, args, options) {
     outcome = await spawnOnce(claude, args, options);
   }
   if (!retriesProviderError(outcome)) return outcome;
-  return spawnOnFallback(claude, args, options, outcome);
+  return spawnOnFallback({ claude, args, options, outcome });
 }

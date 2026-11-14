@@ -8,9 +8,7 @@ Plan on about 900 s at effort high.
 
 Decide first whether the page is an app or a document, because the two fit the screen differently.
 
-- App: launcher, feed, inbox, dashboard, editor, store, any tool someone uses daily.
-- App at 1440: it fits the 1440x900 window like a desktop app: chrome bar, panes, lists that scroll inside their pane.
-- App at 390: a phone app with a top bar and a bottom tab bar switching views.
+- App: launcher, feed, inbox, dashboard, editor, store, any tool someone uses daily; sized per the layout reference (1440 desktop window, 390 phone app).
 - Document: landing, marketing, docs and article pages, laid out per the marketing reference.
 
 ## Direction
@@ -27,7 +25,7 @@ A named direction wins: the request's own look, the repo's tokens, a plan's `## 
 
 Read the slop reference while choosing; it names the generic looks and copy tells to steer away from. Ask only when the page cannot be built without the answer; else decide and report the decision.
 
-Steer away from the exo house look, since it is what this skill produced across unrelated briefs: pale ground, serif display with sans body and mono labels, hairline rules, small stamped props. Banning a look alone swaps it for another fixed look, or leaves the space empty, so put working detail where the banned detail stood:
+Steer away from the exo house look (pale ground, serif display with sans body and mono labels, hairline rules, small stamped props). A banned look alone swaps in another fixed look, so put working detail where it stood:
 
 - Mono labels and stamped props: real labels set in the item's own color, counters, status chips, timestamps and progress.
 - Hairline rules: the world's own edges and dividers (a track line, a dock stripe, a tape edge), or a change of ground value.
@@ -51,7 +49,7 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 - Repeated items: one data array plus one render function, so content lands in the DOM before the first paint.
 - Finish: a full, working product surface, not a hero with stubs: tabs and views switch, toggles toggle, progress moves, each requested state (loading, empty, error, success) has a styled place.
 - Controls: hover, `:focus-visible`, active and disabled styles; themed `::selection`, `caret-color` and scrollbar.
-- Semantics: real `button`, `a` and `label`, heading order, alt text, `lang`, viewport meta, touch targets about 44px at 390.
+- Semantics: real `button`, `a` and `label`, heading order, alt text, `lang`, viewport meta.
 - Network: no CDN or network fonts unless the request allows them; a failed request shows as a `CONSOLE` line.
 - Copy: passes the swap test in the slop reference.
 
@@ -61,13 +59,12 @@ The floors catch what is broken; the critique catches what is weak.
 
 1. Floors: `node "${CLAUDE_SKILL_DIR}/scripts/look.mjs" <file-or-url> --out <dir>`, with `--app` for an app, one `--expect "<text>"` per explicit ask, and one `--state "<name>=<js>"` per state worth seeing (a second tab, an open sheet, a filled form, an error, keyboard focus). The JS runs in the page and puts it in that state, for example `document.querySelector('#tab-friends').click()`.
 2. Fix each printed line: `CONTRAST` (the ratio decides, not the eye), `CLIP`, `OVERLAP`, `FONTS`, `FIT`, `NAV`, `OVERFLOW`, `CONSOLE`, `MISSING`, `BELOW`, `STATE`; fixes over 2 files go to `exo:build-task` with the printed lines and you keep its return. A hidden view counts for an ask only when its tab or control is visible and its content is in the DOM.
-3. Critique: dispatch one fresh delegate whose prompt opens with `exo-kind: review` as critic with `Reads: <shot paths>` and `Worktree: <abs path>` lines, briefed per the critic reference. It sees the shots, the request and the contract, never your code or reasoning.
-4. Fix round, bounded by ledger kind `look`: act on its findings, rebuild any `rebuild` area, rerun look with `--no-shots`.
+3. Critique: dispatch one fresh delegate whose prompt opens with `exo-kind: review` as critic with `Reads: <shot paths>` and `Worktree: <abs path>` lines, briefed per the critic reference.
+4. Fix round, bounded by ledger kind `look`, as the critic reference's "Acting on it" says; rerun look with `--no-shots`.
 
 ## Report
 
-- Contents: the contract lines, files changed, shot paths, the final `LOOK fail=<n>` line, the critic's verdict and what you changed for it, each explicit ask with a pass mark, any decision taken in place of a question.
-- Length: under 15 lines, no praise of the result.
+- Report under 15 lines, no praise: the contract lines, files changed, shot paths, the final `LOOK fail=<n>` line, the critic's verdict and your fix, each explicit ask with a pass mark, and any decision taken in place of a question.
 
 ## Judgment
 

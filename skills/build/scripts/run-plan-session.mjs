@@ -44,7 +44,7 @@ export function handoffNote(ctx, number) {
 }
 
 function stallGuardOn(ctx, kind) {
-  return ctx.sandbox.enabled && BUILD_KINDS.includes(kind);
+  return ctx.provider.sandbox.enabled && BUILD_KINDS.includes(kind);
 }
 
 function costBeyondEarlierTry(ctx, reported, resume) {
@@ -57,7 +57,7 @@ function remainingBudget(ctx) {
   return [sessionCap, runCap === undefined ? undefined : Number((runCap - ctx.spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
 }
 
-export async function spawnOne(ctx, { prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = ctx.model, sessionEffort = ctx.effort, resume = null, taskCount = 1, repair = false, limitMs = ctx.timeoutMs }) {
+export async function spawnOne(ctx, { prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = ctx.provider.model, sessionEffort = ctx.provider.effort, resume = null, taskCount = 1, repair = false, limitMs = ctx.timeoutMs }) {
   const { root, provider, claude, pluginDir, ecosystemEnv, planPath } = ctx;
   if (BUILD_KINDS.includes(kind) && !(await ensureApp(ctx))) ctx.say(`app not ready, app log ends: ${appTail(ctx)}`);
   const before = snapshot(root);

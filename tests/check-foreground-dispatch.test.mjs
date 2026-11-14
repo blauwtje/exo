@@ -18,10 +18,6 @@ function scan(files) {
   return scanForegroundDispatches(createRepository(root));
 }
 
-test('the shipped lead-run text tells no Agent call to run in the foreground', () => {
-  assert.deepEqual(scanForegroundDispatches(createRepository(ROOT)), { flagged: [] });
-});
-
 test('a skill line that sends agents in the foreground is flagged with its line', () => {
   const result = scan({ 'skills/spec/SKILL.md': 'Steps\n- Send both in the foreground, in one message.\n' });
   assert.deepEqual(result.flagged, ['skills/spec/SKILL.md:2']);

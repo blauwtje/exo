@@ -13,6 +13,37 @@ function scriptFolders(repository) {
     .filter((folder) => fs.existsSync(folder) && fs.statSync(folder).isDirectory());
 }
 
+function isFile(target) {
+  return fs.existsSync(target) && fs.statSync(target).isFile();
+}
+
+function scriptFiles(folders) {
+  return folders.flatMap((folder) => fs.readdirSync(folder).sort()
+    .filter((name) => !name.startsWith('.'))
+    .map((name) => path.join(folder, name))
+    .filter((file) => fs.statSync(file).isFile()));
+}
+
+function contentProblems(relative, content) {
+  const problems = [];
+  if (PACKAGE_MANAGER_CALL.test(content)) problems.push(`${relative} runs a package manager; skill scripts install nothing`);
+  if (MACHINE_PATH.test(content)) problems.push(`${relative} hard-codes an absolute machine path`);
+  return problems;
+}
+
+function linkProblems(repository) {
+  return repository.processFiles().flatMap((file) => {
+    const folder = path.dirname(file);
+    const skillRoot = path.basename(folder) === 'references' ? path.dirname(folder) : folder;
+    return [...repository.text(file).matchAll(SCRIPT_LINK)]
+      .filter(([, siblingSkill, scriptName]) => {
+        const owningRoot = siblingSkill ? path.join(repository.skillsRoot, siblingSkill) : skillRoot;
+        return !isFile(path.join(owningRoot, 'scripts', scriptName));
+      })
+      .map(([link]) => `${repository.relative(file)} links missing ${link}`);
+  });
+}
+
 export function checkSkillScripts(report, repository) {
   const folders = scriptFolders(repository);
   if (folders.length === 0) {
@@ -20,52 +51,18 @@ export function checkSkillScripts(report, repository) {
     return;
   }
 
-  const problems = [];
-  let checked = 0;
-  const parsable = [];
-  for (const folder of folders) {
-    for (const name of fs.readdirSync(folder).sort()) {
-      if (name.startsWith('.')) continue;
-      const file = path.join(folder, name);
-      if (!fs.statSync(file).isFile()) continue;
-      const relative = repository.relative(file);
-      if (path.extname(name) !== '.mjs') {
-        problems.push(`${relative} is not a .mjs module`);
-        continue;
-      }
-      checked += 1;
-      const content = repository.text(file);
-      if (PACKAGE_MANAGER_CALL.test(content)) {
-        problems.push(`${relative} runs a package manager; skill scripts install nothing`);
-      }
-      if (MACHINE_PATH.test(content)) {
-        problems.push(`${relative} hard-codes an absolute machine path`);
-      }
-      parsable.push(file);
-    }
-  }
-
-  for (const { file, message } of syntaxFailures(parsable)) {
-    problems.push(`${repository.relative(file)} fails to parse: ${message}`);
-  }
-
-  for (const file of repository.processFiles()) {
-    let skillRoot = path.dirname(file);
-    if (path.basename(skillRoot) === 'references') skillRoot = path.dirname(skillRoot);
-    for (const match of repository.text(file).matchAll(SCRIPT_LINK)) {
-      const [link, siblingSkill, scriptName] = match;
-      const owningRoot = siblingSkill ? path.join(repository.skillsRoot, siblingSkill) : skillRoot;
-      const target = path.join(owningRoot, 'scripts', scriptName);
-      if (!(fs.existsSync(target) && fs.statSync(target).isFile())) {
-        problems.push(`${repository.relative(file)} links missing ${link}`);
-      }
-    }
-  }
+  const files = scriptFiles(folders);
+  const modules = files.filter((file) => path.extname(file) === '.mjs');
+  const problems = [
+    ...files.filter((file) => path.extname(file) !== '.mjs').map((file) => `${repository.relative(file)} is not a .mjs module`),
+    ...modules.flatMap((file) => contentProblems(repository.relative(file), repository.text(file))),
+    ...syntaxFailures(modules).map(({ file, message }) => `${repository.relative(file)} fails to parse: ${message}`),
+    ...linkProblems(repository)
+  ];
 
   report.assert(
     problems.length === 0,
     'skill scripts',
-    `${checked} skill scripts parse, install nothing, and are linked correctly`,
-    problems.join('; ')
+    { pass: `${modules.length} skill scripts parse, install nothing, and are linked correctly`, fail: problems.join('; ') }
   );
 }

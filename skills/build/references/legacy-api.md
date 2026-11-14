@@ -27,9 +27,3 @@ Refactor reshapes an internal API → callers move to the new form, old form del
 ## The one exception
 
 Adapter kept on purpose needs all three: a named reason no in-repository change can remove, an owner, and a removal date written beside it. Explicit user request counts as such a reason. Missing any → shim, delete it.
-
-## Judgment
-
-- Zero-hit search outranks a caller list believed complete from memory; rerun it after the delete.
-- The exception's three conditions outrank a deadline or line cap alone.
-- Scope decides first: caller outside this repository keeps compatibility on purpose, never this file's delete-in-place rule.

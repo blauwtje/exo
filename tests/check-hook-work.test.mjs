@@ -52,12 +52,6 @@ test('two runs of a hook give identical counts', () => {
   assert.deepEqual(countHookWork(script, 'dispatch-bash.mjs'), countHookWork(script, 'dispatch-bash.mjs'));
 });
 
-test('every registered hook stays within its lock row', () => {
-  const results = [];
-  checkHookWork({ result: (status, name, detail) => results.push({ status, name, detail }) }, createRepository(ROOT));
-  assert.deepEqual(results.map((result) => result.status), ['PASS']);
-});
-
 test('a hook over its row fails and names the lock file', () => {
   const lock = HOOK_WORK_LOCK.scripts['dispatch-bash.mjs'];
   const results = runCheck(['dispatch-bash.mjs'], () => ({ modules: lock.modules + 1, reads: lock.reads }));

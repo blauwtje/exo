@@ -22,7 +22,7 @@ test('a gate that exits 0 while its log ends FAIL=1 is refused and nothing commi
 test('a cached pass whose kept log ends FAIL=1 is not trusted, so the gate runs and refuses', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  recordPass(root, 'exit 1', 5, undefined, FAILING);
+  recordPass(root, 'exit 1', { ms: 5, output: FAILING });
   assert.throws(() => landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root }), /Land gate "exit 1" failed/);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
@@ -30,14 +30,14 @@ test('a cached pass whose kept log ends FAIL=1 is not trusted, so the gate runs 
 test('a cached pass with no kept log is not trusted', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  recordPass(root, 'exit 1', 5);
+  recordPass(root, 'exit 1', { ms: 5 });
   assert.throws(() => landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root }), /Land gate "exit 1" failed/);
 });
 
 test('a cached pass whose kept log ends clean on this tree is skipped', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  recordPass(root, 'exit 1', 5, undefined, CLEAN);
+  recordPass(root, 'exit 1', { ms: 5, output: CLEAN });
   const output = landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root });
   assert.match(output, /^Land gate "exit 1" skipped: its log shows a clean pass on this tree\.$/m);
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);

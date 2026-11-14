@@ -6,6 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { memoryDirectory } from '#memory-store';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { GhError, ghText } from './gh-run.mjs';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const USAGE = [
@@ -26,24 +27,13 @@ const DEFAULT_PROJECT_FIELDS = new Set([
   'Milestone', 'Repository', 'Reviewers', 'Parent issue', 'Sub-issues progress'
 ]);
 
-class GhError extends Error {}
-
-function gh(args) {
-  try {
-    return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch (error) {
-    const text = `${error.stderr ?? ''}`.trim() || error.message;
-    throw new GhError((text.split('\n').find((line) => line.trim() !== '') ?? 'no output').trim());
-  }
-}
-
-function optional(label, unread, fallback, read) {
+function optional(label, unread, read) {
   try {
     return read();
   } catch (error) {
     if (!(error instanceof GhError)) throw error;
     unread.push(`${label}: ${error.message}`);
-    return fallback;
+    return [];
   }
 }
 
@@ -78,8 +68,8 @@ function hasOwnVocabulary(labels, types, projects) {
 }
 
 function readProjectFields(owner, project, unread) {
-  return optional(`project ${project.number} fields`, unread, [], () => {
-    const text = gh([
+  return optional(`project ${project.number} fields`, unread, () => {
+    const text = ghText([
       'project', 'field-list', String(project.number), '--owner', owner, '--format', 'json',
       '--jq', '[.fields[]|{id,name,options:[.options[]?|{id,name}]}]'
     ]);
@@ -89,27 +79,27 @@ function readProjectFields(owner, project, unread) {
 
 function readRepository(cwd) {
   const unread = [];
-  const repoJson = JSON.parse(gh(['repo', 'view', '--json', 'owner,name,defaultBranchRef']));
+  const repoJson = JSON.parse(ghText(['repo', 'view', '--json', 'owner,name,defaultBranchRef']));
   const repo = { owner: repoJson.owner.login, name: repoJson.name, defaultBranch: repoJson.defaultBranchRef.name };
 
-  const labels = JSON.parse(gh(['label', 'list', '--limit', '100', '--json', 'name', '--jq', '[.[].name]']));
+  const labels = JSON.parse(ghText(['label', 'list', '--limit', '100', '--json', 'name', '--jq', '[.[].name]']));
 
-  const types = optional('types', unread, [], () => {
+  const types = optional('types', unread, () => {
     const query = `{repository(owner:"${repo.owner}",name:"${repo.name}"){issueTypes(first:20){nodes{name}}}}`;
-    return JSON.parse(gh(['api', 'graphql', '-f', `query=${query}`, '--jq', '[.data.repository.issueTypes.nodes[].name]']));
+    return JSON.parse(ghText(['api', 'graphql', '-f', `query=${query}`, '--jq', '[.data.repository.issueTypes.nodes[].name]']));
   });
 
-  const milestones = optional('milestones', unread, [], () => JSON.parse(
-    gh(['api', `repos/${repo.owner}/${repo.name}/milestones`, '--jq', '[.[]|{number,title}]'])
+  const milestones = optional('milestones', unread, () => JSON.parse(
+    ghText(['api', `repos/${repo.owner}/${repo.name}/milestones`, '--jq', '[.[]|{number,title}]'])
   ));
 
-  const projectList = optional('projects', unread, [], () => JSON.parse(
-    gh(['project', 'list', '--owner', repo.owner, '--format', 'json', '--jq', '[.projects[]|{number,title,id}]'])
+  const projectList = optional('projects', unread, () => JSON.parse(
+    ghText(['project', 'list', '--owner', repo.owner, '--format', 'json', '--jq', '[.projects[]|{number,title,id}]'])
   ));
   const projects = projectList.map((project) => ({ ...project, fields: readProjectFields(repo.owner, project, unread) }));
 
-  const titles = optional('titles', unread, [], () => JSON.parse(
-    gh(['issue', 'list', '--limit', '5', '--json', 'title', '--jq', '[.[].title]'])
+  const titles = optional('titles', unread, () => JSON.parse(
+    ghText(['issue', 'list', '--limit', '5', '--json', 'title', '--jq', '[.[].title]'])
   ));
 
   const root = repoRoot();
@@ -234,6 +224,19 @@ function sizeFlagsFrom(flags) {
   return { paths, criteria, shape: flags.shape, shipped: Boolean(flags.shipped), blocking: Boolean(flags.blocking), options };
 }
 
+function runSize(flags) {
+  let sizeFlags;
+  try {
+    sizeFlags = sizeFlagsFrom(flags);
+  } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    console.error(`usage: repo-fields.mjs --size --paths <n> --criteria <n> --shape spec|report [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]: ${error.message}`);
+    process.exitCode = 2;
+    return;
+  }
+  console.log(JSON.stringify(sizeFields(sizeFlags)));
+}
+
 function main() {
   let flags;
   try {
@@ -245,16 +248,7 @@ function main() {
     return;
   }
   if (flags.size) {
-    let sizeFlags;
-    try {
-      sizeFlags = sizeFlagsFrom(flags);
-    } catch (error) {
-      if (!(error instanceof UsageError)) throw error;
-      console.error(`usage: repo-fields.mjs --size --paths <n> --criteria <n> --shape spec|report [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]: ${error.message}`);
-      process.exitCode = 2;
-      return;
-    }
-    console.log(JSON.stringify(sizeFields(sizeFlags)));
+    runSize(flags);
     return;
   }
   runRepoRead(Boolean(flags.refresh));

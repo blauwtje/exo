@@ -16,7 +16,8 @@ function spokenCues(cues, duration) {
   return inside.map((cue) => ({ ...cue, text: spokenText(cue.text) })).filter((cue) => cue.text !== '');
 }
 
-function writeChunks(dir, cues, { duration, chapters, withHours, link }, options) {
+function writeChunks(dir, cues, layout) {
+  const { duration, chapters, withHours, link, options } = layout;
   const chunks = planChunks(duration, chapters, options.chunkMinutes * 60);
   const folder = path.join(dir, 'chunks');
   fs.mkdirSync(folder, { recursive: true });
@@ -44,7 +45,7 @@ export function writeOutputs({ dir, cues: heard, duration, chapters, head, capti
   const words = countWords(cues);
   const fields = { ...head, duration: formatDuration(duration), captions, words, tokens: Math.round(words * TOKENS_PER_WORD), transcript };
   if (duration > options.chunkMinutes * 120) {
-    const chunks = writeChunks(dir, cues, { duration, chapters, withHours, link }, options);
+    const chunks = writeChunks(dir, cues, { duration, chapters, withHours, link, options });
     fields.chunks = `${chunks.folder} (${chunks.count} files)`;
   }
   return { line: summaryLine(fields), transcript, words, duration, dir };

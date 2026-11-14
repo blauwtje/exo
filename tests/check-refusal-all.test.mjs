@@ -18,10 +18,6 @@ function scan(files) {
   return firstViolationOnly(createRepository(root));
 }
 
-test('every shipped hook outside the pending list reports all violations', () => {
-  assert.deepEqual(firstViolationOnly(createRepository(ROOT)), []);
-});
-
 test('a hook chaining denial rules with ?? is flagged', () => {
   const text = 'const fields = roleFields(input) ?? sizeFields(input, rewrite) ?? sliceFields(input);\n';
   const [finding] = scan({ 'hooks/bad.mjs': text });

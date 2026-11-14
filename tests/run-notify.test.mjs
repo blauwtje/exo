@@ -41,9 +41,9 @@ test('a done run and a stuck task each post one line with the plan and the phase
   const { server, posts, url } = await listener();
   const root = projectWith(url);
   const state = { id: '20261106T101500-ab12', plan: '/repo/docs/specs/2026-11-06-sample-plan.md' };
-  await notifyRun(root, state, 'landed', null);
-  await notifyRun(root, state, 'stopped', 'Task 3 is blocked: PLAN DRIFT');
-  await notifyRun(root, state, 'parked', null);
+  await notifyRun(root, state, { phase: 'landed', reason: null });
+  await notifyRun(root, state, { phase: 'stopped', reason: 'Task 3 is blocked: PLAN DRIFT' });
+  await notifyRun(root, state, { phase: 'parked', reason: null });
   server.close();
   assert.equal(posts.length, 3);
   assert.ok(posts.every((post) => post.method === 'POST' && !post.body.includes('\n')));
@@ -54,8 +54,8 @@ test('a done run and a stuck task each post one line with the plan and the phase
 
 test('an unset notify posts nothing and a refused run posts nothing', async () => {
   const { server, posts, url } = await listener();
-  await notifyRun(projectWith(''), { id: 'r1', plan: 'p.md' }, 'landed', null);
-  await notifyRun(projectWith(url), { id: 'r1', plan: 'p.md' }, 'refused', 'x');
+  await notifyRun(projectWith(''), { id: 'r1', plan: 'p.md' }, { phase: 'landed', reason: null });
+  await notifyRun(projectWith(url), { id: 'r1', plan: 'p.md' }, { phase: 'refused', reason: 'x' });
   server.close();
   assert.deepEqual(posts, []);
 });
@@ -67,7 +67,7 @@ test('a failed post logs one line and does not throw', async () => {
   const original = process.stderr.write;
   process.stderr.write = (chunk) => { written.push(String(chunk)); return true; };
   try {
-    await notifyRun(projectWith(url), { id: 'r1', plan: 'p.md' }, 'landed', null);
+    await notifyRun(projectWith(url), { id: 'r1', plan: 'p.md' }, { phase: 'landed', reason: null });
   } finally {
     process.stderr.write = original;
   }

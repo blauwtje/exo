@@ -133,10 +133,15 @@ async function flush($, context) {
   }
 }
 
+function newestOwnRun(runs, root) {
+  const own = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase) && (run.dir.startsWith(`${root}/.exo/run/`) || run.state.runRoot === root));
+  return own[own.length - 1];
+}
+
 async function tick($, context) {
   const root = await $.session.root();
   context.sessionId = await Promise.resolve().then(() => $.session.id()).catch(() => undefined);
-  const all =await readAllRuns($, root);
+  const all = await readAllRuns($, root);
   const flags = await Promise.all(all.map((run) => isLive($, run)));
   const runs = all.filter((run, i) => flags[i]);
   for (const run of runs) {
@@ -144,8 +149,7 @@ async function tick($, context) {
     else await wake($, context, run);
   }
   context.first = false;
-  const own = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase) && (run.dir.startsWith(`${root}/.exo/run/`) || run.state.runRoot === root));
-  const newest = own[own.length - 1];
+  const newest = newestOwnRun(runs, root);
   $.ui.status(newest ? statusLine(newest, await $.clock.now()) : undefined);
   if (!context.busy) await flush($, context);
 }

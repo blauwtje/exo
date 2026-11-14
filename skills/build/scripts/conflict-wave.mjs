@@ -70,6 +70,19 @@ export function keepConflict({ planPath, root, number, sha, base }) {
 
 const stop = (number, reason) => `CONFLICT ${number}: ${reason}\nStart: none\n`;
 
+function commitResolution(tree, sha) {
+  gitText(tree, ['add', '-A']);
+  if (gitText(tree, ['status', '--porcelain']) !== '') gitText(tree, ['commit', '-q', '-n', '-m', `fix: resolve conflict of ${sha}`]);
+}
+
+function squashLanded({ root, tree, branch, sha, number }) {
+  gitText(root, ['merge', '--squash', branch]);
+  gitText(root, ['commit', '-q', '-n', '--allow-empty', '-C', sha]);
+  gitText(root, ['worktree', 'remove', '--force', tree]);
+  gitText(root, ['branch', '-D', branch]);
+  return `LANDED ${number} ${gitText(root, ['rev-parse', 'HEAD'])}\nResolved branch ${branch} landed and removed; the slot folder of task ${number} is still kept.\n`;
+}
+
 export function landResolved({ planPath, root, number }) {
   const folder = folderOf(root, number);
   const tree = path.join(folder, 'tree');
@@ -78,8 +91,7 @@ export function landResolved({ planPath, root, number }) {
   const { sha, files } = JSON.parse(fs.readFileSync(path.join(folder, 'pick.json'), 'utf8'));
   const markers = conflictMarkers(tree, files);
   if (markers.length > 0) return stop(number, `branch ${branch} still has conflict markers in ${markers.join(', ')}`);
-  gitText(tree, ['add', '-A']);
-  if (gitText(tree, ['status', '--porcelain']) !== '') gitText(tree, ['commit', '-q', '-n', '-m', `fix: resolve conflict of ${sha}`]);
+  commitResolution(tree, sha);
   const frame = frameOf(parsePlan(fs.readFileSync(planPath, 'utf8')).frame);
   try {
     runLandGate(frame.landGate, tree);
@@ -89,11 +101,7 @@ export function landResolved({ planPath, root, number }) {
   }
   const block = squashBlock(root, branch);
   if (block !== null) return stop(number, `branch ${branch}: ${block.problem}; ${block.fix}`);
-  gitText(root, ['merge', '--squash', branch]);
-  gitText(root, ['commit', '-q', '-n', '--allow-empty', '-C', sha]);
-  gitText(root, ['worktree', 'remove', '--force', tree]);
-  gitText(root, ['branch', '-D', branch]);
-  return `LANDED ${number} ${gitText(root, ['rev-parse', 'HEAD'])}\nResolved branch ${branch} landed and removed; the slot folder of task ${number} is still kept.\n`;
+  return squashLanded({ root, tree, branch, sha, number });
 }
 
 const USAGE = [

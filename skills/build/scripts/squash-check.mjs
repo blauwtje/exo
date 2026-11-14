@@ -26,12 +26,14 @@ function main(argv) {
   process.exitCode = result.ok ? 0 : 1;
 }
 
-if (isMain(import.meta.url)) {
+function runMain(argv) {
   try {
-    main(process.argv.slice(2));
+    main(argv);
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     process.stderr.write(`squash-check: ${error.message}\n`);
     process.exitCode = 2;
   }
 }
+
+if (isMain(import.meta.url)) runMain(process.argv.slice(2));

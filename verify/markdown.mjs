@@ -17,12 +17,12 @@ export function markdownBody(fileName, text) {
 
 export function markdownTargets(text) {
   const seen = new Map();
-  for (const pattern of TARGET_PATTERNS) {
-    for (const match of text.matchAll(pattern)) {
-      const target = match.groups.target.trim();
-      const key = target.toLowerCase();
-      if (!seen.has(key)) seen.set(key, target);
-    }
+  const targets = TARGET_PATTERNS.flatMap((pattern) => {
+    return [...text.matchAll(pattern)].map((match) => match.groups.target.trim());
+  });
+  for (const target of targets) {
+    const key = target.toLowerCase();
+    if (!seen.has(key)) seen.set(key, target);
   }
   return [...seen.values()];
 }

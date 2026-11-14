@@ -29,16 +29,24 @@ export function installWorkflow(root, { force = false, label } = {}) {
   return { status: existing === null ? 'written' : 'replaced', target };
 }
 
+function runCli(argv) {
+  const values = parseFlags(argv, { force: 'boolean', root: 'value', label: 'value' }, { usage: 'usage: ci-render.mjs [--root <repo>] [--label <name>] [--force]; writes .github/workflows/exo-run.yml, never over an edited file without --force' });
+  const done = installWorkflow(path.resolve(values.root ?? process.cwd()), { force: values.force === true, label: values.label });
+  const refused = done.status === 'refused';
+  process.stdout.write(refused ? `exo: ${done.target} differs from the template; it may hold your edits. Rerun with --force to replace it\n` : `exo: ${done.status} ${done.target}; add the repository secret ANTHROPIC_API_KEY and allow Actions to create pull requests\n`);
+  process.exitCode = refused ? 2 : 0;
+}
+
+function reportUsage(error) {
+  if (!(error instanceof UsageError)) throw error;
+  process.stderr.write(`exo: ${error.message}\n`);
+  process.exitCode = 2;
+}
+
 if (isMain(import.meta.url)) {
   try {
-    const values = parseFlags(process.argv.slice(2), { force: 'boolean', root: 'value', label: 'value' }, { usage: 'usage: ci-render.mjs [--root <repo>] [--label <name>] [--force]; writes .github/workflows/exo-run.yml, never over an edited file without --force' });
-    const done = installWorkflow(path.resolve(values.root ?? process.cwd()), { force: values.force === true, label: values.label });
-    const refused = done.status === 'refused';
-    process.stdout.write(refused ? `exo: ${done.target} differs from the template; it may hold your edits. Rerun with --force to replace it\n` : `exo: ${done.status} ${done.target}; add the repository secret ANTHROPIC_API_KEY and allow Actions to create pull requests\n`);
-    process.exitCode = refused ? 2 : 0;
+    runCli(process.argv.slice(2));
   } catch (error) {
-    if (!(error instanceof UsageError)) throw error;
-    process.stderr.write(`exo: ${error.message}\n`);
-    process.exitCode = 2;
+    reportUsage(error);
   }
 }

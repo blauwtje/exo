@@ -41,16 +41,21 @@ function hasConfirmButton(inner) {
   return false;
 }
 
+function hiddenFields(formHtml) {
+  const fields = new URLSearchParams();
+  for (const [, inputAttrs] of formHtml.matchAll(INPUT)) {
+    const name = attr(inputAttrs, 'name');
+    if (name && /hidden/i.test(attr(inputAttrs, 'type') ?? '')) fields.append(name, attr(inputAttrs, 'value') ?? '');
+  }
+  return fields;
+}
+
 function formStep(html, base) {
   for (const [, attrs, inner] of html.matchAll(FORM)) {
     if (!hasConfirmButton(inner)) continue;
     const target = sameOrigin(attr(attrs, 'action') || base, base);
     if (!target) continue;
-    const fields = new URLSearchParams();
-    for (const [, inputAttrs] of inner.matchAll(INPUT)) {
-      const name = attr(inputAttrs, 'name');
-      if (name && /hidden/i.test(attr(inputAttrs, 'type') ?? '')) fields.append(name, attr(inputAttrs, 'value') ?? '');
-    }
+    const fields = hiddenFields(inner);
     if (/post/i.test(attr(attrs, 'method') ?? '')) {
       return { url: target.href, init: { method: 'POST', body: fields.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } } };
     }

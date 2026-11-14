@@ -88,16 +88,20 @@ function discardBranch(root, worktree, branch) {
   return left;
 }
 
+function checkPathspec(flag, entry) {
+  try {
+    matchScope(['probe'], [entry]);
+  } catch (error) {
+    if (!(error instanceof ScopeError)) throw error;
+    throw new SetupError(`--${flag} entry is not a valid :(glob) pathspec: ${entry} (${error.message})`);
+  }
+}
+
 function checkEntries(flag, entries) {
   for (const entry of entries) {
     const rel = path.posix.normalize(entry);
     if (path.isAbsolute(entry) || rel === '..' || rel.startsWith('../')) throw new SetupError(`--${flag} entry must be relative and inside the repository: ${entry}`);
-    try {
-      matchScope(['probe'], [entry]);
-    } catch (error) {
-      if (!(error instanceof ScopeError)) throw error;
-      throw new SetupError(`--${flag} entry is not a valid :(glob) pathspec: ${entry} (${error.message})`);
-    }
+    checkPathspec(flag, entry);
   }
 }
 

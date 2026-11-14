@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
+import { GhError, ghJson } from './gh-run.mjs';
 
 export const GH_ERROR_EXIT = 3;
 const USAGE = 'usage: ship-gate.mjs --pr <number> | --order <number>...';
@@ -10,8 +10,6 @@ const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,stat
 const ORDER_FIELDS = 'number,baseRefName,headRefName';
 const PASSING_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
 const PR_NUMBER = /^[1-9][0-9]*$/;
-
-class GhError extends Error {}
 
 function holdingCheck(check) {
   const name = check.name || check.context || 'unnamed';
@@ -61,13 +59,7 @@ export function stackOrder(pullRequests) {
 }
 
 function viewPullRequest(number, fields) {
-  try {
-    const text = execFileSync('gh', ['pr', 'view', number, '--json', fields], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-    return JSON.parse(text);
-  } catch (error) {
-    const errorText = `${error.stderr ?? ''}`.trim() || error.message;
-    throw new GhError((errorText.split('\n').find((line) => line.trim() !== '') ?? 'no output').trim());
-  }
+  return ghJson(['pr', 'view', number, '--json', fields]);
 }
 
 function readFlags(argv) {

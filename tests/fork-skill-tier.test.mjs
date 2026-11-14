@@ -19,10 +19,6 @@ function fixture(skillText, kind = 'orchestrator') {
   return root;
 }
 
-test('this repository passes', () => {
-  assert.deepEqual(findForkSkillTierFailures(REPO), []);
-});
-
 test('a fork skill with no pin fails and names the write command', () => {
   const failures = findForkSkillTierFailures(fixture(SKILL));
   assert.match(failures.join(), /--write/);

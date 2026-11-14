@@ -6,22 +6,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { tempDir } from './harness.mjs';
+import { hookEntries, tempDir } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
 const BASH = ['/bin/bash', '/usr/bin/bash'].find((candidate) => fs.existsSync(candidate));
 const PRE_TOOL_USE_CALLS = 10;
-
-function hookEntries() {
-  const entries = [];
-  for (const [event, groups] of Object.entries(HOOKS)) {
-    for (const group of groups) {
-      for (const hook of group.hooks) entries.push({ event, matcher: group.matcher, hook });
-    }
-  }
-  return entries;
-}
 
 function runHook(hook, input, pathValue) {
   return spawnSync(BASH, ['-c', hook.command], {

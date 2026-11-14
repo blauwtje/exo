@@ -1,6 +1,6 @@
 # Reopening a stored brief
 
-This page keeps one outcome to one brief. New wishes edit it where it stands. The enemy is a second brief for the same outcome that disagrees with the first by the next edit. The overcorrection is folding a different outcome into an old brief because its title shares a word.
+This page keeps one outcome to one brief. New wishes edit it where it stands.
 
 ## Steps
 

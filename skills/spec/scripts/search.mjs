@@ -63,6 +63,12 @@ export async function searchMany(request, context) {
 
 const SINGLE_FLAGS = ['source', 'query', 'run', 'limit', 'subreddit', 'sort', 'time'];
 
+function flagName(token) {
+  const name = token.slice(2);
+  if (name !== 'url' && !SINGLE_FLAGS.includes(name)) throw new Error(`unknown flag ${token}`);
+  return name;
+}
+
 export function parseArgs(argv) {
   const values = {};
   let owner = null;
@@ -73,8 +79,7 @@ export function parseArgs(argv) {
       continue;
     }
     if (token.startsWith('--')) {
-      owner = token.slice(2);
-      if (owner !== 'url' && !SINGLE_FLAGS.includes(owner)) throw new Error(`unknown flag ${token}`);
+      owner = flagName(token);
       continue;
     }
     if (owner === 'url') {

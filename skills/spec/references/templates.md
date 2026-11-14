@@ -1,6 +1,6 @@
 # Plan templates and the done-list
 
-A template is a landed plan with its changing words turned into parameters, so recurring work starts from a shape that already passed the plan check. The enemy is a plan written fresh each time that drops a step the last one needed. The overcorrection is a template offered for work it only resembles.
+A template is a landed plan with its changing words turned into parameters, so recurring work starts from a shape that already passed the plan check.
 
 Both live in the repository under version control, beside the plans `build` already searches, so a fresh session and every teammate read the same files:
 

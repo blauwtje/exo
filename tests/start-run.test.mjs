@@ -17,8 +17,8 @@ function fixture() {
   fs.mkdirSync(path.dirname(plan), { recursive: true });
   fs.writeFileSync(plan, [
     '# Demo', '', '## Goal', 'g', '', '## Plan basis', `Repository: ${repo}`, 'Branch: work', 'Worktree setup: none',
-    'Land gate: node --version','Land: local', 'Commit: feat(x): y', 'Lint: none', 'Allow: none', '',
-    '## Success criterion', '`true`', 'Red: none (demo plan)','Product run: none', '',
+    'Land gate: node --version', 'Land: local', 'Commit: feat(x): y', 'Lint: none', 'Allow: none', '',
+    '## Success criterion', '`true`', 'Red: none (demo plan)', 'Product run: none', '',
     '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none', '- Smallest safe split: one each', '',
     '## Tasks', '### Task 1: feat(x): one', 'Depends on: none | Files: `a.txt` | Data: d | Proof: true', '',
     '### Task 2: feat(x): two', 'Depends on: 1 | Files: `b.txt` | Data: d | Proof: true', '',

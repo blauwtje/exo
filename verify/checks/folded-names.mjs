@@ -67,8 +67,7 @@ export function checkFoldedNames(report, repository) {
   report.assert(
     hits.length === 0,
     NAME,
-    'no file names a folded skill or agent, a folded skill path or a MODE.md',
-    `run node verify/fold-skills.mjs --from <name> --into <owner>; found: ${hits.slice(0, 5).join(' | ')}${hits.length > 5 ? ` (+${hits.length - 5} more)` : ''}`
+    { pass: 'no file names a folded skill or agent, a folded skill path or a MODE.md', fail: `run node verify/fold-skills.mjs --from <name> --into <owner>; found: ${hits.slice(0, 5).join(' | ')}${hits.length > 5 ? ` (+${hits.length - 5} more)` : ''}` }
   );
 }
 

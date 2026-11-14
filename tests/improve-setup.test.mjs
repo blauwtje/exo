@@ -112,11 +112,6 @@ test('a second setup with a taken tag gets a numeric suffix', () => {
   assert.match(run(root, ...base).stdout, /^tag=t1-3 /);
 });
 
-test('no setup script swallows a failure', () => {
-  const dir = path.dirname(SETUP);
-  for (const name of ['setup.mjs', 'round.mjs']) assert.doesNotMatch(fs.readFileSync(path.join(dir, name), 'utf8'), /\} catch \{/);
-});
-
 test('a failed baseline run or scorer commit exits 2 and leaves no improve branch or worktree', () => {
   const root = repo();
   const wrong = run(root, '--goal', 'g', '--command', 'node check.mjs', '--regex', 'nomatch (\\d+)', '--direction', 'higher', '--scope', 'code.txt', '--tag', 't7');

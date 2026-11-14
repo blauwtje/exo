@@ -15,7 +15,3 @@ For wrong output or a timeout, use the main `find-cause` loop, unless speed is t
 5. **Apply the decision rule.** Keep the change only when the median improves by more than the larger of the before and after spreads. Otherwise revert it before testing another candidate.
 6. **Stop at two reverts.** After the second reverted candidate, go to the report step, because a third guess at the same region is intuition, not measurement.
 7. **Report evidence.** Give the before and after medians, both spreads, the measurement method, the input and the mechanism changed.
-
-## Judgment
-
-- End-to-end measurements on the reported path outrank faster micro-benchmarks elsewhere.

@@ -28,31 +28,45 @@ function sessionStartWords(repository) {
   }
 }
 
+function blockedMessage(repository, file) {
+  return `count blocked by unparsed frontmatter in ${repository.relative(file)}`;
+}
+
+function skillWords(repository) {
+  let total = 0;
+  for (const file of repository.everySkillFile()) {
+    const parsed = readFrontmatter(repository.lines(file));
+    if (parsed.errors.length > 0) return { blocked: blockedMessage(repository, file) };
+    if (parsed.values.get('disable-model-invocation') === 'true') continue;
+    total += words(`${parsed.values.get('name') ?? path.basename(path.dirname(file))} ${parsed.values.get('description') ?? ''}`);
+  }
+  return { total };
+}
+
+function agentWords(repository) {
+  let total = 0;
+  for (const file of repository.agentFiles()) {
+    const { fields } = splitFrontmatter(fs.readFileSync(file, 'utf8'));
+    if (fields === null) return { blocked: blockedMessage(repository, file) };
+    total += words(`${fields.name ?? path.basename(file, '.md')} ${fields.description ?? ''}`);
+  }
+  return { total };
+}
+
 export function checkSessionLoad(report, repository) {
   const start = sessionStartWords(repository);
   if (start.error) {
     report.result('UNRUN', 'session load', start.error);
     return;
   }
-  let skills = 0;
-  for (const file of repository.everySkillFile()) {
-    const parsed = readFrontmatter(repository.lines(file));
-    if (parsed.errors.length > 0) {
-      report.result('UNRUN', 'session load', `count blocked by unparsed frontmatter in ${repository.relative(file)}`);
-      return;
-    }
-    if (parsed.values.get('disable-model-invocation') === 'true') continue;
-    skills += words(`${parsed.values.get('name') ?? path.basename(path.dirname(file))} ${parsed.values.get('description') ?? ''}`);
+  const skillCount = skillWords(repository);
+  const agentCount = skillCount.blocked ? skillCount : agentWords(repository);
+  if (agentCount.blocked) {
+    report.result('UNRUN', 'session load', agentCount.blocked);
+    return;
   }
-  let agents = 0;
-  for (const file of repository.agentFiles()) {
-    const { fields } = splitFrontmatter(fs.readFileSync(file, 'utf8'));
-    if (fields === null) {
-      report.result('UNRUN', 'session load', `count blocked by unparsed frontmatter in ${repository.relative(file)}`);
-      return;
-    }
-    agents += words(`${fields.name ?? path.basename(file, '.md')} ${fields.description ?? ''}`);
-  }
+  const skills = skillCount.total;
+  const agents = agentCount.total;
   if (start.bytes > SESSION_START_BYTES_LOCK.bytes) {
     report.result('FAIL', 'session load', `hooks/session-start.mjs injects ${start.bytes} bytes, over the ${SESSION_START_BYTES_LOCK.bytes} locked on ${SESSION_START_BYTES_LOCK.measured}; cut the text, or raise the lock in verify/budgets.mjs in the commit that pays for it`);
     return;

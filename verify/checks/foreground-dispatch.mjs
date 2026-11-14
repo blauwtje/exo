@@ -48,7 +48,6 @@ export function checkForegroundDispatch(report, repository) {
   report.assert(
     flagged.length === 0,
     'foreground dispatch',
-    'no lead-run text tells an Agent call to run in the foreground',
-    `${flagged.join(', ')} tell an Agent call to run in the foreground; the lead dispatches in the background and waits for the completion notification`
+    { pass: 'no lead-run text tells an Agent call to run in the foreground', fail: `${flagged.join(', ')} tell an Agent call to run in the foreground; the lead dispatches in the background and waits for the completion notification` }
   );
 }

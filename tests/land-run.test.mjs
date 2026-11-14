@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { landRun } from '../skills/build/scripts/land-run.mjs';
 import { readGates, approveGates } from '../skills/build/scripts/run-state.mjs';
 import { recordPass } from '#check-cache';
-import { git, tempDir } from './harness.mjs';
+import { git, restoreEnv, tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-run.mjs', import.meta.url));
 const gitOk = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' }).status === 0;
@@ -16,42 +16,59 @@ const write = (dir, file, text) => {
   fs.writeFileSync(path.join(dir, file), text);
 };
 
-function fixture({ origin = true } = {}) {
-  const dir = tempDir('land-run-');
-  const bare = path.join(dir, 'origin.git');
-  const root = path.join(dir, 'work');
+function commitAll(root, message) {
+  git(root, 'add', '.');
+  git(root, 'commit', '-qm', message);
+}
+
+function initWork(root) {
   fs.mkdirSync(root);
   git(root, 'init', '-q', '-b', 'main');
   git(root, 'config', 'user.email', 't@t');
   git(root, 'config', 'user.name', 't');
   write(root, '.gitignore', '.exo/\n');
   write(root, 'a.txt', 'a\n');
-  git(root, 'add', '.');
-  git(root, 'commit', '-qm', 'init');
-  if (origin) {
-    git(dir, 'init', '-q', '--bare', '-b', 'main', bare);
-    git(root, 'remote', 'add', 'origin', bare);
-    git(root, 'push', '-q', 'origin', 'main');
-  }
-  git(root, 'switch', '-q', '-c', 'feat');
-  write(root, 'b.txt', 'b\n');
-  git(root, 'add', '.');
-  git(root, 'commit', '-qm', 'feat');
-  const runDir = path.join(root, '.exo', 'run', 'r1');
-  fs.mkdirSync(runDir, { recursive: true });
-  const stubs = path.join(dir, 'bin');
+  commitAll(root, 'init');
+}
+
+function addOrigin(dir, root, bare) {
+  git(dir, 'init', '-q', '--bare', '-b', 'main', bare);
+  git(root, 'remote', 'add', 'origin', bare);
+  git(root, 'push', '-q', 'origin', 'main');
+}
+
+function writeGhStub(stubs) {
   write(stubs, 'gh', '#!/bin/sh\necho "$@" >> "$GH_LOG"\n[ -n "$GH_FAIL" ] && { echo boom >&2; exit 1; }\necho https://example.test/pr/1\n');
   fs.chmodSync(path.join(stubs, 'gh'), 0o755);
-  const opts = { root, runRoot: root, branch: 'feat', mode: 'local', commit: 'feat(x): add x', runDir, success: '`true`' };
-  const land = (patch = {}) => {
+}
+
+function landWithStubs({ stubs, dir, opts }) {
+  return (patch = {}) => {
     const saved = { PATH: process.env.PATH, GH_LOG: process.env.GH_LOG, GH_FAIL: process.env.GH_FAIL };
     process.env.PATH = `${stubs}${path.delimiter}${saved.PATH}`;
     process.env.GH_LOG = path.join(dir, 'gh.log');
     process.env.GH_FAIL = patch.ghFail ? '1' : '';
     try { return landRun({ ...opts, ...patch }); } finally {
-      for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+      restoreEnv(saved);
     }
   };
+}
+
+function fixture({ origin = true } = {}) {
+  const dir = tempDir('land-run-');
+  const bare = path.join(dir, 'origin.git');
+  const root = path.join(dir, 'work');
+  initWork(root);
+  if (origin) addOrigin(dir, root, bare);
+  git(root, 'switch', '-q', '-c', 'feat');
+  write(root, 'b.txt', 'b\n');
+  commitAll(root, 'feat');
+  const runDir = path.join(root, '.exo', 'run', 'r1');
+  fs.mkdirSync(runDir, { recursive: true });
+  const stubs = path.join(dir, 'bin');
+  writeGhStub(stubs);
+  const opts = { root, runRoot: root, branch: 'feat', mode: 'local', commit: 'feat(x): add x', runDir, success: '`true`' };
+  const land = landWithStubs({ stubs, dir, opts });
   const refs = () => git(bare, 'for-each-ref', '--format=%(refname) %(objectname)');
   return { dir, bare, root, runDir, opts, land, refs, ghLog: path.join(dir, 'gh.log') };
 }
@@ -217,14 +234,14 @@ test('a local main ahead of origin main is the rebase target and keeps its commi
 
 test('an unmoved branch whose tree last passed the criterion skips the re-check', () => {
   const f = fixture();
-  recordPass(f.root, 'false', 1, undefined, 'SUMMARY PASS=1 FAIL=0 WARN=0 UNRUN=0');
+  recordPass(f.root, 'false', { ms: 1, output: 'SUMMARY PASS=1 FAIL=0 WARN=0 UNRUN=0' });
   assert.equal(f.land({ success: '`false`' }).phase, 'landed');
   assert.equal(fixture().land({ success: '`mcp:browser check`' }).phase, 'landed');
 });
 
 test('a branch rebased by hand after its last criterion pass reruns the re-check', () => {
   const f = fixture();
-  recordPass(f.root, 'false', 1, undefined, 'SUMMARY PASS=1 FAIL=0 WARN=0 UNRUN=0');
+  recordPass(f.root, 'false', { ms: 1, output: 'SUMMARY PASS=1 FAIL=0 WARN=0 UNRUN=0' });
   const other = path.join(f.dir, 'other');
   git(f.dir, 'clone', '-q', f.bare, other);
   git(other, 'config', 'user.email', 't@t');

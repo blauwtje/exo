@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { receiptsOn } from '../hooks/context-limit.mjs';
 import { SCHEMA, settingOrDefault } from '../lib/settings-store.mjs';
-import { tempDir } from './harness.mjs';
+import { restoreEnv, tempDir } from './harness.mjs';
 
 const AGENT_HOOK = fileURLToPath(new URL('../hooks/agent-effort.mjs', import.meta.url));
 const SETTINGS = fileURLToPath(new URL('../skills/configure/scripts/settings.mjs', import.meta.url));
@@ -28,10 +28,7 @@ function inProject(directory, work) {
   try {
     return work();
   } finally {
-    for (const [name, value] of Object.entries(saved)) {
-      if (value === undefined) delete process.env[name];
-      else process.env[name] = value;
-    }
+    restoreEnv(saved);
   }
 }
 

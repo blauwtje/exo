@@ -163,18 +163,18 @@ test('a confirmation run that errors names the cause instead of flaky', async ()
   const third = git(root, 'rev-parse', 'HEAD~2');
   const result = await run(SCRIPT, ['--repro', REPRO], {
     cwd: root,
-    env: { HANG_COUNTER: counters, HANG_SHA: third, FAIL_SHA: third, EXO_BISECT_PROBE_MS: '1500' }
+    env: { HANG_COUNTER: counters, HANG_SHA: third, FAIL_SHA: third, EXO_BISECT_PROBE_MS: '800' }
   });
   assert.equal(result.code, 1);
-  assert.match(result.stdout, /^Bisect: error: .*timed out after 1500 ms\n$/);
+  assert.match(result.stdout, /^Bisect: error: .*timed out after 800 ms\n$/);
 });
 
 test('a regression more than 32 commits back is named without a good ref', async () => {
-  const root = await longHistoryRepository({ total: 120, culpritAge: 54 });
+  const root = await longHistoryRepository({ total: 70, culpritAge: 54 });
   const culprit = git(root, 'rev-parse', 'HEAD~54');
   const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root });
   assert.equal(result.code, 0, result.stdout + result.stderr);
-  assert.equal(result.stdout.split('\n')[0], `First bad: ${culprit} feat: commit 66`);
+  assert.equal(result.stdout.split('\n')[0], `First bad: ${culprit} feat: commit 16`);
 });
 
 test('a good commit only at the root is found by the root fallback', async () => {

@@ -9,7 +9,7 @@ import { frameOf } from '#plan-frame';
 import { INLINE_TASK_LIMIT } from '#plan-waves';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { stallSeconds } from '#stall-guard';
-import { taskBrief } from './next-task-brief.mjs';
+import { relativeTaskBrief } from './next-task-brief.mjs';
 import { SCRIPT } from './run-session-paths.mjs';
 
 const SKILL_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -53,7 +53,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     task: `Task ${number}`,
     plan: planPath,
     root: relativeFor(root, root),
-    brief: [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root, { relative: true }).trimEnd()].join('\n'),
+    brief: [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), relativeTaskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
     codeRules: `\`${codeRulesCommand(planPath, number, root)}\``,
     landGate: landGate === 'none' ? '' : `- After the code rules print \`Code rules OK\` and before "Task ${number} is done", run the plan's Land gate with \`node ${RUN_CHECK} ${landGate}\` and fix every failure it prints until it passes, except one that names only words in the task's \`Drops:\` line: land-task drops those.\n`,
     extra,
@@ -68,7 +68,7 @@ export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
   const briefs = numbers.map((number) => {
     const task = plan.tasks.find((entry) => entry.number === number);
     const unlanded = { ...task, section: task.section.replace(COMMIT_BLOCK, '').trimEnd() };
-    return [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(unlanded, frameOf(plan.frame), root, { relative: true }).trimEnd()].join('\n');
+    return [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), relativeTaskBrief(unlanded, frameOf(plan.frame), root).trimEnd()].join('\n');
   });
   const fields = {
     tasks: `${numbers.length === 1 ? 'Task' : 'Tasks'} ${numbers.join(', ')}`,

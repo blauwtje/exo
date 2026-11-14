@@ -334,9 +334,9 @@ test('out-of-scope: a failing covering test of a changed file refuses the land, 
 test('out-of-scope: a covering test that times out refuses the land, naming the test file and the timeout', async () => {
   const checkout = await coveringCheckout({ 'tests/covers.test.mjs': COVERING_HANG });
   const head = git(checkout.root, 'rev-parse', 'HEAD');
-  const result = await landFromCli(checkout, { EXO_PROOF_TIMEOUT_MS: '2000' });
+  const result = await landFromCli(checkout, { EXO_PROOF_TIMEOUT_MS: '1000' });
   assert.equal(result.code, 1, result.stderr);
-  assert.match(result.stderr, /Task 1: 1 covering test\(s\) of the changed files failed:\ntests\/covers\.test\.mjs failed \(timed out after 2s\):/);
+  assert.match(result.stderr, /Task 1: 1 covering test\(s\) of the changed files failed:\ntests\/covers\.test\.mjs failed \(timed out after 1s\):/);
   assert.equal(git(checkout.root, 'rev-parse', 'HEAD'), head);
 });
 
@@ -376,13 +376,12 @@ test('a Budget-raise line in the report is on the candidate during the Land gate
   assert.match(body, /^Plan-task: fixture\/1$/m);
 });
 
-test('a Land gate that passes only on an untracked file outside the commit is refused, and the worktree is removed', async () => {
+test('a Land gate that passes only on a nested worktree outside the commit is refused, and the worktree is removed', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  await fs.mkdir(path.join(root, '.github'));
-  await fs.writeFile(path.join(root, '.github/stray.txt'), 'only here\n');
-  const planText = withLandGate('test -e .github/stray.txt').replace('git add .', 'git add src/app.js');
-  assert.throws(() => landTask({ planPath, planText, number: 1, root }), /Land gate "test -e \.github\/stray\.txt" failed/);
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'nested'));
+  const planText = withLandGate('test -e nested/.git').replace('git add .', 'git add src/app.js');
+  assert.throws(() => landTask({ planPath, planText, number: 1, root }), /Land gate "test -e nested\/\.git" failed/);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
   assert.doesNotMatch(git(root, 'worktree', 'list'), /gate-/);
 });
@@ -392,8 +391,7 @@ test('the setup of the detached candidate sees the slot variables', async () => 
   await editApp(root);
   await fs.mkdir(path.join(root, '.exo'), { recursive: true });
   await fs.writeFile(path.join(root, '.exo/slot.env'), 'export EXO_SLOT="3"\n');
-  await fs.mkdir(path.join(root, '.github'));
-  await fs.writeFile(path.join(root, '.github/stray.txt'), 'only here\n');
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'nested'));
   const planText = withLandGate('test "$(cat slot-seen.txt)" = 3')
     .replace('Branch: feat/fixture', 'Branch: feat/fixture\nWorktree setup: printf %s "$EXO_SLOT" > slot-seen.txt')
     .replace('git add .', 'git add src/app.js');

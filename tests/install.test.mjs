@@ -14,7 +14,7 @@ const base = fs.realpathSync(tempDir('install-test-'));
 
 const calls = [];
 
-function stub(name, label, state = { detected: true, installable: true }, fail = false, count = 0) {
+function stub(name, label, { state = { detected: true, installable: true }, fail = false, count = 0 } = {}) {
   return {
     name,
     label,
@@ -100,8 +100,8 @@ test('without a terminal the installer behaves as --yes', async () => {
 test('a harness that is absent is skipped and one that is blocked is listed with its reason', async () => {
   register(
     stub('here', 'Here'),
-    stub('absent', 'Absent', { detected: false, installable: false }),
-    stub('blocked', 'Blocked', { detected: true, installable: false, reason: 'its CLI is missing' })
+    stub('absent', 'Absent', { state: { detected: false, installable: false } }),
+    stub('blocked', 'Blocked', { state: { detected: true, installable: false, reason: 'its CLI is missing' } })
   );
   const result = await exo(['--yes']);
   assert.deepEqual(calls, [['install', 'here', 'user', undefined]]);
@@ -110,7 +110,7 @@ test('a harness that is absent is skipped and one that is blocked is listed with
 });
 
 test('--harness picks adapters by name and refuses an unknown or a blocked one before any write', async () => {
-  register(stub('one', 'First'), stub('two', 'Second'), stub('blocked', 'Blocked', { detected: true, installable: false, reason: 'its CLI is missing' }));
+  register(stub('one', 'First'), stub('two', 'Second'), stub('blocked', 'Blocked', { state: { detected: true, installable: false, reason: 'its CLI is missing' } }));
   const picked = await exo(['--harness', 'two']);
   assert.equal(picked.code, 0);
   assert.deepEqual(calls, [['install', 'two', 'user', undefined]]);
@@ -122,7 +122,7 @@ test('--harness picks adapters by name and refuses an unknown or a blocked one b
 });
 
 test('no installable harness is an error naming why', async () => {
-  register(stub('blocked', 'Blocked', { detected: true, installable: false, reason: 'its CLI is missing' }));
+  register(stub('blocked', 'Blocked', { state: { detected: true, installable: false, reason: 'its CLI is missing' } }));
   assert.match((await exo(['--yes'])).thrown, /no harness to install into \(Blocked: its CLI is missing\)/);
   assert.deepEqual(calls, []);
 });
@@ -201,7 +201,7 @@ test('an invalid scope answer aborts before any write', async () => {
 });
 
 test('one failed install is reported, the others still run and the exit code is 1', async () => {
-  register(stub('bad', 'Bad', undefined, true), stub('good', 'Good'));
+  register(stub('bad', 'Bad', { fail: true }), stub('good', 'Good'));
   const result = await exo(['--yes']);
   assert.equal(result.code, 1);
   assert.match(result.err, /Bad failed: bad exploded/);
@@ -250,7 +250,7 @@ test('--remove asks every adapter, or only the matching ones, to remove what the
 });
 
 test('--recorded prints the label of each adapter that still records an install', async () => {
-  register(stub('one', 'First', undefined, false, 2), stub('two', 'Second'), stub('three', 'Third', undefined, false, 1));
+  register(stub('one', 'First', { count: 2 }), stub('two', 'Second'), stub('three', 'Third', { count: 1 }));
   const result = await exo(['--recorded']);
   assert.equal(result.code, 0);
   assert.equal(result.out, 'First\nThird\n');

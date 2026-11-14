@@ -20,7 +20,7 @@ function fixture(files) {
 
 function detail(files) {
   const messages = [];
-  const report = { assert: (ok, ...texts) => messages.push(ok ? '' : texts.at(-1)) };
+  const report = { assert: (ok, name, details) => messages.push(ok ? '' : details.fail) };
   checkLoopKinds(report, createRepository(fixture(files)));
   return messages.join('');
 }
@@ -50,7 +50,7 @@ test('a kind its owner never reads fails and a missing table fails', () => {
   const messages = [];
   const root = fixture({});
   fs.rmSync(path.join(root, 'lib', 'loop-kinds.json'));
-  checkLoopKinds({ assert: (ok, ...texts) => messages.push(ok ? '' : texts.at(-1)) }, createRepository(root));
+  checkLoopKinds({ assert: (ok, name, details) => messages.push(ok ? '' : details.fail) }, createRepository(root));
   assert.match(messages.join(''), /missing/);
 });
 

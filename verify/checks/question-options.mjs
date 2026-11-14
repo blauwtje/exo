@@ -39,32 +39,53 @@ const QUESTION_REASON = /^Recommended: \(([A-Z])\), because (\S.*)$/;
 
 const words = (text) => text.trim().split(/\s+/).length;
 
-function questionCapFindings(repository) {
-  const files = sourceFiles(repository, []);
+function isFence(line) {
+  return /^\s*```/.test(line);
+}
+
+function blockAfter(lines, open) {
+  let end = open + 1;
+  while (end < lines.length && !isFence(lines[end])) end++;
+  return lines.slice(open + 1, end).map((line) => line.trim());
+}
+
+function exceedsContextCap(block) {
+  const blank = block.indexOf('');
+  const context = block.slice(1, blank < 0 ? block.length : blank).join(' ');
+  const sentences = context.split(/[.!?](?:\s|$)/).filter((part) => part.trim() !== '');
+  return sentences.length > 1 || sentences.some((sentence) => words(sentence) > QUESTION_CAPS.context);
+}
+
+function exceedsLineCap(text) {
+  const option = text.match(QUESTION_OPTION);
+  if (option && (words(option[2]) > QUESTION_CAPS.label || words(option[3]) > QUESTION_CAPS.option)) return true;
+  const reason = text.match(QUESTION_REASON);
+  return Boolean(reason) && words(reason[2]) > QUESTION_CAPS.reason;
+}
+
+function blockOffenders(block) {
+  const offsets = [];
+  if (words(block[0].match(QUESTION_TITLE)[1]) > QUESTION_CAPS.title) offsets.push(1);
+  if (exceedsContextCap(block)) offsets.push(2);
+  block.forEach((text, index) => {
+    if (exceedsLineCap(text)) offsets.push(index + 1);
+  });
+  return offsets;
+}
+
+function fileCapFindings(repository, file) {
+  const lines = repository.lines(file);
   const findings = [];
-  for (const file of files) {
-    const lines = repository.lines(file);
-    for (let open = 0; open < lines.length; open++) {
-      if (!/^\s*```/.test(lines[open]) || !QUESTION_TITLE.test((lines[open + 1] ?? '').trim())) continue;
-      const rel = repository.relative(file);
-      const flag = (offset) => findings.push({ path: rel, line: open + 1 + offset });
-      let end = open + 1;
-      while (end < lines.length && !/^\s*```/.test(lines[end])) end++;
-      const block = lines.slice(open + 1, end).map((line) => line.trim());
-      if (words(block[0].match(QUESTION_TITLE)[1]) > QUESTION_CAPS.title) flag(1);
-      const blank = block.indexOf('');
-      const context = block.slice(1, blank < 0 ? block.length : blank).join(' ');
-      const sentences = context.split(/[.!?](?:\s|$)/).filter((part) => part.trim() !== '');
-      if (sentences.length > 1 || sentences.some((sentence) => words(sentence) > QUESTION_CAPS.context)) flag(2);
-      block.forEach((text, index) => {
-        const option = text.match(QUESTION_OPTION);
-        if (option && (words(option[2]) > QUESTION_CAPS.label || words(option[3]) > QUESTION_CAPS.option)) flag(index + 1);
-        const reason = text.match(QUESTION_REASON);
-        if (reason && words(reason[2]) > QUESTION_CAPS.reason) flag(index + 1);
-      });
-    }
-  }
+  lines.forEach((line, open) => {
+    if (!isFence(line) || !QUESTION_TITLE.test((lines[open + 1] ?? '').trim())) return;
+    const path = repository.relative(file);
+    for (const offset of blockOffenders(blockAfter(lines, open))) findings.push({ path, line: open + 1 + offset });
+  });
   return findings;
+}
+
+function questionCapFindings(repository) {
+  return sourceFiles(repository, []).flatMap((file) => fileCapFindings(repository, file));
 }
 
 export function checkQuestionOptions(report, repository) {
@@ -72,14 +93,12 @@ export function checkQuestionOptions(report, repository) {
   report.assert(
     capFindings.length === 0,
     'question caps',
-    'every example question keeps the word caps',
-    `example question over a word cap at ${capFindings.map((finding) => `${finding.path}:${finding.line}`).join(', ')}`
+    { pass: 'every example question keeps the word caps', fail: `example question over a word cap at ${capFindings.map((finding) => `${finding.path}:${finding.line}`).join(', ')}` }
   );
   const findings = questionOptionFindings(repository);
   report.assert(
     findings.length === 0,
     'question options',
-    'every question lists its options in order A, B, C, none is tagged (Recommended), and no line opens with Assuming:',
-    `option out of order, a (Recommended) tag or an Assuming: line at ${findings.map((finding) => `${finding.path}:${finding.line}`).join(', ')}`
+    { pass: 'every question lists its options in order A, B, C, none is tagged (Recommended), and no line opens with Assuming:', fail: `option out of order, a (Recommended) tag or an Assuming: line at ${findings.map((finding) => `${finding.path}:${finding.line}`).join(', ')}` }
   );
 }

@@ -1,6 +1,6 @@
 # Research
 
-Answer a question from many sources with a report a reader can check. Produce a short report whose every citation is a verbatim quote on a fetched page. Avoid citing from memory, from a search snippet, or from a page that was never fetched, and avoid fanning out workers for a question the lead can answer alone.
+Answer a question from many sources with a report a reader can check. Produce a short report whose every citation is a verbatim quote on a fetched page.
 
 ## When to use
 
@@ -19,7 +19,7 @@ Answer a question from many sources with a report a reader can check. Produce a 
 5. **Dispatch** exactly one `exo:orchestrator` per wave from the lead, with `Workers: 4` or fewer and the brief below; the orchestrator dispatches the `exo:research-worker` agents, one per sub-question, all in one message. The lead sends no worker itself, and workers spawn no agents.
 6. **Collect** the indexes. Read the claims and sources files in the folder, not page text.
 7. **Write** the report in the report shape.
-8. **Verify** with `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/verify.mjs" .exo/research/<slug>`, then dispatch the `exo:review-branch` agent with `exo-kind: judge` as the verification rules say. Each output line names a failing footnote; repair only those sentences, one round.
+8. **Verify** per `verification.md`; repair only the failing footnotes, one round.
 
 ## Worker brief
 
@@ -36,10 +36,6 @@ Return the claim ids you stored and the gaps, at most 1,500 tokens, no page text
 
 - Send videos to `watch` as one batch in one call, not one call per video.
 - `search.mjs --url` takes several thread URLs.
-
-## Output
-
-The answer first in 3-8 sentences with footnotes, then the key claims with label and source count, then the coverage gaps, with the report path.
 
 ## Judgment
 

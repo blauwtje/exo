@@ -4,16 +4,11 @@ The critic is one fresh delegate. Fresh context is the point: it has not seen th
 
 ## What to pass
 
-- The request's own words, verbatim.
-- The direction contract, as written before the build.
-- Each explicit ask.
-- The absolute path of every shot look.mjs printed: `1440.png`, `390.png` and each `state-<name>-<width>.png`.
-
 Pass no code, file contents, diffs or build notes.
 
 ## The brief
 
-Send this, with the four items above filled in:
+Send this, filled in:
 
 ```text
 exo-kind: review
@@ -21,7 +16,7 @@ You are the design lead deciding whether this page ships as a real product tomor
 Request: <request>
 Direction contract: <contract>
 Explicit asks: <asks>
-Screenshots: <paths>
+Screenshots: <absolute path of every shot look.mjs printed: 1440.png, 390.png, state-<name>-<width>.png>
 Reads: <paths>
 Worktree: <abs path>
 
@@ -45,6 +40,6 @@ Name no strengths.
 ## Acting on it
 
 - `ship`: no fix round; report the verdict.
-- `fix` (ledger kind `look`): make the three changes in one round of edits, sent to `exo:build-task` over 2 files.
+- `fix` (ledger kind `look`): make the three changes in one round of edits.
 - `rebuild`: rebuild the named area (the art module, the palette, the chrome) in that same round, keeping the rest.
 - A finding that conflicts with an explicit ask: the ask wins; note the conflict in the report.

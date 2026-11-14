@@ -32,6 +32,31 @@ Exits 1 on an unopened citation, a failed setup, a skill loaded from outside its
 
 export const SPEC = { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'contrast-env': 'value', 'contrast-style': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value', grade: 'boolean', criteria: 'value', threshold: 'value', 'judge-cell': 'value', 'judge-votes': 'value', 'dry-run': 'boolean', regrade: 'value', full: 'boolean' };
 
+function contrastFrom(flags) {
+  if (flags['contrast-style'] !== undefined && (flags['contrast-env'] !== undefined || flags['output-style'] !== undefined)) {
+    throw new UsageError('--contrast-style sets the style per arm; pass it without --contrast-env or --output-style');
+  }
+  const contrast = flags['contrast-style'] !== undefined ? parseContrastStyle(flags['contrast-style'])
+    : flags['contrast-env'] === undefined ? undefined : parseContrastEnv(flags['contrast-env']);
+  if (contrast !== undefined && flags['main-dir'] !== undefined) throw new UsageError('--contrast-env, --contrast-style and --main-dir each define the second arm; pass one');
+  return contrast;
+}
+
+function parseCells(text) {
+  return text.split(',').map((cell) => {
+    const match = CELL_PATTERN.exec(cell);
+    if (!match) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort, got '${cell}'`);
+    return { model: match[1], effort: match[2] };
+  });
+}
+
+function setupScriptFrom(setup) {
+  if (setup === undefined) return undefined;
+  const setupScript = path.resolve(setup);
+  if (!fs.existsSync(setupScript)) throw new UsageError(`--setup needs an existing script, got '${setupScript}'`);
+  return setupScript;
+}
+
 export function optionsFrom(flags) {
   if (flags['cells-for'] !== undefined) return { cellsFor: flags['cells-for'] };
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
@@ -42,22 +67,10 @@ export function optionsFrom(flags) {
     throw new UsageError(`--runs needs a positive integer, got '${flags.runs}'`);
   }
   const grade = gradeSettings(flags, flags.grade === true);
-  if (flags['contrast-style'] !== undefined && (flags['contrast-env'] !== undefined || flags['output-style'] !== undefined)) {
-    throw new UsageError('--contrast-style sets the style per arm; pass it without --contrast-env or --output-style');
-  }
-  const contrast = flags['contrast-style'] !== undefined ? parseContrastStyle(flags['contrast-style'])
-    : flags['contrast-env'] === undefined ? undefined : parseContrastEnv(flags['contrast-env']);
-  if (contrast !== undefined && flags['main-dir'] !== undefined) throw new UsageError('--contrast-env, --contrast-style and --main-dir each define the second arm; pass one');
-  const cells = flags.cells.split(',').map((cell) => {
-    const match = CELL_PATTERN.exec(cell);
-    if (!match) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort, got '${cell}'`);
-    return { model: match[1], effort: match[2] };
-  });
+  const contrast = contrastFrom(flags);
+  const cells = parseCells(flags.cells);
   const pluginDir = resolvePluginDir('--plugin-dir', flags['plugin-dir'], process.cwd());
-  const setupScript = flags.setup === undefined ? undefined : path.resolve(flags.setup);
-  if (setupScript !== undefined && !fs.existsSync(setupScript)) {
-    throw new UsageError(`--setup needs an existing script, got '${setupScript}'`);
-  }
+  const setupScript = setupScriptFrom(flags.setup);
   return {
     promptFile: flags.prompt,
     cells,

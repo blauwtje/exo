@@ -80,13 +80,45 @@ function refuseUnmerged(worktree, run, landed) {
   throw new RemoveWorktreeError(`'${worktree}' holds commits or tracked changes not in '${run}'; land them, pass --patch with a saved patch, or keep the worktree; removed nothing`);
 }
 
-export function removeWorktree({ worktree, run, report, patch, kept = false }) {
+function refuseMissingInputs({ report, patch }) {
   if (report !== undefined && !fs.existsSync(report)) {
     throw new RemoveWorktreeError(`build report '${report}' is absent, so the build has not returned; removed nothing`);
   }
   if (patch !== undefined && !(fs.existsSync(patch) && fs.statSync(patch).size > 0)) {
     throw new RemoveWorktreeError(`patch '${patch}' is absent or empty, so the worktree's work is not saved; removed nothing`);
   }
+}
+
+function moveExistingKeptAside(keptRoot, keptTarget) {
+  if (!fs.existsSync(keptRoot)) return undefined;
+  try {
+    return moveAside(keptRoot);
+  } catch (error) {
+    throw new RemoveWorktreeError(`moving '${keptTarget}' aside failed: ${error.message}; removed nothing`);
+  }
+}
+
+function refuseGitFailure({ worktree, failure, copied, kept, keptTarget, movedTo, rollBack }) {
+  const keptSources = [
+    ...copied.briefs.map((relative) => path.join(worktree, SPECS, relative)),
+    ...(kept ? copied.exo.map((relative) => path.join(worktree, '.exo', relative)) : []),
+  ];
+  if (!keptSources.every((source) => fs.existsSync(source))) {
+    const earlier = movedTo === undefined ? '' : `; the earlier one stays in '${movedTo}/'`;
+    throw new RemoveWorktreeError(`git removed part of '${worktree}' and then failed: ${failure}; the copy stays in '${keptTarget}'${earlier}`);
+  }
+  rollBack();
+  throw new RemoveWorktreeError(`git refused to remove '${worktree}': ${failure}`);
+}
+
+function removalSummary({ worktree, run, kept, keptTarget, copied, movedTo }) {
+  const briefNote = copied.briefs.length === 0 ? '' : `; kept ${copied.briefs.length} ${SPECS}/ file(s) in '${keptTarget}${SPECS}/'`;
+  const moved = movedTo === undefined ? '' : `; moved existing '${keptTarget}' to '${movedTo}/'`;
+  return `Copied ${copied.exo.length} .exo/ file(s) from '${worktree}' to '${kept ? keptTarget : run}'${briefNote}${moved}; removed '${worktree}'\n`;
+}
+
+export function removeWorktree({ worktree, run, report, patch, kept = false }) {
+  refuseMissingInputs({ report, patch });
   const landed = refuseUnsquashable(worktree, run);
   if (patch === undefined) refuseUnmerged(worktree, run, landed);
   if (patch === undefined) refuseStray(worktree);
@@ -95,14 +127,7 @@ export function removeWorktree({ worktree, run, report, patch, kept = false }) {
   const briefs = untrackedFiles(worktree, SPECS);
   const exo = kept ? { root: keptRoot, target: keptTarget } : { root: path.join(run, '.exo'), target: `${run}/.exo/` };
   const ownsKept = kept || briefs.length > 0;
-  let movedTo;
-  if (ownsKept && fs.existsSync(keptRoot)) {
-    try {
-      movedTo = moveAside(keptRoot);
-    } catch (error) {
-      throw new RemoveWorktreeError(`moving '${keptTarget}' aside failed: ${error.message}; removed nothing`);
-    }
-  }
+  const movedTo = ownsKept ? moveExistingKeptAside(keptRoot, keptTarget) : undefined;
   const rollBack = () => {
     if (!ownsKept) return;
     fs.rmSync(keptRoot, { recursive: true, force: true });
@@ -116,25 +141,11 @@ export function removeWorktree({ worktree, run, report, patch, kept = false }) {
     throw error;
   }
   const failure = gitRemoveFailure({ worktree, run, discard: patch !== undefined });
-  if (failure !== undefined) {
-    const keptSources = [
-      ...copied.briefs.map((relative) => path.join(worktree, SPECS, relative)),
-      ...(kept ? copied.exo.map((relative) => path.join(worktree, '.exo', relative)) : []),
-    ];
-    if (!keptSources.every((source) => fs.existsSync(source))) {
-      const earlier = movedTo === undefined ? '' : `; the earlier one stays in '${movedTo}/'`;
-      throw new RemoveWorktreeError(`git removed part of '${worktree}' and then failed: ${failure}; the copy stays in '${keptTarget}'${earlier}`);
-    }
-    rollBack();
-    throw new RemoveWorktreeError(`git refused to remove '${worktree}': ${failure}`);
-  }
-  const counts = { exo: copied.exo.length, briefs: copied.briefs.length };
-  const briefNote = counts.briefs === 0 ? '' : `; kept ${counts.briefs} ${SPECS}/ file(s) in '${keptTarget}${SPECS}/'`;
-  const moved = movedTo === undefined ? '' : `; moved existing '${keptTarget}' to '${movedTo}/'`;
-  return `Copied ${counts.exo} .exo/ file(s) from '${worktree}' to '${kept ? keptTarget : run}'${briefNote}${moved}; removed '${worktree}'\n`;
+  if (failure !== undefined) refuseGitFailure({ worktree, failure, copied, kept, keptTarget, movedTo, rollBack });
+  return removalSummary({ worktree, run, kept, keptTarget, copied, movedTo });
 }
 
-function copyFiles(relatives, source, destination, labels) {
+function copyFiles(relatives, { source, destination, from, to: target }) {
   const copied = [];
   try {
     for (const relative of relatives) {
@@ -144,25 +155,28 @@ function copyFiles(relatives, source, destination, labels) {
       copied.push(relative);
     }
   } catch (error) {
-    throw new RemoveWorktreeError(`copying '${labels.from}' to '${labels.to}' failed: ${error.message}`);
+    throw new RemoveWorktreeError(`copying '${from}' to '${target}' failed: ${error.message}`);
   }
   return copied;
 }
 
-function refuseMissed(worktree, folder, listed, copied) {
-  const copiedSet = new Set(copied);
-  const missed = listed.filter((relative) => !copiedSet.has(relative));
+function refuseMissed(worktree, folder, missed) {
   if (missed.length > 0) {
     throw new RemoveWorktreeError(`'${worktree}' still holds uncopied ${folder} file(s): ${missed.join(', ')}`);
   }
 }
 
+function uncopied(listed, copied) {
+  const copiedSet = new Set(copied);
+  return listed.filter((relative) => !copiedSet.has(relative));
+}
+
 function copyChecked({ worktree, exo, keptRoot, keptTarget, briefs }) {
   const carried = (relative) => exo.root === keptRoot || !SLOT_STATE.includes(relative);
-  const exoCopied = copyFiles(exoFiles(worktree).filter(carried), path.join(worktree, '.exo'), exo.root, { from: `${worktree}/.exo/`, to: exo.target });
-  const briefsCopied = copyFiles(briefs, path.join(worktree, SPECS), path.join(keptRoot, SPECS), { from: `${worktree}/${SPECS}/`, to: `${keptTarget}${SPECS}/` });
-  refuseMissed(worktree, '.exo/', untrackedFiles(worktree, '.exo').filter(carried), exoCopied);
-  refuseMissed(worktree, `${SPECS}/`, untrackedFiles(worktree, SPECS), briefsCopied);
+  const exoCopied = copyFiles(exoFiles(worktree).filter(carried), { source: path.join(worktree, '.exo'), destination: exo.root, from: `${worktree}/.exo/`, to: exo.target });
+  const briefsCopied = copyFiles(briefs, { source: path.join(worktree, SPECS), destination: path.join(keptRoot, SPECS), from: `${worktree}/${SPECS}/`, to: `${keptTarget}${SPECS}/` });
+  refuseMissed(worktree, '.exo/', uncopied(untrackedFiles(worktree, '.exo').filter(carried), exoCopied));
+  refuseMissed(worktree, `${SPECS}/`, uncopied(untrackedFiles(worktree, SPECS), briefsCopied));
   return { exo: exoCopied, briefs: briefsCopied };
 }
 
@@ -190,18 +204,19 @@ function main(argv) {
   process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, report: flags.report, patch: flags.patch, kept: flags.kept ?? false }));
 }
 
-if (isMain(import.meta.url)) {
+function exitCodeOf(error) {
+  if (error instanceof UsageError) return 2;
+  if (error instanceof RemoveWorktreeError) return 1;
+  throw error;
+}
+
+function runMain(argv) {
   try {
-    main(process.argv.slice(2));
+    main(argv);
   } catch (error) {
-    if (error instanceof UsageError) {
-      process.stderr.write(`remove-worktree: ${error.message}\n`);
-      process.exitCode = 2;
-    } else if (error instanceof RemoveWorktreeError) {
-      process.stderr.write(`remove-worktree: ${error.message}\n`);
-      process.exitCode = 1;
-    } else {
-      throw error;
-    }
+    process.exitCode = exitCodeOf(error);
+    process.stderr.write(`remove-worktree: ${error.message}\n`);
   }
 }
+
+if (isMain(import.meta.url)) runMain(process.argv.slice(2));

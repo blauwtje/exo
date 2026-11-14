@@ -74,21 +74,9 @@ Decided change, no plan file, or spec's fast route → `references/no-spec.md`. 
 | `references/test-first.md` | No spec test-first, before a boundary. |
 | `references/project-knowledge.md` | No spec 6, if first line applies. |
 | `references/performance.md` | No spec speed work, pre-measure. |
-| `references/refactor.md` | `refactor` mode. |
-| `references/behavior-pin.md` | `refactor` mode. |
-| `references/legacy-api.md` | `refactor` mode. |
-| `references/improve.md` | `improve` mode. |
-| `references/worker-round.md` | `improve` mode. |
-| `references/worker.md` | `improve` mode. |
-| `references/design-ui.md` | `design-ui` mode. |
-| `references/color.md` | `design-ui` mode. |
-| `references/critic.md` | `design-ui` mode. |
-| `references/layout.md` | `design-ui` mode. |
-| `references/marketing.md` | `design-ui` mode. |
-| `references/motion.md` | `design-ui` mode. |
-| `references/reference-input.md` | `design-ui` mode. |
-| `references/slop.md` | `design-ui` mode. |
-| `references/typography.md` | `design-ui` mode. |
+| `references/refactor.md`, `references/behavior-pin.md`, `references/legacy-api.md` | `refactor` mode. |
+| `references/improve.md`, `references/worker-round.md`, `references/worker.md` | `improve` mode. |
+| `references/design-ui.md`, `references/color.md`, `references/critic.md`, `references/layout.md`, `references/marketing.md`, `references/motion.md`, `references/reference-input.md`, `references/slop.md`, `references/typography.md` | `design-ui` mode. |
 | `references/run-plan.md` | `run-plan` setup or `ci`. |
 
 Report: `ship`'s overview only.

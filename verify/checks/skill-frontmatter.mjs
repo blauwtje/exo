@@ -24,7 +24,43 @@ function userOnlyReferences(repository, userOnlySkills) {
   return references;
 }
 
-export function checkSkillFrontmatter(report, repository) {
+function skillErrors(file, relative, values) {
+  const errors = [];
+  const name = values.get('name') ?? '';
+  const description = values.get('description') ?? '';
+  if (!SKILL_NAME_SHAPE.test(name) || name.length > 64) errors.push(`${relative}: invalid skill name '${name}'`);
+  if (RESERVED_NAME.test(name)) errors.push(`${relative}: skill name '${name}' holds a reserved word`);
+  if ((values.get('compatibility') ?? '').length > COMPATIBILITY_LIMIT) {
+    errors.push(`${relative}: compatibility exceeds ${COMPATIBILITY_LIMIT} characters`);
+  }
+  if (name !== path.basename(path.dirname(file))) errors.push(`${relative}: name does not match directory`);
+  if (description.trim() === '' || description.length > 1024 || /[<>]/.test(description)) {
+    errors.push(`${relative}: invalid description`);
+  }
+  if (!/\bUse (when|for|at|only)\b/.test(description) || !/\bNot (for|when)\b/.test(description)) {
+    errors.push(`${relative}: description lacks a Use clause or a Not clause`);
+  }
+  if (values.get('disable-model-invocation') !== 'true' && !description.startsWith('Use when ')) {
+    errors.push(`${relative}: model-invocable description does not open with 'Use when'`);
+  }
+  return errors;
+}
+
+function frontmatterErrors(repository) {
+  const errors = [];
+  const userOnlySkills = [];
+  for (const file of repository.everySkillFile()) {
+    const relative = repository.relative(file);
+    const parsed = readFrontmatter(repository.lines(file));
+    errors.push(...parsed.errors.map((message) => `${relative}: ${message}`));
+    if (parsed.errors.length > 0) continue;
+    errors.push(...skillErrors(file, relative, parsed.values));
+    if (parsed.values.get('disable-model-invocation') === 'true') userOnlySkills.push(parsed.values.get('name') ?? '');
+  }
+  return { errors, userOnlySkills };
+}
+
+function assertSkillSet(report, repository) {
   const skillFiles = repository.walk(repository.skillsRoot, (file) => path.basename(file) === 'SKILL.md');
   const actualNames = repository.skillDirectories();
   const actualPaths = skillFiles.map((file) => repository.relative(file)).sort();
@@ -33,54 +69,23 @@ export function checkSkillFrontmatter(report, repository) {
   report.assert(
     namesMatch && pathsMatch,
     'skill set',
-    'exactly the expected canonical skill paths exist',
-    `unexpected skill directories or paths: names=${actualNames.join(', ')}, paths=${actualPaths.join(', ')}`
+    { pass: 'exactly the expected canonical skill paths exist', fail: `unexpected skill directories or paths: names=${actualNames.join(', ')}, paths=${actualPaths.join(', ')}` }
   );
+}
 
-  const errors = [];
-  const userOnlySkills = [];
-  for (const file of repository.everySkillFile()) {
-    const relative = repository.relative(file);
-    const parsed = readFrontmatter(repository.lines(file));
-    for (const message of parsed.errors) errors.push(`${relative}: ${message}`);
-    if (parsed.errors.length > 0) continue;
-    const name = parsed.values.get('name') ?? '';
-    const description = parsed.values.get('description') ?? '';
-    if (!SKILL_NAME_SHAPE.test(name) || name.length > 64) {
-      errors.push(`${relative}: invalid skill name '${name}'`);
-    }
-    if (RESERVED_NAME.test(name)) {
-      errors.push(`${relative}: skill name '${name}' holds a reserved word`);
-    }
-    if ((parsed.values.get('compatibility') ?? '').length > COMPATIBILITY_LIMIT) {
-      errors.push(`${relative}: compatibility exceeds ${COMPATIBILITY_LIMIT} characters`);
-    }
-    if (name !== path.basename(path.dirname(file))) {
-      errors.push(`${relative}: name does not match directory`);
-    }
-    if (description.trim() === '' || description.length > 1024 || /[<>]/.test(description)) {
-      errors.push(`${relative}: invalid description`);
-    }
-    if (!/\bUse (when|for|at|only)\b/.test(description) || !/\bNot (for|when)\b/.test(description)) {
-      errors.push(`${relative}: description lacks a Use clause or a Not clause`);
-    }
-    if (parsed.values.get('disable-model-invocation') === 'true') userOnlySkills.push(name);
-    if (parsed.values.get('disable-model-invocation') !== 'true' && !description.startsWith('Use when ')) {
-      errors.push(`${relative}: model-invocable description does not open with 'Use when'`);
-    }
-  }
+export function checkSkillFrontmatter(report, repository) {
+  assertSkillSet(report, repository);
+  const { errors, userOnlySkills } = frontmatterErrors(repository);
   report.assert(
     errors.length === 0,
     'YAML frontmatter',
-    'every skill uses the strict portable subset',
-    errors.join('; ')
+    { pass: 'every skill uses the strict portable subset', fail: errors.join('; ') }
   );
 
   const references = userOnlyReferences(repository, userOnlySkills);
   report.assert(
     references.length === 0,
     'user-only skill names',
-    'model-facing text names no user-only skill as bare exo:<name>',
-    references.join('; ')
+    { pass: 'model-facing text names no user-only skill as bare exo:<name>', fail: references.join('; ') }
   );
 }

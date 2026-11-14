@@ -7,21 +7,18 @@ const PATTERNS = [
   ['override phrase', 'disregard (?:all )?(?:the )?(?:previous|prior|above)', 'i'],
 ];
 
+function patternErrors(label, text) {
+  return PATTERNS
+    .filter(([, pattern, flags]) => new RegExp(pattern, flags).test(text))
+    .map(([kind, pattern, flags]) => `${label}: ${kind} /${pattern}/${flags}`);
+}
+
 export function checkShippedTextScan(report, repository) {
   const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.agentFiles(), ...repository.everySkillFile()]);
-  const errors = [];
-  for (const file of files) {
-    const text = repository.text(file);
-    for (const [kind, pattern, flags] of PATTERNS) {
-      if (new RegExp(pattern, flags).test(text)) {
-        errors.push(`${repository.relative(file)}: ${kind} /${pattern}/${flags}`);
-      }
-    }
-  }
+  const errors = [...files].flatMap((file) => patternErrors(repository.relative(file), repository.text(file)));
   report.assert(
     errors.length === 0,
     'shipped text scan',
-    'no credential or override phrase appears in active skill text',
-    errors.join('; ')
+    { pass: 'no credential or override phrase appears in active skill text', fail: errors.join('; ') }
   );
 }

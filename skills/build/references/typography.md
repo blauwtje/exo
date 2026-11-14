@@ -9,7 +9,7 @@ Type carries most of a page's voice, so choose faces for the direction's world, 
 - Text face: body, labels, buttons, metadata. Quiet and readable at small sizes, so the display face has room to speak.
 - Pairing: contrast in structure, such as a condensed or wide display over a humanist text face, or a slab over a grotesque. Two similar sans faces read as a mistake.
 - One family: fine when the family has a wide weight range and the direction is restrained; then hierarchy comes from weight and size alone.
-- Mono: only for real code, paths, keys and IDs; mono labels as decoration are part of the house look.
+- Mono: only for real code, paths, keys and IDs.
 
 ## Sources
 

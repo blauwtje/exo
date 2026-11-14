@@ -189,7 +189,7 @@ test('--help prints the usage and exits 0', async () => {
   assert.match(help.stdout, /--chained/);
 });
 
-test('a land that amends Files leaves no pending plan edit to refuse the next slot', async () => {
+test('a land with a path outside Files commits it and leaves no plan edit to refuse the next slot', async () => {
   const plan = compactPlanFixture({ tasks: [
     compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' }),
     compactTask({ number: 2, title: 'feat(two): two', files: ['src/two.js'], proof: 'node tests/greet.test.mjs' })
@@ -207,7 +207,8 @@ test('a land that amends Files leaves no pending plan edit to refuse the next sl
   await fs.writeFile(path.join(slots[1], 'src/two.js'), 'export const two = 2;\n');
   const land = (number, slot, input) => run(SCRIPT, ['--plan', planPath, '--task', String(number), '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, '--in-flight', '1,2', '--report', '-'], { cwd: root, input });
   const first = await land(1, slots[0], PASS_REPORT);
-  assert.match(first.stdout, /^AMEND Task 1 src\/extra\.js$/m);
+  assert.doesNotMatch(first.stdout, /AMEND|outside Files/);
+  assert.match(git(root, 'show', '--name-only', '--format=', 'HEAD'), /src\/extra\.js/);
   const second = await land(2, slots[1], PASS_REPORT.replace('src/app.js', 'src/two.js').replace('tests/app.test.mjs', 'tests/greet.test.mjs'));
   assert.doesNotMatch(second.stdout, /NEWPATH/);
 });
@@ -231,6 +232,6 @@ test('a tracked file an open sibling lists and this task modified is no sibling 
   await editApp(slot);
   await fs.writeFile(path.join(slot, 'src/two.js'), 'export const two = 2;\n');
   const landed = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--slot', slot, '--base', base, '--baseline', baseline, '--in-flight', '1,2', '--report', '-'], { cwd: root, input: PASS_REPORT });
-  assert.match(landed.stdout, /changed a path outside Files: `src\/two\.js`/);
+  assert.doesNotMatch(landed.stdout, /outside Files/);
   assert.doesNotMatch(landed.stdout, /left `src\/two\.js` for open Task 2/);
 });

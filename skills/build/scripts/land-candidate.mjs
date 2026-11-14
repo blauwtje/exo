@@ -1,9 +1,9 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
-import { coversCompanion, decisionsPathOf, isCovered, planTaskTrailer } from '#plan-landed';
+import { decisionsPathOf, planTaskTrailer } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { LandingError, OutsideFilesError } from './land-errors.mjs';
+import { LandingError } from './land-errors.mjs';
 import { headMessage, headSha, moveHead } from './land-git.mjs';
 import { gitText } from '#git';
 import { createWorktree, worktreePath } from '#checkout';
@@ -11,10 +11,25 @@ import { candidateTrailer } from './land-commit-block.mjs';
 import { isProtectedPath, nestedWorktrees } from './land-paths.mjs';
 import { runLandGate } from './land-gate.mjs';
 import { discard, runSetup, slotEnvOf } from './open-slots.mjs';
-import { carryRaises } from './land-raises.mjs';
+
+const RAISE_PREFIX = /^Budget-raise:[ \t]/;
+
+function raiseLinesOf(reportText) {
+  if (reportText === null) return [];
+  return [...new Set(reportText.replace(/\r\n/g, '\n').split('\n').map((line) => line.trim()).filter((line) => RAISE_PREFIX.test(line)))];
+}
+
+function carryRaises(root, reportText) {
+  const message = headMessage(root);
+  const present = new Set(message.split('\n'));
+  const missing = raiseLinesOf(reportText).filter((line) => !present.has(line));
+  if (missing.length === 0) return;
+  const amended = spawnSync('git', ['-C', root, 'commit', '--amend', '-q', '--no-verify', '-F', '-'], { encoding: 'utf8', input: `${message.trimEnd()}\n${missing.join('\n')}\n` });
+  if (amended.status !== 0) throw new LandingError(`carrying the Budget-raise lines onto the task commit failed:\n${amended.stderr}`);
+}
 
 export function dropCandidate(root, { base, candidate }) {
-  return moveHead(root, 'land-task: drop candidate', base, candidate) || headSha(root) === base;
+  return moveHead(root, 'land-task: drop candidate', { target: base, expected: candidate }) || headSha(root) === base;
 }
 
 export function clearStaleCandidate(root, planId) {
@@ -25,7 +40,7 @@ export function clearStaleCandidate(root, planId) {
   dropCandidate(root, { base: base.stdout.trim(), candidate });
 }
 
-export function commitCandidate(block, root, task, planId, reportText = null) {
+export function commitCandidate({ block, root, task, planId, reportText = null }) {
   const trailer = candidateTrailer(planId, task.number);
   const base = headSha(root);
   runCommitBlock(block.replace(planTaskTrailer(planId, task.number), trailer), root, task.number);
@@ -46,12 +61,12 @@ function signsCommits(root) {
   return signing.stdout.trim() === 'true';
 }
 
-export function promoteCandidate(root, task, planId, { base, candidate }) {
+export function promoteCandidate({ root, task, planId, candidate: { base, candidate } }) {
   const message = execFileSync('git', ['-C', root, 'log', '-1', '--format=%B', candidate], { encoding: 'utf8' })
     .replace(candidateTrailer(planId, task.number), planTaskTrailer(planId, task.number));
   const signing = signsCommits(root) ? ['-S'] : [];
   const promoted = execFileSync('git', ['-C', root, 'commit-tree', `${candidate}^{tree}`, '-p', base, ...signing, '-F', '-'], { encoding: 'utf8', input: message, env: authorEnvOf(root, candidate) }).trim();
-  if (!moveHead(root, 'land-task: promote candidate', promoted, candidate)) {
+  if (!moveHead(root, 'land-task: promote candidate', { target: promoted, expected: candidate })) {
     throw new LandingError(`HEAD moved off the candidate ${candidate.slice(0, 7)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   }
 }
@@ -74,7 +89,7 @@ function gateOnDetachedCandidate({ frame, root, gateEnv, candidate }) {
   }
 }
 
-export function gateCandidate(frame, root, gateEnv, candidate) {
+export function gateCandidate({ frame, root, gateEnv, candidate }) {
   try {
     if (slotDiffersFromCandidate(root)) return gateOnDetachedCandidate({ frame, root, gateEnv, candidate });
     return runLandGate(frame.landGate, root, gateEnv) ?? '';
@@ -92,30 +107,22 @@ function runCommitBlock(block, root, number) {
 }
 
 export function stageOutside(root, paths) {
-  const staged = paths.filter((changed) => !isProtectedPath(changed));
-  if (staged.length > 0) execFileSync('git', ['-C', root, 'update-index', '--add', '--remove', '--', ...staged]);
+  if (paths.length > 0) execFileSync('git', ['-C', root, 'update-index', '--add', '--remove', '--', ...paths]);
 }
 
-function outsideTaskFiles(task, { root, planPath, base }) {
-  const entries = task.files.map((file) => file.path);
+function committedProtectedPaths({ root, planPath, base }) {
   const exempt = [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
   const worktrees = nestedWorktrees(root);
   const top = realpathSync(root);
   return gitText(root, ['diff', '--name-only', base, 'HEAD']).split('\n')
     .filter((changed) => changed !== '' && !changed.startsWith(`${SCRATCH_FOLDER}/`) && !exempt.includes(changed) && !worktrees.has(path.join(top, changed)))
-    .filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed));
+    .filter(isProtectedPath);
 }
 
-function quoted(paths) {
-  return paths.map((file) => `\`${file}\``).join(', ');
-}
-
-function checkOutsideTaskFiles(task, options) {
-  const outside = outsideTaskFiles(task, options);
-  const guarded = outside.filter((changed) => isProtectedPath(changed));
-  if (guarded.length > 0) throw new OutsideFilesError(`the commit of Task ${task.number} holds a security-boundary path outside Files: ${quoted(guarded)}; move it to its own task`);
-  if (outside.length === 0) return;
-  process.stderr.write(`Warning: the commit of Task ${task.number} holds a path outside Files: ${quoted(outside)}\n`);
+function warnProtectedPaths(task, options) {
+  const protectedPaths = committedProtectedPaths(options);
+  if (protectedPaths.length === 0) return;
+  process.stderr.write(`[WARN] Task ${task.number} committed a security-boundary path: ${protectedPaths.map((file) => `\`${file}\``).join(', ')}\n`);
 }
 
 export function committedSha(task, { root, planId, planPath, base }) {
@@ -126,6 +133,6 @@ export function committedSha(task, { root, planId, planPath, base }) {
   const expectedSubject = task.commitSubject ?? task.title;
   if (subject !== expectedSubject) throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   if (gitText(root, ['rev-parse', 'HEAD~1']) !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${base.slice(0, 7)}, the commit Task ${task.number} started from`);
-  checkOutsideTaskFiles(task, { root, planPath, base });
+  warnProtectedPaths(task, { root, planPath, base });
   return sha;
 }

@@ -9,7 +9,7 @@ import { mcpToolCall } from '#mcp-tool-call';
 import { isTestFirst, runOnBase, testPaths } from '#red-green';
 import { AlreadyLandedError, LandingError, UnfinishedMergeError } from './land-errors.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
-import { outsideFilesWarning, statedLimitWarning } from './land-paths.mjs';
+import { leftForSiblingWarning, statedLimitWarning } from './land-paths.mjs';
 import { dropsOf } from './land-commit-block.mjs';
 import { unfinishedMergeNote } from '#merge-state';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -52,7 +52,7 @@ function untaggedBaseNote(task, root) {
   return `\nBase commits touching this task's files without a Plan-task trailer: ${commits.join(', ')}; the fix may already be on the base.`;
 }
 
-export function redGreenLine(task, proofCommands, root, pending) {
+export function redGreenLine(task, { proofCommands, root, pending }) {
   if (task.red !== null) return { line: `Red: skipped: none (${task.red.reason})`, warning: '' };
   if (pending !== null) return { line: 'Red: skipped: deferred MCP proof', warning: '' };
   if (proofCommands.length === 0) return { line: 'Red: skipped: no passing Bash proof command', warning: '' };
@@ -77,7 +77,7 @@ export function refuseUntestedTestFirst(task, root) {
   }
 }
 
-export function refuseAlreadyLanded(plan, task, root, planId) {
+export function refuseAlreadyLanded(plan, task, { root, planId }) {
   if (!landedTasks(plan.tasks, root, planId).includes(task.number)) return;
   const [sha] = taskCommits(task, root, planId);
   throw new AlreadyLandedError(`Task ${task.number} is already landed as ${sha.slice(0, 7)}; landing it again would add no change`);
@@ -142,7 +142,7 @@ export function passingRunsOf(task) {
 
 export function checkReport(task, reportText, reportPath) {
   const mcpCall = task.compact ? mcpProofOf(task) : null;
-  const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, reportText, reportPath);
+  const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, { reportText, reportPath });
   const proofCommand = task.compact && pending === null ? proofCommandOf(task, reportText, reportPath) : null;
   return { proofCommand, pending };
 }
@@ -167,8 +167,8 @@ export function refuseTogether(task, { root, planPath, siblingWork, reportText, 
     attempt('missing literals', () => refuseMissingLiterals(task, root, planPath)),
     attempt('report', () => checkReport(task, reportText, reportPath))
   ];
-  const text = landRefusal(path.join(root, SCRATCH_FOLDER, 'refusals'), task.number, checks, {});
-  if (text === null) return outsideFilesWarning(task, { root, planPath, siblingWork }) + droppedBoundaryWarning(task, root) + statedLimitWarning(task, reportText);
+  const text = landRefusal(path.join(root, SCRATCH_FOLDER, 'refusals'), task.number, checks);
+  if (text === null) return leftForSiblingWarning(task, { root, planPath, siblingWork }) + droppedBoundaryWarning(task, root) + statedLimitWarning(task, reportText);
   const first = checks.find((check) => check.error !== null).error;
   throw new first.constructor(text.trimEnd());
 }

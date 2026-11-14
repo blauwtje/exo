@@ -2,12 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { frameOf, parallelValueValid } from '#plan-frame';
 import { subjectProblem } from '#commit-text';
-import { equalsLandGate } from '#land-gate';
 import { mcpToolCall } from '#mcp-tool-call';
 import { isTestPath } from '#red-green';
-import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
-import { reachesThrough } from './plan-check-files.mjs';
-import { main } from './plan-check.mjs';
+import { packageEntryPoints, packageRunTerms, unchainedPairs } from './plan-check-files.mjs';
+
+function equalsLandGate(command, landGate) {
+  if (command === undefined || landGate === undefined || landGate === null) return false;
+  return command.replace(/^`|`$/g, '').trim() === landGate.replace(/^`|`$/g, '').trim();
+}
 
 const AUTONOMY_MODES = ['auto', 'pause-flagged', 'approve-each'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
@@ -21,32 +23,19 @@ export function checkParallelForm(frame) {
 export function checkParallelDisjoint(tasks, frame) {
   const named = frameOf(frame).parallel ?? [];
   const listed = tasks.filter((task) => named.includes(task.number));
-  const byNumber = new Map(tasks.map((task) => [task.number, task]));
-  const problems = [];
-  for (let i = 0; i < listed.length; i++) {
-    for (let j = i + 1; j < listed.length; j++) {
-      if (reachesThrough(byNumber, listed[i].number, listed[j].number) || reachesThrough(byNumber, listed[j].number, listed[i].number)) continue;
-      const secondPaths = new Set(listed[j].files.map((file) => file.path));
-      for (const filePath of new Set(listed[i].files.map((file) => file.path))) {
-        if (secondPaths.has(filePath)) problems.push(`Task ${listed[i].number} and Task ${listed[j].number} are both on the Parallel: line but both list Files: \`${filePath}\``);
-      }
-    }
-  }
-  return problems;
+  return unchainedPairs(listed).flatMap(([first, second]) => {
+    const secondPaths = new Set(second.files.map((file) => file.path));
+    const shared = new Set(first.files.map((file) => file.path).filter((filePath) => secondPaths.has(filePath)));
+    return [...shared].map((filePath) => `Task ${first.number} and Task ${second.number} are both on the Parallel: line but both list Files: \`${filePath}\``);
+  });
 }
 
 export function checkWorktreeSetup(tasks, frame) {
   if (frameOf(frame).worktreeSetup !== null) return [];
-  const byNumber = new Map(tasks.map((task) => [task.number, task]));
-  for (let i = 0; i < tasks.length; i++) {
-    for (let j = i + 1; j < tasks.length; j++) {
-      const first = tasks[i].number;
-      const second = tasks[j].number;
-      if (reachesThrough(byNumber, first, second) || reachesThrough(byNumber, second, first)) continue;
-      return [`Task ${first} and Task ${second} share no Depends on chain, but the plan's '## Plan basis' has no 'Worktree setup:' line: add 'Worktree setup: <command>' or 'Worktree setup: none' so they build together`];
-    }
-  }
-  return [];
+  const [pair] = unchainedPairs(tasks);
+  if (!pair) return [];
+  const [first, second] = pair.map((task) => task.number);
+  return [`Task ${first} and Task ${second} share no Depends on chain, but the plan's '## Plan basis' has no 'Worktree setup:' line: add 'Worktree setup: <command>' or 'Worktree setup: none' so they build together`];
 }
 
 export function checkPlanBasis(frame, run) {
@@ -152,12 +141,7 @@ export function checkFrame(frame) {
   if ((frame.Goal ?? '').trim() === '') problems.push("the plan has no '## Goal'");
   if ((frame['Success criterion'] ?? '').trim() === '') problems.push("the plan has no '## Success criterion'");
   const checkpoint = frame.Checkpoint ?? '';
-  if (checkpoint.trim() === '') {
-    problems.push("the plan has no '## Checkpoint'");
-  } else {
-    for (const point of CHECKPOINT_POINTS) {
-      if (!checkpoint.includes(point)) problems.push(`the plan's '## Checkpoint' has no '${point}' point`);
-    }
-  }
-  return problems;
+  if (checkpoint.trim() === '') return [...problems, "the plan has no '## Checkpoint'"];
+  const missing = CHECKPOINT_POINTS.filter((point) => !checkpoint.includes(point));
+  return [...problems, ...missing.map((point) => `the plan's '## Checkpoint' has no '${point}' point`)];
 }

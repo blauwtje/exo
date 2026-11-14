@@ -15,7 +15,7 @@ function recorder() {
     results,
     result,
     note: () => {},
-    assert: (...entry) => result(entry[0] ? 'PASS' : 'FAIL', entry[1], entry[0] ? entry[2] : entry[3])
+    assert: (ok, name, details) => result(ok ? 'PASS' : 'FAIL', name, ok ? details.pass : details.fail)
   };
 }
 

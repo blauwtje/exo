@@ -151,9 +151,17 @@ test('the fixed timeout ends a child holding stdout open and exits 124', { timeo
     assert.equal(result.status, 124);
     assert.ok(gone(pid), 'child sleep still running');
   } finally {
-    if (pid) try { process.kill(pid, 'SIGKILL'); } catch {}
+    if (pid) killQuietly(pid);
   }
 });
+
+function killQuietly(pid) {
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch (error) {
+    if (error.code !== 'ESRCH') throw error;
+  }
+}
 
 test('the fixed timeout leaves no child behind when the bash group is killed', { timeout: 20000 }, () => {
   const result = spawnSync('node', ['lib/stall-guard.mjs', '--', fix('timeout 3 sh -c "sleep 15"')], {

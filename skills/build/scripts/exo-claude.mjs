@@ -28,7 +28,7 @@ export function claudeEnvironment({ config, keys, home, env, provider: name, eff
   if (effort !== undefined && !config.efforts.includes(effort)) {
     return { refused: `refused: unknown effort ${JSON.stringify(effort)}; use one of ${config.efforts.join(', ')}` };
   }
-  const resolved = resolveProvider(config, name, keys, effort, home);
+  const resolved = resolveProvider(config, name, { keys, effort, home });
   if (resolved.refused !== undefined) return { refused: `refused: ${resolved.refused}` };
   const inherited = { ...env };
   if (name !== 'claude') delete inherited.ANTHROPIC_API_KEY;
@@ -56,6 +56,12 @@ function loadConfig(home) {
   }
 }
 
+function printPeakNotice(provider, config, env) {
+  if (provider !== 'deepseek') return;
+  const notice = peakNotice(environmentMs('EXO_NOW_MS', Date.now(), env), config.defaults.deepseekPeak);
+  if (notice) process.stderr.write(`${notice}\n`);
+}
+
 export async function startClaude(args, { home, env = process.env }) {
   if (insideClaudeCode(env)) return { refused: 'refused: exo claude starts an interactive session and runs only from a terminal, not inside a Claude Code session' };
   const parsed = parseArgs(args);
@@ -72,8 +78,7 @@ export async function startClaude(args, { home, env = process.env }) {
     effort: parsed.flags.effort
   });
   if (built.refused) return built;
-  const notice = built.provider === 'deepseek' ? peakNotice(environmentMs('EXO_NOW_MS', Date.now(), env), config.defaults.deepseekPeak) : null;
-  if (notice) process.stderr.write(`${notice}\n`);
+  printPeakNotice(built.provider, config, env);
   const claude = resolveClaude({ pathValue: env.PATH ?? '' });
   if (claude.refused) return { refused: `refused: ${claude.refused}` };
   return runChild(claude.command, [...claude.prefix, ...parsed.passed], built.env);

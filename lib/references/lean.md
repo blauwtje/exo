@@ -1,25 +1,20 @@
 # Lean code
 
-Applies to written or changed code, beside the code standard. Covers how much code to write, not how it reads. All sections apply together.
-
 ## Size
 
 - Make the smallest change that fully does what the user asked.
 - Smaller = fewer parts, not denser lines.
-- When the user has not stated a need, add no option, setting or extension point for it.
+- Add no option, setting, extension point or abstraction for single-use code or an unstated need.
 - Leave code the user did not ask about unchanged, even when it could be better.
-- Match the surrounding style; remove only leftovers of your own change and report other dead code.
+- Remove only leftovers of your own change and report other dead code.
 - Say so when a simpler approach exists.
-- Write no abstraction for single-use code and no handling of impossible cases.
-- For a trivial task, scale these checks down.
+- For a trivial task, skip the assumption and limit reports; the never-traded list still holds.
 
-## Assumptions
+## Before and after
 
 - Name your assumptions and, when a task reads two ways, the reading you take; stop and report when it stays unclear.
-
-## Check
-
 - Name the pass-or-fail check before the first edit and work until it passes.
+- When you knowingly left something simpler than it could be, say so in the report, naming the limit and what would lift it.
 
 ## Reuse
 
@@ -31,7 +26,3 @@ Applies to written or changed code, beside the code standard. Covers how much co
 
 - Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
 - When keeping one of these takes more code, write that code.
-
-## Known limits
-
-- When you knowingly left something simpler than it could be, say so in the report, naming the limit and what would lift it.

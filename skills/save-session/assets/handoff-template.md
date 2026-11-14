@@ -6,7 +6,7 @@ Written: <date>, last commit <short commit code>, branch <name>
 <What the work is for, in one or two sentences. Say what it will not do.>
 
 ## Progress
-<What works now and what is half done. Name each file. Say which changes are saved in a commit (a saved step in git) and list every other changed path in full. Add each decision as "<the decision>, decided by <the user | this session>".>
+<What works now and what is half done. Name each file. List committed changes apart from every other changed path, in full. Add each decision as "<the decision>, decided by <the user | this session>".>
 
 ## Evidence
 - Proven: <the claim>, <the command that proved it>, <what it showed>

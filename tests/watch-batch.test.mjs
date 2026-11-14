@@ -4,7 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import process from 'node:process';
-import { tempDir } from './harness.mjs';
+import { restoreEnv, tempDir } from './harness.mjs';
 import './watch-gate-env.mjs';
 import { watchBatch } from '../skills/watch/scripts/batch.mjs';
 import { readOptions } from '../skills/watch/scripts/options.mjs';
@@ -57,20 +57,13 @@ function batch(replies, rateWaitMs = '0') {
   return { dir, out, env, run, rerun, calls, metadataCalls, write };
 }
 
-function restoreEnvironment(saved) {
-  for (const [name, value] of Object.entries(saved)) {
-    if (value === undefined) delete process.env[name];
-    else process.env[name] = value;
-  }
-}
-
 async function withEnvironment(values, task) {
   const saved = Object.fromEntries(Object.keys(values).map((name) => [name, process.env[name]]));
   Object.assign(process.env, values);
   try {
     return await task();
   } finally {
-    restoreEnvironment(saved);
+    restoreEnv(saved);
   }
 }
 

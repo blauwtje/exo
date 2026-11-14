@@ -58,7 +58,6 @@ export function checkRunContract(report, repository) {
   report.assert(
     findings.length === 0,
     'run contract',
-    'every build and gate stop and check path goes through the outcome table and the check entry',
-    findings.join('; ')
+    { pass: 'every build and gate stop and check path goes through the outcome table and the check entry', fail: findings.join('; ') }
   );
 }

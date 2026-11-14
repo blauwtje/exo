@@ -15,14 +15,14 @@ export function stageCandidate({ plan, task, frame, block, outside, root, planId
   const warnLines = runPreCommitGates(task, frame, root);
   const changed = taskChangedPaths(root);
   stageOutside(root, [...outside, ...refreshedBehaviour(root)]);
-  const candidate = commitCandidate(block, root, task, planId, reportText);
-  const gateLine = warnLines + gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
+  const candidate = commitCandidate({ block, root, task, planId, reportText });
+  const gateLine = warnLines + gateCandidate({ frame, root, gateEnv: gateEnvOf({ plan, task, root, planId }), candidate });
   return { changed, candidate, gateLine };
 }
 
 export function coverOrDrop({ task, proofs, root, changed, pendingEvidence, candidate }) {
   try {
-    runCoveringTests(task, proofs.map(({ command }) => command), root, changed, pendingEvidence);
+    runCoveringTests(task, proofs.map(({ command }) => command), { root, changed, pendingEvidence });
   } catch (error) {
     dropCandidate(root, candidate);
     throw error;
@@ -30,6 +30,6 @@ export function coverOrDrop({ task, proofs, root, changed, pendingEvidence, cand
 }
 
 export function promoteAndCommit({ task, root, planId, planPath, candidate }) {
-  promoteCandidate(root, task, planId, candidate);
+  promoteCandidate({ root, task, planId, candidate });
   return committedSha(task, { root, planId, planPath, base: candidate.base });
 }

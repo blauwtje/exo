@@ -44,7 +44,6 @@ export function checkWorktreePaths(report, repository) {
   report.assert(
     findings.length === 0,
     'worktree paths',
-    `git worktree add and worktree folder paths live only in ${OWNER}`,
-    findings.join('; ')
+    { pass: `git worktree add and worktree folder paths live only in ${OWNER}`, fail: findings.join('; ') }
   );
 }

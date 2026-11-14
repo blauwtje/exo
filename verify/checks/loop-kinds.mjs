@@ -71,33 +71,33 @@ function readsKind(ownerText, name) {
   return call.test(ownerText);
 }
 
-function kindFindings(repository, kinds) {
+function ownerFindings(repository, tests, [name, entry]) {
+  const owner = path.join(repository.root, entry.owner);
+  if (!fs.existsSync(owner)) return [`loop kind ${name}: owner ${entry.owner} does not exist`];
   const findings = [];
-  const tests = repository.trackedFiles().filter((file) => /^tests\/.*\.test\.mjs$/.test(repository.relative(file)));
-  for (const name of CAPPED_AT_TWO) {
-    if (kinds[name] && kinds[name].cap !== 2) findings.push(`loop kind ${name}: cap must be 2`);
-  }
-  for (const [name, entry] of Object.entries(kinds)) {
-    const owner = path.join(repository.root, entry.owner);
-    if (!fs.existsSync(owner)) {
-      findings.push(`loop kind ${name}: owner ${entry.owner} does not exist`);
-      continue;
-    }
-    if (!readsKind(repository.text(owner), name)) findings.push(`loop kind ${name}: owner ${entry.owner} never reads it through the loop budget`);
-    const base = path.basename(entry.owner, '.mjs');
-    const named = tests.some((file) => {
-      const text = repository.text(file);
-      return (file.includes(base) || text.includes(base)) && (text.includes(`'${name}'`) || text.includes(`"${name}"`));
-    });
-    if (!named) findings.push(`loop kind ${name}: no test of ${entry.owner} names it`);
-  }
+  if (!readsKind(repository.text(owner), name)) findings.push(`loop kind ${name}: owner ${entry.owner} never reads it through the loop budget`);
+  const base = path.basename(entry.owner, '.mjs');
+  const named = tests.some((file) => {
+    const text = repository.text(file);
+    return (file.includes(base) || text.includes(base)) && (text.includes(`'${name}'`) || text.includes(`"${name}"`));
+  });
+  if (!named) findings.push(`loop kind ${name}: no test of ${entry.owner} names it`);
   return findings;
+}
+
+function kindFindings(repository, kinds) {
+  const tests = repository.trackedFiles().filter((file) => /^tests\/.*\.test\.mjs$/.test(repository.relative(file)));
+  const capFindings = CAPPED_AT_TWO
+    .filter((name) => kinds[name] && kinds[name].cap !== 2)
+    .map((name) => `loop kind ${name}: cap must be 2`);
+  const entryFindings = Object.entries(kinds).flatMap((kind) => ownerFindings(repository, tests, kind));
+  return [...capFindings, ...entryFindings];
 }
 
 export function checkLoopKinds(report, repository) {
   const kindsFile = path.join(repository.root, 'lib', 'loop-kinds.json');
   if (!fs.existsSync(kindsFile)) {
-    report.assert(false, 'loop kinds', 'every loop cap lives in lib/loop-kinds.json', 'lib/loop-kinds.json is missing');
+    report.assert(false, 'loop kinds', { pass: 'every loop cap lives in lib/loop-kinds.json', fail: 'lib/loop-kinds.json is missing' });
     return;
   }
   const kinds = JSON.parse(repository.text(kindsFile));
@@ -106,7 +106,6 @@ export function checkLoopKinds(report, repository) {
   report.assert(
     errors.length === 0,
     'loop kinds',
-    'every loop cap lives in lib/loop-kinds.json and every kind has a consumer and a test',
-    errors.join('; ')
+    { pass: 'every loop cap lives in lib/loop-kinds.json and every kind has a consumer and a test', fail: errors.join('; ') }
   );
 }

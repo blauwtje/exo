@@ -55,7 +55,7 @@ function targetSkill(body, relativePath) {
   return LOAD_SENTENCE.exec(body)?.groups.skill ?? ownerOf(relativePath);
 }
 
-function missingStepErrors(label, reference, skill, steps) {
+function missingStepErrors(label, reference, { skill, steps }) {
   const missing = reference.numbers.filter((number) => !steps.has(number));
   if (missing.length === 0) return [];
   const last = Math.max(...steps);
@@ -74,10 +74,10 @@ function fileErrors(repository, file) {
   const references = stepReferences(body);
   if (references.length === 0) return { count: 0, errors: [] };
   const skill = targetSkill(body, label);
-  const steps = skill ? stepsOf(repository, skill) : null;
+  const target = skill ? { skill, steps: stepsOf(repository, skill) } : null;
   const forbidden = forbiddenSteps(data);
   const errors = references.flatMap((reference) => [
-    ...(steps ? missingStepErrors(label, reference, skill, steps) : []),
+    ...(target ? missingStepErrors(label, reference, target) : []),
     ...forbiddenStepErrors(label, reference, forbidden)
   ]);
   return { count: references.length, errors };
@@ -91,7 +91,6 @@ export function checkStepReferences(report, repository) {
   report.assert(
     errors.length === 0,
     'Step references',
-    `${count} step references resolve to numbered steps and avoid forbidden ones`,
-    errors.join('; ')
+    { pass: `${count} step references resolve to numbered steps and avoid forbidden ones`, fail: errors.join('; ') }
   );
 }

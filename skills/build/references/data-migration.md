@@ -2,7 +2,7 @@ Read this when work or a fix changes a database schema, persisted-data or file f
 
 # Data migration
 
-Keep every deployed reader and writer compatible until migrated data is proven. The enemy is a schema or format switch that makes one deployment green by breaking another. The overcorrection is permanent dual paths with no measured contract point. Move through four ordered phases; name the rollback boundary.
+Keep every deployed reader and writer compatible until migrated data is proven. The enemy is a schema or format switch that makes one deployment green by breaking another. The overcorrection is permanent dual paths with no measured contract point.
 
 ## Rollback line
 
@@ -35,9 +35,3 @@ Mark all eight cells. Each required cell stays valid until the deployment state 
 - Name the statements in one transaction and its maximum rows or bytes. Do not hold one transaction across the whole backfill.
 - Name each DDL or application lock, the operation acquiring it, and the timeout or deployment window bounding it.
 - Define retry for deadlock, timeout, interrupted batch, and duplicate delivery. Retry starts from the checkpoint and reuses the idempotent predicate.
-
-## Judgment
-
-- Compatibility evidence from concurrently deployable versions outranks a single-version green build.
-- Resumable, idempotent backfill outranks a faster one-shot operation.
-- Contract waits for measured migration completion and rollback evidence; a deployment schedule alone is not proof.

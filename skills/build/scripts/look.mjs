@@ -21,7 +21,11 @@ for (let i = 0; i < args.length; i++) {
 }
 if (!target) { console.log(USAGE); process.exit(2); }
 async function loadPlaywright() {
-  try { return await import('playwright'); } catch {}
+  try {
+    return await import('playwright');
+  } catch (error) {
+    if (error.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+  }
   const root = join(homedir(), '.npm', '_npx');
   for (const d of existsSync(root) ? readdirSync(root) : []) {
     const p = join(root, d, 'node_modules', 'playwright', 'index.mjs');
@@ -49,16 +53,12 @@ function measure() {
     if (cs.display === 'none' || cs.visibility === 'hidden' || r.width === 0 || r.height === 0 || +cs.opacity === 0) continue;
     if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName)) continue;
     const label = `${sel(el)} "${text.slice(0, 40)}"`;
-    let op = 1, image = false, bg = { r: 255, g: 255, b: 255, a: 1 };
     const chain = [];
-    for (let a = el; a; a = a.parentElement) {
-      const s = getComputedStyle(a);
-      op *= Number(s.opacity);
-      if (s.backgroundImage !== 'none') image = true;
-      chain.push(parse(s.backgroundColor));
-    }
+    for (let a = el; a; a = a.parentElement) chain.push(getComputedStyle(a));
+    const op = chain.reduce((product, s) => product * Number(s.opacity), 1);
+    const image = chain.some((s) => s.backgroundImage !== 'none');
     if (op < 0.05) continue;
-    for (const c of chain.reverse()) if (c.a > 0) bg = over(c, bg);
+    const bg = chain.map((s) => parse(s.backgroundColor)).reverse().filter((c) => c.a > 0).reduce((under, c) => over(c, under), { r: 255, g: 255, b: 255, a: 1 });
     if (image) rows.push(`SKIP ${label} (background-image, ratio still computed)`);
     const size = parseFloat(cs.fontSize), large = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700);
     const floor = large ? 3 : 4.5;
@@ -80,6 +80,25 @@ function layout(isApp) {
   const pinned = (el) => { for (let a = el; a; a = a.parentElement) { const p = getComputedStyle(a).position; if (p === 'fixed' || p === 'sticky') return a; } return null; };
   const clipped = (el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const s = getComputedStyle(a); if (s.overflowX !== 'visible' || s.overflowY !== 'visible') return a; } return null; };
   const cut = (r, c) => { const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), w = Math.min(r.right, c.right) - x, h = Math.min(r.bottom, c.bottom) - y; return w > 0 && h > 0 ? { left: x, top: y, right: x + w, bottom: y + h } : null; };
+  const textClipped = (el, box) => {
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (cs.textOverflow === 'ellipsis') return false;
+    if (box && getComputedStyle(box).textOverflow === 'ellipsis') return false;
+    const c = box ? box.getBoundingClientRect() : { left: 0, right: innerWidth };
+    const partial = r.right > c.left && r.left < c.right && (r.right > c.right + 1 || r.left < c.left - 1);
+    const self = ['hidden', 'clip'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1;
+    return partial || self;
+  };
+  const textRects = (el) => {
+    const range = document.createRange();
+    const rects = [];
+    for (const n of el.childNodes) {
+      if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+      range.selectNodeContents(n);
+      rects.push(...range.getClientRects());
+    }
+    return rects;
+  };
   const fonts = new Map(), clips = [], boxes = [];
   for (const el of document.body.querySelectorAll('*')) {
     if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName) || el.closest('svg')) continue;
@@ -89,16 +108,8 @@ function layout(isApp) {
     if (!el.closest('code, pre, kbd, samp')) { const f = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim().toLowerCase(); fonts.set(f, fonts.get(f) ?? label); }
     const r = el.getBoundingClientRect();
     const box = clipped(el);
-    if (cs.textOverflow !== 'ellipsis') {
-      const c = box ? box.getBoundingClientRect() : { left: 0, right: innerWidth };
-      const ellipsisBox = box && getComputedStyle(box).textOverflow === 'ellipsis';
-      const partial = r.right > c.left && r.left < c.right && (r.right > c.right + 1 || r.left < c.left - 1);
-      const self = ['hidden', 'clip'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1;
-      if (!ellipsisBox && (partial || self)) clips.push(`CLIP ${innerWidth} ${label}`);
-    }
-    const range = document.createRange();
-    const lines = [];
-    for (const n of el.childNodes) if (n.nodeType === 3 && n.textContent.trim()) { range.selectNodeContents(n); lines.push(...range.getClientRects()); }
+    if (textClipped(el, box)) clips.push(`CLIP ${innerWidth} ${label}`);
+    const lines = textRects(el);
     let area = { left: -1e9, top: -1e9, right: 1e9, bottom: 1e9 };
     for (let a = box; a && area; a = clipped(a)) area = cut(area, a.getBoundingClientRect());
     const kept = area ? lines.map((l) => cut(l, area)).filter((l) => l && l.right - l.left > 3 && l.bottom - l.top > 3) : [];
@@ -125,16 +136,22 @@ const lines = [];
 let fail = 0;
 const wallMs = kindWallMs('look');
 setTimeout(() => {
-  console.log([...lines,`LOOK timeout ${wallMs}ms`, `LOOK fail=${fail + 1}`].join('\n'));
+  console.log([...lines, `LOOK timeout ${wallMs}ms`, `LOOK fail=${fail + 1}`].join('\n'));
   process.exit(1);
 }, wallMs).unref();
-const browser = await chromium.launch();
-for (const width of [1440, 768, 390]) {
-  const page = await browser.newPage({ viewport: { width, height: 900 } });
-  page.on('console', (m) => { if (m.type() === 'error') { lines.push(`CONSOLE ${m.text().replace(/\s+/g, ' ')}`); fail++; } });
-  page.on('pageerror', (e) => { lines.push(`CONSOLE ${String(e.message).replace(/\s+/g, ' ')}`); fail++; });
-  page.on('requestfailed', (r) => { lines.push(`CONSOLE requestfailed ${r.url()}`); fail++; });
-  await page.goto(url, { waitUntil: 'load' });
+
+function failWith(row) {
+  lines.push(row);
+  fail++;
+}
+
+function watchPage(page) {
+  page.on('console', (m) => { if (m.type() === 'error') failWith(`CONSOLE ${m.text().replace(/\s+/g, ' ')}`); });
+  page.on('pageerror', (e) => failWith(`CONSOLE ${String(e.message).replace(/\s+/g, ' ')}`));
+  page.on('requestfailed', (r) => failWith(`CONSOLE requestfailed ${r.url()}`));
+}
+
+async function scrollThrough(page) {
   await page.evaluate(async () => {
     const h = () => document.documentElement.scrollHeight;
     for (let y = 0; y < h(); y += 400) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 80)); }
@@ -142,51 +159,77 @@ for (const width of [1440, 768, 390]) {
     window.scrollTo(0, 0);
   });
   await page.waitForTimeout(600);
+}
+
+function visibleText() {
+  const shown = (el) => { const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0 && +cs.opacity > 0.05; };
+  const controls = [...document.querySelectorAll('a, button, [role=tab], [role=button], [tabindex], label, select option')].filter((c) => shown(c.tagName === 'OPTION' ? c.parentElement : c));
+  const keys = (p) => [p.id, ...Object.values(p.dataset)].filter(Boolean);
+  const opened = (p) => keys(p).some((k) => controls.some((c) => [...c.attributes].some((a) => a.value === k || a.value === `#${k}` || a.value.split(/\s+/).includes(k))))
+    || (p.getAttribute('aria-labelledby') || '').split(/\s+/).some((id) => { const c = id && document.getElementById(id); return c && shown(c); });
+  const present = (el) => {
+    if (shown(el)) return true;
+    let panel = null;
+    for (let a = el; a && a !== document.body; a = a.parentElement) if (!shown(a) && (!a.parentElement || shown(a.parentElement) || a.parentElement === document.body)) { panel = a; break; }
+    return !!panel && opened(panel);
+  };
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), out = [];
+  for (let n; (n = w.nextNode());) if (!n.parentElement.closest('script, style, noscript, template') && present(n.parentElement)) out.push(n.textContent);
+  return out.join(' ').replace(/\s+/g, ' ');
+}
+
+function topOfText(needle) {
+  for (const el of document.body.querySelectorAll('*')) {
+    const own = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').toLowerCase();
+    if (own.includes(needle) && !el.closest('a, button, nav, header, footer')) return Math.round(el.getBoundingClientRect().top + scrollY);
+  }
+  return null;
+}
+
+async function checkLayout(page) {
+  const rows = await page.evaluate(layout, app);
+  lines.push(...rows);
+  fail += rows.filter((row) => !/^\S+ \+\d+ more$/.test(row)).length;
+}
+
+async function checkDesktopContent(page) {
+  const rows = await page.evaluate(measure);
+  lines.push(...rows);
+  fail += rows.filter((row) => !row.startsWith('SKIP')).length;
+  const body = (await page.evaluate(visibleText)).toLowerCase();
+  for (const t of expects.filter((text) => !body.includes(text.toLowerCase()))) failWith(`MISSING "${t}"`);
+}
+
+async function checkBelowFold(page, width) {
+  for (const t of expects) {
+    const top = await page.evaluate(topOfText, t.toLowerCase());
+    if (top !== null && top > 3000) failWith(`BELOW ${width} ${top} "${t}"`);
+  }
+}
+
+async function checkOverflow(page, width) {
+  const px = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (px > 0) failWith(`OVERFLOW ${width} ${px}`);
+}
+
+async function lookAt(browser, width) {
+  const page = await browser.newPage({ viewport: { width, height: 900 } });
+  watchPage(page);
+  await page.goto(url, { waitUntil: 'load' });
+  await scrollThrough(page);
   if (shots && width !== 768) {
     const shot = join(out, `${width}.png`);
     await page.screenshot({ path: shot, fullPage: true });
     lines.push(`SHOT ${shot}`);
   }
-  if (width !== 768) for (const row of await page.evaluate(layout, app)) { lines.push(row); if (!/^\S+ \+\d+ more$/.test(row)) fail++; }
-  if (width === 1440) {
-    for (const row of await page.evaluate(measure)) { lines.push(row); if (!row.startsWith('SKIP')) fail++; }
-    const body = (await page.evaluate(() => {
-      const shown = (el) => { const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0 && +cs.opacity > 0.05; };
-      const controls = [...document.querySelectorAll('a, button, [role=tab], [role=button], [tabindex], label, select option')].filter((c) => shown(c.tagName === 'OPTION' ? c.parentElement : c));
-      const keys = (p) => [p.id, ...Object.values(p.dataset)].filter(Boolean);
-      const opened = (p) => keys(p).some((k) => controls.some((c) => [...c.attributes].some((a) => a.value === k || a.value === `#${k}` || a.value.split(/\s+/).includes(k))))
-        || (p.getAttribute('aria-labelledby') || '').split(/\s+/).some((id) => { const c = id && document.getElementById(id); return c && shown(c); });
-      const present = (el) => {
-        if (shown(el)) return true;
-        let panel = null;
-        for (let a = el; a && a !== document.body; a = a.parentElement) if (!shown(a) && (!a.parentElement || shown(a.parentElement) || a.parentElement === document.body)) { panel = a; break; }
-        return !!panel && opened(panel);
-      };
-      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), out = [];
-      for (let n; (n = w.nextNode());) if (!n.parentElement.closest('script, style, noscript, template') && present(n.parentElement)) out.push(n.textContent);
-      return out.join(' ').replace(/\s+/g, ' ');
-    })).toLowerCase();
-    for (const t of expects) if (!body.includes(t.toLowerCase())) { lines.push(`MISSING "${t}"`); fail++; }
-  }
-  if (width !== 768 && !app) {
-    for (const t of expects) {
-      const top = await page.evaluate((needle) => {
-        for (const el of document.body.querySelectorAll('*')) {
-          const own = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').toLowerCase();
-          if (own.includes(needle) && !el.closest('a, button, nav, header, footer')) return Math.round(el.getBoundingClientRect().top + scrollY);
-        }
-        return null;
-      }, t.toLowerCase());
-      if (top !== null && top > 3000) { lines.push(`BELOW ${width} ${top} "${t}"`); fail++; }
-    }
-  }
-  if (width !== 1440) {
-    const px = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    if (px > 0) { lines.push(`OVERFLOW ${width} ${px}`); fail++; }
-  }
+  if (width !== 768) await checkLayout(page);
+  if (width === 1440) await checkDesktopContent(page);
+  if (width !== 768 && !app) await checkBelowFold(page, width);
+  if (width !== 1440) await checkOverflow(page, width);
   await page.close();
 }
-for (const { name, js } of shots ? states : []) for (const width of [1440, 390]) {
+
+async function captureState(browser, { name, js }, width) {
   const page = await browser.newPage({ viewport: { width, height: 900 } });
   await page.goto(url, { waitUntil: 'load' });
   await page.waitForTimeout(300);
@@ -196,9 +239,17 @@ for (const { name, js } of shots ? states : []) for (const width of [1440, 390])
     const shot = join(out, `state-${name}-${width}.png`);
     await page.screenshot({ path: shot });
     lines.push(`SHOT ${shot}`);
-  } catch (e) { lines.push(`STATE ${name} ${width} ${String(e.message).split('\n')[0]}`); fail++; }
+  } catch (e) {
+    failWith(`STATE ${name} ${width} ${String(e.message).split('\n')[0]}`);
+  }
   await page.close();
 }
+
+const browser = await chromium.launch();
+for (const width of [1440, 768, 390]) await lookAt(browser, width);
+for (const state of shots ? states : []) {
+  for (const width of [1440, 390]) await captureState(browser, state, width);
+}
 await browser.close();
-done();
+console.log([...lines, `LOOK fail=${fail}`].join('\n'));
 process.exit(fail > 0 ? 1 : 0);

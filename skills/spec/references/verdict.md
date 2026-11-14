@@ -1,6 +1,6 @@
 # Verdict
 
-The verdict is the first judgment spec makes, before any question or brief. The enemy is a brief for work the repo or an installed tool already does. The overcorrection is a stop on a request that only looks like existing work.
+The verdict is the first judgment spec makes, before any question or brief.
 
 ## Steps
 

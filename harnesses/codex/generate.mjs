@@ -64,45 +64,45 @@ function readKnown(root) {
   return { skills, agents };
 }
 
-function addSkills(root, known, files, sources) {
-  for (const name of known.skills) {
-    const directory = path.join(root, 'skills', name);
-    for (const location of listFiles(directory)) {
-      if (location.endsWith('.mjs')) continue;
-      const source = posix(path.relative(root, location));
-      const generated = path.posix.join(GENERATED, source);
-      const text = fs.readFileSync(location, 'utf8');
-      files.set(generated, location.endsWith('.md') ? codexMarkdown(source, text, known) : text);
-      sources.set(generated, source);
-    }
-    const skillSource = `skills/${name}/SKILL.md`;
-    const policy = codexOpenaiYaml(skillSource, fs.readFileSync(path.join(root, skillSource), 'utf8'));
-    if (policy === null) continue;
-    const generated = path.posix.join(GENERATED, 'skills', name, 'agents', 'openai.yaml');
-    files.set(generated, policy);
-    sources.set(generated, skillSource);
-  }
+function skillSourceFile(root, known, location) {
+  const source = posix(path.relative(root, location));
+  const text = fs.readFileSync(location, 'utf8');
+  return { generated: path.posix.join(GENERATED, source), source, text: location.endsWith('.md') ? codexMarkdown(source, text, known) : text };
 }
 
-function addAgents(root, known, files, sources) {
-  const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'), { provider: 'codex' });
+function skillPolicy(root, name) {
+  const source = `skills/${name}/SKILL.md`;
+  const text = codexOpenaiYaml(source, fs.readFileSync(path.join(root, source), 'utf8'));
+  if (text === null) return [];
+  return [{ generated: path.posix.join(GENERATED, 'skills', name, 'agents', 'openai.yaml'), source, text }];
+}
 
-  for (const [file, entry] of Object.entries(table.agents)) {
-    const name = `exo-${path.basename(file, '.md')}`;
-    const resolved = table.kinds[entry.kind];
-    const text = fs.readFileSync(path.join(root, entry.generatedFrom ?? file), 'utf8');
-    const { body } = splitFrontmatter(text);
-    const own = splitFrontmatter(fs.readFileSync(path.join(root, file), 'utf8')).fields;
-    const generated = path.posix.join(GENERATED, 'agents', `${name}.toml`);
-    files.set(generated, renderAgent({
-      name,
-      description: codexBody(file, entry.description ?? own.description, known),
-      instructions: `${preambleWithBrief(root, own)}${codexBody(file, body.replace(/^\n+/, ''), known)}`,
-      model: resolved.model,
-      effort: resolved.effort
-    }));
-    sources.set(generated, entry.generatedFrom ?? file);
-  }
+function skillGenerated(root, known, name) {
+  const locations = listFiles(path.join(root, 'skills', name)).filter((location) => !location.endsWith('.mjs'));
+  return [...locations.map((location) => skillSourceFile(root, known, location)), ...skillPolicy(root, name)];
+}
+
+function agentGenerated({ root, known, table }, [file, entry]) {
+  const name = `exo-${path.basename(file, '.md')}`;
+  const resolved = table.kinds[entry.kind];
+  const { body } = splitFrontmatter(fs.readFileSync(path.join(root, entry.generatedFrom ?? file), 'utf8'));
+  const own = splitFrontmatter(fs.readFileSync(path.join(root, file), 'utf8')).fields;
+  const text = renderAgent({
+    name,
+    description: codexBody(file, entry.description ?? own.description, known),
+    instructions: `${preambleWithBrief(root, own)}${codexBody(file, body.replace(/^\n+/, ''), known)}`,
+    model: resolved.model,
+    effort: resolved.effort
+  });
+  return { generated: path.posix.join(GENERATED, 'agents', `${name}.toml`), source: entry.generatedFrom ?? file, text };
+}
+
+function overrideProblem({ root, files, sources }, { generated, text, header }) {
+  if (!files.has(generated)) return 'overrides a file the rules do not generate';
+  if (header === null) return 'does not open with <!-- exo:override source-sha256=<hash> -->';
+  const source = sources.get(generated);
+  if (header[1] === hashOf(fs.readFileSync(path.join(root, source), 'utf8'))) return undefined;
+  return `source hash changed: ${source} differs from the one it overrides`;
 }
 
 function applyOverrides(root, files, sources) {
@@ -111,29 +111,25 @@ function applyOverrides(root, files, sources) {
   for (const location of listFiles(directory)) {
     const relative = posix(path.relative(directory, location));
     if (relative === 'README.md') continue;
-    const file = path.posix.join(OVERRIDES, relative);
     const generated = path.posix.join(GENERATED, relative);
     const text = fs.readFileSync(location, 'utf8');
     const header = OVERRIDE_HEADER.exec(text);
-    if (!files.has(generated)) {
-      problems.push({ file, problem: 'overrides a file the rules do not generate' });
-    } else if (header === null) {
-      problems.push({ file, problem: 'does not open with <!-- exo:override source-sha256=<hash> -->' });
-    } else if (header[1] !== hashOf(fs.readFileSync(path.join(root, sources.get(generated)), 'utf8'))) {
-      problems.push({ file, problem: `source hash changed: ${sources.get(generated)} differs from the one it overrides` });
-    } else {
-      files.set(generated, text.slice(header[0].length));
-    }
+    const problem = overrideProblem({ root, files, sources }, { generated, text, header });
+    if (problem !== undefined) problems.push({ file: path.posix.join(OVERRIDES, relative), problem });
+    else files.set(generated, text.slice(header[0].length));
   }
   return problems;
 }
 
 function build(root) {
   const known = readKnown(root);
-  const files = new Map();
-  const sources = new Map();
-  addSkills(root, known, files, sources);
-  addAgents(root, known, files, sources);
+  const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'), { provider: 'codex' });
+  const generated = [
+    ...known.skills.flatMap((name) => skillGenerated(root, known, name)),
+    ...Object.entries(table.agents).map((agent) => agentGenerated({ root, known, table }, agent))
+  ];
+  const files = new Map(generated.map((entry) => [entry.generated, entry.text]));
+  const sources = new Map(generated.map((entry) => [entry.generated, entry.source]));
   const problems = applyOverrides(root, files, sources);
   return { files, problems };
 }

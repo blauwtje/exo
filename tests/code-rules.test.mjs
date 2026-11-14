@@ -13,7 +13,7 @@ if (args.includes('--version')) {
 }
 const names = args.flatMap((arg, index) => (args[index - 1] === '--rule' ? [arg.split(':')[0]] : []));
 const files = args.slice(args.indexOf('--') + 1);
-const messages = ['no-empty', 'no-unused-vars']
+const messages = ['no-empty', 'no-unused-vars', 'eqeqeq', 'no-implicit-coercion']
   .filter((name) => names.includes(name))
   .map((ruleId) => ({ ruleId, line: 1, message: 'reported' }));
 console.log(JSON.stringify(files.map((file) => ({ filePath: require('node:path').resolve(file), messages }))));
@@ -77,14 +77,14 @@ test('an unchanged swallowed catch is not reported when only other lines are add
   assert.deepEqual(fails, []);
 });
 
-test('the eslint path asks for no-empty and no-unused-vars and fails on both', () => {
+test('the eslint path asks for the fail rules and fails on each', () => {
   const root = repository();
   const bin = path.join(root, 'node_modules', '.bin');
   fs.mkdirSync(bin, { recursive: true });
   fs.writeFileSync(path.join(bin, 'eslint'), FAKE_ESLINT, { mode: 0o755 });
   fs.writeFileSync(path.join(root, 'sample.mjs'), 'const unused = 1;\n');
   const { fails } = codeRuleFindings({ root, base: 'HEAD', paths: ['sample.mjs'] });
-  assert.deepEqual(fails, ['sample.mjs:1 no-empty reported', 'sample.mjs:1 no-unused-vars reported']);
+  assert.deepEqual(fails, ['sample.mjs:1 no-empty reported', 'sample.mjs:1 no-unused-vars reported', 'sample.mjs:1 eqeqeq reported', 'sample.mjs:1 no-implicit-coercion reported']);
 });
 
 const CWD_ESLINT = `#!/usr/bin/env node

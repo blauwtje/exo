@@ -23,30 +23,50 @@ const configDirectory = onCodex
 
 if (inSidecall()) process.exit(0);
 
-let input = {};
-try {
-  input = JSON.parse((await readHookText()) || '{}');
-} catch (error) {
-  console.error(`exo: session hook input unreadable, ${error.message}`);
-}
-
-try {
-  fs.mkdirSync(configDirectory, { recursive: true });
-  const loadedRoot = process.env.CLAUDE_PLUGIN_ROOT;
-  if (loadedRoot && fs.existsSync(loadedRoot) && fs.realpathSync(loadedRoot) === fs.realpathSync(root)) {
-    writePluginPointer(configDirectory, root);
+async function readInput() {
+  try {
+    return JSON.parse((await readHookText()) || '{}');
+  } catch (error) {
+    console.error(`exo: session hook input unreadable, ${error.message}`);
+    return {};
   }
-  if (!onCodex) refreshStatusLauncher(configDirectory);
-} catch (error) {
-  console.error(`exo: plugin-root pointer not written, ${error.message}`);
 }
 
-try {
-  removeSavedOutputs();
-  passUnmatchedGlobs(process.env.CLAUDE_ENV_FILE);
-} catch (error) {
-  console.error(`exo: saved Bash logs or the session shell setup not written, ${error.message}`);
+function writePointers() {
+  try {
+    fs.mkdirSync(configDirectory, { recursive: true });
+    const loadedRoot = process.env.CLAUDE_PLUGIN_ROOT;
+    if (loadedRoot && fs.existsSync(loadedRoot) && fs.realpathSync(loadedRoot) === fs.realpathSync(root)) {
+      writePluginPointer(configDirectory, root);
+    }
+    if (!onCodex) refreshStatusLauncher(configDirectory);
+  } catch (error) {
+    console.error(`exo: plugin-root pointer not written, ${error.message}`);
+    return;
+  }
 }
+
+function prepareSessionShell() {
+  try {
+    removeSavedOutputs();
+    passUnmatchedGlobs(process.env.CLAUDE_ENV_FILE);
+  } catch (error) {
+    console.error(`exo: saved Bash logs or the session shell setup not written, ${error.message}`);
+    return;
+  }
+}
+
+function neededNodeMajor() {
+  try {
+    return Number(/>=\s*(\d+)/.exec(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).engines?.node ?? '')?.[1] ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+const input = await readInput();
+writePointers();
+prepareSessionShell();
 
 if (process.env.EXO_RUN_DIR) process.exit(0);
 
@@ -68,10 +88,7 @@ if (onCodex) parts.push(readDispatchRules());
 else if (typeof input.session_id === 'string' && input.session_id !== '') fs.rmSync(dispatchMarker(input.session_id), { force: true });
 if (`${pointers}${settings}` !== '') parts.push(`${pointers}${settings}`);
 const additionalContext = parts.join('\n\n');
-let neededNode = 0;
-try {
-  neededNode = Number(/>=\s*(\d+)/.exec(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).engines?.node ?? '')?.[1] ?? 0);
-} catch {}
+const neededNode = neededNodeMajor();
 const nodeWarning = Number(process.versions.node.split('.')[0]) < neededNode
   ? `\nexo needs Node ${neededNode} or newer, and this is Node ${process.versions.node}. Update Node, or some exo hooks and scripts will fail.`
   : '';

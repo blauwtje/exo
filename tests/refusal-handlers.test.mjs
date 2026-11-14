@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { RUN_OUTCOMES } from '../lib/run-outcomes.mjs';
 import { REFUSAL_HANDLERS, isRetryable, refusalHandler } from '../lib/refusal-handlers.mjs';
 
-const KINDS = ['plan drift', 'input unreachable', 'outside Files', 'report missing', 'proof failed', 'env', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
+const KINDS = ['plan drift', 'input unreachable', 'report missing', 'proof failed', 'env', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
 
 test('every refusal kind maps to one single-line Then: handler', () => {
   assert.deepEqual(Object.keys(REFUSAL_HANDLERS).sort(), [...KINDS].sort());
@@ -28,7 +28,7 @@ test('the input unreachable handler stops the run BLOCKED and parks no task for 
 
 test('a stop kind is not retryable', () => {
   for (const kind of ['refused', 'landed', 'pin', 'lock', 'unfinished merge', 'env', 'input unreachable']) assert.equal(isRetryable(kind), false, kind);
-  for (const kind of ['proof failed', 'outside Files', 'report missing', 'plan drift']) assert.equal(isRetryable(kind), true, kind);
+  for (const kind of ['proof failed', 'report missing', 'plan drift']) assert.equal(isRetryable(kind), true, kind);
 });
 
 test('repair handoffs name build-repair and not hardest', () => {
@@ -46,13 +46,13 @@ test('a land report breaking several rules gets one refusal naming each, and the
   const { landRefusal } = await import('../lib/refusal-handlers.mjs');
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'refusal-'));
   const checks = ['a', 'b', 'c'].map((id) => ({ id, violation: () => `rule ${id} broken` }));
-  const first = landRefusal(runDir, 1, checks, {});
+  const first = landRefusal(runDir, 1, checks);
   for (const id of ['a', 'b', 'c']) assert.match(first, new RegExp(`rule ${id} broken`));
   assert.match(first, /LOOP refusal CONTINUE/);
-  landRefusal(runDir, 1, checks, {});
-  const third = landRefusal(runDir, 1, checks, {});
+  landRefusal(runDir, 1, checks);
+  const third = landRefusal(runDir, 1, checks);
   assert.match(third, /^LOOP refusal STOP .*cap.*: a, b, c\n$/);
-  assert.equal(landRefusal(runDir, 1, [], {}), null);
+  assert.equal(landRefusal(runDir, 1, []), null);
 });
 
 test('out-of-scope: the third refusal of one task stops with LOOP refusal STOP cap', async () => {
@@ -62,9 +62,9 @@ test('out-of-scope: the third refusal of one task stops with LOOP refusal STOP c
   const { landRefusal } = await import('../lib/refusal-handlers.mjs');
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'refusal-scope-'));
   const checks = [{ id: 'a', violation: () => 'rule a broken' }];
-  assert.doesNotMatch(landRefusal(runDir, 1, checks, {}), /STOP/);
-  assert.doesNotMatch(landRefusal(runDir, 1, checks, {}), /STOP/);
-  assert.match(landRefusal(runDir, 1, checks, {}), /LOOP refusal STOP .*cap/);
+  assert.doesNotMatch(landRefusal(runDir, 1, checks), /STOP/);
+  assert.doesNotMatch(landRefusal(runDir, 1, checks), /STOP/);
+  assert.match(landRefusal(runDir, 1, checks), /LOOP refusal STOP .*cap/);
 });
 
 test('a second task\'s first refusal is not stopped by an earlier task\'s refusals', async () => {
@@ -74,9 +74,9 @@ test('a second task\'s first refusal is not stopped by an earlier task\'s refusa
   const { landRefusal } = await import('../lib/refusal-handlers.mjs');
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'refusal-tasks-'));
   const checks = [{ id: 'a', violation: () => 'rule a broken' }];
-  for (let i = 0; i < 3; i++) landRefusal(runDir, 1, checks, {});
-  assert.match(landRefusal(runDir, 1, checks, {}), /STOP/);
-  assert.match(landRefusal(runDir, 2, checks, {}), /LOOP refusal CONTINUE/);
+  for (let i = 0; i < 3; i++) landRefusal(runDir, 1, checks);
+  assert.match(landRefusal(runDir, 1, checks), /STOP/);
+  assert.match(landRefusal(runDir, 2, checks), /LOOP refusal CONTINUE/);
 });
 
 test('REFUSAL_RULES entries report their rule when named violated', async () => {

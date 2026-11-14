@@ -23,11 +23,7 @@ Wording sets how firmly the model follows a rule, so match the register to the k
 
 When two phrasings compete, test the sentence in isolation before a full scenario.
 
-1. Use the same realistic prompt with a fresh context per call: one arm per phrasing and a control arm with no guidance.
-2. Cut the sentence when the control arm does not fail, since there is nothing to fix.
-3. Run each arm the same number of times.
-4. Read every flagged output by eye, because a grep match is not a judgment.
-5. Treat variance across runs as the signal: a binding phrasing converges and a weak one scatters.
+Run one arm per phrasing plus a no-guidance control, same prompt, fresh context, same run count; cut the sentence when the control passes; read every flagged output by eye, and treat variance as the signal: a binding phrasing converges and a weak one scatters.
 
 A micro-test settles wording only. Whether the skill holds under pressure is the scenario's job.
 

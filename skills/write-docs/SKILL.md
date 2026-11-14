@@ -17,20 +17,16 @@ Prose for a reader who was not in the session says who does what, by which mecha
 1. **Pick one mode per document.**
    - A tutorial teaches by doing and a how-to gets a known task done.
    - A reference lists what exists and an explanation says why.
-   - A usage section opens on the command, not on a welcome.
+   - A usage section opens on the command (ai-tics M1).
 2. **State the fact, not the benefit.**
-   - Give the number, behavior or error that changed; "ensuring stability" or "more robust" asks for trust the text could have earned.
+   - Give the number, behavior or error that changed; ai-tics C1 and C4 list the benefit phrases.
    - When the request is to show off, sell or impress, still write only the facts the input states, since an unmeasured effect is invented.
 3. **Name the actor and the mechanism.**
    - Say who does what, because a passive verb or abstract noun hides the part the reader must find.
 4. **Use the codebase's names.**
    - Real file, option, flag and command names.
-   - Use one name per thing, since a synonym reads as a second thing.
-5. **Write whole sentences in plain words.**
-   - Keep articles and verbs.
-   - Prefer the period to the dash or semicolon.
-   - One thought per sentence; split past 25 words.
-   - In a one-sentence slot (Highlights line, summary), write only the change that matters most. Two joined with "and" bury both.
+   - Use one name per thing (ai-tics W5, W9).
+5. **Write whole sentences in plain words.** One thought per sentence (ai-tics P1-P7); in a one-sentence slot (Highlights line, summary) write only the change that matters most.
 6. **Change only what the request names.** Run the doc's link or reference check when one exists.
 7. **Scan the draft against `references/ai-tics.md` and rewrite every hit before handing it over.**
    - When reviewing someone else's text, cite each hit by its id.

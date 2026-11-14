@@ -1,4 +1,3 @@
-- The agent writes findings to a named file under `.exo/<topic>/` and returns the verdict and path within the contract's return cap with no findings pasted, which keeps the lead's context small.
 - On an `exo:` agent call, pass no `model` or `effort` because the kind table decides, and name a model in text only when you pass that model.
 - Give an unnamed delegate the first brief line `exo-kind: hardest` when its brief leaves a design, architecture or solution choice open or asks for an unknown cause, and `exo-kind: build` when the brief is a fully decided fix.
 - Size each worker brief before dispatch: a `Reads:` line of paths or `none`, an optional `Fetches: <n>` line (a whole number first, one page each, one search.mjs call on the reddit route); keep the reads within 30k tokens and split into more agents when over.

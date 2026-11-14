@@ -62,11 +62,11 @@ export function budgetStop(ctx, task) {
   return stopOf('ceiling', { task, line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd or defaults.maxRunUsd in run.json, then run exo run again' });
 }
 
-export function parkedStop(line, log, kind = 'parked', task) {
+export function parkedStop({ line, log, kind = 'parked', task }) {
   return stopOf(kind, { task, line: `parked: ${line}`, why: `The run is parked: ${clip(line, 100)}`, next: `run exo approve for the open gate (see ${log}), then run exo run again` });
 }
 
-export function unsafeStop(ctx, n, before, trailer, parsed, log) {
+export function unsafeStop({ ctx, n, before, trailer, parsed, log }) {
   const { root, say, branch, iteration } = ctx;
   const breach = planBreach(ctx) ?? breachOf(root, before, { trailer });
   if (breach !== null) {
@@ -76,7 +76,7 @@ export function unsafeStop(ctx, n, before, trailer, parsed, log) {
   const parked = takeParked(n);
   if (parked !== null) {
     say(`task ${n} parked: ${clip(parked, 80)}`);
-    return parkedStop(parked, log, 'parked', n);
+    return parkedStop({ line: parked, log, task: n });
   }
   const notLoaded = exoError(parsed.init, PLUGIN_ROOT);
   if (notLoaded === null) return null;
@@ -103,7 +103,7 @@ export function autonomyStop(ctx, task) {
   if (used || takeApproved(dir, action)) return undefined;
   openGate(dir, { source: 'autonomy', action, reason: `the plan's Autonomy pauses before task ${task.number}` });
   ctx.say(`task ${task.number} paused for approval`);
-  return parkedStop(`paused before task ${task.number} for approval`, path.join(ctx.logDir, 'progress.md'), 'autonomy', task.number);
+  return parkedStop({ line: `paused before task ${task.number} for approval`, log: path.join(ctx.logDir, 'progress.md'), kind: 'autonomy', task: task.number });
 }
 
 export function unreachableInputStop(ctx, n) {
@@ -120,7 +120,7 @@ export function shelvePartialWork(ctx, n) {
   if (failed !== undefined) say(`task ${n} partial work not cleared: ${clip(failed, 80)}`);
 }
 
-export function maxTurnsStop(ctx, n, outcome, parsed, taskCount) {
+export function maxTurnsStop({ ctx, n, outcome, parsed, taskCount }) {
   if (outcome.timedOut || parsed.subtype !== 'error_max_turns') return undefined;
   shelvePartialWork(ctx, n);
   return blockedStop(ctx, n, `hit --max-turns ${agentMaxTurns('build') * taskCount}`);

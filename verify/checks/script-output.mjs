@@ -17,7 +17,6 @@ export function checkScriptOutput(report, repository) {
   report.assert(
     missing.length === 0,
     'runner script output',
-    'every runner-facing build script imports #script-output or is exempt',
-    `no #script-output import in ${missing.join(', ')}; route its output through lib/script-output.mjs or list it in SCRIPT_OUTPUT_EXEMPT`
+    { pass: 'every runner-facing build script imports #script-output or is exempt', fail: `no #script-output import in ${missing.join(', ')}; route its output through lib/script-output.mjs or list it in SCRIPT_OUTPUT_EXEMPT` }
   );
 }

@@ -43,7 +43,7 @@ async function post(url, line) {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }
 
-export async function notifyRun(root, state, phase, reason) {
+export async function notifyRun(root, state, { phase, reason }) {
   desktopNotice(state.id, phase);
   const url = configuredUrl(root);
   if (url === '') return;

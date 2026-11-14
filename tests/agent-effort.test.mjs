@@ -243,7 +243,7 @@ test('a label on an exo call with no model or effort moves it only to a label it
     const { model, effort } = call(input);
     return { model, effort };
   };
-  assert.deepEqual(pair({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review\nx' }), { model: kinds.research.model, effort: kinds.research.effort });
+  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: review\nx' }), kinds.judge);
   assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: hardest\nx' }), kinds.judge);
   assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review\nx' }).permissionDecision, 'allow');
   assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: hardest\nx', effort: 'high' }), undefined);

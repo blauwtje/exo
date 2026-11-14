@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { buildGraph } from './skill-graph-build.mjs';
-import { cmdSize, cmdRange, cmdInbound, cmdPins, cmdJson } from './skill-graph-commands.mjs';
-import { cmdRefs, cmdOverlap } from './skill-graph-refs.mjs';
+import { cmdSize, cmdRange, cmdRangeSed, cmdInbound, cmdPins, cmdJson, cmdRefs, cmdOverlap } from './skill-graph-commands.mjs';
 
 const COMMANDS = {
   size: { usage: 'size <skill>', required: 1 },
@@ -29,7 +28,8 @@ function main() {
       cmdSize(graph, args[0]);
       break;
     case 'range':
-      cmdRange(graph, positional[0], positional.slice(1).join(' '), args.includes('--sed'));
+      const render = args.includes('--sed') ? cmdRangeSed : cmdRange;
+      render(graph, positional[0], positional.slice(1).join(' '));
       break;
     case 'inbound':
       cmdInbound(graph, args[0]);

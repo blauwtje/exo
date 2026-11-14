@@ -1,6 +1,6 @@
 # AI writing tics
 
-Tic ids are stable: a review cites them; a new tic takes the next free number in its group; a removed tic retires its number.
+Tic ids are stable; a new tic takes the next free number in its group; a removed tic retires its number.
 
 ## Contents
 

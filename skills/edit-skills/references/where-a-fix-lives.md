@@ -24,7 +24,6 @@ Read the failed run's transcript, go down this list and stop at the first line t
 
 ## A rule that has to be prose
 
-- Say what to produce, because a sentence naming only the unwanted output keeps that output in view.
 - Give an exception its own gate beside the rule, and keep soft clauses out of the rule itself.
 - When one kind of output must stay untouched, place the rule where that output never passes, because an exemption clause still colours it.
 

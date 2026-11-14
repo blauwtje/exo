@@ -29,7 +29,7 @@ function addLineOf(command, paths) {
   return paths.length === 0 ? '' : `${command} ${paths.map(shellQuote).join(' ')}\n`;
 }
 
-function deriveCommit(task, number, planId, signatures, root) {
+function deriveCommit({ task, number, planId, signatures, root }) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
@@ -44,7 +44,7 @@ function deriveCommit(task, number, planId, signatures, root) {
 }
 
 
-export function commitBlockOf(plan, number, planId, signatures = [], root = '.') {
+export function commitBlockOf({ plan, number, planId, signatures = [], root = '.' }) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   if (task.commitBlock !== null) {
@@ -53,6 +53,6 @@ export function commitBlockOf(plan, number, planId, signatures = [], root = '.')
     }
     return task.commitBlock.replace(`"Plan-task: ${number}"`, shellQuote(trailersOf(planId, number, signatures)));
   }
-  if (task.compact) return deriveCommit(task, number, planId, signatures, root);
+  if (task.compact) return deriveCommit({ task, number, planId, signatures, root });
   throw new LandingError(`Task ${number} has no Commit: block`);
 }

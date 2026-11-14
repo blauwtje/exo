@@ -37,7 +37,7 @@ for (const [name, output, trusted] of [
   test(`a cached pass is ${trusted ? '' : 'not '}trusted from ${name}`, async () => {
     const { root } = await landingCheckout();
     await editApp(root);
-    recordPass(root, 'exit 1', 5, undefined, output);
+    recordPass(root, 'exit 1', { ms: 5, output });
     assert.equal(cachedPass(root, 'exit 1') !== null, trusted);
   });
 }
@@ -45,18 +45,18 @@ for (const [name, output, trusted] of [
 test('a proved key is judged by the command it proves', async () => {
   const { root } = await landingCheckout();
   await editApp(root);
-  recordPass(root, 'red-green:abc:exit 1', 5, undefined, NODE_FAIL);
+  recordPass(root, 'red-green:abc:exit 1', { ms: 5, output: NODE_FAIL });
   assert.equal(cachedPass(root, 'red-green:abc:exit 1', 'exit 1'), null);
-  recordPass(root, 'red-green:abc:exit 1', 5, undefined, NODE_PASS);
+  recordPass(root, 'red-green:abc:exit 1', { ms: 5, output: NODE_PASS });
   assert.notEqual(cachedPass(root, 'red-green:abc:exit 1', 'exit 1'), null);
 });
 
 test('a reverted tree hits its earlier verdict', async () => {
   const { root } = await landingCheckout();
   const original = workingTreeKey(root);
-  recordPass(root, 'npm test', 5, undefined, NODE_PASS);
+  recordPass(root, 'npm test', { ms: 5, output: NODE_PASS });
   await editApp(root);
-  recordPass(root, 'npm test', 7, undefined, NODE_PASS);
+  recordPass(root, 'npm test', { ms: 7, output: NODE_PASS });
   assert.equal(treePassMs(root, 'npm test'), 7);
   await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {}\n');
   assert.equal(workingTreeKey(root), original);
@@ -68,7 +68,7 @@ test('only the newest verdicts per command are kept', async () => {
   const { root } = await landingCheckout();
   for (let round = 0; round < 9; round += 1) {
     await fs.writeFile(path.join(root, 'src/app.js'), `export const round = ${round};\n`);
-    recordPass(root, 'npm test', round, undefined, NODE_PASS);
+    recordPass(root, 'npm test', { ms: round, output: NODE_PASS });
   }
   const entry = JSON.parse(await fs.readFile(cacheFile(root), 'utf8'))['npm test'];
   assert.equal(entry.ms, 8);

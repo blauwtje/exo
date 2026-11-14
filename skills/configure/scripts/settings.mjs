@@ -69,18 +69,19 @@ function settingBlock(key, stack) {
   const head = wrapped(`${number}. ${entry.label}: ${plainValue(key, value)}  (${key} = ${value}, ${origin})`, BLOCK_INDENT);
   head[0] = head[0].slice(BLOCK_INDENT.length);
   const block = [...head, ...wrapped(entry.about, BLOCK_INDENT)];
-  if (entry.options) {
-    const marked = entry.options.map((option) => {
-      const label = plainValue(key, option);
-      return option === value ? `[${label}]` : label;
-    });
-    block.push(`${BLOCK_INDENT}options: ${marked.join('  ')}`);
-  }
+  if (entry.options) block.push(`${BLOCK_INDENT}options: ${markedOptions(key, value).join('  ')}`);
   const overridden = stack
     .filter((lower) => lower.name !== layer && lower.values[key] !== undefined)
     .map((lower) => `${lower.name}=${lower.values[key]}`);
   if (overridden.length > 0) block.push(`${BLOCK_INDENT}overrides: ${overridden.join(', ')}`);
   return block;
+}
+
+function markedOptions(key, value) {
+  return SCHEMA[key].options.map((option) => {
+    const label = plainValue(key, option);
+    return option === value ? `[${label}]` : label;
+  });
 }
 
 function overview(keys, stack) {
@@ -107,7 +108,7 @@ const TOPICS = {
   notices: { label: 'Notices', question: 'Which notice?', about: 'where a finished, stuck or waiting run tells you', keys: ['notify'] }
 };
 
-function question(title, context, keep, picks, reason) {
+function question(title, context, { keep, picks, reason }) {
   const letters = [keep, ...picks].map((line, index) => `- **(${String.fromCharCode(65 + index)}) ${line}`);
   return [`**${title}**`, ...(context ? [context] : []), '', ...letters, '', `Recommended: (A), because ${reason}`];
 }
@@ -116,25 +117,28 @@ function plainValue(key, value) {
   return SCHEMA[key].choices?.[String(value)]?.label ?? (value === '' ? 'none' : String(value));
 }
 
-function menu(root, name) {
-  const stack = layers(root);
-  if (name === undefined) {
-    const topics = Object.entries(TOPICS);
-    const picks = topics.slice(0, MAX_PICKS).map(([, topic]) => `${topic.label}**: ${topic.about}`);
-    const rest = topics.slice(MAX_PICKS).map(([key, topic]) => `\`${key}\` for ${topic.label}`);
-    const context = rest.length > 0 ? `Or type ${rest.join(' or ')}.` : '';
-    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', context, 'Keep as is**: change nothing', picks, 'your settings stay as they are')].join('\n'));
-    return;
-  }
-  if (Object.hasOwn(TOPICS, name)) {
-    const topic = TOPICS[name];
-    const line = (key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about}`;
-    const picks = topic.keys.slice(0, MAX_PICKS).map(line);
-    const rest = topic.keys.slice(MAX_PICKS).map((key) => `\`${key}\` for ${SCHEMA[key].label}`);
-    console.log([...overview(topic.keys, stack), '', ...question(topic.question, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : '', 'Keep as is**: change nothing', picks, 'nothing changes unless you pick another')].join('\n'));
-    return;
-  }
-  if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
+function rest(items, describeItem) {
+  const typed = items.slice(MAX_PICKS).map(describeItem);
+  return typed.length > 0 ? `Or type ${typed.join(' or ')}.` : '';
+}
+
+function topMenu(stack) {
+  const topics = Object.entries(TOPICS);
+  const picks = topics.slice(0, MAX_PICKS).map(([, topic]) => `${topic.label}**: ${topic.about}`);
+  const context = rest(topics, ([key, topic]) => `\`${key}\` for ${topic.label}`);
+  const proposal = { keep: 'Keep as is**: change nothing', picks, reason: 'your settings stay as they are' };
+  return [...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', context, proposal)];
+}
+
+function topicMenu(topic, stack) {
+  const line = (key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about}`;
+  const picks = topic.keys.slice(0, MAX_PICKS).map(line);
+  const context = rest(topic.keys, (key) => `\`${key}\` for ${SCHEMA[key].label}`);
+  const proposal = { keep: 'Keep as is**: change nothing', picks, reason: 'nothing changes unless you pick another' };
+  return [...overview(topic.keys, stack), '', ...question(topic.question, context, proposal)];
+}
+
+function keyMenu(name, stack) {
   const entry = SCHEMA[name];
   const current = resolve(name, stack).value;
   const choices = entry.choices ?? {};
@@ -142,9 +146,17 @@ function menu(root, name) {
   const keep = kept ? `Keep ${kept.label}**: ${kept.gives}` : `Keep ${plainValue(name, current)}**: change nothing`;
   const others = Object.entries(choices).filter(([value]) => value !== String(current));
   const picks = others.slice(0, MAX_PICKS).map(([, choice]) => `${choice.label}**: ${choice.gives}`);
-  const rest = others.slice(MAX_PICKS).map(([value, choice]) => `\`${value}\` for ${choice.label}`);
-  const context = [entry.typed, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : ''].filter(Boolean).join(' ');
-  console.log([...overview([name], stack), '', ...question(entry.question, context, keep, picks, 'nothing changes unless you pick another')].join('\n'));
+  const context = [entry.typed, rest(others, ([value, choice]) => `\`${value}\` for ${choice.label}`)].filter(Boolean).join(' ');
+  const proposal = { keep, picks, reason: 'nothing changes unless you pick another' };
+  return [...overview([name], stack), '', ...question(entry.question, context, proposal)];
+}
+
+function menu(root, name) {
+  const stack = layers(root);
+  if (name === undefined) return console.log(topMenu(stack).join('\n'));
+  if (Object.hasOwn(TOPICS, name)) return console.log(topicMenu(TOPICS[name], stack).join('\n'));
+  if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
+  return console.log(keyMenu(name, stack).join('\n'));
 }
 
 function gitignoreEntry(root, relative) {
@@ -154,8 +166,7 @@ function gitignoreEntry(root, relative) {
   return `${separator}${relative.split(path.sep).join('/')}\n`;
 }
 
-function set(root, key, value, scope) {
-  if (!Object.hasOwn(SCHEMA, key ?? '')) throw unknownKey(key);
+function checkScope(scope) {
   const onCodex = currentHost() === 'codex';
   if (scope === 'global' && !onCodex) {
     throw new Error('a global value is set in /config under the exo plugin, not by this script');
@@ -163,25 +174,32 @@ function set(root, key, value, scope) {
   if (scope !== 'project' && scope !== 'local' && !(scope === 'global' && onCodex)) {
     throw new Error(`--scope must be project, local${onCodex ? ' or global' : ''}`);
   }
+}
+
+function writeSetting(root, { key, value, scope }) {
   const typed = typedValue(key, value);
   const problem = invalidReason(key, typed);
   if (problem) throw new Error(problem);
-
   const relative = { local: LOCAL_FILE, project: PROJECT_FILE, global: codexSettingsFile() }[scope];
   const file = scope === 'global' ? relative : path.join(root, relative);
   const values = readLayer(file);
   values[key] = typed;
   writeAtomic(file, `${JSON.stringify(values, null, 2)}\n`);
   console.log(`${key}=${typed} set in ${relative}`);
+  return relative;
+}
 
-  if (scope === 'global') return;
-
+function set(root, change) {
+  if (!Object.hasOwn(SCHEMA, change.key ?? '')) throw unknownKey(change.key);
+  checkScope(change.scope);
+  const relative = writeSetting(root, change);
+  if (change.scope === 'global') return;
   const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);
-  if (scope === 'local' && ignored.status === 1) {
+  if (change.scope === 'local' && ignored.status === 1) {
     fs.appendFileSync(path.join(root, '.gitignore'), gitignoreEntry(root, relative));
     console.log(`${relative} added to .gitignore`);
   }
-  if (scope === 'project' && ignored.status === 0) {
+  if (change.scope === 'project' && ignored.status === 0) {
     console.log(`${relative} is git-ignored, so collaborators do not receive it`);
   }
 }
@@ -225,7 +243,7 @@ try {
   } else if (command === 'statusline') {
     statusline();
   } else if (command === 'set') {
-    set(root, args[0], args[1], option(args, '--scope'));
+    set(root, { key: args[0], value: args[1], scope: option(args, '--scope') });
   } else {
     throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local | statusline');
   }

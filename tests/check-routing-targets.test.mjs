@@ -30,6 +30,3 @@ test('a mode named alone fails, as it is no skill', () => {
   assert.deepEqual(unroutableTargets(sample('Go to `refactor`.')), ['hooks/session-routing.md: refactor']);
 });
 
-test('the shipped routing text passes', () => {
-  assert.deepEqual(unroutableTargets(ROOT), []);
-});

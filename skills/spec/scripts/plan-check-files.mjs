@@ -1,7 +1,9 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { isCovered } from '#plan-landed';
-import { filesUnder, lockProblems, mentions, readerProblems, testTextsOf } from './plan-check-locks.mjs';
+import { readJsonOrNull } from '#basics';
+import { dataLiterals, literalFinder, literalFragments } from '#data-literals';
+import { realPath } from './plan-check-loop.mjs';
 
 export function checkFilesExist(task, root, byNumber) {
   if (root === undefined || root === null) return [];
@@ -21,65 +23,17 @@ export function checkFilesExist(task, root, byNumber) {
   return problems;
 }
 
-function existingTestsOf(sourcePath, testFiles, root) {
-  const base = path.parse(sourcePath).name;
-  const fileName = path.posix.basename(sourcePath);
-  return testFiles
-    .filter((name) => name === `${base}.test.mjs` || (name.startsWith(`${base}-`) && name.endsWith('.test.mjs')))
-    .filter((name) => testTextsOf(path.join(root, 'tests', name)).some((text) => mentions(text, fileName)))
-    .map((name) => `tests/${name}`);
-}
-
-export function checkUnlistedTests(task, root, byNumber) {
-  if (root === undefined || root === null) return [];
-  const testsDir = path.join(root, 'tests');
-  if (!fs.existsSync(testsDir)) return [];
-  const testFiles = fs.readdirSync(testsDir);
-  const listed = task.files.map((file) => file.path);
-  const sources = task.files.filter((file) => file.kind !== 'Create' && !file.path.endsWith('/') && !file.path.endsWith('.test.mjs') && file.path !== 'CHANGELOG.md');
-  const problems = [];
-  for (const source of sources) {
-    const tests = existingTestsOf(source.path, testFiles, root);
-    if (tests.length === 0 || tests.some((testPath) => isCovered(listed, testPath))) continue;
-    problems.push(`Task ${task.number}: Files: \`${source.path}\` has existing tests ${tests.map((testPath) => `\`${testPath}\``).join(', ')} and lists none of them`);
-  }
-  if (sources.length === 0) return problems;
-  const tracked = filesUnder(root);
-  const withOthers = sources.map((source) => ({
-    path: source.path,
-    others: new Set(tracked.filter((name) => name !== source.path).map((name) => path.posix.basename(name)))
-  }));
-  return [...problems, ...lockProblems(task, root, withOthers, laterChainedPaths(byNumber, task.number)),...readerProblems(task, root, withOthers)];
-}
-
-const TEST_FILE_NAME = /^(?:[\w.-]+[._](?:test|spec)|test_[\w.-]+)\.\w+$/;
-
-export function checkProofTestsListed(task, root, byNumber) {
-  if (task.proof === null || root === undefined || root === null) return [];
-  const listed = [task.number, ...dependencyChainOf(byNumber, task.number)].flatMap((number) => byNumber.get(number).files.map((file) => file.path));
-  const unlisted = (task.proof.match(/[\w./@-]+/g) ?? [])
-    .map((token) => token.replace(/^\.\//, ''))
-    .filter((token) => TEST_FILE_NAME.test(path.posix.basename(token)) && !isCovered(listed, token) && fs.existsSync(path.join(root, token)));
-  const listedProblems = [...new Set(unlisted)].map((testPath) => `Task ${task.number}: add \`${testPath}\` to Files: (its Proof runs it)`);
-  return [...listedProblems, ...proofCommandProblems(task)];
-}
-
 const SHELL_WORDS = new Set(['cd', 'export', 'test', 'true', 'false', 'source', 'set', 'echo', 'exit']);
 
 function isOnPath(command) {
   return (process.env.PATH ?? '').split(path.delimiter).some((directory) => directory !== '' && fs.existsSync(path.join(directory, command)));
 }
 
-function proofCommandProblems(task) {
+export function checkProofOnPath(task, root) {
+  if (task.proof === null || root === undefined || root === null) return [];
   const command = task.proof.trim().replace(/^`+/, '').split(/\s+/)[0];
   if (!/^[A-Za-z][\w.-]*$/.test(command) || SHELL_WORDS.has(command) || isOnPath(command)) return [];
   return [`Task ${task.number}: Proof starts with \`${command}\`, which is not on this host's PATH`];
-}
-
-function laterChainedPaths(byNumber, number) {
-  return [...byNumber.values()]
-    .filter((other) => reachesThrough(byNumber, other.number, number))
-    .flatMap((other) => other.files.map((file) => file.path));
 }
 
 function dependencyChainOf(byNumber, from) {
@@ -99,47 +53,81 @@ export function reachesThrough(byNumber, from, to) {
 }
 
 export function checkSharedFiles(tasks) {
+  return unchainedPairs(tasks).flatMap(([first, second]) => sharedFileProblems(first, second));
+}
+
+export function unchainedPairs(tasks) {
   const byNumber = new Map(tasks.map((task) => [task.number, task]));
-  const problems = [];
-  for (let i = 0; i < tasks.length; i++) {
-    for (let j = i + 1; j < tasks.length; j++) {
-      const first = tasks[i];
-      const second = tasks[j];
-      const secondPaths = new Set(second.files.map((file) => file.path));
-      const shared = new Set(first.files.map((file) => file.path).filter((filePath) => secondPaths.has(filePath)));
-      if (shared.size === 0) continue;
-      if (reachesThrough(byNumber, first.number, second.number) || reachesThrough(byNumber, second.number, first.number)) continue;
-      for (const filePath of shared) {
-        problems.push(`Task ${first.number} and Task ${second.number} both list Files: \`${filePath}\` with no Depends on chain between them`);
-      }
-    }
-  }
-  return problems;
+  const pairs = tasks.flatMap((first, i) => tasks.slice(i + 1).map((second) => [first, second]));
+  return pairs.filter(([first, second]) => !reachesThrough(byNumber, first.number, second.number) && !reachesThrough(byNumber, second.number, first.number));
 }
 
-const DATA_PATH = /`([\w@-][\w./@-]*\/[\w./@-]*)`/g;
-
-function listedPathsOf(task, byNumber) {
-  return [task.number, ...dependencyChainOf(byNumber, task.number)].flatMap((number) => byNumber.get(number).files.map((file) => file.path));
+function sharedFileProblems(first, second) {
+  const secondPaths = new Set(second.files.map((file) => file.path));
+  const shared = new Set(first.files.map((file) => file.path).filter((filePath) => secondPaths.has(filePath)));
+  return [...shared].map((filePath) => `Task ${first.number} and Task ${second.number} both list Files: \`${filePath}\` with no Depends on chain between them`);
 }
 
-function proofStartWarning(task, root, listed) {
-  if (task.proof === null) return [];
-  const first = task.proof.trim().split(/\s+/)[0].replace(/^\.\//, '');
-  if (!/^[\w@-][\w./@-]*\/[\w./@-]+$/.test(first)) return [];
-  if (isCovered(listed, first) || fs.existsSync(path.join(root, first))) return [];
-  return [`Task ${task.number}: Proof starts with \`${first}\`, which is not in the checkout root and not in Files:`];
+function hasHead(root) {
+  return spawnSync('git', ['-C', root, 'rev-parse', '--verify', '-q', 'HEAD'], { stdio: 'ignore' }).status === 0;
 }
 
-function dataPathWarnings(task, listed) {
-  const paths = [...(task.data ?? '').matchAll(DATA_PATH)].map((match) => match[1].replace(/^\.\//, ''));
-  return [...new Set(paths)]
-    .filter((dataPath) => !isCovered(listed, dataPath))
-    .map((dataPath) => `Task ${task.number}: Data: names \`${dataPath}\`, which Files: omits`);
+function namesUnsearchablePath(fragment, root) {
+  const target = path.resolve(root, fragment);
+  if (!fs.existsSync(target)) return false;
+  const relative = path.relative(root, fs.realpathSync(target));
+  if (path.isAbsolute(fragment) || relative.startsWith('..') || path.isAbsolute(relative)) return true;
+  return spawnSync('git', ['-C', root, 'check-ignore', '-q', '--', relative], { stdio: 'ignore' }).status === 0;
 }
 
-export function warnProofAndData(task, root, byNumber) {
-  if (root === undefined || root === null) return [];
-  const listed = listedPathsOf(task, byNumber);
-  return [...proofStartWarning(task, root, listed), ...dataPathWarnings(task, listed)];
+const PLACEHOLDER = /<[^>]*>/;
+
+const quoted = (literals) => literals.map((literal) => `\`${literal}\``).join(', ');
+
+function unsearchablePaths(task, literals, { found, root }) {
+  const flagged = literals.filter((literal) => !found(literal) && literalFragments(literal).some((fragment) => namesUnsearchablePath(fragment, root) && !found(fragment)));
+  if (flagged.length === 0) return [];
+  return [`Task ${task.number}: Data: names ${quoted(flagged)}, a path the land check cannot search (absolute, outside the repository or git-ignored); name it relative to the repository, or add \`Literals: none (<reason>)\``];
+}
+
+function unmatchedPlaceholders(task, literals, found) {
+  const flagged = literals.filter((literal) => !found(literal));
+  if (flagged.length === 0) return [];
+  return [`Task ${task.number}: Data: names ${quoted(flagged)}, a <placeholder> literal no file holds verbatim, and its text around the placeholder is not in the tree, so the land check refuses it as missing; name a literal the change holds verbatim, or add \`Literals: none (<reason>)\``];
+}
+
+function checkDataLiterals(task, root, planPath) {
+  if (task.literals !== null || !task.data || !hasHead(root)) return [];
+  const literals = [...new Set(dataLiterals(task.data))];
+  const paths = literals.filter((literal) => literalFragments(literal).some((fragment) => namesUnsearchablePath(fragment, root)));
+  const placeholders = literals.filter((literal) => PLACEHOLDER.test(literal));
+  if (paths.length === 0 && placeholders.length === 0) return [];
+  const found = literalFinder(root, planPath);
+  return [...unsearchablePaths(task, paths, { found, root }), ...unmatchedPlaceholders(task, placeholders, found)];
+}
+
+export function dataLiteralsCheck(context) {
+  if (!context.hasRoot || !fs.existsSync(context.root)) return [];
+  const planFile = context.planPath === undefined ? null : realPath(context.planPath);
+  return context.unlanded.flatMap((task) => checkDataLiterals(task, realPath(context.root), planFile));
+}
+
+const readManifest = (directory) => readJsonOrNull(path.join(directory, 'package.json'));
+
+export function packageEntryPoints(directory) {
+  const manifest = readManifest(directory);
+  if (manifest === null) return null;
+  const bin = manifest?.bin;
+  const bins = bin && typeof bin === 'object' ? Object.keys(bin) : bin ? [String(bin)] : [];
+  return typeof manifest?.scripts?.start === 'string' ? [...bins, 'npm start'] : bins;
+}
+
+const START_FORMS = ['npm start', 'npm run start', 'pnpm start', 'pnpm run start', 'yarn start', 'yarn run start'];
+
+export function packageRunTerms(directory) {
+  const manifest = readManifest(directory);
+  const bin = manifest?.bin;
+  const bins = bin && typeof bin === 'object' ? Object.entries(bin).flat() : bin ? [String(bin)] : [];
+  const terms = bins.map((term) => String(term).replace(/^\.\//, ''));
+  return typeof manifest?.scripts?.start === 'string' ? [...terms, ...START_FORMS] : terms;
 }

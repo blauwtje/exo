@@ -22,7 +22,7 @@ function setGateEnv(values) {
   };
 }
 
-function unlandedEvidenceOf(plan, root, planId, skip) {
+function unlandedEvidenceOf({ plan, root, planId, skip = null }) {
   const landed = landedTasks(plan.tasks, root, planId);
   const values = plan.tasks
     .filter((other) => other.number !== skip?.number && !landed.includes(other.number) && other.evidence !== null)
@@ -30,16 +30,12 @@ function unlandedEvidenceOf(plan, root, planId, skip) {
   return values.length === 0 ? undefined : values.join('\n');
 }
 
-function pendingEvidenceOf(plan, task, root, planId) {
-  return unlandedEvidenceOf(plan, root, planId, task);
-}
-
 export function proofEvidenceOf(plan, root, planId) {
-  return unlandedEvidenceOf(plan, root, planId, null);
+  return unlandedEvidenceOf({ plan, root, planId });
 }
 
-export function gateEnvOf(plan, task, root, planId) {
-  return { EXO_DROPS: dropsOf(task) ?? undefined, EXO_PENDING_EVIDENCE: pendingEvidenceOf(plan, task, root, planId) };
+export function gateEnvOf({ plan, task, root, planId }) {
+  return { EXO_DROPS: dropsOf(task) ?? undefined, EXO_PENDING_EVIDENCE: unlandedEvidenceOf({ plan, root, planId, skip: task }) };
 }
 
 export function runLandGate(landGate, root, gateEnv = {}) {

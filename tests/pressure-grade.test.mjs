@@ -70,9 +70,9 @@ test('judge lines read PASS or FAIL from the judge and hide nothing but the arm'
 });
 
 const run = ([caseFile, arm, n, ...passes]) => ({ case: caseFile, arm, run: n, lines: passes.map((pass) => ({ text: 't', pass, reason: '' })) });
-const arms = (caseFile, withPasses, otherPasses, other = 'without') => [
+const arms = (caseFile, withPasses, otherPasses) => [
   ...withPasses.map((pass, index) => run([caseFile, 'with', index + 1, pass])),
-  ...otherPasses.map((pass, index) => run([caseFile, other, index + 1, pass]))
+  ...otherPasses.map((pass, index) => run([caseFile, 'without', index + 1, pass]))
 ];
 
 test('aggregate gives PASS, FAIL or INCONCLUSIVE from the interval of the pass-rate difference and the margin', () => {
@@ -99,7 +99,7 @@ test('a 3 of 3 against 2 of 3 split is INCONCLUSIVE, not the FAIL a 100 percent 
 });
 
 test('the margin decides where PASS and FAIL start, and a case margin beats the default', () => {
-  const ci = newcombe(30, 30, 30, 30);
+  const ci = newcombe({ passed: 30, runs: 30 }, { passed: 30, runs: 30 });
   assert.equal(verdictFor(ci, 0.2), 'PASS');
   assert.equal(verdictFor(ci, 0.05), 'INCONCLUSIVE');
   const grades = arms('a.txt', Array(30).fill(true), Array(30).fill(true));
@@ -110,8 +110,8 @@ test('the margin decides where PASS and FAIL start, and a case margin beats the 
 });
 
 test('newcombe interval of equal rates is symmetric about 0 and narrows with n', () => {
-  const [low3, high3] = newcombe(3, 3, 3, 3);
-  const [low30, high30] = newcombe(30, 30, 30, 30);
+  const [low3, high3] = newcombe({ passed: 3, runs: 3 }, { passed: 3, runs: 3 });
+  const [low30, high30] = newcombe({ passed: 30, runs: 30 }, { passed: 30, runs: 30 });
   assert.ok(Math.abs(low3 + high3) < 1e-9);
   assert.ok(high30 < high3);
 });
@@ -132,7 +132,7 @@ test('PASS with an interval spanning 0 is flagged no skill effect, and judge ins
 });
 
 test('a contrast arm is compared like the without arm', () => {
-  const [result] = aggregate(arms('a.txt', [true, true, true], [false, false, false], 'contrast'));
+  const [result] = aggregate(arms('a.txt', [true, true, true], [false, false, false]).map((entry) => (entry.arm === 'without' ? { ...entry, arm: 'contrast' } : entry)));
   assert.equal(result.comparison, 'contrast');
   assert.equal(result.verdict, 'PASS');
 });

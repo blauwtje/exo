@@ -23,17 +23,17 @@ function unanswered(url) {
   };
 }
 
-async function request(fetchFn, url, init, options) {
+async function request({ fetchFn, options }, url, init) {
   const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(options.fetchMs) }).catch(unanswered(url));
   if (response.status === 429) throw new Unreadable('YouTube answered 429, this network is rate limited', { retryable: true, blocked: true, rateLimited: true });
   if (!response.ok) throw new Unreadable(`YouTube answered HTTP ${response.status}`, { retryable: true });
   return response.text().catch(unanswered(url));
 }
 
-async function fetchPlayer(id, fetchFn, options, identity = IDENTITIES[0]) {
+async function fetchPlayer(id, network, identity) {
   const body = JSON.stringify({ context: { client: identity.client }, videoId: id });
   const headers = { 'content-type': 'application/json', 'user-agent': identity.agent };
-  const text = await request(fetchFn, PLAYER_URL, { method: 'POST', headers, body }, options);
+  const text = await request(network, PLAYER_URL, { method: 'POST', headers, body });
   try {
     return JSON.parse(text);
   } catch {
@@ -41,23 +41,23 @@ async function fetchPlayer(id, fetchFn, options, identity = IDENTITIES[0]) {
   }
 }
 
-async function playableWith(id, fetchFn, options, identity) {
-  const player = await fetchPlayer(id, fetchFn, options, identity);
+async function playableWith(id, network, identity) {
+  const player = await fetchPlayer(id, network, identity);
   checkPlayable(player);
   return player;
 }
 
 export async function fetchPlayable(id, fetchFn, options) {
   try {
-    return await playableWith(id, fetchFn, options, IDENTITIES[0]);
+    return await playableWith(id, { fetchFn, options }, IDENTITIES[0]);
   } catch (error) {
     if (!error.blocked) throw error;
-    return playableWith(id, fetchFn, options, IDENTITIES[1]);
+    return playableWith(id, { fetchFn, options }, IDENTITIES[1]);
   }
 }
 
 export async function fetchWatchPage(id, fetchFn, options) {
-  return request(fetchFn, `${WATCH_URL}${id}`, { headers: { 'accept-language': 'en-US,en;q=0.9' } }, options).catch(() => '');
+  return request({ fetchFn, options }, `${WATCH_URL}${id}`, { headers: { 'accept-language': 'en-US,en;q=0.9' } }).catch(() => '');
 }
 
 function checkPlayable(player) {
@@ -107,7 +107,7 @@ export function languagesOf(tracks) {
 
 export async function readCaptions(track, fetchFn, options) {
   if (/[?&]exp=xpe\b/.test(track.url)) throw new Unreadable('YouTube wants a proof-of-origin token for these captions', { retryable: true });
-  const xml = await request(fetchFn, track.url, {}, options);
+  const xml = await request({ fetchFn, options }, track.url, {});
   if (xml.trim() === '') throw new Unreadable('YouTube sent an empty caption file', { retryable: true });
   const cues = parseTimedText(xml, { auto: track.auto });
   if (cues.length === 0) throw new Unreadable('YouTube sent a caption file with no text', { retryable: true });

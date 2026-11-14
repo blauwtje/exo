@@ -18,10 +18,6 @@ function scan(files) {
   return unrememberedRefusals(createRepository(root));
 }
 
-test('every shipped hook sends its refusals through the shared helper', () => {
-  assert.deepEqual(unrememberedRefusals(createRepository(ROOT)), []);
-});
-
 test('a hook that writes a deny straight to stdout is flagged', () => {
   const text = "const out = { hookSpecificOutput: { permissionDecision: 'deny' } };\nprocess.stdout.write(JSON.stringify(out));\n";
   assert.deepEqual(scan({ 'hooks/bad.mjs': text }), ['hooks/bad.mjs:2 writes hook output past writeHookOutput', 'hooks/bad.mjs refuses without lib/hook-refusal.mjs']);

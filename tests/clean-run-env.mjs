@@ -47,7 +47,8 @@ function createRunRoot() {
   process.on('exit', () => {
     try {
       fs.rmSync(root, { recursive: true, force: true, maxRetries: 3 });
-    } catch {
+    } catch (error) {
+      process.stderr.write(`cleanup of ${root} failed: ${error.message}\n`);
     }
   });
   return root;

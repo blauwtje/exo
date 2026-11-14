@@ -1,6 +1,6 @@
 # A brief stored as an issue
 
-This page puts the brief in a GitHub issue. The `specs` setting authorizes the issue, so the brief goes to GitHub with no draft shown first. The enemy is an issue inventing a label, type or milestone the repository never defined. The overcorrection is falling back to a file while the repository and `gh` both work.
+This page puts the brief in a GitHub issue. The `specs` setting authorizes the issue, so the brief goes to GitHub with no draft shown first.
 
 ## Writing it
 

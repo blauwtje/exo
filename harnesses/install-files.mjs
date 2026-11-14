@@ -6,6 +6,14 @@ export const isPlain = (value) => typeof value === 'object' && value !== null &&
 export const hashOf = (content) => crypto.createHash('sha256').update(content).digest('hex');
 export const statOf = (file) => fs.lstatSync(file, { throwIfNoEntry: false });
 
+export function tryRmdir(folder) {
+  try {
+    fs.rmdirSync(folder);
+  } catch {
+    return;
+  }
+}
+
 export function plainChain(base, parts) {
   let current = base;
   for (const part of parts.slice(0, -1)) {

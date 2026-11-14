@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { RUN_OUTCOMES, outcome, outcomeLine, parkQuestion } from '../lib/run-outcomes.mjs';
 
-const ACTIONS = ['continue', 'repair', 'amend', 'park', 'stop'];
+const ACTIONS = ['continue', 'repair', 'park', 'stop'];
 
 test('every row has its own kind, one known action and a single Then: line', () => {
   for (const [kind, row] of Object.entries(RUN_OUTCOMES)) {
@@ -22,9 +22,8 @@ test('the table is frozen and an unknown kind throws', () => {
   assert.throws(() => outcome('mystery'), /no run outcome for 'mystery'/);
 });
 
-test('a gate fail repairs, an unplanned path amends, a question parks and only the bound stops', () => {
+test('a gate fail repairs, a question parks and only the bound stops', () => {
   assert.equal(outcome('gate fail').action, 'repair');
-  assert.equal(outcome('outside Files').action, 'amend');
   assert.equal(outcome('question').action, 'park');
   assert.equal(outcome('repair bound').action, 'stop');
 });

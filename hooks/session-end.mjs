@@ -52,7 +52,7 @@ function goalText(progress) {
   return GOAL_SECTION.exec(fs.readFileSync(progress, 'utf8'))?.[1].trim() || GOAL_MISSING;
 }
 
-function stubText(cwd, file, dirty, progress) {
+function stubText(cwd, file, { dirty, progress }) {
   const values = {
     date: new Date().toISOString().slice(0, 10),
     head: gitLine(cwd, ['rev-parse', '--short', 'HEAD']) ?? 'none',
@@ -74,7 +74,7 @@ function writeHandoffStub({ cwd, transcript_path: transcriptPath }) {
   const progress = newestProgressFile(cwd);
   if (dirty.length === 0 && progress === undefined) return undefined;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, stubText(cwd, file, dirty, progress));
+  fs.writeFileSync(file, stubText(cwd, file, { dirty, progress }));
   return file;
 }
 
@@ -85,6 +85,7 @@ async function handleSessionEnd() {
     writeHandoffStub(input);
   } catch (error) {
     console.error(`exo: handoff stub not written, ${error.message}`);
+    return;
   }
 }
 

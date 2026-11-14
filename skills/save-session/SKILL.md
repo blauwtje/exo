@@ -27,15 +27,15 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 
 ## Where it goes
 
-1. Read the location instead of guessing it: `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` prints it, the same file `hooks/session-start.mjs` points a resuming session at.
+1. Read the location instead of guessing it: `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` prints it.
 2. A branch name holding `/` gives a nested path, so create parent directories first.
 3. Write the file whole, replacing any handoff already at that path: the state it held is what this clear discards.
 
 ## What it holds
 
-Fill `assets/handoff-template.md`: a work record with `## Goal`, `## Progress`, `## Evidence` and `## Next step` in that order, then `## Resume`, and no chat history. Its first line answers in one sentence where the work stands. The file is read by the user, so write plain words in the user's language per `../../lib/references/user-read-format.md`.
+Fill `assets/handoff-template.md` and keep its section order, with no chat history. The file is read by the user, so write plain words in the user's language per `../../lib/references/user-read-format.md`.
 
-The last line of the file is `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue. The sections carry every step, so this one line suffices.
+The last line of the file is `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue.
 
 In those sections:
 
@@ -64,6 +64,6 @@ Diff the work this handoff records as done against the work it still lists as ne
 
 ## Judgment
 
-- File read this session outranks memory of it: confirm path, branch and commit with a command before writing them down.
-- A short true handoff outranks a full one that guesses. Put what the session does not know under the unproven list in `## Evidence`.
+- Confirm path, branch and commit with a command before writing them down.
+- A short true handoff outranks a full one that guesses.
 - Turn ends naming the written path, saying to run `/clear`, and quoting the `Resume:` prompt to paste after it. Nothing else written; no work continues after.

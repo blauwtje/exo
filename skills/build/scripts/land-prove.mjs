@@ -3,7 +3,7 @@ import { commitBlockOf } from './land-commit-block.mjs';
 import { refuseMcpProofUnderPin } from './land-pin.mjs';
 import { refuseBadCommitText, refuseBadEvidence } from './land-fix.mjs';
 import { runProof, runNamedTests } from './land-proof.mjs';
-import { siblingWorkOf, unplannedPaths } from './land-paths.mjs';
+import { siblingWorkOf, landablePaths } from './land-paths.mjs';
 import { signatureChanges } from './land-signatures.mjs';
 import { runLint, runCodeRules } from './land-code-rules.mjs';
 import { redGreenLine, refuseTogether, passingRunsOf, checkReport } from './land-refusals.mjs';
@@ -18,8 +18,8 @@ export function refuseBeforeProof(plan, task, { root, planPath, pin, planId, rep
   refuseMcpProofUnderPin(pin, task);
   const siblingWork = siblingWorkOf(plan, task, { root, planPath, landing: true });
   const warning = refuseTogether(task, { root, planPath, siblingWork, reportText, reportPath });
-  const outside = unplannedPaths(task, { root, planPath, siblingWork });
-  const block = commitBlockOf(plan, task.number, planId, signatureChanges(task, root), root);
+  const outside = landablePaths({ root, planPath, siblingWork });
+  const block = commitBlockOf({ plan, number: task.number, planId, signatures: signatureChanges(task, root), root });
   refuseBadCommitText(task.commitSubject ?? task.title, block);
   if (task.evidence != null) refuseBadEvidence(`Evidence: ${task.evidence}`);
   return { block, warning, outside };
@@ -30,7 +30,7 @@ export function proveTask(task, { root, planPath, docker, reportText, reportPath
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, { root, field: task.compact ? 'Proof' : 'Run', docker, pendingEvidence }));
   runNamedTests(task, proofCommands, { root, planPath, pendingEvidence });
-  const { line, warning } = redGreenLine(task, proofCommands, root, pending);
+  const { line, warning } = redGreenLine(task, { proofCommands, root, pending });
   return { proofs, pending, redLine: line, warning };
 }
 

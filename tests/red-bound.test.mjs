@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { redGreen, runOnBase } from '../lib/red-green.mjs';
-import { commitFiles, gitRepository } from './harness.mjs';
+import { commitFiles, gitRepository, restoreEnv } from './harness.mjs';
 import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs';
 
 const inBase = (body) => `if pwd | grep -q red-green-; then ${body}; fi`;
@@ -17,10 +17,7 @@ async function withEnv(settings, body) {
   try {
     return await body();
   } finally {
-    for (const [name, value] of Object.entries(saved)) {
-      if (value === undefined) delete process.env[name];
-      else process.env[name] = value;
-    }
+    restoreEnv(saved);
   }
 }
 

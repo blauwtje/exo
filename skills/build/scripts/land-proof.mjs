@@ -26,7 +26,7 @@ export function quietText(text, ok) {
   return `${[...kept, `Full output: ${quiet.file}`].join('\n')}\n`;
 }
 
-function proofAttempt(task, command, root, pendingEvidence) {
+function proofAttempt(task, command, { root, pendingEvidence }) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const outcome = runCheck(root, command, { timeoutMs: deadlineMs, env: proofEnvOf(task, pendingEvidence), fresh: true, record: false });
   const proofRun = { status: outcome.code, signal: outcome.signal, timedOut: outcome.timedOut, error: outcome.error, output: outcome.output };
@@ -53,31 +53,33 @@ function proofFailure(attempt) {
 
 const outcome = (passed) => (passed ? 'pass' : 'fail');
 
-function shadowRun(task, command, selection, { root, pendingEvidence }, fullPassed) {
-  const narrowed = selection.files.length === 0 || proofAttempt(task, selection.command, root, pendingEvidence).passed;
+function shadowRun({ task, command, selection, scope, fullPassed }) {
+  const { root } = scope;
+  const narrowed = selection.files.length === 0 || proofAttempt(task, selection.command, scope).passed;
   recordShadow(root, { command, files: selection.files.length, narrowed: outcome(narrowed), full: outcome(fullPassed) });
 }
 
-function trialPass(task, command, selection, { root, pendingEvidence }) {
+function trialPass({ task, command, selection, scope }) {
+  const { root } = scope;
   if (selection === null || !trialActive(readShadow(root), command, changedTestsTrialRuns())) return null;
-  const narrowed = selection.files.length === 0 ? null : proofAttempt(task, selection.command, root, pendingEvidence);
+  const narrowed = selection.files.length === 0 ? null : proofAttempt(task, selection.command, scope);
   if (narrowed !== null && !narrowed.passed) return null;
   recordShadow(root, { command, files: selection.files.length, narrowed: 'pass', full: 'skipped' });
   return { command, tail: narrowed === null ? ['  no changed tests, full suite skipped'] : [...narrowed.tail, '  changed tests only, full suite skipped'] };
 }
 
 export function runProof(task, command, options) {
-  const { root, field, docker, pendingEvidence } = options;
+  const { root, field, docker } = options;
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
   const selection = shadowSelection(root, command);
-  const trial = trialPass(task, command, selection, options);
+  const trial = trialPass({ task, command, selection, scope: options });
   if (trial !== null) return trial;
   const before = workingTreeKey(root);
   const started = Date.now();
-  let attempt = proofAttempt(task, command, root, pendingEvidence);
-  if (!attempt.passed && roundCap('proof') > 1 && startedServices(root, docker)) attempt = proofAttempt(task, command, root, pendingEvidence);
-  if (attempt.passed) recordPass(root, command, Date.now() - started, before, attempt.proofRun.output);
-  if (selection !== null) shadowRun(task, command, selection, options, attempt.passed);
+  let attempt = proofAttempt(task, command, options);
+  if (!attempt.passed && roundCap('proof') > 1 && startedServices(root, docker)) attempt = proofAttempt(task, command, options);
+  if (attempt.passed) recordPass(root, command, { ms: Date.now() - started, before, output: attempt.proofRun.output });
+  if (selection !== null) shadowRun({ task, command, selection, scope: options, fullPassed: attempt.passed });
   if (attempt.passed) return { command, tail: attempt.tail };
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${proofFailure(attempt)}):`, ...attempt.tail].join('\n'));
 }
@@ -99,34 +101,35 @@ function testRunFailure(file, testRun, deadlineMs) {
   return [`${file} failed (${reason}):`, ...tail].join('\n');
 }
 
-function testFileFailure(task, file, root, pendingEvidence) {
+function testFileFailure(task, file, { root, pendingEvidence }) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
   const testRun = runCheck(root, ['node', ...projectNodeFlags(root), '--test', '--test-reporter=spec', file].join(' '), { timeoutMs: deadlineMs, env, record: false, fresh: true });
   return testRunFailure(file, { status: testRun.ok ? 0 : (testRun.code ?? 1), timedOut: testRun.timedOut, output: testRun.output }, deadlineMs);
 }
 
-function parallelFailures(task, files, root, pendingEvidence) {
+function parallelFailures(task, files, scope) {
+  const { root, pendingEvidence } = scope;
   if (files.length === 0) return [];
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = proofEnvOf(task, pendingEvidence);
   const waves = Math.ceil(files.length / poolSize(files.length));
   const pool = runCheck(root, testPoolCommand(files), { timeoutMs: deadlineMs * waves, env: { ...env, EXO_TEST_POOL_TIMEOUT_MS: String(deadlineMs) }, record: false, fresh: true });
   const results = pool.ok ? parseTestPool(pool.output) : null;
-  if (results === null) return files.map((file) => testFileFailure(task, file, root, pendingEvidence));
+  if (results === null) return files.map((file) => testFileFailure(task, file, scope));
   return results.map((result) => testRunFailure(result.file, result, deadlineMs));
 }
 
 export function runNamedTests(task, proofCommands, options) {
   for (const file of namedTestFiles(task, proofCommands, options)) {
-    const failure = testFileFailure(task, file, options.root, options.pendingEvidence);
+    const failure = testFileFailure(task, file, options);
     if (failure !== null) throw new LandingError(`Task ${task.number}: the test file ${failure}`);
   }
 }
 
-export function runCoveringTests(task, proofCommands, root, changed, pendingEvidence) {
+export function runCoveringTests(task, proofCommands, { root, changed, pendingEvidence }) {
   const files = coveringTests(root, changed).filter((file) => !proofCommands.some((command) => command.includes(file)));
-  const failures = parallelFailures(task, files, root, pendingEvidence).filter((failure) => failure !== null);
+  const failures = parallelFailures(task, files, { root, pendingEvidence }).filter((failure) => failure !== null);
   if (failures.length === 0) return;
   throw new LandingError([`Task ${task.number}: ${failures.length} covering test(s) of the changed files failed:`, ...failures].join('\n'));
 }

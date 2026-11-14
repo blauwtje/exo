@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { relativeFor } from '#checkout';
 import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
@@ -10,8 +11,52 @@ import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { regionRange } from '#plan-regions';
 import { SKILL_DIRECTORY } from './next-task-paths.mjs';
-import { handoffLines } from './next-task-handoff.mjs';
-import { headedLines, sectionLines, bulletLines } from './next-task-sections.mjs';
+import { handoffNote } from './run-plan-session.mjs';
+
+const SMALL_TASK_FILES = 2;
+
+const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function namesFile(bullet, file) {
+  if (bullet.includes(file.path) || (file.region !== null && bullet.includes(file.region))) return true;
+  const segments = file.path.split('/');
+  const basename = new RegExp(`(?<![\\w/])${escaped(segments.at(-1))}(?!\\w)`);
+  const directories = segments.slice(0, -1).map((_, index) => escaped(segments.slice(0, index + 1).join('/')));
+  return basename.test(bullet) || directories.some((directory) => new RegExp(`(?<![\\w/.-])${directory}(?:/(?![\\w.-])|(?![\\w/-]))`).test(bullet));
+}
+
+function bulletsFor(task, bullets) {
+  const named = bullets.filter((bullet) => task.files.some((file) => namesFile(bullet, file)));
+  if (named.length === 0 && task.files.length > SMALL_TASK_FILES) return bullets;
+  return bullets.filter((bullet) => named.includes(bullet) || inputPaths(bullet).length > 0);
+}
+
+function headedLines(task, heading, bullets) {
+  if (bullets.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
+  return [heading, ...bulletLines(bullets)];
+}
+
+function sectionLines(task, heading, bullets) {
+  return headedLines(task, heading, bulletsFor(task, bullets));
+}
+
+function bulletLines(bullets) {
+  return bullets.length === 0 ? ['- none'] : bullets.map((bullet) => `- ${bullet}`);
+}
+
+function latestCheckpoint(root, number) {
+  const found = spawnSync('git', ['-C', root, 'log', '-1', '--format=%h', '--extended-regexp', `--grep=^Plan-checkpoint: .+/${number}$`], { encoding: 'utf8' });
+  return found.status === 0 ? found.stdout.trim() : '';
+}
+
+function handoffLines(task, root) {
+  const note = handoffNote({ root }, task.number).trim();
+  const checkpoint = latestCheckpoint(root, task.number);
+  return [
+    ...(note === '' ? [] : [`Handoff: ${note}`]),
+    ...(checkpoint === '' ? [] : [`Plan-checkpoint: ${checkpoint}`])
+  ];
+}
 
 function visualDirectionLines(task, frame) {
   if (!task.design || frame.visualDirection === null) return ['Visual direction: none'];
@@ -109,7 +154,7 @@ function inputLines(task, sections) {
   return [`Inputs: read each absolute path above before building; one unreadable → end on \`Task ${task.number}: BLOCKED ${INPUT_UNREADABLE}: <path>\`, never write its content from memory.`];
 }
 
-export function taskBrief(task, frame, root, { relative = false } = {}) {
+function briefText({ task, frame, root, relative }) {
   const rulesPath = scratchPath(root, 'run-rules.md');
   const hasRules = readable(rulesPath);
   const shownRules = relative ? relativeFor(root, path.join(root, SCRATCH_FOLDER, 'run-rules.md')) : rulesPath;
@@ -137,7 +182,15 @@ export function taskBrief(task, frame, root, { relative = false } = {}) {
   ].join('\n');
 }
 
-function writeBrief(task, frame, root, briefDirectory) {
+export function taskBrief(task, frame, root) {
+  return briefText({ task, frame, root, relative: false });
+}
+
+export function relativeTaskBrief(task, frame, root) {
+  return briefText({ task, frame, root, relative: true });
+}
+
+function writeBrief({ task, frame, root, briefDirectory }) {
   const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
   fs.writeFileSync(briefPath, taskBrief(task, frame, root));
   return briefPath;
@@ -154,7 +207,7 @@ function driftLines(task, drift) {
   return [...drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`), refusalHandler(kind)];
 }
 
-export function taskLines(task, frame, root, briefDirectory) {
+export function taskLines({ task, frame, root, briefDirectory }) {
   const drift = driftOf(task, root, frame);
   return [
     `Task ${task.number}: ${task.title}`,
@@ -162,7 +215,7 @@ export function taskLines(task, frame, root, briefDirectory) {
     ...(task.proof === null ? [] : [`Proof: ${task.proof}`]),
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
     ...driftLines(task, drift),
-    `Brief: ${writeBrief(task, frame, root, briefDirectory)}`
+    `Brief: ${writeBrief({ task, frame, root, briefDirectory })}`
   ];
 }
 

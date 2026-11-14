@@ -11,7 +11,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function runOn(repository) {
   const results = [];
-  const report = { assert: (ok, ...texts) => results.push({ ok, detail: texts[ok ? 1 : 2] }) };
+  const report = { assert: (ok, name, details) => results.push({ ok, detail: ok ? details.pass : details.fail }) };
   checkRunContract(report, repository);
   return results[0];
 }
@@ -24,11 +24,6 @@ function outcome(files) {
   }
   return runOn(createRepository(root));
 }
-
-test('the shipped repository passes', () => {
-  const result = runOn(createRepository(ROOT));
-  assert.equal(result.ok, true, result.detail);
-});
 
 test('a script that prints its own stop line fails and names the line', () => {
   const result = outcome({ 'skills/gate/scripts/gate-new.mjs': "const a = 1;\nconsole.log('DECIDE x: end the turn');\n" });

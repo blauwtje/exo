@@ -16,10 +16,6 @@ export class ReportMissingError extends LandingError {
   kind = 'report missing';
 }
 
-export class OutsideFilesError extends LandingError {
-  kind = 'outside Files';
-}
-
 export class RefusedError extends LandingError {
   kind = 'refused';
 }

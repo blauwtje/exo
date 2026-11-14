@@ -40,7 +40,7 @@ function ranRun() {
   commit(root, 'b.txt');
   git(root, 'switch', '-q', 'main');
   git(root, 'merge', '-q', '--ff-only', 'feat');
-  recordRefDiff(root, ID, before, 'test');
+  recordRefDiff({ root, id: ID, label: 'test' }, before);
   return { root, dir, base, tip: sha(root, 'main') };
 }
 
@@ -117,8 +117,8 @@ test('worktrees and pushes are reported and never reversed', () => {
   const { root, dir } = ranRun();
   const tree = path.join(root, 'tree');
   git(root, 'worktree', 'add', '-q', '--detach', tree, 'main');
-  recordWorktree(root, ID, 'test', tree, 'feat');
-  recordPush(root, ID, 'test', 'origin', 'main', sha(root, 'main'));
+  recordWorktree({ root, id: ID, label: 'test' }, tree, 'feat');
+  recordPush({ root, id: ID, label: 'test' }, { remote: 'origin', ref: 'main', sha: sha(root, 'main') });
   const result = undoRun(root, ID, { apply: true });
   const text = result.lines.join('\n');
   assert.match(text, /manual: pushed .* remote operations are not reversed/);

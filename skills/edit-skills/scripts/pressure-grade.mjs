@@ -57,10 +57,10 @@ export function parseCriteria(markdown) {
     if (!bullet) {
       if (!raw.trim() || MARGIN.test(raw.trim())) return;
       if (/^\s/.test(raw) || scope === null) {
-        if (last) last.context.push(raw.trim());
-      } else {
-        notes.set(scope, [...(notes.get(scope) ?? []), raw.trim()]);
+        last?.context.push(raw.trim());
+        return;
       }
+      notes.set(scope, [...(notes.get(scope) ?? []), raw.trim()]);
       return;
     }
     const where = `line ${index + 1}`;
@@ -127,7 +127,7 @@ function judgeVote(line, answer, judge) {
   return { pass: word === 'PASS', reason: reason.join(' ').trim() || word.toLowerCase() };
 }
 
-function judgeLine(line, answer, judge, votes) {
+function judgeLine(line, { answer, judge, votes }) {
   const cast = Array.from({ length: votes }, () => judgeVote(line, answer, judge));
   const passes = cast.filter((vote) => vote.pass).length;
   const pass = passes * 2 > votes;
@@ -169,7 +169,7 @@ export function gradeLine(line, { answer, dir, judge, votes = JUDGE_VOTES }) {
     return { text, pass: run.status === 0, reason: `exit ${run.status}` };
   }
   try {
-    return { text, ...judgeLine(line, answer, judge, votes) };
+    return { text, ...judgeLine(line, { answer, judge, votes }) };
   } catch (error) {
     return { text, pass: false, reason: error.message };
   }
@@ -196,9 +196,9 @@ function wilson(passes, n) {
   return { rate, low: (centre - spread) / scale, high: (centre + spread) / scale };
 }
 
-export function newcombe(passesA, nA, passesB, nB) {
-  const a = wilson(passesA, nA);
-  const b = wilson(passesB, nB);
+export function newcombe(armA, armB) {
+  const a = wilson(armA.passed, armA.runs);
+  const b = wilson(armB.passed, armB.runs);
   const delta = a.rate - b.rate;
   return [delta - Math.sqrt((a.rate - a.low) ** 2 + (b.high - b.rate) ** 2), delta + Math.sqrt((a.high - a.rate) ** 2 + (b.rate - b.low) ** 2)];
 }
@@ -211,7 +211,7 @@ export function verdictFor([low, high], margin) {
 
 export function runsNeeded(rateA, rateB, margin) {
   for (let n = 2; n <= NEEDED_N_LIMIT; n += 1) {
-    if (verdictFor(newcombe(Math.round(rateA * n), n, Math.round(rateB * n), n), margin) !== 'INCONCLUSIVE') return n;
+    if (verdictFor(newcombe({ passed: Math.round(rateA * n), runs: n }, { passed: Math.round(rateB * n), runs: n }), margin) !== 'INCONCLUSIVE') return n;
   }
   return null;
 }
@@ -233,7 +233,7 @@ export function aggregate(grades, { threshold = 1, margin = DEFAULT_MARGIN, marg
     if (other === undefined || rates.with === undefined) {
       return { case: caseFile, rates, counts, comparison: null, pass: rates.with !== undefined && rates.with >= threshold, verdict: rates.with !== undefined && rates.with >= threshold ? 'PASS' : 'FAIL', delta: null, ci: null, margin: bound, needed: null, unstable, noSkillEffect: false };
     }
-    const ci = newcombe(counts.with.passed, counts.with.runs, counts[other].passed, counts[other].runs);
+    const ci = newcombe(counts.with, counts[other]);
     const verdict = verdictFor(ci, bound);
     return {
       case: caseFile, rates, counts, comparison: other, pass: verdict === 'PASS', verdict, delta: rates.with - rates[other], ci, margin: bound,
@@ -244,6 +244,23 @@ export function aggregate(grades, { threshold = 1, margin = DEFAULT_MARGIN, marg
   });
 }
 
+function checkFile(file) {
+  try {
+    const markdown = fs.readFileSync(file, 'utf8');
+    const parsed = parseCriteria(markdown);
+    const count = parsed.reduce((sum, group) => sum + group.lines.length, 0);
+    console.log(`${file}: ${parsed.length} scopes, ${count} pass lines`);
+    parseMargins(markdown);
+    for (const { line, clauses } of lintCriteria(markdown)) {
+      console.log(`LINT ${file}:${line}: judge line has ${clauses} clauses, more than ${MAX_CLAUSES}; one claim per judge line`);
+    }
+    return true;
+  } catch (error) {
+    console.error(`${file}: ${error.message}`);
+    return false;
+  }
+}
+
 function main(argv) {
   const start = argv.indexOf('--check');
   let end = start + 1;
@@ -251,22 +268,8 @@ function main(argv) {
   const files = start >= 0 ? argv.slice(start + 1, end) : [];
   const flags = parseFlags([...argv.slice(0, start + 2), ...argv.slice(end)], { check: 'value' }, { usage: USAGE });
   if (!flags.check) throw new UsageError('--check needs a criteria file');
-  let failed = false;
-  for (const file of files) {
-    try {
-      const parsed = parseCriteria(fs.readFileSync(file, 'utf8'));
-      const count = parsed.reduce((sum, group) => sum + group.lines.length, 0);
-      console.log(`${file}: ${parsed.length} scopes, ${count} pass lines`);
-      parseMargins(fs.readFileSync(file, 'utf8'));
-      for (const { line, clauses } of lintCriteria(fs.readFileSync(file, 'utf8'))) {
-        console.log(`LINT ${file}:${line}: judge line has ${clauses} clauses, more than ${MAX_CLAUSES}; one claim per judge line`);
-      }
-    } catch (error) {
-      console.error(`${file}: ${error.message}`);
-      failed = true;
-    }
-  }
-  if (failed) process.exitCode = 1;
+  const outcomes = files.map(checkFile);
+  if (outcomes.includes(false)) process.exitCode = 1;
 }
 
 if (isMain(import.meta.url)) {

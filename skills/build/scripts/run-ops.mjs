@@ -12,7 +12,7 @@ export function snapshotRefs(root) {
   return { refs, head: head.ok ? head.text : null };
 }
 
-export function recordRefDiff(root, id, before, label) {
+export function recordRefDiff({ root, id, label }, before) {
   const after = snapshotRefs(root);
   const names = [...new Set([...before.refs.keys(), ...after.refs.keys()])].sort();
   for (const ref of names) {
@@ -23,10 +23,10 @@ export function recordRefDiff(root, id, before, label) {
   if (before.head !== after.head) appendOp(root, id, { kind: 'head', label, root, before: before.head, after: after.head });
 }
 
-export function recordWorktree(root, id, label, worktree, branch) {
+export function recordWorktree({ root, id, label }, worktree, branch) {
   appendOp(root, id, { kind: 'worktree', label, path: worktree, branch });
 }
 
-export function recordPush(root, id, label, remote, ref, sha) {
+export function recordPush({ root, id, label }, { remote, ref, sha }) {
   appendOp(root, id, { kind: 'push', label, remote, ref, sha });
 }

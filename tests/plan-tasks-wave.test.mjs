@@ -23,7 +23,7 @@ function planWith(parallelLine) {
 function waveOf(parallelLine, landed, inFlight = []) {
   const plan = parsePlan(planWith(parallelLine));
   const frame = frameOf(plan.frame);
-  return nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel, inFlight).map((task) => task.number);
+  return nextWave(plan.tasks, landed, { worktreeSetup: frame.worktreeSetup, parallel: frame.parallel, inFlight }).map((task) => task.number);
 }
 
 test('nextWave batches tasks that became independent after the Parallel: line was written', () => {

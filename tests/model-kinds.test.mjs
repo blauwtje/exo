@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INHERIT, TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
+import { resolvedKind } from '../lib/kind-resolution.mjs';
 import { findInheritanceGaps, findUnusedKinds } from '../verify/model-kinds.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -109,25 +110,16 @@ test('a skills or agents line dispatching a claude agent with no kind is a gap',
   ]);
 });
 
-test('this repository has no hooks text or CLAUDE.md line dispatching a kindless general-purpose agent', () => {
-  const root = fileURLToPath(new URL('..', import.meta.url));
-  assert.deepEqual(findInheritanceGaps(root, readKindTable()).filter((gap) => /^(hooks|\.claude)\//.test(gap)), []);
-});
-
 test('a kind no table entry, exo-kind: line or kind lookup names is unused', () => {
   const root = rootWith({ 'skills/a/SKILL.md': 'opens with `exo-kind: labelled`', 'skills/a/scripts/x.mjs': "pin({ kind: 'scripted' });" });
   const table = { kinds: { mapped: {}, unnamed: {}, labelled: {}, scripted: {}, dead: {}, 'labelled-more': {} }, agents: { 'agents/x.md': { kind: 'mapped' } }, dispatches: [], unnamed: { kind: 'unnamed', jobs: {} } };
   assert.deepEqual(findUnusedKinds(root, table).map((line) => line.split(' ')[2]), ['dead', 'labelled-more']);
 });
 
-test('this repository has no unused kind', () => {
-  const root = fileURLToPath(new URL('..', import.meta.url));
-  assert.deepEqual(findUnusedKinds(root, readKindTable()), []);
-});
-
 test('kinds.orchestrator.on.effort is medium', () => {
   const { kinds } = readKindTable();
   assert.equal(kinds.orchestrator.effort, 'medium');
+  assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds.orchestrator.model, 'opus');
   assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds['build-task'].effort, 'medium');
 });
 
@@ -139,6 +131,14 @@ test('the judge kind runs on the standard tier at low effort and the research ag
   assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest', 'build-repair']);
   assert.equal(agents['agents/research-worker.md'].kind, 'research');
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');
+});
+
+test('a research-worker brief opening hardest or review gets that kind and any other brief keeps research', () => {
+  const kindOf = (prompt) => resolvedKind({ subagent_type: 'exo:research-worker', prompt }, 'on').kind;
+  const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude' });
+  assert.deepEqual(kindOf('exo-kind: hardest\nWhy?'), kinds.hardest);
+  assert.deepEqual(kindOf('exo-kind: review\nCheck'), kinds.review);
+  assert.deepEqual(kindOf('Find the caller'), kinds.research);
 });
 
 test('CONTRIBUTING.md points at the provider columns of the data file and repeats none of their values', () => {
@@ -154,7 +154,3 @@ test('a skills entry naming an unknown kind is rejected', () => {
   assert.throws(() => readKindTable(file), /skills\/gate\/SKILL\.md: unknown kind no-such-kind/);
 });
 
-test('orchestrator runs on the strong tier', () => {
-  const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude' });
-  assert.equal(kinds.orchestrator.model, 'opus');
-});

@@ -20,5 +20,4 @@ Goal: ship a plan branch as a chain of small pull requests, one per wave, and me
 
 ## Merging
 
-- Merge the stack in order with `ship.mjs --merge <all>`. Each merge restacks its children before the next one.
-- When a child conflicts, the restack stops on that pull request and leaves it for conflict resolution.
+- Merge the stack in order with `ship.mjs --merge <all>`; a conflicting child stops the restack for conflict resolution.

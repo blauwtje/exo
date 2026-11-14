@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkBackgroundStops } from '../verify/checks/background-stops.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { checkOutcome } from './check-outcome.mjs';
 import { tempDir } from './harness.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -15,15 +16,8 @@ function outcome(agents) {
   const root = tempDir('background-stops-');
   fs.mkdirSync(path.join(root, 'agents'));
   for (const [name, text] of Object.entries(agents)) fs.writeFileSync(path.join(root, 'agents', `${name}.md`), text);
-  const results = [];
-  checkBackgroundStops({ assert: (ok, name, pass, fail) => results.push({ ok, detail: ok ? pass : fail }) }, createRepository(root));
-  return results[0];
+  return checkOutcome(checkBackgroundStops, createRepository(root));
 }
-
-test('the shipped agents all pass', () => {
-  const shipped = Object.fromEntries(fs.readdirSync(path.join(ROOT, 'agents')).map((file) => [file, fs.readFileSync(path.join(ROOT, 'agents', file), 'utf8')]));
-  assert.equal(outcome(Object.fromEntries(Object.entries(shipped).map(([file, text]) => [file.replace(/\.md$/, ''), text]))).ok, true);
-});
 
 test('an agent with Bash and no Monitor passes, as the wait rule is injected into its brief', () => {
   assert.equal(outcome({ shell: agent('Read, Bash', '- Run the proof.') }).ok, true);

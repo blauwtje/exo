@@ -20,15 +20,12 @@ function areaFile(area, entries) {
 function renderBehaviour(root) {
   const { briefs, unreadable } = shippedBriefs(root);
   const byArea = new Map();
-  for (const brief of briefs) {
-    for (const { text, areas } of brief.acceptance) {
-      for (const area of areas) {
-        const entries = byArea.get(area) ?? [];
-        const entry = entries.find((candidate) => candidate.name === brief.name) ?? entries[entries.push({ name: brief.name, lines: [] }) - 1];
-        entry.lines.push(text);
-        byArea.set(area, entries);
-      }
-    }
+  const acceptances = briefs.flatMap((brief) => brief.acceptance.flatMap(({ text, areas }) => areas.map((area) => ({ area, name: brief.name, text }))));
+  for (const { area, name, text } of acceptances) {
+    const entries = byArea.get(area) ?? [];
+    const entry = entries.find((candidate) => candidate.name === name) ?? entries[entries.push({ name, lines: [] }) - 1];
+    entry.lines.push(text);
+    byArea.set(area, entries);
   }
   const files = new Map([...byArea].sort().map(([area, entries]) => [`${FOLDER}/${area}.md`, areaFile(area, entries)]));
   return { files, unreadable };
@@ -76,12 +73,16 @@ export function main(argv) {
   if (stale.length > 0) process.exitCode = 1;
 }
 
+function reportUsageError(error) {
+  if (!(error instanceof UsageError)) throw error;
+  process.stderr.write(`behaviour: ${error.message}\n`);
+  process.exitCode = 2;
+}
+
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    if (!(error instanceof UsageError)) throw error;
-    process.stderr.write(`behaviour: ${error.message}\n`);
-    process.exitCode = 2;
+    reportUsageError(error);
   }
 }

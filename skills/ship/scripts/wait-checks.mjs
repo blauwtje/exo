@@ -17,7 +17,7 @@ export const GH_ERROR_EXIT = 3;
 const NO_CHECKS = /no checks reported/i;
 const FAIL_STATUS = /^fail(ing|ed)?$/i;
 
-function positiveNumber(text, fallback, name, allowZero) {
+function numberFlag(text, { fallback, name, allowZero }) {
   if (text === undefined) return fallback;
   const number = Number(text);
   const valid = Number.isFinite(number) && (allowZero ? number >= 0 : number > 0);
@@ -28,8 +28,8 @@ function positiveNumber(text, fallback, name, allowZero) {
 function readFlags(argv) {
   const flags = parseFlags(argv, { pr: 'value', minutes: 'value', 'grace-seconds': 'value' }, { usage: USAGE });
   if (!/^[1-9][0-9]*$/.test(flags.pr ?? '')) throw new UsageError('--pr needs a pull request number');
-  const minutes = positiveNumber(flags.minutes, DEFAULT_MINUTES, '--minutes', false);
-  const graceSeconds = positiveNumber(flags['grace-seconds'], DEFAULT_GRACE_SECONDS, '--grace-seconds', true);
+  const minutes = numberFlag(flags.minutes, { fallback: DEFAULT_MINUTES, name: '--minutes', allowZero: false });
+  const graceSeconds = numberFlag(flags['grace-seconds'], { fallback: DEFAULT_GRACE_SECONDS, name: '--grace-seconds', allowZero: true });
   return { pr: flags.pr, minutes, graceMs: graceSeconds * 1000 };
 }
 
@@ -68,18 +68,18 @@ function watchChecks(pr, track, log) {
   });
 }
 
-async function main() {
-  exitWithParent('wait-checks');
-  let flags;
+function parseArguments() {
   try {
-    flags = readFlags(process.argv.slice(2));
+    return readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`${USAGE}: ${error.message}`);
     process.exitCode = 2;
-    return;
+    return null;
   }
-  const log = openLog(process.cwd());
+}
+
+async function watchUntilSettled(flags, log) {
   let running = null;
   let timedOut = false;
   const deadline = setTimeout(() => {
@@ -96,7 +96,10 @@ async function main() {
     await pollUntil(checksReady, { intervalMs: RETRY_MS, wallMs: flags.graceMs, giveUp: () => timedOut });
   }
   clearTimeout(deadline);
-  log.end();
+  return { outcome, timedOut };
+}
+
+function reportOutcome(outcome, timedOut) {
   if (timedOut) {
     console.log('checks: timeout');
     process.exitCode = TIMEOUT_EXIT;
@@ -121,6 +124,16 @@ async function main() {
   const firstErrorLine = outcome.errorText.split('\n').find((line) => line.trim() !== '') ?? '';
   console.log(`checks: error ${firstErrorLine.trim()}`);
   process.exitCode = GH_ERROR_EXIT;
+}
+
+async function main() {
+  exitWithParent('wait-checks');
+  const flags = parseArguments();
+  if (flags === null) return;
+  const log = openLog(process.cwd());
+  const { outcome, timedOut } = await watchUntilSettled(flags, log);
+  log.end();
+  reportOutcome(outcome, timedOut);
 }
 
 if (isMain(import.meta.url)) {

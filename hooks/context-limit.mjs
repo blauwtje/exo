@@ -8,7 +8,6 @@ import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
-import { topicNudge } from '../lib/topic-switch.mjs';
 
 const REASON_MAX = 140;
 
@@ -26,7 +25,7 @@ function shortReason(reason) {
   return text.length > REASON_MAX ? `${text.slice(0, REASON_MAX - 1)}…` : text;
 }
 
-function receiptLine({ tool_name: tool, tool_input: original } = {}, fields, input = original) {
+function receiptLine({ tool_name: tool, tool_input: input } = {}, fields) {
   if (fields?.permissionDecision === 'deny') return `exo blocked: ${shortReason(fields.permissionDecisionReason)}`;
   if (tool === 'Skill') {
     const name = /^exo:(.+)$/.exec(input?.skill ?? '')?.[1];
@@ -41,26 +40,18 @@ function receiptLine({ tool_name: tool, tool_input: original } = {}, fields, inp
   return null;
 }
 
-export function withReceipt(output, hookInput, fields, input, enabled = receiptsOn) {
-  const line = receiptLine(hookInput, fields, input);
+export function withReceipt(output, { hookInput, fields, enabled = receiptsOn }) {
+  const line = receiptLine(hookInput, fields);
   if (!line || !enabled()) return output;
   return { ...output, systemMessage: line };
-}
-
-function withTopicNudge(fields, input) {
-  if (fields?.permissionDecision === 'deny') return fields;
-  const nudge = topicNudge(input);
-  if (!nudge) return fields;
-  const context = [fields?.additionalContext, nudge].filter(Boolean).join('\n');
-  return { ...fields, additionalContext: context };
 }
 
 export function contextHook(input, enabled) {
   const decision = redditRouteDecision(input) ?? predispatchDecision(input) ?? readCapDecision(input) ?? searchCapDecision(input) ?? contextDecision(input);
   if (!decision?.deny) recordPredispatchRead(input);
-  const fields = withTopicNudge(contextFields(decision, input), input);
+  const fields = contextFields(decision, input);
   const output = fields ? { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } } : null;
-  return rememberRefusal(input, withReceipt(output, input, fields, undefined, enabled), { guard: 'context-limit' });
+  return rememberRefusal(input, withReceipt(output, { hookInput: input, fields, enabled }), { guard: 'context-limit' });
 }
 
 if (isMain(import.meta.url) && !inSidecall()) {
@@ -68,5 +59,6 @@ if (isMain(import.meta.url) && !inSidecall()) {
     const input = JSON.parse(await readHookText());
     writeHookOutput(input, contextHook(input), 'context-limit');
   } catch {
+    process.exitCode = 0;
   }
 }

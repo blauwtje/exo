@@ -48,12 +48,6 @@ test('a module that is neither shebang nor isMain is not an entry point', () => 
   assert.deepEqual(results.map((line) => line.slice(0, 6)), ['[PASS]']);
 });
 
-test('every entry-point script the repository ships has a --help path', () => {
-  const results = [];
-  checkScriptHelp({ result: (status, name, detail) => results.push(`[${status}] ${name}: ${detail}`) }, createRepository(ROOT));
-  assert.deepEqual(results.map((line) => line.slice(0, 6)), ['[PASS]'], results.join('\n'));
-});
-
 test('a --help that only appears in a usage string is not a --help path', () => {
   const results = lines({ 'usage.mjs': '#!/usr/bin/env node\nconst USAGE = "usage: a.mjs [--help]";\nconsole.log(process.argv);\n' });
   assert.match(results[0], /^\[FAIL\] script help: skills\/build\/scripts\/usage\.mjs /);

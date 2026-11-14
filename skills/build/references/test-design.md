@@ -1,4 +1,4 @@
-Read this when logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner, after the baseline, orientation, or reproduction. Read it before the first affected test or production edit; or before writing the first task of any task list, to sort tasks into risky and routine so the risky ones write their test first. (style, text, and version-only changes do not qualify, and report mode never loads it).
+Read this before the first test or production edit when logic or public behavior changes and the repository has a test runner, or before ordering a task list into risky and routine. Style, text and version-only changes skip it.
 
 # Test design
 
@@ -17,7 +17,7 @@ Risky when any one holds:
 Else routine: proves itself the ordinary way.
 
 Risky, `Proof:` names a test file or runs a test runner → `## Red before green` as written, quoting failing output before the production edit and passing output after.
-Risky, other `Proof:` → run it red before the production edit, green after; add no test outside `Files:`.
+Risky, other `Proof:` → run it red before the production edit, green after; put the test where `Files:` expects it, or list its path in the report.
 
 ## Red before green
 
@@ -27,7 +27,7 @@ Risky, other `Proof:` → run it red before the production edit, green after; ad
 4. Make the production change, rerun the same command, record the passing value.
 5. Run the nearest existing suite owning the changed boundary.
 
-Test passes before the change → proves nothing. Tighten the assertion, or report that a failing-before test could not be established.
+Test passes before the change: tighten the assertion, or report that a failing-before test could not be established.
 
 - Proof or Success criterion passing before the change → `land-task` and `exo run` refuse it, unless the plan names `Red: none (<reason>)`.
 - Proof needing an untracked build artifact → reads as red on the base; build it inside the Proof command.
@@ -41,6 +41,7 @@ Before the test, write one sentence: `Given <public input/state>, the caller obs
 - Assert returned values, status/error contracts, emitted events, persisted state, files, or command output the repository contract names.
 - Private function calls, call order, local variables, cache layout, internal object shape → do not assert, unless that item is itself a documented public contract.
 - External system → test double only at the repository's existing adapter boundary. Assert the request crossing that boundary and the repository-visible result; do not reproduce the implementation inside the double.
+- Write each expected value as a literal, not computed by the code under test or a copy of its logic; put no `if` in a test body, and loop only over a table of literal cases.
 - Time, randomness, concurrency scheduling, generated identifiers → control through existing seams, so repeated runs get the same assertion inputs.
 
 ## Documented boundaries
@@ -50,5 +51,3 @@ Add a case only when the changed contract accepts it: absent/empty input, each d
 ## Judgment
 
 - Failing-before and passing-after public observation outranks coverage percentage or assertion count.
-- Repository test levels and public contracts outrank a new testing abstraction.
-- Test coupled to private construction → replace with the nearest stable observable boundary, even when the private assertion is easier.

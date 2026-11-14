@@ -34,8 +34,8 @@ function filled(input, budget, level) {
 
 function workerScope(hookInput) {
   const { tool_input: input } = hookInput;
-  if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return null;
   const fromOrchestrator = hookAgentType(hookInput) === 'orchestrator';
+  if (input.subagent_type === 'exo:orchestrator' && !fromOrchestrator) return null;
   const table = readKindTable();
   const fetchDocs = (table.fetchSized ?? []).includes(input.subagent_type) && webSources(input.prompt);
   const sized = fetchDocs || table.unnamed.types.includes(input.subagent_type ?? 'general-purpose');
@@ -111,10 +111,8 @@ function recordDispatch(hookInput) {
   recordResearchDispatch(hookInput);
 }
 
-export function agentHook(hookInput, budget, enabled) {
-  const rewrite = readsRewrite(hookInput);
-  const output = agentEffort(hookInput, budget, rewrite);
-  const fields = refusalRound(hookInput, mergedFields([
+function agentFields(hookInput, budget, rewrite) {
+  return refusalRound(hookInput, mergedFields([
     roleFields(hookInput),
     researchFields(hookInput),
     mismatchFields(hookInput, budget),
@@ -124,8 +122,14 @@ export function agentHook(hookInput, budget, enabled) {
     sliceFields(hookInput),
     contextFields(contextDecision(hookInput), hookInput)
   ]));
-  const ran = output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input;
-  const receipt = (message, noted) => withReceipt(message, hookInput, noted, ran, enabled);
+}
+
+export function agentHook(hookInput, budget, enabled) {
+  const rewrite = readsRewrite(hookInput);
+  const output = agentEffort(hookInput, budget, rewrite);
+  const fields = agentFields(hookInput, budget, rewrite);
+  const ran = { ...hookInput, tool_input: output?.hookSpecificOutput.updatedInput ?? hookInput.tool_input };
+  const receipt = (message, noted) => withReceipt(message, { hookInput: ran, fields: noted, enabled });
   if (fields?.permissionDecision) {
     const sent = receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
     return fields.permissionDecisionReason.includes('LOOP ') ? sent : rememberRefusal(hookInput, sent, { guard: 'agent-effort' });
@@ -142,5 +146,6 @@ if (isMain(import.meta.url) && !inSidecall()) {
     const input = JSON.parse(await readHookText());
     writeHookOutput(input, agentHook(input), 'agent-effort');
   } catch {
+    process.exitCode = 0;
   }
 }

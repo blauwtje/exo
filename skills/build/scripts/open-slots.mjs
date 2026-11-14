@@ -94,11 +94,7 @@ export function runSetup(slot, setup, variables) {
   return { reason: `Worktree setup failed in ${slot}: ${`${ran.stdout}${ran.stderr}`.trim().split('\n').at(-1)}` };
 }
 
-function openSlot(toplevel, number, { setup, inputs, variables }, made) {
-  const slot = slotOf(toplevel, number);
-  const add = createWorktree(toplevel, slot, ['--detach', slot, 'HEAD']);
-  if (!add.ok) return { reason: add.failure };
-  made.push(slot);
+function prepareSlot(toplevel, slot, { setup, inputs, variables }) {
   fs.mkdirSync(path.join(slot, '.exo'), { recursive: true });
   copyInputs(toplevel, slot, inputs);
   writeSlotEnv(slot, variables);
@@ -119,7 +115,14 @@ export function openSlots({ root, numbers, setup, inputs = [], fresh, since }) {
   const indexes = freeIndexes(toplevel, numbers, records);
   const variables = numbers.map((number, position) => slotEnv(toplevel, indexes[position]));
   for (const [position, number] of numbers.entries()) {
-    const problem = openSlot(toplevel, number, { setup, inputs, variables: variables[position] }, made);
+    const slot = slotOf(toplevel, number);
+    const add = createWorktree(toplevel, slot, ['--detach', slot, 'HEAD']);
+    if (!add.ok) {
+      discard(toplevel, made);
+      return { reason: add.failure };
+    }
+    made.push(slot);
+    const problem = prepareSlot(toplevel, slot, { setup, inputs, variables: variables[position] });
     if (!problem) continue;
     discard(toplevel, made);
     return problem;

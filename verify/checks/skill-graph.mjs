@@ -17,7 +17,6 @@ export function checkSkillGraph(report, repository) {
   report.assert(
     missing.length === 0 && graph.edges.length > 0,
     NAME,
-    `${graph.files.length} files, ${graph.sections.length} sections and ${graph.edges.length} edges build into one graph`,
-    missing.length > 0 ? `${missing.join(', ')} missing from the graph` : 'the graph has no edges'
+    { pass: `${graph.files.length} files, ${graph.sections.length} sections and ${graph.edges.length} edges build into one graph`, fail: missing.length > 0 ? `${missing.join(', ')} missing from the graph` : 'the graph has no edges' }
   );
 }

@@ -26,12 +26,12 @@ async function checkout(bodies) {
 
 test('covering tests run side by side, not one after another', async () => {
   const root = await checkout(['', '', '', '', '', '']);
-  runCoveringTests(TASK, [], root, ['src/app.js'], undefined);
+  runCoveringTests(TASK, [], { root, changed: ['src/app.js'] });
 });
 
 test('a failing covering test is named with its exit and the others are not', async () => {
   const root = await checkout(['', 'throw new Error("boom");', '']);
-  assert.throws(() => runCoveringTests(TASK, [], root, ['src/app.js'], undefined), (error) => {
+  assert.throws(() => runCoveringTests(TASK, [], { root, changed: ['src/app.js'] }), (error) => {
     assert.ok(error instanceof LandingError);
     assert.match(error.message, /Task 4: 1 covering test\(s\) of the changed files failed:/);
     assert.match(error.message, /tests\/case-1\.test\.mjs failed \(exit 1\):/);
@@ -44,7 +44,7 @@ test('a covering test past the deadline is reported as timed out', async () => {
   const root = await checkout(['']);
   process.env.EXO_PROOF_TIMEOUT_MS = '300';
   try {
-    assert.throws(() => runCoveringTests(TASK, [], root, ['src/app.js'], undefined), /case-0\.test\.mjs failed \(timed out after 0\.3s\)/);
+    assert.throws(() => runCoveringTests(TASK, [], { root, changed: ['src/app.js'] }), /case-0\.test\.mjs failed \(timed out after 0\.3s\)/);
   } finally {
     delete process.env.EXO_PROOF_TIMEOUT_MS;
   }
@@ -52,5 +52,5 @@ test('a covering test past the deadline is reported as timed out', async () => {
 
 test('a proof command that names a covering test skips it', async () => {
   const root = await checkout(['throw new Error("boom");']);
-  runCoveringTests(TASK, ['node --test tests/case-0.test.mjs'], root, ['src/app.js'], undefined);
+  runCoveringTests(TASK, ['node --test tests/case-0.test.mjs'], { root, changed: ['src/app.js'] });
 });

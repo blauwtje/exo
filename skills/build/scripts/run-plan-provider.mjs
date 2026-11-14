@@ -5,7 +5,7 @@ import { contextLimit, softLimit } from '#context-limits';
 import { settingOrDefault } from '#settings-store';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 import { sandboxMode } from './run-session-sandbox.mjs';
-import { Refusal } from './run-plan-errors.mjs';
+import { Refusal } from './cli-refusal.mjs';
 
 function listedProvider(name) {
   const { providers } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
@@ -49,7 +49,7 @@ export function chooseProvider(flags, home, project) {
   const name = flags.provider ?? config.defaults.provider;
   const asked = flags.effort ?? config.providers[name]?.effort ?? config.defaults.effort;
   if (!config.efforts.includes(asked)) throw new Refusal(`unknown effort "${asked}"; use one of ${config.efforts.join(', ')}`);
-  const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
+  const provider = resolveProvider(config, name, { keys: readKeys(path.join(configDir(home), 'keys.env')), effort: asked, home });
   if (provider.refused !== undefined) throw new Refusal(provider.refused);
   if (!Number.isInteger(config.defaults.attemptCap) || config.defaults.attemptCap < 1) throw new Refusal(`run.json defaults.attemptCap must be a positive integer, got ${JSON.stringify(config.defaults.attemptCap)}`);
   return {

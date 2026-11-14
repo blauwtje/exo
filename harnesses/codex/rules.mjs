@@ -19,7 +19,7 @@ const PHRASES = [
   ["under the Bash tool's `run_in_background`", 'in a background `exec_command` session polled with `write_stdin`'],
   ['with `run_in_background: false`', 'then waits for it with `wait_agent`'],
   ['with `run_in_background: true`', 'without `wait_agent`'],
-  ['under `run_in_background`','in a background `exec_command` session polled with `write_stdin`'],
+  ['under `run_in_background`', 'in a background `exec_command` session polled with `write_stdin`'],
   ['A `SendMessage`', 'A follow-up message'],
   ['`SendMessage` it to', 'send it as a follow-up message to'],
   ['via SendMessage', 'by a follow-up message'],

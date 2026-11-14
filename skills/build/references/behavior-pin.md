@@ -29,6 +29,4 @@ Keep the old version runnable beside the new until the comparison passes, then d
 
 ## Judgment
 
-- Pin outranks a build, type check or lint pass; none prove outputs matched.
 - Mismatch you did not predict → old behavior was misread; read it again before moving on, never wave it through.
-- One-input pin outranks nothing; widen the input range before trusting zero mismatches.

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BYTES_PER_TOKEN } from './budgets.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(SCRIPT_DIR, '..');
@@ -24,55 +25,112 @@ function walkFilesWithExtension(dir, extension) {
   return found;
 }
 
+function directoryEntries(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true });
+}
+
+function markdownIn(dir) {
+  return directoryEntries(dir)
+    .filter((entry) => entry.name.endsWith('.md'))
+    .map((entry) => path.join(dir, entry.name));
+}
+
+function skillDocs(skillDir) {
+  const skillMd = path.join(skillDir, 'SKILL.md');
+  const own = fs.existsSync(skillMd) ? [skillMd] : [];
+  return [...own, ...markdownIn(path.join(skillDir, 'references'))];
+}
+
 export function listDocFiles() {
-  const files = [];
   const skillsDir = path.join(ROOT, 'skills');
-  for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const skillMd = path.join(skillsDir, entry.name, 'SKILL.md');
-    if (fs.existsSync(skillMd)) files.push(skillMd);
-    const referencesDir = path.join(skillsDir, entry.name, 'references');
-    if (fs.existsSync(referencesDir)) {
-      for (const ref of fs.readdirSync(referencesDir)) {
-        if (ref.endsWith('.md')) files.push(path.join(referencesDir, ref));
-      }
-    }
-  }
-  const agentsDir = path.join(ROOT, 'agents');
-  if (fs.existsSync(agentsDir)) {
-    for (const agent of fs.readdirSync(agentsDir)) {
-      if (agent.endsWith('.md')) files.push(path.join(agentsDir, agent));
-    }
-  }
-  for (const rootDoc of ['README.md', 'CONTRIBUTING.md', '.claude/CLAUDE.md', '.claude/landing.md']) {
-    const full = path.join(ROOT, rootDoc);
-    if (fs.existsSync(full)) files.push(full);
-  }
-  const docsSkillsDir = path.join(ROOT, 'docs', 'skills');
-  if (fs.existsSync(docsSkillsDir)) {
-    for (const doc of fs.readdirSync(docsSkillsDir)) {
-      if (doc.endsWith('.md')) files.push(path.join(docsSkillsDir, doc));
-    }
-  }
-  return files;
+  const skillDirs = directoryEntries(skillsDir).filter((entry) => entry.isDirectory());
+  const rootDocs = ['README.md', 'CONTRIBUTING.md', '.claude/CLAUDE.md', '.claude/landing.md']
+    .map((rootDoc) => path.join(ROOT, rootDoc))
+    .filter((full) => fs.existsSync(full));
+  return [
+    ...skillDirs.flatMap((entry) => skillDocs(path.join(skillsDir, entry.name))),
+    ...markdownIn(path.join(ROOT, 'agents')),
+    ...rootDocs,
+    ...markdownIn(path.join(ROOT, 'docs', 'skills'))
+  ];
 }
 
 export function listCodeFiles() {
-  const files = [];
-  const hooksDir = path.join(ROOT, 'hooks');
-  if (fs.existsSync(hooksDir)) {
-    for (const entry of fs.readdirSync(hooksDir, { withFileTypes: true })) {
-      if (entry.isFile()) files.push(path.join(hooksDir, entry.name));
-    }
-  }
+  const hookFiles = directoryEntries(path.join(ROOT, 'hooks'))
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(ROOT, 'hooks', entry.name));
   const verifyMjs = path.join(ROOT, 'verify.mjs');
-  if (fs.existsSync(verifyMjs)) files.push(verifyMjs);
-  files.push(...walkFilesWithExtension(path.join(ROOT, 'verify'), '.mjs'));
-  files.push(...walkFilesWithExtension(path.join(ROOT, 'tests'), '.mjs'));
-  return files;
+  return [
+    ...hookFiles,
+    ...(fs.existsSync(verifyMjs) ? [verifyMjs] : []),
+    ...walkFilesWithExtension(path.join(ROOT, 'verify'), '.mjs'),
+    ...walkFilesWithExtension(path.join(ROOT, 'tests'), '.mjs')
+  ];
 }
 
 export function skillNameFromPath(relativePath) {
   const match = /^skills\/([^/]+)\//.exec(relativePath);
   return match ? match[1] : null;
+}
+
+function descriptionValue(raw) {
+  if (!raw.startsWith('"')) return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+export function readDescription(text) {
+  const lines = text.split('\n');
+  if (lines[0] !== '---') return '';
+  const closing = lines.indexOf('---', 1);
+  if (closing < 0) return '';
+  for (const line of lines.slice(1, closing)) {
+    const match = /^description: +(.+)$/.exec(line);
+    if (!match) continue;
+    return descriptionValue(match[1]);
+  }
+  return '';
+}
+
+const HEADING_LINE = /^(#{1,6})\s+(.*)$/;
+
+function parseHeadings(lines) {
+  const headings = [];
+  lines.forEach((line, index) => {
+    const match = HEADING_LINE.exec(line);
+    if (match) headings.push({ level: match[1].length, heading: match[2].trim(), lineIndex: index });
+  });
+  return headings;
+}
+
+function sectionEndIndex(lines, headings, position) {
+  const current = headings[position];
+  const next = headings.slice(position + 1).find((heading) => heading.level <= current.level);
+  return next ? next.lineIndex - 1 : lines.length - 1;
+}
+
+export function parseSections(relativePath, text) {
+  const lines = text.split('\n');
+  const headings = parseHeadings(lines);
+  return headings.map((current, position) => {
+    const endIndex = sectionEndIndex(lines, headings, position);
+    const bytes = Buffer.byteLength(lines.slice(current.lineIndex, endIndex + 1).join('\n'), 'utf8');
+    return {
+      path: relativePath,
+      heading: current.heading,
+      level: current.level,
+      startLine: current.lineIndex + 1,
+      endLine: endIndex + 1,
+      bytes,
+      tokens: Math.floor(bytes / BYTES_PER_TOKEN)
+    };
+  });
+}
+
+export function normalizeHeading(heading) {
+  return heading.replace(/^#+\s*/, '').trim().toLowerCase();
 }

@@ -22,8 +22,6 @@ The run is its own plan on branch `improve/<tag>`, so call no spec, build or gat
 - Run `node "${CLAUDE_SKILL_DIR}/scripts/setup.mjs" --goal <text> --command <cmd> --regex <re> --direction higher|lower --scope <glob,...> [--readonly <path,...>] [--scorer <path,...>] [--fast-check <cmd>] [--limit <s>] [--first <dir> --first-subject <text>]`. It runs `defaults.improve.baselineRuns` baseline runs, then prints one line `tag= branch= worktree= score= limit= seed= sd= mde= holdout= model= effort= noidea= mode= brief=<path>`.
 - When the files to change were read before setup, one Bash command carries round 1: `mkdir -p .exo/improve/first && cat > .exo/improve/first/<repo path> <<'EOF' ... EOF && node "${CLAUDE_SKILL_DIR}/scripts/setup.mjs" <flags> --first .exo/improve/first --first-subject <change in plain words>`. Setup commits and scores it and prints its `ROW` line.
 - Check the idea through the `ROW` line, its `CASES` line with the cases that moved most, and after any row but a keep its `OUT` lines with the score command's output. Run no test, check or score of the idea before it.
-- Pick the next idea only after reading the last round's `CASES` and `OUT` lines.
-- The first idea is the strongest method known for the goal, as in Inline idea.
 - When setup exits nonzero, fix the flag or step its output names and rerun.
 - Once settled, send one message that is not a question: scope, command, direction, limit, branch, worktree, baseline `score`, its noise `sd` and smallest detectable gain `mde`, `holdout`, and any round-1 `ROW`. Then start the next round in the same turn.
 
@@ -37,14 +35,12 @@ Ask the user nothing, because the user may be away. Read only each worker's retu
 - An inline idea comes from the files read at start and the `ROW` lines, and is untried. Start with the strongest method known for the goal, not a stepping stone toward it.
 - An inline discard resets the worktree to the best commit, so a retry of the discarded idea starts from `git show <hash>:<file>`.
 - Inline bounds: edit nothing the scorer reads and add no special case for its cases.
-- Inline, with no idea left or on an interrupt, Stop. Run `node "${CLAUDE_SKILL_DIR}/scripts/round.mjs" --root <root> --tag <tag> --report`, then report the best kept score against the baseline, its `HOLDOUT` line, the branch, the worktree and the reason, and leave them and `.exo/improve/` in place.
-- The lead runs no score command, test or check of its own; `round.mjs` owns scoring, rows, keeps and resets.
+- On Stop (an interrupt, or an inline lead with no idea left), run `node "${CLAUDE_SKILL_DIR}/scripts/round.mjs" --root <root> --tag <tag> --report`, then report the best kept score against the baseline, its `HOLDOUT` line (`HOLDOUT none` when setup held none out), the branch, the worktree and the reason (the trigger, when it was not the user), and leave them and `.exo/improve/` in place.
+- The lead runs no score command of its own; `round.mjs` owns scoring, rows, keeps and resets.
 - After a crash row, its idea may be retried with the cause its `OUT` lines name fixed.
 
 ## Judgment
 
-- Run until a Stop trigger; a question after setup finds no one.
-- A kept commit comes only from a `round.mjs` `keep` row. Edit no scorer and take no score from chat.
 - At an equal score the simpler commit wins. A removal that keeps the score is a win, and a tiny gain that adds much code is not worth it.
-- `round.mjs` reruns a noisy score up to `defaults.improve.maxRuns` times and keeps only when the lower bound of the gain's `keepZ` interval exceeds `keepFloor`. An exact score decides on one run.
+- `round.mjs` decides keeps from the score's noise (`keepFloor`); an exact score decides on one run.
 - After 2 rounds without gain, label each failing case in the last `CASES` lines agent fault or case fault. The next idea targets only agent faults, and the Stop report lists the case faults.

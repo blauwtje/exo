@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { writeAtomic } from '../../lib/basics.mjs';
-import { apply, jsonText, removeInstalls, sameInstall, statOf, updateInstalls } from '../install-files.mjs';
+import { apply, jsonText, removeInstalls, sameInstall, statOf, tryRmdir, updateInstalls } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
-import { agentEntries, planFile, planSkill, releaseFiles, skillEntries, tryRmdir } from './files.mjs';
+import { agentEntries, planFile, planSkill, releaseFiles, skillEntries } from './files.mjs';
 import { generateOpenCodeTree } from './generate.mjs';
 import { PLAIN_PATH, SCOPES, readInstalls } from './record.mjs';
 
@@ -48,17 +48,9 @@ function checkProject(scope, project) {
   if (statOf(folder)?.isSymbolicLink()) throw new Error(`${folder} is a link; exo does not write through a symlink in a project`);
 }
 
-function planInstall({ root, env, scope, project }, verb = 'installed') {
-  if (!SCOPES.includes(scope)) throw new Error(`OpenCode scope must be one of ${SCOPES.join(', ')}, got ${JSON.stringify(scope)}`);
-  checkProject(scope, project);
-  const where = locations(env, scope, project);
-  const installs = readInstalls(where.recordFile);
-  const old = installs.find((entry) => sameInstall(entry, { scope, project }));
-  const { skills, agents } = generated(root);
-  const next = { scope, ...(project === undefined ? {} : { project }), skills: [], agents: [] };
-  const plan = { conflicts: [], notes: [], writes: [] };
-  const { target } = where;
-
+function planEntries({ target, old, generatedFiles, plan }) {
+  const { skills, agents } = generatedFiles;
+  const next = { skills: [], agents: [] };
   for (const [skill, files] of skills) {
     const oldSkill = old?.skills.find((entry) => entry.name === skill);
     next.skills.push(planSkill({ target, skill, files, oldSkill, plan }));
@@ -68,11 +60,29 @@ function planInstall({ root, env, scope, project }, verb = 'installed') {
     const sha256 = planFile({ target, relative: `agents/${file}`, text, recorded, plan });
     if (sha256 !== undefined) next.agents.push({ name: file, sha256 });
   }
+  return next;
+}
+
+const allEntries = (install) => [...skillEntries(install?.skills ?? []), ...agentEntries(install?.agents ?? [])];
+
+function staleEntries(old, next) {
+  const kept = new Set(allEntries(next).map((entry) => entry.path));
+  return allEntries(old).filter((entry) => !kept.has(entry.path));
+}
+
+function planInstall({ root, env, scope, project }, verb = 'installed') {
+  if (!SCOPES.includes(scope)) throw new Error(`OpenCode scope must be one of ${SCOPES.join(', ')}, got ${JSON.stringify(scope)}`);
+  checkProject(scope, project);
+  const where = locations(env, scope, project);
+  const installs = readInstalls(where.recordFile);
+  const old = installs.find((entry) => sameInstall(entry, { scope, project }));
+  const plan = { conflicts: [], notes: [], writes: [] };
+  const { target } = where;
+  const entries = planEntries({ target, old, generatedFiles: generated(root), plan });
+  const next = { scope, ...(project === undefined ? {} : { project }), ...entries };
   if (plan.conflicts.length > 0) throw new Error(`${plan.conflicts.join('\n')}\nNothing was written. Move those aside, or remove them, then rerun.`);
 
-  const kept = new Set([...skillEntries(next.skills), ...agentEntries(next.agents)].map((entry) => entry.path));
-  const stale = [...skillEntries(old?.skills ?? []), ...agentEntries(old?.agents ?? [])].filter((entry) => !kept.has(entry.path));
-  releaseFiles({ target, entries: stale, plan });
+  releaseFiles({ target, entries: staleEntries(old, next), plan });
   const others = installs.filter((entry) => !sameInstall(entry, next));
   const fileCount = next.skills.reduce((total, skill) => total + skill.files.length, 0);
   return {
@@ -80,6 +90,16 @@ function planInstall({ root, env, scope, project }, verb = 'installed') {
     notes: plan.notes,
     summary: `${verb} ${next.skills.length} skills (${fileCount} files) and ${next.agents.length} agents into ${target}`
   };
+}
+
+function removeRecord(where, rest) {
+  if (rest.length > 0) {
+    writeAtomic(where.recordFile, jsonText({ version: 2, installs: rest }));
+    return;
+  }
+  fs.unlinkSync(where.recordFile);
+  tryRmdir(path.dirname(where.recordFile));
+  tryRmdir(where.configHome);
 }
 
 function planRemove(install, installs, env) {
@@ -93,15 +113,7 @@ function planRemove(install, installs, env) {
     if (install.scope === 'project') tryRmdir(where.target);
   });
   const rest = installs.filter((entry) => !sameInstall(entry, install));
-  plan.writes.push(() => {
-    if (rest.length > 0) {
-      writeAtomic(where.recordFile, jsonText({ version: 2, installs: rest }));
-      return;
-    }
-    fs.unlinkSync(where.recordFile);
-    tryRmdir(path.dirname(where.recordFile));
-    tryRmdir(where.configHome);
-  });
+  plan.writes.push(() => removeRecord(where, rest));
   return { ...plan, summary: `removed the ${install.scope} install that ${where.recordFile} listed` };
 }
 

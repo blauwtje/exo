@@ -15,8 +15,8 @@ export function createReport() {
     note(name, detail) {
       console.log(`[INFO] ${name}: ${detail}`);
     },
-    assert(condition, name, passDetail, failDetail) {
-      result(condition ? 'PASS' : 'FAIL', name, condition ? passDetail : failDetail);
+    assert(condition, name, details) {
+      result(condition ? 'PASS' : 'FAIL', name, condition ? details.pass : details.fail);
     },
     counts() {
       const counts = { PASS: 0, FAIL: 0, WARN: 0, UNRUN: 0 };

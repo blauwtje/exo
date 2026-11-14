@@ -2,7 +2,7 @@ Read this when proof reveals a build, test, or run command, or a failure-causing
 
 # Retain project knowledge
 
-Turn a lesson learned this session into something the next session reads unprompted. The enemy is a fix that repeats because nothing outside this session's memory recorded it. The overcorrection is a session log nobody reads back.
+Turn a lesson learned this session into something the next session reads unprompted.
 
 ## Append the line, or build the check
 

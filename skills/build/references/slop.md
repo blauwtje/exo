@@ -19,12 +19,8 @@ Each pattern here reads as machine-made because so many generated pages share it
 - Calls to action: name the outcome ("Install Tidewrack", "Post to Murmur"), not "Get started" or "Learn more" alone.
   - Good: "Install Tidewrack". Bad: "Get started".
 - App labels: standard verbs for standard actions (Play, Install, Follow, Save), since themed renaming makes people guess.
-- Stock words: replace seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern" and "Welcome to" with a concrete claim.
+- Stock words: replace seamless, elevate, unlock, empower, revolutionize, cutting-edge, next-gen, supercharge, all-in-one, effortless, "built for the modern" and "Welcome to" with a concrete claim, and grep the page for them after the build.
 - Tics: the "Not X. Y." reveal, reflexive lists of three, em dashes in short copy, an arrow on every button; write the plain sentence instead.
 - Middle-dot meta strings (`3h · 12 likes · Design`): separate elements: a timestamp, a counter with its icon, a category chip in the item's color.
   - Good: a "3h" timestamp, a heart icon with 12, a Design chip in the item's color. Bad: `3h · 12 likes · Design` as one gray string.
 - Placeholders: lorem ipsum, "Feature One", "John Doe" and round numbers (100, 50%) become specific names and uneven numbers.
-
-## Vague-word grep
-
-After the build, grep the page for the stock words above; rewrite each hit.

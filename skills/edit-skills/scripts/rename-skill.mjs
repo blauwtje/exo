@@ -12,7 +12,7 @@ Moves skills/<from>/, docs/skills/<from>.md and benchmarks/pressure/<from>/ to <
 then rewrites every word-bounded mention of <from> to <to>. Skips CHANGELOG.md,
 benchmarks/results/, .git/ and worktree folders, which name the skill as it was.
 Prints one line per rewritten file as <path> <count>.`;
-const NAME_PATTERN =/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const NAME_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const SKIPPED_DIR_NAMES = new Set(['.git']);
 const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md']);
 const SKIPPED_RELATIVE_PREFIXES = ['benchmarks/results/'];
@@ -36,9 +36,9 @@ function listFiles(root) {
       if (isSkipped(relative) || isWorktreePath(relative)) continue;
       if (entry.isDirectory()) {
         walk(full);
-      } else if (entry.isFile()) {
-        files.push(relative);
+        continue;
       }
+      if (entry.isFile()) files.push(relative);
     }
   };
   walk(root);
@@ -64,7 +64,10 @@ function renameSkill({ root, from, to }) {
   moveIfPresent(root, skillFolder, path.join('skills', to));
   moveIfPresent(root, path.join('docs', 'skills', `${from}.md`), path.join('docs', 'skills', `${to}.md`));
   moveIfPresent(root, path.join('benchmarks', 'pressure', from), path.join('benchmarks', 'pressure', to));
+  return rewriteMentions(root, from, to);
+}
 
+function rewriteMentions(root, from, to) {
   const escaped = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const mention = new RegExp(`(?<![a-z0-9-])${escaped}(?![a-z0-9-])`, 'g');
   const rows = [];
@@ -90,18 +93,16 @@ function main(argv) {
   process.stdout.write(rows.map((row) => `${row.path} ${row.count}`).join('\n') + (rows.length > 0 ? '\n' : ''));
 }
 
+function reportFailure(error) {
+  if (!(error instanceof UsageError || error instanceof RenameError)) throw error;
+  process.stderr.write(`rename-skill: ${error.message}\n`);
+  process.exitCode = error instanceof UsageError ? 2 : 1;
+}
+
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    if (error instanceof UsageError) {
-      process.stderr.write(`rename-skill: ${error.message}\n`);
-      process.exitCode = 2;
-    } else if (error instanceof RenameError) {
-      process.stderr.write(`rename-skill: ${error.message}\n`);
-      process.exitCode = 1;
-    } else {
-      throw error;
-    }
+    reportFailure(error);
   }
 }

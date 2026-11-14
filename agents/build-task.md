@@ -15,7 +15,7 @@ Build one plan task and report it.
 ## Scope
 
 - Work in `<checkout>` only: start every command with `cd <checkout> &&` and give Edit and Write absolute paths.
-- Edit only the `Files:` paths, and write a missing `Proof:` script first, after you read `code-standard.md`. Report other paths.
+- `Files:` names where the work is expected: edit any file the task needs and list extra paths in the report. Write a missing `Proof:` script first, after you read `code-standard.md`.
 - Your first call reads the brief, `lean.md` and `code-standard.md`, once each, the last two from `${CLAUDE_PLUGIN_ROOT}/lib/references/` and not a `<checkout>` copy. When the brief says `Code rules: none`, it reads the brief only.
 - Send no text before the first tool call or between calls.
 

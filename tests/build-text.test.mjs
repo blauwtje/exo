@@ -3,29 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { readAgents } from './harness.mjs';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
-const agentsRoot = path.join(repositoryRoot, 'agents');
 const skillsRoot = path.join(repositoryRoot, 'skills');
 
-function readAgent(fileName) {
-  const text = fs.readFileSync(path.join(agentsRoot, fileName), 'utf8');
-  const lines = text.split('\n');
-  const closing = lines.indexOf('---', 1);
-  assert.ok(lines[0] === '---' && closing > 0, `${fileName} has no frontmatter block`);
-  const frontmatter = {};
-  for (const line of lines.slice(1, closing)) {
-    const separator = line.indexOf(': ');
-    assert.ok(separator > 0, `${fileName} has an unreadable frontmatter line: ${line}`);
-    frontmatter[line.slice(0, separator)] = line.slice(separator + 2);
-  }
-  const body = lines.slice(closing + 1).join('\n');
-  return { fileName, frontmatter, body };
-}
-
-const agents = fs.readdirSync(agentsRoot)
-  .filter((fileName) => fileName.endsWith('.md'))
-  .map(readAgent);
+const agents = readAgents();
 
 test('a Design: task with a named direction goes to a design-ui delegate, not the implementer', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
-import { agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
+import { AGENT_HARD_RATIO, agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
 import { guardKind } from '../lib/guard-rules.mjs';
 import { tempDir } from './harness.mjs';
@@ -28,7 +28,7 @@ const SOFT = softLimit(catalogLimit) + 1000;
 const HARD = catalogLimit + 1000;
 const TARGET = agentContextTarget();
 const AGENT_SOFT = softLimit(TARGET) + 1000;
-const AGENT_HARD = Math.round(TARGET * 1.25) + 1000;
+const AGENT_HARD = Math.round(TARGET * AGENT_HARD_RATIO) + 1000;
 
 test('contextLimit is the catalog default when run.json sets none', () => {
   assert.equal(contextLimit(homeWith()), catalogLimit);
@@ -147,37 +147,47 @@ function assertTargetWarns(call, tools, tokens) {
   for (const tool of tools) assert.match(call(tokens, tool).deny, /new reads, searches, fetches, skills and agents/, `${tool} at ${tokens}`);
 }
 
+function assertAllow(call, tools, tokens) {
+  for (const tool of tools) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
+}
+
+function assertHandover(call, tools, tokens) {
+  for (const tool of tools) assert.match(call(tokens, tool).deny, /Status: handover/, `${tool} at ${tokens}`);
+}
+
+function growthCall(dir, agent_id) {
+  return (tokens, tool_name) => {
+    const file = path.join(dir, `t${tokens}.jsonl`);
+    fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+    return contextDecision({ session_id: 'a', agent_id, agent_transcript_path: file, tool_name });
+  };
+}
+
+function assertGrowthBands(call) {
+  const intake = ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch', 'Skill', 'Agent', 'ToolSearch'];
+  for (const tokens of [10_000, 30_000, 44_000]) assertAllow(call, [...intake, 'Bash', 'Write'], tokens);
+  const note = call(46_000, 'Bash');
+  assert.match(note.additionalContext, /60k/);
+  assert.match(note.additionalContext, /75k/);
+  assert.match(note.additionalContext, /handover/);
+  assert.equal(call(46_000, 'Bash'), null);
+  assertAllow(call, intake, 59_000);
+  for (const tokens of [61_000, 74_000]) {
+    assertTargetWarns(call, intake, tokens);
+    assertAllow(call, ['Bash', 'Write', 'Edit'], tokens);
+  }
+  for (const tokens of [76_000, 120_000, 159_600]) {
+    assertHandover(call, [...intake, 'Bash'], tokens);
+    assertAllow(call, ['Write', 'Edit'], tokens);
+  }
+}
+
 test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and is bound by agentContextTarget on the way', () => {
   const runJson = path.join(testHome, '.config', 'exo', 'run.json');
   fs.mkdirSync(path.dirname(runJson), { recursive: true });
   fs.writeFileSync(runJson, '{"defaults":{"contextLimit":150000}}');
   try {
-    const dir = tempDir('exo-growth-');
-    const agent_id = `a-growth-${process.pid}-${Date.now()}`;
-    const call = (tokens, tool_name) => {
-      const file = path.join(dir, `t${tokens}.jsonl`);
-      fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
-      return contextDecision({ session_id: 'a', agent_id, agent_transcript_path: file, tool_name });
-    };
-    const intake = ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch', 'Skill', 'Agent', 'ToolSearch'];
-    for (const tokens of [10_000, 30_000, 44_000]) for (const tool of [...intake, 'Bash', 'Write']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
-
-    const note = call(46_000, 'Bash');
-    assert.match(note.additionalContext, /60k/);
-    assert.match(note.additionalContext, /75k/);
-    assert.match(note.additionalContext, /handover/);
-    assert.equal(call(46_000, 'Bash'), null);
-    for (const tool of intake) assert.equal(call(59_000, tool), null, `${tool} at 59000`);
-
-    for (const tokens of [61_000, 74_000]) {
-      assertTargetWarns(call, intake, tokens);
-      for (const tool of ['Bash', 'Write', 'Edit']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
-    }
-
-    for (const tokens of [76_000, 120_000, 159_600]) {
-      for (const tool of [...intake, 'Bash']) assert.match(call(tokens, tool).deny, /Status: handover/, `${tool} at ${tokens}`);
-      for (const tool of ['Write', 'Edit']) assert.equal(call(tokens, tool), null, `${tool} at ${tokens}`);
-    }
+    assertGrowthBands(growthCall(tempDir('exo-growth-'), `a-growth-${process.pid}-${Date.now()}`));
   } finally {
     fs.rmSync(runJson, { force: true });
   }

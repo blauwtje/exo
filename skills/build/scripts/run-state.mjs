@@ -122,7 +122,7 @@ export function resumePoint(steps) {
   return { pending, attempts: open, failedAttempts, gateSteps };
 }
 
-const gatesFile =(dir) => path.join(dir, 'gates.md');
+const gatesFile = (dir) => path.join(dir, 'gates.md');
 const GATE_LINE = /^- (open|approved|used): ([^:]+): (.*) \(([^()]*)\)$/;
 
 export function readGates(dir) {
@@ -225,17 +225,18 @@ function scratch(root, text) {
 function drop(file) {
   try {
     fs.unlinkSync(file);
-  } catch {}
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
 }
 
-function settle(fn) {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return fn();
-    } catch (err) {
-      if (attempt >= 40 || !['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
-      sleepSync(5);
-    }
+function settle(fn, attempt = 0) {
+  try {
+    return fn();
+  } catch (err) {
+    if (attempt >= 40 || !['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+    sleepSync(5);
+    return settle(fn, attempt + 1);
   }
 }
 
@@ -255,19 +256,28 @@ function readLock(root) {
   }
 }
 
+function claimHolderPid(root, key, n) {
+  try {
+    return Number(fs.readFileSync(claimFile(root, key, n), 'utf8'));
+  } catch {
+    return 0;
+  }
+}
+
+function link(from, to) {
+  try {
+    fs.linkSync(from, to);
+    return true;
+  } catch (err) {
+    if (err.code !== 'EEXIST') throw err;
+    return false;
+  }
+}
+
 function claim(root, key, token) {
   for (let n = 0; n < 16; n++) {
-    try {
-      fs.linkSync(token, claimFile(root, key, n));
-      return n;
-    } catch (err) {
-      if (err.code !== 'EEXIST') throw err;
-    }
-    let pid = 0;
-    try {
-      pid = Number(fs.readFileSync(claimFile(root, key, n), 'utf8'));
-    } catch {}
-    if (isAlive(pid)) return -1;
+    if (link(token, claimFile(root, key, n))) return n;
+    if (isAlive(claimHolderPid(root, key, n))) return -1;
   }
   return -1;
 }
@@ -282,41 +292,44 @@ function held(root, holder, id) {
   return state !== null && !FINAL_PHASES.includes(state.phase) && isAlive(state.pid);
 }
 
-export function acquireLock(root, id) {
-  const file = lockFile(root);
-  fs.mkdirSync(runsDir(root), { recursive: true });
-  const mine = scratch(root, `${id}\n`);
-  let token = null;
+function takeOver(spin, lock) {
+  const { root, mine } = spin;
+  const n = claim(root, lock.key, spin.token);
+  if (n < 0) {
+    sleepSync(5);
+    return null;
+  }
+  const unchanged = readLock(root)?.key === lock.key;
+  if (unchanged) settle(() => fs.renameSync(mine, lockFile(root)));
+  unclaim(root, lock.key, n);
+  if (!unchanged) return null;
+  return lock.holder ? { ok: true, stale: lock.holder } : { ok: true };
+}
+
+function spinForLock(spin) {
+  const { root, id, mine } = spin;
   let holder = '';
+  for (let attempt = 0; attempt < 400; attempt++) {
+    if (link(mine, lockFile(root))) return { ok: true };
+    const lock = readLock(root);
+    if (lock === null) continue;
+    holder = lock.holder;
+    if (held(root, holder, id)) return { ok: false, holder };
+    spin.token ??= scratch(root, `${process.pid}\n`);
+    const taken = takeOver(spin, lock);
+    if (taken !== null) return taken;
+  }
+  return { ok: false, holder };
+}
+
+export function acquireLock(root, id) {
+  fs.mkdirSync(runsDir(root), { recursive: true });
+  const spin = { root, id, mine: scratch(root, `${id}\n`), token: null };
   try {
-    for (let attempt = 0; attempt < 400; attempt++) {
-      try {
-        fs.linkSync(mine, file);
-        return { ok: true };
-      } catch (err) {
-        if (err.code !== 'EEXIST') throw err;
-      }
-      const lock = readLock(root);
-      if (lock === null) continue;
-      holder = lock.holder;
-      if (held(root, holder, id)) return { ok: false, holder };
-      token ??= scratch(root, `${process.pid}\n`);
-      const n = claim(root, lock.key, token);
-      if (n < 0) {
-        sleepSync(5);
-        continue;
-      }
-      if (readLock(root)?.key === lock.key) {
-        settle(() => fs.renameSync(mine, file));
-        unclaim(root, lock.key, n);
-        return holder ? { ok: true, stale: holder } : { ok: true };
-      }
-      unclaim(root, lock.key, n);
-    }
-    return { ok: false, holder };
+    return spinForLock(spin);
   } finally {
-    drop(mine);
-    if (token) drop(token);
+    drop(spin.mine);
+    if (spin.token) drop(spin.token);
   }
 }
 
@@ -331,6 +344,7 @@ export function releaseLock(root, id) {
     if (readLock(root)?.key === lock.key) settle(() => fs.unlinkSync(lockFile(root)));
     unclaim(root, lock.key, n);
   } catch {
+    return;
   } finally {
     if (token) drop(token);
   }

@@ -84,8 +84,7 @@ export function checkForkSkillTier(report, repository) {
   report.assert(
     failures.length === 0,
     'fork skill tier',
-    'every fork skill carries the model and effort of its kind, and every exo-kind label names a table kind',
-    failures.join('; ')
+    { pass: 'every fork skill carries the model and effort of its kind, and every exo-kind label names a table kind', fail: failures.join('; ') }
   );
 }
 

@@ -31,17 +31,17 @@ test('zai maps the haiku tier to glm-5.3-flash and keeps glm-5.3 elsewhere', () 
 })
 
 test('resolveProvider maps the default effort onto a provider that names none', () => {
-  assert.equal(resolveProvider(catalog, 'deepseek', KEYS, undefined, HOME).effort, 'high')
-  assert.equal(resolveProvider(catalog, 'deepseek', KEYS, 'high', HOME).effort, 'high')
+  assert.equal(resolveProvider(catalog, 'deepseek', { keys: KEYS, home: HOME }).effort, 'high')
+  assert.equal(resolveProvider(catalog, 'deepseek', { keys: KEYS, effort: 'high', home: HOME }).effort, 'high')
 })
 
 test('resolveProvider falls back to the default effort when the entry sets none', () => {
-  assert.equal(resolveProvider(catalog, 'claude', {}, undefined, HOME).effort, catalog.defaults.effort)
+  assert.equal(resolveProvider(catalog, 'claude', { keys: {}, home: HOME }).effort, catalog.defaults.effort)
 })
 
 test('resolveProvider names the provider in the env it returns', () => {
-  assert.equal(resolveProvider(catalog, 'claude', {}, undefined, HOME).env.EXO_PROVIDER, 'claude')
-  const resolved = resolveProvider(catalog, 'deepseek', KEYS, undefined, HOME)
+  assert.equal(resolveProvider(catalog, 'claude', { keys: {}, home: HOME }).env.EXO_PROVIDER, 'claude')
+  const resolved = resolveProvider(catalog, 'deepseek', { keys: KEYS, home: HOME })
   assert.equal(resolved.env.EXO_PROVIDER, 'deepseek')
   assert.equal(resolved.env.ANTHROPIC_MODEL, 'deepseek-flash')
 })

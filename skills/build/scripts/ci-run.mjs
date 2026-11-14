@@ -5,11 +5,29 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { isMain, parseFlags } from '#script-flags';
+import { gitLine } from '#git';
 import { PLUGIN_ROOT, SCRIPTS_DIR } from '../../build/scripts/run-session-paths.mjs';
-import { bundleResult } from './ci-bundle.mjs';
 import { planPathFrom } from './ci-plan-path.mjs';
 
 const EXO_CLI = path.join(SCRIPTS_DIR, 'exo-cli.mjs');
+
+export const RESULT_REF = 'exo-result';
+export const BUNDLE_FILE = 'result.bundle';
+
+function branchesAhead(root, base) {
+  const names = gitLine(root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']) ?? '';
+  return names.split('\n').filter((name) => name !== '' && name !== RESULT_REF && gitLine(root, ['rev-list', '--count', `${base}..${name}`]) !== '0');
+}
+
+export function bundleResult(root, base, directory) {
+  const ahead = branchesAhead(root, base);
+  if (ahead.length !== 1) return { branch: null, ahead };
+  fs.mkdirSync(directory, { recursive: true });
+  gitLine(root, ['branch', '-f', RESULT_REF, ahead[0]]);
+  const file = path.join(directory, BUNDLE_FILE);
+  const made = gitLine(root, ['bundle', 'create', file, RESULT_REF, `^${base}`]);
+  return { branch: made === null ? null : ahead[0], ahead };
+}
 
 function fail(message) {
   process.stderr.write(`exo: ${message}\n`);

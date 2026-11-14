@@ -23,8 +23,8 @@ function fakeRepository(file, lines) {
 
 function collectingReport(results) {
   return {
-    assert(condition, checkName, ...details) {
-      const detail = condition ? details[0] : details[1];
+    assert(condition, checkName, details) {
+      const detail = condition ? details.pass : details.fail;
       results.push({ name: checkName, passed: condition, detail });
     },
   };

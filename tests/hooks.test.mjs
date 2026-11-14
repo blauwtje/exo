@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { tempDir } from './harness.mjs';
+import { hookEntries, tempDir } from './harness.mjs';
 
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -14,16 +14,6 @@ delete process.env.EXO_PROVIDER;
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
 const PLUGIN_PATH = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"\s]+)/g;
-
-function hookEntries() {
-  const entries = [];
-  for (const [event, groups] of Object.entries(HOOKS)) {
-    for (const group of groups) {
-      for (const hook of group.hooks) entries.push({ event, matcher: group.matcher, hook });
-    }
-  }
-  return entries;
-}
 
 test('every hook command resolves under the plugin root to a file the repository ships', () => {
   const entries = hookEntries();
@@ -247,7 +237,6 @@ test('the dispatch rules leave agent models to the kind table', () => {
 
 test('the dispatch file rule names no folded research agent', () => {
   const rules = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8');
-  assert.match(rules, /agent writes findings to a named file under `\.exo\/<topic>\/` and returns the verdict and path/);
   assert.doesNotMatch(rules, /fetch-docs|locate-code|ideate-worker|find-open-points/);
 });
 

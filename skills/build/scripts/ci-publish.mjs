@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { isMain, parseFlags } from '#script-flags';
-import { BUNDLE_FILE, RESULT_REF } from './ci-bundle.mjs';
+import { BUNDLE_FILE, RESULT_REF } from './ci-run.mjs';
 import { git } from '#git';
 
 const BASE_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$/;

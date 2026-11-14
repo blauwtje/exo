@@ -28,31 +28,39 @@ function readUserConfig(file) {
   }
 }
 
-export function configCommand(args) {
-  const home = os.homedir();
-  const file = path.join(configDir(home), 'run.json');
-  if (args.length === 0) {
-    const user = readUserConfig(file);
-    const merged = loadRunConfig({ home });
-    for (const [key, value] of leaves(merged)) {
-      process.stdout.write(`${key} = ${JSON.stringify(value)} (${has(user, key) ? 'run.json' : 'catalog'})\n`);
-    }
-    const keys = readKeys(path.join(configDir(home), 'keys.env'));
-    for (const [name, entry] of Object.entries(merged.providers)) {
-      if (entry.key) process.stdout.write(`key ${entry.key} (${name}): ${keys[entry.key] ? 'set' : 'missing'}\n`);
-    }
-    return;
-  }
-  if (args.length !== 2) throw new Refusal('usage: exo run config [<key> <value>]');
-  const [key, raw] = args;
-  let value = raw;
+function parseValue(raw) {
   try {
-    value = JSON.parse(raw);
+    return JSON.parse(raw);
   } catch {
+    return raw;
   }
+}
+
+function printConfig(home, file) {
+  const user = readUserConfig(file);
+  const merged = loadRunConfig({ home });
+  for (const [key, value] of leaves(merged)) {
+    process.stdout.write(`${key} = ${JSON.stringify(value)} (${has(user, key) ? 'run.json' : 'catalog'})\n`);
+  }
+  const keys = readKeys(path.join(configDir(home), 'keys.env'));
+  for (const [name, entry] of Object.entries(merged.providers)) {
+    if (entry.key) process.stdout.write(`key ${entry.key} (${name}): ${keys[entry.key] ? 'set' : 'missing'}\n`);
+  }
+}
+
+function writeConfig(home, file, [key, raw]) {
+  const value = parseValue(raw);
   const user = readUserConfig(file);
   user[key] = value;
   fs.mkdirSync(configDir(home), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(user, null, 2)}\n`);
   process.stdout.write(`exo: ${key} = ${JSON.stringify(value)} written to ${file}\n`);
+}
+
+export function configCommand(args) {
+  const home = os.homedir();
+  const file = path.join(configDir(home), 'run.json');
+  if (args.length === 0) return printConfig(home, file);
+  if (args.length !== 2) throw new Refusal('usage: exo run config [<key> <value>]');
+  writeConfig(home, file, args);
 }

@@ -64,7 +64,7 @@ export function mapEffort(level, accepted, order) {
   return best;
 }
 
-export function resolveProvider(config, name, keys, effort, home) {
+export function resolveProvider(config, name, { keys, effort, home }) {
   const entry = config.providers[name];
   if (!entry) {
     const known = Object.keys(config.providers).join(', ');

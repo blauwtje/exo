@@ -43,29 +43,33 @@ export function derivedNames() {
   return ENCODED_NAMES.map((encoded) => Buffer.from(encoded, 'base64').toString('utf8'));
 }
 
-export function checkDerivation(report, repository) {
-  const errors = [];
+function scannedFiles(repository) {
+  return repository.trackedFiles()
+    .filter((file) => repository.relative(file) !== LIST_FILE)
+    .map((file) => ({ file, text: repository.text(file) }))
+    .filter(({ text }) => !text.includes('\0'));
+}
+
+function derivedNameErrors(files, repository) {
   const names = derivedNames();
-  let scanned = 0;
-  for (const file of repository.trackedFiles()) {
-    if (repository.relative(file) === LIST_FILE) continue;
-    const text = repository.text(file);
-    if (text.includes('\0')) continue;
-    scanned += 1;
+  return files.flatMap(({ file, text }) => {
     const lowered = text.toLowerCase();
-    for (const name of names) {
-      if (lowered.includes(name)) errors.push(`${repository.relative(file)}: derived name '${name}'`);
-    }
-  }
-  for (const notice of NOTICE_FILES) {
-    if (fs.existsSync(repository.join(notice))) {
-      errors.push(`${notice} exists, and LICENSE is the only licence file exo ships`);
-    }
-  }
+    return names
+      .filter((name) => lowered.includes(name))
+      .map((name) => `${repository.relative(file)}: derived name '${name}'`);
+  });
+}
+
+export function checkDerivation(report, repository) {
+  const files = scannedFiles(repository);
+  const scanned = files.length;
+  const noticeErrors = NOTICE_FILES
+    .filter((notice) => fs.existsSync(repository.join(notice)))
+    .map((notice) => `${notice} exists, and LICENSE is the only licence file exo ships`);
+  const errors = [...derivedNameErrors(files, repository), ...noticeErrors];
   report.assert(
     errors.length === 0,
     'derivation',
-    `no derived name and no third-party notice reaches a tracked file, across ${scanned} files`,
-    errors.join('; ')
+    { pass: `no derived name and no third-party notice reaches a tracked file, across ${scanned} files`, fail: errors.join('; ') }
   );
 }

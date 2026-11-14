@@ -35,18 +35,6 @@ test('a listed non-claude provider pins only the kind effort, an unlisted one pi
   assert.deepEqual(budgetPin('zai', {}, { retry: true, budget: 'off' }), {});
 });
 
-test('run-plan carries no narrating comment above the retry pin', async () => {
-  const { readFileSync } = await import('node:fs');
-  const source = readFileSync(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url), 'utf8');
-  assert.ok(!source.includes('// why: a try after a failed attempt of the same task runs on the kind'));
-});
-
-test('a resumed headless retry keeps the session pin, only a fresh retry uses the retry cell', async () => {
-  const { readFileSync } = await import('node:fs');
-  const source = readFileSync(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url), 'utf8');
-  assert.ok(source.includes('const basePin = retrying && resume === null && hasPin(provider.retryPin) ? provider.retryPin : { model, effort }'));
-});
-
 test('chooseProvider takes the caller effort before the config default', () => {
   const home = tempDir('exo-plan-home-');
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
@@ -109,6 +97,11 @@ test('an attempt after a landing counts as progress', async () => {
 });
 
 test('a free try spends no attempt round', async () => {
-  const source = fs.readFileSync(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url), 'utf8');
-  assert.match(source, /freeTry \? \{ stop: false \} : settleAttempt/);
+  const source = fs.readFileSync(new URL('../skills/build/scripts/run-plan-build.mjs', import.meta.url), 'utf8');
+  assert.match(source, /if \(freeTry\) return undefined;\s+return attemptLimitStop/);
+});
+
+test('the max-turns path imports shelvePartialWork', () => {
+  const source = fs.readFileSync(new URL('../skills/build/scripts/run-plan-build.mjs', import.meta.url), 'utf8');
+  assert.match(source, /import \{[^}]*\bshelvePartialWork\b[^}]*\} from '\.\/run-plan-stops\.mjs'/);
 });

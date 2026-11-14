@@ -22,7 +22,7 @@ function section(text, heading) {
   const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
   if (start === -1) return null;
   const rest = lines.slice(start + 1);
-  const end = rest.findIndex((line) => /^#{1,2} /.test(line));
+  const end = rest.findIndex((line) => /^(?:#|##) /.test(line));
   return (end === -1 ? rest : rest.slice(0, end)).join('\n');
 }
 

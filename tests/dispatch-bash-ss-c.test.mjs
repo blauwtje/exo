@@ -14,7 +14,7 @@ async function decide(command, cwd) {
 test('a whole suite on a tree that already passed it warns and lets the call run', async () => {
   const { root } = await landingCheckout();
   await editApp(root);
-  recordPass(root, 'npm test', 5, undefined, NODE_PASS);
+  recordPass(root, 'npm test', { ms: 5, output: NODE_PASS });
   const output = await decide('npm test', root);
   assert.equal(output?.permissionDecision, undefined);
   assert.match(output?.additionalContext ?? '', /already passed/);
@@ -22,7 +22,7 @@ test('a whole suite on a tree that already passed it warns and lets the call run
 
 test('a whole suite on a changed tree runs', async () => {
   const { root } = await landingCheckout();
-  recordPass(root, 'npm test', 5, undefined, NODE_PASS);
+  recordPass(root, 'npm test', { ms: 5, output: NODE_PASS });
   await editApp(root);
   assert.notEqual((await decide('npm test', root))?.permissionDecision, 'deny');
 });

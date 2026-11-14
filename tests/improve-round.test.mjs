@@ -29,7 +29,7 @@ function setup({ direction = 'lower', command = 'cat src/x.txt', limit = 20, bas
   return root;
 }
 
-function commitEdit(root, text, file = 'src/x.txt', subject = 'idea') {
+function commitEdit(root, text, { file = 'src/x.txt', subject = 'idea' } = {}) {
   fs.writeFileSync(path.join(root, file), text);
   git(root, 'add', '-A');
   git(root, 'commit', '-qm', subject);
@@ -55,7 +55,7 @@ const brief = (root) => fs.readFileSync(path.join(root, '.exo/improve/t.brief.md
 
 test('keeps a better score, logs a row and rewrites the brief', () => {
   const root = setup();
-  const commit = commitEdit(root, 'score=7\n', 'src/x.txt', 'shrink x');
+  const commit = commitEdit(root, 'score=7\n', { subject: 'shrink x' });
   const { out, status } = round(root, commit);
   assert.equal(out, `ROW ${commit} 7 keep best=7`);
   assert.equal(status, 0);
@@ -88,7 +88,7 @@ test('higher direction prefers a larger score', () => {
 
 test('an out-of-scope diff is discarded without scoring', () => {
   const root = setup();
-  const commit = commitEdit(root, 'other\n', 'lib.txt');
+  const commit = commitEdit(root, 'other\n', { file: 'lib.txt' });
   assert.match(round(root, commit).out, /^ROW \S+ 10 discard/);
   assert.match(rows(root).at(-1), /file out of scope: lib\.txt/);
   assert.equal(fs.existsSync(path.join(root, 'lib.txt')), false);
@@ -209,7 +209,7 @@ test('replay: the recorded 0dc2ee2e runs 100, 50 and 37.5 against the 46.3 basel
   const root = setup({ direction: 'higher', command: SEQUENCE, baseline: [46.3], score: 46.3, regex: 'SCORE (-?[0-9.]+)' });
   sequence(root, ['DETAIL wins=8/8\nSCORE 100.00\n', 'DETAIL wins=4/8\nSCORE 50.00\n', 'DETAIL wins=3/8\nSCORE 37.50\n']);
   const base = git(root, 'rev-parse', 'HEAD');
-  const commit = commitEdit(root, 'score=10\npad\nart in a delegate\n', 'src/x.txt', 'design-ui writes the art module in a parallel delegate');
+  const commit = commitEdit(root, 'score=10\npad\nart in a delegate\n', { subject: 'design-ui writes the art module in a parallel delegate' });
   assert.match(round(root, commit).out, new RegExp(`^ROW ${commit} 62.5 discard best=46.3$`));
   assert.equal(runCount(root), 3);
   assert.equal(git(root, 'rev-parse', 'HEAD'), base);
@@ -221,13 +221,13 @@ test('replay: the recorded 0dc2ee2e runs 100, 50 and 37.5 against the 46.3 basel
 
 test('a deterministic score keeps, discards and ties on one run, with today\'s rows', () => {
   const root = setup({ command: 'echo run >> runs.log; cat src/x.txt' });
-  const better = commitEdit(root, 'score=7\npad\n', 'src/x.txt', 'lower');
+  const better = commitEdit(root, 'score=7\npad\n', { subject: 'lower' });
   assert.equal(round(root, better).out, `ROW ${better} 7 keep best=7`);
   assert.equal(runCount(root), 1);
-  const worse = commitEdit(root, 'score=9\npad\n', 'src/x.txt', 'higher');
+  const worse = commitEdit(root, 'score=9\npad\n', { subject: 'higher' });
   assert.equal(round(root, worse).out, `ROW ${worse} 9 discard best=7`);
   assert.equal(runCount(root), 2);
-  const tie = commitEdit(root, 'score=7\n', 'src/x.txt', 'shorter');
+  const tie = commitEdit(root, 'score=7\n', { subject: 'shorter' });
   assert.equal(round(root, tie).out, `ROW ${tie} 7 keep best=7`);
   assert.equal(runCount(root), 3);
   assert.deepEqual(rows(root).slice(-3).map((line) => line.split('\t').slice(1).join(' ')), ['7 keep lines=+1/-1; lower', '9 discard lines=+1/-1; higher', '7 keep lines=+0/-1; shorter']);
@@ -246,7 +246,7 @@ test('the kept commit\'s samples become the next baseline', () => {
 
 test('a state with no stored samples falls back to the kept score and reruns once for variance', () => {
   const root = setup({ command: 'echo run >> runs.log; cat src/x.txt', baseline: null });
-  const commit = commitEdit(root, 'score=7\n', 'src/x.txt', 'lower');
+  const commit = commitEdit(root, 'score=7\n', { subject: 'lower' });
   assert.equal(round(root, commit).out, `ROW ${commit} 7 keep best=7`);
   assert.equal(runCount(root), 2);
   assert.equal(rows(root).at(-1), `${commit}\t7\tkeep\tn=2 se=0 lo=3 hi=3 aborted=0 lines=+1/-2; lower`);
@@ -267,7 +267,7 @@ test('ITEM lines pair the candidate with the kept commit per item and decide on 
 test('a run with no score is left out and counted as aborted, the next valid run decides', () => {
   const root = setup({ command: SEQUENCE });
   sequence(root, ['no score here\n', 'score=7\n']);
-  const commit = commitEdit(root, 'x\n', 'src/x.txt', 'retry');
+  const commit = commitEdit(root, 'x\n', { subject: 'retry' });
   assert.equal(round(root, commit).out, `ROW ${commit} 7 keep best=7`);
   assert.equal(runCount(root), 2);
   assert.equal(rows(root).at(-1), `${commit}\t7\tkeep\tn=1 se=0 lo=3 hi=3 aborted=1 lines=+1/-2; retry`);
@@ -294,13 +294,13 @@ test('every round score run gets the stored seed as EXO_SEED', () => {
 test('a candidate that is not exactly one commit on the kept commit is refused unscored', () => {
   const root = setup({ command: 'echo run >> runs.log; cat src/x.txt' });
   const base = git(root, 'rev-parse', '--short', 'HEAD');
-  commitEdit(root, 'score=8\n', 'src/x.txt', 'first');
-  const two = commitEdit(root, 'score=7\n', 'src/x.txt', 'second');
+  commitEdit(root, 'score=8\n', { subject: 'first' });
+  const two = commitEdit(root, 'score=7\n', { subject: 'second' });
   assert.equal(round(root, two).out, `ROW ${two} - not-one-commit best=10`);
   assert.match(rows(root).at(-1), new RegExp(`\t-\tnot-one-commit\t2 commits on ${base}, want one; second$`));
   assert.equal(round(root, base).out, `ROW ${base} - not-one-commit best=10`);
   git(root, 'checkout', '-q', '--orphan', 'other');
-  const stray = commitEdit(root, 'score=1\n', 'src/x.txt', 'stray');
+  const stray = commitEdit(root, 'score=1\n', { subject: 'stray' });
   git(root, 'checkout', '-q', base);
   assert.equal(round(root, stray).out, `ROW ${stray} - not-one-commit best=10`);
   assert.match(rows(root).at(-1), new RegExp(`not on ${base}, want one`));

@@ -12,7 +12,7 @@ const attempt = { task: 3, last: 'Task 3: BLOCKED', log: '/tmp/run/land-task-3.l
 
 test('the retry note carries the ruled-out record of the failed attempt', () => {
   const dir = root();
-  appendRuledOut(dir, 3, 'a change to src/a.js', 'proof stayed red');
+  appendRuledOut(dir, 3, { tried: 'a change to src/a.js', because: 'proof stayed red' });
   const note = failedAttemptNote({ root: dir, ...attempt, proofEnd: 'proof stayed red' });
   assert.match(note, /did not land task 3\. Its last result line: Task 3: BLOCKED/);
   assert.ok(lines(note).includes('Ruled out for task 3 (take none of these again):'));

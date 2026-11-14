@@ -21,8 +21,7 @@ Goal: resolve every conflict with a passing check, without a tag or a strategy f
 
 ## Validate before the push
 
-- A failing check here blocks the push: fix it or report it, and do not push past it.
-- Before the push, run the project's own check, compile, lint and relevant tests.
+- Before the push, run the project's own check, compile, lint and relevant tests; fix a failure or report it, and do not push past it.
 
 ## Report
 

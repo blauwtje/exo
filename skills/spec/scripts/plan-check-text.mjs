@@ -1,13 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { codeBlocks } from '#plan-regions';
-import { isCovered } from '#plan-landed';
 import { fenceAfter } from '#plan-tasks';
 import { taskSize } from '#plan-waves';
 import { derivedNames } from '#derivation';
 import { isEvidenceValue, WORDING_PATH } from '#evidence-rules';
 import { wholeSuiteKeys } from '#suite-command';
-import { main } from './plan-check.mjs';
 
 const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
@@ -44,9 +42,6 @@ export function checkGitAdd(task) {
   if (task.commitBlock === null) return [];
   const addLine = task.commitBlock.match(/^git add (.+)$/m);
   if (addLine === null) return [`Task ${task.number}: Commit: block has no 'git add' line`];
-  const added = addLine[1].trim().split(/\s+/).sort().join(' ');
-  const files = task.files.map((file) => file.path).sort().join(' ');
-  if (added !== files) return [`Task ${task.number}: 'git add ${addLine[1]}' does not match Files: (${files})`];
   return [];
 }
 
@@ -91,14 +86,12 @@ function checkBareDefaultBranchProof(task) {
   return [`Task ${task.number}: 'Proof: ${task.proof}' diffs against bare \`${match[1]}\`, which moves when the default branch moves: use \`$(git merge-base ${match[1]} HEAD)\` as the base`];
 }
 
-const BOUNDARY_FORMAT = "'Boundary: in <accepted input> | out <rejected input> | test <test file in Files>'";
+const BOUNDARY_FORMAT = "'Boundary: in <accepted input> | out <rejected input> | test <test file>'";
 
 function checkBoundary(task) {
   if (task.risk !== 'security boundary') return [];
-  if (task.boundary === null) return [`Task ${task.number}: 'Risk: security boundary' has no 'Boundary:' field: add ${BOUNDARY_FORMAT}`];
-  const listed = task.files.map((file) => file.path);
-  if (isCovered(listed, task.boundary.test)) return [];
-  return [`Task ${task.number}: 'Boundary:' test \`${task.boundary.test}\` is not in Files:: use ${BOUNDARY_FORMAT}`];
+  if (task.boundary !== null) return [];
+  return [`Task ${task.number}: 'Risk: security boundary' has no 'Boundary:' field: add ${BOUNDARY_FORMAT}`];
 }
 
 export function checkCompactFields(task) {

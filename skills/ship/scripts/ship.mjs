@@ -151,7 +151,7 @@ function printRouteMenu() {
 
 function printMenu(menu, asked) {
   if (asked && inRun()) {
-    recordDecision('ship', 'local', 'a run never asks which route ships');
+    recordDecision({ source: 'ship', choice: 'local', reason: 'a run never asks which route ships' });
     console.log('route: local (run)');
     return;
   }
@@ -225,6 +225,21 @@ function confirmMerge(number, url) {
   return `${data.url} merged`;
 }
 
+function mergeOne(number) {
+  const pullRequest = pullRequestView(number);
+  runGate(number, pullRequest.url);
+  mergePullRequest(number, 'squash', pullRequest.url);
+  console.log(confirmMerge(number, pullRequest.url));
+  restackChildren(pullRequest.headRefName, originDefaultBranch(process.cwd()));
+  return pullRequest.headRefName;
+}
+
+function reportStepError(error, number) {
+  if (!(error instanceof StepError)) throw error;
+  console.log(`${error.subject ?? `#${number}`} stopped ${error.step} ${error.message}`);
+  return error.code === DIRTY_EXIT ? DIRTY_EXIT : 1;
+}
+
 function runMergeList(numbers) {
   process.stderr.write(`ship: order ${numbers.join(' ')}\n`);
   const order = runSibling(SHIP_GATE, ['--order', ...numbers]);
@@ -238,16 +253,9 @@ function runMergeList(numbers) {
   const merged = [];
   for (const number of order.line.split(' ')) {
     try {
-      const pullRequest = pullRequestView(number);
-      runGate(number, pullRequest.url);
-      mergePullRequest(number, 'squash', pullRequest.url);
-      console.log(confirmMerge(number, pullRequest.url));
-      restackChildren(pullRequest.headRefName, originDefaultBranch(process.cwd()));
-      merged.push(pullRequest.headRefName);
+      merged.push(mergeOne(number));
     } catch (error) {
-      if (!(error instanceof StepError)) throw error;
-      console.log(`${error.subject ?? `#${number}`} stopped ${error.step} ${error.message}`);
-      exitCode = Math.max(exitCode, error.code === DIRTY_EXIT ? DIRTY_EXIT : 1);
+      exitCode = Math.max(exitCode, reportStepError(error, number));
     }
   }
   if (merged.length > 0) console.log(returnToDefault({ base: originDefaultBranch(process.cwd()), merged }).line);

@@ -11,9 +11,7 @@ A pressure scenario tempts the model into the mistake the skill guards against, 
 
 ## When a case needs pressure
 
-- Start every case as the ordinary task, because a mistake seen in a real run reappears without a push.
-- Add pressure only when the run without the skill passes the ordinary task, because pressure supplies the temptation the task lacks.
-- Add no pressure for a default tendency seen in a real run, since it proves nothing and risks a refusal.
+- Start every case as the ordinary task and add pressure only when the run without the skill passes it; a default tendency seen in a real run needs none, since pressure on it proves nothing and risks a refusal.
 
 ## Sources of pressure
 

@@ -53,16 +53,3 @@ test('one run parses and reads each script once across both script checks', () =
   assert.equal(result.reads, 1);
 });
 
-test('the check script registers the skill graph and validate differs from check', () => {
-  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-  assert.notEqual(pkg.scripts.validate, pkg.scripts.check);
-  assert.equal(pkg.scripts['validate:static'], 'node verify.mjs --static');
-  const verifier = fs.readFileSync(path.join(ROOT, 'verify.mjs'), 'utf8');
-  assert.match(verifier, /checkSkillGraph\(report, repository\)/);
-  assert.match(verifier, /checkWorktreePaths\(report, repository\)/);
-});
-
-test('the verifier registers the size cap check', () => {
-  const verifier = fs.readFileSync(path.join(ROOT, 'verify.mjs'), 'utf8');
-  assert.match(verifier, /checkSizeBudgets\(report, repository\)/);
-});

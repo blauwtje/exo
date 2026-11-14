@@ -69,13 +69,13 @@ function blockedPage(reason, runDir, url) {
   return new BlockedPage(reason, runDir, url);
 }
 
-async function routed(route, row, context, runDir) {
+async function routed(route, row, context) {
   try {
     return { text: await route.fetchText(row.url, context), via: route.name };
   } catch (error) {
     if (!(error instanceof BlockedRoute)) throw error;
     const reason = /not public/.test(error.message) ? 'not-public' : error.message;
-    throw blockedPage(reason, runDir, row.url);
+    throw blockedPage(reason, context.stateDir, row.url);
   }
 }
 
@@ -101,7 +101,7 @@ export async function fetchPage(url, options) {
   if (fs.existsSync(file)) return { ...row, file, cached: true };
   const context = { fetchImpl, gate, render, stateDir: runDir };
   const route = pageRoute(url);
-  const found = route ? await routed(route, { ...row, url }, context, runDir) : await direct(row, context, runDir);
+  const found = route ? await routed(route, { ...row, url }, context) : await direct(row, context, runDir);
   if (found.text === '') throw blockedPage('empty', runDir, row.url);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, found.text.endsWith('\n') ? found.text : `${found.text}\n`);

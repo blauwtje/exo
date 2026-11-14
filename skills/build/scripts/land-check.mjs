@@ -36,17 +36,17 @@ function checkTaskLocked({ planText, number, root, reportText, reportPath, planP
   const warning = refuseTogether(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }), reportText, reportPath });
   const frame = frameOf(plan.frame);
   const warnLines = runPreCommitGates(task, frame, root);
-  const gateLine = warnLines + gateCheckedOnCandidate(plan, task, frame, { root, planId });
+  const gateLine = warnLines + gateCheckedOnCandidate({ plan, task, frame, root, planId });
   const report = `Report OK: Task ${number}\n`;
   writeCheckStamp(root, number, report);
   return `${warning}${gateLine}${report}`;
 }
 
-function gateCheckedOnCandidate(plan, task, frame, { root, planId }) {
+function gateCheckedOnCandidate({ plan, task, frame, root, planId }) {
   if (frame.landGate === null || frame.landGate === 'none') return '';
   stageOutside(root, refreshedBehaviour(root));
-  const candidate = commitCandidate(commitBlockOf(plan, task.number, planId, signatureChanges(task, root), root), root, task, planId);
-  const gateLine = gateCandidate(frame, root, gateEnvOf(plan, task, root, planId), candidate);
+  const candidate = commitCandidate({ block: commitBlockOf({ plan, number: task.number, planId, signatures: signatureChanges(task, root), root }), root, task, planId });
+  const gateLine = gateCandidate({ frame, root, gateEnv: gateEnvOf({ plan, task, root, planId }), candidate });
   if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${candidate.candidate.slice(0, 7)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   return gateLine;
 }

@@ -1,8 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
-import { coversCompanion, decisionsPathOf, isCovered, isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
-import { unfinishedMergeNote } from '#merge-state';
+import { decisionsPathOf, isCovered, isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { addedPathspecs } from './land-signatures.mjs';
 
@@ -40,12 +39,11 @@ export function changedPaths(root, planPath) {
     .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
-export function unplannedPaths(task, { root, planPath, siblingWork = () => false }) {
-  const entries = task.files.map((file) => file.path);
-  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !coversCompanion(entries, changed) && !siblingWork(changed));
+export function landablePaths({ root, planPath, siblingWork }) {
+  return changedPaths(root, planPath).filter((changed) => !siblingWork(changed));
 }
 
-function leftForSiblingWarning(task, { root, planPath, siblingWork }) {
+export function leftForSiblingWarning(task, { root, planPath, siblingWork }) {
   const entries = task.files.map((file) => file.path);
   return changedPaths(root, planPath)
     .filter((changed) => !isCovered(entries, changed) && siblingWork(changed))
@@ -54,17 +52,6 @@ function leftForSiblingWarning(task, { root, planPath, siblingWork }) {
       return owner === undefined ? [] : [`[WARN] Task ${task.number} left \`${changed}\` for open Task ${owner}\n`];
     })
     .join('');
-}
-
-export function outsideFilesWarning(task, options) {
-  const unplanned = unplannedPaths(task, options);
-  if (unplanned.length === 0) return options.siblingWork === undefined ? '' : leftForSiblingWarning(task, options);
-  const unfinished = unfinishedMergeNote(options.root);
-  const quote = (files) => files.map((file) => `\`${file}\``).join(', ');
-  const kept = unplanned.filter(isProtectedPath);
-  const left = kept.length === 0 ? '' : `; not committed: ${quote(kept)}; add it to Files or give it its own task`;
-  const outside = `[WARN] Task ${task.number} changed a path outside Files: ${quote(unplanned)}${left}${unfinished === null ? '' : `; ${unfinished}`}\n`;
-  return options.siblingWork === undefined ? outside : outside + leftForSiblingWarning(task, options);
 }
 
 export function siblingWorkOf(plan, task, { root, planPath, landing }) {

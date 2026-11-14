@@ -4,6 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { checkStepReferences } from '../verify/checks/step-references.mjs';
 import { createRepository } from '../verify/repository.mjs';
+import { checkOutcome } from './check-outcome.mjs';
 import { tempDir } from './harness.mjs';
 
 const SKILL = '# Loop\n\n1. **Reproduce.**\n2. **Isolate.**\n3. **Fix.**\n4. **Retain.**\n';
@@ -14,9 +15,7 @@ function run(promptText) {
   fs.mkdirSync(folder, { recursive: true });
   fs.writeFileSync(path.join(folder, 'SKILL.md'), SKILL);
   fs.writeFileSync(path.join(folder, 'fixer-prompt.md'), promptText);
-  const results = [];
-  checkStepReferences({ assert: (ok, name, pass, fail) => results.push({ ok, detail: ok ? pass : fail }) }, createRepository(root));
-  return results[0];
+  return checkOutcome(checkStepReferences, createRepository(root));
 }
 
 const load = 'Load the `exo:find-cause` skill and run only';

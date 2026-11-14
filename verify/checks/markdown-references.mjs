@@ -2,21 +2,25 @@
 import fs from 'node:fs';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 
+function isFile(path) {
+  return fs.existsSync(path) && fs.statSync(path).isFile();
+}
+
+function unresolvedTargets(file, repository) {
+  return markdownTargets(repository.text(file))
+    .filter((target) => {
+      const resolved = resolveMarkdownTarget(file, target);
+      return resolved !== null && !isFile(resolved);
+    })
+    .map((target) => `${repository.relative(file)}: '${target}' does not resolve`);
+}
+
 export function checkMarkdownReferences(report, repository) {
   const files = [repository.join('README.md'), ...repository.processFiles(), ...repository.promptFiles()];
-  const errors = [];
-  for (const file of files) {
-    for (const target of markdownTargets(repository.text(file))) {
-      const resolved = resolveMarkdownTarget(file, target);
-      if (resolved !== null && !(fs.existsSync(resolved) && fs.statSync(resolved).isFile())) {
-        errors.push(`${repository.relative(file)}: '${target}' does not resolve`);
-      }
-    }
-  }
+  const errors = files.flatMap((file) => unresolvedTargets(file, repository));
   report.assert(
     errors.length === 0,
     'Markdown references',
-    'all local Markdown references resolve',
-    errors.join('; ')
+    { pass: 'all local Markdown references resolve', fail: errors.join('; ') }
   );
 }

@@ -1,13 +1,17 @@
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf } from '#plan-frame';
-import { landedTasks, planIdOf, proofRecordPath } from '#plan-landed';
+import { landedTasks, planIdOf, proofRecordPath, decisionsPathOf } from '#plan-landed';
+import { BLOCK_TASK_LIMIT, isolatedCheckout, nextWave, planRoute, routeLine, waveLine } from '#plan-waves';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { appendRuledOut } from '../../../lib/ruled-out.mjs';
-import { forCaller } from '#script-output';
+import { forCaller, keepLines } from '#script-output';
 import { resolvePlanPath } from '#checkout';
-import { refreshProgress } from './next-task.mjs';
+import { chainedForCaller, refreshProgress } from './next-task.mjs';
+import { nextTaskReport } from './next-task-report.mjs';
 import { refusalTail } from '../../../lib/refusal-handlers.mjs';
 import { dockerHost } from '../../../lib/services.mjs';
 import { LandingError, PlanDriftError } from './land-errors.mjs';
@@ -16,16 +20,70 @@ import { parsePin, refuseOutsidePin, refuseMismatchedToplevel } from './land-pin
 import { fixLand } from './land-fix.mjs';
 import { quiet, quietText } from './land-proof.mjs';
 import { appendTimeline } from '../../../lib/timeline.mjs';
-import { appendDecisions, writeProofRecord } from './land-record.mjs';
 import { proofEvidenceOf } from './land-gate.mjs';
 import { refuseAlreadyLanded, refuseUnfinishedMerge, taskChangedPaths } from './land-refusals.mjs';
 import { checkTask, checkCodeRules } from './land-check.mjs';
-import { amendOutsideFiles } from './land-amend.mjs';
 import { taskOf, refuseBeforeProof, proveTask } from './land-prove.mjs';
 import { clearStaleCandidate } from './land-candidate.mjs';
 import { stageCandidate, coverOrDrop, promoteAndCommit } from './land-stage.mjs';
-import { landingReport, landingForCaller, withNext } from './land-output.mjs';
 import { foldCheckpoints, reportFlagOf, reportSourceOf } from './land-stopped.mjs';
+
+const CHOICE_LINE = /^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
+
+function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
+  if (planPath === undefined || reportText === null || taskCount <= BLOCK_TASK_LIMIT) return;
+  const choices = reportText.replace(/\r\n/g, '\n').split('\n').flatMap((line) => {
+    const match = line.match(CHOICE_LINE);
+    return match === null ? [] : [`Task ${number} ${sha}: ${match[1]}\n`];
+  });
+  if (choices.length > 0) fs.appendFileSync(decisionsPathOf(planPath), choices.join(''));
+}
+
+
+const PASS_SUMMARY_LINE = /^(?:ℹ |# )?pass \d+\b|\b\d+ (?:passing|passed)\b|^Tests:/;
+const TIMING_LINE = /^(?:ℹ |# )?duration_ms\b|^(?:Time|Duration|Done in)\b/;
+
+function proofOutcomeOf(tail) {
+  const lines = tail.map((line) => line.trim()).filter((line) => !TIMING_LINE.test(line));
+  const outcome = lines.findLast((line) => PASS_SUMMARY_LINE.test(line)) ?? lines.at(-1) ?? 'no output';
+  return `exit 0, ${outcome}`;
+}
+
+function writeProofRecord({ root, planId, number, proofs, redLine }) {
+  const lines = [...proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${proofOutcomeOf(tail)}\n`), `${redLine}\n`];
+  const record = proofRecordPath(root, planId, number);
+  fs.mkdirSync(path.dirname(record), { recursive: true });
+  fs.writeFileSync(record, lines.join(''));
+}
+
+function nextLine(wave, planPath, root) {
+  if (wave.length === 0) return waveLine(wave);
+  const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'next-task.mjs');
+  return `Then: node "${script}" --block --plan "${planPath}" --root "${root}"`;
+}
+
+
+function landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine }) {
+  const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (${proofOutcomeOf(tail)})`, ...tail].join('\n')}\n`).join('');
+  const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
+  const route = planRoute(plan.tasks);
+  const wave = nextWave(plan.tasks, landed, { worktreeSetup: route.route === 'inline' || isolatedCheckout(root, frame.repository) ? null : frame.worktreeSetup, parallel: frame.parallel });
+  return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${nextLine(wave, planPath, root)}\n`;
+}
+
+
+const PROOF_TAIL = /^ {2}/;
+const NEXT_REPEATS = /^(?:Landed|Route|Then): /;
+
+export function landingForCaller(text, { followed = false } = {}) {
+  return keepLines(text, (line) => !PROOF_TAIL.test(line) && !(followed && NEXT_REPEATS.test(line)));
+}
+
+function withNext(output, { planPath, planText, root }) {
+  const kept = output.split('\n').filter((line) => !line.startsWith('Then: ')).join('\n');
+  const next = nextTaskReport({ planPath, planText, root, open: true });
+  return { full: `${kept}${next}`, shown: `${landingForCaller(output, { followed: true })}${chainedForCaller(next)}` };
+}
 
 export function landTask({ planText, number, root, reportText = null, reportPath = null, planPath, pin = null, docker = dockerHost }) {
   refuseOutsidePin(pin, planPath, number);
@@ -46,24 +104,22 @@ function ruledOutOnFailure(root, number, land) {
 function recordRuledOut(root, number, error) {
   const paths = taskChangedPaths(root).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
   const reason = error.message.split('\n').find((line) => line.trim() !== '') ?? error.message;
-  appendRuledOut(root, number, paths.length === 0 ? 'no file change' : `a change to ${paths.join(', ')}`, reason);
+  appendRuledOut(root, number, { tried: paths.length === 0 ? 'no file change' : `a change to ${paths.join(', ')}`, because: reason });
 }
 
 function landTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin, docker }) {
   const early = parsePlan(planText);
-  refuseAlreadyLanded(early, taskOf(early, number), root, planIdOf(planPath));
-  const amended = amendOutsideFiles({ planText, number, context: { root, planPath, docker, reportText, reportPath, pendingEvidence: proofEvidenceOf(parsePlan(planText), root, planIdOf(planPath)) } });
-  const report = landAmended({ planText: amended.planText, number, root, reportText, reportPath, planPath, pin, docker });
-  return `${amended.lines.map((line) => `${line}\n`).join('')}${report}`;
+  refuseAlreadyLanded(early, taskOf(early, number), { root, planId: planIdOf(planPath) });
+  return landPlanned({ planText, number, root, reportText, reportPath, planPath, pin, docker });
 }
 
-function landAmended({ planText, number, root, reportText, reportPath, planPath, pin, docker }) {
+function landPlanned({ planText, number, root, reportText, reportPath, planPath, pin, docker }) {
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
   clearStaleCandidate(root, planId);
   foldCheckpoints(root);
   const task = taskOf(plan, number);
-  refuseAlreadyLanded(plan, task, root, planId);
+  refuseAlreadyLanded(plan, task, { root, planId });
   const { block, warning: filesWarning, outside } = refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath });
   const pendingEvidence = proofEvidenceOf(plan, root, planId);
   const { proofs, pending, redLine, warning: redWarning } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
@@ -74,7 +130,7 @@ function landAmended({ planText, number, root, reportText, reportPath, planPath,
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   writeProofRecord({ root, planId, number, proofs, redLine });
-  appendTimeline(root, 'landed', number);
+  appendTimeline(root, { event: 'landed', task: number });
   return filesWarning + redWarning + landingReport({ plan, frame, root, planPath, number, sha, landed, proofs, pending, gateLine });
 }
 

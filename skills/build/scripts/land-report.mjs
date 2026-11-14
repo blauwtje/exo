@@ -77,7 +77,7 @@ export function mcpProofOf(task) {
   return mcpToolCall(task.proof.replace(/^`(.*)`$/, '$1'));
 }
 
-export function deferredProofOf(task, call, reportText, reportPath) {
+export function deferredProofOf(task, call, { reportText, reportPath }) {
   const lines = reportLinesOf(task, reportText, reportPath);
   const written = provedCommand(task, lines, reportPath);
   const outcomes = [...new Set([written, call])].flatMap((command) => outcomesOf(command, lines).map((entry) => ({ ...entry, command })));

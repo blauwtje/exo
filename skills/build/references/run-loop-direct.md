@@ -14,5 +14,4 @@
 - `PLAN DRIFT` follows its printed `Then:` line from next-task or land-task. The `plan drift` line hands the report path, unread, to `../drift-repairer-prompt.md`, and the `input unreachable` line stops the run `BLOCKED` with that path and no repair delegate.
 - Build return `BLOCKED input unreadable: <path>` stops the run `BLOCKED` with that path and no repair delegate, because no repair session can supply the input.
 - Any other land-task refusal reads the full diff. Any other line hands its report path, unread, to a repair delegate: `BLOCKED` or a failed `Run:` with no cause goes to `../bug-fixer-prompt.md`.
-- A second failure of one task stops the run `BLOCKED` with both reports and 2-3 options.
-- A land-task refusal other than `PLAN DRIFT` or a report refusal goes to a repair delegate the same way and reruns once. A second refusal stops likewise.
+- A land-task refusal other than `PLAN DRIFT` or a report refusal goes to a repair delegate the same way and reruns once. A second failure of one task, or a second such refusal, stops the run `BLOCKED` with both reports and 2-3 options.

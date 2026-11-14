@@ -12,7 +12,7 @@ export function headSha(root) {
   return head.status === 0 ? head.stdout.trim() : null;
 }
 
-export function moveHead(root, message, target, expected) {
+export function moveHead(root, message, { target, expected }) {
   const moved = spawnSync('git', ['-C', root, 'update-ref', '-m', message, 'HEAD', target, expected], { encoding: 'utf8' });
   return moved.status === 0;
 }

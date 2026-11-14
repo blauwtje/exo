@@ -19,16 +19,27 @@ const blockLimit = () => roundCap('wait') - 1;
 
 const lines = (text) => String(text ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
 
+function entryText(line) {
+  const entry = JSON.parse(line);
+  const content = entry.message?.role === 'assistant' || entry.type === 'assistant' ? entry.message?.content : null;
+  const text = Array.isArray(content) ? content.filter((part) => part.type === 'text').map((part) => part.text).join('\n') : content;
+  return typeof text === 'string' && text.trim() ? text : undefined;
+}
+
+function lastEntryText(lines) {
+  for (const line of lines.reverse()) {
+    const text = entryText(line);
+    if (text) return text;
+  }
+  return '';
+}
+
 function transcriptEnd(file) {
   try {
-    for (const line of fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).reverse()) {
-      const entry = JSON.parse(line);
-      const content = entry.message?.role === 'assistant' || entry.type === 'assistant' ? entry.message?.content : null;
-      const text = Array.isArray(content) ? content.filter((part) => part.type === 'text').map((part) => part.text).join('\n') : content;
-      if (typeof text === 'string' && text.trim()) return text;
-    }
-  } catch { }
-  return '';
+    return lastEntryText(fs.readFileSync(file, 'utf8').split('\n').filter(Boolean));
+  } catch {
+    return '';
+  }
 }
 
 function endText(input) {
@@ -46,23 +57,27 @@ function missingStatus(line, task, text) {
   return task ? !new RegExp(`^Task ${task.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: (GREEN|LANDED|BLOCKED|PLAN DRIFT|FAIL)\\b`).test(line) : openQuestion(text);
 }
 
+function noteBlock(dir, session, blockedNote) {
+  const file = path.join(dir, 'blocks.json');
+  const counts = readJsonOrNull(file) ?? {};
+  const count = Number.isInteger(counts[session]) ? counts[session] : 0;
+  if (count >= blockLimit()) {
+    fs.writeFileSync(path.join(dir, 'blocked'), blockedNote);
+    return count;
+  }
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ ...counts, [session]: count + 1 }));
+  return count;
+}
+
 export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, task = env.EXO_RUN_REPAIR ? null : env.EXO_RUN_TASK?.split('/').pop() } = {}) {
   if (!inRun(env) || !dir || !input) return null;
   const asking = input.tool_name === 'AskUserQuestion' && input.hook_event_name !== 'Stop';
   const text = asking ? input.tool_input?.questions?.[0]?.question ?? input.tool_input?.question : endText(input);
   const line = lines(text).pop() ?? '';
   if (!asking && !missingStatus(line, task, text)) return null;
-  const file = path.join(dir, 'blocks.json');
-  const counts = readJsonOrNull(file) ?? {};
-  const session = String(input.session_id ?? '');
-  const count = Number.isInteger(counts[session]) ? counts[session] : 0;
+  const count = noteBlock(dir, String(input.session_id ?? ''), `Task ${task ?? ''}: BLOCKED ${line}\n`);
   const atLimit = count >= blockLimit();
-  if (atLimit) {
-    fs.writeFileSync(path.join(dir, 'blocked'), `Task ${task ?? ''}: BLOCKED ${line}\n`);
-  } else {
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify({ ...counts, [session]: count + 1 }));
-  }
   const record = `record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to ${path.join(dir, 'decisions.md')}`;
   const why = denyReason(count + 1 >= blockLimit() ? 'run-no-wait-final' : 'run-no-wait', record).replace('. Do instead: ', '.\nDo instead: ');
   if (asking) return rememberRefusal(input, { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } }, { guard: 'run-no-wait' });
@@ -73,5 +88,7 @@ if (isMain(import.meta.url) && !inSidecall()) {
   try {
     const input = JSON.parse(await readHookText());
     writeHookOutput(input, runNoWait(input), 'run-no-wait');
-  } catch { }
+  } catch {
+    process.exitCode = 0;
+  }
 }

@@ -8,7 +8,6 @@ Make every changed trust crossing explicit before it becomes an exploit path. Th
 
 - For each changed entry point, record `principal or source → validation and authorization → operation → resource or sink`.
 - Mark each arrow that crosses a process, tenant, network, filesystem, privilege, or confidentiality boundary.
-- A boundary with no changed arrow is out of scope.
 
 ## Countable checks
 
@@ -20,13 +19,7 @@ Each applicable numbered check needs one security-relevant negative test, becaus
 4. **Secrets.** When a secret, credential, token, or key is read, written, or transmitted, keep it out of logs, errors, telemetry, client bundles, diffs, and persisted fields the contract does not name. Test one failure path and inspect the emitted output for the secret value.
 5. **Trust boundaries.** For each marked arrow, name the check that runs before the first side effect and its rejection result. A caller-supplied "trusted" flag does not replace that check.
 6. **Path traversal.** When untrusted data selects a path, reject absolute paths, resolve against the allowed root, follow the repository's symlink policy, and assert the resolved path stays inside that root. Test `..`, an absolute path, and a symlink escape when symlinks are accepted.
-7. **SSRF.** When untrusted data selects a URL, host, redirect, or proxy destination, parse once and allow only the required schemes and ports. Test the initial URL and a redirect to a rejected address.
-8. **SSRF ranges.** Validate every resolved address and redirect, and reject loopback, link-local, private, and metadata-service ranges unless the feature names them.
-9. **Replay and rate abuse.** When repeating a request can create money movement, credentials, privilege changes, persisted records, deletion, or repository-defined expensive work, enforce an idempotency key, nonce and expiry, or rate limit at the authoritative boundary. Test a duplicate and one request beyond the documented limit.
-10. **Cryptography.** When behavior creates or verifies ciphertext, hashes, signatures, nonces, or keys, use the repository's established primitive and key source. Test invalid key or signature input, plus nonce or token reuse when the primitive requires uniqueness.
-11. **Payments and regulated data.** When changed behavior reads, writes, or transmits payment or regulated fields, list those fields, their destination, and the principal allowed access. Test one denied principal and confirm the logs omit the fields.
-
-## Judgment
-
-- Enforce resource ownership at the authoritative lookup, not inferred from a preceding UI or route check.
-- An observed rejection before the side effect outranks a reasoned claim that the path cannot occur.
+7. **SSRF.** When untrusted data selects a URL, host, redirect, or proxy destination, parse once and allow only the required schemes and ports; validate every resolved address and redirect and reject loopback, link-local, private, and metadata-service ranges unless the feature names them. Test the initial URL and a redirect to a rejected address.
+8. **Replay and rate abuse.** When repeating a request can create money movement, credentials, privilege changes, persisted records, deletion, or repository-defined expensive work, enforce an idempotency key, nonce and expiry, or rate limit at the authoritative boundary. Test a duplicate and one request beyond the documented limit.
+9. **Cryptography.** When behavior creates or verifies ciphertext, hashes, signatures, nonces, or keys, use the repository's established primitive and key source. Test invalid key or signature input, plus nonce or token reuse when the primitive requires uniqueness.
+10. **Payments and regulated data.** When changed behavior reads, writes, or transmits payment or regulated fields, list those fields, their destination, and the principal allowed access. Test one denied principal and confirm the logs omit the fields.

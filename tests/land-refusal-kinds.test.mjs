@@ -63,13 +63,13 @@ test('an unfinished squash merge is refused before any commit, with no exo-retry
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
 });
 
-test('every refusal kind has a retry field, and only the four repairable kinds are retryable', () => {
+test('every refusal kind has a retry field, and only the three repairable kinds are retryable', () => {
   for (const [kind, row] of Object.entries(REFUSAL_HANDLERS)) {
     assert.equal(typeof row.retry, 'boolean', kind);
     assert.equal(isRetryable(kind), row.retry, kind);
   }
   const retryable = Object.keys(REFUSAL_HANDLERS).filter(isRetryable).sort();
-  assert.deepEqual(retryable, ['outside Files', 'plan drift', 'proof failed', 'report missing']);
+  assert.deepEqual(retryable, ['plan drift', 'proof failed', 'report missing']);
 });
 
 test('every LandingError kind thrown by the land path has a row in the table', () => {

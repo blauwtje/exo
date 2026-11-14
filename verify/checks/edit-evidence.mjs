@@ -19,19 +19,21 @@ function changesSince(root) {
   return { changed: lines(changed), added: new Set(lines(added)), log: log.stdout };
 }
 
-function evidenceProblems(log, results, needOne) {
-  const problems = [];
-  let found = 0;
-  for (const entry of log.split('\x1e')) {
+function evidenceTrailers(log) {
+  return log.split('\x1e').flatMap((entry) => {
     const [sha, body = ''] = entry.replace(/^\n/, '').split('\0');
-    for (const match of body.matchAll(/^Evidence:[ \t]*(.*)$/gm)) {
-      found += 1;
-      const value = match[1].trim();
-      const why = badTrailer(value, results);
-      if (why !== '') problems.push(`${sha} Evidence: ${value || '(empty)'} ${why}`);
-    }
+    return [...body.matchAll(/^Evidence:[ \t]*(.*)$/gm)].map((match) => ({ sha, value: match[1].trim() }));
+  });
+}
+
+function evidenceProblems(log, results, needOne) {
+  const trailers = evidenceTrailers(log);
+  const problems = [];
+  for (const { sha, value } of trailers) {
+    const why = badTrailer(value, results);
+    if (why !== '') problems.push(`${sha} Evidence: ${value || '(empty)'} ${why}`);
   }
-  if (needOne && found === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
+  if (needOne && trailers.length === 0) problems.push('no commit since the merge base has an `Evidence:` trailer');
   return problems;
 }
 
@@ -45,13 +47,12 @@ export function checkEditEvidence(report, repository, { env = process.env } = {}
   const pending = (env.EXO_PENDING_EVIDENCE ?? '').trim() !== '';
   const problems = evidenceProblems(since.log, edited.length > 0 ? since.added : null, edited.length > 0 && !pending);
   if (edited.length === 0) {
-    report.assert(problems.length === 0, NAME, 'no wording file changed and every Evidence trailer in the range is valid', `${problems.join('; ')}; fix the \`Evidence:\` line`);
+    report.assert(problems.length === 0, NAME, { pass: 'no wording file changed and every Evidence trailer in the range is valid', fail: `${problems.join('; ')}; fix the \`Evidence:\` line` });
     return;
   }
   report.assert(
     problems.length === 0,
     NAME,
-    `${edited.length} wording file(s) changed and the range carries a valid Evidence trailer`,
-    `${problems.join('; ')} (changed: ${edited.join(', ')}); add \`Evidence: benchmarks/results/<file>\` or \`Evidence: none (<reason>)\``
+    { pass: `${edited.length} wording file(s) changed and the range carries a valid Evidence trailer`, fail: `${problems.join('; ')} (changed: ${edited.join(', ')}); add \`Evidence: benchmarks/results/<file>\` or \`Evidence: none (<reason>)\`` }
   );
 }

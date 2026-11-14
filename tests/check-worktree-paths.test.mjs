@@ -14,7 +14,7 @@ function detail(files) {
     fs.writeFileSync(path.join(root, name), text);
   }
   const messages = [];
-  const report = { assert: (ok, ...texts) => messages.push(ok ? '' : texts.at(-1)) };
+  const report = { assert: (ok, name, details) => messages.push(ok ? '' : details.fail) };
   checkWorktreePaths(report, createRepository(root));
   return messages.join('');
 }

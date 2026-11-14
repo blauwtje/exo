@@ -32,7 +32,6 @@ Given a TikTok, YouTube, Instagram or X profile, a YouTube channel or a playlist
 1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]` with every video in this one call, or `--from <file>` or `--from -` for the `list.mjs` output. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
    - Run a batch of two or more videos in the background, pass its last line on unchanged, and on exit 75 report the open video count and the restart command from that line.
    - Pass all videos in one batch call, which runs them one by one and skips the finished ones (`--force` redoes them); do not spread watch over parallel agents or parallel Bash calls.
-   - For a list too long for one call, run it through `lib/map.mjs` `mapItems` with a spend cap.
    - Add `--lang <code>` only when the user names a language, because it picks a listed track, not a machine translation, and names the spoken language on the speech route.
    - Add `--model <name or ggml file path>` only when the user names a whisper model.
 2. The script reads captions itself, runs yt-dlp only when it is already on PATH and does not download it, and transcribes a video with no captions by speech through yt-dlp, fetching whisper.node, a ggml model and a decoder itself. When a line says `missing tool` for yt-dlp, relay its install command and ask the user before installing anything; relay any other failure line as it is.

@@ -1,6 +1,6 @@
 # Run a plan
 
-Build the plan the user invokes run-plan on through `exo:build`, each task landed by agents in this session. The enemy is a session that starts the headless scripts itself, which refuse inside a session. The overcorrection is a session that builds tasks itself beside the build loop.
+Build the plan the user invokes run-plan on through `exo:build`, each task landed by agents in this session.
 
 ## Run
 
