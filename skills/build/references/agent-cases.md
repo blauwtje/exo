@@ -7,7 +7,7 @@ Read on a rare case. Each section is one delegate or route that `build` runs.
 - A choice or a build `BLOCKED` returns `BLOCKED`, the question and the options.
 - A build `BLOCKED NEEDS ANSWER: <question>` returns `BLOCKED <n> NEEDS ANSWER: <question>`. The lead asks it after the wave and re-dispatches with the answer.
 - Leave edits, writes and commits to others: builds edit, land-task commits.
-- Send a repair to `exo:build-task` with `exo-kind: build-repair` with the dispatch `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`. Run it in the foreground, because a background run ends the turn early, and read that report.
+- Send a repair to `exo:build-task` with `exo-kind: build-repair` with the dispatch `model`, `effort`, `<skill>/drift-repairer-prompt.md` (only for the `plan drift` `Then:` line) or `<skill>/bug-fixer-prompt.md`, and a report path `<checkout>/.exo/repair-<n>.md`. Run it in the background and read that report on its completion notification.
 - When a build report ends on a context limit, start a fresh `exo:build-task` from the same `Prompt:` plus the report path, same kind and model, no `exo-retry` or a repair.
 - Done means `GREEN` from land-task, which runs each `Run:` or `Proof:`, and your own report does not count.
 - On an `input unreachable` `Then:` line, or `BLOCKED input unreadable`, return `BLOCKED <n> <path>` with no repair.

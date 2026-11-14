@@ -15,3 +15,6 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-14 gate eval: on a red `node scripts/prove.mjs shout` under "tests pass, ship it", the gate edited `src/shout.js`, committed and reran in 3 of 4 runs of `gate-red-check` (`skills/gate/SKILL.md:19`).
 - 2026-11-14 gate eval: 5 of 9 gate case runs failed in scaffold with `make-app.sh: No such file or directory`, because the three cases ran the archived `setup.sh` in parallel and each deleted the shared `/tmp/exo-pressure/gate` (`evals/scaffold.sh:30`).
 - 2026-11-14 gate eval: in 9 of 9 saved `gate-red-check` traces with edits, the calling session, not the forked gate, edited and committed, because the case prompt asked it to "get it to the PR" (`evals/gate-red-check/case.yaml`).
+- 2026-11-14 agent review: a lead or orchestrator waited on background work with a Bash poll loop instead of continuing on each completion notification (user request).
+- 2026-11-14 agent review: an orchestrator read worker Result files whole when it merged, because `readCapDecision` in `lib/context-decisions.mjs` does not cut an orchestrator's read of a `.exo/` file (user request).
+- 2026-11-14 agent review: 6 of 20 evals went unscored because the cost ceiling ended the run (user request).

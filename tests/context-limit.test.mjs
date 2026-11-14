@@ -288,6 +288,13 @@ test('readCapDecision runs a Read with the largest limit that fits the room left
   assert.equal(readCapDecision({ ...caller, tool_input: { file_path: file, pages: '1' } }), null);
   assert.equal(readCapDecision({ tool_name: 'Read', tool_input: { file_path: file } }), null);
   assert.equal(readCapDecision({ ...roomCaller(1000), tool_input: { file_path: file } }), null, 'a Read with the whole room left runs as asked');
+  const resultFile = path.join(dir, '.exo', 'part', 'result.md');
+  fs.mkdirSync(path.dirname(resultFile), { recursive: true });
+  fs.writeFileSync(resultFile, `${'x'.repeat(99)}\n`.repeat(100));
+  const orchestrator = roomCaller(60000 - 2250, { agent_type: 'exo:orchestrator' });
+  assert.equal(readCapDecision({ ...orchestrator, tool_input: { file_path: resultFile } }), null, 'an orchestrator reads a worker Result file whole');
+  assert.ok(readCapDecision({ ...orchestrator, tool_input: { file_path: file } }).updatedInput, 'an orchestrator read outside .exo is still cut');
+  assert.ok(readCapDecision({ ...caller, tool_input: { file_path: resultFile } }).updatedInput, 'a worker read of a .exo file is still cut');
 });
 
 test('a Read whose single line is over the room left is not told to retry with limit 1', () => {

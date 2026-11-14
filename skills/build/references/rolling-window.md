@@ -1,6 +1,6 @@
 # Rolling window
 
-The lead starts the next ready task of its block when a foreground window returns and its slots land. Each slot is one task in worktree `worktreePath('<run>-task-<n>')`, per wave worktrees.
+The lead starts the next ready task of its block when a window returns and its slots land. Each slot is one task in worktree `worktreePath('<run>-task-<n>')`, per wave worktrees.
 
 1. **Baseline.** `next-task.mjs --open-slots` runs steps 1 and 2, and you run them by hand only after `Wave discarded:`. Before the first slot, write the run checkout's `git status --porcelain` once to `<root>/.exo/baseline.txt`.
 2. **Open a slot.**
@@ -21,10 +21,10 @@ The lead starts the next ready task of its block when a foreground window return
    - With no report still, land from the return text (`land-slot.mjs --report -`), handoff or checkpoint commit. With no report, commit or handoff after the resume the child is dead: keep its slot folder and name it in the return.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
-   - Send each window build, including a `Next:` build, to `exo:build-task`. Each call is foreground and returns after its report.
+   - Send each window build, including a `Next:` build, to `exo:build-task`. Each call runs in the background and its completion notification carries its report.
    - A landing's refill is in `land-slot.mjs`'s output, with slots opened. Otherwise run `next-task.mjs --in-flight <running task numbers, comma separated> --only <block>` and read its `Start: Task <n>[, Task <m>]` line.
    - On `Start: none` start no refill, land the returned slots, then return to step 1.
 8. **Wait.**
-   - Send every `Prompt:` in one message; each foreground call returns after its report.
+   - Send every `Prompt:` in one message; each completion notification carries its report.
    - Land each returned slot per step 3 at once, unless `Land all:` follows. Then land only once every build of the block returned.
    - Use no `sleep` loop, and land every returned report before the next dispatch.

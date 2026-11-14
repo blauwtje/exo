@@ -6,7 +6,7 @@ Route a `Design:` task by the direction state `next-task.mjs --block` prints on 
 
 This session reads the state only, and leaves the plan's `## Visual direction` and the task unread:
 
-- **`direction named`.** Dispatch one `general-purpose` delegate whose prompt opens with `exo-kind: hardest` and carries `Reads:` and `Worktree: <abs path>` lines, silently with `run_in_background: false`; keep the turn open until it returns, then step 6.
+- **`direction named`.** Dispatch one `general-purpose` delegate whose prompt opens with `exo-kind: hardest` and carries `Reads:` and `Worktree: <abs path>` lines, silently with `run_in_background: true`; continue on its completion notification, then step 6.
   - Name plan path, branch, checkout, `<skill>` (`${CLAUDE_SKILL_DIR}` resolved), the task number, and `<skill>/references/design-tasks.md` `## The delegate` as its steps.
   - Call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.
   - Its one-line return routes as a unit's does.

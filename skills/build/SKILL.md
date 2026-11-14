@@ -16,7 +16,7 @@ Build lands a plan through a **unit** and the **tail** (step 7).
 2. **Leave the plan to the builds;** read only script output and build returns.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`; skip it once when `run started` printed a `Plan:` line. `Next: none` goes to step 7.
 4. **Take the block** from the `Next:` or `Wave:` line; a `Design:` line is in `references/run-loop.md`.
-5. **Dispatch the builds.** Send each task of the `Next:` or `Wave:` line to `exo:build-task` in one foreground message, silently; refills follow `references/rolling-window.md`.
+5. **Dispatch the builds.** Send each task of the `Next:` or `Wave:` line to `exo:build-task` in one background message, silently, and continue on each completion notification; refills follow `references/rolling-window.md`.
    - Build no task here.
    - Call no ScheduleWakeup, ListAgents, Monitor or sleep.
 6. **Route the return.** Each build returns one line; land a `GREEN` one with `land-task.mjs` (`land-slot.mjs` for a slot), then `next-task.mjs`, and follow each `Then:` line to step 3. This session edits no product code or plan.

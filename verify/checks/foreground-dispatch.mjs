@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const UNFORKED_BUILD_FOLDER = path.join('skills', 'build') + path.sep;
 const SCANNED = ['skills', 'agents', 'hooks', 'harnesses/codex/generated'];
 const TEXT_FILE = /\.(?:md|mjs|json)$/;
 const FOREGROUND = /\bforeground\b|run_in_background[`"']?\s*(?:[:=]|to|as)?\s*false\b|\bno `?run_in_background\b/i;
@@ -26,8 +25,7 @@ function isForegroundDispatch(line) {
   return FOREGROUND.test(line) && DISPATCH.test(line) && !SHELL.test(line);
 }
 
-function isSkipped(file, forked, repository) {
-  if (repository.relative(file).startsWith(UNFORKED_BUILD_FOLDER)) return true;
+function isSkipped(file, forked) {
   return forked.some((folder) => file.startsWith(folder));
 }
 
@@ -41,7 +39,7 @@ function flaggedLines(file, repository) {
 export function scanForegroundDispatches(repository) {
   const forked = forkedSkillFolders(repository);
   const files = SCANNED.flatMap((directory) => filesUnder(repository.join(directory)));
-  const scanned = files.filter((file) => !isSkipped(file, forked, repository));
+  const scanned = files.filter((file) => !isSkipped(file, forked));
   return { flagged: scanned.flatMap((file) => flaggedLines(file, repository)) };
 }
 

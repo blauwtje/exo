@@ -19,8 +19,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `save-session` lists the session corrections, checks note staleness with `git status --short` and reopens read ranges on resume.
 - The emphasis lint also scans agents, hooks and lib prompt text.
 - `npm run check` runs a shipped-text scan for credentials and override phrases.
-- `node benchmarks/lead-delegation.mjs` runs one session on a 5-component board refactor and passes when the lead starts at least 1 subagent and writes at most 2 files itself; `--dry-run` spends nothing, `--score <stream.jsonl>` scores a stored stream, and a run with a permission denial prints `VOID`.
-- `node benchmarks/lead-delegation.mjs --history` runs the session in two turns, pre-work first and the build second, scores only the second turn and prints the context size at its start.
 - A main session that writes its 3rd distinct file inline gets one note to hand the remaining writes to `exo:build`; subagent writes and `.exo/` paths are not counted, and `leadWriteNudge` in run.json `defaults` sets the count.
 - `adhd-score.mjs --prereg benchmarks/adhd/prereg.json` refuses a paired adhd run when a frozen file's hash changed or the planned cases fall below the cases the recorded spread needs, then runs the frozen cases, samples, arms, model and cap; the paired facts-kept count uses a t interval and prints `decided`, `no effect of 1` or `not decided`, and gate passes print on their own line.
 - `--rescore --log <quick record>` re-judges every stored answer of both arms with the current judge and no reply call, prints a projected judge cost and refuses over `--max-usd`; the paired record adds a `facts_share` interval (not preregistered).
@@ -63,7 +61,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `gate` is rebuilt small: one `verify.mjs` run of the plan's checks, one branch review by `review-branch`, and failures handed back to `build`; the journal, repair rounds, shards, probes and benchmark lines are gone.
 - The speed ledger records the plugin-arm cache hit rate gap (10.7 pp, n=22) as meeting its threshold, verdict `pass`, not `nog`.
 - `skills/spec/references/measured-goal.md` picks a setting only when `mde.mjs --scores` prints no `ceiling` line, and labels each failure agent fault or case fault; `skills/build/references/improve.md` labels the failing cases after 2 rounds without gain and lists case faults in the Stop report.
-- `node benchmarks/lead-delegation.mjs --history` has the first turn read 3 generated reference files, so the build turn starts at about 80k tokens of read history; a run that starts it under 50k prints `VOID`, and `--dry-run` prints the reference size and the floor.
 - The spec open-points step also checks the spec, brief and plan for contradicting statements, the find-cause skill reproduces as the reporter and races two fixers after failed rounds, and the run loop names `EXO_MAX_RUN_USD`.
 - `search.mjs --source reddit` reads live Reddit through an exo-owned logged-in browser session (`--login` sets it up) and drops the archive and RSS; a missing login prints one `blocked` line naming the fix.
 - The facts judge passes a fact ending in "is named" when the reply names that part in one or two words matching the name or the part in parentheses.
@@ -109,6 +106,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The `gate-red-check` eval case asks for the next step and to change nothing yet, so its "no file was changed" criterion grades the gate's stop instead of the calling session's own fix.
 - `evals/scaffold.sh` gives each scaffold run its own copy of the `/tmp/exo-pressure` fixture root, so parallel gate and spec case runs no longer delete each other's fixture.
+- An orchestrator reads a worker Result file `.exo/**/*.md` whole when it merges, because the intake bound no longer cuts that read for the coordinator role.
+- A lead now dispatches ready parts in the background and continues on each completion notification instead of waiting in the foreground or a Bash poll loop, while the orchestrator keeps its foreground wait; the foreground-dispatch check scans the build skill too.
 - `gate/scripts/verify.mjs` resolves `--plan` against `--root`, so the gate fork finds the plan from any folder.
 - The gate eval cases grade outcomes in the final message with a Sonnet judge, and the exact-wording `fail-line` and `reviewer` graders are removed.
 - The three `gate-*` eval cases grade the final message, so a correct gate run can pass and a rule break fails.
@@ -121,13 +120,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `build` names the owner of every write over 2 files: the build skill body, the no-spec route and the critic fix round each send it to `exo:build-task`, where only the design-ui reference said so before.
 - The lead write nudge counts the files the main session writes through Bash: a lead Bash call records the dirty working-tree files, and the next Bash, Write or Edit call adds the ones that changed. It stays a nudge and fires once.
 - A build request that states no size routes to `exo:build`: the session routing text now names a code restructure, a UI restyle or copy rewrite, a dependency major or swap, a security hardening and a change reaching every caller. Held-out build recall on the hook arm rose from 0.511 to 0.770 over 3 runs per prompt, with no false positive.
-- The `isolation-probe`, `lead-delegation-session`, `locate-recall`, `lean-gates` and `run` benchmarks remove their scratch folder with `removeScratch`, which retries while a child's descendants still write into it.
+- The `isolation-probe`, `locate-recall`, `lean-gates` and `run` benchmarks remove their scratch folder with `removeScratch`, which retries while a child's descendants still write into it.
 - Benchmark sessions load only the plugins their `--plugin-dir` names when `CLAUDE_CONFIG_DIR` is set, and `node benchmarks/isolation-probe.mjs --plugins` checks that at no cost.
-- `node benchmarks/lead-delegation.mjs` counts the product files the lead changes through Bash, by comparing the project around each of its Bash calls.
 - `design-ui` sends floor fixes that touch over 2 files to `exo:build-task` instead of the lead fixing each printed line itself.
 - The session routing text names `build refactor` and `build design-ui` instead of two skills that no longer exist, and `npm run check` fails when it names a skill that does not exist.
 - `node benchmarks/routing.mjs` no longer crashes and loses its results when a stopped session still writes to its scratch folder.
-- `node benchmarks/lead-delegation.mjs` marks a session that died on an API error or left no result as VOID instead of FAIL.
 - A change that writes 3 or more files, or a redesign, goes through `exo:build` instead of staying in the main session, and the design-ui mode hands the writing of more than 2 files to `exo:build-task`.
 - The `exo:adhd` style replies in the language of the user's latest message and translates English labels such as `Also` and the Recommended tag.
 - The reddit source reads every reachable comment of a thread: hidden replies load in batches of 100 through `morechildren` (one refetch per id when it fails) inside a per-thread budget of `EXO_REDDIT_THREAD_MS` (default 45 s), and `signals` names the ids left unread.

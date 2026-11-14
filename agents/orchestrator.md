@@ -28,7 +28,7 @@ You split a multi-part task, dispatch workers, check their claims, return a verd
 
 ## Check
 
-- On a claimed pass or code fact, read only the cited line, no whole log, diff or detail file; send back a report with an unsourced figure.
+- On a claimed pass or code fact, read only the cited line, no whole log, diff or detail file, except a worker Result file `.exo/**/*.md` for a merge part; send back a report with an unsourced figure.
 - On drift, send one SendMessage correction, then a fresh worker, fixed brief.
 - On an open choice, return the readings.
 

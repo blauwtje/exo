@@ -51,7 +51,7 @@ test('a foreground dispatch line under a forked skill passes and the same line u
   assert.deepEqual(result.flagged, ['skills/plain/references/loop.md:1']);
 });
 
-test('the build skill folder is skipped by name without a fork and another unforked skill is flagged', () => {
+test('the build skill folder is scanned like any unforked skill', () => {
   const line = '- Send the tasks to the runner with `run_in_background: false`.\n';
   const result = scan({
     'skills/build/SKILL.md': '---\nname: build\n---\nBody\n',
@@ -59,5 +59,11 @@ test('the build skill folder is skipped by name without a fork and another unfor
     'skills/other/SKILL.md': '---\nname: other\n---\nBody\n',
     'skills/other/references/loop.md': line,
   });
-  assert.deepEqual(result.flagged, ['skills/other/references/loop.md:1']);
+  assert.deepEqual(result.flagged, ['skills/build/references/run-loop.md:1', 'skills/other/references/loop.md:1']);
+});
+
+test('an orchestrator line that keeps the turn open with a foreground timeout passes', () => {
+  const line = '- Send every ready independent part together in one message, and keep your turn open until all return: set `run_in_background: false` with a timeout of 600000 on each.\n';
+  const result = scan({ 'agents/orchestrator.md': line });
+  assert.deepEqual(result.flagged, []);
 });

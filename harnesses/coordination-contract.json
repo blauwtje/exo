@@ -3,7 +3,7 @@
     "main": {
       "maxDepth": 0,
       "mayDispatch": true,
-      "wait": "foreground",
+      "wait": "notification",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -47,7 +47,7 @@
     "run-session": {
       "maxDepth": 0,
       "mayDispatch": true,
-      "wait": "foreground",
+      "wait": "notification",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -60,7 +60,7 @@
     "main": {
       "maxDepth": 0,
       "mayDispatch": true,
-      "wait": "foreground",
+      "wait": "notification",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -104,7 +104,7 @@
     "run-session": {
       "maxDepth": 0,
       "mayDispatch": true,
-      "wait": "foreground",
+      "wait": "notification",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -117,7 +117,7 @@
     "main": {
       "maxDepth": 0,
       "mayDispatch": true,
-      "wait": "foreground",
+      "wait": "notification",
       "return": {
         "verdictLine": true,
         "resultPath": true,
@@ -161,7 +161,7 @@
     "run-session": {
       "maxDepth": 0,
       "mayDispatch": true,
-      "wait": "foreground",
+      "wait": "notification",
       "return": {
         "verdictLine": true,
         "resultPath": true,
