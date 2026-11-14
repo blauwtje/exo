@@ -52,6 +52,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## loop-budget
 - look.mjs ends within its kinds-table wall timeout (Task 8).
 
+## review-level
+- Task 1: `skills/build/references/tail.md` runs the rerun its `Then:` line names (`gate` with `--since <rev>`) after the one fix round, and that report is final.
+
 ## review-reliability
 - `review-fixer-prompt.md` holds the `git log -S` removed-text check and the static Land gate revert rule (Task 6).
 

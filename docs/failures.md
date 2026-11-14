@@ -24,3 +24,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-14 gate review: re-review rounds 2 and 4 of watch-tiktok-speed cost 0.4 to 0.7M tokens with no code commit (1 branch, user request).
 - 2026-11-14 subagents: subagent returns took 15% of the context at the first compaction (7 spec sessions, user request).
 - 2026-11-14 gate review: after the branch review was removed, `land-run.mjs` still required `.exo/branch-review.md` and the review-fixer prompt still expected a findings file with `fix` marks (1 gate run).
+- 2026-11-14 gate review: the `low` review found 1 of the 10 findings of `medium` on one diff and missed a break that parks every landing run (1 run, user request).

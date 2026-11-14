@@ -54,7 +54,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
-- `gate` reviews the branch with the built-in `code-review` skill, at `medium` when a landed task has a `Risk:` line and `low` otherwise.
+- `gate` reviews the branch with the built-in `code-review` skill, at `low` when the plan has one task and names no `Risk:` and at `medium` otherwise; a finding comes back with the rerun command, and `gate --since <rev>` reviews only the fix at `low` and is final.
 - `skills/gate/scripts/verify.mjs` writes its full log to `.exo/logs/gate-verify.log` and prints only `PASS` and `FAIL` lines, so `gate` runs it in one foreground call.
 - `exo:research-worker` returns at most 10 lines ending on `Result: <path>`, and `spec` step 4 starts at most four research workers.
 - `skills/edit-skills/references/instruction-style.md` holds the size and shape limits for every skill, agent, hook and script.

@@ -3,7 +3,7 @@ name: gate
 description: "Use when a plan's tasks are landed and its branch needs the gate before a pull request: the plan's checks and one branch review. Not for landing a task (build) or a change with no plan."
 context: fork
 agent: exo:orchestrator
-argument-hint: "[plan path] [--land]"
+argument-hint: "[plan path] [--land] [--since <rev>]"
 model: opus
 effort: medium
 ---
@@ -17,8 +17,9 @@ The gate readies a branch for a pull request.
 1. **Find the plan.** No plan file → end the turn: ask for its path and name `build`'s no-plan route; run no check by hand.
 2. **Run the checks.** `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout>` once, in one foreground call with Bash timeout 600000; it appends each check's output to `.exo/logs/gate-verify.log` and prints only `PASS` and `FAIL` lines, each `FAIL` naming that log.
    - On any `FAIL` line, edit nothing, rerun nothing: end the turn with the `FAIL` lines and hand back to `exo:build`.
-3. **Review the branch.** Only with all `PASS`, call the built-in `code-review` skill once through the Skill tool with args `<level> <branch>`: `medium` when a landed task has a `Risk:` line, else `low`; the branch is required.
-   - A finding goes back to `exo:build`, never fixed in the gate.
+3. **Review the branch.** Only with all `PASS`, call the built-in `code-review` skill once through the Skill tool with args `<level> <branch>`: `low` when the plan has one task and names no `Risk:`, else `medium`; the branch is required.
+   - A finding ends the turn with the findings and the line `Then: fix once, then gate <plan path> --since <head>`, with `--land` when given; nothing is fixed in the gate.
+   - `--since <rev>` (the head before the fixes) → review only `<rev>...<branch>` at `low` and report what is left as the result, with no `Then:` line.
    - With no `code-review` skill listed, say no review ran and still offer `ship`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
    - `--land` → pass `--land` to `ship`.
