@@ -78,7 +78,7 @@ test('the run plan budgets the soft limit and follows a run.json contextLimit', 
 test('a failed attempt is a ledger round of kind attempt with its cost and the cap is the kinds table cap', async () => {
   const { settleAttempt, attemptsLeft } = await import('../skills/build/scripts/run-plan-attempts.mjs');
   const { readLedger, roundCap } = await import('../lib/loop-budget.mjs');
-  const { ledgerDirOf } = await import('../skills/gate/scripts/repair-round.mjs');
+  const { ledgerDirOf } = await import('../skills/build/scripts/run-state.mjs');
   const root = tempDir('exo-attempt-root-');
   const ctx = { root, planPath: path.join(root, 'plan.md'), plan: { tasks: [{}, {}] }, run: { landings: new Map() }, spent: 0.5, failedAttempts: 1 };
   const settled = settleAttempt(ctx, { wallMs: 10 });

@@ -83,9 +83,8 @@ test('prose telling an agent to poll fails', () => {
   assert.doesNotMatch(detail({ ...CLEAN, 'agents/a.md': '---\nname: a\n---\nWait with kind `proof`, poll nothing.\n' }), /poll or rerun a wait/);
 });
 
-test('the real kinds table names review-fix and provider with a cap', async () => {
+test('the real kinds table names fix and provider with a cap', async () => {
   const { roundCap } = await import('../lib/loop-budget.mjs');
-  assert.equal(roundCap('review-fix'), 2)
   assert.equal(roundCap('fix'), 2);
   assert.equal(roundCap('provider'), 3);
 });

@@ -3,8 +3,6 @@ import assert from 'node:assert/strict';
 import { roundCap } from '../lib/loop-budget.mjs';
 
 const OWNED = [
-  ['review', 'gate-repair.mjs'],
-  ['review-fix', 'run-tail.mjs', 2],
   ['provider', 'run-session.mjs'],
   ['proof', 'land-proof.mjs']
 ];

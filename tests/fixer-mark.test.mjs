@@ -2,8 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { findingsDigest } from '../skills/gate/scripts/merge-reviews.mjs';
-import { fixedProbes } from '../skills/gate/scripts/run-probes.mjs';
+import { findingsDigest } from '../lib/fixer-mark.mjs';
 import { unprovenRisks } from '../skills/build/scripts/run-tail-parse.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -53,23 +52,8 @@ test('the fixer agent sends a defect already absent to reported, not fixed', () 
   assert.match(agent, /no longer has the finding's defect, make no edit and write `reported: already absent`, not `fixed`/);
 });
 
-test('fixedProbes reads each mark the fixer prompt shows', () => {
-  const states = promptExamples().map((line) => fixedProbes(`${line}\n  Probe: true\n`)[0]?.command ?? 'reported');
-  assert.deepEqual(states, ['true', 'reported']);
-});
-
 test('findingsDigest of a fixer-written file equals the merged file', () => {
   assert.equal(findingsDigest(FIXER_WRITTEN), findingsDigest(MERGED));
-});
-
-test('fixedProbes reads fixed and reported marks from a fixer-written file', () => {
-  assert.deepEqual(fixedProbes(FIXER_WRITTEN), [{
-    finding: FIXER_WRITTEN.split('\n')[0],
-    command: 'grep -c "manager subagent" lib/context-limits.mjs',
-    sweep: 'grep -L "manager subagent" lib/context-limits.mjs',
-    quote: null,
-    prepass: false
-  }]);
 });
 
 test('unprovenRisks names a reported-unproven concern without its mark', () => {

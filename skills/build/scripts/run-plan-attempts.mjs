@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { attemptFingerprint } from '#attempt-fingerprint';
 import { decide, formatLine, recordRound, roundCap } from '../../../lib/loop-budget.mjs';
-import { ledgerDirOf } from '../../gate/scripts/repair-round.mjs';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { isFileOnDisk } from './run-session-claude.mjs';
 import { gitOut } from './run-worktree.mjs';
+import { ledgerDirOf } from './run-state.mjs';
 
 export function recordAttempt(ctx, n, check, line) {
   const seen = ctx.fingerprints.get(n) ?? new Set();

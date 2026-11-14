@@ -5,15 +5,15 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { cachedPass } from '#check-cache';
 import { subjectProblem } from '#commit-text';
-import { defaultBranch } from '#git';
+import { defaultBranch, gitText } from '#git';
 import { isCovered, isPlanDoc } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { recordPush, recordRefDiff, snapshotRefs } from './run-ops.mjs';
-import { benchmarkOverride } from '../../gate/scripts/benchmark-lines.mjs';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
 
 const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'remove-worktree.mjs');
+const NO_OVERRIDE = { reason: null, ignored: false };
 const LAND_ANYWAY = 'land anyway';
 const USAGE = [
   'usage: land-run.mjs --root <checkout> --run-root <build checkout> --branch <name>',
@@ -89,6 +89,30 @@ function commitPlanDocs(root, runRoot, runDir) {
   if (docs.length === 0) return null;
   if (git(runRoot, 'add', '--', ...docs).ok) git(runRoot, 'commit', '-q', '-m', 'docs: add plan documents', '--', ...docs);
   return null;
+}
+
+function specCommitPlan(planPath, root) {
+  const relative = path.relative(root, path.resolve(root, planPath));
+  const added = gitText(root, ['log', '--diff-filter=A', '--format=%H', '--', relative]).split('\n').at(-1);
+  if (!added) return null;
+  return gitText(root, ['show', `${added}:${relative}`], { trim: false });
+}
+
+function committedPlan(planPath, root) {
+  if (planPath === undefined) return null;
+  try {
+    return specCommitPlan(planPath, root);
+  } catch {
+    return null;
+  }
+}
+
+function benchmarkOverride(plan, { root, planPath }) {
+  if (plan.benchmarkOverride === null) return NO_OVERRIDE;
+  const atSpec = committedPlan(planPath, root);
+  const committed = atSpec === null ? null : parsePlan(atSpec).benchmarkOverride;
+  if (committed === plan.benchmarkOverride) return { reason: committed, ignored: false };
+  return { reason: null, ignored: true };
 }
 
 function overrideTrailer(root, runDir) {

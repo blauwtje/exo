@@ -4,7 +4,6 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { gitRepository, run } from './harness.mjs';
-import { mergeReviews } from '../skills/gate/scripts/merge-reviews.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/ship/scripts/pr-comment-tasks.mjs', import.meta.url));
 
@@ -47,17 +46,6 @@ test('each file-and-line review comment becomes one fix task and a general comme
   assert.ok(lines.includes('SKIP 103 no file and line'));
   assert.equal(lines.at(-1), 'TASKS 2 SKIPPED 1');
   assert.match(await fs.readFile(outcome.log, 'utf8'), /^api repos\/\{owner\}\/\{repo\}\/pulls\/7\/comments/);
-});
-
-test('each task file is a findings file the gate merge counts as one fix finding', async () => {
-  const outcome = await tasksFor(comments);
-  const files = outcome.stdout.split('\n').filter((line) => line.startsWith('TASK ')).map((line) => line.split('findings=')[1]);
-  assert.equal(files.length, 2);
-  for (const file of files) {
-    const text = await fs.readFile(file, 'utf8');
-    const merged = mergeReviews([{ name: 'review-branch', text }], new Map(), null, outcome.root);
-    assert.equal(merged.counts.fix, 1);
-  }
 });
 
 test('a bot comment, a reply and a line absent at HEAD are skipped', async () => {

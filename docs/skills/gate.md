@@ -1,26 +1,18 @@
 # gate
 
-Checks a finished plan's branch, reviews it and fixes what the review finds.
+Checks a finished plan's branch and reviews it once.
 
 ## When it runs
 
 Every task in a plan has landed and the branch needs checking before a pull request.
 
-Not for a change without a plan; use `review`.
-
 ## What you get
 
-- Each task's proof command and the plan's success check, run once.
-- Every task marked done or open, plus the checks only you can make.
-- One review of the branch, picked by risk and asked three to five concrete questions, then a model-free list of files and names several tasks changed.
-- Review findings that cite the rule they break, grouped by category and sorted by usefulness score; uncited ones cannot block and low-score ones are counted, not listed.
-- Review findings fixed in one commit.
+- Each task's proof command and the plan's success check, run once, as `PASS` and `FAIL` lines.
+- On a `FAIL`, nothing is edited or rerun; the lines go back to `build`.
+- With all `PASS`, one review of the branch by `review-branch`; a `defect` finding goes back to `build`.
 - A handoff to `ship`.
-
-## Modes
-
-This skill also runs the folded skills review as modes.
 
 ## Source
 
-`skills/gate/SKILL.md` and `skills/gate/scripts/gate.mjs`.
+`skills/gate/SKILL.md` and `skills/gate/scripts/verify.mjs`.

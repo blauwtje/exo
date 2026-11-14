@@ -20,12 +20,12 @@ test('every kind has a cap, a progress count and an existing owner script', () =
 
 test('a kind stops at its cap and the line names the reason', () => {
   const dir = tempDir('exo-loop-');
-  recordRound(dir, { kind: 'review', openAfter: 5 });
-  recordRound(dir, { kind: 'review', openBefore: 5, openAfter: 3 });
-  assert.equal(decide(dir, 'review', { env: {} }).verdict, 'CONTINUE');
-  recordRound(dir, { kind: 'review', openBefore: 3, openAfter: 1 });
-  const line = formatLine('review', decide(dir, 'review', { env: {} }));
-  assert.equal(line, 'LOOP review STOP round cap 3 reached');
+  recordRound(dir, { kind: 'proof', openAfter: 5 });
+  recordRound(dir, { kind: 'proof', openBefore: 5, openAfter: 3 });
+  assert.equal(decide(dir, 'proof', { env: {} }).verdict, 'CONTINUE');
+  recordRound(dir, { kind: 'proof', openBefore: 3, openAfter: 1 });
+  const line = formatLine('proof', decide(dir, 'proof', { env: {} }));
+  assert.equal(line, 'LOOP proof STOP round cap 3 reached');
 });
 
 test('a round without progress is discarded and stops its kind only', () => {
@@ -64,10 +64,9 @@ function homeWith(defaults) {
 }
 
 test('run.json defaults override the table and env overrides run.json', () => {
-  const home = homeWith({ loopCaps: { look: 5 }, loopWallMs: { look: 7 }, repairBound: 4 });
+  const home = homeWith({ loopCaps: { look: 5 }, loopWallMs: { look: 7 } });
   assert.equal(roundCap('look', { HOME: home }), 5);
   assert.equal(kindWallMs('look', { HOME: home }), 7);
-  assert.equal(roundCap('review-fix', { HOME: home }), 4);
   assert.equal(roundCap('look', { HOME: home, EXO_LOOP_LOOK_CAP: '2' }), 2);
 });
 

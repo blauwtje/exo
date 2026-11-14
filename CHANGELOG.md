@@ -56,6 +56,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- Eval score and cost work runs only through `exo:build improve` with a frozen scorer, and the gate spec drops its fixed 1.5 cost-ratio target.
+- `gate` is rebuilt small: one `verify.mjs` run of the plan's checks, one branch review by `review-branch`, and failures handed back to `build`; the journal, repair rounds, shards, probes and benchmark lines are gone.
 - The speed ledger records the plugin-arm cache hit rate gap (10.7 pp, n=22) as meeting its threshold, verdict `pass`, not `nog`.
 - `skills/spec/references/measured-goal.md` picks a setting only when `mde.mjs --scores` prints no `ceiling` line, and labels each failure agent fault or case fault; `skills/build/references/improve.md` labels the failing cases after 2 rounds without gain and lists case faults in the Stop report.
 - `node benchmarks/lead-delegation.mjs --history` has the first turn read 3 generated reference files, so the build turn starts at about 80k tokens of read history; a run that starts it under 50k prints `VOID`, and `--dry-run` prints the reference size and the floor.
@@ -102,6 +104,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `gate/scripts/verify.mjs` resolves `--plan` against `--root`, so the gate fork finds the plan from any folder.
+- The gate eval cases grade outcomes in the final message with a Sonnet judge, and the exact-wording `fail-line` and `reviewer` graders are removed.
+- The three `gate-*` eval cases grade the final message, so a correct gate run can pass and a rule break fails.
+- Eval cases the `claude plugin eval` sandbox blocked now reach their tools: the stand-in `gh` and the gate plan's `node --test` sit under the case workdir, and the four route cases judge the skill choice and first step only.
 - Every eval case loads under the current `claude plugin eval` schema: scaffolded cases are `case.yaml` files with inline graders and a one-line `scaffold.sh`, and `evals/scaffold.sh` finds the exo root from its own path.
 - The gate's review read coverage no longer counts files the branch deletes, so a branch that removes many files is not blocked.
 - `adhd-score --rescore` of a quick record no longer reads the gitignored baseline, so the paired rescore test passes in CI.

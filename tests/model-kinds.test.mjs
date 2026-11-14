@@ -128,11 +128,13 @@ test('this repository has no unused kind', () => {
 test('kinds.orchestrator.on.effort is medium', () => {
   const { kinds } = readKindTable();
   assert.equal(kinds.orchestrator.effort, 'medium');
+  assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds['build-task'].effort, 'medium');
 });
 
-test('the judge kind runs on the fast tier at low effort and the research agents map to their kinds', () => {
+test('the judge kind runs on the standard tier at low effort and the research agents map to their kinds', () => {
   const { kinds, agents } = readKindTable();
   assert.equal(kinds.judge.effort, 'low');
+  assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds.judge.model, 'sonnet');
   assert.ok(agents['agents/review-branch.md'].labels.includes('judge'));
   assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest', 'build-repair']);
   assert.equal(agents['agents/research-worker.md'].kind, 'research');

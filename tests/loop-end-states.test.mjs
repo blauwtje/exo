@@ -11,14 +11,14 @@ test('the two end states each have a run outcome', () => {
 
 test('a spent cap ends as rounds-spent', () => {
   const dir = tempDir('exo-end-');
-  recordRound(dir, { kind: 'review', openBefore: 9, openAfter: 5 });
-  recordRound(dir, { kind: 'review', openBefore: 5, openAfter: 3 });
-  recordRound(dir, { kind: 'review', openBefore: 3, openAfter: 1 });
-  assert.equal(decide(dir, 'review', { env: {} }).state, 'rounds-spent');
+  recordRound(dir, { kind: 'proof', openBefore: 9, openAfter: 5 });
+  recordRound(dir, { kind: 'proof', openBefore: 5, openAfter: 3 });
+  recordRound(dir, { kind: 'proof', openBefore: 3, openAfter: 1 });
+  assert.equal(decide(dir, 'proof', { env: {} }).state, 'rounds-spent');
 });
 
 test('a round that fixed nothing ends as no-progress', () => {
   const dir = tempDir('exo-end-');
-  recordRound(dir, { kind: 'review', openBefore: 4, openAfter: 4 });
-  assert.equal(decide(dir, 'review', { env: {} }).state, 'no-progress');
+  recordRound(dir, { kind: 'proof', openBefore: 4, openAfter: 4 });
+  assert.equal(decide(dir, 'proof', { env: {} }).state, 'no-progress');
 });

@@ -3,7 +3,7 @@
 The prompt `gate` step 3 hands the `exo:build-task` agent with `exo-kind: fix-review` on `fix` findings. The dispatch line carries this file's path and the fill values, never the prompt text.
 
 ```text
-Review fix for <plan path>, repository <root>, base <base>, findings file <findings path>, input to `run-probes.mjs`.
+Review fix for <plan path>, repository <root>, base <base>, findings file <findings path>.
 
 You fix the findings a branch review wrote to that file. For each finding marked `fix`, read only the `file:start-end` range it names. Leave every `report` finding, every `question` and every `note` unchanged.
 

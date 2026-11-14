@@ -33,7 +33,9 @@ pressure_case() {
     cp -R "/tmp/exo-pressure/spec/$script/." "$workdir"
     return 0
   fi
-  bash "/tmp/exo-pressure/$skill/$script" "$@"
+  [ -d "/tmp/exo-pressure/$skill/bin" ] && cp -R "/tmp/exo-pressure/$skill/bin" "$workdir/bin"
+  sed 's/`npm test` passes\./`node --test` passes./' "/tmp/exo-pressure/$skill/$script" > "$source_dir/$script"
+  bash "$source_dir/$script" "$@"
 }
 
 case "$kind" in

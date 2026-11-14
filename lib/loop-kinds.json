@@ -1,10 +1,8 @@
 {
-  "review": { "cap": 3, "progress": "open findings", "owner": "skills/gate/scripts/gate-repair.mjs" },
-  "fix": { "cap": 2, "progress": "open fix count", "owner": "skills/gate/scripts/gate-repair.mjs" },
+  "fix": { "cap": 2, "progress": "open fix count", "owner": "lib/run-outcomes.mjs" },
   "look": { "cap": 3, "wallMs": 180000, "progress": "look fail lines", "owner": "skills/build/scripts/look.mjs" },
   "proof": { "cap": 3, "progress": "failing proof tests", "owner": "skills/build/scripts/land-proof.mjs" },
   "attempt": { "cap": 3, "progress": "open task items", "owner": "skills/build/scripts/run-plan-attempts.mjs" },
-  "review-fix": { "cap": 2, "progress": "open fix count", "owner": "skills/build/scripts/run-tail.mjs" },
   "wait": { "cap": 3, "wallMs": 600000, "progress": "pending waits", "owner": "hooks/run-no-wait.mjs" },
   "provider": { "cap": 3, "progress": "transient provider errors", "owner": "skills/build/scripts/run-session.mjs" },
   "refusal": { "cap": 2, "progress": "rule violations", "owner": "lib/refusal-handlers.mjs" }

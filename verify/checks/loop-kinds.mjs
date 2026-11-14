@@ -15,7 +15,7 @@ const SLEEP_CALL = /setInterval\(|setTimeout\(|Atomics\.wait\(|\bsleep\(|\bdelay
 const PROBE_CALL = /existsSync\(|statSync\(|accessSync\(|process\.kill\([^)]*,\s*0\)|readFileSync\(|\bpgrep\b/;
 const LOOP_HEAD = /\b(?:while|for)\s*\(|\bdo\s*\{|setInterval\(/;
 const LOOP_WINDOW = 12;
-const CAPPED_AT_TWO = ['fix', 'review-fix'];
+const CAPPED_AT_TWO = ['fix'];
 
 function kindNames(kinds) {
   return Object.keys(kinds);

@@ -2,12 +2,6 @@
 
 Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of the shipped briefs; edit a brief, not this file. A brief that holds a `Supersedes: <brief name>` line replaces that brief.
 
-## bench-honesty
-- A sweep run with `--baseline` writes the section with the excluded runs and a verdict per metric (Task 2).
-- The gate prints `FAIL benchmark` for a fixture regression, `PASS benchmark (baseline: none)` with no baseline, and `WARN benchmark override (<reason>)` with an override (Task 3).
-- The squash commit body carries the override trailer (Task 4).
-- `npm run check` fails a results file whose comparison counts a bypassing run and passes the rewritten Karpathy file (Tasks 5 and 6, Success criterion).
-
 ## aie-round1
 - Task 2: each rule fails on a bad fixture and passes on the repo.
 - Success criterion: the full check.

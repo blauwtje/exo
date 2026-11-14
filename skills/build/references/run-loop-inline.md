@@ -10,8 +10,6 @@
 - Commit with `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, one commit per task, not a hand-written `git commit`.
 - A failed `Run:` or a land-task refusal gets one fix by this session, then goes to `${CLAUDE_SKILL_DIR}/bug-fixer-prompt.md`. A second failure ends as the direct route does.
 - After a `Then:` line from a landing, rerun `next-task.mjs` for the next task's `Steps:`.
-- On `Next: none`, run `node "${CLAUDE_SKILL_DIR}/../gate/scripts/gate.mjs" --plan <plan> --root <checkout> --base <base>` once.
-- Clean output holds only `PASS`, `DONE`, `REPORT`, `MANUAL`, `Proof:`, `REVIEW ... none`, `OVERLAP none` and `SKIP` lines. A `SKIP` with `(out of scope` or `Proof: not a single` is not clean.
-- On clean output, finish as `gate` step 4 does: end on `ship`, whose three lines name the `REPORT` path as the pointer and omit `Proof:` and `MANUAL` lines.
-- On clean output with a request that rules out a push, skip `ship`, give the same three lines, and say nothing left the machine.
-- On any other line, or `--land` in the request, do the loop's step 7 as written: its tail reference, then `gate`, with this output standing for the gate run.
+- On `Next: none`, run `node "${CLAUDE_SKILL_DIR}/../gate/scripts/verify.mjs" --plan <plan> --root <checkout>` once, in the background, to a log; read only its `PASS` and `FAIL` lines.
+- With only `PASS` lines and no `--land` in the request, finish as `gate` steps 3 and 4 do, with this output standing for its step 2.
+- On a `FAIL` line, or `--land` in the request, do the loop's step 7 as written: its tail reference, then `gate`, with this output standing for its step 2.

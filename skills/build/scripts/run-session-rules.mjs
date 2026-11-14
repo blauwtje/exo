@@ -21,7 +21,7 @@ const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${
 const fileRule = (tool, file) => spellings(file).map((spelling) => `${tool}(${ruleSpelling(spelling)})`);
 const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((spelling) => [`Bash(node "${spelling}" *)`, `Bash(node ${spelling} *)`]));
 
-export const unsandboxedScripts = (tail) => [...(tail ? [SCRIPT.gate, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), SCRIPT.runDecision];
+export const unsandboxedScripts = (tail) => [...(tail ? [SCRIPT.gate, SCRIPT.landTask] : [SCRIPT.landTask]), SCRIPT.runDecision];
 
 export function allowRules({ root, planPath, plan, tail = false, repair = false, pluginRoot = PLUGIN_ROOT, sandbox = false, decisions = Boolean(process.env.EXO_RUN_DIR) }) {
   const paths = [
@@ -31,7 +31,7 @@ export function allowRules({ root, planPath, plan, tail = false, repair = false,
     ...(repair ? fileRule('Edit', planPath) : [])
   ];
   if (sandbox) return [...new Set([...paths, ...scriptRules(unsandboxedScripts(tail))])];
-  const scripts = [...(tail ? [SCRIPT.gate, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), ...(decisions ? [SCRIPT.runDecision] : [])];
+  const scripts = [...(tail ? [SCRIPT.gate, SCRIPT.landTask] : [SCRIPT.landTask]), ...(decisions ? [SCRIPT.runDecision] : [])];
   const commands = loopCommands(plan)
     .filter((entry) => entry.field !== 'Success criterion')
     .flatMap((entry) => entry.parts.map((part) => `Bash(${part} *)`));

@@ -138,7 +138,7 @@ test('the budget twins fold into their base agents, which a dispatch runs at the
     assert.ok(!agents.some((agent) => agent.frontmatter.name === folded), `agents/${folded}.md is still an agent file`);
   }
   assert.match(TASK_MODES, /carry out the prompt exactly as written/i);
-  assert.ok(agents.find((agent) => agent.frontmatter.name === 'review-branch').body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
+  assert.ok(agents.find((agent) => agent.frontmatter.name === 'review-branch').body.includes('at the path the dispatch names'), 'the dispatch names the findings path');
 });
 
 test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
@@ -147,7 +147,7 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.deepEqual(reviewer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'NotebookEdit', 'Agent'].includes(tool)), []);
   assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
   assert.doesNotMatch(reviewer.body, /run every Final verification|`fixed` or `reported`|`FIXED`/);
-  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> note=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
+  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> question=<n> report=<path>`'), 'the reviewer returns one verdict line');
 });
 
 test('the implementer reads CLAUDE.md', () => {
@@ -174,30 +174,17 @@ test('the branch reviewer holds the test-first rule and the missing-Red: rule', 
   }
 });
 
-test('the branch reviewer requires a Probe line under each fix finding and names merge-reviews.mjs as the reader of its findings file', () => {
+test('the branch reviewer writes one-line findings and a Count line to the dispatch path', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  assert.match(reviewer.body, /`  Probe: <command>`/, 'each fix finding carries a Probe line');
-  assert.match(reviewer.body, /## Probe/, 'the Probe rule points to review-rules.md ## Probe');
-  assert.match(reviewer.body, /input to `merge-reviews\.mjs`/, 'merge-reviews.mjs reads the findings file');
-  assert.doesNotMatch(reviewer.body, /report file is the deliverable/, 'the old deliverable wording is gone');
+  assert.match(reviewer.body, /^<path:lines>; defect\|concern\|question; <title>; <evidence>\nCount: defect=<n> concern=<n> question=<n>$/m);
+  assert.match(reviewer.body, /one finding per line and no heading/);
+  assert.doesNotMatch(reviewer.body, /merge-reviews|Probe|review-rules|triage/);
 });
 
-test('the branch reviewer keeps each finding on one line and shows an example the merge parser reads', () => {
+test('the branch reviewer confirms with one test file or a read-only command, never the full suite', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  assert.match(reviewer.body, /one line each and no heading per finding/, 'a finding shares one line');
-  assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|concern|question|note)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
-});
-
-test('the branch reviewer quotes one verbatim line under each fix finding, after Probe, Class and Sweep', () => {
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  assert.match(reviewer.body, /`  Sweep: <read-only grep, diff files>` and `  Quote: <verbatim line>`/, 'the fix rule names the Quote line after Sweep');
-  assert.match(reviewer.body, /^ {2}Probe: \S.*\n {2}Class: \S.*\n {2}Sweep: \S.*\n {2}Quote: \S/m, 'the example finding ends with a Quote line');
-});
-
-test('the branch reviewer confirms with one test file or Probe command, never the full suite', () => {
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  assert.match(reviewer.body, /single test file or a `Probe:` command/, 'only a single test file or Probe command');
-  for (const banned of ['`gate.mjs`', '`npm run check`', '`npm run validate`', '`npm test`']) {
+  assert.match(reviewer.body, /single test file or a read-only command/);
+  for (const banned of ['`npm run check`', '`npm run validate`', '`npm test`']) {
     assert.ok(reviewer.body.includes(banned), `${banned} is named as forbidden`);
   }
   assert.match(reviewer.body, /needs the full suite `question`/, 'a full-suite finding goes to question');
@@ -233,20 +220,9 @@ test('only build-task and doc-task hold a retry cell, above their on cell', () =
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds.review, kindTable.kinds.review);
 });
 
-test('the branch reviewer takes its input path from the dispatch and reads the weights and closing lines in review-rules.md', () => {
+test('the branch reviewer keeps the question and nit weights', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  const rules = fs.readFileSync(new URL('../skills/gate/references/review-rules.md', import.meta.url), 'utf8');
-  assert.match(reviewer.body, /first Read the dispatch's `input=` path, else `<checkout>\/\.exo\/review-input\.md`/);
-  assert.match(reviewer.body, /First read `## Report` in `\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/gate\/references\/review-rules\.md`/);
-  assert.match(rules, /^## Report$/m);
-  assert.match(rules, /`out-of-scope` finding is an input class under a task's `Boundary:` `out`, marked `report`/);
-  assert.match(rules, /`Read: <paths>` for every file read/);
-});
-
-test('the branch reviewer keeps the question, nit and note weights', () => {
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  assert.match(reviewer.body, /Weight a nit, preference, refactor or later-only idea `note`, and use `question` only for open plan intent\./);
-  assert.match(reviewer.body, /Mark a `note` `report`, never `concern`; it is style, naming, layout or a test gap, test-gap notes included\./);
+  assert.match(reviewer.body, /Weight a nit, preference, refactor or later-only idea `concern`, and use `question` only for open plan intent\./);
 });
 
 test('orchestrator holds Agent, Skill, Write and TaskStop, loads the project CLAUDE.md and runs on orchestrator', () => {

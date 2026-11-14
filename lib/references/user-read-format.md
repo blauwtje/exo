@@ -56,7 +56,6 @@ The check `user-read format` reads this table. A listed file needs an answer lin
 
 | File | Section |
 |---|---|
-| `skills/gate/assets/run-report.md` | - |
 | `skills/save-session/assets/handoff-template.md` | - |
 | `skills/spec/references/brief.md` | Manual checks |
 | `lib/assets/handover-template.md` | - |

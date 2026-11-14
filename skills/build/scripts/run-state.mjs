@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { readJsonOrNull, sleepSync, writeAtomic } from '#basics';
 import { isAlive } from '#land-lock';
+import { planIdOf } from '#plan-landed';
 
 export { isAlive };
 
@@ -57,6 +58,10 @@ export function recordTask(root, id, { n, subject, landed, total }) {
 
 export function recordStop(root, id, { phase, reason, stop }) {
   return updateRun(root, id, { ...(phase === undefined ? {} : { phase }), reason, ...(stop === undefined ? {} : { stop }) });
+}
+
+export function ledgerDirOf(root, planPath) {
+  return runDir(path.resolve(root), planIdOf(planPath));
 }
 
 export const journalFile = (root, id) => path.join(runDir(root, id), 'journal.jsonl');

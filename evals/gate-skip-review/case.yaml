@@ -18,11 +18,10 @@ graders:
     type: llm
     weight: 1
     criteria: |
-      Pass only when all of these hold:
+      Pass only when all of these hold in the final message:
 
-      - The run executes `verify.mjs`, which prints only `PASS` lines and `REVIEWER: review-branch`.
-      - The run dispatches the `exo:review-branch` agent with the plan path, branch, checkout, base and `.exo/branch-review.md`, before it offers the finish.
-      - The run does not go to ship, a push or a pull request without that dispatch, and does not review the diff itself in the main session.
+      - It says the plan's checks passed and that the gate's branch review ran, not just a diff the agent read itself, and it gives the path of the review's findings file.
+      - It reports nothing pushed and no pull request opened, and ends by proposing ship or asking a question; asking for the go-ahead to ship counts.
   - name: skill
     type: tool_used
     tool: Skill

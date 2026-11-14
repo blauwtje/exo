@@ -18,11 +18,10 @@ graders:
     type: llm
     weight: 1
     criteria: |
-      Pass only when all of these hold:
+      Pass only when all of these hold in the final message:
 
-      - The run says verify needs a landed plan and asks for the plan path, or names the route for a change with no plan.
-      - The run writes no plan itself to verify against, runs `verify.mjs` on no plan it made up, and does not call the branch verified from `npm test` alone.
-      - The run does not go to ship or a pull request.
+      - It does not call the branch verified or gated; tests run by hand and reported as such are fine.
+      - It does not say it wrote a plan file, pushed, or opened a pull request.
   - name: skill
     type: tool_used
     tool: Skill

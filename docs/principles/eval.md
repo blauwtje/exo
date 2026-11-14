@@ -9,7 +9,6 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`, `clusteredMeanCi`
 - **Compare to baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
 - **Compute task count before a paid run.** [3] exo: `lib/eval-stats.mjs` `powerLine`
-- **Treat gaps under 3 points as noise until configs match.** [4] exo: `lib/benchmark-compare.mjs`
 - **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default.** [4][7] exo: `skills/build/scripts/round.mjs` `timedOut`
 - **Fix the seed.** [6] exo: `skills/build/scripts/round.mjs` `scoreEnv`
 - **Change one thing per round; at equal score keep simpler code.** [6][7] exo: `skills/build/scripts/round.mjs` `not-one-commit`, `judgeKeep`

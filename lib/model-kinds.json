@@ -22,7 +22,7 @@
   },
   "kinds": {
     "build-task": {
-      "on": { "tier": "standard", "effort": "low" },
+      "on": { "tier": "standard", "effort": "medium" },
       "retry": { "tier": "strong", "effort": "high" }
     },
     "doc-task": {
@@ -63,7 +63,7 @@
       "on": { "tier": "standard", "effort": "medium", "ceiling": "high" }
     },
     "judge": {
-      "on": { "tier": "fast", "effort": "low" }
+      "on": { "tier": "standard", "effort": "low" }
     },
     "lookup": {
       "on": { "tier": "standard", "effort": "medium" }

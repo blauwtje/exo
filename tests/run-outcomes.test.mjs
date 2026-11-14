@@ -30,7 +30,7 @@ test('a gate fail repairs, an unplanned path amends, a question parks and only t
 });
 
 test('the repair line reads its cap from the fix kind', () => {
-  const repairs = JSON.parse(fs.readFileSync(new URL('../lib/loop-kinds.json', import.meta.url), 'utf8')).fix.cap - 1;
+  const repairs = JSON.parse(fs.readFileSync(new URL('../lib/loop-kinds.json', import.meta.url), 'utf8'))['fix'].cap - 1;
   assert.match(outcomeLine('proof failed'), new RegExp(`at most ${repairs} times`));
   assert.match(outcomeLine('findings'), new RegExp(`at most ${repairs} times`));
 });

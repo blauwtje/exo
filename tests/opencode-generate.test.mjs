@@ -48,6 +48,6 @@ test('each agent file carries the variant of its kind effort', () => {
   const variants = { low: 'min', medium: 'mid', high: 'top', xhigh: 'top', max: 'top' };
   const config = { opencode: { model: 'provider/model', variants } };
   const tree = generateOpenCodeTree(ROOT, { exoRoot: EXO_ROOT, config });
-  assert.equal(modelOf(tree, 'build-task.md'), 'model: provider/model#min');
+  assert.equal(modelOf(tree, 'build-task.md'), 'model: provider/model#mid');
   assert.equal(modelOf(tree, 'orchestrator.md'), 'model: provider/model#mid');
 });

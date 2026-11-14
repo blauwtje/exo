@@ -11,4 +11,4 @@ Detail for Steps 1-5 of the loop in SKILL.md, whoever runs them.
 
 ## Step 7
 
-- Run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when the Step 7 trigger in SKILL.md holds, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../gate/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`) and fix under Step 5. End on `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain, else on `ship`.
+- Run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when the Step 7 trigger in SKILL.md holds, run `code-review` at level `low` and fix under Step 5. End on `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain, else on `ship`.

@@ -20,11 +20,12 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - When a mistake recurs, fix or delete its code path; add a check only by replacing one, because every check is upkeep.
 - Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `docs/failures.md` first.
 - Raise no cap in `verify/budgets.mjs`: remove something or ask the user.
+- Raise an eval score or cut eval cost only through `exo:build improve`: one frozen scorer, one change per round, keep only a round.mjs keep row, no fixed targets.
 
 ## Editing
 
 - Before designing a prompt, context, agent, tool, harness or eval, read `docs/principles/README.md` and open only the page it names.
-- Run `claude plugin eval` only before a release, with `--max-cost-usd 20`.
+- Run `claude plugin eval` only before a release or as the frozen scorer of an improve run, always with `--max-cost-usd`.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
 - Derive a new value from the repo, or use one overridable default in run.json `defaults` or an `EXO_*_MS` var via `environmentMs`.
 

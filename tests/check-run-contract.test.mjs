@@ -67,9 +67,8 @@ test('a git spawn with an argument list passes', () => {
   assert.equal(outcome({ 'skills/build/scripts/ok.mjs': "spawnSync(command, args, { cwd });\n" }).ok, true);
 });
 
-test('the table owner and a clean script pass', () => {
+test('a clean script passes', () => {
   const result = outcome({
-    'skills/gate/scripts/gate-decide.mjs': "const a = 'end the turn';\n",
     'skills/build/scripts/ok.mjs': "console.log('LANDED 1');\n"
   });
   assert.equal(result.ok, true);
@@ -80,14 +79,14 @@ test('the run-loop page fails with its own stop rule or without the table pointe
   assert.equal(outcome({ 'skills/build/references/run-loop.md': '- Follow `lib/run-outcomes.mjs`.\n' }).ok, true);
 });
 
-test('a gate script that starts a full review outside review-input fails', () => {
+test('a gate script that starts a full review fails', () => {
   const result = outcome({ 'skills/gate/scripts/gate-new.mjs': "const line = `DISPATCH Branch: x`;\n" });
   assert.equal(result.ok, false);
-  assert.match(result.detail, /gate-new\.mjs:1 starts a full review outside review-input\.mjs/);
+  assert.match(result.detail, /gate-new\.mjs:1 starts a full review outside exo:review-branch/);
 });
 
 test('gate prose that names a redispatch fails', () => {
-  const result = outcome({ 'skills/gate/references/repair.md': 'Then redispatch the reviewer.\n' });
+  const result = outcome({ 'skills/gate/SKILL.md': 'Then redispatch the reviewer.\n' });
   assert.equal(result.ok, false);
-  assert.match(result.detail, /repair\.md:1 names a second full review step/);
+  assert.match(result.detail, /SKILL\.md:1 names a second full review step/);
 });
