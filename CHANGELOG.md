@@ -56,6 +56,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The claim judge in spec research runs on Sonnet at low effort instead of Haiku.
+- Build tasks run at medium effort instead of low; a retry still steps up to Opus at high.
 - Eval score and cost work runs only through `exo:build improve` with a frozen scorer, and the gate spec drops its fixed 1.5 cost-ratio target.
 - `gate` is rebuilt small: one `verify.mjs` run of the plan's checks, one branch review by `review-branch`, and failures handed back to `build`; the journal, repair rounds, shards, probes and benchmark lines are gone.
 - The speed ledger records the plugin-arm cache hit rate gap (10.7 pp, n=22) as meeting its threshold, verdict `pass`, not `nog`.
