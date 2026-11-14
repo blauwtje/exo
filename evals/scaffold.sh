@@ -27,14 +27,16 @@ pressure_case() {
   local skill="$1" setup="$2" script="${3:-}"
   shift 3 || true
   extract "benchmarks/pressure/$skill"
-  bash "$source_dir/benchmarks/pressure/$skill/$setup" > /dev/null || true
+  local fixtures="$source_dir/exo-pressure"
+  sed "s#/tmp/exo-pressure#$fixtures#g" "$source_dir/benchmarks/pressure/$skill/$setup" > "$source_dir/$setup"
+  bash "$source_dir/$setup" > /dev/null || true
   [ -z "$script" ] && return 0
   if [ "$skill" = spec ]; then
-    cp -R "/tmp/exo-pressure/spec/$script/." "$workdir"
+    cp -R "$fixtures/spec/$script/." "$workdir"
     return 0
   fi
-  [ -d "/tmp/exo-pressure/$skill/bin" ] && cp -R "/tmp/exo-pressure/$skill/bin" "$workdir/bin"
-  sed 's/`npm test` passes\./`node --test` passes./' "/tmp/exo-pressure/$skill/$script" > "$source_dir/$script"
+  [ -d "$fixtures/$skill/bin" ] && cp -R "$fixtures/$skill/bin" "$workdir/bin"
+  sed 's/`npm test` passes\./`node --test` passes./' "$fixtures/$skill/$script" > "$source_dir/$script"
   bash "$source_dir/$script" "$@"
 }
 

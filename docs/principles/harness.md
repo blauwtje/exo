@@ -1,18 +1,18 @@
 # Harness engineering
 
-Checked: 2026-10-22
+Checked: 2026-11-14
 
 Read it when: you design a run loop, a hook, a subagent hand-off or a check that gates an agent's work.
 
-- **Separate the agent doing the work from the one judging it.** Tune the judge to be skeptical. [1][4] exo: `skills/build/scripts/land-task.mjs`, `skills/build/reviewer-prompt.md`
+- **Separate the agent doing the work from the one judging it.** [1][4] exo: `skills/build/scripts/land-task.mjs`, `skills/build/reviewer-prompt.md`
 - **Give every task a runnable pass/fail check.** Require evidence, not claims. [4] exo: `skills/build/references/test-design.md`
-- **A context reset with a handoff is an option beside compaction.** The 2026-03-24 post adds it; auto compaction still covers the context target. [1][2] exo: `skills/build/references/run-loop.md`, `skills/build/implementer-prompt.md`
-- **Keep a progress file and git history.** A fresh session then orients quickly. [2] exo: `skills/build/references/run-loop.md`
-- **Never let an agent remove or edit tests.** Let it change only status fields. [2] exo: `agents/build-task.md`, `skills/gate/scripts/verify.mjs`
-- **Strip harness parts one at a time.** Keep only what the model cannot do alone. Assumptions "can go stale as models improve". [1][9] exo: gap
+- **A context reset with a handoff is an option beside compaction.** Auto compaction still covers the context target. [1][2] exo: `skills/build/references/run-loop.md`, `skills/build/implementer-prompt.md`
+- **Keep a progress file and git history.** [2] exo: `skills/build/references/run-loop.md`
+- **Never let an agent remove or edit tests.** Keep the scorer frozen in one place outside its scope, with one implementation of each rule. [2][10][11] exo: `agents/build-task.md`, `skills/gate/scripts/verify.mjs`
+- **Strip harness parts one at a time.** Keep only what the model cannot do alone. [1][9] exo: gap
 - **Use hooks for what must happen every time.** CLAUDE.md is advisory, hooks are deterministic. [3] exo: `hooks/hooks.json`
-- **Use prompt or agent hooks only where judgment is needed.**  [3] exo: gap, only command hooks
-- **Guard Stop hooks against loops.** Check `stop_hook_active`. [3] exo: `hooks/run-no-wait.mjs` caps blocks at `BLOCK_LIMIT = 2` per session, stricter than it
+- **Use prompt or agent hooks only where judgment is needed.** [3] exo: gap, only command hooks
+- **Guard Stop hooks against loops.** Check `stop_hook_active`. [3] exo: `hooks/run-no-wait.mjs` caps blocks at `BLOCK_LIMIT = 2` per session.
 - **`SubagentStop` and `TaskCompleted` hooks can block.** Exit 2 keeps it going. [6] exo: gap, unused
 - **Do not rely on one hook's deny to stop another, or let two hooks rewrite one tool input.** [3] exo: `hooks/dispatch-bash.mjs` merges deny in-process
 - **Rewrite input with `updatedInput` alone.** `allow` skips the user's prompt. [6] exo: `lib/context-limits.mjs`
@@ -31,3 +31,5 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 7. [Keep Claude working toward a goal](https://code.claude.com/docs/en/goal), undated
 8. [Add components to a plugin](https://code.claude.com/docs/en/plugins/components), undated
 9. [Scaling Managed Agents with stable interfaces](https://www.anthropic.com/engineering/managed-agents), 2026-04-08
+10. [autoresearch program.md](https://github.com/karpathy/autoresearch), undated
+11. [nanochat commits](https://github.com/karpathy/nanochat/commits), 2026-07-03

@@ -58,6 +58,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The claim judge in spec research runs on Sonnet at low effort instead of Haiku.
 - Build tasks run at medium effort instead of low; a retry still steps up to Opus at high.
+- The improve reference states the scorer contract: one `SCORE`, none on a broken run, `ITEM` lines only from 8 cases up, and for a paid score a spend cap and a $0 replay of a saved result.
 - Eval score and cost work runs only through `exo:build improve` with a frozen scorer, and the gate spec drops its fixed 1.5 cost-ratio target.
 - `gate` is rebuilt small: one `verify.mjs` run of the plan's checks, one branch review by `review-branch`, and failures handed back to `build`; the journal, repair rounds, shards, probes and benchmark lines are gone.
 - The speed ledger records the plugin-arm cache hit rate gap (10.7 pp, n=22) as meeting its threshold, verdict `pass`, not `nog`.
@@ -106,6 +107,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The `gate-red-check` eval case asks for the next step and to change nothing yet, so its "no file was changed" criterion grades the gate's stop instead of the calling session's own fix.
+- `evals/scaffold.sh` gives each scaffold run its own copy of the `/tmp/exo-pressure` fixture root, so parallel gate and spec case runs no longer delete each other's fixture.
 - `gate/scripts/verify.mjs` resolves `--plan` against `--root`, so the gate fork finds the plan from any folder.
 - The gate eval cases grade outcomes in the final message with a Sonnet judge, and the exact-wording `fail-line` and `reviewer` graders are removed.
 - The three `gate-*` eval cases grade the final message, so a correct gate run can pass and a rule break fails.

@@ -1,6 +1,6 @@
 # Context engineering
 
-Checked: 2026-10-22
+Checked: 2026-11-14
 
 Read it when: you change what a skill, agent or run loads into a window, hands to a sub-agent or keeps between steps.
 
@@ -8,7 +8,7 @@ Read it when: you change what a skill, agent or run loads into a window, hands t
 - **Aim for the smallest set of high-signal tokens.** Fewer tokens that carry the point give the desired outcome more often. [1] exo: `skills/edit-skills/references/instruction-style.md`
 - **Load data just in time.** Keep lightweight identifiers such as file paths and read them when needed. [1] exo: `hooks/session-rules.md`
 - **Delegate focused work to sub-agents.** They start with a clean window and return a short result. [1] exo: `agents/research-worker.md`, `hooks/session-rules.md`
-- **Keep full history in a durable store outside the window.** Irreversible trimming loses what a later step may need. [3] exo: `skills/build/references/run-loop.md` keeps landed tasks in commits, `hooks/session-rules.md` logs output under `.exo/`
+- **Keep full history in a durable store outside the window.** Irreversible trimming loses what a later step may need; a loop keeps its state in files, so the lead reads rows, not logs. [3][4] exo: `skills/build/references/run-loop.md` keeps landed tasks in commits, `hooks/session-rules.md` logs output under `.exo/`
 - **Hand over files rather than a summary when a fresh start is cheaper.** A reset hands over files instead of a summary; auto compaction still covers the context target, so a reset is a choice, not a rule. [1][2] exo: `hooks/session-rules.md` suggests a fresh session, `skills/build/references/run-loop.md` resumes from commits
 
 ## Sources
@@ -16,3 +16,4 @@ Read it when: you change what a skill, agent or run loads into a window, hands t
 1. [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents), 2025-09-29
 2. [Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps), 2026-03-24
 3. [Managed agents](https://www.anthropic.com/engineering/managed-agents), 2026-04-08
+4. [autoresearch program.md](https://github.com/karpathy/autoresearch), undated
