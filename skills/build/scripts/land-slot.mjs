@@ -52,14 +52,12 @@ function removeSlot({ slot, root, base, number }) {
   }
 }
 
-// why: the rebuild rewrites the slot's report, so its record restarts its since at this refusal.
 function rebuildLines({ planPath, number, root, slot, base, inFlight, unlanded, chained, only }) {
   const records = restartRecord(root, number, { slot, base, since: Math.floor(Date.now() / 1000) });
   if (chained) return '';
   return `${windowLines({ planPath, root, records, running: [number, ...inFlight.filter((other) => other !== number)], unlanded, only }).join('\n')}\n`;
 }
 
-// why: --chained marks a `Land all:` command before the last; the last one prints the next step for the whole chain.
 export function landSlot({ planPath, number, root, slot, base, baseline, inFlight: named = [], chained = false, only = null, report = {} }) {
   const known = fs.readFileSync(baseline, 'utf8').split('\n');
   const fresh = statusOf(root).filter((line) => !known.includes(line));

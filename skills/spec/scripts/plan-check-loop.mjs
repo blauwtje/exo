@@ -67,7 +67,6 @@ export function checkLoop(plan, root, planPath) {
 
 const HTML_ENTITY = /&(?:gt|lt|amp|quot|apos|#\d+|#x[0-9a-f]+);/i;
 
-// why: land runs the raw 'Land gate:' and 'Lint:' text in a shell, so a wrapping backtick pair becomes a command substitution; rejecting here keeps one reading of the field in every consumer.
 export function checkRunCommands(plan) {
   const basis = frameOf(plan.frame);
   const problems = [];

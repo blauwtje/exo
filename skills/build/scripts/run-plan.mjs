@@ -146,7 +146,6 @@ async function main(argv) {
 
   const ledgerFile = path.join(logDir, 'sessions.jsonl');
 
-  // why: a builder the sandbox kept from running its proof could not see the failure, so its first script proof failure is a free try; once per task, so it cannot loop.
   const unprovenRetried = new Set();
   const failedSessions = new Map();
   let stop;
@@ -222,7 +221,6 @@ async function main(argv) {
     const resume = handoffNote(ctx, n) === '' ? failedSessions.get(n) ?? null : null;
     failedSessions.delete(n);
     const prompt = resume === null ? buildPrompt(n, ctx.retryNote + handoffNote(ctx, n)) : ctx.retryNote;
-    // why: a report from an earlier try or run process would otherwise stay, and land-task would prove this try from it.
     fs.rmSync(path.join(root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
     if (landedByChangelogScript(ctx, task)) {
       ctx.iteration -= 1;

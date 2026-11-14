@@ -98,7 +98,6 @@ function taskBytes(task, root, forkPoint) {
   return Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + sizeOf(file), 0);
 }
 
-// why: two adjacent tiny tasks on the same files and one chain each pay a session start that one merged task would pay once.
 export function warnTinyTasks(tasks, { root, forkPoint, landed }) {
   if (root === undefined || root === null) return [];
   const byNumber = new Map(tasks.map((task) => [task.number, task]));
@@ -124,7 +123,6 @@ function rootBodySizes(root) {
 
 const dirOf = (file) => path.posix.dirname(file);
 
-// why: a task that edits a skill or agent already near its body cap fails the verify budget check after landing; the plan can raise the lock in the same task instead.
 export function warnNearCap(tasks, root, landed) {
   if (root === undefined || root === null || !fs.existsSync(path.join(root, 'verify/budgets.mjs'))) return [];
   const sized = rootBodySizes(root);

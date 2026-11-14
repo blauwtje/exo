@@ -56,7 +56,6 @@ export function worktreeTree(root, skipFile) {
 }
 
 export function shelveLeftover(root, patchFile, knownUntracked) {
-  // why: git lists a nested repository as `dir/`, which would enter the patch as a bare commit id.
   const fresh = untrackedPaths(root).filter((file) => !knownUntracked.has(file) && !file.startsWith(`${SCRATCH_FOLDER}/`) && !file.endsWith('/'));
   const spec = ['--', '.', `:(exclude)${SCRATCH_FOLDER}`];
   const git = (args, options = {}) => spawnSync('git', ['-C', root, ...args], { maxBuffer: 1024 * 1024 * 1024, ...options });

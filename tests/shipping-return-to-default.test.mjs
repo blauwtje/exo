@@ -1,6 +1,3 @@
-// return-to-default.mjs puts the main checkout back on the default branch and
-// fast-forwards it after a branch's work lands, against a real bare origin
-// that a second clone moves ahead, so the pull has something to bring in.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -13,8 +10,6 @@ import { returnToDefault } from '../skills/ship/scripts/return-to-default.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/ship/scripts/return-to-default.mjs', import.meta.url));
 
-// A checkout on feat/x cloned from a bare origin whose main has since moved
-// one commit ahead of it, the way it stands right after a merge.
 async function mergedRepository() {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });
   const root = await fs.realpath(await fixture());

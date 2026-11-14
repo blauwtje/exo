@@ -1,22 +1,3 @@
-// Generates the Codex skill and agent tree from the Claude sources, in memory,
-// as one map of path (relative to the exo root) to text:
-//
-//   harnesses/codex/generated/skills/<name>/**/*.md      each skill Markdown file, rewritten by rules.mjs
-//   harnesses/codex/generated/skills/<name>/agents/openai.yaml   the policy of an explicit-only skill
-//
-// An override in `harnesses/codex/overrides/<path under generated>` replaces one
-// generated file when its first line, `<!-- exo:override source-sha256=<hash> -->`,
-// names the sha256 of that file's Claude source; the line itself is dropped
-// from the output. A changed source hash is drift, never a silent fallback.
-//
-// The installer builds this tree in memory, so nothing reads it from disk and it
-// stays uncommitted (gitignored):
-//
-//   node harnesses/codex/generate.mjs           write the tree locally, for inspection
-//   node harnesses/codex/generate.mjs --check   list override problems and exit 1 when any
-//
-// An agent file cannot override the session sandbox, so none writes `sandbox_mode`.
-// `maxTurns` and `omitClaudeMd` have no Codex field and are dropped.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,13 +17,10 @@ const OVERRIDE_HEADER = /^<!-- exo:override source-sha256=([0-9a-f]{64}) -->\n/;
 
 export const posix = (file) => file.split(path.sep).join('/');
 
-// A JSON string is a valid TOML basic string.
 function tomlString(text) {
   return JSON.stringify(text);
 }
 
-// The multi-line literal string takes the text verbatim, so no escape can
-// alter an instruction; its one limit is a body holding three single quotes.
 function tomlLiteralBlock(text) {
   if (text.includes("'''")) {
     throw new Error("an agent body holds ''', which a TOML literal string cannot carry; reword it");
@@ -86,13 +64,10 @@ function readKnown(root) {
   return { skills, agents };
 }
 
-// Adds each skill's rewritten Markdown, its other non-script files verbatim and its policy file; `sources` maps each
-// generated path to the Claude file whose hash an override must name.
 function addSkills(root, known, files, sources) {
   for (const name of known.skills) {
     const directory = path.join(root, 'skills', name);
     for (const location of listFiles(directory)) {
-      // Scripts stay in the clone, which the installed text reaches through {{EXO_ROOT}}.
       if (location.endsWith('.mjs')) continue;
       const source = posix(path.relative(root, location));
       const generated = path.posix.join(GENERATED, source);
@@ -130,8 +105,6 @@ function addAgents(root, known, files, sources) {
   }
 }
 
-// Replaces each generated file that has a matching override; returns the
-// problems of the overrides that cannot apply.
 function applyOverrides(root, files, sources) {
   const problems = [];
   const directory = path.join(root, OVERRIDES);
@@ -173,20 +146,15 @@ function buildOrThrow(root) {
   return built.files;
 }
 
-// Returns a Map of path relative to `root` to the file's expected text; a stale or
-// malformed override throws instead of falling back to the plain rule output.
 export function generateTree(root = ROOT) {
   return buildOrThrow(root);
 }
 
-// Lists the overrides that cannot apply as { file, problem } records, empty when
-// every one applies; a source the rules cannot rewrite throws.
 export function findOverrideProblems(root = ROOT) {
   return build(root).problems;
 }
 
-// Replaces the local tree, so a file the sources no longer generate does not linger.
-export function writeGenerated(root = ROOT) {
+function writeGenerated(root = ROOT) {
   const files = buildOrThrow(root);
   fs.rmSync(path.join(root, GENERATED), { recursive: true, force: true });
   for (const [file, text] of files) {

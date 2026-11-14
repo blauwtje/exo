@@ -8,8 +8,6 @@ const MANIFEST_FIELDS = ['scripts', 'bin', 'main', 'exports'];
 
 const MAX_SCANNED_BYTES = 1024 * 1024;
 
-const GIT_OUTPUT_BYTES = 256 * 1024 * 1024;
-
 const COMMIT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const DECLARED_NAME = /^export\s+(?:declare\s+)?(?:default\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|function|class|const|let|var|interface|type|enum|namespace)\b\s*\*?\s*([A-Za-z_$][\w$]*)/gm;

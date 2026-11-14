@@ -1,5 +1,3 @@
-// Fixtures the land-task*.test.mjs files share: plans, checkouts and build reports
-// that land-task.mjs reads.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -11,18 +9,14 @@ import {
   taskSection as plainTaskSection
 } from './harness.mjs';
 
-// These fixtures' Proofs pass on their base, so each names `Red: none` and the red gate stays out of the way.
 export const compactTask = (options) => `${plainCompactTask(options)} | Red: none (fixture)`;
 
-// A long-format task has no `Red:` field, so its Run: command must fail in the temporary
-// red-green-* worktree the red check runs in, and pass in the fixture checkout.
 export const CHANGED = '! pwd | grep -q red-green-';
 
 export const taskSection = (options) => plainTaskSection(options).replace('Run: `node --test`', `Run: \`${CHANGED}\``);
 
 export const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
 
-// The check cache lives in the repository's common git directory, shared by its worktrees.
 export const cacheFile = (root) => path.join(memoryDirectory(root), 'check-cache.json');
 
 export const PLAN = planFixture({ tasks: [
@@ -32,8 +26,6 @@ export const PLAN = planFixture({ tasks: [
   taskSection({ number: 4, title: 'Two files', files: ['- Modify: `src/app.js`', '- Create: `src/note.md`'], subject: 'feat(app): two files' })
 ] });
 
-// The block runs `git commit` outside the harness's `git()`, so the fixture
-// repository carries its own identity and no signing.
 export async function landingCheckout() {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/fixture.md': PLAN });
   git(root, 'config', 'user.name', 'exo-test');
@@ -64,8 +56,6 @@ export const PASS_REPORT = [
   ''
 ].join('\n');
 
-// The Proof land-task runs: a plain script, since a nested `node --test`
-// inherits this runner's NODE_TEST_CONTEXT and exits 0 whatever it ran.
 export const APP_PROOF = [
   "import { greet } from '../src/app.js';",
   "if (greet() !== 'hello') {",
@@ -89,7 +79,7 @@ export async function compactCheckout(plan = COMPACT_PLAN) {
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
-  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n'); // as in a real checkout
+  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n');
   await editApp(root);
   return { root, planPath: path.join(root, 'docs/plans/compact.md') };
 }
@@ -99,8 +89,6 @@ export async function writeReport(root, text) {
   await fs.writeFile(path.join(root, '.exo/implementer-1.md'), text);
 }
 
-// Not done without proof: each refusal exits 1 before the commit runs, so HEAD
-// and the edit stay as the build left them.
 export async function assertRefused(root, planPath, extraArgs, stderrPattern) {
   const head = git(root, 'rev-parse', 'HEAD');
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, ...extraArgs], { cwd: root });
@@ -111,15 +99,10 @@ export async function assertRefused(root, planPath, extraArgs, stderrPattern) {
   assert.match(git(root, 'status', '--porcelain'), /src\/app\.js/);
 }
 
-// An older compact plan names no `Proof:`, so build-task writes or picks one
-// test for the Success criterion; that test's pass line is the proof.
 export const OLDER_PLAN = compactPlanFixture({ tasks: [
   compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: null })
 ] });
 
-// The builder holds no MCP tool, so a `Proof: mcp:<tool> <args>` task lands on
-// the report's `<command>: deferred` line and names the proof as pending for
-// the session.
 export const MCP_PLAN = compactPlanFixture({ tasks: [
   compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'mcp:run_playtest mode=play' })
 ] });

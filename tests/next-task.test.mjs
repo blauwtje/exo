@@ -22,7 +22,6 @@ const wavePlan = (worktreeSetup = 'none') => planFixture({ worktreeSetup, parall
   taskSection({ number: 4, title: 'Both', dependsOn: 'Task 2', files: ['- Create: `src/both.js`'], subject: 'feat(app): both' })
 ] });
 
-// A checkout with Task 1 landed, so the next report names a Wave.
 async function afterTaskOne(worktreeSetup) {
   const { root, planPath } = await landingCheckout();
   excludeScratch(root);
@@ -98,8 +97,6 @@ test('a slot prompt carries Code rules: none only for the all-markdown task', as
   assert.match(out, /^Task 2 of .*\nRead your brief at .*\nReport to:/m);
 });
 
-// The plan names its only content input by absolute path, outside the checkout,
-// under Assumptions, which names none of the task's Files.
 async function planWithInput(input, region = 'greet') {
   const plan = PLAN.replace('(`greet`)', `(\`${region}\`)`).replace('## Tasks', `## Assumptions\n\n- assume: the notes at \`${input}\` are the only content input.\n\n## Tasks`);
   const { root, planPath } = await landingCheckout();

@@ -1,8 +1,3 @@
-// The ship route as one script: push, open a pull request, merge one, or
-// merge a list of pull requests in their stacking order, run from a single
-// command instead of separate model calls. Push is exercised against a real
-// bare origin; gh is a stand-in that logs its argv and answers from a
-// scenario.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -14,8 +9,6 @@ import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
 
 const SHIP = fileURLToPath(new URL('../skills/ship/scripts/ship.mjs', import.meta.url));
 
-// A repository on `main`, cloned from a bare `origin` the way a real checkout
-// would be, so `refs/remotes/origin/HEAD` and upstream tracking are real.
 async function shipRepository() {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });
   const bareRoot = await fixture();
@@ -27,8 +20,6 @@ async function shipRepository() {
   return { workDir, origin };
 }
 
-// Stands in for gh: logs its arguments, then answers with the reply a test's
-// scenario names for that exact command, a queue for one logged twice.
 const GH_STAND_IN = [
   '#!/usr/bin/env node',
   "const fs = require('node:fs');",
@@ -211,8 +202,6 @@ test('open-pr refuses attributing or untyped text and an AI-named branch before 
   }
 });
 
-// The pull request read by "create" and reused through wait, gate, merge and
-// confirm, so a pr-merge test never needs to name a number by hand.
 const OPEN_PR = { number: 42, url: 'https://github.com/acme/widgets/pull/42', state: 'OPEN' };
 const REUSE = { 'pr view feat/x --json number,url,state': { stdout: `${JSON.stringify(OPEN_PR)}\n` } };
 const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup';
@@ -360,9 +349,6 @@ test('a bad route, mode or missing flag is a usage error that runs no gh', async
   }
 });
 
-// --merge orders pull requests by ship-gate.mjs --order before gating them,
-// so a scenario answers the order lookup (baseRefName/headRefName) as well
-// as the per-number view, gate, merge and confirm calls.
 const ORDER_FIELDS = 'number,baseRefName,headRefName';
 const VIEW_FIELDS = 'number,url,state,headRefName';
 function stacked(number, base, head) {

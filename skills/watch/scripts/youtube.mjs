@@ -30,7 +30,7 @@ async function request(fetchFn, url, init, options) {
   return response.text().catch(unanswered(url));
 }
 
-export async function fetchPlayer(id, fetchFn, options, identity = IDENTITIES[0]) {
+async function fetchPlayer(id, fetchFn, options, identity = IDENTITIES[0]) {
   const body = JSON.stringify({ context: { client: identity.client }, videoId: id });
   const headers = { 'content-type': 'application/json', 'user-agent': identity.agent };
   const text = await request(fetchFn, PLAYER_URL, { method: 'POST', headers, body }, options);
@@ -60,7 +60,7 @@ export async function fetchWatchPage(id, fetchFn, options) {
   return request(fetchFn, `${WATCH_URL}${id}`, { headers: { 'accept-language': 'en-US,en;q=0.9' } }, options).catch(() => '');
 }
 
-export function checkPlayable(player) {
+function checkPlayable(player) {
   const { status, reason = '' } = player.playabilityStatus ?? {};
   if (status === 'OK') return;
   if (status === 'LOGIN_REQUIRED' && /bot/i.test(reason)) throw new Unreadable('YouTube asks this network to sign in and prove it is not a bot', { retryable: true, blocked: true });

@@ -1,7 +1,3 @@
-// land-task.mjs runs a task's Commit: block as the plan wrote it, its trailer
-// naming the plan, checks the Plan-task: <plan-id>/<n> trailer on the new
-// commit and prints the landed set; a compact task
-// lands only on a build report whose Proof: command passed.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -14,9 +10,6 @@ import {
   SCRIPT, cacheFile, PLAN, landingCheckout, editApp, COMPACT_PLAN, PASS_REPORT, compactCheckout, writeReport
 } from './land-task-fixture.mjs';
 
-// planFixture carries no Land gate line; this inserts one into the same
-// Plan basis frame so the gate tests exercise the real grammar, not a
-// hand-rolled plan shape.
 function withLandGate(command) {
   return PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
 }
@@ -96,7 +89,6 @@ test('a Land gate past its deadline is stopped and refused with timed out after 
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
-// A grandchild the gate started must die with it, else it outlives the refusal.
 const survivorCommand = (marker) => `(sleep 1; touch ${marker}) & sleep 10`;
 
 test('a timed-out Land gate stops the processes it started too', async () => {
@@ -127,7 +119,6 @@ test('a timed-out Proof is refused with timed out after <n>s, its process tree s
   await assert.rejects(fs.access(marker));
 });
 
-// bash exits 0 at once, but a background child holds the output pipe past the deadline.
 test('a Proof whose bash exits 0 while a background child outlives the deadline is refused, not cached as a pass', async () => {
   const command = '(sleep 5) & true';
   const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', command));

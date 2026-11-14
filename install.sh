@@ -1,26 +1,4 @@
 #!/usr/bin/env bash
-# Installs, updates or removes exo in one command, with no git or node to type.
-#
-#   Install: curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash
-#   Update:  curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update
-#   Remove:  curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --remove
-#
-# Install clones exo into ~/.exo, or pulls that clone when it is already there,
-# then runs the clone's install.mjs. Update pulls the clone once, then runs
-# install.mjs --update with --pulled, so the pulled adapters run without a
-# second pull. Remove never clones or pulls: it runs install.mjs --remove, then
-# deletes the clone only when no harness still records an install and the clone
-# holds no uncommitted, untracked or unpushed work; otherwise it says why the
-# clone stayed. Every argument passes through to install.mjs, such as
-# `--harness codex` or `--yes`.
-#
-# `EXO_DIR` sets the clone folder (default ~/.exo), `EXO_REPO` the clone source
-# (default the GitHub repository). It needs git and Node 22 or newer and checks
-# both before it writes anything. A folder at `EXO_DIR` that is not a git clone
-# is refused, never replaced.
-# Under `curl | bash` stdin is this script, so install.mjs reads its prompts from
-# /dev/tty; with no terminal at all it takes the defaults.
-# The body is one function called on the last line, so a cut-off download runs nothing.
 
 set -eu
 
@@ -31,7 +9,6 @@ fail() {
   exit 1
 }
 
-# Runs the clone's install.mjs, reading prompts from the terminal when stdin is not one.
 run_installer() {
   if [ ! -t 0 ] && (exec </dev/tty) 2>/dev/null; then
     node "$exo_dir/install.mjs" "$@" </dev/tty
@@ -40,7 +17,6 @@ run_installer() {
   fi
 }
 
-# Prints why the clone must stay, or nothing when it may be deleted.
 why_clone_stays() {
   left="$(node "$exo_dir/install.mjs" --recorded 2>&1)" || { echo "the install records could not be read: $left"; return; }
   [ -z "$left" ] || { echo "${left//$'\n'/, } still records an install"; return; }

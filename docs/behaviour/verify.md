@@ -24,6 +24,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 2: a subagent's `git stash` runs as a saved patch and never reaches the shared stash list; `git stash pop` is still denied.
 - Task 3: a Write whose only break is added comment lines lands with those lines stripped; a nested ternary is still refused.
 
+## exo-lean
+- Task 3: no file names dispatch-edit.
+
 ## fast-task-gate
 - `killTree` with `platform: 'win32'` calls its `run` stub with `taskkill` and `['/pid', '<pid>', '/T', '/F']`; on POSIX a detached shell's grandchild is gone after `killTree`; a timed-out verify Proof and gate still fail with `timed out after <n>s` (Task 2; seam: `tests/process-tree.test.mjs`, `tests/verify-gate.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).

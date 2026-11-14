@@ -1,29 +1,3 @@
-// The Codex harness for install.mjs: installs exo into Codex's folders from this
-// clone; the CLI and the IDE extension both read them.
-//
-// It copies each generated skill (harnesses/codex/generate.mjs, built in memory
-// from the sources, so an install never uses a stale tree) into a skills folder,
-// copies the generated agents into an agents folder, and merges the entries of
-// `harnesses/codex/hooks.mjs` into a hooks.json. Scope `user` writes
-// ~/.agents/skills, `<codex home>/agents` and `<codex home>/hooks.json` (codex home
-// is $CODEX_HOME or ~/.codex); `project` and `local` write
-// `<project>/.agents/skills`, `<project>/.codex/agents` and `<project>/.codex/hooks.json`.
-// `local` adds each file it wrote to `<project>/.git/info/exclude` and removes
-// those lines again. Both placeholders are filled at install: `{{EXO_ROOT}}` with
-// the clone's path (for `project`, shared through git, `$HOME/.exo`, so the clone
-// must live at ~/.exo), `{{SKILL_DIR}}` with the installed skill folder (for
-// `project`, relative to the project, so it holds for every teammate). What it
-// wrote, with a sha256 per file, goes to `<codex home>/exo/installed.json`, one
-// entry per install (scope and project folder); update and remove act only on
-// what that record lists.
-//
-// Every check runs before the first write, and any failure aborts. A file, link,
-// folder or hook group that this adapter did not write is never replaced or
-// removed: a conflicting one aborts the install, an identical one stays
-// unrecorded, an edited one stays on removal. Names are checked against a fixed
-// pattern before they join a path, because `installed.json` is read back as
-// untrusted data. The record `codex/install.mjs` wrote (skill links, no hashes)
-// reads as one user install and is rewritten in the new shape on the next write.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -31,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
 import { shellQuote, writeAtomic } from '../../lib/basics.mjs';
-import { apply, combine, hashOf, isPlain, jsonText, plainChain, readRecord, removeInstalls, sameInstall, statOf } from '../install-files.mjs';
+import { apply, hashOf, isPlain, jsonText, plainChain, readRecord, removeInstalls, sameInstall, statOf, updateInstalls } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 import { generateTree } from './generate.mjs';
 import { codexHookEntries } from './hooks.mjs';
@@ -47,13 +21,11 @@ const EXCLUDE_LINE = /^\/\.agents\/skills\/[a-z0-9][a-z0-9-]*\/$|^\/\.codex\/age
 const SKILL_PREFIX = 'harnesses/codex/generated/skills/';
 const AGENT_PREFIX = 'harnesses/codex/generated/agents/';
 
-
 function safeName(value, pattern, what) {
   if (typeof value !== 'string' || !pattern.test(value)) throw new Error(`${what} name ${JSON.stringify(value)} is not a plain name`);
   return value;
 }
 
-// A recorded or generated file path inside a skill folder, as its parts.
 function safeParts(relative) {
   if (typeof relative !== 'string') throw new Error(`file path ${JSON.stringify(relative)} is not a plain path`);
   const parts = relative.split('/');
@@ -63,7 +35,6 @@ function safeParts(relative) {
 
 const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [], created: [] });
 
-// The paths an install can have created, by name; `.codex` is a project folder only.
 const CREATED = ['.agents', '.agents/skills', '.codex/agents', '.codex/hooks.json', '.codex'];
 
 function createdPath(name, where) {
@@ -83,7 +54,6 @@ function validInstall(entry) {
     && Array.isArray(entry.hooks) && entry.hooks.every((hook) => isPlain(hook) && typeof hook.event === 'string' && isPlain(hook.group));
 }
 
-// Returns the installs the record file lists; the old single-target shape is one user install.
 function readInstalls(file) {
   const record = readRecord(file, 'written');
   if (record === undefined) return [];
@@ -103,7 +73,6 @@ const matches = (install, selector) => (selector.scope === undefined || install.
   && (selector.project === undefined || install.project === selector.project);
 const withInstall = (installs, install) => [...installs.filter((entry) => !sameInstall(entry, install)), install];
 
-// The folders of one install; the record file is the same for every scope.
 function locations(env, scope = 'user', project) {
   const home = env.HOME || env.USERPROFILE || os.homedir();
   const codexHome = path.resolve(env.CODEX_HOME || path.join(home, '.codex'));
@@ -122,11 +91,6 @@ function locations(env, scope = 'user', project) {
   };
 }
 
-// Checks before the first write of a per-project install: the folder exists, a
-// `project` install runs from a clone at ~/.exo (its text says `$HOME/.exo`), and
-// no folder or file the install writes through is a link, so a repository cannot
-// lead a write outside itself. Ceiling: `local` needs `.git` to be a folder, not
-// the file a worktree or submodule has; lift it by resolving `gitdir:` from that file.
 function checkProject({ root, env, scope, project }) {
   if (typeof project !== 'string' || !path.isAbsolute(project)) throw new Error(`Codex ${scope} scope needs an absolute project folder, got ${JSON.stringify(project)}`);
   if (!fs.statSync(project, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`project folder ${project} is not a folder`);
@@ -146,7 +110,6 @@ function checkProject({ root, env, scope, project }) {
   }
 }
 
-// True when `link` is a symlink or junction whose target is `source`.
 function linksTo(link, source) {
   const stat = statOf(link);
   if (!stat?.isSymbolicLink()) return false;
@@ -158,18 +121,12 @@ function removeLink(link) {
   try {
     fs.unlinkSync(link);
   } catch {
-    // Ceiling: Windows may refuse unlink on a junction; lift it once a Windows run shows otherwise.
     fs.rmdirSync(link);
   }
 }
 
-// macOS Finder drops a `.DS_Store` into any folder it opens. It is not exo's and not
-// a user's work, so a skill folder is never refused for it, and it is never recorded,
-// overwritten or deleted. Only the exact name counts; other dotfiles stay foreign.
 const FINDER_FILE = '.DS_Store';
 
-// True when `folder` is a real folder that holds a Finder file and nothing else,
-// counting a subfolder only when it too holds nothing but Finder files.
 function holdsOnlyFinderFiles(folder) {
   if (!statOf(folder)?.isDirectory()) return false;
   const names = fs.readdirSync(folder);
@@ -182,8 +139,6 @@ function holdsOnlyFinderFiles(folder) {
   });
 }
 
-// Each releasing helper adds the writes that delete what the record says this
-// adapter wrote, and a note for each entry it leaves because it changed.
 function releaseLinks(entries, skillsDir, writes, notes) {
   for (const entry of entries) {
     const link = path.join(skillsDir, safeName(entry.name, SKILL_NAME, 'skill'));
@@ -194,7 +149,6 @@ function releaseLinks(entries, skillsDir, writes, notes) {
 }
 
 function releaseFiles(skillDir, entries, writes, notes) {
-  // A skill folder swapped for a link would lead the deletes below outside it.
   if (statOf(skillDir)?.isSymbolicLink()) {
     notes.push(`kept ${skillDir}: it is a link, not the folder exo wrote`);
     return;
@@ -209,14 +163,12 @@ function releaseFiles(skillDir, entries, writes, notes) {
     if (plainChain(skillDir, parts) && stat.isFile() && hashOf(fs.readFileSync(file)) === entry.sha256) writes.push(() => fs.unlinkSync(file));
     else notes.push(`kept ${file}: it is not the file exo wrote`);
   }
-  // Only a folder the writes emptied goes; rmdir refuses one that still holds anything.
   const deepestFirst = [...folders].sort((left, right) => right.length - left.length);
   writes.push(() => {
     for (const folder of deepestFirst) {
       try {
         fs.rmdirSync(folder);
       } catch {
-        // Not empty, or gone: leave it.
       }
     }
   });
@@ -232,8 +184,6 @@ function releaseAgents(entries, agentsDir, writes, notes) {
   }
 }
 
-// Returns the hooks.json object with the recorded groups removed and the new
-// ones appended, and the groups it appended. Only the events involved are inspected.
 function mergeHooks(config, removed, additions) {
   if (!isPlain(config)) throw new Error('hooks.json is not an object; nothing was written');
   const events = config.hooks ?? {};
@@ -256,9 +206,6 @@ function mergeHooks(config, removed, additions) {
   return { config: isDeepStrictEqual(nextEvents, events) ? config : { ...config, hooks: nextEvents }, added };
 }
 
-// Entries for a `project` install, which a repository shares: the clone's absolute
-// path becomes `$HOME/.exo`. Ceiling: no `commandWindows`, so a Windows host runs
-// the POSIX `command`; lift it once Codex documents its Windows shell.
 function projectHookEntries(exoRoot) {
   const entryScript = path.join(exoRoot, 'harnesses', 'codex', 'hook-entry.mjs');
   const quoted = shellQuote(entryScript);
@@ -274,7 +221,6 @@ function projectHookEntries(exoRoot) {
   return entries;
 }
 
-// The lines `.git/info/exclude` has, or none when the file is missing.
 function readExclude(file) {
   const stat = statOf(file);
   if (stat === undefined) return [];
@@ -296,8 +242,6 @@ function planHooks(hooksFile, removed, additions, writes, dropEmpty = false) {
   return added;
 }
 
-// The generated tree as skill name to (relative path to text) and agent file to text,
-// each with {{EXO_ROOT}} filled, and {{SKILL_DIR}} filled in a skill.
 function generated(root, exoRoot, skillDirOf) {
   const skills = new Map();
   const agents = new Map();
@@ -317,8 +261,6 @@ function generated(root, exoRoot, skillDirOf) {
   return { skills, agents };
 }
 
-// Plans one skill: the writes that bring its folder to the generated files, the
-// record entry, the interim entry (old hashes kept where a write may not land) and any conflicts.
 function planSkill({ skillDir, files, oldSkill, oldLink, writes, conflicts }) {
   const fresh = statOf(skillDir) === undefined;
   const legacy = oldLink !== undefined && linksTo(skillDir, oldLink.source);
@@ -425,8 +367,6 @@ function planInstall({ root, env, scope, project }, verb = 'installed') {
   const added = planHooks(where.hooksFile, old.hooks, hookEntries, writes);
   next.hooks.push(...added);
 
-  // `local`: every file this install wrote is listed in .git/info/exclude, and the
-  // record keeps the lines it added, so a removal takes back only those.
   const excludes = [...old.excludes];
   if (scope === 'local') {
     const present = readExclude(where.excludeFile);
@@ -442,8 +382,6 @@ function planInstall({ root, env, scope, project }, verb = 'installed') {
   next.excludes.push(...excludes);
 
   if (conflicts.length > 0) throw new Error(`${conflicts.join('\n')}\nNothing was written. Move those aside, or remove them, then rerun.`);
-  // The interim record lists everything either state may hold, so a rerun after a
-  // failed write still finds each file it wrote.
   interim.skills.push(...staleSkills);
   interim.agents.push(...staleAgents);
   interim.hooks.push(...old.hooks, ...next.hooks);
@@ -466,7 +404,6 @@ function planRemove(install, installs, env) {
   const writes = [];
   const notes = [];
   if (install.scope !== 'user') {
-    // A recorded project is untrusted: a link on the way would lead a delete outside it.
     for (const parts of [['.agents'], ['.agents', 'skills'], ['.codex'], ['.codex', 'agents'], ['.codex', 'hooks.json'], ['.git', 'info'], ['.git', 'info', 'exclude']]) {
       const here = path.join(install.project, ...parts);
       if (statOf(here)?.isSymbolicLink()) throw new Error(`${here} is a link; exo does not remove through links in a project`);
@@ -481,14 +418,12 @@ function planRemove(install, installs, env) {
   for (const skill of install.skills) releaseFiles(path.join(where.skillsDir, safeName(skill.name, SKILL_NAME, 'skill')), skill.files, writes, notes);
   releaseAgents(install.agents, where.agentsDir, writes, notes);
   planHooks(where.hooksFile, install.hooks, {}, writes, install.created.includes('.codex/hooks.json'));
-  // Folders this install created go last, deepest first; rmdir refuses one that holds anything.
   writes.push(() => {
     for (const name of ['.agents/skills', '.agents', '.codex/agents', '.codex']) {
       if (!install.created.includes(name)) continue;
       try {
         fs.rmdirSync(createdPath(name, where));
       } catch {
-        // Not empty, or gone: leave it.
       }
     }
   });
@@ -502,7 +437,6 @@ function planRemove(install, installs, env) {
     try {
       fs.rmdirSync(path.dirname(where.recordFile));
     } catch {
-      // The folder holds other exo files; leave it.
     }
   });
   return { writes, notes, summary: `removed the ${install.scope} install that ${where.recordFile} listed` };
@@ -520,20 +454,12 @@ export function install(plan) {
   return apply(planInstall(plan));
 }
 
-// How many installs the record lists; install.sh deletes the clone only when every adapter says 0.
 export function recorded(env) {
   return readInstalls(locations(env).recordFile).length;
 }
 
-// An update re-applies each install the selector matches, from the clone as it is now.
 export function update(record) {
-  const installs = readInstalls(locations(record.env).recordFile).filter((entry) => matches(entry, record));
-  if (installs.length === 0) return 'nothing to update: no Codex install recorded';
-  return combine(installs.map((entry) => {
-    // A project folder deleted since the install has nothing to update; --remove drops its record.
-    if (entry.scope !== 'user' && !statOf(entry.project)?.isDirectory()) return { summary: `skipped ${entry.scope} install in ${entry.project}`, notes: [`${entry.project} is not a folder; run --remove to drop its record`] };
-    return apply(planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }, 'updated'));
-  }));
+  return updateInstalls(record, { locations, readInstalls, matches, planInstall }, 'Codex');
 }
 
 export function remove(record) {

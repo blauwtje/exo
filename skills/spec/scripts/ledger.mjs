@@ -26,11 +26,11 @@ export function canonicalUrl(raw) {
   return url.pathname === '/' && !url.search ? href.replace(/\/$/, '') : href;
 }
 
-export function refOf(canonical) {
+function refOf(canonical) {
   return crypto.createHash('sha256').update(canonical).digest('hex').slice(0, REF_LENGTH);
 }
 
-export function ledgerPath(runDir) {
+function ledgerPath(runDir) {
   return path.join(runDir, 'sources.jsonl');
 }
 

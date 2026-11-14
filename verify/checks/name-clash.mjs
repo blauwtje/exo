@@ -1,16 +1,3 @@
-// A user who types /verify gets Claude Code's bundled skill, not exo's, and
-// /configure runs hookify's command. This check compares each skills/*/SKILL.md
-// name with the names a user is likely to have installed beside exo: Claude
-// Code's bundled skills, its built-in commands, and the commands and skills of
-// plugins in the marketplace cache. Same name = clash; another name a proper
-// prefix of the exo name = shadow. The clashes and shadows in BASELINE are
-// accepted until a rename lands (PASS); any other clash with a pinned Claude Code
-// name FAILs, and so does a new shadow of one. A clash or shadow with a
-// marketplace name that is not in BASELINE is a note, because the cache differs
-// per machine.
-// `--strict` ignores BASELINE.
-//
-//   node verify/checks/name-clash.mjs [--strict] [--root <repository>] [--marketplaces <folder>]
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,10 +8,8 @@ import { readFrontmatter } from '../frontmatter.mjs';
 import { createReport } from '../report.mjs';
 import { createRepository } from '../repository.mjs';
 
-// Pinned from Claude Code v2.1.304 (bundled skill list and command table); a
-// subset, extended by hand when a release adds a name.
-export const BUNDLED_SKILLS = ['batch', 'code-review', 'commit', 'debug', 'loop', 'pr', 'run', 'simplify', 'update-config', 'verify'];
-export const BUILTIN_COMMANDS = [
+const BUNDLED_SKILLS = ['batch', 'code-review', 'commit', 'debug', 'loop', 'pr', 'run', 'simplify', 'update-config', 'verify'];
+const BUILTIN_COMMANDS = [
   'add-dir', 'agents', 'bug', 'clear', 'compact', 'config', 'context', 'cost', 'doctor', 'exit', 'export', 'help', 'hooks', 'ide',
   'init', 'login', 'logout', 'mcp', 'memory', 'model', 'output-style', 'permissions', 'plan', 'plugin', 'pr-comments', 'release-notes',
   'resume', 'review', 'rewind', 'settings', 'skills', 'status', 'statusline', 'terminal-setup', 'theme', 'usage', 'vim'
@@ -33,9 +18,7 @@ export const BUILTIN_COMMANDS = [
 const MINIMUM_PREFIX = 3;
 const MAXIMUM_DEPTH = 6;
 
-// Names a user may hold from marketplace plugins: commands/<name>.md and
-// skills/<name>/SKILL.md, each tagged with the plugin folder that ships it.
-export function marketplaceNames(folder) {
+function marketplaceNames(folder) {
   const found = [];
   const relative = (directory) => path.relative(folder, directory).split(path.sep).join('/') || path.basename(folder);
   function visit(directory, depth) {
@@ -59,7 +42,7 @@ export function marketplaceNames(folder) {
   return found.filter((entry) => !/(^|\/)exo\//.test(entry.source) && !seen.has(`${entry.name} ${entry.source}`) && seen.add(`${entry.name} ${entry.source}`));
 }
 
-export function findNameClashes(ownNames, others) {
+function findNameClashes(ownNames, others) {
   const clashes = [];
   const shadows = [];
   for (const own of ownNames) {
@@ -81,7 +64,6 @@ function skillNames(root) {
     .sort();
 }
 
-// Accepted today: key = `<exo name> ~ <other source>`, value = why it stays.
 export const BASELINE = new Map([
   ['verify ~ Claude Code bundled skill', 'rename deferred to round 2; routing eval reruns with it'],
   ['configure ~ claude-plugins-official/plugins/hookify command', 'rename deferred to round 2; hookify is optional'],

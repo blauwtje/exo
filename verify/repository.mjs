@@ -1,15 +1,9 @@
-// Path and file-set questions every check asks of the repository under test.
-// Relative paths are always forward-slashed: the detail strings they land in are
-// compared against each other across macOS and Windows.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { EXPECTED_SKILLS } from './budgets.mjs';
 
-// PowerShell's Sort-Object orders paths case-insensitively, so a references/
-// folder sorts before its sibling SKILL.md. Detail strings built from this order
-// are compared against that output character for character.
 function comparePaths(left, right) {
   const loweredLeft = left.toLowerCase();
   const loweredRight = right.toLowerCase();
@@ -26,11 +20,6 @@ export function createRepository(root) {
     return path.relative(absoluteRoot, path.resolve(target)).split(path.sep).join('/');
   }
 
-  // At the skills root only the skills the corpus contract names are walked:
-  // skills/ also holds the workflow and meta skills, whose shape the
-  // edit-skills skill governs until each is rewritten into this contract;
-  // everySkillFile reaches them for the checks every skill must pass.
-  // `enter` decides which folders are descended into at all.
   function walk(directory, predicate, enter = () => true) {
     const found = [];
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -43,8 +32,6 @@ export function createRepository(root) {
     return found.sort(comparePaths);
   }
 
-  // Every file git tracks under the root. Outside a work tree,
-  // every file under the root counts instead.
   function trackedFiles() {
     const listing = spawnSync('git', ['-C', absoluteRoot, 'ls-files', '-z'], { encoding: 'utf8' });
     if (listing.status === 0) {
@@ -83,22 +70,15 @@ export function createRepository(root) {
       .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(skillsRoot, entry.name, 'SKILL.md')))
       .map((entry) => path.join(skillsRoot, entry.name, 'SKILL.md'))
       .sort(comparePaths),
-    // Get-ProcessFiles: every SKILL.md plus every .md inside a references/ folder.
     processFiles: () => walk(skillsRoot, (full) => path.basename(full) === 'SKILL.md'
       || (full.endsWith('.md') && path.basename(path.dirname(full)) === 'references')),
-    // A delegate prompt sits beside its SKILL.md as <role>-prompt.md: text the skill
-    // hands to an agent, so it carries no process structure of its own but still
-    // keeps to the portable-language rules.
     promptFiles: () => walk(skillsRoot, (full) => full.endsWith('-prompt.md')
       && path.basename(path.dirname(path.dirname(full))) === 'skills'),
-    // A plugin agent's body is its system prompt, so it keeps to the same rules
-    // as a delegate prompt.
     agentFiles: () => {
       const agentsRoot = path.join(absoluteRoot, 'agents');
       if (!fs.existsSync(agentsRoot)) return [];
       return walk(agentsRoot, (full) => full.endsWith('.md'));
     },
-    // ReadAllLines drops the newline that ends the last line; split does not.
     lines: (file) => {
       const text = fs.readFileSync(file, 'utf8');
       const split = text.split('\n');

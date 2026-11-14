@@ -26,7 +26,6 @@ export function dispatchBlock({ task, frame, planPath, checkout, briefPath, sinc
   return [`Dispatch: exo:build-task`, `Since: ${since}`, ...promptLines(task, frame, planPath, checkout, briefPath)];
 }
 
-// why: with every unlanded task running no landing can start a refill, so one chained land replaces the per-slot lands.
 export function windowLines({ planPath, root, records, running, unlanded = null, only = null }) {
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];

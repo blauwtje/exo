@@ -17,8 +17,8 @@ const USAGE = [
   'length: within defaults.prBodyBytes in ~/.config/exo/run.json (4096); over it Follow-ups, Read order, Risk areas are cut in that order (CUT line), then exit 4 with OVER and no body: shorten Why or What changed.',
   'no diagram and no label suggestions; ship.mjs copies the labels from the issue.'
 ].join('\n');
-export const DEFAULT_BODY_BYTES = 4096;
-export const OVER_EXIT = 4;
+const DEFAULT_BODY_BYTES = 4096;
+const OVER_EXIT = 4;
 const AUTHORED = ['Why', 'What changed', 'Read order', 'Risk areas', 'Follow-ups'];
 const ORDER = ['Why', 'Acceptance', 'What changed', 'Read order', 'Risk areas', 'Proof', 'Follow-ups'];
 const CUT_ORDER = ['Follow-ups', 'Read order', 'Risk areas'];
@@ -49,26 +49,26 @@ export function parseSections(text) {
   return new Map([...sections].map(([name, lines]) => [name, lines.join('\n').trim()]));
 }
 
-export function isEmptySection(content) {
+function isEmptySection(content) {
   return content === undefined || content === '' || EMPTY_BODY.test(content);
 }
 
-export function issueFromBranch(branch) {
+function issueFromBranch(branch) {
   const match = /(?:^|\/)(?:(?:issue|gh)-)?(\d+)(?=[-/]|$)/.exec(branch ?? '');
   return match ? Number(match[1]) : null;
 }
 
-export function issueFromPlan(planText) {
+function issueFromPlan(planText) {
   const match = /^Issue:\s*#?(\d+)\s*$/m.exec(planText ?? '');
   return match ? Number(match[1]) : null;
 }
 
-export function issueFromCloses(text) {
+function issueFromCloses(text) {
   const match = CLOSES.exec(text ?? '');
   return match ? Number(match[1]) : null;
 }
 
-export function checklistItems(issueBody) {
+function checklistItems(issueBody) {
   const items = [];
   let fenced = false;
   for (const line of String(issueBody ?? '').split('\n')) {
@@ -88,7 +88,7 @@ function verdictFor(verdicts, item, index) {
     ?? verdicts.find((verdict) => String(verdict.item ?? '').trim().toLowerCase() === wanted);
 }
 
-export function acceptanceRows(items, verdicts = []) {
+function acceptanceRows(items, verdicts = []) {
   return items.map((item, index) => {
     const verdict = verdictFor(verdicts, item, index);
     const evidence = String(verdict?.evidence ?? '').trim();
@@ -100,7 +100,7 @@ export function acceptanceRows(items, verdicts = []) {
 
 const cell = (text) => text.replaceAll('|', '\\|');
 
-export function acceptanceTable(rows) {
+function acceptanceTable(rows) {
   if (rows.length === 0) return '';
   const lines = rows.map((row) => `| ${cell(row.item)} | ${row.status} | ${cell(row.evidence)} |`);
   return ['| Criterion | Status | Evidence |', '| --- | --- | --- |', ...lines].join('\n');
@@ -110,11 +110,11 @@ export function proofLines(gateText) {
   return String(gateText ?? '').split('\n').filter((line) => GATE_LINE.test(line)).map((line) => line.trimEnd());
 }
 
-export function proofBlock(lines) {
+function proofBlock(lines) {
   return lines.length === 0 ? '' : ['```', ...lines, '```'].join('\n');
 }
 
-export function composeBody({ authored, acceptance, proof, issue, limit }) {
+function composeBody({ authored, acceptance, proof, issue, limit }) {
   const generated = new Map([['Acceptance', acceptance], ['Proof', proof]]);
   const present = (name) => (generated.has(name) ? generated.get(name) : authored.get(name));
   const closes = issue === null ? '' : `\n\nCloses #${issue}`;
@@ -131,7 +131,7 @@ export function composeBody({ authored, acceptance, proof, issue, limit }) {
   return { body: render(names), cut, bytes: size(names), over: size(names) > limit };
 }
 
-export function readIssueBody(issue, run = execFileSync) {
+function readIssueBody(issue, run = execFileSync) {
   try {
     const out = run('gh', ['issue', 'view', String(issue), '--json', 'body'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     return JSON.parse(out).body ?? '';

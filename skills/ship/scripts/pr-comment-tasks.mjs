@@ -70,7 +70,7 @@ function evidenceOf(body) {
 
 const shellQuoted = (text) => `'${text.replaceAll("'", "'\\''")}'`;
 
-export function findingFor(comment, quote) {
+function findingFor(comment, quote) {
   return [
     `${comment.path}:${comment.line}; defect; reviewer comment; ${evidenceOf(comment.body)}; fix`,
     `  Probe: ! grep -qF -e ${shellQuoted(quote)} ${shellQuoted(comment.path)}`,
@@ -81,7 +81,7 @@ export function findingFor(comment, quote) {
   ].join('\n');
 }
 
-export function planTasks(comments, root, pr, threadStates = new Map()) {
+function planTasks(comments, root, pr, threadStates = new Map()) {
   const tasks = [];
   const skipped = [];
   for (const comment of comments) {

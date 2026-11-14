@@ -5,7 +5,7 @@ const ENTER_WORD = /\b(enter|i am (over )?18|i'm (over )?18|yes)\b/i;
 const GATE_TEXT_LIMIT = 1500;
 const CHALLENGE_TEXT_LIMIT = 4000;
 
-export function isCloudflare(headers) {
+function isCloudflare(headers) {
   return Boolean(headers.get('cf-mitigated')) || /cloudflare/i.test(headers.get('server') ?? '');
 }
 

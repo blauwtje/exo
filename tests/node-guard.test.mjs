@@ -1,7 +1,3 @@
-// Without Node on PATH every hook command used to exit 127 and exo's safety went
-// off with no word to the user. Each hook command now tests for node first:
-// SessionStart says once that the hooks are off, every other hook exits 0 and
-// prints nothing. With node present the guard changes nothing.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

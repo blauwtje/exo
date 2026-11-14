@@ -1,7 +1,3 @@
-// Runs tests/*.test.mjs under node --test with the TAP reporter and reports the
-// tally. The tally comes from the TAP footer rather than the exit code alone, so
-// a green line names how many tests actually ran and a red one names which ones
-// failed.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -12,9 +8,6 @@ import { pathToFileURL } from 'node:url';
 
 const TALLY_KEYS = ['tests', 'pass', 'fail', 'skipped'];
 
-// The TAP footer prints each count once, but a nested reporter can repeat a key,
-// so the last occurrence is the run's own total. A key that never appears is -1,
-// which shows up in the detail rather than passing as a zero.
 function tallyFrom(lines, key) {
   const pattern = new RegExp(`^#\\s+${key}\\s+(\\d+)\\s*$`);
   let value = -1;
@@ -64,7 +57,6 @@ export function startSkillScriptBehavior(repository) {
     return Promise.resolve({ status: 'UNRUN', name: NAME, detail: 'tests/ holds no *.test.mjs file' });
   }
 
-  // why: the check can run inside `exo run`, whose variables would make the tests park gates in the live run.
   const stripFile = repository.join('tests', 'clean-run-env.mjs');
   const strip = fs.existsSync(stripFile) ? ['--import', pathToFileURL(stripFile).href] : [];
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-behavior-'));

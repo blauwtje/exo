@@ -28,7 +28,6 @@ function run(cwd, cmd, args) {
 }
 const git = (cwd, ...args) => run(cwd, 'git', args);
 
-// why: a branch rebased by hand moves nothing in this rebase, so only the cache's tree key shows the criterion never ran on it.
 function passedOnTree(runRoot, check) {
   try {
     return cachedPass(runRoot, check) !== null;

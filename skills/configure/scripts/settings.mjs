@@ -176,7 +176,6 @@ function set(root, key, value, scope) {
 
   if (scope === 'global') return;
 
-  // why: check-ignore exits 0 for an ignored path, 1 for a tracked one and 128 outside git.
   const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);
   if (scope === 'local' && ignored.status === 1) {
     fs.appendFileSync(path.join(root, '.gitignore'), gitignoreEntry(root, relative));
@@ -186,7 +185,6 @@ function set(root, key, value, scope) {
     console.log(`${relative} is git-ignored, so collaborators do not receive it`);
   }
 }
-
 
 function statusline() {
   if (currentHost() === 'codex') {

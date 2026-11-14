@@ -1,5 +1,3 @@
-// Receipts: a user-only `systemMessage` line when an exo skill starts, an exo agent is dispatched or
-// a call is refused. The model's context (`hookSpecificOutput`) must stay as it was.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -9,10 +7,8 @@ import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
 import { contextHook, receiptsOn } from '../hooks/context-limit.mjs';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
-import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { tempDir } from './harness.mjs';
 
-// The hook reads the session provider from the environment; these tests expect the claude column.
 delete process.env.EXO_PROVIDER;
 
 const REPOSITORY = path.resolve(import.meta.dirname, '..');
@@ -26,17 +22,8 @@ function transcript(tokens) {
   return file;
 }
 
-// A subagent over the hard limit is denied by the context hook for every tool but Write and Edit; the edit hook denies a result-file Write while a background shell runs.
 let refusedCalls = 0;
 const refused = (tool, toolInput = {}) => ({ session_id: `receipts-${process.pid}-${Date.now()}-${refusedCalls++}`, agent_id: 'a1', agent_transcript_path: transcript(10_000_000), tool_name: tool, tool_input: toolInput });
-const shellEntries = [
-  { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'ls', run_in_background: true } }] } },
-  { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: 'Command running in background with ID: bg1. Output is being written to: /tmp/bg1.output.' }] } }
-];
-const shellTranscript = path.join(WORK, 'shells.jsonl');
-fs.writeFileSync(shellTranscript, shellEntries.map((entry) => JSON.stringify(entry)).join('\n'));
-let editCalls = 0;
-const refusedEdit = () => ({ session_id: `receipts-edit-${process.pid}-${Date.now()}-${editCalls}`, agent_id: `receipts-edit-${process.pid}-${Date.now()}-${editCalls++}`, agent_transcript_path: shellTranscript, tool_name: 'Write', tool_input: { file_path: '/x/.exo/r.md' } });
 const skill = (name) => ({ tool_name: 'Skill', tool_input: { skill: name } });
 
 test('an exo skill start gives one user-only line and no model context', () => {
@@ -67,14 +54,10 @@ test('an agent that is not an exo agent gives no line', () => {
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'exo-kind: build\nReads: none\nx' } }, 'on', ON).systemMessage, undefined);
 });
 
-test('a refusal gives one line with its reason from the Bash, Edit and Agent hooks', async () => {
+test('a refusal gives one line with its reason from the Bash, Agent and context hooks', async () => {
   const bash = await dispatchBash(refused('Bash', { command: 'ls' }), undefined, ON);
-  const edit = dispatchEdit(refusedEdit(), ON);
   const agent = agentHook(refused('Agent', { subagent_type: 'Explore' }), 'on', ON);
   const read = contextHook(refused('Read', { file_path: '/x' }), ON);
-  assert.equal(edit.hookSpecificOutput.permissionDecision, undefined);
-  assert.match(edit.hookSpecificOutput.additionalContext, /^Background shells you started still run/);
-  assert.equal(edit.systemMessage, undefined);
   for (const output of [bash, agent, read]) {
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
     assert.match(output.systemMessage, /^exo blocked: Over the (hard )?context (limit|target)/);
@@ -112,12 +95,10 @@ test('receipts off gives no systemMessage anywhere', async () => {
   assert.equal(contextHook(skill('exo:spec'), OFF), null);
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF).systemMessage, undefined);
   assert.equal((await dispatchBash(refused('Bash'), undefined, OFF)).systemMessage, undefined);
-  assert.equal(dispatchEdit(refusedEdit(), OFF).systemMessage, undefined);
 });
 
 test('a call with nothing to show gives no output', async () => {
   assert.equal(await dispatchBash({ tool_name: 'Bash', tool_input: { command: 'ls' } }, undefined, ON), null);
-  assert.equal(dispatchEdit({ tool_name: 'Edit', tool_input: { file_path: '/x' } }, ON), null);
 });
 
 test('receiptsOn is on by default and off only for off', () => {
@@ -134,7 +115,6 @@ test('the hook script prints the line on stdout with receipts at their default',
   assert.deepEqual(JSON.parse(run('context-limit.mjs', skill('exo:build'))), { systemMessage: 'exo › build' });
   assert.match(JSON.parse(run('agent-effort.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'exo:review-branch' } })).systemMessage, /^exo › review-branch/);
   assert.match(JSON.parse(run('dispatch-bash.mjs', refused('Bash'))).systemMessage, /^exo blocked: /);
-  assert.equal(JSON.parse(run('dispatch-edit.mjs', refusedEdit())).systemMessage, undefined);
   fs.mkdirSync(path.join(project, '.claude'));
   fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
   assert.equal(run('context-limit.mjs', skill('exo:build')), '');

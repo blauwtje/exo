@@ -1,7 +1,3 @@
-// Every file a skill ships under scripts/ is an .mjs module that parses,
-// installs nothing, hard-codes no machine path, and is linked from the prose
-// that names it. A skill script that installs a package or points at one
-// machine's temp directory works only where it was written.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,8 +25,6 @@ export function checkSkillScripts(report, repository) {
   const parsable = [];
   for (const folder of folders) {
     for (const name of fs.readdirSync(folder).sort()) {
-      // A dot-prefixed file is skipped deliberately rather than by the shell's
-      // hidden-file convention, which differs per platform.
       if (name.startsWith('.')) continue;
       const file = path.join(folder, name);
       if (!fs.statSync(file).isFile()) continue;
@@ -41,7 +35,6 @@ export function checkSkillScripts(report, repository) {
       }
       checked += 1;
       const content = repository.text(file);
-      // An install command may appear as advice in a message; it may never be run.
       if (PACKAGE_MANAGER_CALL.test(content)) {
         problems.push(`${relative} runs a package manager; skill scripts install nothing`);
       }

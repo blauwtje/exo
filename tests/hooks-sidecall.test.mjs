@@ -15,7 +15,6 @@ const PAYLOADS = {
   Stop: { hook_event_name: 'Stop', session_id: 'sidecall' },
   Bash: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Bash', tool_input: { command: 'find / -name x' } },
   Agent: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Agent', tool_input: { description: 'x', prompt: 'y' } },
-  Edit: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Edit', tool_input: { file_path: '/tmp/x', old_string: 'a', new_string: 'b' } },
   Read: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Read', tool_input: { file_path: '/tmp/x' } },
   AskUserQuestion: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'AskUserQuestion', tool_input: {} }
 };

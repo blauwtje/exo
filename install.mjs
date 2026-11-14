@@ -1,33 +1,3 @@
-// Installs exo into every detected harness from this clone.
-//
-//   node install.mjs [--harness claude,codex] [--scope user|project|local]
-//                    [--project <dir>]... [--yes] [--update] [--remove]
-//
-// Scopes follow Claude Code's `-s` values: `user` (every project), `project`
-// (chosen projects, shared through git), `local` (chosen projects, private).
-// With no flag and a terminal it asks for the harnesses, the scope and, for a
-// per-project scope, the project folders (default: the current folder), then
-// prints one plan and writes. Enter at every prompt installs every detected
-// harness at user scope. `--yes`, or no terminal, takes the defaults for
-// anything a flag leaves unset. `--update` runs `git pull --ff-only` in this
-// clone, then asks every adapter to update what it recorded; `--remove` asks
-// every adapter to remove it, narrowed by `--harness`, `--scope` and `--project`.
-//
-// Adapters (harnesses/registry.mjs) export `name`, `label`, `detect(env)`,
-// `install(plan)`, `update(record)`, `remove(record)` and `recorded(env)`:
-//   detect(env)  -> { detected, installable, reason? }; a detected harness that
-//                   is not installable carries the reason and is listed with it.
-//   install(plan) with plan = { root, env, scope, project }, once per project
-//                   (`project` is undefined for `user`).
-//   update(record) / remove(record) with record = { root, env, scope?, project? }:
-//                   the adapter walks its own installed.json and applies every
-//                   install the optional `scope` and `project` match.
-//   recorded(env) -> the number of installs its installed.json lists; the
-//                   internal `--recorded` prints the label of each adapter above 0,
-//                   so install.sh keeps the clone while any install is left.
-// install, update and remove return a summary string or { summary, notes? },
-// or throw to abort that install; the installer carries on with the rest and
-// exits 1 at the end.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,9 +22,7 @@ function parse(argv) {
       yes: { type: 'boolean' },
       update: { type: 'boolean' },
       remove: { type: 'boolean' },
-      // Set by the update itself on the child it starts after the pull; never typed.
       pulled: { type: 'boolean' },
-      // Asked by install.sh --remove before it deletes the clone; never typed.
       recorded: { type: 'boolean' }
     }
   });
@@ -83,7 +51,6 @@ function projectFolder(folder, cwd) {
   return resolved;
 }
 
-// Reads answers line by line; a closed input answers every later prompt with Enter.
 function prompter(input, stdout) {
   const reader = readline.createInterface({ input });
   const lines = reader[Symbol.asyncIterator]();
@@ -187,9 +154,6 @@ function pullClone(root) {
   return pulled.stdout.trim();
 }
 
-// Returns the exit code. `context` lets a test inject the adapter list, the
-// streams, the environment and the clone root; `restartAfterPull` makes --update
-// finish in a new process, so the pulled adapters are the ones that run.
 export async function run(argv, context = {}) {
   const {
     root = ROOT,
@@ -209,13 +173,9 @@ export async function run(argv, context = {}) {
   if (options.update || options.remove) {
     const verb = options.update ? 'update' : 'remove';
     const selected = pickAdapters(options.harness, adapters);
-    // A filter names a project that may be gone, so it is resolved but not checked.
     const projects = options.project?.map((folder) => path.resolve(cwd, folder)) ?? [undefined];
     if (options.update && !options.pulled) {
       stdout.write(`${pullClone(root)}\n`);
-      // This process imported the adapters before the pull, so the pulled sources
-      // would be written by the old rules; a fresh process imports the new ones.
-      // Only the command line asks for the restart; a caller of run() keeps its own adapters.
       if (context.restartAfterPull) {
         const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url), ...argv, '--pulled'], { stdio: 'inherit' });
         if (child.error) throw new Error(`update after the pull failed to start: ${child.error.message}`);

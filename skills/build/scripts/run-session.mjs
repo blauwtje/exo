@@ -28,7 +28,6 @@ function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit 
     let partial = '';
     let settled = false;
     let graceTimer = null;
-    // why: on POSIX a detached child leads its own process group, which the timeout can end whole.
     const child = spawn(claude.command, [...claude.prefix, ...args], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     const endTree = (signal) => {
       try {
@@ -89,7 +88,6 @@ function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit 
     });
     child.on('exit', (code, signal) => {
       if (!timedOut && !aborted) {
-        // why: a grandchild holding the pipes keeps 'close' from firing, so the run would hang with no timeout armed.
         clearTimeout(graceTimer);
         graceTimer = setTimeout(() => {
           endTree('SIGKILL');
@@ -100,7 +98,6 @@ function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit 
       endTree('SIGKILL');
       settle(code, signal);
     });
-    // why: after a kill a grandchild may still hold the pipes, so 'close' can lag behind 'exit'.
     child.on('close', settle);
     const timer = setTimeout(() => {
       timedOut = true;

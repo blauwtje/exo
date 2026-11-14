@@ -1,6 +1,3 @@
-// Shared child-process and fixture plumbing for the skill-script tests.
-// `node --test` runs every *.test.mjs file in its own process, so the cleanup
-// hook registered here belongs to whichever test file imported it.
 
 import { execFile, execFileSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
@@ -30,29 +27,19 @@ after(async () => {
   }
 });
 
-// The variables through which a script finds the developer's own exo settings:
-// the project folder, and the plugin options a hook receives.
 const SETTINGS_VARIABLE = /^(CLAUDE_PROJECT_DIR|CLAUDE_PLUGIN_OPTION_.*)$/;
-// The task pin run-plan.mjs sets for each task session; inherited by a test run inside
-// one, it would make every spawned land-task refuse all but that task.
 const RUN_PIN_VARIABLE = 'EXO_RUN_TASK';
 const RUN_SESSION_VARIABLE = 'EXO_RUN_SESSION';
-// The marker Claude Code sets in every Bash call; inherited by a test run inside a session,
-// it would make every spawned exo-cli or run-plan refuse as started from a session.
 const SESSION_VARIABLE = 'CLAUDECODE';
-// why: git refuses a commit on a host with no configured identity, such as a CI
-// runner, and the scripts under test commit through plain git.
 export const GIT_IDENTITY = { GIT_AUTHOR_NAME: 'stub', GIT_AUTHOR_EMAIL: 'stub@example.com', GIT_COMMITTER_NAME: 'stub', GIT_COMMITTER_EMAIL: 'stub@example.com' };
 
 let emptyConfigDirectory;
 
-/** One empty directory shared by every spawn of this test file, so no global settings file is read from it. */
 function emptyConfig() {
   emptyConfigDirectory ??= fixture();
   return emptyConfigDirectory;
 }
 
-/** The inherited environment without the developer's own exo settings or run pin, then `overrides`, so a test that names one on purpose still wins. */
 async function isolatedEnv(overrides) {
   const inherited = Object.fromEntries(
     Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name) && name !== RUN_PIN_VARIABLE && name !== RUN_SESSION_VARIABLE && name !== SESSION_VARIABLE)
@@ -74,16 +61,12 @@ export async function run(file, args, options = {}) {
       })
     );
     if (options.input !== undefined) {
-      // A child that exits before reading its stdin fails this write with EPIPE, and an
-      // unhandled stream error aborts the whole test file; the execFile callback above
-      // still reports the child's real outcome.
       child.stdin.on('error', () => {});
       child.stdin.end(options.input);
     }
   });
 }
 
-/** Write `value` as JSON into a fresh temp directory and return its path. */
 export async function jsonFixture(name, value) {
   const directory = await fixture();
   const file = path.join(directory, name);
@@ -91,17 +74,13 @@ export async function jsonFixture(name, value) {
   return file;
 }
 
-// A fixed identity and no signing, so a commit works on a machine that has
-// neither configured.
 const GIT_SETTINGS = ['-c', 'user.name=exo-test', '-c', 'user.email=exo-test@example.com', '-c', 'commit.gpgsign=false'];
 
-/** Run git in `directory` and return what it printed, trimmed. */
 export function git(directory, ...args) {
   const output = execFileSync('git', ['-C', directory, ...GIT_SETTINGS, ...args], { encoding: 'utf8' });
   return output.trim();
 }
 
-/** Write `files`, a map of relative path to content, under `root` and commit them all. */
 export async function commitFiles(root, files, subject) {
   for (const [relativePath, content] of Object.entries(files)) {
     const target = path.join(root, relativePath);
@@ -112,9 +91,6 @@ export async function commitFiles(root, files, subject) {
   git(root, 'commit', '-q', '-m', subject);
 }
 
-// A real repository on branch main with `files` in its first commit. The root
-// goes through realpath: macOS reaches its temp directory through a symlink,
-// and git reports the resolved path, which no path built from mkdtemp matches.
 export async function gitRepository(files) {
   const root = await fs.realpath(await fixture());
   git(root, 'init', '-q', '-b', 'main');
@@ -124,7 +100,6 @@ export async function gitRepository(files) {
 
 const FENCE = '```';
 
-/** One task in the grammar `spec` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
 export function taskSection({ number, title, dependsOn = 'none', design = false, files, code = '', subject, trailer = true, commit = true }) {
   const commitLine = trailer
     ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
@@ -150,7 +125,6 @@ export function taskSection({ number, title, dependsOn = 'none', design = false,
   ].join('\n');
 }
 
-/** One compact task: its heading plus the single `Depends on: ... | Files: ... | Data: ...` field line. `proof: null` drops the `Proof:` segment, for a test that checks plan-check catches its absence. */
 export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', design = null, proof = 'node --test' }) {
   const filesSegment = `Files: ${files.map((filePath) => `\`${filePath}\``).join(', ')}`;
   const designSegment = design === null ? '' : ` | Design: ${design}`;
@@ -161,7 +135,6 @@ export function compactTask({ number, title, dependsOn = 'none', files, data = '
   ].join('\n');
 }
 
-/** A whole compact plan around `tasks`: the `## Goal`/`## Plan basis`/`## Success criterion`/`## Checkpoint` frame the grammar requires, then `## Tasks`. */
 export function compactPlanFixture({ tasks }) {
   return [
     '# Plan: compact fixture',
@@ -189,9 +162,6 @@ export function compactPlanFixture({ tasks }) {
   ].join('\n');
 }
 
-/** A spec brief around `tasks`: the compact frame plus the brief-only
- * `## Decisions` and `## Acceptance` sections ahead of it,
- * per skills/spec/references/brief.md. */
 export function briefFixture({ tasks }) {
   return [
     '# Brief: compact fixture',
@@ -225,9 +195,6 @@ export function briefFixture({ tasks }) {
   ].join('\n');
 }
 
-/** A whole plan around `tasks`, with a `Worktree setup:` line only when
- * `worktreeSetup` is given and a `## Checkpoint` whose `Parallel:` point reads
- * `parallel` only when `parallel` is given. */
 export function planFixture({ worktreeSetup = null, parallel = null, tasks }) {
   return [
     '# Plan: fixture',

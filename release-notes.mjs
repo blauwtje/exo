@@ -1,10 +1,3 @@
-// Print the GitHub Release body for one version from its CHANGELOG.md section:
-// the highlights first, then the change sections in a fixed order under release
-// headings. Each bullet ends with its source: the pull request that brought the
-// line in, else the branch merged with it, else its commit linked on GitHub.
-// A link to the full diff against the previous tag closes the body.
-//
-//   node release-notes.mjs [version]     defaults to the version in plugin.json
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,7 +45,6 @@ function previousTag(reference) {
   }
 }
 
-// Before the release is tagged, the notes cover the commits up to HEAD.
 const tag = `v${version}`;
 const reference = succeeds(['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`]) ? tag : 'HEAD';
 const previous = previousTag(reference);
@@ -68,7 +60,6 @@ function firstParentLine() {
 }
 const mainLine = firstParentLine();
 
-/** The merges in the range that brought `sha` in through a side parent, those on the first-parent line of the reference first. */
 function mergesBringing(sha) {
   const merges = [];
   for (const line of gitText(root, ['log', '--merges', '--ancestry-path', '--format=%H%x09%P%x09%s', `${sha}..${reference}`]).split('\n')) {
@@ -80,7 +71,6 @@ function mergesBringing(sha) {
   return merges.filter((merge) => mainLine.has(merge.hash)).concat(merges.filter((merge) => !mainLine.has(merge.hash)));
 }
 
-/** Where a changelog line came from: a pull request, a merged branch or its commit, or undefined without history. */
 function source(line) {
   let added;
   try {

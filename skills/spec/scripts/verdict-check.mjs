@@ -32,7 +32,7 @@ function objectionLineProblems(section) {
   return ["the 'Objection:' line names no concrete reason the work could fail"];
 }
 
-export function verdictProblems(text) {
+function verdictProblems(text) {
   const section = verdictSection(text);
   if (section === null) return ["the brief has no '## Verdict' section: add 'Verdict: go' and 'Objection: <strongest reason the work fails or is not worth doing>'"];
   return [...verdictLineProblems(section), ...objectionLineProblems(section)];

@@ -1,5 +1,3 @@
-// A link that leaves the skill folder reaches the clone through {{EXO_ROOT}}, and one
-// that climbs above the exo root fails generation.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

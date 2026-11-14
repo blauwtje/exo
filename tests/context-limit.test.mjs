@@ -5,13 +5,11 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CONTEXT_STEP, dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
-import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
 import { guardKind } from '../lib/guard-rules.mjs';
 import { tempDir } from './harness.mjs';
 
-// why: node --test gives each file its own process, so this home covers the in-process calls and the spawned hook alike.
 const testHome = tempDir('exo-limit-home-');
 process.env.HOME = testHome;
 process.env.USERPROFILE = testHome;
@@ -99,16 +97,12 @@ test('Bash and Edit dispatchers give the interactive main session no context not
 
     for (const tokens of [below, soft, limit + 1000]) {
       assert.equal(await dispatchBash(input('Bash', `${id}-b${tokens}`, tokens)), null);
-      assert.equal(dispatchEdit(input('Edit', `${id}-e${tokens}`, tokens)), null);
     }
 
     const deny = { name: 'deny', run: () => ({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'no' } }) };
     const denied = await dispatchBash(input('Bash', `${id}-b2`, soft), [CONTEXT_STEP, deny]);
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
     assert.equal(denied.hookSpecificOutput.additionalContext, undefined);
-
-    process.env.EXO_RUN_HANDOFF = path.join(dir, 'handoff.md');
-    assert.equal(dispatchEdit(input('Edit', `${id}-e2`, limit + 1000)).hookSpecificOutput.permissionDecision, 'deny');
   } finally {
     if (saved !== undefined) process.env.EXO_RUN_HANDOFF = saved; else delete process.env.EXO_RUN_HANDOFF;
   }
@@ -187,16 +181,6 @@ test('replay: an agent grows past 150000 under a lead contextLimit of 150000 and
   } finally {
     fs.rmSync(runJson, { force: true });
   }
-});
-
-test('an Edit by a subagent past its hard limit passes the edit dispatcher', () => {
-  const dir = tempDir('exo-agent-edit-');
-  const file = path.join(dir, 't.jsonl');
-  fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: AGENT_HARD } } })}\n`);
-  const agent_id = `a-edit-${process.pid}-${Date.now()}`;
-  const input = { session_id: 'a', agent_id, agent_transcript_path: file, tool_name: 'Edit', tool_input: { file_path: path.join(dir, 'x.txt'), old_string: 'a', new_string: 'b' } };
-  const output = dispatchEdit(input, () => false);
-  assert.notEqual(output?.hookSpecificOutput?.permissionDecision, 'deny');
 });
 
 test('hookAgentType reads agent_type first, else the meta file beside the subagent transcript, and strips the exo: prefix', async () => {

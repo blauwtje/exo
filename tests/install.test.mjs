@@ -1,7 +1,3 @@
-// install.mjs selects harnesses, scope and projects from flags, prompts or
-// defaults, prints one plan, and calls each selected adapter through the
-// adapter contract. A stub adapter registered through harnesses/registry.mjs
-// stands in for the real harnesses.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -18,8 +14,6 @@ const base = fs.realpathSync(tempDir('install-test-'));
 
 const calls = [];
 
-// `state` is what detect() answers for the stub; `fail` makes install throw;
-// `count` is how many installs recorded() reports.
 function stub(name, label, state = { detected: true, installable: true }, fail = false, count = 0) {
   return {
     name,
@@ -60,8 +54,6 @@ function sink() {
   return { stream, text: () => Buffer.concat(chunks).toString() };
 }
 
-// Runs install.mjs in this process with a registered adapter list; `answers`
-// make the input a terminal that types those lines.
 async function exo(args, { answers, cwd = base, root = REPO } = {}) {
   const out = sink();
   const err = sink();

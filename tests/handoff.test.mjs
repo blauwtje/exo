@@ -1,4 +1,3 @@
-// handoff.mjs path outside git resolves the same config root as hooks/session-start.mjs per host.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

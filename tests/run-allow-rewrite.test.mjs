@@ -1,4 +1,3 @@
-// why: a run session gates Bash on dontAsk prefix allow rules; a command one allowed must stay allowed.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

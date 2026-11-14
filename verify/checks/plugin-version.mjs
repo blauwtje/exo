@@ -1,8 +1,3 @@
-// One version lives in three manifests, and `claude plugin update` compares only
-// the one in plugin.json, so users receive a change only when a release raises
-// it. Between releases every change waits under `## Unreleased` in CHANGELOG.md:
-// the gate demands that entry whenever the tree differs from the pushed base,
-// and a raised version must carry the dated section `npm run bump` writes.
 
 import fs from 'node:fs';
 import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
@@ -12,12 +7,10 @@ const PACKAGE_FILE = 'package.json';
 const PLUGIN_FILE = '.claude-plugin/plugin.json';
 const MARKETPLACE_FILE = '.claude-plugin/marketplace.json';
 const CHANGELOG_FILE = 'CHANGELOG.md';
-// The pushed state, never the local branch: `git diff main` on main compares HEAD
-// to itself and would pass every unrecorded commit.
 const BASE_REF = 'origin/main';
 const THREE_FIELDS = /^\d+\.\d+\.\d+$/;
 
-export function compareVersions(left, right) {
+function compareVersions(left, right) {
   const leftFields = left.split('.').map(Number);
   const rightFields = right.split('.').map(Number);
   for (let field = 0; field < Math.max(leftFields.length, rightFields.length); field += 1) {
@@ -32,7 +25,6 @@ function marketplaceEntry(manifest, pluginName) {
   return manifest.plugins.find((plugin) => plugin.name === pluginName);
 }
 
-// Tracked differences and new files both ship, and `git diff` sees only the first.
 function treeDiffers(repository) {
   if (git(repository.root, ['diff', '--quiet', BASE_REF]).status !== 0) return true;
   return (git(repository.root, ['ls-files', '--others', '--exclude-standard']).stdout ?? '').trim() !== '';
@@ -96,8 +88,6 @@ export function checkPluginVersion(report, repository, { strict = false } = {}) 
   const baseVersion = JSON.parse(shown.stdout).version;
   const order = compareVersions(declared, baseVersion);
   if (order < 0) {
-    // A release pushed after this branch forked raises origin/main alone; a version
-    // equal to the fork point's means the branch never lowered it.
     const mergeBase = git(repository.root, ['merge-base', 'HEAD', BASE_REF]).stdout.trim();
     const forked = mergeBase === '' ? { status: 1 } : git(repository.root, ['show', `${mergeBase}:${PLUGIN_FILE}`]);
     if (forked.status === 0 && JSON.parse(forked.stdout).version === declared) {
@@ -131,9 +121,6 @@ export function checkPluginVersion(report, repository, { strict = false } = {}) 
     return;
   }
   const missing = `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`;
-  // Only the lead writes the changelog line, at landing: a branch waits for it, while
-  // the default branch and a detached HEAD (CI on a pull request) must already carry it.
-  // `strict` demands it on any branch.
   const branch = git(repository.root, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
   if (!strict && branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
     report.result('PASS', name, `every manifest carries ${declared}; the tree differs from ${BASE_REF} and the lead writes the ${UNRELEASED_HEADING} line at landing`);

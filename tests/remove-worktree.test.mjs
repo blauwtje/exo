@@ -1,9 +1,3 @@
-// remove-worktree.mjs copies a worktree's .exo/ files into the run's .exo/
-// (or, with --kept, into .exo/kept/<name>/, first moving an existing folder of
-// that name to <name>-<stamp>/) and every docs/specs/ file git does not track
-// into .exo/kept/<name>/docs/specs/ before it removes the worktree, and refuses
-// to remove it, with any moved kept folder back in place, when a copy fails or
-// git refuses; when git removed part of it, both kept folders stay.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -14,9 +8,6 @@ import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/rem
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
-// `.exo/` is excluded (lib/scratch-exclude.mjs), not gitignored, the same as a
-// real wave worktree, so `git worktree remove` sees it as clean rather than
-// refusing over an "untracked" .exo/ file.
 async function runWithWorktree(files = {}) {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', ...files });
   excludeScratch(root);
@@ -82,8 +73,6 @@ test('--kept copies into .exo/kept/<name>/ and leaves the run .exo/ untouched', 
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
-// Two worktrees named `task` under different parents, each holding one
-// `.exo/task-1.patch` that names its own worktree.
 async function runWithTwoSameNamedWorktrees() {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
   excludeScratch(root);
@@ -166,8 +155,6 @@ test('copies a .exo/ file whose name has a space', async () => {
   assert.equal(fs.readFileSync(path.join(root, '.exo', 'my report.md'), 'utf8'), 'spaced\n');
 });
 
-// The file walk copies regular files only, so a symlink is a `.exo/` file git
-// lists that the copy misses; symlinks need privileges on Windows.
 test('refuses and removes nothing when git lists a .exo/ file the copy missed', { skip: process.platform === 'win32' }, async () => {
   const { root, worktree } = await runWithWorktree();
   writeFile(worktree, '.exo/report.md', 'report\n');
@@ -187,9 +174,6 @@ function writeFile(root, relative, content) {
   fs.writeFileSync(path.join(root, relative), content);
 }
 
-// A `.gitignore` of `docs/*`, the same as this repository's, makes a spec
-// brief under `docs/specs/` ignored, so `git worktree remove` deletes it
-// without refusing.
 const IGNORED_DOCS = { '.gitignore': 'docs/*\n' };
 
 test('--kept keeps an ignored docs/specs/ brief in .exo/kept/<name>/docs/specs/ and removes the worktree', async () => {
@@ -350,8 +334,6 @@ test('the command line rejects --force as a usage error', async () => {
   assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
-// A read-only parent lets git delete every file inside the worktree and
-// then fail on the worktree folder itself, whatever order readdir gives.
 test('--kept keeps the copy and the moved-aside folder when git removes part of the worktree', { skip: process.getuid?.() === 0 || process.platform === 'win32' }, async () => {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', ...IGNORED_DOCS });
   excludeScratch(root);

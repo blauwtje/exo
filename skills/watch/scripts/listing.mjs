@@ -43,7 +43,7 @@ function viewsOf(entry) {
   return Number.isFinite(entry.view_count) ? `${entry.view_count} views` : '';
 }
 
-export function entryLine(entry, base) {
+function entryLine(entry, base) {
   return [urlOfEntry(entry, base), entry.title, dateOf(entry), durationOf(entry), viewsOf(entry)].filter(Boolean).join(' | ');
 }
 

@@ -17,7 +17,7 @@ const EXCLUDED = [
   /^tests\/folded-names\.test\.mjs$/,
 ];
 
-export function isExcluded(file) {
+function isExcluded(file) {
   return EXCLUDED.some((pattern) => pattern.test(file));
 }
 
@@ -25,7 +25,7 @@ export function loadFoldMap(root) {
   return JSON.parse(fs.readFileSync(path.join(root, MAP_FILE), 'utf8'));
 }
 
-export function foldedEntries(map) {
+function foldedEntries(map) {
   const named = (kind) => Object.entries(map[kind] ?? {}).filter(([, entry]) => entry.state !== 'pending');
   return { skills: named('skills').map(([name]) => name), agents: named('agents').map(([name]) => name) };
 }
@@ -40,7 +40,7 @@ function escaped(name) {
   return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function oldNamePattern({ skills, agents }) {
+function oldNamePattern({ skills, agents }) {
   const parts = ['MODE\\.md'];
   for (const name of [...skills, ...agents]) parts.push(`exo:${escaped(name)}(?![\\w-])`);
   for (const name of skills) parts.push(`skills/${escaped(name)}/`);

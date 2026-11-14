@@ -15,7 +15,6 @@ import { chainedForCaller } from './next-task-caller.mjs';
 import { nextTaskReport } from './next-task-report.mjs';
 import { blockReport } from './next-task-block.mjs';
 
-// why: the status line reads this record; a failure here must never fail the calling script.
 export function refreshProgress({ planPath, planText, root }) {
   const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
   if (!sessionId || process.env.EXO_RUN_TASK) return;

@@ -16,7 +16,7 @@ function lineCount(file) {
   return text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 }
 
-export function checkHookSize(report, repository) {
+function checkHookSize(report, repository) {
   const files = [...repository.walk(repository.join('hooks'), (file) => file.endsWith('.mjs')), repository.join('lib/hook-input.mjs')]
     .filter((file) => fs.existsSync(file));
   const lines = files.reduce((total, file) => total + lineCount(file), 0);
@@ -46,7 +46,7 @@ function readOrEmpty(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 }
 
-export function hookTextBytes(repository) {
+function hookTextBytes(repository) {
   const authored = COST_FILES.reduce((total, name) => total + Buffer.byteLength(readOrEmpty(repository.join(name)).trimEnd()), 0);
   return authored + reasonBytes(readOrEmpty(repository.join(REASON_SOURCE)));
 }
@@ -100,7 +100,7 @@ export function checkHookWork(report, repository, count = countHookWork) {
 const CONTEXT_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md'];
 const NAMES = CONTEXT_FILES.join(' and ');
 
-export function checkInjectedContext(report, repository) {
+function checkInjectedContext(report, repository) {
   const present = CONTEXT_FILES.map((name) => repository.join(name)).filter((file) => fs.existsSync(file));
   const bytes = present.reduce((sum, file) => sum + Buffer.byteLength(fs.readFileSync(file, 'utf8').trimEnd(), 'utf8'), 0);
   if (bytes > INJECTED_CONTEXT_LOCK.bytes) {

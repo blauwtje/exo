@@ -40,7 +40,6 @@ export function testTextsOf(testPath) {
   return texts;
 }
 
-// why: a constant bound to import.meta.url or import.meta.dirname, in the test or a helper it imports, points at the repository; any other path is a temp-folder copy.
 function repoPathNames(testPath) {
   let names = new Set();
   const texts = testTextsOf(testPath);

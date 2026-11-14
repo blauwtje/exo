@@ -8,7 +8,6 @@ const bash = (command) => ({ tool_name: 'Bash', tool_input: { command } });
 const root = '/private/tmp/work';
 const landLoop = `S=${SCRIPT.landTask}; R=${root}; for n in 1 2 3 4; do node $S --check --plan $R/docs/plans/p.md --task $n --root $R --report $R/.exo/implementer-$n.md 2>&1 | tail -15; done`;
 
-// why: wrapped in the stall guard, this compound call matched no allow rule and dontAsk denied it with no hint; the session reported the task blocked.
 test('a compound call of an unsandboxed exo script is refused with the bare form to run', () => {
   const output = stallGuardInput(bash(landLoop))?.hookSpecificOutput;
   assert.equal(output?.permissionDecision, 'deny');

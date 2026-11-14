@@ -22,7 +22,7 @@ const compactOnly = (check) => (context) => (context.compactPlan ? check(context
 const classicOnly = (check) => (context) => (context.compactPlan ? [] : check(context));
 const eachTask = (tasks, check) => tasks.flatMap(check);
 
-export const PLAN_CHECKS = [
+const PLAN_CHECKS = [
   { check: compactOnly(({ plan }) => checkFrame(plan.frame)), warn: true, hardWhen: SUCCESS_CRITERION },
   { check: compactOnly(({ plan, run }) => checkPlanBasis(plan.frame, run)), warn: true, hardWhen: BASIS_LINE },
   { check: compactOnly(({ planText }) => openPoints(planText).map((entry) => `the plan's '## Open points' still holds an unanswered question: ${entry}`)), warn: true },
@@ -67,9 +67,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
   const compactPlan = plan.tasks.every((task) => task.compact);
   const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
-  // why: a landed task's Files: grow after it lands, and a landed task can no longer be fixed, so a resumed or mid-run check measures and flags only unlanded tasks.
   const landed = run && resolvedRoot !== undefined && resolvedRoot !== null && planPath !== undefined ? landedTasks(plan.tasks, resolvedRoot, planIdOf(planPath)) : [];
-  // why: earlier tasks of a run grow the Files: of later ones, so a mid-run check measures each Files: path at the commit the run branch forked from, the size spec checked.
   const forkPoint = run && resolvedRoot !== undefined && resolvedRoot !== null ? forkPointOf(resolvedRoot) : null;
   const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
   const hasRoot = resolvedRoot !== undefined && resolvedRoot !== null;

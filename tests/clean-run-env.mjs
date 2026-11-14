@@ -1,15 +1,3 @@
-// why: loaded with `node --import` before `--test` for four purposes. A test run started inside `exo run`
-// why: would otherwise hand the run's variables to every test and hook it spawns, and their guard refusals
-// why: would park as open gates in the live run. And git 2.54 detaches `git maintenance run --auto` after a
-// why: commit, which repacks a temp repository's .git while the test removes it (ENOTEMPTY), so every git of
-// why: this process and its children gets maintenance.auto=false, appended to git's GIT_CONFIG_COUNT entries.
-// why: Third, tests and the scripts they spawn leave mkdtemp folders in the user temp folder, so this process
-// why: points TMPDIR at one run root that every child inherits, and removes that root on exit. Fourth, a test
-// why: must not read the developer's git setup, so HOME is a fresh folder, the global and system git config
-// why: are empty, init.defaultBranch is main and user.useConfigOnly is true, and the git identity, GIT_DIR and
-// why: index variables are dropped; a test that commits names its own identity. Fifth, a test must not read the
-// why: developer's exo settings, so every CLAUDE_PLUGIN_OPTION_* variable is dropped and CLAUDE_PROJECT_DIR
-// why: names an empty folder, which also stops the git-toplevel fallback from reaching this checkout.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -60,7 +48,6 @@ function createRunRoot() {
     try {
       fs.rmSync(root, { recursive: true, force: true, maxRetries: 3 });
     } catch {
-      // a late writer must not fail the run
     }
   });
   return root;

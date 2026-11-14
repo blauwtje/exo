@@ -8,7 +8,6 @@ function hasHead(root) {
   return spawnSync('git', ['-C', root, 'rev-parse', '--verify', '-q', 'HEAD'], { stdio: 'ignore' }).status === 0;
 }
 
-// why: land searches names relative to the run worktree, so an absolute, outside or ignored path is one it can never find.
 function namesUnsearchablePath(fragment, root) {
   const target = path.resolve(root, fragment);
   if (!fs.existsSync(target)) return false;

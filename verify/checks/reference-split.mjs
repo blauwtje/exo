@@ -1,6 +1,3 @@
-// A skill that splits a branch into references/ keeps one selector line: every
-// `read references/<file>` pointer resolves, every references/*.md file is
-// named in its SKILL.md, and no long line lives in both places.
 
 import fs from 'node:fs';
 import path from 'node:path';

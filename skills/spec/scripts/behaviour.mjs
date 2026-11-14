@@ -17,7 +17,7 @@ function areaFile(area, entries) {
   return `${header.join('\n')}\n\n${sections.join('\n\n')}\n`;
 }
 
-export function renderBehaviour(root) {
+function renderBehaviour(root) {
   const { briefs, unreadable } = shippedBriefs(root);
   const byArea = new Map();
   for (const brief of briefs) {
@@ -34,7 +34,7 @@ export function renderBehaviour(root) {
   return { files, unreadable };
 }
 
-export function behaviourDrift(root) {
+function behaviourDrift(root) {
   const { files, unreadable } = renderBehaviour(root);
   const folder = path.join(root, FOLDER);
   const present = fs.existsSync(folder) ? fs.readdirSync(folder).filter((name) => name.endsWith('.md')).map((name) => `${FOLDER}/${name}`) : [];

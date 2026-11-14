@@ -1,6 +1,3 @@
-// The merge gate `ship` runs right before a merge: a skipped or neutral
-// check passes, a cancelled or pending one stops, BEHIND and DIRTY get their
-// own verdicts, and stacked pull requests come out bases first.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -56,8 +53,6 @@ test('a loop of base and head branches is a cycle, not an order', () => {
   assert.deepEqual(stackOrder(pullRequests), { cycle: [12, 13] });
 });
 
-// Stands in for gh: logs its arguments and prints the JSON stored for the
-// pull request it is asked about, or fails like an unauthenticated gh.
 const STAND_IN = [
   '#!/usr/bin/env node',
   "const fs = require('node:fs');",

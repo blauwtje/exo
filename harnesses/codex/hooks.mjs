@@ -1,36 +1,20 @@
-// The hook entries exo installs into Codex's hooks.json, derived from
-// `hooks/hooks.json` by an allowlist: the events and matchers Codex can serve
-// (SessionStart, PreToolUse Bash). Each
-// entry keeps only the handler fields Codex documents, so Claude's `shell` is
-// dropped, and runs `harnesses/codex/hook-entry.mjs`, which sets the host and plugin root
-// before it imports the script the source entry named.
 
 import fs from 'node:fs';
 import path from 'node:path';
 
-// An undefined matcher selects the group the source file gives none.
 const ALLOWED = [
   { event: 'SessionStart', matcher: 'startup|resume|clear|compact' },
   { event: 'PreToolUse', matcher: 'Bash' }
 ];
 
-// The handler fields of the hooks page of learn.chatgpt.com/docs/hooks.
 export const DOCUMENTED_FIELDS = ['type', 'command', 'commandWindows', 'timeout', 'statusMessage', 'additionalContextLimit', 'async'];
 
-// Codex counts additionalContextLimit in tokens; the session hook caps its
-// context at 5000 estimated tokens, and this leaves room for the estimate's error.
 const SESSION_CONTEXT_LIMIT = 6000;
 
-// The source command may start with the Node guard hooks/hooks.json adds:
-// `command -v node ... || exit 0;` or the SessionStart variant that prints a message.
 const SOURCE_COMMAND = /^(?:command -v node >\/dev\/null 2>&1 \|\| (?:exit 0|\{[^;]*; exit 0; \}); )?node "\$\{CLAUDE_PLUGIN_ROOT\}\/([^"$\\]+)"$/;
 
-// cmd.exe expands % and PowerShell expands $ and the backtick inside double
-// quotes, so a root holding one cannot be quoted for either.
 const WINDOWS_UNQUOTABLE = /["%$`^&!]/;
 
-// Ceiling: a root with such a character gets no `commandWindows`, so a Windows
-// host would run the POSIX `command`; lift it once Codex documents its Windows shell.
 function quotedCommands(root, target) {
   const entryScript = path.join(root, 'harnesses', 'codex', 'hook-entry.mjs');
   const posixQuoted = `'${entryScript.replaceAll("'", "'\\''")}'`;
@@ -51,7 +35,6 @@ function targetOf(handler) {
   return found[1];
 }
 
-// The `hooks` object for Codex's hooks.json: event name to matcher groups.
 export function codexHookEntries(root) {
   const hooks = {};
   for (const allowed of ALLOWED) {
@@ -69,7 +52,6 @@ export function codexHookEntries(root) {
   return hooks;
 }
 
-// The root-relative scripts `hook-entry.mjs` may import: those the entries run.
 export function codexHookTargets(root) {
   return ALLOWED.flatMap((allowed) => sourceHandlers(root, allowed).map(targetOf));
 }

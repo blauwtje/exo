@@ -1,8 +1,3 @@
-// install.sh, run under a temporary home with EXO_REPO pointing at a local copy
-// of this checkout, clones and installs, pulls on a second run, refuses a
-// folder that is not a clone, and stops before writing when node is missing.
-// --update pulls once and updates; --remove removes and deletes the clone only
-// when no install is recorded and the clone holds no work of its own.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -16,15 +11,12 @@ const SCRIPT = path.join(ROOT, 'install.sh');
 const BASH = spawnSync('sh', ['-c', 'command -v bash'], { encoding: 'utf8' }).stdout.trim();
 const GIT = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
 
-// maintenance.auto=false: a commit would otherwise detach a `git maintenance run --auto`
-// that packs the loose objects and deletes them while the clone copies them.
 function git(cwd, ...args) {
   const result = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'maintenance.auto=false', ...args], { cwd, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout;
 }
 
-// A repository holding this checkout's files, so the clone carries uncommitted work too.
 function sourceRepository(base) {
   const source = path.join(base, 'source');
   const listed = spawnSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' });
@@ -63,7 +55,6 @@ function install(environment, cwd, ...args) {
 test('a fresh run clones and installs, and a second run pulls the clone', (t) => {
   const { base, home, environment } = sandbox(t);
   const source = sourceRepository(base);
-  // file:// makes git honour --depth 1, so the pull below runs on a shallow clone.
   const env = { ...environment, EXO_REPO: `file://${source}` };
 
   const first = install(env, base, '--harness', 'codex', '--yes');
@@ -111,7 +102,6 @@ test('a missing or old node is named and nothing is written', (t) => {
   assert.ok(!fs.existsSync(path.join(home, '.exo')), 'nothing is cloned');
 });
 
-// A sandbox with exo cloned from a fresh source repository and installed into Codex.
 function installedCodex(t) {
   const box = sandbox(t);
   const source = sourceRepository(box.base);
@@ -138,7 +128,6 @@ test('--update pulls the new commit once and updates the Codex install', (t) => 
   const result = install(env, base, '--update', '--harness', 'codex');
   assert.equal(result.status, 0, result.stderr + result.stdout);
   assert.match(fs.readFileSync(skill, 'utf8'), /PULLED-MARKER/, 'the installed skill carries the pulled change');
-  // install.mjs prints its own pull's output; --pulled skips that second pull.
   assert.doesNotMatch(result.stdout, /Already up to date|Fast-forward/);
 });
 

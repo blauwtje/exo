@@ -1,7 +1,3 @@
-// land-task.mjs runs a task's Commit: block as the plan wrote it, its trailer
-// naming the plan, checks the Plan-task: <plan-id>/<n> trailer on the new
-// commit and prints the landed set; a compact task
-// lands only on a build report whose Proof: command passed.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -24,9 +20,9 @@ test('a green task lands with its trailer and the landed set grows', async () =>
   const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1\nRoute: unit \(\d+ tasks\)\nThen: node ".+next-task\.mjs" --block --plan ".+" --root ".+"$/m);
-  assert.doesNotMatch(output, /^(?:Next|Wave): Task \d/m); // only next-task.mjs writes a brief, so a landing names no task to dispatch
+  assert.doesNotMatch(output, /^(?:Next|Wave): Task \d/m);
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
-  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '');
 });
 
 test('a landing in a checkout under .claude/worktrees/ or a main checkout points at next-task.mjs and names no task', async () => {
@@ -61,7 +57,7 @@ test('a task without a Commit: block is refused', async () => {
 
 test('a failing block reports the failure', async () => {
   const { root, planPath } = await landingCheckout();
-  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n'); // as in a real checkout, so the recorded pass is not committed
+  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n');
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
 });
 
@@ -103,7 +99,7 @@ test('a git worktree nested in the checkout is skipped, a plain untracked direct
   await editApp(root);
   git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'agents', 'agent-1'));
   git(root, 'worktree', 'add', '-q', '-b', 'feat/gone', path.join(root, 'agents', 'agent-gone'));
-  await fs.rm(path.join(root, 'agents', 'agent-gone'), { recursive: true }); // prunable: still listed, directory gone
+  await fs.rm(path.join(root, 'agents', 'agent-gone'), { recursive: true });
   await fs.mkdir(path.join(root, 'stray'));
   await fs.writeFile(path.join(root, 'stray', 'file.txt'), 'x\n');
   const checked = checkTask({ planPath, planText: PLAN, number: 1, root });
@@ -119,7 +115,7 @@ test('a task whose changes match every Files: path lands clean', async () => {
   await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
   const output = landTask({ planPath, planText: PLAN, number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
-  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '');
 });
 
 test('Lint runs on the task Files script paths, without a shell, and a passing run lands', async () => {
@@ -159,8 +155,6 @@ test('Lint: none and a task with no script path run nothing', async () => {
   assert.match(noted, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-// A checkout that tracks `src/old.mjs`, deleted in the working tree, plus a
-// recording linter, so a test sees exactly which paths reached the linter.
 async function deletedScriptCheckout(files) {
   const plan = planFixture({ tasks: [taskSection({ number: 1, title: 'Drop old', files, subject: 'refactor(app): drop old' })] });
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'src/old.mjs': 'export const old = 1;\n', 'docs/plans/fixture.md': plan });

@@ -1,8 +1,3 @@
-// Deterministic verification of the skill corpus: no model calls, no network.
-//
-//   node verify.mjs [--repository-root <dir>] [--static]
-//
-// Exits 1 when any check failed.
 
 import fs from 'node:fs';
 import path from 'node:path';

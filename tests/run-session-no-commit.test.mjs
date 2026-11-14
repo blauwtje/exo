@@ -33,7 +33,6 @@ const sessionCommits = [
   'git commit --no-verify -q -m "feat(text): add b"'
 ];
 
-// why: a plan session committed its tasks while the stall guard wrapped the command, so no `Bash(git commit *)` deny rule matched.
 test('a build session cannot commit on the run tree, bare or wrapped by the stall guard', () => {
   for (const command of sessionCommits) {
     for (const wrapped of [command, `node "${GUARD}" -- ${shellQuote(command)}`]) {
@@ -48,7 +47,6 @@ test('a build session cannot commit on the run tree, bare or wrapped by the stal
   }
 });
 
-// why: a session's Land gate runs test suites that commit in temp fixture repos.
 test('a build session still commits in a repo other than the run root', () => {
   const run = seedRepo();
   const fixture = seedRepo();
@@ -59,7 +57,6 @@ test('a build session still commits in a repo other than the run root', () => {
   assert.notEqual(fixture.head(), before);
 });
 
-// why: a session runs its tasks' Proof, and those tests init repos, commit and add worktrees in temp fixture repos; a restriction in the session env reaches each of them.
 test('this repo\'s fixture-repo tests pass unchanged under a session env rooted at this repo', () => {
   const root = spawnSync('git', ['-C', PLUGIN_ROOT, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).stdout.trim();
   const env = childEnv('plan/1', PROVIDER, { refuseCommits: root });

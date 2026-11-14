@@ -16,7 +16,6 @@ const write = (dir, file, text) => {
   fs.writeFileSync(path.join(dir, file), text);
 };
 
-// A bare origin, a main checkout on `main` and a run branch `feat` with one commit.
 function fixture({ origin = true } = {}) {
   const dir = tempDir('land-run-');
   const bare = path.join(dir, 'origin.git');

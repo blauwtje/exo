@@ -5,13 +5,17 @@ const OPTION_LINE = /^\s*- \*\*\(([A-Z])\)/;
 const RECOMMENDED_TAG = /\(Recommended\)/;
 const ASSUMING = /^\s*(?:[-*]\s+)?Assuming:/;
 
-export function questionOptionFindings(repository) {
-  const files = [repository.skillsRoot, repository.join('agents'), repository.join('output-styles'), repository.join('lib')]
+function sourceFiles(repository, extra) {
+  return [repository.skillsRoot, ...['agents', ...extra, 'lib'].map((name) => repository.join(name))]
     .filter((directory) => fs.existsSync(directory))
     .flatMap((directory) => fs.readdirSync(directory, { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile() && /\.(md|mjs)$/.test(entry.name))
       .map((entry) => path.join(entry.parentPath, entry.name)))
     .sort();
+}
+
+function questionOptionFindings(repository) {
+  const files = sourceFiles(repository, ['output-styles']);
   const findings = [];
   for (const file of files) {
     let previous = '@';
@@ -27,25 +31,16 @@ export function questionOptionFindings(repository) {
   return findings;
 }
 
-export const QUESTION_CAPS = { title: 10, context: 15, label: 3, option: 8, reason: 8 };
+const QUESTION_CAPS = { title: 10, context: 15, label: 3, option: 8, reason: 8 };
 
-// The one copy of the line patterns; tests/question-shape.mjs imports them.
-// Any letter parses, so a fourth option or a reason off A fails its own check.
-export const QUESTION_TITLE = /^\*\*(?:\d+\/\d+ )?([^*]+\?)\*\*$/;
-export const QUESTION_OPTION = /^- \*\*\(([A-Z])\) ([^*]+)\*\*: (\S.*)$/;
-export const QUESTION_REASON = /^Recommended: \(([A-Z])\), because (\S.*)$/;
+const QUESTION_TITLE = /^\*\*(?:\d+\/\d+ )?([^*]+\?)\*\*$/;
+const QUESTION_OPTION = /^- \*\*\(([A-Z])\) ([^*]+)\*\*: (\S.*)$/;
+const QUESTION_REASON = /^Recommended: \(([A-Z])\), because (\S.*)$/;
 
 const words = (text) => text.trim().split(/\s+/).length;
 
-// Each fenced block opening on a bold title ending in `?` is an example question;
-// a finding is `{ path, line }` for every cap it breaks, at the line that breaks it.
-export function questionCapFindings(repository) {
-  const files = [repository.skillsRoot, repository.join('agents'), repository.join('lib')]
-    .filter((directory) => fs.existsSync(directory))
-    .flatMap((directory) => fs.readdirSync(directory, { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile() && /\.(md|mjs)$/.test(entry.name))
-      .map((entry) => path.join(entry.parentPath, entry.name)))
-    .sort();
+function questionCapFindings(repository) {
+  const files = sourceFiles(repository, []);
   const findings = [];
   for (const file of files) {
     const lines = repository.lines(file);

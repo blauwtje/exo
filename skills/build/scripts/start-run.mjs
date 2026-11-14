@@ -64,7 +64,6 @@ function pickPlans(candidates, branch) {
 
 function resolvePlan(root) {
   const repository = gitText(root, ['rev-parse', '--show-toplevel']);
-  // why: git branch --show-current prints an empty line on a detached HEAD.
   const branch = gitText(root, ['branch', '--show-current']);
   const candidates = candidatePlans(root, repository);
   if (candidates.length === 0) {
@@ -112,7 +111,6 @@ async function main(argv) {
   if (frame !== null) process.stdout.write(firstBlock(planPath, checkout));
 }
 
-// why: the status line reads this record; a failure here must never fail the run start.
 function recordProgress(planPath, checkout) {
   const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
   if (!sessionId || process.env.EXO_RUN_TASK) return;

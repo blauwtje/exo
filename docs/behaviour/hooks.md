@@ -11,6 +11,14 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 4: an Agent brief that names paths but lacks `Reads:` gets those paths as its `Reads:` line; a brief naming none is still refused.
 - Success criterion: `npm run check` ends `FAIL=0 WARN=0 UNRUN=0`.
 
+## exo-lean
+- Task 1: value.mjs has no removal mode and value.md holds no removal verdict.
+- Task 2: `node evals/size.mjs` prints `SCORE <bytes>`.
+- Task 3: no file names dispatch-edit.
+- Task 4: the improve run keeps only rounds whose SCORE dropped.
+- Task 5: no part's with-arm pass count is below baseline.
+- Success criterion: `npm run check` is clean.
+
 ## issues-115-117
 - Task 1: `taskReviewer` returns `none (output only, test covered)` for `['skills/x/scripts/a.mjs', 'tests/a.test.mjs']` with an output-only diff, the light pick for `skills/x/SKILL.md`, `hooks/hooks.json` and `.claude/skills/x/SKILL.md`, and the light pick for a non-output script diff under `skills/`; seam: `tests/pick-reviewer.test.mjs`.
 

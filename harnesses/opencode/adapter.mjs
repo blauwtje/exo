@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { writeAtomic } from '../../lib/basics.mjs';
-import { apply, combine, jsonText, removeInstalls, sameInstall, statOf } from '../install-files.mjs';
+import { apply, jsonText, removeInstalls, sameInstall, statOf, updateInstalls } from '../install-files.mjs';
 import { onPath } from '../on-path.mjs';
 import { agentEntries, planFile, planSkill, releaseFiles, skillEntries, tryRmdir } from './files.mjs';
 import { generateOpenCodeTree } from './generate.mjs';
@@ -120,12 +120,7 @@ export function recorded(env) {
 }
 
 export function update(record) {
-  const installs = readInstalls(locations(record.env).recordFile).filter((entry) => matches(entry, record));
-  if (installs.length === 0) return 'nothing to update: no OpenCode install recorded';
-  return combine(installs.map((entry) => {
-    if (entry.scope !== 'user' && !statOf(entry.project)?.isDirectory()) return { summary: `skipped ${entry.scope} install in ${entry.project}`, notes: [`${entry.project} is not a folder; run --remove to drop its record`] };
-    return apply(planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }, 'updated'));
-  }));
+  return updateInstalls(record, { locations, readInstalls, matches, planInstall }, 'OpenCode');
 }
 
 export function remove(record) {

@@ -1,5 +1,3 @@
-// The red check's base run is bounded by the head run's time plus EXO_RED_BASE_MARGIN_MS,
-// not only by the proof timeout: a base that stays alive past that bound is red, not error.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -9,7 +7,6 @@ import { redGreen, runOnBase } from '../lib/red-green.mjs';
 import { commitFiles, gitRepository } from './harness.mjs';
 import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs';
 
-// The proof passes in the checkout; in the temporary red-green-* tree the base run starts.
 const inBase = (body) => `if pwd | grep -q red-green-; then ${body}; fi`;
 const HANGS_AFTER_FAILING = inBase('echo "not ok 1 - boom"; sleep 300');
 const PASSES_AFTER_MINUTES = inBase('sleep 300');

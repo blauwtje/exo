@@ -33,7 +33,7 @@ function templateFile(root, name) {
   return path.join(root, TEMPLATE_DIRECTORY, `${name}.md`);
 }
 
-export function parseTemplate(text) {
+function parseTemplate(text) {
   const match = text.match(/^---\n([\s\S]*?)\n---\n/);
   if (match === null) throw new UsageError('the template has no front matter between two --- lines');
   const fields = Object.fromEntries(match[1].split('\n').map((line) => [line.slice(0, line.indexOf(':')).trim(), line.slice(line.indexOf(':') + 1).trim()]));
@@ -45,7 +45,7 @@ function placeholdersOf(body) {
   return [...new Set([...body.matchAll(PLACEHOLDER)].map((match) => match[1]))];
 }
 
-export function fillTemplate(template, values) {
+function fillTemplate(template, values) {
   const known = new Set(['root', ...template.params]);
   const undeclared = placeholdersOf(template.body).filter((name) => !known.has(name));
   if (undeclared.length > 0) throw new UsageError(`the template uses undeclared parameters: ${undeclared.join(', ')}`);
@@ -58,7 +58,7 @@ export function fillTemplate(template, values) {
   return template.body.replace(PLACEHOLDER, (_, name) => values[name]);
 }
 
-export function doneCommands(text) {
+function doneCommands(text) {
   const commands = text.split('\n').map((line) => line.match(/^\s*[-*]\s+`([^`]+)`/)?.[1].trim()).filter(Boolean);
   return [...new Set(commands)];
 }
@@ -71,7 +71,7 @@ function criterionSection(planText) {
   return { start, text: length === -1 ? planText.slice(start) : planText.slice(start, start + length) };
 }
 
-export function applyDone(planText, commands) {
+function applyDone(planText, commands) {
   const { start, text } = criterionSection(planText);
   const found = text.match(/`([^`]+)`/);
   if (found === null) throw new UsageError("the plan's Success criterion holds no backticked command");
@@ -102,7 +102,7 @@ function listTemplates(root) {
   return fs.readdirSync(directory).filter((file) => file.endsWith('.md')).sort().map((file) => parseTemplate(fs.readFileSync(path.join(directory, file), 'utf8')));
 }
 
-export function renderPlan(root, name, values) {
+function renderPlan(root, name, values) {
   const template = parseTemplate(readFile(templateFile(root, name), 'template'));
   return applyDone(fillTemplate(template, { ...values, root }), doneListOf(root));
 }
@@ -114,7 +114,7 @@ function repositoryAndBranch(planText) {
   return { repository, branch };
 }
 
-export function parameterise(planText, literals) {
+function parameterise(planText, literals) {
   const { repository, branch } = repositoryAndBranch(planText);
   const pairs = [[repository, 'root'], [branch, 'branch'], ...Object.entries(literals)];
   const absent = pairs.filter(([literal]) => !planText.includes(literal)).map(([literal]) => literal);

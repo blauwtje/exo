@@ -15,7 +15,6 @@ const { checkDenyReasons } = denyReasons;
 const { agentHook } = await import('../hooks/agent-effort.mjs');
 const { refusalRound } = await import('../lib/brief-denials.mjs');
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
-const { dispatchEdit } = await import('../hooks/dispatch-edit.mjs');
 const { contextHook } = await import('../hooks/context-limit.mjs');
 const { readKindTable } = await import('../lib/model-kinds.mjs');
 const { agentContextTarget, contextLimit } = await import('../lib/context-limits.mjs');
@@ -35,12 +34,6 @@ const bash = async (command, extra = {}) => {
   const output = await dispatchBash({ tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
   return textOf(output?.hookSpecificOutput);
 };
-
-const edit = () => dispatchEdit({
-  tool_name: 'Write',
-  cwd,
-  tool_input: { file_path: path.join(cwd, 'a.mjs'), content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' }
-})?.hookSpecificOutput?.additionalContext ?? '';
 
 const bashWarning = async (command, extra = {}) => {
   const output = await dispatchBash({ tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
@@ -89,18 +82,6 @@ const largeSearch = () => {
     process.env.HOME = saved;
   }
 };
-const shellTranscript = path.join(spent, 'shells.jsonl');
-fs.writeFileSync(shellTranscript, [
-  { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'ls', run_in_background: true } }] } },
-  { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: 'Command running in background with ID: bg1. Output is being written to: /tmp/bg1.output.' }] } }
-].map((entry) => JSON.stringify(entry)).join('\n'));
-const liveShells = () => textOf(dispatchEdit({
-  tool_name: 'Write',
-  session_id: 'guard-rules',
-  agent_id: `guard-rules-live-${process.pid}-${Date.now()}`,
-  agent_transcript_path: shellTranscript,
-  tool_input: { file_path: '/x/.exo/r.md' }
-})?.hookSpecificOutput);
 const noWait = (asks) => {
   const dir = tempDir('guard-rules-run-');
   const env = { EXO_RUN: '1', EXO_RUN_DIR: dir };
@@ -193,14 +174,14 @@ const cases = {
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
   watch: () => bash(['gh pr checks 1 --wat', 'ch'].join(''), { ...agent, agent_type: 'exo:task-runner' }),
   'suite-passed': () => denyReason('suite-passed', 'This tree already passed a suite'),
-  'code-rules': () => edit(),
+  'code-rules': () => denyReason('code-rules', 'a.mjs:1 comment'),
   'result-line': () => subagent(10_000, 'Read', { file_path: longLine }),
   'context-lead': () => leadOverLimit(),
   'context-hard': () => subagent(agentHardLimit(agentContextTarget()) + 1000, 'Bash', { command: 'ls' }),
   'context-target': () => subagent(agentContextTarget() + 1000, 'Read', { file_path: 'a.md' }),
   'intake-glob': () => subagent(agentContextTarget() - 6000, 'Glob', { pattern: '**/*' }),
   'intake-websearch': () => largeSearch(),
-  'live-shells': () => liveShells(),
+  'live-shells': () => denyReason('live-shells', 'bg1'),
   'run-no-wait': () => noWait(1),
   'run-no-wait-final': () => noWait(2),
   'run-stall-guard': () => stallGuard(),
@@ -497,17 +478,6 @@ test('an Agent note and a context note show once per session', () => {
   assert.equal(contextHook({ ...read, session_id: `${session}-shape` }, () => false).hookSpecificOutput.permissionDecision, undefined);
   assert.match(contextNote(), /target/);
   assert.doesNotMatch(contextNote(), /target/);
-});
-
-test('code rules warn: a breaking Write runs with the rule in its context', () => {
-  const output = dispatchEdit({
-    tool_name: 'Write',
-    cwd,
-    tool_input: { file_path: path.join(cwd, 'a.mjs'), content: 'function deep(items) {\n  if (items) {\n    for (const item of items) {\n      if (item) {\n        return item;\n      }\n    }\n  }\n  return null;\n}\n' }
-  });
-  assert.equal(output?.hookSpecificOutput?.permissionDecision, undefined);
-  assert.match(output?.hookSpecificOutput?.additionalContext ?? '', /max-depth/);
-  assert.equal(rules.guardKind('code-rules'), 'warn');
 });
 
 test('no tool-case rule', () => {

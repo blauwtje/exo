@@ -33,7 +33,6 @@ function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
-  // why: git add refuses a path that matches neither the index nor the tree, so a path already staged as deleted stays out of it; with rename detection off, the old path of a git mv counts as a staged deletion.
   const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--no-renames', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
   const paths = task.files.map((file) => file.path).filter((file) => !removed.has(file));
   const tracked = new Set(paths.length === 0 ? [] : execFileSync('git', ['-C', root, 'ls-files', '-z', '--', ...paths], { encoding: 'utf8' }).split('\0'));

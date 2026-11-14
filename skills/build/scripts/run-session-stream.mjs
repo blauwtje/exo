@@ -33,7 +33,6 @@ export function parseStream(text) {
   events.filter((event) => event.type === 'assistant' && event.message?.usage).forEach((event, index) => {
     usageByCall.set(event.message.id ?? index, event.message.usage);
   });
-  // why: stream assistant events carry a partial output count; the result events' usage holds the real one.
   const resultOutput = results.reduce((sum, result) => sum + (Number(result.usage?.output_tokens) || 0), 0);
   const weightedTokens = sumCounts([...usageByCall.values()].map((usage) => ({ ...usageCounts(usage), output: 0 }))).weightedInput + resultOutput;
   const sumField = (field) => {

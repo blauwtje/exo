@@ -1,21 +1,13 @@
-// A deliberately narrow frontmatter reader: it accepts the keys the corpus
-// uses and rejects any plain scalar a YAML 1.1 and a YAML 1.2 parser would read
-// differently, so a harness that disagrees with this repository cannot exist.
 
 import { ALLOWED_EFFORT, ALLOWED_MODEL } from './budgets.mjs';
 
 const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell|license|compatibility|user-invocable|disallowed-tools|context|agent): +(?<value>.+)$/;
-// A switch reads the same under YAML 1.1 and 1.2 only as lowercase true or
-// false, so those two plain scalars are its whole vocabulary.
 const BOOLEAN_KEYS = ['disable-model-invocation', 'user-invocable'];
 const AMBIGUOUS_START = /^[-?:,[\]{}#&*!|>@`]/;
 const AMBIGUOUS_COLON = /:\s/;
 const AMBIGUOUS_COMMENT = /\s#/;
 const RESERVED_SCALAR = /^(null|true|false|~|[-+]?\d+(\.\d+)?)$/i;
 
-// Port of Get-Frontmatter (verify.ps1:89-159): opening marker on line 1, a
-// closing marker, one supported key per line, no duplicates, no ambiguous scalar,
-// name and description required, effort and model constrained to their sets.
 export function readFrontmatter(lines) {
   const values = new Map();
   const errors = [];

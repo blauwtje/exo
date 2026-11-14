@@ -21,7 +21,6 @@ export function checkFilesExist(task, root, byNumber) {
   return problems;
 }
 
-// why: `run-` also starts the names of tests of `run-session.mjs`, so a name match counts only when the test, or a helper it imports, names the source file.
 function existingTestsOf(sourcePath, testFiles, root) {
   const base = path.parse(sourcePath).name;
   const fileName = path.posix.basename(sourcePath);
@@ -55,7 +54,6 @@ export function checkUnlistedTests(task, root, byNumber) {
 
 const TEST_FILE_NAME = /^(?:[\w.-]+[._](?:test|spec)|test_[\w.-]+)\.\w+$/;
 
-// why: a test that a task in the Depends on chain lists passes for this task too, and every flag here refuses the run start.
 export function checkProofTestsListed(task, root, byNumber) {
   if (task.proof === null || root === undefined || root === null) return [];
   const listed = [task.number, ...dependencyChainOf(byNumber, task.number)].flatMap((number) => byNumber.get(number).files.map((file) => file.path));

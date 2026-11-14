@@ -7,7 +7,6 @@ import { onPath } from '#on-path';
 const NAME = 'plugin validate';
 const PLUGIN_FILE = '.claude-plugin/plugin.json';
 
-// why: --json lists every finding as a string under errors[] or warnings[] of the manifest and each contents[] entry; --strict makes warnings fail.
 export function findings(result, root) {
   const found = [];
   for (const entry of [result.manifest, ...(result.contents ?? [])]) {
@@ -25,7 +24,6 @@ export function checkPluginValidate(report, repository, { env = process.env } = 
     report.result('UNRUN', NAME, `the repository root carries no ${PLUGIN_FILE}`);
     return;
   }
-  // why: CI installs no Claude Code; an INFO line outside the tally keeps its run at UNRUN=0.
   if (!onPath('claude', env)) {
     report.note(NAME, 'skipped: claude is not on PATH');
     return;

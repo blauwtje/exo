@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { dispatchEdit } from '../hooks/dispatch-edit.mjs';
 import { liveShells, shellStopDecision } from '../lib/live-shells.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -57,19 +56,6 @@ test('only an agent Write to a result file is checked', () => {
   assert.equal(shellStopDecision(write(file, { agent_id: undefined })), null);
   assert.equal(shellStopDecision(write(file, { tool_name: 'Edit' })), null);
   assert.equal(shellStopDecision(write(file, { tool_input: { file_path: '/repo/lib/x.mjs' } })), null);
-});
-
-test('the edit dispatcher runs the shell-stop check and denies the result-file Write', () => {
-  const file = transcript([start('t1'), started('t1', 'bg1')]);
-  const output = dispatchEdit(write(file), () => false);
-  assert.ok(output.hookSpecificOutput.additionalContext);
-  assert.match(output.hookSpecificOutput.additionalContext, /Background shells/);
-});
-
-test('shell-stop adds no hook entry', () => {
-  const hooks = JSON.parse(fs.readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
-  assert.doesNotMatch(JSON.stringify(hooks), /live-shells/);
-  assert.equal(hooks.hooks.PreToolUse.filter((entry) => entry.matcher === 'Edit|Write|MultiEdit').length, 1);
 });
 
 test('liveShells also lists a Monitor that was started and neither stopped nor ended', () => {
@@ -146,7 +132,7 @@ test('a Result path named only by a tool result is not the brief Result path', (
 });
 
 test('a background start counts only in the first line of a Bash result', () => {
-  const rows = JSON.parse(fs.readFileSync(new URL('./fixtures/refusals/live-shells.json', import.meta.url), 'utf8'));
+  const rows = JSON.parse(fs.readFileSync(new URL('./fixtures/live-shells.json', import.meta.url), 'utf8'));
   for (const row of rows) {
     const result = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: row.result }] } };
     const quoted = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: `ls output\n${row.result}` }] } };

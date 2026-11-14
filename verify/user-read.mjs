@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const REFERENCE_PATH = 'lib/references/user-read-format.md';
-export const MAX_JARGON_PER_100_WORDS = 2;
-export const ACRONYMS = new Set(['PR', 'CI', 'URL', 'API']);
-export const MIN_CODE_TOKENS = 2;
-export const MIN_CODE_SHARE = 0.25;
+const MAX_JARGON_PER_100_WORDS = 2;
+const ACRONYMS = new Set(['PR', 'CI', 'URL', 'API']);
+const MIN_CODE_TOKENS = 2;
+const MIN_CODE_SHARE = 0.25;
 
 const NOT_PROSE = /^(?:#|[-*+|>`]|\d+[.)]|<!--|\/\/|import\s|export\s|---)/;
 const LANGUAGE_RULE = /user(?:'|’)s language|language of the user/i;
@@ -53,7 +53,7 @@ export function sourceText(text, heading) {
   return section(text, heading);
 }
 
-export function answerLine(text) {
+function answerLine(text) {
   const first = text.split('\n').map((line) => line.trim()).find((line) => line !== '');
   return first !== undefined && !NOT_PROSE.test(first);
 }
@@ -70,7 +70,7 @@ function prose(text) {
   return kept.join('\n').replace(/`[^`]*`|<[^>\n]*>|\{\{[^}]*\}\}/g, ' ');
 }
 
-export function jargonPer100(text, jargon) {
+function jargonPer100(text, jargon) {
   if (jargon.length === 0) return 0;
   const plain = prose(text);
   const words = plain.match(/[\p{L}][\p{L}'-]*/gu) ?? [];
@@ -92,12 +92,12 @@ function visible(text) {
   }).join('\n');
 }
 
-export function capsWords(text) {
+function capsWords(text) {
   const found = visible(text).match(ALL_CAPS) ?? [];
   return [...new Set(found)].filter((word) => !ACRONYMS.has(word));
 }
 
-export function codeShare(line) {
+function codeShare(line) {
   const spans = line.match(CODE_SPAN)?.length ?? 0;
   const tokens = line.replace(CODE_SPAN, ' ').replace(PLACEHOLDER, ' x ').split(/\s+/)
     .map((token) => token.replace(/^[(\[]+|[.,;)\]]+$/g, ''))
@@ -107,7 +107,7 @@ export function codeShare(line) {
   return { code, share: total === 0 ? 0 : code / total };
 }
 
-export function codeLines(text) {
+function codeLines(text) {
   return visible(text).split('\n').filter((line) => {
     const { code, share } = codeShare(line);
     return code >= MIN_CODE_TOKENS && share >= MIN_CODE_SHARE;
@@ -126,31 +126,4 @@ export function problems(text, { jargon, banned }) {
   const code = codeLines(text);
   if (code.length > 0) found.push(`machine text in ${code.length} lines, such as "${code[0].trim().slice(0, 50)}"`);
   return found;
-}
-
-function label(file, heading) {
-  return WHOLE_FILE.has(heading) ? file : `${file}#${heading}`;
-}
-
-export function userReadProblems(root) {
-  const referenceFile = path.join(root, REFERENCE_PATH);
-  if (!fs.existsSync(referenceFile)) return { count: 0, errors: [`${REFERENCE_PATH} is missing`] };
-  const reference = readReference(fs.readFileSync(referenceFile, 'utf8'));
-  if (reference.sources.length === 0) return { count: 0, errors: [`${REFERENCE_PATH} lists no source`] };
-  const errors = [];
-  for (const { file, heading } of reference.sources) {
-    const full = path.join(root, file);
-    if (!fs.existsSync(full)) {
-      errors.push(`${file} does not exist`);
-      continue;
-    }
-    const text = sourceText(fs.readFileSync(full, 'utf8'), heading);
-    if (text === null) {
-      errors.push(`${file} has no section "${heading}"`);
-      continue;
-    }
-    const found = problems(text, reference);
-    if (found.length > 0) errors.push(`${label(file, heading)} (${found.join(', ')})`);
-  }
-  return { count: reference.sources.length, errors };
 }

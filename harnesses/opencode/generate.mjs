@@ -9,7 +9,7 @@ import { listFiles, posix } from '../codex/generate.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
-export function readOpenCodeConfig(home = os.homedir()) {
+function readOpenCodeConfig(home = os.homedir()) {
   const file = path.join(home, '.config', 'exo', 'run.json');
   if (!fs.existsSync(file)) return {};
   return JSON.parse(fs.readFileSync(file, 'utf8'));

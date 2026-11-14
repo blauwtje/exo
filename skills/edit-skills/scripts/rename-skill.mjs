@@ -5,7 +5,7 @@ import path from 'node:path';
 import { isWorktreePath } from '#checkout';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
-export class RenameError extends Error {}
+class RenameError extends Error {}
 
 const USAGE = `Usage: node rename-skill.mjs --from <old-name> --to <new-name> [--root <dir>]
 Moves skills/<from>/, docs/skills/<from>.md and benchmarks/pressure/<from>/ to <to>,
@@ -53,7 +53,7 @@ function moveIfPresent(root, fromRelative, toRelative) {
   return true;
 }
 
-export function renameSkill({ root, from, to }) {
+function renameSkill({ root, from, to }) {
   const skillFolder = path.join('skills', from);
   if (!fs.existsSync(path.join(root, skillFolder))) {
     throw new RenameError(`no skill folder at 'skills/${from}'`);

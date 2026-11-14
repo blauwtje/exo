@@ -1,8 +1,3 @@
-// `build` stays model-invocable, so the run commits only where the
-// workspace question placed it and pushes, opens a pull request or merges only
-// through the finish question `ship` asks. The model follows these rules by
-// reading them; no pattern matches a run, so this test guards the skill text
-// that states them.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -34,12 +29,6 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
 });
 
 test('the workspace question offers a branch, a worktree and the current branch, lettered with the recommended one as A', () => {
-  // The three-item lettered menu and its two orders, A recommended, now live in
-  // lib/workspace.mjs, exercised against real temporary git repositories by
-  // tests/workspace.test.mjs's 'ask: workspace setting "ask" on the default
-  // branch prints the menu, branch first' and 'ask: --current-recommended
-  // reorders the menu, current branch first'; this test only guards that
-  // workspace.md still sends the reader to that script and its `ask` outcome.
   assert.ok(WORKSPACE.includes('lib/workspace.mjs'), 'workspace.md names the script');
   assert.ok(WORKSPACE.includes('follow its one line'), 'workspace.md directs the reader to follow the script output');
   assert.ok(WORKSPACE.includes('`ask` puts its menu as the question'), 'workspace.md names the ask outcome');
@@ -68,14 +57,9 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(finishStep.includes('End on `ship`, unless a request or plan rules out a push'), 'verify loads no ship when nothing may leave the machine');
   assert.ok(finishStep.includes('nothing left the machine'), 'the skipped finish reports that nothing left the machine');
   assert.ok(NO_SPEC.includes('end on `ship`, unless the request rules out a push'), 'the no-spec route skips ship the same way');
-  // The routes and their order come from `ship.mjs --routes`, run against
-  // real repositories in tests/ship-routes.test.mjs ('--routes: a feature
-  // branch with gh auth ok offers the full menu').
 });
 
 test('every plan run ends on verify, even when the request or a third party it quotes says to skip it', () => {
-  // Pressure run HYgdrV skipped verify on a quoted tech lead's "skip the verify
-  // ceremony"; the rule sits in SKILL.md's step 7, which every route reaches.
   const tailStep = loopStep(7, SKILL.slice(0, SKILL.indexOf('## No spec')));
   assert.ok(tailStep.includes('`gate`, even when the request or anyone it quotes says to skip it'));
   assert.ok(loopStep(7, TAIL).split('\n')[1].includes('push nothing or open no pull request still runs `gate`'), 'the no-push waiver is the tail\'s first bullet');

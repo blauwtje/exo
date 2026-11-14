@@ -1,7 +1,3 @@
-// A plugin agent's frontmatter is read by the harness, not by the model, so a
-// wrong key, a turn budget that disagrees with its limit or a script flag that
-// does not exist fails silently in a real run. These checks hold the agent
-// files to what the harness and the scripts accept, without dispatching one.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -14,7 +10,6 @@ import { GUARD_RULES, briefedPrompt } from '../lib/guard-rules.mjs';
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const agentsRoot = path.join(repositoryRoot, 'agents');
 
-// The keys code.claude.com/docs/en/plugins-reference lists for a plugin agent.
 const SUPPORTED_KEYS = [
   'name', 'description', 'model', 'effort', 'maxTurns', 'tools',
   'disallowedTools', 'skills', 'memory', 'color', 'autoCompactWindow', 'background', 'omitClaudeMd',

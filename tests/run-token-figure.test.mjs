@@ -18,7 +18,6 @@ const stream = [call('m1', 100000), call('m2', 100000), result].join('\n');
 
 test('the session figure weights cache reads and takes output from the result usage', () => {
   const parsed = parseStream(stream);
-  // 20 input + 200000 * 0.1 cache read + 2000 * 1.25 cache write + 500 result output
   assert.equal(parsed.weightedTokens, 23020);
   assert.equal(parsed.cacheRead, 200000);
   assert.equal(parsed.cacheWrite, 2000);

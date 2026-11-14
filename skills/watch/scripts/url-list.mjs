@@ -4,7 +4,7 @@ import { UsageError } from '#script-flags';
 const LIST_SUMMARY = /^\d+ entr(y|ies)(\s|$)/;
 const STDIN = '-';
 
-export function parseUrlLines(text) {
+function parseUrlLines(text) {
   return text
     .replace(/^﻿/, '')
     .split(/\r?\n/)

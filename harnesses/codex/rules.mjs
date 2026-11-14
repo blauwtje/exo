@@ -1,24 +1,13 @@
-// Rewrites exo's Claude Code Markdown into Codex text by fixed rules. Every
-// function is pure: path and text in, text out, no file read.
-//
-//   codexMarkdown(path, text, known)  a whole skill Markdown file, frontmatter included
-//   codexBody(path, text, known)      text without frontmatter, such as an agent body
-//   codexOpenaiYaml(path, text)       the `agents/openai.yaml` policy, or null
-//
-// `known` is `{ skills, agents }`, two arrays of names, because `exo:<name>`
-// becomes `$<name>` for a skill and `exo-<name>` for an agent.
 
 import path from 'node:path';
 
-export const DESCRIPTION_CAP = 1024;
-export const EMPHASIS_WORDS = ['MUST', 'NEVER', 'ALWAYS', 'IMPORTANT', 'CRITICAL', 'REQUIRED'];
+const DESCRIPTION_CAP = 1024;
+const EMPHASIS_WORDS = ['MUST', 'NEVER', 'ALWAYS', 'IMPORTANT', 'CRITICAL', 'REQUIRED'];
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
-// Every lib file reaches the launcher, which refuses one outside its LIB_ENTRIES list.
 const SCRIPT_PATH = /^(skills\/[a-z0-9-]+\/scripts|lib)\/[^/]+\.mjs$/;
 const RUN_ENTRY = 'node "{{EXO_ROOT}}/harnesses/codex/run.mjs"';
 
-// Plain-text phrases, longest first so a longer phrase wins over its part.
 const PHRASES = [
   ['the Agent or Task tool', 'a spawn of the custom agent'],
   ['the Task or Agent tool', 'a spawn of the custom agent'],
@@ -26,7 +15,6 @@ const PHRASES = [
   ['the Task tool', 'a spawn of the custom agent'],
   ['through the Skill tool', "by reading that skill's `SKILL.md`"],
   ['the Skill tool', "a read of that skill's `SKILL.md`"],
-  // Whether Codex wakes the parent when a spawned agent finishes is unconfirmed, so it waits.
   ['end the turn; each completion notification resumes it', 'wait for each agent with `wait_agent`'],
   ["under the Bash tool's `run_in_background`", 'in a background `exec_command` session polled with `write_stdin`'],
   ['with `run_in_background: false`', 'then waits for it with `wait_agent`'],
@@ -44,10 +32,8 @@ const PHRASES = [
   ['means `exo:<name>`', 'means `$<name>`, a bare agent name `exo-<name>`']
 ];
 
-// Claude runs a line `` !`cmd` `` when the skill loads; Codex passes the line as text.
 const LOAD_COMMAND = /^!`([^`\n]+)`$/gm;
 
-// An agent has no skill folder of its own: the dispatch passes one.
 const AGENT_SKILL_DIR = [
   ['`${CLAUDE_SKILL_DIR}`', 'skill folder path'],
   ['${CLAUDE_SKILL_DIR}', 'the skill folder path the dispatch passes']
@@ -69,7 +55,6 @@ export function splitFrontmatter(text) {
   return { fields, body: text.slice(match[0].length) };
 }
 
-// All-caps emphasis words go lowercase outside fenced blocks and code spans.
 function lowerEmphasis(text) {
   const words = new RegExp(`\\b(?:${EMPHASIS_WORDS.join('|')})\\b`, 'g');
   const lower = (piece) => piece.replace(words, (word) => word.toLowerCase());
@@ -94,8 +79,6 @@ function skillOf(file) {
   return match === null ? null : match[1];
 }
 
-// `node "${CLAUDE_SKILL_DIR}/scripts/x.mjs"` runs through the launcher, which
-// sets the host and takes only a skill script or a lib entry; any other root file keeps a plain path.
 function mapScriptCommands(file, text) {
   const command = /node "\$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}\/([^"]+\.mjs)"/g;
   return text.replace(command, (whole, variable, relative) => {
@@ -112,8 +95,6 @@ function mapScriptCommands(file, text) {
   });
 }
 
-// A Codex install holds only the skill folder, so a link that leaves it reaches the
-// clone through {{EXO_ROOT}}. Covers `../x` and `{{SKILL_DIR}}/../x`; throws above the root.
 function mapEscapingLinks(file, text) {
   const skill = skillOf(file);
   const link = /(\{\{SKILL_DIR\}\}\/)?((?:\.\.\/)+[\w./-]*\w)/g;
@@ -147,7 +128,6 @@ export function codexBody(file, text, known) {
   for (const [phrase, replacement] of PHRASES) mapped = mapped.replaceAll(phrase, replacement);
   mapped = mapped.replace(LOAD_COMMAND, 'Run `$1` first and use its output here.');
   mapped = lowerEmphasis(mapped);
-  // The installer fills {{SKILL_DIR}} only in a skill folder.
   const leftovers = inSkill ? ['${CLAUDE_'] : ['${CLAUDE_', '{{SKILL_DIR}}'];
   for (const leftover of leftovers) {
     const left = mapped.indexOf(leftover);
@@ -158,9 +138,7 @@ export function codexBody(file, text, known) {
   return mapped;
 }
 
-// The generated `name` and `description` pair; throws on a missing field or a
-// description over the cap.
-export function codexHeader(file, text, known) {
+function codexHeader(file, text, known) {
   const { fields } = splitFrontmatter(text);
   if (fields === null || !fields.name || !fields.description) {
     throw new Error(`${file}: frontmatter needs name and description`);
@@ -180,7 +158,6 @@ export function codexMarkdown(file, text, known) {
   return `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\n---\n${mapped}`;
 }
 
-// A skill that disables model invocation is explicit-only on Codex.
 export function codexOpenaiYaml(file, text) {
   const { fields } = splitFrontmatter(text);
   if (fields?.['disable-model-invocation'] !== 'true') return null;

@@ -32,7 +32,6 @@ try {
 
 try {
   fs.mkdirSync(configDirectory, { recursive: true });
-  // why: only the harness sets CLAUDE_PLUGIN_ROOT to the copy it loads; a hand run or a clone loaded by a pressure session must not repoint the real pointer.
   const loadedRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (loadedRoot && fs.existsSync(loadedRoot) && fs.realpathSync(loadedRoot) === fs.realpathSync(root)) {
     writePluginPointer(configDirectory, root);
@@ -49,13 +48,11 @@ try {
   console.error(`exo: saved Bash logs or the session shell setup not written, ${error.message}`);
 }
 
-// why: a detached run session (EXO_RUN_DIR, set by exo-cli.mjs for every spawned kind) reads no human-facing context; its final report is machine-read.
 if (process.env.EXO_RUN_DIR) process.exit(0);
 
 if (typeof input.cwd === 'string' && input.cwd !== '') pruneExo({ cwd: input.cwd });
 
 const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(configDirectory, input.cwd, input.source) : '';
-// why: the hook process starts wherever the host ran it; the session's folder, input.cwd, holds the project settings.
 const sessionDirectory = typeof input.cwd === 'string' && fs.existsSync(input.cwd) && fs.statSync(input.cwd).isDirectory() ? input.cwd : undefined;
 const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8', cwd: sessionDirectory });
 const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
@@ -71,7 +68,6 @@ if (onCodex) parts.push(readDispatchRules());
 else if (typeof input.session_id === 'string' && input.session_id !== '') fs.rmSync(dispatchMarker(input.session_id), { force: true });
 if (`${pointers}${settings}` !== '') parts.push(`${pointers}${settings}`);
 const additionalContext = parts.join('\n\n');
-// why: systemMessage shows to the user only, so the line costs no model tokens. The `receipts` setting turns "exo is on" off, and Codex never shows it; a Node warning still shows.
 let neededNode = 0;
 try {
   neededNode = Number(/>=\s*(\d+)/.exec(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).engines?.node ?? '')?.[1] ?? 0);

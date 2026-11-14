@@ -89,7 +89,6 @@ export async function runCommand(argv, { approving = false } = {}) {
 
   const live = liveLogFile(root);
   if (!child) fs.appendFileSync(live, `=== ${new Date().toTimeString().slice(0, 8)} run ${id} ${path.basename(plan)} ===\n`);
-  // why: only the detach spawn passes --run-id, without --detach, so the child is the detached run.
   if (child) teeToFile(live);
 
   if (approving && !child) {
@@ -117,7 +116,6 @@ export async function runCommand(argv, { approving = false } = {}) {
   }
 
   if (process.platform === 'darwin') {
-    // why: caffeinate exits with this process, so the Mac stays awake through run-plan and the land step.
     const awake = spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore' });
     awake.on('error', () => {});
     awake.unref();

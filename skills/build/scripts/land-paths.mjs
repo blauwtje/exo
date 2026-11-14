@@ -17,12 +17,11 @@ export function isProtectedPath(changed) {
   return PROTECTED_PATHS.some((pattern) => pattern.test(changed));
 }
 
-// why: a git worktree nested in the checkout is another checkout, not task output.
 export function nestedWorktrees(root) {
   const listed = spawnSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
   if (listed.status !== 0) return new Set();
   return new Set(listed.stdout.split('\n').filter((line) => line.startsWith('worktree ')).flatMap((line) => {
-    try { return [realpathSync(line.slice('worktree '.length))]; } catch { return []; } // why: a prunable worktree is listed after its directory is gone.
+    try { return [realpathSync(line.slice('worktree '.length))]; } catch { return []; }
   }));
 }
 

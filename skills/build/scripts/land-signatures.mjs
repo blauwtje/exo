@@ -25,7 +25,6 @@ function sourceAtHead(root, file) {
 function outsideCallers(root, name, inFiles) {
   const pathspecs = [...SCRIPT_EXTENSIONS].map((extension) => `*${extension}`);
   const found = spawnSync('git', ['-C', root, 'grep', '-l', '-w', '-F', '-e', name, '--', ...pathspecs], { encoding: 'utf8' });
-  // why: git grep exits 1 when nothing matches, so only a higher status is a failure.
   if (found.error !== undefined || found.status > 1) {
     throw new LandingError(`git grep for callers of ${name} failed: ${found.error?.message ?? found.stderr.trim()}`);
   }

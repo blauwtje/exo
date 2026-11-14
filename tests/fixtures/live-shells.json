@@ -1,0 +1,4 @@
+[
+  { "result": "grep hit: Command was moved to the background (ID: quoted1)" },
+  { "result": "Command running in background with ID: bg9. Output is being written to: /tmp/bg9.output", "live": true }
+]

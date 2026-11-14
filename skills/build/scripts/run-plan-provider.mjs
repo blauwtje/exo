@@ -36,7 +36,6 @@ export function budgetPin(name, flags, { kind = 'build-task', retry = false, bud
   return { model: model === INHERIT ? null : model, effort };
 }
 
-// why: a task that edits only prose needs no build-task tier; code, skill, agent, rule, hook and CLAUDE.md files keep it.
 const DOC_EXCLUDED = /^(skills|agents|rules|hooks)\//;
 export const isDocTask = (task) => task.files.length > 0 && task.files.every(({ path: file }) => file.endsWith('.md') && !DOC_EXCLUDED.test(file) && path.basename(file) !== 'CLAUDE.md');
 

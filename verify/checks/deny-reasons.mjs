@@ -12,7 +12,7 @@ const LITERAL_DENIES = [
   /\bdeny:\s*`/
 ];
 
-export function literalDenyLines(text) {
+function literalDenyLines(text) {
   return text.split('\n')
     .map((line, index) => ({ line, number: index + 1 }))
     .filter(({ line }) => LITERAL_DENIES.some((pattern) => pattern.test(line)))

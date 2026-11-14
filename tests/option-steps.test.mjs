@@ -1,7 +1,3 @@
-// The steps where exo makes options keep their forcing structure: candidates
-// drawn apart by a seat and forbidden move, criteria scored at the pick, and a draft
-// wider than the shown menu. These pin structure only; whether the options
-// come out more varied is prose quality no unit test measures.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

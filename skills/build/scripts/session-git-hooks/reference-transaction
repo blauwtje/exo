@@ -1,5 +1,4 @@
 #!/bin/sh
-# why: git runs this hook on every ref update, and --no-verify does not skip it.
 updates=$(cat)
 [ "$1" = prepared ] || exit 0
 here=$(cd "$(git rev-parse --path-format=absolute --git-common-dir)" && pwd -P) || exit 0

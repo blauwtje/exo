@@ -14,7 +14,7 @@ import { restackChildren } from './stack.mjs';
 import { returnToDefault } from './return-to-default.mjs';
 
 export const USAGE_EXIT = 2;
-export const DIRTY_EXIT = 4;
+const DIRTY_EXIT = 4;
 const USAGE = 'usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes | --verdict-current <patch-id>';
 const ROUTES = new Set(['push', 'open-pr', 'pr-merge']);
 const METHODS = new Set(['squash', 'merge', 'rebase']);
@@ -166,7 +166,6 @@ function currentPatchId() {
   return patchId.trim().split(/\s+/)[0] || null;
 }
 
-// why: GitHub closes an issue on merge only for its closing keywords (close, fix, resolve and their forms).
 function closesIssue(body, issue) {
   return new RegExp(`\\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?\\s+#${issue}\\b`, 'i').test(body);
 }

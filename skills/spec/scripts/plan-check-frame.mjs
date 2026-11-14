@@ -9,7 +9,7 @@ import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { reachesThrough } from './plan-check-files.mjs';
 import { main } from './plan-check.mjs';
 
-export const AUTONOMY_MODES = ['auto', 'pause-flagged', 'approve-each'];
+const AUTONOMY_MODES = ['auto', 'pause-flagged', 'approve-each'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
 export function checkParallelForm(frame) {

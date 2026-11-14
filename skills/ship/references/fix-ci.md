@@ -22,4 +22,4 @@ Goal: fix the failing check at its real cause within three rounds, or hand back 
 
 ## Report
 
-- Name the primary failing job and its root error, the fixes applied as a count and commit range (`<first>..<last>`), a lone SHA only for a fix the user must act on, the current CI status and the next action.
+- Name the primary failing job and its root error, the fixes applied as `watch.md` `## Report` names them, the current CI status and the next action.

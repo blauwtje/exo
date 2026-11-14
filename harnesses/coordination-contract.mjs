@@ -2,8 +2,6 @@ import fs from 'node:fs';
 
 const FILE = new URL('./coordination-contract.json', import.meta.url);
 
-export const ROLES = ['main', 'fork-coordinator', 'subagent-coordinator', 'worker', 'run-session'];
-
 export function readContract(file = FILE) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }

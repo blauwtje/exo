@@ -10,7 +10,7 @@ const SCRUBBED_VARIABLES = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'EXO_HOST', 'EXO_
 const SESSION_ID = 'hook-work';
 const USAGE = { type: 'assistant', timestamp: '2026-01-01T00:00:00.000Z', message: { usage: { input_tokens: 20000, output_tokens: 10 } } };
 
-export function scratchEnv(scratch) {
+function scratchEnv(scratch) {
   const env = { ...process.env, HOME: scratch, USERPROFILE: scratch };
   for (const name of SCRUBBED_VARIABLES) delete env[name];
   return env;
@@ -22,7 +22,6 @@ export const HOOK_INPUTS = {
   'session-start.mjs': () => ({ hook_event_name: 'SessionStart', source: 'startup', session_id: SESSION_ID }),
   'dispatch-bash.mjs': () => toolCall('Bash', { command: 'git status' }),
   'agent-effort.mjs': () => toolCall('Agent', { subagent_type: 'exo:lookup', prompt: 'Reads: none' }),
-  'dispatch-edit.mjs': (scratch) => toolCall('Edit', { file_path: path.join(scratch, 'a.txt'), old_string: 'a', new_string: 'b' }),
   'context-limit.mjs': (scratch) => ({ ...toolCall('Read', { file_path: path.join(scratch, 'a.txt') }), transcript_path: path.join(scratch, 'session.jsonl') }),
   'run-no-wait.mjs': () => ({ hook_event_name: 'Stop', session_id: SESSION_ID }),
   'session-end.mjs': () => ({ hook_event_name: 'SessionEnd', session_id: SESSION_ID })

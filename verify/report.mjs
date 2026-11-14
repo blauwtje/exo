@@ -1,6 +1,3 @@
-// The verifier's result record. Every check reports through one report object,
-// so the process exit code follows from the tally alone and a check never calls
-// process.exit itself.
 
 const STATUSES = ['PASS', 'FAIL', 'WARN', 'UNRUN'];
 
@@ -15,7 +12,6 @@ export function createReport() {
 
   return {
     result,
-    // A measurement printed for the reader, outside the tally.
     note(name, detail) {
       console.log(`[INFO] ${name}: ${detail}`);
     },

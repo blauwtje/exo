@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-export const MATCHED_EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest'];
+const MATCHED_EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest'];
 
 export function unmatchedGroups(hooksConfig) {
   return Object.entries(hooksConfig.hooks ?? {})

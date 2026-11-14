@@ -1,6 +1,3 @@
-// The Codex hook entries come from an allowlist over hooks/hooks.json, carry
-// only documented handler fields, and run harnesses/codex/hook-entry.mjs, which fixes the
-// host and root, refuses an unlisted script and keeps a hostile root as data.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -18,7 +15,6 @@ function handlersOf(entries) {
   return Object.values(entries).flatMap((groups) => groups.flatMap((group) => group.hooks));
 }
 
-// A root of stub scripts, so the test sees what the wrapper hands the script.
 function stubRoot(name) {
   const base = tempDir('codex-hooks-');
   const root = path.join(base, name);

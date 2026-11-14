@@ -28,8 +28,10 @@ pressure_case() {
   shift 3 || true
   extract "benchmarks/pressure/$skill"
   local fixtures="$source_dir/exo-pressure"
-  sed "s#/tmp/exo-pressure#$fixtures#g" "$source_dir/benchmarks/pressure/$skill/$setup" > "$source_dir/$setup"
-  bash "$source_dir/$setup" > /dev/null || true
+  local pressure_dir="$source_dir/benchmarks/pressure/$skill"
+  sed "s#/tmp/exo-pressure#$fixtures#g" "$pressure_dir/$setup" > "$pressure_dir/$setup.rewritten"
+  mv "$pressure_dir/$setup.rewritten" "$pressure_dir/$setup"
+  bash "$pressure_dir/$setup" > /dev/null || true
   [ -z "$script" ] && return 0
   if [ "$skill" = spec ]; then
     cp -R "$fixtures/spec/$script/." "$workdir"

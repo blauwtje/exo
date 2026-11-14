@@ -18,8 +18,8 @@ const CLAUSE_MARK = /;|\b(?:and|but|or|while|because|since|after|although|then)\
 const USAGE = 'usage: pressure-grade.mjs --check <criteria.md> [<criteria.md> ...]\nParses each criteria file and prints its case count and pass-line count; exits 1 if any file has an untagged top-level bullet.\nPrints a LINT line for each judge line with more than MAX_CLAUSES clauses (one claim per judge line); lint never changes the exit code.';
 export const JUDGE_VOTES = 3;
 export const DEFAULT_MARGIN = 0.2;
-export const UNSTABLE_BELOW = 0.8;
-export const MAX_CLAUSES = 2;
+const UNSTABLE_BELOW = 0.8;
+const MAX_CLAUSES = 2;
 const Z95 = 1.959964;
 const NEEDED_N_LIMIT = 1000;
 
@@ -76,7 +76,6 @@ export function parseCriteria(markdown) {
   }));
 }
 
-// why: the margin is the non-inferiority bound a case states before its run, so it lives beside the lines it judges.
 export function parseMargins(markdown) {
   const margins = new Map();
   let scope = null;
@@ -92,10 +91,6 @@ export function parseMargins(markdown) {
     margins.set(scope, margin);
   });
   return margins;
-}
-
-export function marginFor(margins, caseFile) {
-  return margins.get(caseFile) ?? margins.get(null) ?? DEFAULT_MARGIN;
 }
 
 export function judgeClauses(text) {
@@ -132,7 +127,6 @@ function judgeVote(line, answer, judge) {
   return { pass: word === 'PASS', reason: reason.join(' ').trim() || word.toLowerCase() };
 }
 
-// why: one doubtful judge call flips a line at small n, so the majority of several calls decides and their agreement shows how far to trust it.
 function judgeLine(line, answer, judge, votes) {
   const cast = Array.from({ length: votes }, () => judgeVote(line, answer, judge));
   const passes = cast.filter((vote) => vote.pass).length;
@@ -181,7 +175,6 @@ export function gradeLine(line, { answer, dir, judge, votes = JUDGE_VOTES }) {
   }
 }
 
-// why: a run with a failed deterministic line fails whatever the judge says, so its judge calls would cost money and change nothing.
 export function gradeRun({ case: caseFile, arm, run, lines, answer, dir, judge, votes }) {
   const graded = lines.map((line) => (line.tag.kind === 'judge' ? undefined : gradeLine(line, { answer, dir, judge, votes })));
   const blocked = graded.some((line) => line !== undefined && !line.pass);
@@ -203,7 +196,6 @@ function wilson(passes, n) {
   return { rate, low: (centre - spread) / scale, high: (centre + spread) / scale };
 }
 
-// why: the Newcombe hybrid score interval stays inside -1 to 1 and holds at 3 runs, where the plain normal interval does not.
 export function newcombe(passesA, nA, passesB, nB) {
   const a = wilson(passesA, nA);
   const b = wilson(passesB, nB);
@@ -217,7 +209,6 @@ export function verdictFor([low, high], margin) {
   return 'INCONCLUSIVE';
 }
 
-// why: an inconclusive verdict helps only with the runs per arm that would settle it, found by scaling the observed rates.
 export function runsNeeded(rateA, rateB, margin) {
   for (let n = 2; n <= NEEDED_N_LIMIT; n += 1) {
     if (verdictFor(newcombe(Math.round(rateA * n), n, Math.round(rateB * n), n), margin) !== 'INCONCLUSIVE') return n;
@@ -240,7 +231,6 @@ export function aggregate(grades, { threshold = 1, margin = DEFAULT_MARGIN, marg
     const bound = margins.get(caseFile) ?? margins.get(null) ?? margin;
     const unstable = grades.filter((grade) => grade.case === caseFile).reduce((sum, grade) => sum + grade.lines.filter((line) => line.unstable).length, 0);
     if (other === undefined || rates.with === undefined) {
-      // why: with no second arm there is no difference to bound, so the single-arm bar stays the only verdict.
       return { case: caseFile, rates, counts, comparison: null, pass: rates.with !== undefined && rates.with >= threshold, verdict: rates.with !== undefined && rates.with >= threshold ? 'PASS' : 'FAIL', delta: null, ci: null, margin: bound, needed: null, unstable, noSkillEffect: false };
     }
     const ci = newcombe(counts.with.passed, counts.with.runs, counts[other].passed, counts[other].runs);

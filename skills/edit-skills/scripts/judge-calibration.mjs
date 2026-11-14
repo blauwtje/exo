@@ -8,9 +8,9 @@ import { UsageError, isMain, parseFlags } from '../../../lib/script-flags.mjs';
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 
 export const ROOT = path.join(import.meta.dirname, '..', '..', '..');
-export const LABELS_DIR = path.join(ROOT, '.exo', 'judge-labels');
-export const VERDICTS_DIR = path.join(ROOT, '.exo', 'judge-verdicts');
-export const REGISTRY = [
+const LABELS_DIR = path.join(ROOT, '.exo', 'judge-labels');
+const VERDICTS_DIR = path.join(ROOT, '.exo', 'judge-verdicts');
+const REGISTRY = [
   { name: 'replay-rubric', kind: 'grader', dimension: 'case-rubric' },
   { name: 'pressure-line', kind: 'grader', dimension: 'rubric-line' },
   { name: 'adhd-facts', kind: 'grader', dimension: 'facts' },
@@ -83,7 +83,7 @@ function collectIdeas(source, judge) {
   })));
 }
 
-export const COLLECTORS = { 'replay-rubric': collectReplay, 'pressure-line': collectPressure, 'ideas-originality': collectIdeas, 'ideas-fit': collectIdeas };
+const COLLECTORS = { 'replay-rubric': collectReplay, 'pressure-line': collectPressure, 'ideas-originality': collectIdeas, 'ideas-fit': collectIdeas };
 
 const jsonl = (rows) => `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`;
 

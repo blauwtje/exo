@@ -56,3 +56,12 @@ export function removeInstalls(record, adapter) {
   });
   return combine(plans.map(apply));
 }
+
+export function updateInstalls(record, adapter, label) {
+  const installs = adapter.readInstalls(adapter.locations(record.env).recordFile).filter((entry) => adapter.matches(entry, record));
+  if (installs.length === 0) return `nothing to update: no ${label} install recorded`;
+  return combine(installs.map((entry) => {
+    if (entry.scope !== 'user' && !statOf(entry.project)?.isDirectory()) return { summary: `skipped ${entry.scope} install in ${entry.project}`, notes: [`${entry.project} is not a folder; run --remove to drop its record`] };
+    return apply(adapter.planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }, 'updated'));
+  }));
+}

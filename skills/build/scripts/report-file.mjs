@@ -16,7 +16,6 @@ function branchRange(root, state) {
 
 export function writeReport(root, id, { phase, result, reason }) {
   const state = readState(root, id);
-  // why: a stopped, crashed or parked run never reaches landRun, yet its tasks may already be committed on the run branch.
   const range = result?.range ?? (['stopped', 'crashed', 'parked'].includes(phase) ? branchRange(root, state) : null);
   let land = null;
   try {

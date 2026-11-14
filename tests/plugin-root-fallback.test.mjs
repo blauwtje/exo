@@ -1,5 +1,3 @@
-// A session that loads exo from a linked worktree points plugin-root there; once that worktree is
-// removed, the status line, the exo shim and exo-cli fall back to the main checkout in plugin-main.
 
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -16,7 +14,6 @@ const CLI = path.join(REPOSITORY, 'skills', 'build', 'scripts', 'exo-cli.mjs');
 const RUN_CHECKOUT = path.join(REPOSITORY, 'skills', 'build', 'scripts', 'run-checkout.mjs');
 const HOOK = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
 
-// A main checkout with a linked worktree, then the worktree removed: plugin-root names the gone path.
 function goneWorktreeConfig(main) {
   const repo = tempDir('exo-pointer-repo-');
   git(repo, 'init', '-q');

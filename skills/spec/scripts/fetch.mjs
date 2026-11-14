@@ -26,7 +26,6 @@ async function load(url, context, init = {}) {
   return { status: response.status, headers: response.headers, html, text, url: response.url || url };
 }
 
-
 async function followAgeGate(first, context) {
   const step = confirmStep(first.html, first.url);
   if (!step) return null;

@@ -21,52 +21,6 @@ export function htmlToText(html) {
     .trim();
 }
 
-function tagBody(entry, tag) {
-  const match = entry.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`));
-  return match ? match[1] : '';
-}
-
-export function parseSearch(atom) {
-  const entries = [...atom.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
-  return entries.flatMap(([, entry]) => {
-    const href = entry.match(/<link[^>]*href="([^"]*\/comments\/[^"]*)"/)?.[1];
-    if (!href) return [];
-    return [{
-      title: htmlToText(tagBody(entry, 'title')),
-      url: decodeEntities(href),
-      date: tagBody(entry, 'updated').slice(0, 10),
-      text: htmlToText(decodeEntities(tagBody(entry, 'content'))),
-    }];
-  });
-}
-
-export function attributeOf(opening, name) {
-  const match = opening.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`));
-  return match ? decodeEntities(match[1]) : '';
-}
-
-function commentOf(chunk) {
-  const opening = chunk.slice(0, chunk.indexOf('>'));
-  const body = chunk.match(/slot="comment">([\s\S]*?)(?=<div data-hl|<faceplate-loader|<div[^>]*slot="actionRow"|$)/);
-  if (!body) return [];
-  return [{
-    author: attributeOf(opening, 'author'),
-    score: Number(attributeOf(opening, 'score')),
-    depth: Number(attributeOf(opening, 'depth')),
-    text: htmlToText(body[1]),
-  }];
-}
-
-export function parseComments(html) {
-  const chunks = html.split('<shreddit-comment ').slice(1);
-  return chunks.flatMap(commentOf);
-}
-
-export function parseMoreLinks(html) {
-  const links = [...html.matchAll(/<faceplate-partial[^>]*\ssrc="(\/svc\/shreddit\/more-comments\/[^"]*)"/g)];
-  return [...new Set(links.map(([, src]) => decodeEntities(src)))];
-}
-
 export function commentsAsText(comments) {
   return comments
     .map(({ author, score, depth, text }) => `${author} (score ${score}, depth ${depth}): ${text}`)

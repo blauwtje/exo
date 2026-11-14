@@ -1,4 +1,3 @@
-// why: a mod cannot import, so this copy stays; keep it equal to FINAL_PHASES in run-state.mjs.
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 const TICK_MS = 5000;
 const STALE_MS = 3600000;
@@ -35,7 +34,6 @@ async function readRuns($, base) {
   return runs.filter((run) => run.state);
 }
 
-// why: a mod cannot import node:path; a gitdir may be relative to the worktree (worktree.useRelativePaths) or use backslashes.
 function resolveFrom(base, path) {
   if (/^([A-Za-z]:)?\//.test(path)) return path;
   const parts = base.replace(/\\/g, '/').split('/');
@@ -137,8 +135,6 @@ async function flush($, context) {
 
 async function tick($, context) {
   const root = await $.session.root();
-  // why: the session id changes on /clear, so it is read on every tick.
-  // why: a missing or throwing id counts as no match, so the status line still draws.
   context.sessionId = await Promise.resolve().then(() => $.session.id()).catch(() => undefined);
   const all =await readAllRuns($, root);
   const flags = await Promise.all(all.map((run) => isLive($, run)));
@@ -150,7 +146,6 @@ async function tick($, context) {
   context.first = false;
   const own = runs.filter((run) => !FINAL_PHASES.includes(run.state.phase) && (run.dir.startsWith(`${root}/.exo/run/`) || run.state.runRoot === root));
   const newest = own[own.length - 1];
-  // why: the engine draws no PromptHint row under a custom settings.statusLine; ui.status shows beside it.
   $.ui.status(newest ? statusLine(newest, await $.clock.now()) : undefined);
   if (!context.busy) await flush($, context);
 }

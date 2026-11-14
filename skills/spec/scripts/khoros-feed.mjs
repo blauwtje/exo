@@ -13,7 +13,7 @@ function tag(item, name) {
   return found ? decodeCdata(found[1].trim()) : '';
 }
 
-export function feedUrl(url) {
+function feedUrl(url) {
   const parsed = new URL(url);
   const match = THREAD.exec(parsed.pathname);
   if (!match) return null;

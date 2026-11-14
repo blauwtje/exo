@@ -20,7 +20,6 @@ test('a Bash call with an = word is rewritten, and a denied one is not', async (
   assert.equal(denied.hookSpecificOutput.updatedInput, undefined);
 });
 
-// why: a run session gates Bash on prefix allow rules, so the dispatcher leaves its commands unrewritten, guard or not.
 test('a run child env from childEnv carries the run marker, and the dispatcher then leaves the Bash command alone', async () => {
   const input = { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo =ls' } };
   const marker = childEnv(null, PROVIDER).EXO_RUN_SESSION;

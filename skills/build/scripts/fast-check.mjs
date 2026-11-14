@@ -29,7 +29,6 @@ function runFastCommand(worktree, command) {
 function runCoveringTests(worktree, tests, timeoutMs) {
   const command = `node --test ${tests.join(' ')}`;
   const env = { ...process.env };
-  // why: a NODE_TEST_CONTEXT inherited from an outer `node --test` makes the nested runner skip its own run and exit 0.
   delete env.NODE_TEST_CONTEXT;
   return runCheck(worktree, command, { env, timeoutMs, record: false, fresh: true }).ok ? null : command;
 }

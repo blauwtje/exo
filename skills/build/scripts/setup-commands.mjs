@@ -21,7 +21,6 @@ const LAUNCHER = [
   ''
 ].join('\n');
 
-// why: the launcher exo setup wrote before plugin-main; a rerun of setup replaces it.
 const OLD_LAUNCHER = [
   '#!/bin/sh',
   'root=$(cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo/plugin-root") && exec node "$root/skills/build/scripts/exo-cli.mjs" "$@"',

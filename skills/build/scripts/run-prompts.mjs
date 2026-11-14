@@ -67,7 +67,6 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
 export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
   const briefs = numbers.map((number) => {
     const task = plan.tasks.find((entry) => entry.number === number);
-    // why: a plan session copied its tasks' Commit: blocks and committed them; the script lands each task after the session.
     const unlanded = { ...task, section: task.section.replace(COMMIT_BLOCK, '').trimEnd() };
     return [...driftOf(task, root, frameOf(plan.frame)).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(unlanded, frameOf(plan.frame), root, { relative: true }).trimEnd()].join('\n');
   });

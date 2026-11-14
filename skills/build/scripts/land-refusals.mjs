@@ -71,7 +71,6 @@ export function redGreenLine(task, proofCommands, root, pending) {
   return { line: 'Red: skipped: Proof passed without the production change', warning };
 }
 
-// why: gate's claims-diff check refuses the same commit, but only at the end of the run.
 export function refuseUntestedTestFirst(task, root) {
   if (isTestFirst(task) && testPaths(taskChangedPaths(root)).length === 0) {
     throw new LandingError(`Task ${task.number} is test-first, but its change adds or changes no test file; add the failing test the task names`);

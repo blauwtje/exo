@@ -1,7 +1,3 @@
-// makeDefaultOptionsHome mirrors the real home so a claude run started with
-// HOME set to the mirror reads settings without the user's exo options, while
-// every other entry of the home and of ~/.claude stays reachable; pressure-home.mjs
-// spawns every arm with that HOME.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

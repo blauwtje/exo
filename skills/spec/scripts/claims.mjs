@@ -3,8 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { pagePath, readSources } from './ledger.mjs';
 
-export const SOURCE_KINDS = ['web', 'paper', 'code', 'forum', 'social', 'video', 'podcast'];
-export const TIME_CLASSES = ['volatile', 'semi-stable', 'evergreen'];
+const SOURCE_KINDS = ['web', 'paper', 'code', 'forum', 'social', 'video', 'podcast'];
+const TIME_CLASSES = ['volatile', 'semi-stable', 'evergreen'];
 const REQUIRED_FIELDS = ['id', 'sentence', 'ref', 'quote', 'kind', 'time_class'];
 
 export function foldText(text) {
@@ -17,7 +17,7 @@ export function foldText(text) {
     .toLowerCase();
 }
 
-export function claimsPath(runDir) {
+function claimsPath(runDir) {
   return path.join(runDir, 'claims.jsonl');
 }
 

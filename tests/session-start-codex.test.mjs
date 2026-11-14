@@ -1,6 +1,3 @@
-// Given a Codex-shaped SessionStart input with EXO_HOST=codex, the hook adds the
-// host note after the settings line, writes its pointer under the Codex home,
-// shows no welcome, and leaves the Claude config folder alone.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

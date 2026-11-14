@@ -1,11 +1,3 @@
-// Raise the plugin version in every manifest and the lockfile that carry it, and turn the
-// changelog's Unreleased heading into the new version's heading.
-//
-//   node bump.mjs [auto|patch|minor|major]
-//
-// `auto`, the default, reads the level off the Unreleased sections, so a
-// release follows the changelog policy. Rewrites the version field in place
-// rather than reserialising the JSON, so key order and formatting survive.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -53,8 +45,6 @@ const release = requested === 'auto' ? releaseLevel(unreleased, current) : reque
 const next = raise(current, release);
 const versionField = new RegExp(`("version":\\s*")${current.replace(/\./g, '\\.')}(")`, 'g');
 
-// Every file is rewritten or none is: a partial bump leaves the manifests and
-// the changelog further apart than the state it was meant to repair.
 const rewritten = [];
 for (const manifest of MANIFESTS) {
   const before = fs.readFileSync(path.join(root, manifest), 'utf8');
@@ -66,8 +56,6 @@ for (const manifest of MANIFESTS) {
   rewritten.push({ file: manifest, after });
 }
 
-// The lockfile carries the version twice, at the top and under packages[""],
-// and may lag the manifests, so both fields are set whatever they hold now.
 const lockBefore = fs.readFileSync(path.join(root, LOCKFILE), 'utf8');
 const lockAfter = lockBefore
   .replace(/^(\{\s*"name":\s*"[^"]*",\s*"version":\s*")[^"]*(")/, `$1${next}$2`)
@@ -78,7 +66,6 @@ if (lockAfter.split(`"${next}"`).length - 1 < 2) {
 }
 rewritten.push({ file: LOCKFILE, after: lockAfter });
 
-// UTC, so the heading does not depend on the machine's time zone.
 const today = new Date().toISOString().slice(0, 10);
 const dated = changelog.replace(UNRELEASED_LINE, `${UNRELEASED_HEADING}\n\n## ${next} - ${today}`);
 rewritten.push({ file: CHANGELOG, after: dated });

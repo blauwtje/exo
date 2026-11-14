@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `evals/size.mjs` scores the bytes of the shipped files, and `evals/value.md` stores the exo-arm pass counts per part as evidence, not as a removal list.
 - Each `watch` `done.jsonl` row records its route and ms per stage, and a batch writes the short transcripts to one `transcripts.txt` with a `# <id>` header each.
 - `docs/scorecard.md` holds the release measures and `docs/failures.md` lists real-session failures; the contributor rules now cap size and run evals only before a release.
 - Two heavier build fixtures, `redirect` (open redirect) and `deep-merge` (prototype pollution), join the safe tasks the build cells run, so arms have more to separate on.
@@ -55,6 +56,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 - `gate --recheck` replaces `gate --since <rev>`: after the one fix round the gate reruns only the plan's checks and runs no second review, and its report is final.
+- Unused exports, constants and modules are gone and no script or test carries a code comment, cutting the shipped files from 1,805,021 to 1,749,086 bytes (`node evals/size.mjs`).
 - `gate` reviews the branch with the built-in `code-review` skill, at `low` when the plan has one task and names no `Risk:` and at `medium` otherwise; a finding comes back with the rerun command.
 - `skills/gate/scripts/verify.mjs` writes its full log to `.exo/logs/gate-verify.log` and prints only `PASS` and `FAIL` lines, so `gate` runs it in one foreground call.
 - `exo:research-worker` returns at most 10 lines ending on `Result: <path>`, and `spec` step 4 starts at most four research workers.
@@ -190,6 +192,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 - The branch review in `agents/review-branch.md` and its review model kinds; the agent keeps only the claims judge that research dispatches.
+- The `dispatch-edit` hook, its Edit and Write guards, `lib/edit-impact.mjs` and the removal mode of `evals/value.mjs`, after the frozen cases showed the hook did harm.
 - `lib/statistics.mjs`, `verify/prose-style.mjs`, `verify/checks/reference-chain.mjs` and `skills/build/scripts/run-tail-parse.mjs`, which nothing reached.
 
 - `benchmarks/` and 40 check modules that only guarded exo's own wording and process; a size-cap check keeps tracked files at 1,101 and check modules at 40.

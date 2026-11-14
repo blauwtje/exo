@@ -101,7 +101,7 @@ function evaluate(socket, expression) {
   });
 }
 
-export async function openBrowser(overrides = {}, url = HOME_URL) {
+async function openBrowser(overrides = {}, url = HOME_URL) {
   const context = { ...defaults(), ...overrides };
   if (!(await answers(readPort(context), context))) startBrowser(url, context);
   const port = await waitForPort(context);

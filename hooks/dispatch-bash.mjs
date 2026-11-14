@@ -90,7 +90,6 @@ const RESULT_CAP_STEP = {
 const SHELL_STEP = {
   name: 'shell-fix',
   run(hookInput) {
-    // why: a run session gates Bash on prefix allow rules, which a rewritten command no longer matches.
     if (process.env.EXO_RUN_SESSION === '1') return null;
     const updatedInput = fixShellFor(hookInput, hookAgentType);
     return updatedInput && { hookSpecificOutput: { updatedInput } };

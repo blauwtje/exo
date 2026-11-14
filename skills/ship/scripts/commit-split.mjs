@@ -12,7 +12,7 @@ const USAGE = 'usage: commit-split.mjs --list | --plan <file> [--apply] [--dir <
 const USAGE_EXIT = 2;
 const FLAGS = { dir: 'string', list: 'boolean', plan: 'string', apply: 'boolean' };
 
-export class SplitError extends Error {}
+class SplitError extends Error {}
 
 function gitStrict(root, args, env = {}) {
   const result = git(root, args, { env: { ...process.env, ...env } });
@@ -97,7 +97,7 @@ function commitGroup(root, group) {
   gitStrict(root, ['commit', '-q', ...message]);
 }
 
-export function applySplit(root, groups) {
+function applySplit(root, groups) {
   const expected = workingTreeHash(root);
   gitStrict(root, ['reset', '-q']);
   let made = 0;
@@ -114,7 +114,7 @@ export function applySplit(root, groups) {
   return { commits: made, tree: actual };
 }
 
-export function formatProposal(groups) {
+function formatProposal(groups) {
   return groups.map((group, index) => [`${index + 1}. ${group.subject}`, ...group.files.map((file) => `   ${file}`)].join('\n')).join('\n');
 }
 

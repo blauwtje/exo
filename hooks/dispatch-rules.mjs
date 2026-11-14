@@ -13,7 +13,6 @@ export function readDispatchRules(tools = null) {
   return [fs.readFileSync(RULES, 'utf8').trimEnd(), ...briefLines(tools)].join('\n');
 }
 
-// why: the lead pays for these rules at its first Agent call of a session, not at session start; a subagent and a detached run session never got the session text.
 export function dispatchRules({ session_id: sessionId, agent_id: agentId, tool_input: input } = {}) {
   if (input?.subagent_type === BUILD_ONLY_AGENT || agentId || process.env.EXO_RUN_DIR || typeof sessionId !== 'string' || sessionId === '') return null;
   try {

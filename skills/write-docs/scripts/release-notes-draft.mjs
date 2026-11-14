@@ -16,7 +16,7 @@ const HASH = new RegExp(`\\s*\\(${HASH_CORE}\\)|\\b${HASH_CORE}\\b`, 'g');
 const RECORD = '\x1e';
 const FIELD = '\x1f';
 
-export function lastReleaseTag(repo, to) {
+function lastReleaseTag(repo, to) {
   try {
     return gitText(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]);
   } catch {
@@ -24,12 +24,12 @@ export function lastReleaseTag(repo, to) {
   }
 }
 
-export function resolveRange(repo, { from, to = 'HEAD' }) {
+function resolveRange(repo, { from, to = 'HEAD' }) {
   const start = from ?? lastReleaseTag(repo, to);
   return { from: start, to, spec: start === null ? to : `${start}..${to}` };
 }
 
-export function stripReferences(text) {
+function stripReferences(text) {
   return text.replace(PULL_NUMBER, '').replace(HASH, '').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
 }
 
@@ -44,7 +44,7 @@ function sectionOf(type, description) {
   return SECTION_OF_TYPE.get(type) ?? null;
 }
 
-export function parseEntry({ subject, body = '', files = [] }) {
+function parseEntry({ subject, body = '', files = [] }) {
   const match = SUBJECT.exec(subject);
   if (match === null) return null;
   const [, type, , bang, description] = match;
@@ -62,7 +62,7 @@ export function parseEntry({ subject, body = '', files = [] }) {
   };
 }
 
-export function readCommits(repo, spec) {
+function readCommits(repo, spec) {
   const log = gitText(repo, ['log', '--no-merges', '--name-only', `--format=${RECORD}%s${FIELD}%b${FIELD}`, spec]);
   return log
     .split(RECORD)
@@ -96,7 +96,7 @@ function inWindow(pull, window) {
   return (window.since === null || pull.mergedAt > window.since) && pull.mergedAt <= window.until;
 }
 
-export function pullEntries(pulls, entries, window) {
+function pullEntries(pulls, entries, window) {
   const seenNumbers = new Set(entries.flatMap((entry) => entry.pulls));
   const seenTexts = new Set(entries.map((entry) => entry.text.toLowerCase()));
   return pulls
@@ -113,7 +113,7 @@ function breakingBullets(entries) {
   return entries.flatMap((entry) => [`- ${entry.text}`, `  Upgrade: ${entry.upgrade ?? 'not stated in the commit.'}`]);
 }
 
-export function renderNotes(entries) {
+function renderNotes(entries) {
   const breaking = entries.filter((entry) => entry.breaking);
   const blocks = [];
   if (breaking.length > 0) blocks.push(['### Breaking changes', '', ...breakingBullets(breaking)]);
@@ -124,7 +124,7 @@ export function renderNotes(entries) {
   return blocks.map((block) => block.join('\n')).join('\n\n');
 }
 
-export function draftNotes(repo, options = {}) {
+function draftNotes(repo, options = {}) {
   const range = resolveRange(repo, options);
   const commits = readCommits(repo, range.spec);
   const picked = options.uncovered ? commits.filter((commit) => !commit.files.includes('CHANGELOG.md')) : commits;

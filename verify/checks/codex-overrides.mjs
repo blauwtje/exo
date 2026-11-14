@@ -1,6 +1,3 @@
-// One FAIL per Codex override that cannot apply: a changed source hash, a
-// missing header or a path the rules do not generate. Builds the tree in
-// memory, as the installer does, so a source the rules cannot rewrite fails too.
 
 import { findOverrideProblems } from '../../harnesses/codex/generate.mjs';
 

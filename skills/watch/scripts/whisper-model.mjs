@@ -7,7 +7,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { cacheRoot } from './ytdlp-binary.mjs';
 
-export const MODEL = {
+const MODEL = {
   file: 'ggml-base-q5_1.bin',
   url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin',
   size: 59707625,
@@ -18,7 +18,7 @@ export function cachePath(options, ...parts) {
   return path.join(cacheRoot(options.env ?? process.env, options.home ?? os.homedir()), ...parts);
 }
 
-export function failureText(error, ms) {
+function failureText(error, ms) {
   if (error.name === 'TimeoutError') return `no answer within ${ms / 1000} s`;
   return error.cause?.code ?? error.message;
 }

@@ -1,15 +1,3 @@
-// The Claude Code harness for install.mjs: installs exo through Claude Code's own
-// plugin CLI, so Claude Code keeps the plugin copy and updates it. It runs
-// `claude plugin marketplace add blauwtje/exo` and
-// `claude plugin install exo@blauwtje -s <scope>`; `project` and `local` run in
-// the project folder, where Claude Code writes its settings. Update and remove run
-// `claude plugin update` and `claude plugin uninstall` with the same scope and
-// folder. A non-zero exit aborts that call with the CLI's stderr.
-//
-// Each install (scope, project folder) goes to `${CLAUDE_CONFIG_DIR:-~/.claude}/exo/installed.json`
-// as `{ version: 2, installs: [{ scope, project? }] }`, written only after the CLI
-// succeeded; update and remove act only on what it lists. The record is read back
-// as untrusted data and checked before any CLI call.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -52,7 +40,6 @@ function writeInstalls(file, installs) {
     try {
       fs.rmdirSync(path.dirname(file));
     } catch {
-      // The folder holds other exo files; leave it.
     }
     return;
   }
@@ -62,9 +49,7 @@ function writeInstalls(file, installs) {
 const matches = (install, selector) => (selector.scope === undefined || install.scope === selector.scope)
   && (selector.project === undefined || install.project === selector.project);
 
-// Runs `claude <args>` and throws with its stderr on a failure to start or a non-zero exit.
 function claude(args, cwd, env) {
-  // Windows ships claude as a .cmd file, which only a shell starts; the arguments are fixed text.
   const result = spawnSync('claude', args, { cwd, env, encoding: 'utf8', shell: process.platform === 'win32' });
   const command = `claude ${args.join(' ')}`;
   if (result.error) throw new Error(`${command} did not run: ${result.error.message}`);
@@ -99,8 +84,6 @@ export function install({ env, scope, project }) {
   return `installed exo into Claude Code at ${scope} scope${folder === undefined ? '' : ` for ${folder}`}`;
 }
 
-// Runs `claude plugin <verb>` for each recorded install the selector matches; a
-// failure leaves that record in place, and the rest still run before it throws.
 function eachMatch(record, { action, verb, past, keep }) {
   const file = recordFileOf(record.env);
   const installs = readInstalls(file);
@@ -121,7 +104,6 @@ function eachMatch(record, { action, verb, past, keep }) {
   return `${past} ${done.length} Claude Code install${done.length === 1 ? '' : 's'}`;
 }
 
-// How many installs the record lists; install.sh deletes the clone only when every adapter says 0.
 export function recorded(env) {
   return readInstalls(recordFileOf(env)).length;
 }
