@@ -28,6 +28,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `killTree` with `platform: 'win32'` calls its `run` stub with `taskkill` and `['/pid', '<pid>', '/T', '/F']`; on POSIX a detached shell's grandchild is gone after `killTree`; a timed-out verify Proof and gate still fail with `timed out after <n>s` (Task 2; seam: `tests/process-tree.test.mjs`, `tests/verify-gate.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).
 
+## gate-fix-recheck
+- Task 1: `docs/failures.md` holds the gate re-review entry and `CHANGELOG.md` holds one `### Changed` line under `## Unreleased`.
+
 ## issues-115-117
 - Task 2: in a temporary git repository with an `origin/main` ref, removing one `only` from `skills/x/SKILL.md` fails `boundary words` naming the file, `only` and both counts; a rewording that keeps every count passes; the same drop passes with `Drops: only in skills/x/SKILL.md` in a commit body or in `EXO_DROPS`; no `origin/main` gives `UNRUN`; the self-test's boundary scenario is rejected by exactly `boundary words`; seam: `tests/boundary-words.test.mjs`.
 - Task 5: wave-worktrees.md step 4 passes `--report` for every folder, `--patch` for an unlanded folder with a diff, never `--force`; rolling-window.md step 6 keeps a stalled slot's folder; seam: `tests/implementing-waves.test.mjs`.

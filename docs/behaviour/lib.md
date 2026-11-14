@@ -22,6 +22,9 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `runTreeSync` past its deadline returns `timedOut: true` and a grandchild that would write a marker file after the deadline writes none; a passing command returns status 0 with stdout and stderr merged (Task 3; seam: `tests/process-tree.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).
 
+## gate-fix-recheck
+- Task 1: `docs/failures.md` holds the gate re-review entry and `CHANGELOG.md` holds one `### Changed` line under `## Unreleased`.
+
 ## karpathy-level
 - Wish 4, context: worker return cap 40 -> 10 lines (Task 3); spec research workers 8 -> 4 (Task 3); subagent returns 25.3k tokens per spec session (15.0%) before, measured after with `measure-context.mjs` on the first spec session that runs the new exo.
 - Wish 1, ideas: 18 open -> 4 adopted in 3 rule edits (Task 4), 1 open (2/12), 13 closed with a named reason.

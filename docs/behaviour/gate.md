@@ -5,6 +5,11 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 ## brief
 - Each launcher SKILL.md holds `context: fork` (Task 11).
 
+## gate-fix-recheck
+- Task 1: `skills/gate/SKILL.md` step 3 names `--recheck`: the gate runs step 2 only, runs no review, reports any `FAIL` as the final result and ends on `ship` when all pass.
+- Task 1: `docs/failures.md` holds the gate re-review entry and `CHANGELOG.md` holds one `### Changed` line under `## Unreleased`.
+- Success criterion: `npm run check` ends `FAIL=0 WARN=0 UNRUN=0`.
+
 ## loop-budget
 - A gate re-entry on the same run continues the ledger round count instead of restarting it (Task 5).
 

@@ -22,6 +22,10 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - `skills/build/references/rolling-window.md` exists with its row and `npm run validate:static` passes (Task 8).
 - The Success criterion passes.
 
+## gate-fix-recheck
+- Task 1: `skills/build/references/tail.md` reruns `gate` with `--recheck` after the one fix round, and that report is final.
+- Task 1: `docs/failures.md` holds the gate re-review entry and `CHANGELOG.md` holds one `### Changed` line under `## Unreleased`.
+
 ## issues-115-117
 - Task 3: `land-task` runs the land gate with `EXO_DROPS` set to the task's `Drops:` value, in both `--check` and landing, and a compact task's commit body carries the `Drops:` line; a task without the field sets nothing; seam: `tests/land-task.test.mjs`.
 - Task 4: `remove-worktree.mjs --report <absent file>` exits 1, and the worktree stays in `git worktree list` (a blocked wave with one build still running); with the report present it removes; `--patch` with an absent or empty file refuses on a dirty tree; with a non-empty patch it removes; `--force` exits 2; seam: `tests/remove-worktree.test.mjs`.
