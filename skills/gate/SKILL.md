@@ -28,4 +28,4 @@ The gate readies a branch for a pull request.
 |---|---|
 | `../../lib/references/closing.md` | Final message. |
 
-Report: the report rule, three lines: findings file path, `question` findings, one decision: `FAIL`, else `question`, else `ship`.
+Report: the report rule in plain words: whether the branch is ready, any open `question` findings, and what the user does next.

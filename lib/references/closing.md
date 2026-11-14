@@ -7,7 +7,6 @@
 
 ## Report rule
 
-- Report when all work is done, as `output-styles/adhd.md` sets under While working.
-- The report holds what happened, whether it worked, and what the user must do now.
-- What the user must do now → the last line only, as `output-styles/adhd.md` Show sets.
-- Hashes, counts, paths and status words go in the file the work wrote; name that file in one line.
+- Report when all work is done, in the shape `output-styles/adhd.md` sets: result, whether it worked, what the user does now.
+- What the user does now goes on the last line only.
+- Keep hashes, counts, paths, machine status words such as `GREEN` or `FAIL`, and script lines out of it; they go in the work's file. Name a file only when the user should open it.

@@ -116,7 +116,7 @@ test('the tail points to the REPORT file for Proof lines and manual checks, not 
   const tailStep = loopStep(7, TAIL);
   assert.ok(tailStep.includes("`REPORT` file's `## Proofs`"), 'step 7 points to the REPORT file proofs');
   assert.ok(!tailStep.includes('--proofs'), 'the inline route copies no proofs');
-  assert.ok(tailStep.includes('however `gate` ends, a `FAIL` that ends its turn included'), 'a failed gate keeps the pointer');
+  assert.ok(tailStep.includes('however `gate` ends, a failed `gate` included'), 'a failed gate keeps the pointer');
   assert.ok(tailStep.includes('Never rerun a proof'), 'step 7 bans rerunning or reading for proofs');
   assert.ok(tailStep.includes('`Decisions:` line goes in the report as a path, unread'), 'step 7 names the decision log by path only');
 });

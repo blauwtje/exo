@@ -19,3 +19,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-14 agent review: an orchestrator read worker Result files whole when it merged, because `readCapDecision` in `lib/context-decisions.mjs` does not cut an orchestrator's read of a `.exo/` file (user request).
 - 2026-11-14 agent review: 6 of 20 evals went unscored because the cost ceiling ended the run (user request).
 - 2026-11-14 watch: a TikTok page caption track was always labelled `tiktok:eng`, so a machine-made or non-English track never showed as auto and the `auto` rule in `skills/watch/SKILL.md:59` could not fire (`skills/watch/scripts/watch.mjs:103`).
+- 2026-11-14 replies: final messages to the user used exo run words (gate, brief, wave, LANDED, BLOCKED) and machine text (commit hashes, check summary lines, branch names, file paths, raw seconds) that a scanning reader cannot use (user request).

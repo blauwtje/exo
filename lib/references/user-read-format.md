@@ -44,6 +44,8 @@ This page sets how exo writes a file the user opens, so a reader with no backgro
 | fixture, mock | sample data, fake stand-in |
 | landed | added to the branch |
 
+Exo run words (gate, brief, spec, round, worker and the rest) are listed in `output-styles/adhd.md`.
+
 ## Banned phrasing
 
 - `delve`, `tapestry`, `landscape`, `pivotal`, `seamless`, `robust`, `comprehensive`, `streamline`, `facilitate`

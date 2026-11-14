@@ -55,6 +55,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The `adhd` style fixes one report shape (bold status word, at most 3 short bullets, action last) with a plain-word list for run words, and `gate`, `build`, `spec`, `ship`, `find-cause` and the next-stage lines report in plain words instead of script lines.
 - A `watch` batch loads the whisper model once, runs keyframes only for 0-word videos, and prefetches unfinished TikTok pages in parallel (`EXO_WATCH_PAGE_PARALLEL`, default 4); 20 videos took 77.6 s -> 66.3 s.
 - The claim judge in spec research runs on Sonnet at low effort instead of Haiku.
 - Build tasks run at medium effort instead of low; a retry still steps up to Opus at high.

@@ -51,4 +51,4 @@ Goal: ship only as the user says.
 | `references/pr-merge.md` | 3, 5, 7. |
 | `../../lib/references/closing.md` | Before the report. |
 
-Report: each line `ship.mjs` prints and the checkout line (branch for Keep local); status `gh pr view <n> --json state,isDraft`; `gh pr ready <n>` if draft; if merged `node "${CLAUDE_SKILL_DIR}/../build/scripts/remove-worktree.mjs" --kept --worktree <path> --run .`; when that script refuses, leave the worktree and report the refusal.
+Report: the result in plain words (pushed, PR opened, merged, kept local on <branch>, or why it stopped) and the next step; status `gh pr view <n> --json state,isDraft`; `gh pr ready <n>` if draft; if merged `node "${CLAUDE_SKILL_DIR}/../build/scripts/remove-worktree.mjs" --kept --worktree <path> --run .`; when that script refuses, leave the worktree and report the refusal.

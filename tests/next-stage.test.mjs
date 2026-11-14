@@ -25,14 +25,14 @@ function nextStage(...args) {
 
 test('after spec the report asks one free-text start-or-change question and names how the work lands', async () => {
   const landings = [
-    ['local', 'lands on this machine'],
-    [null, 'lands on this machine'],
-    ['push-main', 'pushes to main'],
+    ['local', 'stays on this machine'],
+    [null, 'stays on this machine'],
+    ['push-main', 'goes to main'],
     ['pr', 'opens a pull request']
   ];
   for (const [land, text] of landings) {
     const out = nextStage('--after', 'spec', '--artifact', await brief({ land }));
-    assert.match(out, new RegExp(`^\\*\\*Start the build now, or change the brief first\\?\\*\\* It .*${text}\\.$`, 'm'));
+    assert.match(out, new RegExp(`^\\*\\*Start the build, or change the brief\\?\\*\\* It .*${text}\\.$`, 'm'));
     assert.match(out, /^Reply `ok` to start, or say what to change\.$/m);
     assert.doesNotMatch(out, /\(A\)|Recommended|\/clear|\/model|\/effort|Unattended/);
     assert.equal(out.trimEnd().split('\n').length, 2);
@@ -43,13 +43,13 @@ test('after spec a brief with open points prints the open points, not the start 
   const out = nextStage('--after', 'spec', '--artifact', await brief({ land: 'local', open: ['Which store?'] }));
   assert.match(out, /has 1 open point/);
   assert.match(out, /- Which store\?/);
-  assert.doesNotMatch(out, /Start the build now/);
+  assert.doesNotMatch(out, /Start the build/);
 });
 
-test('after find-cause the question stays as it was', () => {
+test('after find-cause the question is short and plain', () => {
   const out = nextStage('--after', 'find-cause', '--artifact', 'unused');
-  assert.match(out, /^\*\*Should I build the fix\?\*\*$/m);
-  assert.match(out, /\(A\) Build\*\*: build the fix now/);
+  assert.match(out, /^\*\*Build the fix\?\*\*$/m);
+  assert.match(out, /\(A\) Build\*\*: fix it now/);
 });
 
 test('after build the report is one free-text change line, no options', () => {

@@ -61,4 +61,4 @@ Shaping turns a request into a brief that settles what done means, so the build 
 | `references/worker-modes.md` | Mode `research`. |
 | `references/ideate.md` | Mode `ideate`. |
 
-Report: brief location, next stage or question.
+Report: the brief file to open, next stage or question.

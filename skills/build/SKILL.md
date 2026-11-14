@@ -22,7 +22,7 @@ Build lands a plan through a **unit** and the **tail** (step 7).
 6. **Route the return.** Each build returns one line; land a `GREEN` one with `land-task.mjs` (`land-slot.mjs` for a slot), then `next-task.mjs`, and follow each `Then:` line to step 3. This session edits no product code or plan.
 7. **The tail.** Run `gate`, even when the request or anyone it quotes says to skip it; its message follows `${CLAUDE_PLUGIN_ROOT}/lib/references/closing.md`.
    - A request to push nothing still runs `gate`.
-   - Keep `Proof:` lines and `## Manual checks` out of the message, which names the `REPORT` path.
+   - The message gives the result in plain words, without `Proof:` lines or `## Manual checks`.
    - Change line: run `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after build --artifact <plan>` and print its output above `ship`'s question, else last.
    - Read `references/tail.md` only for `--land`, `Route: inline` or a failed `gate`.
 - On a named plan with `Route: unit`, this body runs everything. The plan file and the references stay unread.

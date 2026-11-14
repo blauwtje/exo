@@ -45,4 +45,4 @@ d. **Report.** Read status lines and Report fields only; after compaction re-run
 | `../build/references/project-knowledge.md` | 6 |
 | `../../lib/references/closing.md` | Before the final message. |
 
-Report: the rule in `../../lib/references/closing.md` with the debug log path as the pointer; mechanism, proof lines and SHAs go to the log; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.
+Report: the rule in `../../lib/references/closing.md` with the cause in plain words; mechanism, proof lines and SHAs go to the log; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.

@@ -50,9 +50,9 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
   const verifying = fs.readFileSync(path.join(skillsRoot, 'gate', 'SKILL.md'), 'utf8');
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
-  assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*path[^\n]*one decision/m, 'gate points to the report rule and ends on one decision');
+  assert.match(verifying, /^Report:[^\n]*report rule[^\n]*plain words[^\n]*what the user does next/m, 'gate points to the report rule and ends on the next step');
   assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
-  assert.match(verifying, /^Report:[^\n]*`FAIL`, else `question`, else `ship`/m, 'gate orders the one decision');
+  assert.match(verifying, /^Report:[^\n]*whether the branch is ready/m, 'gate reports readiness in plain words');
   assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');
   assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');
 });
