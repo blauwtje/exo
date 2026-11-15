@@ -1,4 +1,3 @@
-
 export const UNRELEASED_HEADING = '## Unreleased';
 
 export function sectionBody(changelog, heading) {

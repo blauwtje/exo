@@ -10,15 +10,11 @@ Not for a rule or `CLAUDE.md`, a one-off fix, or a limit a script can check.
 
 ## What you get
 
-- The same prompt run with and without the skill. A rule stays only if the run without it went wrong.
-- Long material moved out of the skill into `references/`.
-- A green `node verify.mjs`.
-- A rename in one pass: folder, docs page and every mention.
-
-## Modes
-
-This skill also runs the folded skill prompt as a mode.
+- A skill or agent where each rule changes what the model does and carries its reason.
+- Long material moved out of the skill into `references/`, one level deep.
+- The failure recorded in `docs/failures.md` before the edit.
+- A green `npm run validate:static`.
 
 ## Source
 
-`skills/author/SKILL.md` and its `references/`.
+`skills/author/SKILL.md` and `skills/author/references/instruction-style.md`.

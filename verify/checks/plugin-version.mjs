@@ -1,4 +1,3 @@
-
 import fs from 'node:fs';
 import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
 import { git } from '#git';

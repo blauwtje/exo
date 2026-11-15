@@ -13,10 +13,10 @@ Takes finished commits as far as you choose: keep local, push, open a pull reque
 - A merge only after every check passes. The wait stops after 20 minutes.
 - A failed check leaves the pull request open, with the reason.
 - A dirty tree is first proposed as ordered commits grouped by file and purpose, shown with their subjects, and committed only on your yes. The commits together equal the tree exactly.
-- A pull request body a reviewer can read: why, what changed by theme, read order, risks, the gate's own proof lines, and follow-ups. Empty sections are left out and the body stays within `defaults.prBodyBytes` (4096).
-- When the pull request closes an issue with checklist items, an acceptance table with one row per item: met, unmet or unverifiable, each with where the evidence is. ship never edits the issue.
+- A pull request body of at most 40 lines: why, scope, verification and `Closes #<n>`.
+- A watch that fixes conflicts, failing checks (3 rounds at most) and review comments, then stops at merge-ready.
 - No branch deletion, forced merge or release.
 
 ## Source
 
-`skills/ship/SKILL.md`, `skills/ship/scripts/ship.mjs`, `skills/ship/scripts/pr-body.mjs` and `skills/ship/scripts/commit-split.mjs`.
+`skills/ship/SKILL.md` and `skills/ship/scripts/ship.mjs`.

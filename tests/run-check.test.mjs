@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { cachedPass } from '#check-cache';
 import { runCheck } from '../lib/run-check.mjs';
-import { wholeSuiteKeys } from '#suite-command';
 import { landingCheckout } from './land-task-fixture.mjs';
 
 const PASSING = "node -e \"console.log('ℹ tests 1\\nℹ pass 1\\nℹ fail 0')\"";
@@ -23,12 +22,6 @@ test('an empty or failing run is never recorded', async () => {
   const failing = runCheck(root, 'node -e "process.exit(1)"');
   assert.equal(failing.ok, false);
   assert.equal(cachedPass(root, 'node -e "process.exit(1)"'), null);
-});
-
-test('hook keys equal the recorded command', () => {
-  for (const command of ['npm run check', 'npm run validate:static', 'node --test', 'npm test']) {
-    assert.deepEqual(wholeSuiteKeys(command), [command]);
-  }
 });
 
 test('a retry run with record off never records a pass', async () => {

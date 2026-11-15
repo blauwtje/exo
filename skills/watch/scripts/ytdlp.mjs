@@ -1,64 +1,40 @@
+import { execFile } from 'node:child_process';
 import process from 'node:process';
-import { sleep } from '#basics';
-import { environmentDelayMs } from '#script-flags';
-import { DEFAULTS } from './defaults.mjs';
-import { failureLine, gateRequest, isRetryable } from './request-gate.mjs';
-import { runTool } from './run-tool.mjs';
-import { resolveYtDlp } from './ytdlp-binary.mjs';
+import { environmentMs } from '#script-flags';
 
-const YTDLP_INSTALL = "'brew install yt-dlp' or 'pipx install yt-dlp'";
+export const RATE_LIMITED_EXIT = 75;
+export const INSTALL = "'brew install yt-dlp' or 'pipx install yt-dlp'";
+const RATE_LIMIT = /HTTP Error 429|Too Many Requests|rate.?limit/i;
+const MAX_BUFFER = 256 * 1024 * 1024;
+export const YTDLP_MS = environmentMs('EXO_WATCH_YTDLP_MS', 120000);
 
-const JS_RUNTIME = ['--js-runtimes', `node:${process.execPath}`];
-const UNKNOWN_RUNTIME_OPTION = /no such option: --js-runtimes|unrecognized arguments:.*--js-runtimes/;
-
-async function runYtDlp(args, timeout) {
-  const { command } = resolveYtDlp();
-  return runTool(command ?? 'yt-dlp', args, timeout);
+export function run(command, args, timeout = YTDLP_MS) {
+  return new Promise((resolve) => {
+    execFile(command, args, { encoding: 'utf8', maxBuffer: MAX_BUFFER, timeout }, (error, stdout, stderr) => resolve({ error, stdout, stderr }));
+  });
 }
 
-async function runWithRuntime(args, timeout) {
-  const run = await runYtDlp([...JS_RUNTIME, ...args], timeout);
-  if (!run.error || !UNKNOWN_RUNTIME_OPTION.test(run.stderr)) return run;
-  return runYtDlp(args, timeout);
+export function ytdlp(args, timeout) {
+  return run(process.env.EXO_YTDLP ?? 'yt-dlp', ['--no-warnings', ...args], timeout);
 }
 
-const SEARCH_QUERY = /^ytsearch(?:date)?\d+:/;
-const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results';
-
-function urlOf(args) {
-  if (args.some((arg) => SEARCH_QUERY.test(arg))) return YOUTUBE_SEARCH_URL;
-  const marker = args.indexOf('--');
-  return marker === -1 ? args.find((arg) => /^https?:\/\//.test(arg)) : args[marker + 1];
+export async function ytdlpMissing() {
+  const result = await ytdlp(['--version'], 15000);
+  return result.error?.code === 'ENOENT';
 }
 
-function backoffAfter(attempt) {
-  return environmentDelayMs('EXO_WATCH_BACKOFF_MS', DEFAULTS.retryBackoffMs) * 2 ** (attempt - 1);
+export function isRateLimited(result) {
+  return RATE_LIMIT.test(result.stderr ?? '');
 }
 
-export async function runYtDlpWithRuntime(args, timeout) {
-  const url = urlOf(args);
-  for (let attempt = 1; ; attempt += 1) {
-    await gateRequest(url);
-    const run = await runWithRuntime(args, timeout);
-    if (!isRetryable(run) || attempt >= DEFAULTS.retryTries) return run;
-    await sleep(backoffAfter(attempt));
-  }
+export function reason(result) {
+  if (result.error?.killed) return 'yt-dlp did not finish in time';
+  return result.stderr.trim().split('\n').pop() || result.error.message;
 }
 
-export function ytDlpReason(run, options) {
-  if (run.error?.killed) return `did not finish within ${options.ytDlpMs / 1000} s`;
-  return failureLine(run);
-}
-
-export async function ytDlpAvailable(timeout) {
-  const { command } = resolveYtDlp();
-  if (!command) return false;
-  const { error } = await runTool(command, ['--version'], timeout);
-  return !(error && error.code === 'ENOENT');
-}
-
-export async function ytDlpNeed() {
-  const { command } = resolveYtDlp();
-  if (command) return null;
-  return `yt-dlp on PATH; install it with ${YTDLP_INSTALL}`;
+export function formatDuration(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = String(Math.floor(seconds / 60) % 60).padStart(hours > 0 ? 2 : 1, '0');
+  const rest = String(Math.floor(seconds % 60)).padStart(2, '0');
+  return hours > 0 ? `${hours}:${minutes}:${rest}` : `${minutes}:${rest}`;
 }

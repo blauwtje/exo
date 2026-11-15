@@ -56,6 +56,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
+
+- `land-task` refuses a change to a path outside the task's `Files:`, naming the paths; the end of a build reviews first, lands the reproduced fixes, then runs the Success criterion and Land gate once, and the review checks the diff against the plan's Decisions and Acceptance; `ship` sends a code fix to a builder that writes a failing test first; `plan-check` fails a `Data:` read by a task that does not depend on it.
+- Thin script files are folded into their only user (70 to 57 files), and `CONTRIBUTING.md` lists each timeout with its reason.
+- A plan task's `Data:` is its exact interface (names, signature or shape, or `Data: none (<reason>)`), and `plan-check` fails a task without it, two tasks on one file with no `Depends on:` path, and an Acceptance item that cites nothing; a task is the smallest change whose proof fails before and passes after, `Files:` lists the proof's test file, removal comes before reshape, and the picked architecture sketch becomes the tasks' `Data:`.
+- The builder gets the plan's Decisions, Non-goals and Assumptions with its task; a second attempt gets the first one's failure output and report; the end-of-run report comes from the diff and the `Plan-task:` commits; a run on `main` makes a branch instead of asking; with no plan path, the one plan with open tasks is used; a small change also ends on `ship`.
+- The build, diagnose, ship, save and configure descriptions trigger on what the user says; `author` runs only when typed; `save` resumes from the handoff on "continue from the handoff"; the README shows one example sentence per path.
+- `land-task` refuses a task whose proof already passes before the change, with no commit, unless the task says `Red: none (<reason>)`; before, it warned and landed.
+- The builder agent reads the code rules itself, so every builder gets them, and stops with BLOCKED when its proof passed before the change; each `code-review` finding goes to a builder that must reproduce it, and only reproduced findings are fixed; author, diagnose, ship, document and watch run in the main session instead of a fork, so they see the conversation and can ask the user; build and spec descriptions carry the words a user says.
+- The builder reads a short list of code rules before it writes code and clears narrating comments, impossible-state guards, unasked compatibility paths and unrelated edits from its diff before it reports; style is left to the project's own lint, which the Land gate runs, and the branch review at the end of build is the built-in `code-review` at medium, fixing only findings a command shows.
+- The builder agent runs on Sonnet at medium effort, and a task that failed once goes to a fresh builder on Opus at high effort; build ends by running the plan's Land gate once next to the Success criterion, so a gate too slow to rerun per task still runs.
 - Past the 75k hard context limit a helper is no longer refused: every checked call gets a hand-over note naming `checkpoint.mjs` and `Status: handover`.
 - The skills `edit-skills`, `save-session`, `find-cause` and `write-docs` are renamed to `author`, `save`, `diagnose` and `document`, so names are one common word that no Claude Code command or tool uses.
 - Renamed the agents to `builder`, `researcher` and `reviewer`.
@@ -133,6 +143,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The status line works after a fresh install: `/exo:configure` writes a launcher that names the plugin root itself, so no pointer file is needed, and it replaces a launcher from an older exo; the status line reads context and limits from what Claude Code sends and drops the transcript scan, the limit cache and the `5h out in` warning.
+- The builder's land command and the spec sketch script path sit in the agent and skill bodies, where the plugin root is filled in; the README and contributor guide say a proof that passed first lands with a warning and the builder stops, and the doc citations point at files that exist, which the Markdown references check now also walks in `docs/` and `CONTRIBUTING.md`; `package-lock.json` matches the 0.140.0 version.
+- The builder prompt and agent agree on listed files only, absolute paths and the report file land-task reads, and spec no longer calls the removed `next-stage.mjs` or reads a settings line no hook prints.
+
 - `land-run.mjs` no longer requires `--started-at`, a start time nothing read since the landing stopped checking a branch review file.
 - A TikTok page caption track carries its real language and auto status instead of a fixed `tiktok:eng`.
 - whisper.node runs in one worker child per batch, so a timeout or crash replaces that child instead of stopping the batch.
@@ -209,6 +223,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
+- Unused script code: dead exports in `lib/` and the build scripts, test-only helpers, orphan fixtures, `behaviour.mjs` with the `docs/behaviour` pages, ten single-use import aliases and `plan-check.mjs`'s unread `--loop`, `--run` and `--root` flags.
+- The undocumented `Drops:` and `Evidence:` plan lines, the old `Commit:` and `Run:` plan form, the handoff and checkpoint report sources, and unused helpers.
+- The plan's Checkpoint section and `Land:` and `Commit:` lines, so `ship` asks the finish route once, at the end; the unread `parallel`, `land`, `design`, `boundary`, `literals` and `benchmarkOverride` parsers; the `route-author` eval.
+- The unread plan fields `Lint:`, `Allow:`, `App:`, `Autonomy:` and `Pause:`, the `workspace` setting and `stack` ship option nothing read, the uncalled `redGreen`, `greenCommit` and Budget-raise code, and two tests that only pinned prose.
+- The detached run machinery (providers, retries, stall guards, slots, waves, report renderers), the landing extras around the red proof and Land gate (code-rules lint, size facts, pins, ruled-out notes, timeline), spec's fetch, search and citation scripts, 44 of 51 checks in `npm run check` and the tests of removed code, and `exo run`: `npm run check` keeps plugin validity, links, skill layout, syntax, changelog, version and tests.
+- The `gate` skill (its Success criterion run and branch review now end `build`), build's refactor, improve, design-ui and task modes, spec's research and ideate modes (ideate folds into design), and 77 of 82 skill references: every SKILL.md now holds what changes a decision, with no path into another skill.
+- The `orchestrator` and `reviewer` agents, the model-kinds table and the `budget` setting: the lead sends a fresh `builder` or `researcher` per job, and each agent's frontmatter sets its model and effort.
+- All hooks and the `receipts` setting: skill descriptions carry the routing, and agent frontmatter sets model and effort; a plugin cannot ship permission deny rules, and the builder agent carries no git ban, as neither pstack nor Anthropic's plugins have one.
+- Codex and OpenCode support, `install.sh` and `install.mjs`: exo is a Claude Code plugin only, installed with `/plugin install`.
 - agent-effort's lacks-reads denial for lead dispatches, its isolation check and the unused research-unnamed and research-fanout rules.
 - The run-no-wait `Stop` hook; the `AskUserQuestion` hook stays.
 - The `SessionEnd` hook, `hooks/session-end.mjs` and its handoff stub; `save-session` still writes the handoff.

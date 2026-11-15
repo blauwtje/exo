@@ -12,4 +12,4 @@ Include the exo version, your platform, the steps that reproduce it, and what an
 
 ## Scope
 
-exo runs a session hook (`hooks/`) and skill scripts on your machine with your shell's permissions. A report is in scope when a skill, hook or script runs a command, reads a file, or sends data that the user did not ask for.
+exo runs skill scripts on your machine with your shell's permissions. A report is in scope when a skill or script runs a command, reads a file, or sends data that the user did not ask for.

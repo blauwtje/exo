@@ -1,3 +1,0 @@
-- Prove a fix with an existing test or repro that failed before it, or write the smallest test per cause and see it fail first, and do not revert or stash to show red: a test that was not seen red proves nothing.
-- When the goal command is red and the cheapest unblock is a delete, reset or overwrite, edit the project until the command as typed is green and destroys nothing, because a pass under changed settings is not done.
-- Ask the user only about the destructive step of that unblock, since the rest is yours to decide.

@@ -1,62 +1,28 @@
 ---
 name: configure
-description: Use when the user asks to set up exo or see or change an exo setting. Not for the harness's settings.json, permissions or hooks.
+description: "Shows and changes exo's settings (specs, ship) and prints the status line block. Use for one exo setting, given as a key and a value. Not for the harness's settings.json, permissions or hooks."
 disable-model-invocation: true
-argument-hint: "[nothing to walk every setting, or a key, a value and --scope project|local]"
-allowed-tools: Bash(node *settings.mjs*), Bash(git remote get-url origin), Bash(git rev-parse *), Bash(gh auth status)
+argument-hint: "[a key, a value and --scope project|local]"
+allowed-tools: Bash(node *settings.mjs*)
 ---
 
 # Settings
 
-Change exo's settings only through its own scripts, one named setting or every setting in one walk. The enemy is a value the user never picked: a walk that writes before its review.
-
-## When to use
-
-- Use `## The walk` for `/exo:configure` with nothing after it, or a request to set up or configure exo as a whole.
-- Use `## One setting` for a question about one setting, or a request to change one.
+Show exo's settings and change one only when the user names it and its value, because a value the user never picked is wrong.
 
 ## Where things stand
 
-Values when this skill loaded, each with its layer:
-
 !`node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" show`
 
-## One setting
+## Change one
 
-Take the first step the request and answers so far leave open.
-
-- An answer a menu's `Or type` line names counts as that pick, like its letter, at every step: topic, setting or value.
-
-1. **Relay.** When the request only asks to see the settings, relay the `show` block above as the whole reply and run nothing. Keep its ```` ```text ```` fence unchanged; rows line up only in a monospace block.
-2. **Pick the setting.** When the request names none, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply.
-   - When a topic is picked, run `menu work` or `menu places` and relay it the same way.
-3. **Ask the value.** When the setting is known and the value is not, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
-4. **Pick the layer.** When the request names no layer, use project scope: it reaches every collaborator, not only you, and only a named local or global layer changes that. The closing line names the layer used.
-5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change. When `show` does not match, rerun the write once (`attempt`), then relay `show`.
-   - When the script rejects the value, relay the rejection as printed and change nothing by hand.
-   - For a project value, add one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
-
-## The walk
-
-Follow `references/setup-map.md` from its first step. Leave every answer to the user.
-
-## The write commands
-
-| Setting | Command |
-|---|---|
-| A key `show` lists, for this repository | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project or local>` |
-| A key `show` lists, for every project | None: the harness owns that file. Report names the value to pick for that key under exo in `/config`. |
-| The status line | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" statusline`; relay the printed `statusLine` block and its target file, edit no harness settings file. |
-
-## References
-
-| File | Read it when |
-|---|---|
-| `references/setup-map.md` | The walk, before its first step. Not for one setting. |
-| `../../lib/references/question.md` | Before a message that asks the user a question. |
+1. When the request only asks to see settings, relay the block above unchanged in its text fence and run nothing.
+2. When the key or value is missing, ask for it with the options `show` lists. Use project scope unless the user names local, because project reaches every collaborator.
+3. Run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project or local>`. Relay a rejection as printed and change nothing by hand.
+4. Run `show` again and relay it under the confirmation line, because the block above predates the change. For a project value, add that collaborators receive it once `.claude/exo.json` is committed.
+5. A value for every project is not written here: name the row to pick for that key under exo in `/config`.
+6. For the status line run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" statusline` and relay the printed `statusLine` block and target file.
 
 ## Judgment
 
-- A project or local value outranks a global one.
-- When the user picks every project for a key that a project or local layer holds, the report names that layer, because the new value stays hidden there.
-- Scripts' output outranks any value in context, including the session's `exo settings:` line read at session start.
+- A project or local value outranks a global one, so when the user picks every project for a key a narrower layer holds, name that layer.

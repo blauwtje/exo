@@ -1,51 +1,32 @@
-# Architecture sketch
+# Options
 
-This page gives the user options to pick from before any work starts. The enemy is one context drafting every option near the first, and the overcorrection is building each in full before choosing.
+Use this when the user asks for options or ideas. One context drafting every option tends to draft near its first idea, so the steps below force distance; building each option in full before choosing is the opposite mistake.
 
 ## Draw the pairs
 
-- Before drafting any option, run step 4's repo map once yourself.
-- Then run `node "${CLAUDE_SKILL_DIR}/scripts/draw-seats.mjs"` once, which prints 3 pairs, each a seat and a forbidden move.
-- Keep the pairs as printed: swap none for one you prefer, and never redraw.
+- Run step 2's repo map once, and two or three `gh search repos` queries for projects that solve the same problem plus one from a far domain. Read their descriptions for ideas and copy nothing.
+- Run the `draw-seats.mjs` command the skill body gives once; it prints 3 pairs, each a seat and a forbidden move. Keep them as printed and never redraw.
 
 ## Draft one option per pair
 
-- Draft in your own context, one option per pair, in printed order.
-- Read the code the map names before designing; the design fits the code there.
-- Design from the seat; a design that uses the forbidden move fails.
-- Each option opens with `Core mechanism:` and `p=`.
-- Set p to your estimate of the chance that a typical engineer, given this request and no prompting, proposes that mechanism first.
-- An option may not reuse an earlier option's core mechanism. When it does, redraft it from its pair.
-- Write types, signatures and module boundaries, not bodies.
-- Keep each option to 10 lines: a title, the mechanism in two sentences about what the user sees and does, the sketch, and what it hides and exposes to callers.
+- Draft one option per pair, in printed order, from that seat; a design that uses the forbidden move fails.
+- Each option opens with `Core mechanism:` and `p=`, your estimate that a typical engineer proposes that mechanism first. No two options share a core mechanism.
+- At most 10 lines: a title, the mechanism in two sentences about what the user sees, types, signatures and module boundaries (no bodies), and what it hides from callers.
 
 ## Replace the likely
 
-- An option with p above 0.15 → redraft once from the same pair with a mechanism of lower p, until at least 2 options sit at p at most 0.15.
+- An option with p above 0.15: redraft once from the same pair with a less likely mechanism, until at least 2 options sit at p at most 0.15.
 
 ## Screen each candidate
 
-Reject or revise a candidate showing:
-
-- **Shallow module.** Large interface hiding little; caller learns the implementation anyway.
-- **Information leakage.** Representation or protocol detail in more than one module; changing it needs coordinated edits.
-- **Temporal decomposition.** Modules split by execution order (load, validate, save), not by the knowledge they own.
-- **Pass-through method.** Layer forwarding the same arguments without adding policy or adaptation.
+Revise or drop an option with a large interface that hides little, a detail that two modules must change together, modules split by execution order instead of the knowledge they own, or a layer that only forwards its arguments.
 
 ## Show and pick
 
-- Show the 2-3 most distinct survivors, each beside its seat; a second flavor of one shape is not an option.
-- Score each option per 3-5 criteria from the request, interface depth weighted highest, not on overall feel.
-- Prefer the option that hides more behind a smaller public surface, even when its implementation is harder.
-- When parts of two options hold under one data model, graft them and name each source.
-- Recommend one, with its reason.
+- Show the 2-3 most distinct survivors, each beside its seat; when one matches a project found above, add `Already exists: <url>`.
+- Score each per 3-5 criteria from the request, interface depth weighted highest. Prefer the option that hides more behind a smaller surface.
+- When parts of two options hold under one data model, graft them and name each source. Recommend one, with its reason.
 
 ## Stop at the options
 
-- After Show and pick, ask the user to pick one and stop. Write no spec file, run no plan-check and dispatch no agent.
-- Read at most 3 files beyond the map.
-
-## The sketch is the contract
-
-- Chosen sketch ships in the brief; the build implements it.
-- Re-sketch only on a repeated pattern of friction during the build, not on one awkward call site.
+- Then ask the user to pick one and stop: write no brief, run no plan-check, dispatch no agent. Each signature of the picked sketch becomes the `Data:` of the task that builds it.

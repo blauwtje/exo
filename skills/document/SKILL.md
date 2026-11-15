@@ -1,46 +1,45 @@
 ---
 name: document
-description: Use when the user asks to write or edit prose read later, such as a README, doc page, PR or changelog line. Not for chat replies or code comments.
-context: fork
-agent: exo:orchestrator
+description: "Writes and edits prose read later: README, doc page, PR body, changelog line, release notes. Use when the user asks for one. Not for chat replies or code comments."
 argument-hint: <the document or text to write or edit>
 model: sonnet
 effort: medium
 ---
 
-# Technical writing
+# Document
 
-Prose for a reader who was not in the session says who does what, by which mechanism, in the plain word. The enemy is text that sounds finished and says little: a benefit where the fact belongs, a borrowed phrase, a paragraph that welcomes, teaches and lists at once. The overcorrection is telegraphic text stripped of articles and verbs, which the reader has to decode.
+Prose for a reader who was not in the session says who does what, by which mechanism, in the plain word. Avoid text that sounds finished and says little, and avoid the opposite, telegraphic text without articles and verbs that the reader must decode.
 
-## The loop
+## Process
 
-1. **Pick one mode per document.**
-   - A tutorial teaches by doing and a how-to gets a known task done.
-   - A reference lists what exists and an explanation says why.
-   - A usage section opens on the command (ai-tics M1).
-2. **State the fact, not the benefit.**
-   - Give the number, behavior or error that changed; ai-tics C1 and C4 list the benefit phrases.
-   - When the request is to show off, sell or impress, still write only the facts the input states, since an unmeasured effect is invented.
-3. **Name the actor and the mechanism.**
-   - Say who does what, because a passive verb or abstract noun hides the part the reader must find.
-4. **Use the codebase's names.**
-   - Real file, option, flag and command names.
-   - Use one name per thing (ai-tics W5, W9).
-5. **Write whole sentences in plain words.** One thought per sentence (ai-tics P1-P7); in a one-sentence slot (Highlights line, summary) write only the change that matters most.
-6. **Change only what the request names.** Run the doc's link or reference check when one exists.
-7. **Scan the draft against `references/ai-tics.md` and rewrite every hit before handing it over.**
-   - When reviewing someone else's text, cite each hit by its id.
+1. **Pick one mode per document.** A tutorial teaches by doing, a how-to gets a known task done, a reference lists what exists, an explanation says why. A how-to opens on the command, with no welcome or tour.
+2. **State the fact, not the benefit.** Give the number, behavior or error that changed. When asked to sell or impress, still write only what the input states, because an unmeasured effect is invented.
+3. **Name the actor and the mechanism.** Use the active voice with the real file, option, flag and command names, and one name per thing.
+4. **Write whole sentences.** One thought per sentence, under 25 words. Put the condition before the instruction and the warning before the step it guards. Put "only" and "not" next to the word they limit.
+5. **Change only what the request names.** Run the doc's link or reference check when one exists.
+6. **Scan the draft for the tics below and rewrite each hit.** When reviewing someone else's text, quote each hit.
 
-## References
+## Tics
 
-| File | Read it when |
-|---|---|
-| `references/ai-tics.md` | Step 7, on every draft, and when reviewing a text for machine-written tone. |
-| `references/release-notes.md` | The user asks for release notes or the missing `## Unreleased` lines from a ref range. |
+- Trailing "-ing" benefit phrase ("ensuring stable memory"), inflated significance, a vague source, a promise about the future. State the number or cut it.
+- Quality adjectives with no measurement (robust, seamless, significantly). Give the measured change.
+- Stock vocabulary (delve, pivotal, landscape, showcase, leverage, utilize, facilitate), "serves as" for "is", "not just X but Y", lists of three for rhythm, and "simply" or "just".
+- Em dashes, a colon for drama, bold on ordinary words, Title Case headings, emoji, curly quotes around code, headings on a one-paragraph text.
+- Chat traces: "Here is...", praise, "I hope this helps", "That's it!", a section that describes itself, a summary repeating the list above it.
+- Hedges stacked ("could potentially"), filler ("in order to", "it is worth noting"), aphorisms, abstract metaphors (backbone, guardrail), and "feels smoother" where a mechanism belongs.
+- A passive verb with no actor, a pronoun with two possible referents, a noun stack, a semicolon joining sentences.
+
+## Release notes
+
+When the user asks for release notes or the changelog lines a range misses:
+
+1. Run `node "${CLAUDE_SKILL_DIR}/scripts/release-notes-draft.mjs" --repo <checkout> [--from <ref>] [--to <ref>]`. `--from` defaults to the last `v*` tag reachable from `--to`, `--to` to `HEAD`. It prints `### Breaking changes`, `### Added`, `### Changed`, `### Fixed` and `### Removed` from non-merge commits, and adds merged PR titles through `gh` unless `--prs <file>` gives a JSON list of `{ number, title, mergedAt }`.
+2. Rewrite each line to say what the user sees. Fill each `Upgrade: not stated in the commit.` line from the commit diff, and keep the `Upgrade:` line under each breaking entry.
+3. Add `--uncovered` to list only commits that did not touch the changelog; in the changelog a breaking change stays in its type section and starts with `Breaking:`.
+4. Name the range used in one line, so the user can rerun it. Edit the changelog only when the user names it, and never tag, bump or release.
 
 ## Judgment
 
 - The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
-- Fields that ship or spec set outrank this skill's layout, and only the wording inside them follows it.
-- The reader's ease outranks a rule. When following one hurts a sentence, mend it differently or keep it as written.
-- Product interface strings follow the product's copy rules, not this skill.
+- A fact, number or term the reader needs outranks every tic fix, and a tic inside a quotation, command or code sample stays as written.
+- The pull request body layout of `exo:ship` and the brief sections of `exo:spec` outrank this skill's layout, and product interface strings follow the product's copy rules.

@@ -9,7 +9,7 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - Send every edit, fix and failed-check repair to a worktree subagent, one concern each, and run independent parts in parallel.
 - Before the start-of-run cleanup, a squash, a worktree removal, a branch delete or a session push, read `.claude/landing.md`.
 - Outside a run, only the lead writes `CHANGELOG.md`.
-- Ask nothing about where to commit, because this workflow outranks `skills/build/references/workspace.md` and the pull-request route in `ship`.
+- Ask nothing about where to commit, because this workflow outranks step 1 of `exo:build` and the pull-request route in `exo:ship`.
 - When a report changed exo, tell the user that a new session runs it and that `/reload-plugins` updates only the open session.
 
 ## Checks
@@ -19,15 +19,13 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
 - When a mistake recurs, fix or delete its code path; add a check only by replacing one, because every check is upkeep.
 - Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `docs/failures.md` first, after you grep the session transcripts for it and record the count.
-- Raise no cap in `verify/budgets.mjs`: remove something or ask the user.
-- Raise an eval score or cut eval cost only through `exo:build improve`: one frozen scorer, one change per round, keep only a round.mjs keep row, no fixed targets.
 
 ## Editing
 
 - Before designing a prompt, context, agent, tool, harness or eval, read `docs/principles/README.md` and open only the page it names.
-- Run `claude plugin eval` only before a release or as the frozen scorer of an improve run, always with `--max-cost-usd`.
+- Run `claude plugin eval` only before a release, always with `--max-cost-usd`.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
-- Derive a new value from the repo, or use one overridable default in run.json `defaults` or an `EXO_*_MS` var via `environmentMs`.
+- Derive a new value from the repo, or use one overridable default or an `EXO_*_MS` var via `environmentMs`.
 
 ## Release
 

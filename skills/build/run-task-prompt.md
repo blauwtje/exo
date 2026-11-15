@@ -1,55 +1,24 @@
-# Run session prompts
+# Builder prompt
 
-`run-plan.mjs` fills one section per headless session; `[[name]]` is a field.
+Land Task <n> of the plan below. You get the task with the plan's Decisions, Non-goals and Assumptions, and these rules.
 
-## Build session
+- Work in the checkout you were given: start each command with `cd <checkout> &&` and give Edit and Write absolute paths. Change only the files the task lists; when another file must change, such as a registry or index, stop with `BLOCKED <file> is missing from the file list`.
+- Prove first: see the task's Proof fail, make the change, see it pass. Never delete, skip or loosen a test.
+- A Proof that passes before your change proves nothing. When it does, or when `land-task.mjs` refuses the task because the Proof passes without the production change, stop with `Task <n>: BLOCKED proof <command> did not fail first`, so the lead tightens the test or the plan, unless the task says `Red: none`.
+- Write the report with Write to `<checkout>/.exo/implementer-<n>.md` before landing. `land-task.mjs` reads the proof from it, in this layout:
 
-Land [[task]] of [[plan]] in this session. Load no skill; the brief and the rules below are all you need. Read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` before the first edit.
+```
+Landed: <change>
+Test first: yes, <category> | no
+Red: <test command>: fail | none, <why>
+  <assertion and observed value>
+Proof:
+<command>: pass
+  <last output lines>
+Unresolved: none
+```
 
-Brief:
-[[brief]]
-
-Rules:
-- Work in [[root]]; use relative paths.
-- Run one command per Bash call, exactly as the plan writes it. Add no `$( )`, `;`, `&&`, `|`, redirect or heredoc.
-- Create and change files only with the Write and Edit tools; read with Read.
-- Run at most 1 test beyond red-then-green.
-- If `.exo/ruled-out/task-<n>.md` exists in [[root]], <n> being [[task]]'s number, repeat no approach it lists.
-- Send build and test output to `.exo/logs/<name>.log`; read only the summary and failing lines.
-- After the first red Proof, rerun once per edit (`proof`).
-- A test or command your sandbox or permission rules refuse is not a block: never end `[[task]]: BLOCKED` on one; report it as `not run`, not `failed`.
-- Write no report file. The report, at most 25 lines, is the reply text above the last line: what landed, the proof output, `Unresolved:`.
-- Change only the files the task lists. A registry, index or test list that must name a new file and is not listed → end on `[[task]]: BLOCKED <file> is missing from the file list`.
-- Test-first when the task is risky or a fix: see the failing test first, then make it pass. Never delete, skip or loosen a test.
-- A test the task adds observes the exact case its Acceptance item, `Data:` clause or changed branch names, not a nearby case.
-- Commit nothing by hand, push nothing, dispatch no agent, start no worktree; the script proves, commits and lands.
-- Ask nothing: a choice you cannot rule → `BLOCKED NEEDS ANSWER: <one short question>`; a reversible one → take the recommended option and write a `Decision: <clause>` report line.
-- A `PLAN DRIFT:` line in this prompt → end on `[[task]]: PLAN DRIFT <item>`.
-- After your last edit and before the report, run [[codeRules]] and fix every finding it prints until it prints `Code rules OK`.
-[[landGate]][[extra]]
-
-End: when the work is done and the report is in the reply, end the reply; the script proves and lands.
-
-Last line of the reply, nothing after it, one of:
-- `[[task]]: GREEN`
-- `[[task]]: BLOCKED <reason>`, one clause
-- `[[task]]: PLAN DRIFT <reason>`, one clause
-- `[[task]]: HANDOFF`, only when a context-limit notice tells you to write a hand-off file
-[[retry]]
-
-## Plan session
-
-Build [[tasks]] of [[plan]] in this session. Load no skill.
-Report to: [[report]]
-
-Brief:
-[[brief]]
-
-Commit nothing. Batch independent Writes. Write each task's report, then run its check (it runs code rules; fix every finding):
-[[checks]]
-
-A Lint, Land-gate or code-rule refusal → fix it, rerun the check. One you cannot fix, or the same twice → end on `Task [[first]]: PLAN DRIFT <reason>`.
-
-[[stall]]
-
-Last reply line, nothing after it, always on Task [[first]]: `Task [[first]]: GREEN`, `Task [[first]]: BLOCKED <reason>` or `Task [[first]]: PLAN DRIFT <reason>`. Another task not green → name its number in the reason.
+- Run the land command your agent body gives, with `--plan <plan> --task <n> --root <checkout>`, after your last edit. It proves red then green, runs the Land gate and commits; fix what it refuses inside the task's files and rerun.
+- Commit and push nothing by hand, and start no worktree: the script commits, and the lead owns worktrees and branches.
+- Ask nothing. A question you cannot decide ends the reply with `BLOCKED <n> NEEDS ANSWER: <question>`.
+- Reply with at most 25 lines: what landed, the proof output, `Unresolved:`. The last line is `Task <n>: GREEN`, `Task <n>: BLOCKED <reason>` or `Task <n>: PLAN DRIFT <reason>`.

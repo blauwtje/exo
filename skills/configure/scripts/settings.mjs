@@ -3,249 +3,82 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { writeAtomic } from '#basics';
-import { currentHost } from '#host';
-import { OLD_STATUSLINE_LAUNCHERS, STATUSLINE_LAUNCHER } from '#plugin-pointer';
-import {
-  LOCAL_FILE,
-  PROJECT_FILE,
-  SCHEMA,
-  codexSettingsFile,
-  globalSource,
-  invalidReason,
-  layers,
-  projectRoot,
-  readLayer,
-  resolve,
-  settingOrDefault,
-  typedValue,
-  unknownKey
-} from '#settings-store';
-const USAGE = [
-  'usage: node settings.mjs context                                one line for the session context',
-  '       node settings.mjs show                                   every key: value, layer, options, overridden layers',
-  '       node settings.mjs menu [<topic> | <key>]                 that overview, then the question that picks a topic, a key or a value',
-  '       node settings.mjs get <key>                              the effective value',
-  '       node settings.mjs set <key> <value> --scope project|local',
-  '       node settings.mjs set <key> <value> --scope global       on Codex only',
-  '       node settings.mjs statusline                             install the status line launcher, print the statusLine block',
-].join('\n');
-const OVERVIEW_WIDTH = 76;
-const BLOCK_INDENT = '   ';
-function contextLine(root) {
-  try {
-    const stack = layers(root);
-    const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
-    const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
-    for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
-    const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '' && resolved[key].layer !== 'default');
-    const parts = printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
-    if (parts.length === 0 && notes.length === 0) return '';
-    return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. `;
-  } catch (error) {
-    return `exo settings: ${error.message}; defaults apply. `;
-  }
+import { LOCAL_FILE, PROJECT_FILE, SCHEMA, globalSource, invalidReason, layers, projectRoot, readLayer, resolve, typedValue, unknownKey } from '#settings-store';
+
+const STATUSLINE_MODULE = path.resolve(import.meta.dirname, '..', '..', '..', 'lib', 'statusline.mjs');
+
+function launcherSource() {
+  return [
+    'try {',
+    `  const { main } = await import(${JSON.stringify(pathToFileURL(STATUSLINE_MODULE).href)});`,
+    '  await main();',
+    '} catch {}',
+    ''
+  ].join('\n');
 }
 
-function wrapped(text, indent) {
-  const lines = [];
-  let line = indent;
-  for (const word of text.split(' ')) {
-    if (line.length + word.length > OVERVIEW_WIDTH && line !== indent) {
-      lines.push(line.trimEnd());
-      line = indent;
-    }
-    line += `${word} `;
-  }
-  lines.push(line.trimEnd());
-  return lines;
-}
-
-function settingBlock(key, stack) {
-  const entry = SCHEMA[key];
-  const { value, layer } = resolve(key, stack);
-  const number = Object.keys(SCHEMA).indexOf(key) + 1;
-  const origin = layer === 'global' ? `global, changed via ${globalSource()}` : layer;
-  const head = wrapped(`${number}. ${entry.label}: ${plainValue(key, value)}  (${key} = ${value}, ${origin})`, BLOCK_INDENT);
-  head[0] = head[0].slice(BLOCK_INDENT.length);
-  const block = [...head, ...wrapped(entry.about, BLOCK_INDENT)];
-  if (entry.options) block.push(`${BLOCK_INDENT}options: ${markedOptions(key, value).join('  ')}`);
-  const overridden = stack
-    .filter((lower) => lower.name !== layer && lower.values[key] !== undefined)
-    .map((lower) => `${lower.name}=${lower.values[key]}`);
-  if (overridden.length > 0) block.push(`${BLOCK_INDENT}overrides: ${overridden.join(', ')}`);
-  return block;
-}
-
-function markedOptions(key, value) {
-  return SCHEMA[key].options.map((option) => {
-    const label = plainValue(key, option);
-    return option === value ? `[${label}]` : label;
-  });
-}
-
-function overview(keys, stack) {
-  const blocks = keys.flatMap((key) => [...settingBlock(key, stack), '']);
-  const legend = `[x] is the current value. This skill writes project and local; global is changed via ${globalSource()}.`;
-  const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
-  return ['```text', ...blocks, ...wrapped(legend, ''), '```', ...notes];
-}
-
-function printSetting(key) {
-  const { value, note } = settingOrDefault(key);
-  if (note) console.error(note);
-  console.log(value);
-}
+const USAGE = 'usage: settings.mjs show | set <key> <value> --scope project|local | statusline';
 
 function show(root) {
-  console.log(overview(Object.keys(SCHEMA), layers(root)).join('\n'));
-}
-
-const MAX_PICKS = 2;
-const TOPICS = {
-  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['budget', 'receipts'] },
-  places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code and finished work go', keys: ['specs', 'workspace', 'ship'] }
-};
-
-function question(title, context, { keep, picks, reason }) {
-  const letters = [keep, ...picks].map((line, index) => `- **(${String.fromCharCode(65 + index)}) ${line}`);
-  return [`**${title}**`, ...(context ? [context] : []), '', ...letters, '', `Recommended: (A), because ${reason}`];
-}
-
-function plainValue(key, value) {
-  return SCHEMA[key].choices?.[String(value)]?.label ?? (value === '' ? 'none' : String(value));
-}
-
-function rest(items, describeItem) {
-  const typed = items.slice(MAX_PICKS).map(describeItem);
-  return typed.length > 0 ? `Or type ${typed.join(' or ')}.` : '';
-}
-
-function topMenu(stack) {
-  const topics = Object.entries(TOPICS);
-  const picks = topics.slice(0, MAX_PICKS).map(([, topic]) => `${topic.label}**: ${topic.about}`);
-  const context = rest(topics, ([key, topic]) => `\`${key}\` for ${topic.label}`);
-  const proposal = { keep: 'Keep as is**: change nothing', picks, reason: 'your settings stay as they are' };
-  return [...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', context, proposal)];
-}
-
-function topicMenu(topic, stack) {
-  const line = (key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about}`;
-  const picks = topic.keys.slice(0, MAX_PICKS).map(line);
-  const context = rest(topic.keys, (key) => `\`${key}\` for ${SCHEMA[key].label}`);
-  const proposal = { keep: 'Keep as is**: change nothing', picks, reason: 'nothing changes unless you pick another' };
-  return [...overview(topic.keys, stack), '', ...question(topic.question, context, proposal)];
-}
-
-function keyMenu(name, stack) {
-  const entry = SCHEMA[name];
-  const current = resolve(name, stack).value;
-  const choices = entry.choices ?? {};
-  const kept = choices[String(current)];
-  const keep = kept ? `Keep ${kept.label}**: ${kept.gives}` : `Keep ${plainValue(name, current)}**: change nothing`;
-  const others = Object.entries(choices).filter(([value]) => value !== String(current));
-  const picks = others.slice(0, MAX_PICKS).map(([, choice]) => `${choice.label}**: ${choice.gives}`);
-  const context = [entry.typed, rest(others, ([value, choice]) => `\`${value}\` for ${choice.label}`)].filter(Boolean).join(' ');
-  const proposal = { keep, picks, reason: 'nothing changes unless you pick another' };
-  return [...overview([name], stack), '', ...question(entry.question, context, proposal)];
-}
-
-function menu(root, name) {
   const stack = layers(root);
-  if (name === undefined) return console.log(topMenu(stack).join('\n'));
-  if (Object.hasOwn(TOPICS, name)) return console.log(topicMenu(TOPICS[name], stack).join('\n'));
-  if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
-  return console.log(keyMenu(name, stack).join('\n'));
+  const lines = Object.entries(SCHEMA).map(([key, entry], index) => {
+    const { value, layer } = resolve(key, stack);
+    const origin = layer === 'global' ? `global, changed via ${globalSource()}` : layer;
+    const overridden = stack.filter((lower) => lower.name !== layer && lower.values[key] !== undefined).map((lower) => `${lower.name}=${lower.values[key]}`);
+    return [
+      `${index + 1}. ${entry.label}: ${value === '' ? 'none' : value}  (${key}, ${origin})`,
+      `   ${entry.about}`,
+      ...(entry.options ? [`   options: ${entry.options.join('  ')}`] : []),
+      ...(overridden.length > 0 ? [`   overrides: ${overridden.join(', ')}`] : []),
+      ''
+    ].join('\n');
+  });
+  console.log(['```text', ...lines, `This skill writes project and local; global is changed via ${globalSource()}.`, '```'].join('\n'));
 }
 
-function gitignoreEntry(root, relative) {
-  const file = path.join(root, '.gitignore');
-  const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  const separator = current === '' || current.endsWith('\n') ? '' : '\n';
-  return `${separator}${relative.split(path.sep).join('/')}\n`;
-}
-
-function checkScope(key, scope) {
-  const onCodex = currentHost() === 'codex';
-  if (scope === 'global' && !onCodex) {
-    throw new Error(`${key} is global: set it in /config under the exo plugin, not by this script`);
-  }
-  if (scope !== 'project' && scope !== 'local' && !(scope === 'global' && onCodex)) {
-    throw new Error(`--scope must be project, local${onCodex ? ' or global' : ''}`);
-  }
-}
-
-function writeSetting(root, { key, value, scope }) {
+function set(root, key, value, scope) {
+  if (!Object.hasOwn(SCHEMA, key ?? '')) throw unknownKey(key);
+  if (scope === 'global') throw new Error(`${key} is global: set it in /config under the exo plugin, not by this script`);
+  if (scope !== 'project' && scope !== 'local') throw new Error('--scope must be project or local');
   const typed = typedValue(key, value);
   const problem = invalidReason(key, typed);
   if (problem) throw new Error(problem);
-  const relative = { local: LOCAL_FILE, project: PROJECT_FILE, global: codexSettingsFile() }[scope];
-  const file = scope === 'global' ? relative : path.join(root, relative);
-  const values = readLayer(file);
-  values[key] = typed;
-  writeAtomic(file, `${JSON.stringify(values, null, 2)}\n`);
+  const relative = scope === 'local' ? LOCAL_FILE : PROJECT_FILE;
+  const file = path.join(root, relative);
+  writeAtomic(file, `${JSON.stringify({ ...readLayer(file), [key]: typed }, null, 2)}\n`);
   console.log(`${key}=${typed} set in ${relative}`);
-  return relative;
-}
-
-function set(root, change) {
-  if (!Object.hasOwn(SCHEMA, change.key ?? '')) throw unknownKey(change.key);
-  checkScope(change.key, change.scope);
-  const relative = writeSetting(root, change);
-  if (change.scope === 'global') return;
-  const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);
-  if (change.scope === 'local' && ignored.status === 1) {
-    fs.appendFileSync(path.join(root, '.gitignore'), gitignoreEntry(root, relative));
+  const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]).status;
+  if (scope === 'local' && ignored === 1) {
+    const gitignore = path.join(root, '.gitignore');
+    const current = fs.existsSync(gitignore) ? fs.readFileSync(gitignore, 'utf8') : '';
+    fs.appendFileSync(gitignore, `${current === '' || current.endsWith('\n') ? '' : '\n'}${relative.split(path.sep).join('/')}\n`);
     console.log(`${relative} added to .gitignore`);
   }
-  if (change.scope === 'project' && ignored.status === 0) {
-    console.log(`${relative} is git-ignored, so collaborators do not receive it`);
-  }
+  if (scope === 'project' && ignored === 0) console.log(`${relative} is git-ignored, so collaborators do not receive it`);
 }
 
 function statusline() {
-  if (currentHost() === 'codex') {
-    console.log('the status line is Claude Code only; nothing written on Codex');
-    return;
-  }
   const directory = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
   const target = path.join(directory, 'statusline.mjs');
-  if (fs.existsSync(target) && ![STATUSLINE_LAUNCHER, ...OLD_STATUSLINE_LAUNCHERS].includes(fs.readFileSync(target, 'utf8'))) {
+  if (fs.existsSync(target) && !/lib\W+statusline\.mjs/.test(fs.readFileSync(target, 'utf8'))) {
     throw new Error(`refused: ${target} already exists and is not the exo launcher; move it, then rerun`);
   }
   fs.mkdirSync(directory, { recursive: true });
-  fs.writeFileSync(target, STATUSLINE_LAUNCHER);
-  const command = `node "${path.resolve(target).split(path.sep).join('/')}"`;
+  fs.writeFileSync(target, launcherSource());
   console.log(`launcher ${target}`);
   console.log('add this as the value of the "statusLine" key of your Claude Code settings.json (exo does not edit that file):');
-  console.log(JSON.stringify({ type: 'command', command }, null, 2));
-}
-
-function option(args, name) {
-  const index = args.indexOf(name);
-  return index === -1 ? undefined : args[index + 1];
+  console.log(JSON.stringify({ type: 'command', command: `node "${path.resolve(target).split(path.sep).join('/')}"` }, null, 2));
 }
 
 const [command, ...args] = process.argv.slice(2);
-const root = projectRoot();
+const scopeAt = args.indexOf('--scope');
 try {
-  if (command === '--help') {
-    console.log(USAGE);
-  } else if (command === 'context') {
-    console.log(contextLine(root));
-  } else if (command === 'show') {
-    show(root);
-  } else if (command === 'menu') {
-    menu(root, args[0]);
-  } else if (command === 'get') {
-    printSetting(args[0]);
-  } else if (command === 'statusline') {
-    statusline();
-  } else if (command === 'set') {
-    set(root, { key: args[0], value: args[1], scope: option(args, '--scope') });
-  } else {
-    throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local | statusline' + ` (got: ${[command, ...args].join(' ') || 'no arguments'})`);
-  }
+  if (command === 'show') show(projectRoot());
+  else if (command === 'statusline') statusline();
+  else if (command === 'set') set(projectRoot(), args[0], args[1], scopeAt === -1 ? undefined : args[scopeAt + 1]);
+  else throw new Error(USAGE);
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

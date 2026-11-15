@@ -1,47 +1,29 @@
 ---
 name: diagnose
-description: Use when reported wrong behavior (bug, error, crash, regression, slowdown) has no one-command repro, or its proof stays red after one plain fix attempt. Not for a feature complaint.
-context: fork
-agent: exo:orchestrator
+description: "Finds the proven cause of wrong behavior from a reproduction, then fixes it with a test seen red before green. Use when the user reports a bug, error, crash, regression or slowdown ('why does X fail', 'this broke', 'debug this'). Not for a missing feature or a failing pull request check."
 argument-hint: <symptom, failing command or error>
 model: opus
 effort: medium
 ---
-# Find cause
+# Diagnose
 
-a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: follow `investigator-prompt.md`, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (no symbol: `exo:researcher`, `Sources: repo`).
-b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in source: write `Status: proven`. Else dispatch `exo:builder` with `exo-kind: hardest` from `investigator-prompt.md`.
-c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Change only what the request names.
-   - Last round only, after failures: 2 parallel fixer candidates, keep the passing one.
-   - Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build` and a `Reads:` line, resume `failed` via SendMessage, else a fresh agent with the prior result.
-d. **Report.** Read status lines and Report fields only; after compaction re-run `Repro`.
+Prove the cause before changing code, because a fix for a guessed cause hides the bug. Until then this skill comes before `exo:spec` and `exo:build`; in plan mode, write the plan in `exo:spec`'s format with the reproduction test as Task 1.
 
-1. **Reproduce.** Read an existing log or `.exo/` report first. As the reporter, one command reproduces it, else evidence, no fix; unclear symptom: follow `../../lib/references/question.md` `## When to ask`.
-   - Send long output to `<debug-dir>/debug-repro.log` (`<debug-dir>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`); `tail -n 40`.
-2. **Instrument.**
-3. **Isolate.**
-4. **Predict, then fix.**
-5. **Prove.**
-6. **Retain project knowledge.** Follow `../build/references/project-knowledge.md`.
-7. **Fresh eyes.** With no PR review, read Step 7 of `references/loop.md`, which sets `code-review` for when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, then end on `ship`.
-   - Invoked by a stage or workflow: ask nothing, return to caller.
+## Steps
 
-## References
+1. **Reproduce.** Read an existing log or `.exo/` report, then find one command that shows the failure. Send long output to `<debug-dir>/repro.log`, where `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" debug` prints `<debug-dir>`, and read its `tail -n 40`. No repro: report the evidence and fix nothing. Ask the user only when the symptom itself is unclear.
+   - It worked before: `node "${CLAUDE_SKILL_DIR}/scripts/bisect.mjs" --repro "<command>"` prints the first bad commit; its hunks are the first suspects.
+   - Slowdown: time the reported path five times and record the median and spread first. A captured profile is fixed data: load it, do not re-run, and name the hot frame's file, symbol and line.
+2. **Instrument.** Keep two hypotheses and observe once where they diverge.
+3. **Isolate.** Remove inputs or branches until one more clears the symptom; two rounds with no change end it. Proven means a causal line plus a mechanism that predicts the symptom.
+4. **Predict, then fix.** State the causal line and the output the fix changes, and change only that. Before you edit code yourself, read the code rules that the first bullet of `${CLAUDE_PLUGIN_ROOT}/agents/builder.md` names, because they bind your edit as they bind a builder's. Write a test that fails for the cause and quote its failure before the fix, its pass after. Never revert or stash to show red, because a test never seen red proves nothing. Ask the user before any destructive step. A slowdown fix stays only when the median improves by more than the spread.
+5. **Prove.** Rerun the repro, the isolated case and the suite. A fix that must change a second module, beyond the one holding the cause, goes back to step 1.
+6. **Review.** When the fix changed more than two files, added a dependency, or crosses a public signature, persisted format or security boundary, run `code-review` at level `low` and fix its findings under step 5.
 
-| File | Read it when |
-|---|---|
-| `references/handoff.md` | b, c |
-| `../build/references/workspace.md` | c |
-| `investigator-prompt.md` | b |
-| `fixer-prompt.md` | c |
-| `../build/references/performance.md` | Step 1, slowdown |
-| `references/loop.md` | 1-5, 7 |
-| `references/profiling.md` | Step 1, captured profile |
-| `../build/references/critique.md` | Step 7, no PR review |
-| `../build/references/security.md` | When its first line applies. |
-| `../build/references/data-migration.md` | When its first line applies. |
-| `../build/references/test-design.md` | When its first line applies. |
-| `../build/references/project-knowledge.md` | 6 |
-| `../../lib/references/closing.md` | Before the final message. |
+## Delegating
 
-Report: the rule in `../../lib/references/closing.md` with the cause in plain words; mechanism, proof lines and SHAs go to the log; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.
+When reading alone does not prove the cause, send a fresh `exo:builder` `investigator-prompt.md` (Steps 1 to 3). Once its handoff says `Status: proven`, ask where the fix commits unless the request or caller already says, then send a fresh `exo:builder` `fixer-prompt.md` (Steps 4 and 5); resume a `failed` one once with SendMessage. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
+
+## Report
+
+Invoked by another stage: return without asking. Else state the cause in plain words, whether the fix is proven, and the user's next step, usually `exo:ship`. Unproven: `Repro`, `Expected`, `Actual` and `Hypotheses`. Proof lines and commit hashes stay in the handoff.

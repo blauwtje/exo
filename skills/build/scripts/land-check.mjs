@@ -1,62 +1,48 @@
 import fs, { realpathSync } from 'node:fs';
 import path from 'node:path';
-import { shortSha, gitText, gitLine } from '#git';
+import { git, gitLine, shortSha, gitText } from '#git';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
-import { planIdOf, landedTasks, decisionsPathOf, planTaskTrailer, defaultBase, taskCommits } from '#plan-landed';
+import { planIdOf, landedTasks, planTaskTrailer, taskCommits } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { LandingError, PinError, AlreadyLandedError, UnfinishedMergeError } from './land-errors.mjs';
+import { LandingError, RefusedError, AlreadyLandedError, UnfinishedMergeError } from './land-errors.mjs';
 import { reportSourceOf } from './land-stopped.mjs';
 import { locked, headMessage, headSha, moveHead } from './land-git.mjs';
-import { commitBlockOf, dropsOf, candidateTrailer } from './land-commit-block.mjs';
-import { refuseOtherPlan, refuseMcpProofUnderPin, refuseMismatchedToplevel } from './land-pin.mjs';
-import { siblingWorkOf, landablePaths, changedPaths, isProtectedPath, nestedWorktrees, leftForSiblingWarning, statedLimitWarning } from './land-paths.mjs';
-import { signatureChanges } from './land-signatures.mjs';
-import { runCodeRules, runLint } from './land-code-rules.mjs';
+import { commitBlockOf, candidateTrailer } from './land-commit-block.mjs';
+import { changedPaths } from './land-paths.mjs';
 import { runCoveringTests, runProof, runNamedTests } from './land-proof.mjs';
-import { writeBehaviour } from '../../spec/scripts/behaviour.mjs';
 import { UsageError, environmentMs } from '#script-flags';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { evidenceProblem } from '#evidence-rules';
-import { attributionProblem, subjectProblem } from '#commit-text';
 import { runCheck } from '../../../lib/run-check.mjs';
-import { gateRefusal, lastPassMs, SLOW_GATE_MS, treePassMs } from '#check-cache';
+import { gateRefusal, lastPassMs, GATE_ONCE_PER_RUN_FROM_MS, treePassMs } from '#check-cache';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { createWorktree, worktreePath } from '#checkout';
-import { discard, runSetup, slotEnvOf } from './open-slots.mjs';
-import { dataLiterals, literalFinder } from '#data-literals';
-import { mcpToolCall } from '#mcp-tool-call';
-import { isTestFirst, runInWorktree, testPaths } from '#red-green';
-import { unfinishedMergeNote } from '#merge-state';
-import { landRefusal } from '../../../lib/refusal-handlers.mjs';
+import { isTestFirst, runInWorktree, testPaths } from '../../../lib/red-green.mjs';
 
-export function checkTask({ planText, number, root, reportText, reportPath, planPath, pin }) {
-  refuseOtherPlan(pin, planPath, number);
+export function checkTask({ planText, number, root, reportText, reportPath, planPath }) {
   refuseMismatchedToplevel(root);
-  return locked(root, () => checkTaskLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath, pin }));
+  return locked(root, () => checkTaskLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath }));
 }
 
-function checkTaskLocked({ planText, number, root, reportText, reportPath, planPath, pin }) {
+function checkTaskLocked({ planText, number, root, reportText, reportPath, planPath }) {
   const plan = parsePlan(planText);
   const task = taskOf(plan, number);
   const planId = planIdOf(planPath);
   clearStaleCandidate(root, planId);
   fs.rmSync(checkStampPath(root, number), { force: true });
-  refuseMcpProofUnderPin(pin, task);
-  const warning = refuseTogether(task, { root, planPath, siblingWork: siblingWorkOf(plan, task, { root, planPath, landing: false }), reportText, reportPath });
+  refuseUntestedTestFirst(task, root);
+  checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
-  const warnLines = runPreCommitGates(task, frame, root);
-  const gateLine = warnLines + gateCheckedOnCandidate({ plan, task, frame, root, planId });
+  const gateLine = gateCheckedOnCandidate({ task, frame, root, planId });
   const report = `Report OK: Task ${number}\n`;
   writeCheckStamp(root, number, report);
-  return `${warning}${gateLine}${report}`;
+  return `${gateLine}${report}`;
 }
 
-function gateCheckedOnCandidate({ plan, task, frame, root, planId }) {
+function gateCheckedOnCandidate({ task, frame, root, planId }) {
   if (frame.landGate === null || frame.landGate === 'none') return '';
-  stageOutside(root, refreshedBehaviour(root));
-  const candidate = commitCandidate({ block: commitBlockOf({ plan, number: task.number, planId, signatures: signatureChanges(task, root), root }), root, task, planId });
-  const gateLine = gateCandidate({ frame, root, gateEnv: gateEnvOf({ plan, task, root, planId }), candidate });
+  const candidate = commitCandidate({ block: commitBlockOf({ task, planId, root }), root, task, planId });
+  const gateLine = gateCandidate({ frame, root, candidate });
   if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate.candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   return gateLine;
 }
@@ -71,28 +57,17 @@ function writeCheckStamp(root, number, report) {
   fs.writeFileSync(stamp, report);
 }
 
-export function checkCodeRules({ planText, number, root, planPath, pin }) {
-  refuseOtherPlan(pin, planPath, number);
-  const task = taskOf(parsePlan(planText), number);
-  return `${runCodeRules(task.files.map((file) => file.path), root)}Code rules OK: Task ${number}\n`;
-}
-
-function refreshedBehaviour(root) {
-  return fs.existsSync(path.join(root, 'docs/behaviour')) ? writeBehaviour(root).written : [];
-}
-
-export function stageCandidate({ plan, task, frame, block, outside, root, planId, reportText }) {
-  const warnLines = runPreCommitGates(task, frame, root);
+export function stageCandidate({ task, frame, block, outside, root, planId }) {
   const changed = taskChangedPaths(root);
-  stageOutside(root, [...outside, ...refreshedBehaviour(root)]);
-  const candidate = commitCandidate({ block, root, task, planId, reportText });
-  const gateLine = warnLines + gateCandidate({ frame, root, gateEnv: gateEnvOf({ plan, task, root, planId }), candidate });
+  stageOutside(root, outside);
+  const candidate = commitCandidate({ block, root, task, planId });
+  const gateLine = gateCandidate({ frame, root, candidate });
   return { changed, candidate, gateLine };
 }
 
-export function coverOrDrop({ task, proofs, root, changed, pendingEvidence, candidate }) {
+export function coverOrDrop({ task, proofs, root, changed, candidate }) {
   try {
-    runCoveringTests(task, proofs.map(({ command }) => command), { root, changed, pendingEvidence });
+    runCoveringTests(task, proofs.map(({ command }) => command), { root, changed });
   } catch (error) {
     dropCandidate(root, candidate);
     throw error;
@@ -110,30 +85,28 @@ export function taskOf(plan, number) {
   return task;
 }
 
-export function refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath }) {
-  refuseMcpProofUnderPin(pin, task);
-  const siblingWork = siblingWorkOf(plan, task, { root, planPath, landing: true });
-  const warning = refuseTogether(task, { root, planPath, siblingWork, reportText, reportPath });
-  const outside = landablePaths({ root, planPath, siblingWork });
-  const block = commitBlockOf({ plan, number: task.number, planId, signatures: signatureChanges(task, root), root });
-  refuseBadCommitText(task.commitSubject ?? task.title, block);
-  if (task.evidence != null) refuseBadEvidence(`Evidence: ${task.evidence}`);
-  return { block, warning, outside };
+export function refuseBeforeProof(task, { root, planPath, planId, reportText, reportPath }) {
+  refuseUntestedTestFirst(task, root);
+  checkReport(task, reportText, reportPath);
+  const outside = changedPaths(root, planPath);
+  refuseUnlisted(task, outside);
+  const block = commitBlockOf({ task, planId, root });
+  refuseBadCommitText(task.title, block);
+  return { block, outside };
 }
 
-export function proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence }) {
+function refuseUnlisted(task, changed) {
+  const unlisted = changed.filter((file) => !task.files.some(({ path: listed }) => file === listed || (listed.endsWith('/') && file.startsWith(listed))));
+  if (unlisted.length > 0) throw new LandingError(`Task ${task.number} changes paths outside its Files: ${unlisted.join(', ')}; list them in the plan or revert them`);
+}
+
+export function proveTask(task, { root, planPath, reportText, reportPath }) {
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
-  const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
-  const proofs = proofCommands.map((command) => runProof(task, command, { root, field: task.compact ? 'Proof' : 'Run', docker, pendingEvidence }));
-  runNamedTests(task, proofCommands, { root, planPath, pendingEvidence });
-  const { line, warning } = redGreenLine(task, { proofCommands, root, pending });
-  return { proofs, pending, redLine: line, warning };
-}
-
-function runPreCommitGates(task, frame, root) {
-  const files = task.files.map((file) => file.path);
-  runLint(frame.lint, files, root);
-  return runCodeRules(files, root);
+  const proofCommands = proofCommand === null ? [] : [proofCommand];
+  const proofs = proofCommands.map((command) => runProof(task, command, { root }));
+  runNamedTests(task, proofCommands, { root, planPath });
+  redGreenLine(task, { proofCommands, root, pending });
+  return { proofs, pending };
 }
 
 function refuseBadCommitText(subject, rest) {
@@ -141,26 +114,18 @@ function refuseBadCommitText(subject, rest) {
   if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
 }
 
-function refuseBadEvidence(text) {
-  const problem = evidenceProblem(text);
-  if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
-}
-
-export function fixLand({ root, subject, body = null, plan = null, pin }) {
-  if (pin !== null) throw new PinError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
+export function fixLand({ root, subject, body = null }) {
   refuseMismatchedToplevel(root);
   refuseUnfinishedMerge(root);
   refuseBadCommitText(subject, body ?? '');
-  refuseBadEvidence(body ?? '');
-  return locked(root, () => fixLandLocked({ root, subject, body, plan }));
+  return locked(root, () => fixLandLocked({ root, subject, body }));
 }
 
-function fixLandLocked({ root, subject, body, plan }) {
+function fixLandLocked({ root, subject, body }) {
   const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
   if (status.trim() === '') {
     throw new LandingError('no changed path to commit; edit a file before running --fix');
   }
-  if (plan !== null) runLint(frameOf(parsePlan(fs.readFileSync(plan, 'utf8')).frame).lint, changedPaths(root), root);
   execFileSync('git', ['-C', root, 'add', '-A'], { encoding: 'utf8' });
   const messages = body === null ? ['-m', subject] : ['-m', subject, '-m', body];
   execFileSync('git', ['-C', root, 'commit', ...messages], { encoding: 'utf8' });
@@ -168,69 +133,19 @@ function fixLandLocked({ root, subject, body, plan }) {
   return `Committed: ${sha}\n`;
 }
 
-const GATE_VARIABLES = ['EXO_DROPS', 'EXO_PENDING_EVIDENCE'];
-
-function setGateEnv(values) {
-  const outer = Object.fromEntries(GATE_VARIABLES.map((name) => [name, process.env[name]]));
-  for (const name of GATE_VARIABLES) {
-    if (values[name] === undefined) delete process.env[name];
-    else process.env[name] = values[name];
-  }
-  return () => {
-    for (const name of GATE_VARIABLES) {
-      if (outer[name] === undefined) delete process.env[name];
-      else process.env[name] = outer[name];
-    }
-  };
-}
-
-export function unlandedEvidenceOf({ plan, root, planId, skip = null }) {
-  const landed = landedTasks(plan.tasks, root, planId);
-  const values = plan.tasks
-    .filter((other) => other.number !== skip?.number && !landed.includes(other.number) && other.evidence !== null)
-    .map((other) => other.evidence);
-  return values.length === 0 ? undefined : values.join('\n');
-}
-
-function gateEnvOf({ plan, task, root, planId }) {
-  return { EXO_DROPS: dropsOf(task) ?? undefined, EXO_PENDING_EVIDENCE: unlandedEvidenceOf({ plan, root, planId, skip: task }) };
-}
-
-export function runLandGate(landGate, root, gateEnv = {}) {
+export function runLandGate(landGate, root) {
   if (landGate === null || landGate === 'none') return null;
   const last = lastPassMs(root, landGate);
-  if (last !== null && last >= SLOW_GATE_MS) {
+  if (last !== null && last >= GATE_ONCE_PER_RUN_FROM_MS) {
     return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so gate runs it once.\n`;
   }
   const deadlineMs = environmentMs('EXO_LAND_GATE_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const restore = setGateEnv(gateEnv);
-  let gate;
-  try {
-    gate = runCheck(root, landGate, { timeoutMs: deadlineMs });
-  } finally {
-    restore();
-  }
+  const gate = runCheck(root, landGate, { timeoutMs: deadlineMs });
   if (gate.cached) return `Land gate "${landGate}" skipped: its log shows a clean pass on this tree.\n`;
   if (gate.timedOut) throw new LandingError(`Land gate "${landGate}" failed:\n${`${gate.output}timed out after ${deadlineMs / 1000}s`.trim()}`);
   if (gate.code !== 0) throw new LandingError(`Land gate "${landGate}" failed:\n${gate.output.trim()}`);
   if (!gate.ok) throw new LandingError(`Land gate "${landGate}" exited 0 but ${gateRefusal(landGate, gate.output)}:\n${gate.output.trim()}`);
   return '';
-}
-
-const RAISE_PREFIX = /^Budget-raise:[ \t]/;
-
-function raiseLinesOf(reportText) {
-  if (reportText === null) return [];
-  return [...new Set(reportText.replace(/\r\n/g, '\n').split('\n').map((line) => line.trim()).filter((line) => RAISE_PREFIX.test(line)))];
-}
-
-function carryRaises(root, reportText) {
-  const message = headMessage(root);
-  const present = new Set(message.split('\n'));
-  const missing = raiseLinesOf(reportText).filter((line) => !present.has(line));
-  if (missing.length === 0) return;
-  const amended = spawnSync('git', ['-C', root, 'commit', '--amend', '-q', '--no-verify', '-F', '-'], { encoding: 'utf8', input: `${message.trimEnd()}\n${missing.join('\n')}\n` });
-  if (amended.status !== 0) throw new LandingError(`carrying the Budget-raise lines onto the task commit failed:\n${amended.stderr}`);
 }
 
 function dropCandidate(root, { base, candidate }) {
@@ -245,14 +160,13 @@ export function clearStaleCandidate(root, planId) {
   dropCandidate(root, { base: base.stdout.trim(), candidate });
 }
 
-function commitCandidate({ block, root, task, planId, reportText = null }) {
+function commitCandidate({ block, root, task, planId }) {
   const trailer = candidateTrailer(planId, task.number);
   const base = headSha(root);
   runCommitBlock(block.replace(planTaskTrailer(planId, task.number), trailer), root, task.number);
-  carryRaises(root, reportText);
   const candidate = headSha(root);
-  if (!headMessage(root).split('\n').includes(trailer)) throw new LandingError(`the Commit: block of Task ${task.number} left no commit carrying "${trailer}"`);
-  if (gitText(root, ['rev-parse', `${candidate}~1`]) !== base) throw new LandingError(`the Commit: block of Task ${task.number} did not make exactly one commit on ${shortSha(base)}`);
+  if (!headMessage(root).split('\n').includes(trailer)) throw new LandingError(`the commit of Task ${task.number} left no commit carrying "${trailer}"`);
+  if (gitText(root, ['rev-parse', `${candidate}~1`]) !== base) throw new LandingError(`the commit of Task ${task.number} did not make exactly one commit on ${shortSha(base)}`);
   return { base, candidate };
 }
 
@@ -281,23 +195,23 @@ function slotDiffersFromCandidate(root) {
   return status.split('\n').some((line) => line !== '' && !line.slice(3).startsWith(`${SCRATCH_FOLDER}/`));
 }
 
-function gateOnDetachedCandidate({ frame, root, gateEnv, candidate }) {
+function gateOnDetachedCandidate({ frame, root, candidate }) {
   const where = worktreePath(`gate-${candidate.candidate.slice(0, 12)}`, root);
   const made = createWorktree(root, where, ['--detach', where, candidate.candidate]);
   if (!made.ok) throw new LandingError(made.failure);
   try {
     const failed = runSetup(where, frame.worktreeSetup, slotEnvOf(root));
     if (failed !== null) throw new LandingError(failed.reason);
-    return runLandGate(frame.landGate, where, gateEnv) ?? '';
+    return runLandGate(frame.landGate, where) ?? '';
   } finally {
     discard(root, [where]);
   }
 }
 
-function gateCandidate({ frame, root, gateEnv, candidate }) {
+function gateCandidate({ frame, root, candidate }) {
   try {
-    if (slotDiffersFromCandidate(root)) return gateOnDetachedCandidate({ frame, root, gateEnv, candidate });
-    return runLandGate(frame.landGate, root, gateEnv) ?? '';
+    if (slotDiffersFromCandidate(root)) return gateOnDetachedCandidate({ frame, root, candidate });
+    return runLandGate(frame.landGate, root) ?? '';
   } catch (error) {
     dropCandidate(root, candidate);
     throw error;
@@ -308,26 +222,11 @@ function runCommitBlock(block, root, number) {
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
   if (commit.status === 0) return;
   const output = `${commit.stdout ?? ''}${commit.stderr ?? ''}${commit.error?.message ?? ''}`.trim();
-  throw new LandingError(`the Commit: block of Task ${number} failed:\n${output}`);
+  throw new LandingError(`the commit of Task ${number} failed:\n${output}`);
 }
 
 function stageOutside(root, paths) {
   if (paths.length > 0) execFileSync('git', ['-C', root, 'update-index', '--add', '--remove', '--', ...paths]);
-}
-
-function committedProtectedPaths({ root, planPath, base }) {
-  const exempt = [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
-  const worktrees = nestedWorktrees(root);
-  const top = realpathSync(root);
-  return gitText(root, ['diff', '--name-only', base, 'HEAD']).split('\n')
-    .filter((changed) => changed !== '' && !changed.startsWith(`${SCRATCH_FOLDER}/`) && !exempt.includes(changed) && !worktrees.has(path.join(top, changed)))
-    .filter(isProtectedPath);
-}
-
-function warnProtectedPaths(task, options) {
-  const protectedPaths = committedProtectedPaths(options);
-  if (protectedPaths.length === 0) return;
-  process.stderr.write(`[WARN] Task ${task.number} committed a security-boundary path: ${protectedPaths.map((file) => `\`${file}\``).join(', ')}\n`);
 }
 
 function committedSha(task, { root, planId, planPath, base }) {
@@ -335,10 +234,8 @@ function committedSha(task, { root, planId, planPath, base }) {
   const [sha, subject, ...body] = head.split('\n');
   const trailer = planTaskTrailer(planId, task.number);
   if (!body.includes(trailer)) throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
-  const expectedSubject = task.commitSubject ?? task.title;
-  if (subject !== expectedSubject) throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
+  if (subject !== task.title) throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${task.title}"`);
   if (gitText(root, ['rev-parse', 'HEAD~1']) !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${shortSha(base)}, the commit Task ${task.number} started from`);
-  warnProtectedPaths(task, { root, planPath, base });
   return sha;
 }
 
@@ -352,37 +249,10 @@ export function taskChangedPaths(root) {
   return paths;
 }
 
-const BOUNDARY_WORDS = ['only', 'not', 'no', 'never', 'every', 'each', 'all', 'full', 'except', 'unless'];
-
-function countWords(text) {
-  const counts = Object.fromEntries(BOUNDARY_WORDS.map((word) => [word, 0]));
-  for (const match of text.toLowerCase().matchAll(/[a-z]+/g)) {
-    if (match[0] in counts) counts[match[0]] += 1;
-  }
-  return counts;
-}
-
-function parseDrops(value) {
-  return value.split(',').map((entry) => entry.trim().replace(/\s+/g, ' ')).filter((entry) => / in /.test(entry));
-}
-
-const UNTAGGED_LOOKBACK = 20;
-
-function untaggedBaseNote(task, root) {
-  const files = task.files.map((file) => file.path);
-  if (files.length === 0) return '';
-  const base = defaultBase(root);
-  const range = base === null ? ['-n', String(UNTAGGED_LOOKBACK), 'HEAD'] : [`${base}..HEAD`];
-  const log = execFileSync('git', ['-C', root, 'log', '--no-merges', '--invert-grep', '--grep=^Plan-task: ', '--format=%h %s', ...range, '--', ...files], { encoding: 'utf8' });
-  const commits = log.split('\n').filter((line) => line !== '');
-  if (commits.length === 0) return '';
-  return `\nBase commits touching this task's files without a Plan-task trailer: ${commits.join(', ')}; the fix may already be on the base.`;
-}
-
 function redGreenLine(task, { proofCommands, root, pending }) {
-  if (task.red !== null) return { line: `Red: skipped: none (${task.red.reason})`, warning: '' };
-  if (pending !== null) return { line: 'Red: skipped: deferred MCP proof', warning: '' };
-  if (proofCommands.length === 0) return { line: 'Red: skipped: no passing Bash proof command', warning: '' };
+  if (task.red !== null) return { line: `Red: skipped: none (${task.red.reason})` };
+  if (pending !== null) return { line: 'Red: skipped: deferred MCP proof' };
+  if (proofCommands.length === 0) return { line: 'Red: skipped: no passing Bash proof command' };
   const overlay = testPaths(taskChangedPaths(root));
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
@@ -392,10 +262,9 @@ function redGreenLine(task, { proofCommands, root, pending }) {
     if (base.status === 'error') {
       throw new LandingError(`Task ${task.number}: the red-green check of "${command}" on ${sha || 'HEAD'} failed to finish:\n${base.output.trim().split('\n').slice(-PROOF_TAIL_LINES).join('\n')}`);
     }
-    if (base.status === 'red') return { line: 'Red: proved', warning: '' };
+    if (base.status === 'red') return { line: 'Red: proved' };
   }
-  const warning = `[WARN] Task ${task.number}: Proof passes on ${sha} without the production change: no red proof; tighten the test or add \`Red: none (<reason>)\` to the task${untaggedBaseNote(task, root)}\n`;
-  return { line: 'Red: skipped: Proof passed without the production change', warning };
+  throw new LandingError(`Task ${task.number}: Proof ${proofCommands.map((command) => `"${command}"`).join(', ')} passes on ${sha} without the production change, so it proves nothing; tighten the test or add \`Red: none (<reason>)\` to the task`);
 }
 
 function refuseUntestedTestFirst(task, root) {
@@ -410,15 +279,9 @@ export function refuseAlreadyLanded(plan, task, { root, planId }) {
   throw new AlreadyLandedError(`Task ${task.number} is already landed as ${shortSha(sha)}; landing it again would add no change`);
 }
 
-function refuseMissingLiterals(task, root, planPath) {
-  if (task.literals !== null || !task.data) return;
-  const literals = dataLiterals(task.data);
-  if (literals.length === 0) return;
-  const found = literalFinder(root, planPath);
-  const missing = [...new Set(literals)].filter((literal) => !found(literal));
-  if (missing.length > 0) {
-    throw new LandingError(`Task ${task.number}: Data: names ${missing.map((literal) => `\`${literal}\``).join(', ')}, found in neither its change nor the tree; fix the string, or add \`Literals: none (<reason>)\` to the task if it is prose`);
-  }
+export function refuseMismatchedToplevel(root) {
+  const toplevel = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  if (realpathSync(toplevel) !== realpathSync(root)) throw new RefusedError(`--root '${root}' is not the checkout toplevel: git rev-parse --show-toplevel there prints '${toplevel}'`);
 }
 
 export function refuseUnfinishedMerge(root) {
@@ -426,72 +289,75 @@ export function refuseUnfinishedMerge(root) {
   if (note !== null) throw new UnfinishedMergeError(note);
 }
 
-const PROSE_FOLDERS = ['skills/', 'agents/', 'rules/', 'hooks/'];
-
-function headText(file, root) {
-  return gitLine(root, ['show', `HEAD:${file}`], { trim: false, maxBuffer: 1024 * 1024 });
-}
-
-function droppedWords(file, root, permitted) {
-  const head = headText(file, root);
-  if (head === null) return [];
-  const before = countWords(head);
-  const after = countWords(fs.readFileSync(path.join(root, file), 'utf8'));
-  return Object.keys(before).filter((word) => after[word] < before[word] && !permitted.has(`${word} in ${file}`));
-}
-
-function isTrackedProse(file, root) {
-  if (!file.endsWith('.md') || !PROSE_FOLDERS.some((folder) => file.startsWith(folder))) return false;
-  return fs.existsSync(path.join(root, file)) && execFileSync('git', ['-C', root, 'ls-files', file], { encoding: 'utf8' }) !== '';
-}
-
-function droppedBoundaryWarning(task, root) {
-  const permitted = new Set();
-  parseDrops(dropsOf(task) ?? '').forEach((entry) => {
-    const [words, file] = entry.split(/ in (\S+)$/);
-    words.split(' ').forEach((word) => permitted.add(`${word} in ${file}`));
-  });
-  const lines = taskChangedPaths(root)
-    .filter((file) => isTrackedProse(file, root))
-    .map((file) => ({ file, words: droppedWords(file, root, permitted) }))
-    .filter((entry) => entry.words.length > 0)
-    .map((entry) => `[WARN] Task ${task.number} dropped boundary words: ${entry.words.join(', ')} in \`${entry.file}\`\n`);
-  return lines.join('');
-}
-
-function passingRunsOf(task) {
-  return [...new Set(task.runs.filter((run) => run.expectsPass && mcpToolCall(run.command) === null).map((run) => run.command))];
-}
-
 function checkReport(task, reportText, reportPath) {
-  const mcpCall = task.compact ? mcpProofOf(task) : null;
+  const mcpCall = mcpProofOf(task);
   const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, { reportText, reportPath });
-  const proofCommand = task.compact && pending === null ? proofCommandOf(task, reportText, reportPath) : null;
+  const proofCommand = pending === null ? proofCommandOf(task, reportText, reportPath) : null;
   return { proofCommand, pending };
 }
 
-function attempt(id, run) {
-  const check = { id, error: null, violation() {
-    try {
-      run();
-      return null;
-    } catch (error) {
-      if (!(error instanceof LandingError)) throw error;
-      check.error = error;
-      return error.message;
-    }
-  } };
-  return check;
+function discard(toplevel, slots) {
+  for (const slot of slots) {
+    git(toplevel, ['worktree', 'remove', '--force', slot]);
+    fs.rmSync(slot, { recursive: true, force: true });
+  }
+  git(toplevel, ['worktree', 'prune']);
 }
 
-function refuseTogether(task, { root, planPath, siblingWork, reportText, reportPath }) {
-  const checks = [
-    attempt('untested test-first', () => refuseUntestedTestFirst(task, root)),
-    attempt('missing literals', () => refuseMissingLiterals(task, root, planPath)),
-    attempt('report', () => checkReport(task, reportText, reportPath))
-  ];
-  const text = landRefusal(path.join(root, SCRATCH_FOLDER, 'refusals'), task.number, checks);
-  if (text === null) return leftForSiblingWarning(task, { root, planPath, siblingWork }) + droppedBoundaryWarning(task, root) + statedLimitWarning(task, reportText);
-  const first = checks.find((check) => check.error !== null).error;
-  throw new first.constructor(text.trimEnd());
+function slotEnvOf(slot) {
+  const file = path.join(slot, '.exo/slot.env');
+  if (!fs.existsSync(file)) return {};
+  const lines = fs.readFileSync(file, 'utf8').split('\n').filter((line) => line.startsWith('export '));
+  return Object.fromEntries(lines.map((line) => {
+    const at = line.indexOf('=');
+    return [line.slice('export '.length, at), JSON.parse(line.slice(at + 1))];
+  }));
+}
+
+function runSetup(slot, setup, variables) {
+  if (setup === null || setup === 'none') return null;
+  const ran = spawnSync(setup, { cwd: slot, shell: true, encoding: 'utf8', env: { ...process.env, ...variables } });
+  if (ran.status === 0) return null;
+  return { reason: `Worktree setup failed in ${slot}: ${`${ran.stdout}${ran.stderr}`.trim().split('\n').at(-1)}` };
+}
+
+const SHARED_ATTRIBUTION_PHRASES = 'co-authored-by|generated\\s+with|generated\\s+by|noreply@anthropic\\.com|robot_face';
+const PRODUCT_CREDIT = '\\b(?:made|written|built|created|authored|assisted|produced|generated)\\s+(?:with|by|using|via|in)\\s+\\[?claude\\s+code|claude\\.com/claude-code';
+const ATTRIBUTION = new RegExp(`${SHARED_ATTRIBUTION_PHRASES}|${PRODUCT_CREDIT}`, 'i');
+
+const COMMIT_TYPES = ['build', 'chore', 'ci', 'docs', 'feat', 'fix', 'merge', 'perf', 'refactor', 'revert', 'style', 'test'];
+const CONVENTIONAL_SUBJECT = new RegExp(`^(${COMMIT_TYPES.join('|')})(\\([^()]+\\))?!?: [^ ]`);
+
+function attributionProblem(text) {
+  if (!ATTRIBUTION.test(text)) return null;
+  return 'commit and pull-request text must not attribute the work to an AI. Remove the Co-Authored-By trailer, the "Generated with" line and every tool name.';
+}
+
+function subjectProblem(subject) {
+  if (CONVENTIONAL_SUBJECT.test(subject)) return null;
+  return `a subject follows Conventional Commits so the log can be read by type: type(scope): subject, such as feat(hooks): add the commit check. The scope is optional and the type is one of ${COMMIT_TYPES.join(', ')}.`;
+}
+
+function unmergedPaths(root) {
+  const lines = (gitLine(root, ['ls-files', '-u']) ?? '').split('\n').filter(Boolean);
+  return [...new Set(lines.map((line) => line.split('\t').slice(1).join('\t')))];
+}
+
+function unfinishedMerge(root) {
+  const files = unmergedPaths(root);
+  const mergeHead = gitLine(root, ['rev-parse', '-q', '--verify', 'MERGE_HEAD']);
+  const pickHead = gitLine(root, ['rev-parse', '-q', '--verify', 'CHERRY_PICK_HEAD']);
+  if (files.length === 0 && mergeHead === null && pickHead === null) return null;
+  return { files, mergeHead, pickHead };
+}
+
+function targetName(root) {
+  return gitLine(root, ['symbolic-ref', '-q', '--short', 'HEAD']) ?? 'HEAD';
+}
+
+function unfinishedMergeNote(root) {
+  const unfinished = unfinishedMerge(root);
+  if (unfinished === null) return null;
+  const paths = unfinished.files.length === 0 ? 'none left unmerged' : unfinished.files.join(', ');
+  return `${targetName(root)} has an unfinished merge (unmerged paths: ${paths}); finish or abort it first`;
 }

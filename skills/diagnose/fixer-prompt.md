@@ -1,59 +1,20 @@
----
-forbidden-steps: 6-7
----
 # Fixer prompt
 
-`diagnose` gives a `general-purpose` delegate whose prompt opens with `exo-kind: build` for phase (c), and `build` gives `exo:builder` `exo-kind: build-repair` for a failed `Run:` naming no cause: caller opening, shared block.
-
-## diagnose opening
+Sent filled in to a fresh `exo:builder` once the handoff says `Status: proven`.
 
 ```text
-Fix the proven cause in the handoff, repository <root>. Run only Steps 4 and 5 of its loop: predict, fix, prove. Read only it and its `Ranges`.
+Fix the proven cause in the handoff, repository <root>, worktree <abs path>. Run only Steps 4 and 5 of <skill dir>/SKILL.md: predict, fix, prove. Read only the handoff and its Ranges.
 
 Reads: <handoff path>
-Worktree: <abs path>
-Paths in scope: the `Ranges` paths and the new test files under `Tests`.
+Paths in scope: the Ranges paths and new test files.
 
-First write the failing test the test-design row calls for, in files the fix does not touch where the repository allows, because the session commits them alone before the fix. Quote its failure.
-Then make the predicted fix and prove it: rerun the reproduction and isolated case, then the required suite.
-A run that skips the test or shows no pass is not proof: return `failed`, not `fixed`.
+- First write the failing test, in files the fix does not touch where the repository allows, because the lead commits it alone before the fix. Quote its failure.
+- Then make the predicted fix and rerun the repro, the isolated case and the suite. A run that skips the test or shows no pass is failed, not fixed.
+- Edit only paths in scope; for another path, stop and name it with the reason.
+- Run only the repro, the proof commands and read-only git. Do not commit, push, branch, reset, check out, install or start a service: the lead owns the checkout.
+- Ask nothing; record what is missing under Unresolved. After two failed fix attempts, report both and stop.
 
-Return: `status=<fixed|failed|blocked> handoff=<path>`.
-```
+Append a `## Fix` section to the handoff: Tests (files holding only the new test, or none); Edits (each path, one line on what changed); Proof (failing output before, the same command after, at most 10 lines each); Unresolved (or none).
 
-## build opening
-
-```text
-Bug fix for task <n> of <plan path>, repository <root>.
-
-Fix one failure whose cause is unproven. Run only Steps 1 to 5 of its loop: reproduce, instrument, isolate, predict, fix, prove.
-`git diff` shows the edits already made.
-
-Symptom: <one line>
-Failing command: <the Run: command>
-Output: <at most ten lines, or the log path>
-Paths in scope: <the task's Files: paths>
-Handoff file: <root>/.exo/debug/task-<n>.md; write its investigate part before the fix.
-
-The failing command is the red proof: quote its failure before the edit and its pass after; write no new test.
-`mcp:` command → rerun none, the session does: prove the fix with Bash, report it deferred.
-
-Return only the handoff path.
-```
-
-## Shared block
-
-```text
-Before the fix, read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` and `${CLAUDE_PLUGIN_ROOT}/skills/build/references/fix-class.md`.
-
-Hard boundaries:
-- Edit only paths in scope; fix needs another path → stop, report that path and why.
-- Bash: reproduce and proof commands, read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service.
-- Never commit, push, branch, stash, reset, check out or run `gh`.
-- Blocked → report it with 2-3 options; never delete a file, container, volume, database, branch or credential to get past it.
-- Ask no questions; record what is missing under `Unresolved`.
-- Symptom stands after two fix attempts → report both, stop.
-- Start a long proof in the background and end the turn; never call `Monitor` or start with `sleep`.
-
-Write the handoff file in the fields and order of the `exo:diagnose` skill's `references/handoff.md`, ending on its `## Fix` section; write nothing elsewhere.
+Return one line: status=<fixed|failed|blocked> handoff=<path>
 ```

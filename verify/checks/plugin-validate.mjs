@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
-import { onPath } from '#on-path';
+import { onPath } from '#basics';
 import { PLUGIN_FILE } from './plugin-version.mjs';
 
 const NAME = 'plugin validate';

@@ -1,6 +1,6 @@
 
 import { execFile, execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,32 +16,6 @@ export function restoreEnv(saved) {
     if (value === undefined) delete process.env[name];
     else process.env[name] = value;
   }
-}
-
-export function readHooks() {
-  return JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
-}
-
-export function hookEntries() {
-  const hooks = readHooks();
-  const groups = Object.entries(hooks).flatMap(([event, eventGroups]) => eventGroups.map((group) => ({ event, group })));
-  return groups.flatMap(({ event, group }) => group.hooks.map((hook) => ({ event, matcher: group.matcher, hook })));
-}
-
-export function readAgents() {
-  const agentsRoot = path.join(REPOSITORY_ROOT, 'agents');
-  return readdirSync(agentsRoot).filter((fileName) => fileName.endsWith('.md')).map((fileName) => {
-    const lines = readFileSync(path.join(agentsRoot, fileName), 'utf8').split('\n');
-    const closing = lines.indexOf('---', 1);
-    if (lines[0] !== '---' || closing < 1) throw new Error(`${fileName} has no frontmatter block`);
-    const frontmatter = {};
-    for (const line of lines.slice(1, closing)) {
-      const separator = line.indexOf(': ');
-      if (separator < 1) throw new Error(`${fileName} has an unreadable frontmatter line: ${line}`);
-      frontmatter[line.slice(0, separator)] = line.slice(separator + 2);
-    }
-    return { fileName, frontmatter, body: lines.slice(closing + 1).join('\n') };
-  });
 }
 
 export function tempDir(prefix = 'exo-test-') {
@@ -103,11 +77,6 @@ export function git(directory, ...args) {
   return output.trim();
 }
 
-export function squashInto(root, branch) {
-  git(root, 'merge', '--squash', branch);
-  git(root, 'commit', '-q', '-m', `squash ${branch}`);
-}
-
 export async function commitFiles(root, files, subject) {
   for (const [relativePath, content] of Object.entries(files)) {
     const target = path.join(root, relativePath);
@@ -123,33 +92,6 @@ export async function gitRepository(files) {
   git(root, 'init', '-q', '-b', 'main');
   await commitFiles(root, files, 'chore: seed the fixture');
   return root;
-}
-
-const FENCE = '```';
-
-export function taskSection({ number, title, dependsOn = 'none', design = false, files, subject, trailer = true, commit = true }) {
-  const commitLine = trailer
-    ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
-    : `git commit -m "${subject}"`;
-  return [
-    `### Task ${number}: ${title}`,
-    '',
-    `Depends on: ${dependsOn}`,
-    ...(design ? ['Design: design-ui'] : []),
-    '',
-    'Files:',
-    ...files,
-    '',
-    'Step 1: Write it',
-    `${FENCE}js`,
-    '',
-    FENCE,
-    'Run: `node --test`',
-    'Expected: `pass`',
-    '',
-    ...(commit ? ['Commit:', `${FENCE}bash`, 'git add .', commitLine, FENCE] : []),
-    ''
-  ].join('\n');
 }
 
 export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', proof = 'node --test' }) {
@@ -175,55 +117,9 @@ export function compactPlanFixture({ tasks }) {
     '## Success criterion',
     '`node --test` passes.',
     '',
-    '## Checkpoint',
-    '- Blocks first: none.',
-    '- Parallel: every task.',
-    '- Shared state: none.',
-    '- Smallest safe split: one task per file.',
-    '',
     '## Tasks',
     '',
     ...tasks,
-    ''
-  ].join('\n');
-}
-
-export function planFixture({ worktreeSetup = null, parallel = null, tasks }) {
-  return [
-    '# Plan: fixture',
-    '',
-    '## Goal',
-    '',
-    'The fixture proves the plan reader.',
-    '',
-    '## Plan basis',
-    '',
-    'Repository: /tmp/fixture',
-    'Branch: feat/fixture',
-    ...(worktreeSetup === null ? [] : [`Worktree setup: ${worktreeSetup}`]),
-    '',
-    '## Non-goals',
-    '',
-    '- `src/other.js` stays as it is.',
-    '',
-    '## Context',
-    '',
-    '- `src/app.js` exports `greet`.',
-    '- `src/other.js` is untouched.',
-    '',
-    ...(parallel === null ? [] : ['## Checkpoint', '', `- Parallel: ${parallel}`, '']),
-    '## Visual direction',
-    '',
-    'Design skill: design-ui',
-    '',
-    'Quiet record.',
-    '',
-    '## Tasks',
-    '',
-    ...tasks,
-    '## Final verification',
-    '',
-    '- `node --test`: `pass`.',
     ''
   ].join('\n');
 }

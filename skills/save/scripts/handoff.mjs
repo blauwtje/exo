@@ -2,17 +2,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import os from 'node:os';
-import { currentHost } from '#host';
-import { isMain } from '#script-flags';
-
-export const HANDOFF_SECTIONS = ['Goal', 'Progress', 'Evidence', 'Next step'];
-
-function configDirectory() {
-  return currentHost() === 'codex'
-    ? process.env.CODEX_HOME || path.join(os.homedir(), '.codex')
-    : process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-}
+import { configDirectory } from '#config-directory';
+import { isMain, UsageError, USAGE_EXIT } from '#script-flags';
 
 export function handoffFile(cwd) {
   const gitDir = spawnSync('git', ['-C', cwd, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' });
@@ -27,19 +18,26 @@ export function handoffFile(cwd) {
 
 const USAGE = 'usage: node handoff.mjs path [--cwd <dir>]\nPrints where the handoff of the current branch sits, inside the repository\'s git directory.';
 
-if (isMain(import.meta.url)) {
+function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: { cwd: { type: 'string' }, help: { type: 'boolean' } }
   });
   const [command] = positionals;
-
   if (process.argv.includes('--help')) {
     console.log(USAGE);
-  } else if (command === 'path') {
-    console.log(handoffFile(values.cwd ?? process.cwd()));
-  } else {
-    console.error(`unknown command ${command ?? '(none)'}; expected path`);
-    process.exitCode = 1;
+    return;
+  }
+  if (command !== 'path') throw new UsageError(`unknown command ${command ?? '(none)'}; expected path`);
+  console.log(handoffFile(values.cwd ?? process.cwd()));
+}
+
+if (isMain(import.meta.url)) {
+  try {
+    main();
+  } catch (error) {
+    if (!(error instanceof UsageError) && !error.code?.startsWith('ERR_PARSE_ARGS')) throw error;
+    console.error(error.message);
+    process.exitCode = USAGE_EXIT;
   }
 }

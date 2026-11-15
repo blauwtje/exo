@@ -1,3 +1,0 @@
-- No skill for: version-only bump, git-only operation, read-only question no description claims, edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary. Any size: behavior-preserving restructure goes to `build refactor`, UI restyle or copy rewrite to `build design-ui`, test-first request, dependency major or swap, security hardening or change reaching every caller to `build`.
-- Reported failure with a known cause → one plain attempt first, no skill: one-command repro, fix, proof.
-- Cause unknown, a request to explain why, no one-command repro, or that proof still red after the fix → `diagnose`.

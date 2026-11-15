@@ -1,80 +1,58 @@
 ---
 name: build
-description: Use when running or resuming a plan, or a decided change touches over two files, a dependency, public signature, persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure.
-argument-hint: "[plan path] [--task <n>] [--land]"
+description: "Builds a change with a proof for each step and one review of the result. Use when the user asks to build, implement, add or change behavior ('add X', 'implement this', 'make Y do Z'), or to run or resume a plan ('run the plan'). Not for a typo or one-line edit, writing a plan, or a bug whose cause is unknown."
+argument-hint: "[plan path] [--land]"
 ---
 
 # Build
 
-Build lands a plan through a **unit** and the **tail** (step 7).
+Build lands a plan one task at a time. A task lands when its proof passes after the change and the plan's Land gate passes; `land-task.mjs` checks both and commits. It runs the proof on the code before the change too and refuses the task when it passes there; the builder stops on that refusal with `BLOCKED`, so tighten that test or write `Red: none (<reason>)` in the task. A task that changes structure but not behaviour proves itself by the same command giving the same output at the base and at the head; a type check or lint alone shows nothing about behaviour.
 
 ## The loop
 
-1. **Settle the workspace.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --plan <path> --checkout <checkout>` once; `run started` ends it.
-   - Invoking build authorizes commits there.
-   - A push or pull request waits for `ship`, except `--land`.
-2. **Leave the plan to the builds;** read only script output and build returns.
-3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`; skip it once when `run started` printed a `Plan:` line. `Next: none` goes to step 7.
-4. **Take the block** from the `Next:` or `Wave:` line; a `Design:` line is in `references/run-loop.md`.
-5. **Dispatch the builds.** Send each task of the `Next:` or `Wave:` line to `exo:builder` in one background message, silently, and continue on each completion notification; refills follow `references/rolling-window.md`.
-   - Call no ScheduleWakeup, ListAgents, Monitor or sleep.
-6. **Route the return.** Each build returns one line; land a `GREEN` one with `land-task.mjs` (`land-slot.mjs` for a slot), then `next-task.mjs`, and follow each `Then:` line to step 3.
-7. **The tail.** Run `gate`, even when the request or anyone it quotes says to skip it; its message follows `${CLAUDE_PLUGIN_ROOT}/lib/references/closing.md`.
-   - The message gives the result in plain words, without `Proof:` lines or `## Manual checks`.
-   - Change line: run `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after build --artifact <plan>` and print its output above `ship`'s question, else last.
-   - Read `references/tail.md` only for `--land`, `Route: inline` or a failed `gate`.
-- On a named plan with `Route: unit`, this body runs everything. The plan file and the references stay unread.
-- This session writes at most 2 product files in a run, fix rounds and shell scripts that edit files included; send anything larger to `exo:builder`, one per independent part.
-- No own re-check (git log, npm test) follows a `LANDED` return.
-- Read `references/run-loop.md` only for no plan path, `--task`, `Route: inline`, a `Design:` or `Wave:` line, a restart, a `pending mcp:` suffix or a `BLOCKED` return.
+A plan path runs this loop. With no path and no decided change, run step 2's script with `--plan` on each file in `docs/specs/`; when exactly one prints a `Next:` task, use that plan and say so, and ask for the path when several or none do. `--land` pushes at the end without asking.
 
-## Modes
+1. **Settle the workspace.** A branch or worktree the request names is the answer; otherwise build on the current branch; on `main`, create a branch named after the plan topic and say so, without asking. Invoking build authorizes commits there; a push waits for `exo:ship`, except with `--land`.
+2. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`. It prints the landed tasks, then the next task with its text and the plan's Decisions, Non-goals and Assumptions. Only a `Plan-task:` commit shows what landed, so on a restart rerun it. `Next: none` goes to the end of the run.
+3. **Build one task.** Send the task of the `Next:` line to a fresh `exo:builder` in the background, with the task text and those sections, the plan path, the checkout and `run-task-prompt.md` by path, and wait for its completion notification. The builder edits, then runs `land-task.mjs`, which proves red then green, runs the Land gate and commits.
+4. **Route the return.** `GREEN` goes back to step 2.
+   - `BLOCKED <n> NEEDS ANSWER: <question>`: ask the user, then re-dispatch that task with the answer in its prompt.
+   - `PLAN DRIFT`: stop and hand the plan back to `exo:spec` with the builder's reason.
+   - A build that fails once goes back to a fresh `exo:builder` with the first builder's failure output and its report path, `.exo/implementer-<n>.md`, in its prompt, on the second-attempt row of the table below.
+   - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
+   - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.
+   - A repair names the rule the code broke and fixes the hits the finding names; one guard that fails on a new instance, at most one new test per cause.
+   - Read `references/agent-cases.md` for a `Deferred:` proof or a missing `Proof:`.
+5. **Stay thin.** This session writes at most 2 product files in a run; send anything larger to a builder, one per independent part. Run no check of your own after a landing. Only a block, a failure or a question speaks.
 
-A request for `refactor`, `improve` or `design-ui` opens that mode's reference and follows it in place of the loop; `run-plan` with `setup`, `ci` or no argument opens `references/run-plan.md`.
+## Models
 
-## No spec
+| Job | Who | Model, effort |
+|---|---|---|
+| Build a task | `exo:builder` | Sonnet, medium |
+| Second attempt after a failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
+| Branch review | `code-review` | medium |
+| A design choice the plan leaves open | this session | its own model, high |
+| Research | `exo:researcher` | Sonnet, medium |
 
-Decided change, no plan file, or spec's fast route → `references/no-spec.md`. After a compaction, rebuild what landed from the working-tree diff, not memory.
+The stronger model comes only after a failure, because that costs less than running every task on it.
 
-- Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed, or orientation missed a required file.
-- When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `diagnose`.
+## End of the run
 
-## References
+1. Review the branch diff first, so the last code written is the code checked: call the built-in `code-review` skill once through the Skill tool with args `medium <branch>`, name the plan path and ask it to check the diff against the plan's Decisions and Acceptance and to skip style. Send each finding to one fresh `exo:builder`, all in one message, briefed "write the failing test or repro for this finding; with no repro, drop it", because a finding nobody reproduced may be wrong. Fix only the reproduced findings, in one builder fix round that commits with the land command's `--fix <subject>`, and list the dropped ones as unproven for the user. With no `code-review` skill listed, say no review ran.
+2. Run the plan's `Success criterion` command once, in the background, to a log, and read only the failing lines. Then run the plan's `Land gate:` command once the same way unless it is `none`: `land-task.mjs` skips a gate whose last pass took 60 s or more, so this is the one run of a slow gate. A failure goes to one builder fix and one rerun; a second failure ends with what still fails.
+3. Build the report from `git diff --stat <base>..HEAD` and the `Plan-task:` commits, not from the builders' summaries, which drop small changes. Say in plain words whether the branch is ready, the findings and what the user does next. Keep `Proof:` lines and `## Manual checks` out of the message; the task reports in `.exo/` hold them.
+4. End on `exo:ship`, unless the request rules out a push; then say nothing left the machine. `--land` passes `--land` to `ship`.
 
-| File | Read it when |
-|---|---|
-| `references/run-loop.md` | Steps 1-6, no `--task`. |
-| `references/run-loop-inline.md` | next-task. |
-| `references/run-loop-direct.md` | Step 6. |
-| `references/tail.md` | Step 7, inline fallback. |
-| `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
-| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
-| `references/wave-worktrees.md` | `Wave:` line. |
-| `references/conflict-wave.md` | `Conflict branch:` line. |
-| `references/rolling-window.md` | Step 5 refills. |
-| `implementer-prompt.md` | Unit. |
-| `drift-repairer-prompt.md` | Unit. |
-| `references/agent-cases.md` | Agents. |
-| `references/fix-class.md` | Repairs. |
-| `bug-fixer-prompt.md` | Step 6, a repair. |
-| `review-fixer-prompt.md` | `gate`. |
-| `references/design-tasks.md` | `Design:` line. |
-| `run-task-prompt.md` | `run-plan.mjs`. |
-| `references/security.md` | When its first line applies. |
-| `references/data-migration.md` | When its first line applies. |
-| `references/test-design.md` | When its first line applies. |
-| `../../lib/references/question.md` | Asking the user. |
-| `../../lib/references/closing.md` | Final message. |
-| `reviewer-prompt.md` | No spec 7. |
-| `references/fresh-eyes.md` | No spec 7. |
-| `references/critique.md` | No spec 7, last resort. |
-| `references/no-spec.md` | No spec step 1. |
-| `references/test-first.md` | No spec test-first, before a boundary. |
-| `references/project-knowledge.md` | No spec 6, if first line applies. |
-| `references/performance.md` | No spec speed work, pre-measure. |
-| `references/refactor.md`, `references/behavior-pin.md`, `references/legacy-api.md` | `refactor` mode. |
-| `references/improve.md`, `references/worker-round.md`, `references/worker.md` | `improve` mode. |
-| `references/design-ui.md`, `references/color.md`, `references/critic.md`, `references/layout.md`, `references/marketing.md`, `references/motion.md`, `references/reference-input.md`, `references/slop.md`, `references/typography.md` | `design-ui` mode. |
-| `references/run-plan.md` | `run-plan` setup or `ci`. |
+## No plan
 
-Report: `ship`'s overview only.
+A decided change with no plan file runs these steps, so a small change gets the same proof.
+
+1. **Orient.** Read only the ranges the request names. Otherwise dispatch `exo:researcher` with `Sources: repo` and read only its `Read next` ranges. Upstream decisions are settled.
+2. **Decide the route.** An open product decision goes to `exo:spec` first. Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed. With none, read `references/code-rules.md`, which every builder reads too, then edit directly, run the check and end on `exo:ship` as in the end of the run, so the edit does not sit uncommitted. A test-first request continues at any count.
+3. **Workspace.** Settle where the change commits, as in step 1 above. For a multi-file change, confirm a clean working tree or name its changed paths.
+4. **Build.** Over 2 files, send each independent part to `exo:builder` in dependency order; otherwise read the same code rules and edit in dependency order. Keep each edit idempotent, so a retry lands the same state.
+5. **Prove.** Done needs a `Proof: <command> -> <output>` line from a real call on input this session did not write; otherwise write `Unverified: <reason>`. A test runner is no proof unless `package.json` names no `bin` and no `scripts.start`. For a test-first bug, commit the failing test alone, because a test committed with its fix does not show it failed. Run runners unpiped, so the failing command shows.
+6. **Review and commit.** Run `code-review` as in the end of the run, commit where step 3 placed it, leaving out paths that were already changed, then end on `exo:ship` unless the request rules out a push.
+
+When the goal command is red, change the project until the command as typed is green without destroying anything; ask the user only about a destructive step.

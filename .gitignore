@@ -6,9 +6,7 @@ node_modules/
 .DS_Store
 docs/*
 !docs/principles/
-!docs/behaviour/
 !docs/skills/
-!docs/codex.md
 !docs/settings.md
 !docs/failures.md
 !docs/scorecard.md
@@ -17,7 +15,6 @@ benchmarks/runs/
 benchmarks/replay/**/runs/
 /runs/
 /tmp
-harnesses/codex/generated/
 __pycache__/
 benchmarks/results/*.runs/
 *.cpuprofile

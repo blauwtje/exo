@@ -7,7 +7,7 @@ Read it when: you write or change a tool, an MCP server or a tool description an
 - **Build fewer, non-overlapping tools.** More tools do not always lead to better outcomes. [1] exo: gap
 - **Namespace related tools.** A shared prefix tells the agent which tools belong together. [1] exo: gap
 - **Return only high-signal data.** Add pagination and filtering so one call does not flood the context. [1] exo: gap
-- **Write descriptions as for a new teammate.** State what the tool does and when to use it. [1] exo: `skills/author/references/description.md`
+- **Write descriptions as for a new teammate.** State what the tool does and when to use it. [1] exo: `skills/author/SKILL.md`
 - **Name parameters unambiguously.** A clear name saves the agent a wrong call. [1] exo: gap
 - **Present MCP servers as code APIs.** Load only the definitions needed and keep intermediate results out of context. [2] exo: gap
 - **Defer rarely used tools behind tool search.** Large definition sets cost context on every turn. [3] exo: gap

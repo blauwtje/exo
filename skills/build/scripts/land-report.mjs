@@ -4,7 +4,6 @@ import { escapeRegExp } from '#basics';
 
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
-const CHECKPOINT_SCRIPT = '${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/checkpoint.mjs';
 export const PROOF_TIMEOUT_MS = 540_000;
 export const PROOF_TAIL_LINES = 20;
 const RED_FIELD_LINE = /^\s*(?:[-*]\s+)?(?:Test first|Red):/;
@@ -50,7 +49,7 @@ function expectedLayout(task, reportPath, command = null) {
 function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
     const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
-    throw new ReportMissingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}, and no handoff or checkpoint commit stands in for it${expectedLayout(task, reportPath)}\nWrite the report with that layout, or run \`node ${CHECKPOINT_SCRIPT}\` to leave a checkpoint commit.`);
+    throw new ReportMissingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}${expectedLayout(task, reportPath)}\nWrite the report with that layout.`);
   }
   const lines = reportText.replace(/\r\n/g, '\n').split('\n');
   const kept = [];

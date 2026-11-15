@@ -1,31 +1,22 @@
 # build
 
-Runs a plan, one task per fresh context. Without a plan, it builds a decided change in this session.
+Runs a plan, one task per fresh builder. Without a plan, it builds a decided change in this session.
 
 ## When it runs
 
-- A session opens on a plan, or you say to run or resume one.
+- You say to run or resume a plan.
 - A decided change with no plan touches more than two files, adds a dependency, changes a public signature, or crosses a persisted format or security boundary.
 - You ask for a change test-first, at any size.
-
-Unattended, `exo run <plan>` from your terminal lands each task in its own headless process, then verifies.
 
 Not for writing or repairing a plan, or a change of two files or fewer.
 
 ## What you get
 
-- One commit per task, so a resumed run knows what landed.
-- Independent tasks built in parallel in their own worktrees.
-- Each parallel slot exports `EXO_SLOT`, `EXO_PORT_BASE` and `EXO_STATE_DIR` to its setup command and `.exo/slot.env`, so servers and local state in parallel proofs do not collide; `EXO_SLOT_PORT_START` moves the port range.
-- Test-first work shows the failing test before the fix and the passing test after.
-- A point the plan leaves open is parked, not guessed: after the wave lands you get one question per message, and that task is rebuilt with your answer.
-- A short final message naming a run report that holds the proofs and the brief's `## Manual checks`, the checks only you can make.
-- A line inviting changes in the same session, above `ship`'s route question when it asks one.
-- A handoff to `gate`. It picks the deep reviewer when a landed task's `Risk:` field names a security boundary. A task that crosses a security boundary needs a `Risk:` field.
-
-## Modes
-
-This skill also runs the folded skills run-plan, refactor, improve and design-ui as modes.
+- One commit per task, so a resumed run knows what landed. A task lands when its proof passes and the plan's Land gate passes; a proof that also passes before the change is refused, and the builder stops on that refusal and reports the task as blocked.
+- Each builder, and this session when it edits a no-plan change itself, reads `skills/build/references/code-rules.md` before it writes code and cleans its own diff against it; the project's own lint, run by the Land gate, decides style.
+- A point the plan leaves open is parked, not guessed: you get one question, and that task is rebuilt with your answer.
+- At the end, the plan's Success criterion runs once, then the plan's Land gate once, then one review of the branch diff by the built-in `code-review` skill at `medium`; each finding goes to a builder that must reproduce it with a failing test or command, only the reproduced ones are fixed, and the rest are listed as unproven.
+- A short final message in plain words, then a handoff to `ship`.
 
 ## Source
 

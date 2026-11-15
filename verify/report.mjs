@@ -1,4 +1,3 @@
-
 const STATUSES = ['PASS', 'FAIL', 'WARN', 'UNRUN'];
 
 export function createReport() {

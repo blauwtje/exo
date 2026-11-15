@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { redGreen, runInWorktree } from '../lib/red-green.mjs';
-import { commitFiles, gitRepository, restoreEnv } from './harness.mjs';
-import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs';
+import { runInWorktree } from '../lib/red-green.mjs';
+import { git, restoreEnv, run } from './harness.mjs';
+import { CHANGED, COMPACT_PLAN, PASS_REPORT, PLAN, SCRIPT, compactCheckout, editApp, landingCheckout } from './land-task-fixture.mjs';
 
 const inBase = (body) => `if pwd | grep -q red-green-; then ${body}; fi`;
 const HANGS_AFTER_FAILING = inBase('echo "not ok 1 - boom"; sleep 300');
@@ -49,17 +49,26 @@ test('a base that exits non-zero fast is red, as before', async () => {
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a base that passes fast warns of no red proof and lands', async () => {
-  const land = await landWith('true');
-  const result = await withEnv(TINY, land);
-  assert.match(result, /^\[WARN\] Task 1: Proof passes on .* no red proof/m);
-  assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
-});
+async function assertRefused(command) {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.writeFile(planPath, PLAN.replaceAll(CHANGED, command));
+  const head = git(root, 'rev-parse', 'HEAD');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: TINY });
+  assert.notEqual(result.code, 0);
+  assert.match(result.stderr, /Task 1: Proof .* passes on .* proves nothing/);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.doesNotMatch(git(root, 'log', '--format=%B'), /^Plan-task:/m);
+}
 
-test('a base that passes within head plus margin warns of no red proof and lands', async () => {
-  const land = await landWith(inBase('sleep 0.3'));
-  const result = await withEnv(TINY, land);
-  assert.match(result, /^\[WARN\] Task 1: Proof passes on .* no red proof/m);
+test('a base that passes fast is refused as no red proof and nothing lands', () => assertRefused('true'));
+
+test('a base that passes within head plus margin is refused as no red proof and nothing lands', () => assertRefused(inBase('sleep 0.3')));
+
+test('Red: none lands a proof that passes at the base', async () => {
+  const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', 'true'));
+  const planText = await fs.readFile(planPath, 'utf8');
+  const result = landTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT.replace('node tests/app.test.mjs', 'true') });
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
@@ -84,12 +93,4 @@ test('runInWorktree keeps error when the bound reaches the proof timeout', async
   const { root } = await landingCheckout();
   const result = await withEnv(TINY, () => runInWorktree({ root, base: 'HEAD', command: HANGS_AFTER_FAILING, overlay: [], timeoutMs: 1000, headMs: 100 }));
   assert.equal(result.status, 'error');
-});
-
-test('redGreen proves a Success criterion whose base never exits after failing', async () => {
-  const root = await gitRepository({ 'a.txt': 'a\n' });
-  await commitFiles(root, { ok: 'x\n' }, 'feat: the fix');
-  const command = 'if test -f ok; then exit 0; fi; echo "not ok"; sleep 300';
-  const result = await withEnv(TINY, () => redGreen({ root, base: 'HEAD~1', command, overlay: [], repeat: 1, timeoutMs: 4000 }));
-  assert.equal(result.outcome, 'proved', result.lines.join('\n'));
 });

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { LandLockError, withLandLock } from '#land-lock';
+import { LandLockError, withLandLock } from '../../../lib/land-lock.mjs';
 import { LockHeldError } from './land-errors.mjs';
 
 export function headMessage(root) {

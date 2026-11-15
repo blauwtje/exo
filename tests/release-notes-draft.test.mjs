@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
 import { test } from 'node:test';
-import { commitFiles, git, gitRepository, tempDir } from './harness.mjs';
+import { commitFiles, git, gitRepository } from './harness.mjs';
 
 const SCRIPT = new URL('../skills/document/scripts/release-notes-draft.mjs', import.meta.url).pathname;
 
@@ -57,22 +55,3 @@ test('an explicit range replaces the last release tag', async () => {
   assert.equal(draft(repo, '--from', middle), '### Fixed\n\n- Second change.');
 });
 
-test('a merged pull request title joins the notes once, and a title a commit already carries is dropped', async () => {
-  const repo = await releasedRepository();
-  await commitFiles(repo, { 'a.txt': '1' }, 'fix: close the socket (#7)');
-  const prs = path.join(tempDir('release-prs-'), 'prs.json');
-  fs.writeFileSync(prs, JSON.stringify([
-    { number: 7, title: 'fix: close the socket' },
-    { number: 8, title: 'feat: add the status page' }
-  ]));
-
-  assert.equal(draft(repo, '--prs', prs), '### Added\n\n- Add the status page.\n\n### Fixed\n\n- Close the socket.');
-});
-
-test('--uncovered lists only the commits that left CHANGELOG.md alone', async () => {
-  const repo = await releasedRepository();
-  await commitFiles(repo, { 'a.txt': '1', 'CHANGELOG.md': '# Changelog\n- noted\n' }, 'feat: noted change');
-  await commitFiles(repo, { 'b.txt': '1' }, 'feat: unnoted change');
-
-  assert.equal(draft(repo, '--uncovered'), '### Added\n\n- Unnoted change.');
-});

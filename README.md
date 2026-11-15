@@ -8,7 +8,7 @@
 # exo
 
 <p align="center">
-  <strong>An exoskeleton for AI engineering. A plugin for Claude Code and Codex.</strong>
+  <strong>An exoskeleton for AI engineering. A plugin for Claude Code.</strong>
 </p>
 
 <p align="center">
@@ -17,16 +17,7 @@
 
 ## Install
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash
-```
-
-That asks which harnesses and projects get exo, then installs it. The script keeps its copy in `~/.exo`.
-
-It needs git, Node 22 or newer, and `bash` on `PATH` for the hooks. On Windows, Git Bash runs them; support is best effort.
-
-<details>
-<summary>Claude Code plugin</summary>
+It needs git, Node 22 or newer, and `bash` on `PATH`.
 
 Inside Claude Code, run these, then restart it:
 
@@ -37,60 +28,36 @@ Inside Claude Code, run these, then restart it:
 
 To check, run `/exo:configure` in a new session. If it lists exo's settings, exo is loaded.
 
-</details>
-
-<details>
-<summary>Codex</summary>
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness codex
-```
-
-To check, run `$configure` in a new session. [docs/codex.md](docs/codex.md) names the ChatGPT plan it needs and lists what differs from Claude Code.
-
-</details>
-
 <details>
 <summary>Update or uninstall</summary>
 
-These act on every install the script made.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update
-curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --remove
-```
-
-Installed from inside Claude Code? Update with `claude plugin update exo@blauwtje` in a terminal, then restart. Uninstall with `/plugin uninstall exo@blauwtje`.
+Update with `claude plugin update exo@blauwtje` in a terminal, then restart. Uninstall with `/plugin uninstall exo@blauwtje`.
 
 </details>
 
-Already have exo? Run the install command again; it updates the copy in `~/.exo`.
-
 ## Use
 
-Describe what you want and Claude starts the skill that fits. The routing rule: Unclear: spec. Clear: build. Broken: diagnose. Leaving the machine: ship. About exo: save or configure. A feature goes through four stages, and each asks which runs next.
+Say what you want in your own words and Claude starts the skill that fits. A typo or one-line edit runs without a skill, and a change of two files or fewer is edited directly, with no plan.
 
-| Skill | What it does | Modes |
-|---|---|---|
-| `spec` | Decides what to build. | research, ideate |
-| `build` | Builds a plan or a decided change with subagents. | run-plan, refactor, improve, design-ui |
-| `gate` | Checks the branch before a pull request. | review |
-| `ship` | Pushes, opens or merges the pull request. | |
-| `diagnose` | Finds why something broke before any code changes. | |
-| `author` | Edits exo's own skills and prompts. | prompt |
-| `save` | Saves unfinished work for a fresh session. | |
-| `configure` | Shows or changes exo's settings. | |
-| `watch` | Reads videos from YouTube, TikTok, Instagram, Facebook, X and other yt-dlp sites, through their captions or a local transcript, and answers, summarises or extracts from them. | |
-| `document` | Writes READMEs, pull requests and commit messages. | |
+| You say | What happens |
+|---|---|
+| "rename the `--out` flag to `--output`" | A small fix: `build` edits directly, runs the check and offers to ship. |
+| "plan how we add CSV export" | A feature with a plan: `spec` asks what only you can decide, then writes the plan. |
+| "run the plan" | `build` builds each task with its proof and reviews the result once. |
+| "the export writes duplicate rows, find out why" | A bug: `diagnose` proves the cause, then fixes it with a test. |
+| "ship it" or "open a PR" | `ship` asks once how far the commits go, then pushes, opens or merges. |
+| "save this session", then "continue from the handoff" in a new one | `save` writes a handoff file and reads it back. |
+| a video link and a question | `watch` answers from the captions or a transcript. |
+| "write a README for this" | `document` writes prose that is read later. |
+
+Two skills run only when typed: `/exo:configure` shows or changes a setting, and `/exo:author` edits exo's own skills and agents.
 
 The agents run behind the skills; you do not call them.
 
 | Agent | What it does |
 |---|---|
-| `orchestrator` | Runs a multi-part task with up to 4 workers. |
-| `builder` | Builds one plan task, folding the hard-problem and review-fix work. |
-| `reviewer` | Judges research claims against their cached pages. |
-| `researcher` | Answers one bounded question from named sources, folding the docs fetch, idea and open-point work. |
+| `builder` | Builds one plan task, repair or fix. |
+| `researcher` | Answers one bounded question from named sources. |
 
 [docs/skills/](docs/skills/) has a page for every skill. [docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
 
@@ -100,7 +67,7 @@ Each "before" is plain Claude Code. Nothing here compares exo with other plugins
 
 | Before | After | Test |
 |---|---|---|
-| A task lands once Claude says the tests pass, even if the proof never failed. | A task lands only if its proof fails before the change and passes after; otherwise `no red proof`. | [tests/red-bound.test.mjs](tests/red-bound.test.mjs) |
+| A task lands once Claude says the tests pass, even if the proof never failed. | `land-task.mjs` runs the proof before the change too. When it passes there, the script refuses the task and the builder reports it `BLOCKED`. | [tests/red-bound.test.mjs](tests/red-bound.test.mjs) |
 | A task lands even when the project's own check is red. | A failing Land gate is refused before anything commits. | [tests/land-task-land-gate.test.mjs](tests/land-task-land-gate.test.mjs) |
 
 ## More

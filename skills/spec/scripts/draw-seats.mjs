@@ -1,5 +1,3 @@
-import { draw, seeded } from '#draw';
-
 const POOL = [
   ['Smallest interface. One to three entry points.', 'The platform default, or the shape the code already has.'],
   ['Commonest caller. Its call reads as one line.', 'Keeping the current data model.'],
@@ -11,9 +9,8 @@ const POOL = [
   ['Record of events. Append what happened; compute the current view when read.', 'Storing the current state directly.']
 ];
 
-const at = process.argv.indexOf('--seed');
-const random = at === -1 ? Math.random : seeded(Number(process.argv[at + 1]));
-draw(POOL, random).forEach(([seat, forbidden], index) => {
+const shuffled = [...POOL].sort(() => Math.random() - 0.5);
+shuffled.slice(0, 3).forEach(([seat, forbidden], index) => {
   console.log(`Pair ${index + 1}`);
   console.log(`Seat: ${seat}`);
   console.log(`Forbidden: ${forbidden}`);

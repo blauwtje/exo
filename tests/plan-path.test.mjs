@@ -4,7 +4,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { resolvePlanPath } from '../lib/checkout.mjs';
 import { git, run, tempDir } from './harness.mjs';
-import { landingCheckout, SCRIPT as LAND_TASK } from './land-task-fixture.mjs';
+import { nextTaskReport } from '../skills/build/scripts/next-task.mjs';
+import { landingCheckout, PLAN, SCRIPT as LAND_TASK } from './land-task-fixture.mjs';
 
 const NEXT_TASK = new URL('../skills/build/scripts/next-task.mjs', import.meta.url).pathname;
 const RELATIVE_PLAN = 'docs/plans/fixture.md';
@@ -51,4 +52,11 @@ test('next-task from a worktree finds a relative plan that lives in the main che
   const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', worktree], { cwd: worktree });
   assert.doesNotMatch(result.stderr, /no plan at/);
   assert.equal(result.code, 0, result.stderr);
+});
+
+test('next-task prints the plan non-goals once with the next task', async () => {
+  const { root } = await landingCheckout();
+  const report = nextTaskReport({ planText: PLAN, planPath: path.join(root, RELATIVE_PLAN), root });
+  assert.equal(report.split('Non-goals:\n- `src/other.js` stays as it is.').length, 2);
+  assert.match(report, /Next: 1 feat\(app\): greet/);
 });

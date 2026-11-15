@@ -19,12 +19,12 @@ const REFUSED = JSON.stringify({
   success: false,
   manifest: entry('/ROOT/.claude-plugin/plugin.json', [], ['name: unusual']),
   contents: [
-    entry('/ROOT/hooks/hooks.json', ['modules../run-watch.mjs: $.agent is used as a value']),
+    entry('/ROOT/agents/builder.md', ['tools: unknown tool']),
     entry('/ROOT/CLAUDE.md', [], ['root: not loaded as project context'])
   ]
 });
 
-const PASSED = JSON.stringify({ success: true, manifest: entry('/ROOT/.claude-plugin/plugin.json'), contents: [entry('/ROOT/hooks/hooks.json')] });
+const PASSED = JSON.stringify({ success: true, manifest: entry('/ROOT/.claude-plugin/plugin.json'), contents: [entry('/ROOT/agents/builder.md')] });
 
 function sandbox({ cli = true, manifest = true, status = 0, output = PASSED } = {}) {
   const base = fs.realpathSync(tempDir('exo-plugin-validate-'));
@@ -67,7 +67,7 @@ test('each error and warning is one FAIL detail with its relative file', () => {
   const { counts, detail } = verdict(box);
   assert.equal(counts.FAIL, 3, detail);
   assert.match(detail, /^\[FAIL\] plugin validate: \.claude-plugin\/plugin\.json: name: unusual$/m);
-  assert.match(detail, /^\[FAIL\] plugin validate: hooks\/hooks\.json: modules\.\.\/run-watch\.mjs: \$\.agent is used as a value$/m);
+  assert.match(detail, /^\[FAIL\] plugin validate: agents\/builder\.md: tools: unknown tool$/m);
   assert.match(detail, /^\[FAIL\] plugin validate: CLAUDE\.md: root: not loaded as project context$/m);
   assert.doesNotMatch(detail, /ignored/);
 });

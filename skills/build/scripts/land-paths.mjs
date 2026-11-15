@@ -1,21 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
-import { orWhenAbsent } from '#absent-path';
-import { decisionsPathOf, isCovered, isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { addedPathspecs } from './land-signatures.mjs';
-
-const PROTECTED_PATHS = [
-  /^(\.github\/|\.claude\/|hooks\/|\.env(\.|$)|.*\.(pem|key)$)/,
-  /^lib\/(?:git-deny|guard-rules)\.mjs$/,
-  /^skills\/build\/scripts\/land-[^/]+\.mjs$/,
-  /^docs\/plans\//
-];
-
-export function isProtectedPath(changed) {
-  return PROTECTED_PATHS.some((pattern) => pattern.test(changed));
-}
 
 export function nestedWorktrees(root) {
   const listed = spawnSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
@@ -35,47 +21,18 @@ function untrackedPaths(root) {
 export function changedPaths(root, planPath) {
   const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
   const scratchPrefix = `${SCRATCH_FOLDER}/`;
-  const exempt = planPath === undefined ? [] : [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
+  const exempt = planPath === undefined ? [] : [path.relative(path.resolve(root), path.resolve(planPath))];
   return [...new Set([...tracked.split('\n'), ...untrackedPaths(root)])]
     .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
-export function landablePaths({ root, planPath, siblingWork }) {
-  return changedPaths(root, planPath).filter((changed) => !siblingWork(changed));
-}
+const ABSENT_CODES = ['ENOENT', 'ENOTDIR'];
 
-export function leftForSiblingWarning(task, { root, planPath, siblingWork }) {
-  const entries = task.files.map((file) => file.path);
-  return changedPaths(root, planPath)
-    .filter((changed) => !isCovered(entries, changed) && siblingWork(changed))
-    .flatMap((changed) => {
-      const owner = siblingWork.ownerOf?.(changed);
-      return owner === undefined ? [] : [`[WARN] Task ${task.number} left \`${changed}\` for open Task ${owner}\n`];
-    })
-    .join('');
-}
-
-export function siblingWorkOf(plan, task, { root, planPath, landing }) {
-  const written = landing && (task.commitBlock !== null || !task.compact);
-  const added = written ? addedPathspecs(task.commitBlock ?? '') : [];
-  if (added === null) return () => false;
-  const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
-  const open = plan.tasks.filter((other) => other.number !== task.number && !landed.includes(other.number));
-  const entries = open.flatMap((other) => other.files.map((file) => file.path));
-  const ownerOf = (changed) => open.find((other) => isCovered(other.files.map((file) => file.path), changed))?.number;
-  const named = plan.tasks.flatMap((other) => other.files.map((file) => file.path));
-  const staged = landing ? execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only'], { encoding: 'utf8' }).split('\n') : [];
-  const untracked = new Set(untrackedPaths(root));
-  const siblingFile = (changed) => isCovered(entries, changed) && untracked.has(changed) && !isCovered(added, changed);
-  const planDoc = (changed) => isPlanDoc(changed) && !isCovered(named, changed) && !isCovered(added, changed);
-  const siblingWork = (changed) => !staged.includes(changed) && (siblingFile(changed) || planDoc(changed));
-  siblingWork.ownerOf = ownerOf;
-  return siblingWork;
-}
-
-const STATED_LIMIT_LINE = /^(?:- )?(?:Limit:|Unresolved:(?!\s*none\.?\s*$))/i;
-
-export function statedLimitWarning(task, reportText) {
-  const line = (reportText ?? '').split('\n').map((entry) => entry.trim()).find((entry) => STATED_LIMIT_LINE.test(entry));
-  return line === undefined ? '' : `Warning: the report of Task ${task.number} names a limit: ${line}; a case that worked before the change is fixed or returned BLOCKED\n`;
+function orWhenAbsent(read, fallback) {
+  try {
+    return read();
+  } catch (error) {
+    if (!ABSENT_CODES.includes(error.code)) throw error;
+    return fallback;
+  }
 }

@@ -5,18 +5,18 @@ Checked: 2026-11-14
 Read it when: you design, grade or change an eval, benchmark, regression check or keep/discard rule.
 
 - **Start with 20-50 tasks from real failures.** [1] exo: `evals/`
-- **Write unambiguous tasks with reference solutions.** [1] exo: `tests/benchmark-value.test.mjs`
-- **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`
-- **Compare to baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
+- **Write unambiguous tasks with reference solutions.** [1] exo: gap
+- **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: gap
+- **Compare to baseline as paired differences on shared tasks.** [3] exo: gap
 - **Compute task count before a paid run, and run each stage alone with a cheap limit before the paid whole.** [3][8] exo: gap
-- **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default; an over-budget or broken run is a failure row, never a score; the human sets only the goal and the budget.** [4][7][9] exo: `skills/build/scripts/round.mjs` `timedOut`
-- **Fix the seed.** [6] exo: `skills/build/scripts/round.mjs` `scoreEnv`
-- **Change one thing per round, scored by one number the edited files cannot change; keep only a gain that clears the run noise, and at equal score or fewer net lines keep simpler code.** [6][7][10][11] exo: `skills/build/scripts/round.mjs` `not-one-commit`, `judgeKeep`
-- **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: `tests/benchmark-value.test.mjs`
-- **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/test-design.md`
-- **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: `skills/author/references/pressure-judge.md`
-- **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: `lib/judge-agreement.mjs`
-- **Hold out tasks the change was not tuned on.** [5] exo: `lib/holdout.mjs`
+- **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default; an over-budget or broken run is a failure row, never a score; the human sets only the goal and the budget.** [4][7][9] exo: gap
+- **Fix the seed.** [6] exo: gap
+- **Change one thing per round, scored by one number the edited files cannot change; keep only a gain that clears the run noise, and at equal score or fewer net lines keep simpler code.** [6][7][10][11] exo: gap
+- **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: gap
+- **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/code-rules.md`
+- **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: gap
+- **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: gap
+- **Hold out tasks the change was not tuned on.** [5] exo: gap
 - **Run free regression evals on every change.** [5] exo: `evals/`
 
 ## Sources

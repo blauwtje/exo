@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "exo",
-      "description": "Claude Code plugin with four stages and hooks that refuse risky commands.",
+      "description": "Claude Code plugin with skills for specs, proof-first builds, diagnosis and shipping.",
       "version": "0.140.0",
       "license": "MIT",
       "source": "./"

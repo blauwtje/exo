@@ -1,4 +1,3 @@
-
 import path from 'node:path';
 
 const TARGET_PATTERNS = [
@@ -7,14 +6,8 @@ const TARGET_PATTERNS = [
   /^\[[^\]]+\]:\s*(?<target>\S+\.md(?:#\S+)?)\s*$/gm
 ];
 
-export const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
-export const HARNESS_ROOT_FILES = ['AGENTS.md', 'CLAUDE.md'];
-export const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
-
-export function stripFrontmatter(text) {
-  return text.replace(FRONTMATTER, '');
-}
-
+const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
+const HARNESS_ROOT_FILES = ['AGENTS.md', 'CLAUDE.md'];
 export function markdownTargets(text) {
   const seen = new Map();
   const targets = TARGET_PATTERNS.flatMap((pattern) => {

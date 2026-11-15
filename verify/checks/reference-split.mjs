@@ -1,9 +1,8 @@
-
 import fs from 'node:fs';
 import path from 'node:path';
 
-const POINTER = /read `?(?<target>references\/[\w.-]+\.md)`?/gi;
-const MIN_REPEAT_LENGTH = 40;
+const SKILL_LINE_LIMIT = 500;
+const NESTED = /references\/[\w-]+\.md|\(\.?\/?[\w-]+\.md\)/;
 
 function skillFolders(skillsRoot) {
   return fs.readdirSync(skillsRoot, { withFileTypes: true })
@@ -17,42 +16,47 @@ function referenceFiles(folder) {
   return fs.readdirSync(directory).filter((name) => name.endsWith('.md'));
 }
 
-function longLines(text) {
-  return text.split('\n').map((line) => line.trim()).filter((line) => line.length >= MIN_REPEAT_LENGTH);
+function skillFiles(repository, folder) {
+  return repository.walk(folder, (file) => /\.(md|mjs)$/.test(file));
 }
 
-function namedElsewhere(repository, name, file) {
-  const full = `skills/${name}/references/${file}`;
-  return repository.trackedFiles()
-    .filter((tracked) => /\.(md|mjs)$/.test(tracked) && !tracked.includes('/skills/'))
-    .some((tracked) => repository.text(tracked).includes(full));
+function crossPattern(name, names) {
+  const others = names.filter((other) => other !== name);
+  return others.length === 0 ? null : new RegExp(`(?:\\.\\./|skills/)(?:${others.join('|')})/[\\w./-]+`);
 }
 
-function skillErrors(repository, name, folder) {
-  const errors = [];
-  const skillText = fs.readFileSync(path.join(folder, 'SKILL.md'), 'utf8');
-  for (const match of skillText.matchAll(POINTER)) {
-    const { target } = match.groups;
-    if (!fs.existsSync(path.join(folder, target))) errors.push(`${name}: '${target}' does not exist`);
-  }
-  const skillLines = new Set(longLines(skillText));
-  for (const file of referenceFiles(folder)) {
-    const named = skillText.includes(`references/${file}`) || namedElsewhere(repository, name, file);
-    if (!named) errors.push(`${name}: references/${file} is not named in SKILL.md`);
-    const referenceText = fs.readFileSync(path.join(folder, 'references', file), 'utf8');
-    if (longLines(referenceText).some((line) => skillLines.has(line))) {
-      errors.push(`${name}: references/${file} repeats a SKILL.md line`);
+function crossErrors(repository, name, folder, names) {
+  const pattern = crossPattern(name, names);
+  if (pattern === null) return [];
+  return skillFiles(repository, folder)
+    .filter((file) => pattern.test(repository.text(file)))
+    .map((file) => `${repository.relative(file)} names a path into another skill: '${pattern.exec(repository.text(file))[0]}'`);
+}
+
+function referenceErrors(name, folder, skillText) {
+  return referenceFiles(folder).flatMap((file) => {
+    const errors = [];
+    if (!skillText.includes(`references/${file}`)) errors.push(`${name}: references/${file} is not named in SKILL.md`);
+    if (NESTED.test(fs.readFileSync(path.join(folder, 'references', file), 'utf8'))) {
+      errors.push(`${name}: references/${file} points to another reference`);
     }
-  }
-  return errors;
+    return errors;
+  });
+}
+
+function skillErrors(repository, name, folder, names) {
+  const skillText = fs.readFileSync(path.join(folder, 'SKILL.md'), 'utf8');
+  const lines = skillText.split('\n').length - (skillText.endsWith('\n') ? 1 : 0);
+  const errors = lines > SKILL_LINE_LIMIT ? [`${name}: SKILL.md has ${lines} lines, over ${SKILL_LINE_LIMIT}`] : [];
+  return [...errors, ...referenceErrors(name, folder, skillText), ...crossErrors(repository, name, folder, names)];
 }
 
 export function checkReferenceSplit(report, repository) {
-  const skillsRoot = repository.join('skills');
-  const errors = skillFolders(skillsRoot).flatMap((name) => skillErrors(repository, name, path.join(skillsRoot, name)));
+  const names = skillFolders(repository.skillsRoot);
+  const errors = names.flatMap((name) => skillErrors(repository, name, path.join(repository.skillsRoot, name), names));
   report.assert(
     errors.length === 0,
-    'Reference split',
-    { pass: 'every selector pointer resolves, every reference is named and no moved line is repeated', fail: errors.join('; ') }
+    'skill layout',
+    { pass: 'every SKILL.md is under 500 lines, references sit one level deep and no skill paths into another', fail: errors.join('; ') }
   );
 }

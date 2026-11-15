@@ -70,6 +70,18 @@ test('a failing Land gate is refused before anything commits, naming the command
   assert.ok(!('echo gate broke && exit 1' in cache));
 });
 
+test('a change outside the task Files: is refused, naming the paths, and nothing commits', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export {};\n');
+  await fs.writeFile(path.join(root, 'tests/greet.test.mjs'), '');
+  const head = git(root, 'rev-parse', 'HEAD');
+  assert.throws(
+    () => landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT }),
+    /Task 1 changes paths outside its Files: tests\/greet\.test\.mjs, src\/extra\.js/
+  );
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+});
+
 test('a Land gate past its deadline is stopped and refused with timed out after <n>s, and nothing commits', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
@@ -140,36 +152,21 @@ test('Land gate: none opts out and lands as before', async () => {
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a task that names Drops: gives its Proof the same EXO_DROPS as its Land gate', async () => {
-  const proof = 'test "$EXO_DROPS" = "only in skills/x.md"';
-  const plan = COMPACT_PLAN
-    .replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`)
-    .replace('| Red: none (fixture)', '| Red: none (fixture) | Drops: only in skills/x.md')
-    .replace('## Plan basis\n', '## Plan basis\nLand gate: test "$EXO_DROPS" = "only in skills/x.md"\n');
-  const { root, planPath } = await compactCheckout(plan);
-  const report = PASS_REPORT.replace('`node tests/app.test.mjs`: pass', `\`${proof}\`: pass`);
-  const output = landTask({ planPath, planText: plan, number: 1, root, reportText: report });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(output, /^Proof: test "\$EXO_DROPS" = "only in skills\/x\.md": pass \(exit 0, no output\)$/m);
-});
-
-const EVIDENCE_PLAN = PLAN.replace('-m "Plan-task: 4"', '-m "Plan-task: 4" -m "Evidence: none (fixture)"');
-const SEES_CANDIDATE = "git log -1 --format=%B | grep -q '^Evidence: none' && git ls-files --error-unmatch src/note.md";
+const SEES_CANDIDATE = "git log -1 --format=%B | grep -qx 'Plan-candidate: fixture/4' && git ls-files --error-unmatch src/note.md";
 
 async function twoFileEdit(root) {
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/note.md'), 'note\n');
 }
 
-test('the Land gate judges the task commit: its trailers and its new file are already in HEAD', async () => {
+test('the Land gate judges the task commit: its trailer and its new file are already in HEAD', async () => {
   const { root, planPath } = await landingCheckout();
   await twoFileEdit(root);
-  const output = landTask({ planPath, planText: withGate(EVIDENCE_PLAN, SEES_CANDIDATE), number: 4, root });
+  const output = landTask({ planPath, planText: withGate(PLAN, SEES_CANDIDATE), number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '2');
   const message = git(root, 'log', '-1', '--format=%B');
   assert.match(message, /^Plan-task: fixture\/4$/m);
-  assert.match(message, /^Evidence: none \(fixture\)$/m);
   assert.doesNotMatch(message, /Plan-candidate/);
 });
 
@@ -178,7 +175,7 @@ test('a failing Land gate resets the task commit and leaves the work staged', as
   await twoFileEdit(root);
   const base = git(root, 'rev-parse', 'HEAD');
   assert.throws(
-    () => landTask({ planPath, planText: withGate(EVIDENCE_PLAN, 'echo gate broke && exit 1'), number: 4, root }),
+    () => landTask({ planPath, planText: withGate(PLAN, 'echo gate broke && exit 1'), number: 4, root }),
     /Land gate "echo gate broke && exit 1" failed:\ngate broke/
   );
   assert.equal(git(root, 'rev-parse', 'HEAD'), base);
@@ -190,50 +187,10 @@ test('a candidate commit left by a crashed landing is reset before the next land
   await twoFileEdit(root);
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'Task 4', '-m', 'Plan-candidate: fixture/4');
-  const output = landTask({ planPath, planText: withGate(EVIDENCE_PLAN, 'true'), number: 4, root });
+  const output = landTask({ planPath, planText: withGate(PLAN, 'true'), number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '2');
   assert.doesNotMatch(git(root, 'log', '-1', '--format=%B'), /Plan-candidate/);
-});
-
-const PENDING_PLAN = PLAN.replace('### Task 4: Two files\n\nDepends on: none', '### Task 4: Two files\n\nDepends on: none | Evidence: none (fixture)');
-
-test('the Land gate gets the Evidence value of a task not yet landed', async () => {
-  const { root, planPath } = await landingCheckout();
-  await editApp(root);
-  const gate = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
-  const output = landTask({ planPath, planText: withGate(PENDING_PLAN, gate), number: 1, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-});
-
-test('the Land gate gets no pending Evidence for the task that carries it', async () => {
-  const plan = withGate(COMPACT_PLAN.replace('| Red: none (fixture)', '| Red: none (fixture) | Evidence: none (fixture)'), 'test -z "$EXO_PENDING_EVIDENCE"');
-  const { root, planPath } = await compactCheckout(plan);
-  const output = landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(git(root, 'log', '-1', '--format=%B'), /^Evidence: none \(fixture\)$/m);
-});
-
-const LATER_TASK = '### Task 2: Later\nDepends on: none | Files: `src/later.js` | Data: a plain object | Proof: true | Red: none (fixture) | Evidence: none (fixture)\n\n### Task 1';
-
-async function landProofOfTaskOne(proof, plan) {
-  const { root, planPath } = await compactCheckout(plan);
-  const report = PASS_REPORT.replace('`node tests/app.test.mjs`: pass', `\`${proof}\`: pass`);
-  return landTask({ planPath, planText: plan, number: 1, root, reportText: report });
-}
-
-test('a Proof gets the Evidence value of a task not yet landed, as its Land gate does', async () => {
-  const proof = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
-  const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`), 'true').replace('### Task 1', LATER_TASK);
-  const output = await landProofOfTaskOne(proof, plan);
-  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0, no output\)$/m);
-});
-
-test('a Proof gets the Evidence of the task that carries it, before its commit has the trailer', async () => {
-  const proof = 'test "$EXO_PENDING_EVIDENCE" = "none (fixture)"';
-  const plan = withGate(COMPACT_PLAN.replace('Proof: node tests/app.test.mjs', `Proof: ${proof}`).replace('| Red: none (fixture)', '| Red: none (fixture) | Evidence: none (fixture)'), 'true');
-  const output = await landProofOfTaskOne(proof, plan);
-  assert.match(output, /^Proof: test "\$EXO_PENDING_EVIDENCE" = "none \(fixture\)": pass \(exit 0, no output\)$/m);
 });
 
 async function afterTaskOne() {
@@ -352,18 +309,6 @@ test('a passing covering test lets the task land', async () => {
   const result = await landFromCli(checkout);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Committed: [0-9a-f]+ Task 1$/m);
-});
-
-const RAISE_LINE = 'Budget-raise: STAGE_BODY_TOKENS.spec 935 to 955: the new step needs twenty tokens';
-
-test('a Budget-raise line in the report is on the candidate during the Land gate and in the landed commit', async () => {
-  const { root, planPath } = await landingCheckout();
-  await editApp(root);
-  const gate = `git log -1 --format=%B | grep -qF '${RAISE_LINE}'`;
-  landTask({ planPath, planText: withGate(PLAN, gate), number: 1, root, reportText: `Done.\n${RAISE_LINE}\n` });
-  const body = git(root, 'log', '-1', '--format=%B');
-  assert.ok(body.split('\n').includes(RAISE_LINE));
-  assert.match(body, /^Plan-task: fixture\/1$/m);
 });
 
 test('a Land gate that passes only on a nested worktree outside the commit is refused, and the worktree is removed', async () => {

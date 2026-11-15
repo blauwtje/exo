@@ -4,30 +4,21 @@ Decides what to build before any code is written, and writes it down as a brief.
 
 ## When it runs
 
-A request leaves a product decision open: what counts as done, which data, which architecture, or a trade-off.
+A request leaves a product decision open: what counts as done, which data, which architecture, or a trade-off. It also runs when you ask for options or ideas.
 
 Not for a clear goal, a bug, or visual-only work.
 
 ## What you get
 
-- One question at a time, with lettered options and a recommendation. Reply with a letter, or `ok` to take the recommendation.
-- Facts it can look up are looked up, not asked.
-- Before the brief, a `Verdict:` of go, clarify or stop and the strongest `Objection:` against the work. Clarify asks one question, and stop writes no brief and says why. A go brief keeps both lines under `## Verdict`.
-- After the draft brief, a read-only agent (`exo:researcher`, skipped for a plan of at most 3 tasks that all have static proofs) finds every point a wrong guess would change. Points the code settles and cheap-to-undo guesses go under `## Assumptions`. You are asked only the rest, usually 0-3, one at a time; your answers become numbered Decisions, remembered per project.
+- Before anything else, a `Verdict:` of go, clarify or stop and the strongest `Objection:` against the work. Clarify asks one question; stop writes no brief and says why.
+- One question at a time, with lettered options and a recommendation. Reply with a letter, or `ok` to take the recommendation. Facts it can look up are looked up, not asked.
+- After the draft brief, a read-only agent (`exo:researcher`, skipped for a plan of at most 3 tasks with static proofs) finds every point a wrong guess would change. Points the code settles and cheap-to-undo guesses go under `## Assumptions`; you are asked only the rest.
 - A question you leave unanswered stays under `## Open points`, and build refuses the brief until it is answered.
-- A brief with a task list, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both.
-- A saved plan template that fits the request is offered first; a repo done-list in `docs/plans/definition-of-done.md` is chained onto the Success criterion once. After a run, run-plan offers to save the plan as a template in `docs/plans/templates/`.
-- Checks only you can make go in the brief's `## Manual checks`.
-- New wishes for existing work update the existing brief.
-- A closing free-text question: start the build now in the background, or say what to change in the brief. Build never starts before you reply.
+- A brief with a task list, each task carrying its exact interface and a proof command, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both. New wishes for existing work update the existing brief.
+- A repo's definition-of-done file under `docs/plans/` is chained onto the Success criterion once.
+- A closing question: start the build now in the background, or say what to change. Build never starts before you reply.
 
-Asked only for options, spec lists them, recommends one, and writes nothing.
-
-For an area it changes, spec reads `docs/behaviour/<area>.md`, built by `skills/spec/scripts/behaviour.mjs` from the acceptance lines of the briefs git tracks; `npm run check` fails while a file is stale.
-
-## Modes
-
-This skill also runs the folded skills research and ideate as modes.
+Asked for options, spec drafts two or three distinct ones, recommends one, and writes nothing until you pick.
 
 ## Source
 
