@@ -7,7 +7,7 @@ Both live in the repository under version control, beside the plans `build` sear
 - `docs/plans/templates/<name>.md`: one template per file.
 - The file named definition-of-done in `docs/plans/`, the repo done-list. Each bullet of the form `` - `<command>` `` is a command every plan must pass; other lines are for readers and feed nothing.
 
-`find-cause` keeps run commands, so it holds no plan shape or done-list.
+`diagnose` keeps run commands, so it holds no plan shape or done-list.
 
 ## Script
 

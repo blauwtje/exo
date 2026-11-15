@@ -57,6 +57,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 - Past the 75k hard context limit a helper is no longer refused: every checked call gets a hand-over note naming `checkpoint.mjs` and `Status: handover`.
+- The skills `edit-skills`, `save-session`, `find-cause` and `write-docs` are renamed to `author`, `save`, `diagnose` and `document`, so names are one common word that no Claude Code command or tool uses.
 - Renamed the agents to `builder`, `researcher` and `reviewer`.
 - `dispatch-bash` keeps three steps (sleep/poll deny, shared-state git deny for subagents, commit attribution); the script-size, result-cap, bash-cap, shell-fix, shell-stop, suite-unchanged, predispatch, reddit-route and context-note steps and the `watch` refusal are gone.
 - `context-limit` runs only on `Read` and `Skill` and loses its reddit-route, predispatch and search-cap decisions.

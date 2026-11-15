@@ -57,7 +57,7 @@ A design-ui direction choice opens as a lead-written sketch round in the sketch 
   - SKILL.md body ≤ 10,000 B (verify/budgets.mjs:47-48)
   
   (code: those paths.)
-- Skill, agent and reference edits follow `skills/edit-skills/references/instruction-style.md` (code: CLAUDE.md `## Editing`).
+- Skill, agent and reference edits follow `skills/author/references/instruction-style.md` (code: CLAUDE.md `## Editing`).
 
 ## Baseline
 - 10 runs, 2026-10-03..07: lead peak context median 146k (69k-296k); total tokens median 7.42M, 95%+ cache reads; wall median 17.2 min; first user-visible result median 17.2 min.

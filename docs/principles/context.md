@@ -5,7 +5,7 @@ Checked: 2026-11-14
 Read it when: you change what a skill, agent or run loads into a window, hands to a sub-agent or keeps between steps.
 
 - **Treat context as a finite resource.** Returns diminish as the window fills. [1] exo: `hooks/session-rules.md`
-- **Aim for the smallest set of high-signal tokens.** Fewer tokens that carry the point give the desired outcome more often. [1] exo: `skills/edit-skills/references/instruction-style.md`
+- **Aim for the smallest set of high-signal tokens.** Fewer tokens that carry the point give the desired outcome more often. [1] exo: `skills/author/references/instruction-style.md`
 - **Load data just in time.** Keep lightweight identifiers such as file paths and read them when needed. [1] exo: `hooks/session-rules.md`
 - **Delegate focused work to sub-agents.** They start with a clean window and return a short result. [1] exo: `agents/researcher.md`, `hooks/session-rules.md`
 - **Keep full history in a durable store outside the window.** Irreversible trimming loses what a later step may need; a loop keeps its state in files, so the lead reads rows, not logs. [3][4] exo: `skills/build/references/run-loop.md` keeps landed tasks in commits, `hooks/session-rules.md` logs output under `.exo/`

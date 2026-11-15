@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { tempDir } from './harness.mjs';
 
-const script = path.resolve('skills/save-session/scripts/handoff.mjs');
+const script = path.resolve('skills/save/scripts/handoff.mjs');
 
 function handoffPath(host) {
   const dir = fs.realpathSync(tempDir('handoff-'));
@@ -28,7 +28,7 @@ test('outside git on codex the handoff sits under CODEX_HOME', () => {
 });
 
 test('importing handoff.mjs runs no command and exports the path of a branch', async () => {
-  const { handoffFile } = await import('../skills/save-session/scripts/handoff.mjs');
+  const { handoffFile } = await import('../skills/save/scripts/handoff.mjs');
   const repository = tempDir('handoff-git-');
   spawnSync('git', ['-C', repository, 'init', '-q', '-b', 'topic']);
   spawnSync('git', ['-C', repository, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'start']);
@@ -38,8 +38,8 @@ test('importing handoff.mjs runs no command and exports the path of a branch', a
 });
 
 test('the handoff template holds the goal, progress, evidence and next step in order', async () => {
-  const { HANDOFF_SECTIONS } = await import('../skills/save-session/scripts/handoff.mjs');
-  const template = fs.readFileSync('skills/save-session/assets/handoff-template.md', 'utf8');
+  const { HANDOFF_SECTIONS } = await import('../skills/save/scripts/handoff.mjs');
+  const template = fs.readFileSync('skills/save/assets/handoff-template.md', 'utf8');
   const headings = [...template.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   assert.deepEqual(headings, [...HANDOFF_SECTIONS, 'Resume']);
 });

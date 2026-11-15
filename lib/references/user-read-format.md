@@ -58,6 +58,6 @@ Exo run words (gate, brief, spec, round, worker and the rest) are listed in `out
 
 | File | Section |
 |---|---|
-| `skills/save-session/assets/handoff-template.md` | - |
+| `skills/save/assets/handoff-template.md` | - |
 | `skills/spec/references/brief.md` | Manual checks |
 | `lib/assets/handover-template.md` | - |

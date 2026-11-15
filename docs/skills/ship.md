@@ -4,7 +4,7 @@ Takes finished commits as far as you choose: keep local, push, open a pull reque
 
 ## When it runs
 
-- `build` or `find-cause` has committed a change.
+- `build` or `diagnose` has committed a change.
 - You ask to push, open or merge a pull request, fix its failing checks, or answer review comments.
 
 ## What you get

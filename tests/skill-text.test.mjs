@@ -43,10 +43,10 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
 test('every skill that cites the report rule names closing.md, which defines it', () => {
   const closing = fs.readFileSync(path.join(skillsRoot, '..', 'lib/references/closing.md'), 'utf8');
   assert.match(closing, /^## Report rule$/m, 'closing.md defines the report rule');
-  for (const file of ['edit-skills/references/skill-shape.md', 'gate/SKILL.md', 'ship/SKILL.md', 'build/references/tail.md', 'find-cause/SKILL.md']) {
+  for (const file of ['author/references/skill-shape.md', 'gate/SKILL.md', 'ship/SKILL.md', 'build/references/tail.md', 'diagnose/SKILL.md']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, file), 'utf8'), /closing\.md/, `${file} cites closing.md`);
   }
-  for (const owner of ['edit-skills', 'gate', 'ship', 'build', 'find-cause']) {
+  for (const owner of ['author', 'gate', 'ship', 'build', 'diagnose']) {
     assert.match(fs.readFileSync(path.join(skillsRoot, owner, 'SKILL.md'), 'utf8'), /^\| `\.\.\/\.\.\/lib\/references\/closing\.md` \|/m, `${owner} lists closing.md in its References table`);
   }
 });

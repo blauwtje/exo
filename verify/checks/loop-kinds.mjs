@@ -51,7 +51,7 @@ function scriptFindings(repository) {
 }
 
 function proseFindings(repository, names) {
-  const skipped = (file) => repository.relative(file).startsWith('skills/write-docs/');
+  const skipped = (file) => repository.relative(file).startsWith('skills/document/');
   const findings = [];
   for (const file of repository.shippedTextFiles()) {
     if (skipped(file)) continue;

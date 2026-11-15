@@ -1,0 +1,68 @@
+---
+name: save
+description: Use when the user asks to save this unfinished session for a fresh one. Not for a plan another executor runs (spec) or finished work.
+argument-hint: "[what the next session must not lose]"
+---
+
+# Handoff
+
+Freeze what this session knows and the next one cannot rebuild. The enemy is a handoff that pastes the transcript back, so the fresh session pays again for the context the clear just bought. The overcorrection is a page of headlines naming no file, command or next step, leaving the reader to rediscover the work.
+
+## Before writing
+
+- Take no irreversible action to pause: no push, no pull request.
+- Pause between atomic steps, not inside one: complete or undo the step in progress and begin no new work.
+- On the run branch of a plan (`exo:build` loop), commit nothing. Write partial work of the task in progress to a hint file such as `.exo/carry/task<n>-partial.patch`, and list it under `## Progress`.
+- On a non-default branch that is not a plan run branch, commit every uncommitted edit first as one `chore: wip <topic>` commit.
+- If the tree is broken, say so in that commit's body.
+- On the default branch, leave edits uncommitted and list them under `## Progress`.
+- Preserve verbatim any artefact the user explicitly asked to survive the clear, such as a question list or checklist.
+
+## Pointers, not content
+
+- Each section names a path, command, issue number or line range, and stops there.
+- Paste no diff, file body or log; the reader can open them.
+- For an error, paste only its failing lines.
+- Quote a value only when it exists nowhere on disk, such as a number from an unlogged run.
+
+## Where it goes
+
+1. Read the location instead of guessing it: `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` prints it.
+2. A branch name holding `/` gives a nested path, so create parent directories first.
+3. Write the file whole, replacing any handoff already at that path: the state it held is what this clear discards.
+
+## What it holds
+
+Fill `assets/handoff-template.md` and keep its section order, with no chat history. The file is read by the user, so write plain words in the user's language per `../../lib/references/user-read-format.md`.
+
+The last line of the file is `Resume: <prompt>`, one sentence in the user's language telling a fresh session to read this handoff by the path `handoff.mjs path` printed and continue.
+
+In those sections:
+
+- When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Progress` unchanged.
+- Put a claim no command proved under the unproven list in `## Evidence`, not the proven one.
+- Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` for the task in progress and carry its lines into `## Evidence` as approaches the next session must not retry.
+- List each correction the user made this session under `## Evidence`, with the one-line rule or check that would have prevented it.
+- Read `## Progress` from `git status --short`, not memory.
+- List which changes are committed, then every uncommitted path in full, because a next session that cannot see the difference treats working-tree edits as saved and discards them.
+- For a session running a plan, open `## Progress` with the plan path and the number of the task in progress.
+
+## Resume
+
+Copy this paragraph into `## Resume` exactly, so the reading session inherits the rule without this skill:
+
+```text
+Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof. Compare the `Written` date and last commit with `git log -1` and `git status --short`, and name what changed since before relying on a claim.
+```
+
+## References
+
+| File | Read it when |
+|---|---|
+| `references/reconstructing-without-a-note.md` | Save-session itself starts without a note and must rebuild context before saving. |
+
+## Judgment
+
+- Confirm path, branch and commit with a command before writing them down.
+- A short true handoff outranks a full one that guesses.
+- Turn ends naming the written path, saying to run `/clear`, and quoting the `Resume:` prompt to paste after it. Nothing else written; no work continues after.

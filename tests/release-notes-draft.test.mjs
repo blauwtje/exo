@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { commitFiles, git, gitRepository, tempDir } from './harness.mjs';
 
-const SCRIPT = new URL('../skills/write-docs/scripts/release-notes-draft.mjs', import.meta.url).pathname;
+const SCRIPT = new URL('../skills/document/scripts/release-notes-draft.mjs', import.meta.url).pathname;
 
 function draft(repo, ...args) {
   return execFileSync('node', [SCRIPT, '--repo', repo, ...args], { encoding: 'utf8' }).trim();

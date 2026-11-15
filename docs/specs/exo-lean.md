@@ -3,7 +3,7 @@ Clean up exo without removing any skill or agent: shorten and sharpen the conten
 
 ## Verdict
 Verdict: go
-Objection: 8 of the 17 frozen eval cases fail with and without exo (evals/value.md on branch exo-prove), so for adhd, context-limit, edit-skills, run, watch, write-docs, spec and ship the final eval cannot catch a regression; their only guard is `npm run check`.
+Objection: 8 of the 17 frozen eval cases fail with and without exo (evals/value.md on branch exo-prove), so for adhd, context-limit, author, run, watch, document, spec and ship the final eval cannot catch a regression; their only guard is `npm run check`.
 
 ## Decisions
 1. Start fresh from main on branch exo-lean. Cherry-pick from branch exo-prove only bd4d78025 (frozen cases, evals/value.mjs) and c3c7460c0 (scaffold fix in evals/scaffold.sh, measured figures in evals/value.md). Do not take bba62be8a (the wholesale removal) or later commits. Main has not moved since exo-prove branched, so the picks apply cleanly. The exo-prove branch and worktree stay until exo-lean lands; landing removes them per .claude/landing.md. (exo decided)

@@ -40,7 +40,7 @@ test('a Finder file inside a skill folder is not generated', () => {
 
 test('a delegate prompt drops its repository-only front matter', () => {
   const text = '---\nforbidden-steps: 6-7\n---\n# Fixer prompt\n';
-  assert.equal(codexMarkdown('skills/find-cause/fixer-prompt.md', text, new Set()), '# Fixer prompt\n');
+  assert.equal(codexMarkdown('skills/diagnose/fixer-prompt.md', text, new Set()), '# Fixer prompt\n');
 });
 
 test('no generated agent file sets a sandbox mode', () => {

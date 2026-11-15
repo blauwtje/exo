@@ -46,8 +46,8 @@ test('after spec a brief with open points prints the open points, not the start 
   assert.doesNotMatch(out, /Start the build/);
 });
 
-test('after find-cause the question is short and plain', () => {
-  const out = nextStage('--after', 'find-cause', '--artifact', 'unused');
+test('after diagnose the question is short and plain', () => {
+  const out = nextStage('--after', 'diagnose', '--artifact', 'unused');
   assert.match(out, /^\*\*Build the fix\?\*\*$/m);
   assert.match(out, /\(A\) Build\*\*: fix it now/);
 });

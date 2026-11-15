@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { JUDGE_VOTES, aggregate, defaultJudge, gradeRun, linesForCase, parseCriteria, parseMargins } from '../skills/edit-skills/scripts/pressure-grade.mjs';
-import { regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
+import { JUDGE_VOTES, aggregate, defaultJudge, gradeRun, linesForCase, parseCriteria, parseMargins } from '../skills/author/scripts/pressure-grade.mjs';
+import { regradeFolder } from '../skills/author/scripts/pressure.mjs';
 import { tempDir } from './harness.mjs';
 
 const CRITERIA = `# x: criteria
@@ -177,7 +177,7 @@ test('--check prints a LINT line for a three-clause judge line and still exits 0
     '- Cause and mechanism and exclusion. `grade: answer =~ /x/`',
     ''
   ].join('\n'));
-  const out = spawnSync('node', [path.resolve('skills/edit-skills/scripts/pressure-grade.mjs'), '--check', file], { encoding: 'utf8' });
+  const out = spawnSync('node', [path.resolve('skills/author/scripts/pressure-grade.mjs'), '--check', file], { encoding: 'utf8' });
   assert.equal(out.status, 0);
   const lint = out.stdout.split('\n').filter((line) => line.startsWith('LINT'));
   assert.equal(lint.length, 1);
@@ -192,7 +192,7 @@ test('gradeRun labels the lines with case, arm and run', () => {
 
 test('--check parses a criteria file and exits 1 on an untagged bullet', () => {
   const dir = tempDir('pressure-check-');
-  const script = path.resolve('skills/edit-skills/scripts/pressure-grade.mjs');
+  const script = path.resolve('skills/author/scripts/pressure-grade.mjs');
   const good = path.join(dir, 'good.md');
   const bad = path.join(dir, 'bad.md');
   fs.writeFileSync(good, CRITERIA);
@@ -207,7 +207,7 @@ test('--check parses a criteria file and exits 1 on an untagged bullet', () => {
 
 test('--check takes several criteria files, names each and exits 1 if any fails', () => {
   const dir = tempDir('pressure-check-');
-  const script = path.resolve('skills/edit-skills/scripts/pressure-grade.mjs');
+  const script = path.resolve('skills/author/scripts/pressure-grade.mjs');
   const good = path.join(dir, 'good.md');
   const bad = path.join(dir, 'bad.md');
   fs.writeFileSync(good, CRITERIA);
@@ -222,7 +222,7 @@ test('--check takes several criteria files, names each and exits 1 if any fails'
 
 test('--check reports a missing file and a folder as a failed file, not a crash', () => {
   const dir = tempDir('pressure-check-');
-  const script = path.resolve('skills/edit-skills/scripts/pressure-grade.mjs');
+  const script = path.resolve('skills/author/scripts/pressure-grade.mjs');
   const missing = spawnSync('node', [script, '--check', path.join(dir, 'none.md')], { encoding: 'utf8' });
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /none\.md: ENOENT/);

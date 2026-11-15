@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome } from '../lib/default-options-home.mjs';
-import { pressureHome, withHome as withPressureHome } from '../skills/edit-skills/scripts/pressure-home.mjs';
+import { pressureHome, withHome as withPressureHome } from '../skills/author/scripts/pressure-home.mjs';
 import { tempDir } from './harness.mjs';
 
 function withHome(home, body) {

@@ -10,7 +10,7 @@ Rule: tasks in one phase share no file and need no earlier result; at most 4 tas
 
 ## Phase 3
 - Task 3 (hook rules repoint): `hooks/dispatch-rules.md`, `hooks/session-rules.md`, `tests/hooks.test.mjs`, `tests/agent-effort.test.mjs`, `tests/session-start-codex.test.mjs`, `tests/session-start-source.test.mjs`
-- Task 4 (skill references repoint): `skills/spec/references/*`, `skills/build/references/no-spec.md`, `skills/find-cause/investigator-prompt.md`, `tests/brief-*.test.mjs`, `tests/improve-round.test.mjs`, `tests/improve-setup.test.mjs`, `tests/spec-gate-text.test.mjs`
+- Task 4 (skill references repoint): `skills/spec/references/*`, `skills/build/references/no-spec.md`, `skills/diagnose/investigator-prompt.md`, `tests/brief-*.test.mjs`, `tests/improve-round.test.mjs`, `tests/improve-setup.test.mjs`, `tests/spec-gate-text.test.mjs`
 
 ## Phase 4
 - Task 5 (fold judges and fixers): `agents/review-branch.md`, `agents/build-task.md`, `lib/model-kinds.json`, `skills/gate/*`, `tests/agents.test.mjs`
@@ -28,13 +28,13 @@ Rule: tasks in one phase share no file and need no earlier result; at most 4 tas
 - Task 9 (gate and ship modes): `skills/gate/*`, `skills/review/*`, `skills/ship/*`, `skills/file-issues/*`, `verify/reference-owner-rows.txt`
 
 ## Phase 9
-- Task 10 (edit-skills and start modes): `skills/edit-skills/*`, `skills/prompt/*`, `skills/remember/*`, `skills/start/*`, `skills/configure/*`, `skills/save-session/*`, `skills/route-skills/*`, `hooks/session-end.mjs`, `hooks/session-routing.md`, `verify/reference-owner-rows.txt`
+- Task 10 (author and start modes): `skills/author/*`, `skills/prompt/*`, `skills/remember/*`, `skills/start/*`, `skills/configure/*`, `skills/save/*`, `skills/route-skills/*`, `hooks/session-end.mjs`, `hooks/session-routing.md`, `verify/reference-owner-rows.txt`
 
 ## Phase 10
-- Task 11 (launcher frontmatter): `skills/{build,gate,find-cause,ship,write-docs,edit-skills,watch}/SKILL.md`, `skills/build/references/tail.md`, `skills/build/references/run-loop.md`, `agents/orchestrator.md`, `tests/skill-text.test.mjs`, `verify/checks/reference-tables.mjs`
+- Task 11 (launcher frontmatter): `skills/{build,gate,diagnose,ship,document,author,watch}/SKILL.md`, `skills/build/references/tail.md`, `skills/build/references/run-loop.md`, `agents/orchestrator.md`, `tests/skill-text.test.mjs`, `verify/checks/reference-tables.mjs`
 
 ## Phase 11
 - Task 12 (spec dispatch and orchestrator budgets): `skills/spec/SKILL.md`, `agents/orchestrator.md`, `hooks/dispatch-rules.md`, `verify/budgets.mjs`, `lib/model-kinds.json`, `tests/spec-verdict.test.mjs`
 
 ## Phase 12
-- Task 13 (docs): `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/skills/spec.md`, `docs/skills/build.md`, `docs/skills/start.md`, `docs/skills/gate.md`, `docs/skills/ship.md`, `docs/skills/edit-skills.md`
+- Task 13 (docs): `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/skills/spec.md`, `docs/skills/build.md`, `docs/skills/start.md`, `docs/skills/gate.md`, `docs/skills/ship.md`, `docs/skills/author.md`

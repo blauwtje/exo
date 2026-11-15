@@ -11,14 +11,14 @@ const SKILL = '# Loop\n\n1. **Reproduce.**\n2. **Isolate.**\n3. **Fix.**\n4. **R
 
 function run(promptText) {
   const root = tempDir('step-references-');
-  const folder = path.join(root, 'skills', 'find-cause');
+  const folder = path.join(root, 'skills', 'diagnose');
   fs.mkdirSync(folder, { recursive: true });
   fs.writeFileSync(path.join(folder, 'SKILL.md'), SKILL);
   fs.writeFileSync(path.join(folder, 'fixer-prompt.md'), promptText);
   return checkOutcome(checkStepReferences, createRepository(root));
 }
 
-const load = 'Load the `exo:find-cause` skill and run only';
+const load = 'Load the `exo:diagnose` skill and run only';
 
 test('references that exist and avoid the forbidden list pass', () => {
   const result = run(`---\nforbidden-steps: 4\n---\n${load} Steps 2 to 3 and Step 1.\n`);
@@ -28,13 +28,13 @@ test('references that exist and avoid the forbidden list pass', () => {
 test('a step the loaded skill lacks fails', () => {
   const result = run(`${load} Step 9.\n`);
   assert.equal(result.ok, false);
-  assert.match(result.detail, /fixer-prompt\.md: 'Step 9' names step 9 that exo:find-cause lacks/);
+  assert.match(result.detail, /fixer-prompt\.md: 'Step 9' names step 9 that exo:diagnose lacks/);
 });
 
 test('a range end the loaded skill lacks fails', () => {
   const result = run(`${load} Steps 2-6.\n`);
   assert.equal(result.ok, false);
-  assert.match(result.detail, /names step 5, 6 that exo:find-cause lacks/);
+  assert.match(result.detail, /names step 5, 6 that exo:diagnose lacks/);
 });
 
 test('a step in the forbidden-steps front matter fails, inside a range too', () => {

@@ -68,7 +68,7 @@ Already have exo? Run the install command again; it updates the copy in `~/.exo`
 
 ## Use
 
-Describe what you want and Claude starts the skill that fits. The routing rule: Unclear: spec. Clear: build. Broken: find-cause. Leaving the machine: ship. About exo: save-session or configure. A feature goes through four stages, and each asks which runs next.
+Describe what you want and Claude starts the skill that fits. The routing rule: Unclear: spec. Clear: build. Broken: diagnose. Leaving the machine: ship. About exo: save or configure. A feature goes through four stages, and each asks which runs next.
 
 | Skill | What it does | Modes |
 |---|---|---|
@@ -76,12 +76,12 @@ Describe what you want and Claude starts the skill that fits. The routing rule: 
 | `build` | Builds a plan or a decided change with subagents. | run-plan, refactor, improve, design-ui |
 | `gate` | Checks the branch before a pull request. | review |
 | `ship` | Pushes, opens or merges the pull request. | |
-| `find-cause` | Finds why something broke before any code changes. | |
-| `edit-skills` | Edits exo's own skills and prompts. | prompt |
-| `save-session` | Saves unfinished work for a fresh session. | |
+| `diagnose` | Finds why something broke before any code changes. | |
+| `author` | Edits exo's own skills and prompts. | prompt |
+| `save` | Saves unfinished work for a fresh session. | |
 | `configure` | Shows or changes exo's settings. | |
 | `watch` | Reads videos from YouTube, TikTok, Instagram, Facebook, X and other yt-dlp sites, through their captions or a local transcript, and answers, summarises or extracts from them. | |
-| `write-docs` | Writes READMEs, pull requests and commit messages. | |
+| `document` | Writes READMEs, pull requests and commit messages. | |
 
 The agents run behind the skills; you do not call them.
 

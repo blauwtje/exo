@@ -6,10 +6,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome } from '../lib/default-options-home.mjs';
 import { parseFlags } from '../lib/script-flags.mjs';
-import { SPEC, USAGE, cellsFor, gradeReport, optionsFrom, regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
-import { runOneCell } from '../skills/edit-skills/scripts/pressure-cell.mjs';
-import { dryRunReport, recordRun, recordedRuns } from '../skills/edit-skills/scripts/pressure-records.mjs';
-import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
+import { SPEC, USAGE, cellsFor, gradeReport, optionsFrom, regradeFolder } from '../skills/author/scripts/pressure.mjs';
+import { runOneCell } from '../skills/author/scripts/pressure-cell.mjs';
+import { dryRunReport, recordRun, recordedRuns } from '../skills/author/scripts/pressure-records.mjs';
+import { makeRunFolder } from '../skills/author/scripts/pressure-run-folder.mjs';
 import { restoreEnv, tempDir } from './harness.mjs';
 
 function readFlags(argv) {

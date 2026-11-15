@@ -144,7 +144,7 @@ test('ignores files outside skills, agents, hooks and lib', () => {
   assert.equal(outcome.passed, true, outcome.detail);
 });
 
-const ON_REQUEST_SKILLS = ['save-session', 'write-docs', 'edit-skills'];
+const ON_REQUEST_SKILLS = ['save', 'document', 'author'];
 const USER_ONLY_SKILLS = ['configure'];
 const ON_REQUEST_DESCRIPTION_CAP = 160;
 

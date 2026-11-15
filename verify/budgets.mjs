@@ -1,6 +1,6 @@
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'save-session', 'build', 'gate', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'watch'
+  'diagnose', 'save', 'build', 'gate', 'configure', 'spec', 'ship', 'author', 'document', 'watch'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -28,7 +28,7 @@ export const SESSION_START_BYTES_LOCK = { bytes: 2729, measured: '2026-11-13' };
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { ceiling: 2500 };
 export const STAGE_BODY_TOKENS = {
-  'spec': 935, 'build': 1360, 'gate': 750, 'find-cause': 746, 'ship': 750,
+  'spec': 935, 'build': 1360, 'gate': 750, 'diagnose': 746, 'ship': 750,
 };
 export const AGENT_BODY_TOKENS = { ceiling: 750 };
 

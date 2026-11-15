@@ -2,7 +2,7 @@
 
 Measure the experienced path before any hypothesis or optimization. The enemy is a plausible micro-optimization applied without a baseline. The overcorrection is collecting numbers without a decision rule.
 
-For wrong output or a timeout, use the main `find-cause` loop, unless speed is the only symptom.
+For wrong output or a timeout, use the main `diagnose` loop, unless speed is the only symptom.
 
 ## The loop
 

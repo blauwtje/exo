@@ -20,9 +20,9 @@
 8656 skills/build/scripts/start-run.mjs
 10760 skills/configure/scripts/settings.mjs
 13251 skills/build/scripts/look.mjs
-12698 skills/edit-skills/scripts/pressure-grade.mjs
+12698 skills/author/scripts/pressure-grade.mjs
 9031 skills/ship/scripts/repo-fields.mjs
-9987 skills/find-cause/scripts/bisect.mjs
+9987 skills/diagnose/scripts/bisect.mjs
 19457 skills/build/scripts/round.mjs
 12111 skills/build/scripts/setup.mjs
 8567 skills/ship/scripts/pr-body.mjs
@@ -32,4 +32,4 @@
 9864 skills/spec/scripts/plan-check-frame.mjs
 8870 skills/spec/scripts/plan-template.mjs
 8310 verify/checks/name-clash.mjs
-8466 skills/edit-skills/scripts/judge-calibration.mjs
+8466 skills/author/scripts/judge-calibration.mjs

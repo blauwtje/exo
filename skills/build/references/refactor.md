@@ -8,7 +8,7 @@ Change structure with behavior pinned; leave less code than you found. The enemy
 - Pull to keep the old signature, accept both shapes, or leave a re-export "for compatibility".
 - Not for a behavior change: `build` owns it; mixed request → refactor first, then the change.
 - Not for persisted data, a stored format or a consumer outside this repository: `build` keeps those compatible on purpose via the data-migration reference.
-- Not for a failure with unproven cause: `find-cause` owns it.
+- Not for a failure with unproven cause: `diagnose` owns it.
 - A lean rewrite of a whole repo or folder, hundreds of files: the repo-wide run below.
 
 ## The loop

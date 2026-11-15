@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { tempDir } from './harness.mjs';
 
-const SCRIPT = path.resolve(import.meta.dirname, '../skills/edit-skills/scripts/rename-skill.mjs');
+const SCRIPT = path.resolve(import.meta.dirname, '../skills/author/scripts/rename-skill.mjs');
 
 function write(root, file, text) {
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

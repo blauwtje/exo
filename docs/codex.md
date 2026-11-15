@@ -55,6 +55,6 @@ Codex has no equivalent for some Claude Code features, so exo drops or approxima
 | An agent's tool allowlist | Becomes a `read-only` or `workspace-write` sandbox. |
 | `maxTurns` | No field. |
 | Skill `model` and `effort` | Skills run at the session's model. |
-| `save-session` | Explicit only, as `$save-session`. |
+| `save` | Explicit only, as `$save`. |
 
 How the Codex files are generated and installed is in [CONTRIBUTING.md](../CONTRIBUTING.md#codex).

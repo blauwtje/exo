@@ -6,7 +6,7 @@ import test from 'node:test';
 import { tempDir } from './harness.mjs';
 import { CALIBRATION_MIN_LABELS, calibrationStatus, parseJsonl, statusLine } from '../lib/judge-agreement.mjs';
 
-const SCRIPT = path.join(import.meta.dirname, '..', 'skills', 'edit-skills', 'scripts', 'judge-calibration.mjs');
+const SCRIPT = path.join(import.meta.dirname, '..', 'skills', 'author', 'scripts', 'judge-calibration.mjs');
 const writeJsonl = (file, rows) => fs.writeFileSync(file, `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`);
 const readJsonl = (file) => fs.readFileSync(file, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
 const runCli = (...args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' });

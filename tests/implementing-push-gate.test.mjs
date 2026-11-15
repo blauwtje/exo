@@ -89,11 +89,11 @@ test('the no-spec route settles the workspace and ends on ship', () => {
   assert.ok(NO_SPEC.includes('then end on `ship`'), 'no-spec step 8 names the finish');
 });
 
-test('find-cause settles the workspace and ends on ship', () => {
-  const text = read('find-cause/SKILL.md');
-  assert.ok(text.includes('`../build/references/workspace.md`'), 'find-cause names the workspace step');
-  assert.ok(text.includes('ends on `ship`') || text.includes('end on `ship`') || text.includes('else on `ship`'), 'find-cause names the finish');
-  assert.ok(!text.includes('git push'), 'find-cause runs no push of its own');
+test('diagnose settles the workspace and ends on ship', () => {
+  const text = read('diagnose/SKILL.md');
+  assert.ok(text.includes('`../build/references/workspace.md`'), 'diagnose names the workspace step');
+  assert.ok(text.includes('ends on `ship`') || text.includes('end on `ship`') || text.includes('else on `ship`'), 'diagnose names the finish');
+  assert.ok(!text.includes('git push'), 'diagnose runs no push of its own');
 });
 
 test('the tail points to the REPORT file for Proof lines and manual checks, not copying them', () => {

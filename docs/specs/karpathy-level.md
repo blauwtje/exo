@@ -23,12 +23,12 @@ Shared cause: each stage passes work through more agent turns and returned text 
    (exo decided)
 10. Not adopted: 2/12 skill ablation (`claude plugin eval --ablation` works per plugin only, needs new tooling; left open), 1/18 and 2/24 (exo already equal), 11 single-source ideas including 2/13. (exo decided)
 11. Idea 2/13 against `exo:build improve`: asked, no answer; default `exo:build improve` stays (one source, Anthropic and Warp practise the opposite). No task changes improve. (exo decided)
-12. Karpathy style is one short section in `skills/edit-skills/references/instruction-style.md`, replacing overlapping text, no new page or check: first use in at most 4 commands, 0 runtime dependencies, entry skill at most 120 lines, skill file at most 10 KB, source file at most 700 lines, one done command per task, at most 5 prohibition bullets per instruction file, delete before adding. (exo decided)
+12. Karpathy style is one short section in `skills/author/references/instruction-style.md`, replacing overlapping text, no new page or check: first use in at most 4 commands, 0 runtime dependencies, entry skill at most 120 lines, skill file at most 10 KB, source file at most 700 lines, one done command per task, at most 5 prohibition bullets per instruction file, delete before adding. (exo decided)
 13. Delete `lib/statistics.mjs`, `verify/prose-style.mjs`, `verify/checks/reference-chain.mjs`, and `skills/build/scripts/run-tail-parse.mjs` with its test and import; `verify/user-read.mjs` stays. (exo decided)
 14. Each changed skill, agent, hook or check gets its `docs/failures.md` line first: gate review 278k tokens median with 5 of 8 runs leading to no fix; re-review rounds 2 and 4 of watch-tiktok-speed at 0.4 to 0.7M tokens with no code commit; subagent returns 15% of the context at first compaction. (exo decided)
 
 ## Non-goals
-- Prohibition counts over 5 in `output-styles/adhd.md`, `skills/watch/SKILL.md`, `skills/save-session/SKILL.md`, `agents/orchestrator.md`; test files over 700 lines; the per-task `Proof:` half of `verify.mjs`; the gate fork's model; the 36 of 40 checks that never fired in 55 logs; stale `CHANGELOG.md` lines (the lead fixes them). Reported only.
+- Prohibition counts over 5 in `output-styles/adhd.md`, `skills/watch/SKILL.md`, `skills/save/SKILL.md`, `agents/orchestrator.md`; test files over 700 lines; the per-task `Proof:` half of `verify.mjs`; the gate fork's model; the 36 of 40 checks that never fired in 55 logs; stale `CHANGELOG.md` lines (the lead fixes them). Reported only.
 - Renaming `review-branch` to `claims-judge` (file, `lib/model-kinds.json`, callers, tests, docs) is a reported follow-up.
 - Skill ablation (2/12) and any change to `exo:build improve`.
 
@@ -77,6 +77,6 @@ Depends on: 2 | Files: `agents/research-worker.md`, `verify/budgets.mjs`, `lib/m
 ### Task 4: docs(rules): adopt three idea edits from the ideas list
 Depends on: 3, 6 | Files: `.claude/CLAUDE.md`, `verify/model-kinds.mjs`, `tests/model-kinds.test.mjs`, `tests/agents.test.mjs`, `tests/fixer-mark.test.mjs`, `tests/worker-waits.test.mjs`, `lib/agent-modes/task-modes.md`, `docs/scorecard.md`, `CONTRIBUTING.md` | Data: three edited rule lines and two scorecard columns | Evidence: none (edits come from ideas.md rows 1/10, 2/25, 1/19, 2/5) | Proof: grep -q 'model' docs/scorecard.md && grep -q 'input' lib/agent-modes/task-modes.md
 ### Task 5: docs(style): add the Karpathy style section to instruction-style
-Depends on: none | Files: `skills/edit-skills/references/instruction-style.md` | Data: one section of eight measurable traits | Evidence: none (traits come from karpathy.md table (c)) | Proof: grep -c 'at most 120 lines' skills/edit-skills/references/instruction-style.md
+Depends on: none | Files: `skills/author/references/instruction-style.md` | Data: one section of eight measurable traits | Evidence: none (traits come from karpathy.md table (c)) | Proof: grep -c 'at most 120 lines' skills/author/references/instruction-style.md
 ### Task 6: chore(repo): delete files nothing reaches
 Depends on: none | Files: `lib/statistics.mjs`, `verify/prose-style.mjs`, `verify/checks/reference-chain.mjs`, `skills/build/scripts/run-tail-parse.mjs`, `tests/fixer-mark.test.mjs` | Data: four removed files and one test import | Risk: dependency | Proof: node --test tests/fixer-mark.test.mjs

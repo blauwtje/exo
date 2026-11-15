@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { contrastArms, parseContrastEnv, parseContrastStyle } from '../skills/edit-skills/scripts/pressure-contrast.mjs';
-import { gradeReport } from '../skills/edit-skills/scripts/pressure.mjs';
-import { readPressureStream } from '../skills/edit-skills/scripts/pressure-stream.mjs';
+import { contrastArms, parseContrastEnv, parseContrastStyle } from '../skills/author/scripts/pressure-contrast.mjs';
+import { gradeReport } from '../skills/author/scripts/pressure.mjs';
+import { readPressureStream } from '../skills/author/scripts/pressure-stream.mjs';
 import { tempDir } from './harness.mjs';
 
 const usage = ({ input, output, read, created }) => ({

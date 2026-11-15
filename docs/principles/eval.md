@@ -14,7 +14,7 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Change one thing per round, scored by one number the edited files cannot change; keep only a gain that clears the run noise, and at equal score or fewer net lines keep simpler code.** [6][7][10][11] exo: `skills/build/scripts/round.mjs` `not-one-commit`, `judgeKeep`
 - **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: `tests/benchmark-value.test.mjs`
 - **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/test-design.md`
-- **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: `skills/edit-skills/references/pressure-judge.md`
+- **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: `skills/author/references/pressure-judge.md`
 - **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: `lib/judge-agreement.mjs`
 - **Hold out tasks the change was not tuned on.** [5] exo: `lib/holdout.mjs`
 - **Run free regression evals on every change.** [5] exo: `evals/`

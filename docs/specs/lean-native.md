@@ -90,7 +90,7 @@ Objection: part D can remove a part that catches something Claude Code misses, s
 | session hooks/session-routing.md:2 | a skill takes its part only | on doubt | keep, removal needs the paid routing benchmark |
 | session hooks/session-routing.md:3 | when no skill applies | no; tests/routing-check.test.mjs reads it | keep |
 | session hooks/session-routing.md:4 | known cause, one plain attempt | no; tests/routing-check.test.mjs reads it | keep |
-| session hooks/session-routing.md:5 | unknown cause goes to find-cause | no; tests/routing-check.test.mjs reads it | keep |
+| session hooks/session-routing.md:5 | unknown cause goes to diagnose | no; tests/routing-check.test.mjs reads it | keep |
 | session hooks/session-routing.md:6 | CLAUDE.md outranks a skill | yes, CLAUDE.md is loaded as instructions, https://code.claude.com/docs/en/memory | keep, removal needs the paid routing benchmark |
 | session hooks/session-rules.md:1 | prove a fix red first | no; last copy of the goal-driven rule, the land check only warns after task 6 | keep |
 | session hooks/session-rules.md:2 to 5 | variants, fix all causes, count warnings, oracle on every row | quality advice, no delete, spend, network or security | drop (task 14) |
@@ -108,9 +108,9 @@ Objection: part D can remove a part that catches something Claude Code misses, s
 | session settings and pointers line (skills/configure/scripts/settings.mjs) | effective settings and state pointers | no | keep, `env` leaves it in task 12 |
 | brief checks | validate worker briefs | no | warn only (task 8) |
 | agents in agents/ | dispatch definitions | subagents are the mechanism, https://code.claude.com/docs/en/sub-agents | keep |
-| handoff stub and save-session | resume notes | /compact and auto memory differ | keep |
+| handoff stub and save | resume notes | /compact and auto memory differ | keep |
 | loop budget and run outcomes | bound plan-loop rounds | no | keep |
-| spec, build, gate, ship, watch, find-cause, write-docs, edit-skills, configure scripts | skill workflows | no | keep |
+| spec, build, gate, ship, watch, diagnose, document, author, configure scripts | skill workflows | no | keep |
 | hooks run-no-wait, run-stall-guard, run-watch | guard a run session | no | keep |
 | lib helpers and plugin manifests | shared code | no | keep |
 
