@@ -26,7 +26,7 @@ Inside Claude Code, run these, then restart it:
 /plugin install exo@blauwtje
 ```
 
-To check, run `/exo:configure` in a new session. If it lists exo's settings, exo is loaded.
+To check, type `/exo:` in a new session. If it lists exo's skills, exo is loaded.
 
 <details>
 <summary>Update or uninstall</summary>
@@ -50,7 +50,7 @@ Say what you want in your own words and Claude starts the skill that fits. A typ
 | a video link and a question | `watch` answers from the captions or a transcript. |
 | "write a README for this" | `document` writes prose that is read later. |
 
-Two skills run only when typed: `/exo:configure` shows or changes a setting, and `/exo:author` edits exo's own skills and agents.
+One skill runs only when typed: `/exo:author` edits exo's own skills and agents.
 
 The agents run behind the skills; you do not call them.
 

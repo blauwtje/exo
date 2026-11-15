@@ -35,7 +35,7 @@ Load the `author` skill before any skill or delegate-prompt edit; it holds the s
 
 A skill whose work leaves the machine (a push, pull request, merge or issue) runs only on the authorization its body names: the user's pick of a finish route or a plain request. The one exception is `ship` under `ship=ask`, which pushes a non-default branch to origin without asking; merge, default-branch push, pull request and issue still ask. It leaves every branch in place and cuts no release.
 
-`configure` and `author` carry `disable-model-invocation: true`: `configure` changes settings, `author` holds rules that fit only the exo repository, and user-only also removes a description from the fixed context. Every other skill stays model-invocable, and its description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
+`author` carries `disable-model-invocation: true`: it holds rules that fit only the exo repository, and user-only also removes a description from the fixed context. Every other skill stays model-invocable, and its description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
 
 `ABOUT.md` says what exo is and lists exo's domain words with the synonym each replaces. Skill bodies, replies and commits use the left column.
 
@@ -45,7 +45,7 @@ A skill body stays under 500 lines, because a body is paid for on every run; bul
 
 ## Adding a setting
 
-A new setting is one entry in `skills/configure/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`.
+A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 
 `.gitignore` un-ignores `docs/principles/`, `docs/skills/` and `docs/settings.md`, and `docs/specs/` is tracked too.
 
@@ -63,7 +63,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251. `CLAUDE_CODE_EFFORT_LEVEL` overrides an agent's effort.
 - A subagent takes the model and effort in its agent file's frontmatter: `builder` runs `sonnet` at medium effort, and `build` passes `model: opus` and high effort to the second attempt of a failed task, because escalating after a failure costs less than running every task at high effort.
-- `spec`, `build`, `save` and `configure` pin no model and run on the session's model. `diagnose`, `ship` and `author` pin `opus` at medium effort, and `document` and `watch` pin `sonnet` at medium effort. A pinned model overrides the session's model and rebuilds the prompt cache mid-session, so set `model` or `effort` in a skill only where its work always needs that tier.
+- `spec`, `build` and `save` pin no model and run on the session's model. `diagnose`, `ship` and `author` pin `opus` at medium effort, and `document` and `watch` pin `sonnet` at medium effort. A pinned model overrides the session's model and rebuilds the prompt cache mid-session, so set `model` or `effort` in a skill only where its work always needs that tier.
 
 ## Verifying in one round
 

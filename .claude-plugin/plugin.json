@@ -13,14 +13,14 @@
     "specs": {
       "type": "string",
       "title": "Where spec stores specs",
-      "description": "docs: files under docs/specs. issues: GitHub issues. both: a file plus a linked issue. Not sure? Keep docs. A project overrides this in .claude/exo.json.",
+      "description": "docs: files under docs/specs. issues: GitHub issues. both: a file plus a linked issue. Not sure? Keep docs.",
       "options": ["docs", "issues", "both"],
       "default": "docs"
     },
     "ship": {
       "type": "string",
       "title": "How ship finishes a run",
-      "description": "ask: ship puts the question. pr-merge: open a pull request and merge it once checks pass. open-pr: open a pull request and stop. push: push the branch. local: keep the commits on this machine. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
+      "description": "ask: ship puts the question. pr-merge: open a pull request and merge it once checks pass. open-pr: open a pull request and stop. push: push the branch. local: keep the commits on this machine. Not sure? Keep ask.",
       "options": ["ask", "pr-merge", "open-pr", "push", "local"],
       "default": "ask"
     }

@@ -11,8 +11,6 @@ const store = pathToFileURL(path.resolve(import.meta.dirname, '../lib/settings-s
 
 test('the preload keeps the developer settings out of a settings read', () => {
   const project = tempDir('clean-run-env-settings-');
-  fs.mkdirSync(path.join(project, '.claude'));
-  fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), JSON.stringify({ specs: 'issues' }));
   const env = { ...process.env, CLAUDE_PLUGIN_OPTION_SPECS: 'issues' };
   delete env.EXO_TEST_TMP_ROOT;
   env.CLAUDE_PROJECT_DIR = project;

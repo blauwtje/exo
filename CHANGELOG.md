@@ -223,6 +223,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
+- The `configure` skill and the `.claude/exo.json` and `.claude/exo.local.json` layers: settings are set only in `/config`, and the status line installs with one terminal command in `docs/settings.md`.
 - Unused script code: dead exports in `lib/` and the build scripts, test-only helpers, orphan fixtures, `behaviour.mjs` with the `docs/behaviour` pages, ten single-use import aliases and `plan-check.mjs`'s unread `--loop`, `--run` and `--root` flags.
 - The undocumented `Drops:` and `Evidence:` plan lines, the old `Commit:` and `Run:` plan form, the handoff and checkpoint report sources, and unused helpers.
 - The plan's Checkpoint section and `Land:` and `Commit:` lines, so `ship` asks the finish route once, at the end; the unread `parallel`, `land`, `design`, `boundary`, `literals` and `benchmarkOverride` parsers; the `route-author` eval.
