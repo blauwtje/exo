@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { checkHookCost } from '../verify/checks/hook-budgets.mjs';
+import { checkHookCost, checkHookMatchers } from '../verify/checks/hook-budgets.mjs';
 import { createRepository } from '../verify/repository.mjs';
 import { REPOSITORY_ROOT as REPOSITORY, tempDir } from './harness.mjs';
 
@@ -30,4 +30,24 @@ test('the hook cost check passes at the locks and fails one entry or one byte un
   assert.equal(verdict(at(entries, bytes)).status, 'PASS');
   assert.equal(verdict(at(entries - 1, bytes)).status, 'FAIL');
   assert.equal(verdict(at(entries, bytes - 1)).status, 'FAIL');
+});
+
+function matcherVerdict(target) {
+  const results = [];
+  checkHookMatchers({ result: (status, name, detail) => results.push({ status, name, detail }) }, target);
+  return results[0];
+}
+
+test('a tool-event group without a matcher or with a star is flagged', () => {
+  const root = tempDir('hook-matchers-');
+  fs.mkdirSync(path.join(root, 'hooks'));
+  const config = { hooks: { PreToolUse: [{ hooks: [] }, { matcher: '*', hooks: [] }, { matcher: 'Bash', hooks: [] }], Stop: [{ hooks: [] }] } };
+  fs.writeFileSync(path.join(root, 'hooks', 'hooks.json'), JSON.stringify(config));
+  const result = matcherVerdict(createRepository(root));
+  assert.equal(result.status, 'FAIL');
+  assert.match(result.detail, /^2 hooks\.json group\(s\) on PreToolUse have no matcher/);
+});
+
+test('every shipped tool-event group names its tools', () => {
+  assert.equal(matcherVerdict(repository).status, 'PASS');
 });

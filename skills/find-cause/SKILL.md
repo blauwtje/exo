@@ -18,7 +18,6 @@ d. **Report.** Read status lines and Report fields only; after compaction re-run
 
 1. **Reproduce.** Read an existing log or `.exo/` report first. As the reporter, one command reproduces it, else evidence, no fix; unclear symptom: follow `../../lib/references/question.md` `## When to ask`.
    - Send long output to `<debug-dir>/debug-repro.log` (`<debug-dir>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`); `tail -n 40`.
-   - Steps 1-5 → read `references/loop.md` first.
 2. **Instrument.**
 3. **Isolate.**
 4. **Predict, then fix.**

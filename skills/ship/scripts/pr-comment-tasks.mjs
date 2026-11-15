@@ -14,10 +14,6 @@ const TASK_DIR = path.join('.exo', 'pr-comments');
 
 const THREADS_QUERY = 'query($owner:String!,$name:String!,$pr:Int!){repository(owner:$owner,name:$name){pullRequest(number:$pr){reviewThreads(first:100){nodes{isResolved isOutdated comments(first:100){nodes{databaseId}}}}}}}';
 
-function fetchComments(pr) {
-  return ghJson(['api', `repos/{owner}/{repo}/pulls/${pr}/comments`, '--paginate', '--slurp']).flat();
-}
-
 function fetchThreadStates(pr) {
   const response = ghJson(['api', 'graphql', '-F', 'owner={owner}', '-F', 'name={repo}', '-F', `pr=${pr}`, '-f', `query=${THREADS_QUERY}`]);
   const threads = response.data?.repository?.pullRequest?.reviewThreads?.nodes ?? [];
@@ -30,16 +26,11 @@ function fetchThreadStates(pr) {
   return states;
 }
 
-function isOutdated(comment, state) {
-  if (state?.outdated) return true;
-  return typeof comment.path === 'string' && comment.line === null && Number.isInteger(comment.original_line);
-}
-
 function skipReason(comment, state) {
   if (comment.user?.type === 'Bot') return 'bot';
   if (comment.in_reply_to_id) return 'reply';
   if (state?.resolved) return 'resolved';
-  if (isOutdated(comment, state)) return 'outdated';
+  if (state?.outdated || (typeof comment.path === 'string' && comment.line === null && Number.isInteger(comment.original_line))) return 'outdated';
   if (typeof comment.path !== 'string' || !Number.isInteger(comment.line)) return 'no file and line';
   if (/\s/.test(comment.path)) return 'path with whitespace';
   return null;
@@ -111,7 +102,7 @@ function main() {
   }
   try {
     const root = path.resolve(flags.root);
-    const { tasks, skipped } = planTasks(fetchComments(flags.pr), fetchThreadStates(flags.pr), { root, pr: flags.pr });
+    const { tasks, skipped } = planTasks(ghJson(['api', `repos/{owner}/{repo}/pulls/${flags.pr}/comments`, '--paginate', '--slurp']).flat(), fetchThreadStates(flags.pr), { root, pr: flags.pr });
     fs.mkdirSync(path.join(root, TASK_DIR), { recursive: true });
     for (const task of tasks) {
       fs.writeFileSync(task.file, task.text);

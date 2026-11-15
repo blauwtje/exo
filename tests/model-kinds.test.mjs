@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INHERIT, TABLE_PATH, readKindTable } from '../lib/model-kinds.mjs';
-import { resolvedKind } from '../lib/kind-resolution.mjs';
+import { researchFields, resolvedKind } from '../lib/kind-resolution.mjs';
 import { findInheritanceGaps, findUnusedKinds } from '../verify/model-kinds.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -154,3 +154,27 @@ test('a skills entry naming an unknown kind is rejected', () => {
   assert.throws(() => readKindTable(file), /skills\/gate\/SKILL\.md: unknown kind no-such-kind/);
 });
 
+
+const researchCall = (subagent_type, prompt) => ({ tool_name: 'Agent', session_id: `s-cut-${prompt}`, tool_input: { subagent_type, prompt } });
+const piped = 'Sources: web\nRun gh api repos/o/r/readme | head -c 4000 and answer.';
+
+test('research worker brief that cuts a page with head -c warns', () => {
+  const fields = researchFields(researchCall('exo:research-worker', piped));
+  assert.equal(fields.permissionDecision, undefined);
+  assert.match(fields.additionalContext, /fetch\.mjs/);
+});
+
+test('head --bytes and cut -c warn too', () => {
+  for (const cutter of ['head --bytes 900', 'cut -c1-500']) {
+    const fields = researchFields(researchCall('exo:research-worker', `Sources: web\ngh api x | ${cutter}`));
+    assert.match(fields?.additionalContext, /fetch\.mjs/, cutter);
+  }
+});
+
+test('the same brief without the pipe is allowed', () => {
+  assert.equal(researchFields(researchCall('exo:research-worker', 'Sources: repo\nRead the readme of o/r.')), null);
+});
+
+test('a general-purpose build brief with head -c is allowed', () => {
+  assert.equal(researchFields(researchCall('general-purpose', 'Show the log with tail .exo/run.log | head -c 4000')), null);
+});

@@ -22,7 +22,6 @@ This page gives the user options to pick from before any work starts. The enemy 
 ## Replace the likely
 
 - An option with p above 0.15 → redraft once from the same pair with a mechanism of lower p, until at least 2 options sit at p at most 0.15.
-- A redraft still meets the seat, the forbidden move and the request.
 
 ## Screen each candidate
 

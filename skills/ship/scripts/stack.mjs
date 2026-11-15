@@ -140,12 +140,8 @@ function syncChild(child, base) {
   gitText('restack', ['push', 'origin', `${commit}:refs/heads/${child.headRefName}`]);
 }
 
-function containsBase(child, base) {
-  return runCli('git', ['merge-base', '--is-ancestor', `origin/${base}`, `origin/${child.headRefName}`]).ok;
-}
-
 function restackChild(child, base) {
-  if (!containsBase(child, base)) syncChild(child, base);
+  if (!runCli('git', ['merge-base', '--is-ancestor', `origin/${base}`, `origin/${child.headRefName}`]).ok) syncChild(child, base);
   if (child.baseRefName !== base) ghText('restack', ['pr', 'edit', String(child.number), '--base', base]);
   return `${child.url} restacked onto ${base}`;
 }
@@ -186,7 +182,6 @@ function main() {
   }
   try {
     for (const line of flags.restack ? restackAll() : openStack(flags)) console.log(line);
-    process.exitCode = 0;
   } catch (error) {
     if (!(error instanceof StepError)) throw error;
     console.log(`${error.subject ?? 'stack'} stopped ${error.step} ${error.message}`);

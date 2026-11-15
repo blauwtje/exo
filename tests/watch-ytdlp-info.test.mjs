@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { availableLanguages, pickCaptions } from '../skills/watch/scripts/ytdlp-info.mjs';
+import { availableLanguages, pickCaptions } from '../skills/watch/scripts/watch.mjs';
 
 const TRACK = [{ ext: 'vtt' }];
 

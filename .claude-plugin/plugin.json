@@ -44,12 +44,6 @@
       "description": "on: a short line to you when exo starts, hands work to a helper or refuses a command; it costs the model no tokens. off: no such lines. A project overrides this in .claude/exo.json.",
       "options": ["on", "off"],
       "default": "on"
-    },
-    "notify": {
-      "type": "string",
-      "title": "Remote notice url",
-      "description": "An http(s) url, such as an ntfy topic, that exo run posts a one-line notice to when a plan is done, a task is stuck or a question waits. Empty posts nothing. A public topic with no login shows plan names to anyone who knows the topic. A project overrides this in .claude/exo.json.",
-      "default": ""
     }
   }
 }

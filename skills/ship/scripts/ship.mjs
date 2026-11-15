@@ -72,10 +72,6 @@ function inWorktree() {
   return path.resolve(gitDir.stdout.trim()) !== path.resolve(commonDir.stdout.trim());
 }
 
-function ghAuthOk() {
-  return runCli('gh', ['auth', 'status']).ok;
-}
-
 const CONTEXT = 'Your new commits are only on this computer.';
 const MENU_FULL = [
   '**Where should the commits go?**',
@@ -136,7 +132,7 @@ function printRouteMenu() {
     return;
   }
   const onDefault = currentBranch() === base && !inWorktree();
-  const ghOk = ghAuthOk();
+  const ghOk = runCli('gh', ['auth', 'status']).ok;
   if (setting !== 'ask') {
     const blocked = setting === 'push' ? null : setRouteBlocked(onDefault, ghOk);
     if (blocked === null) {
@@ -323,7 +319,6 @@ function main() {
 
   try {
     console.log(run(flags, branch, base));
-    process.exitCode = 0;
   } catch (error) {
     if (!(error instanceof StepError)) throw error;
     console.log(`${error.subject ?? branch} stopped ${error.step} ${error.message}`);

@@ -1,16 +1,16 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { transcribe } from './speech.mjs';
-import { parseVtt } from './cues.mjs';
+import { parseLine } from '#basics';
+import { parseVtt, parseTimedText } from './cues.mjs';
+import { extractFrames } from './decoder.mjs';
 import { writeOutputs, headOf } from './outputs.mjs';
 import { isRateLimited } from './request-gate.mjs';
-import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './ytdlp.mjs';
-import { pickCaptions, availableLanguages, chaptersOf, folderOf } from './ytdlp-info.mjs';
-import { WATCH_URL, sourceOf } from './video-url.mjs';
-import { withKeyframes } from './keyframes.mjs';
+import { ToolFailure } from './run-tool.mjs';
+import { transcribe } from './speech.mjs';
 import { readTikTok, isTikTokUrl, tiktokIdOf } from './tiktok.mjs';
-import { chaptersFromHtml } from './youtube-chapters.mjs';
-import { Unreadable, fetchPlayable, fetchWatchPage, tracksOf, defaultLanguage, pickTrack, languagesOf, readCaptions } from './youtube.mjs';
+import { WATCH_URL, sourceOf, urlOf, YOUTUBE_HOST } from './video-url.mjs';
+import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './ytdlp.mjs';
 
 function languageFailure(id, lang, available) {
   return { failure: `${id}: no captions in language '${lang}'; available: ${available.join(', ')}. Rerun with --lang <code> set to one of them.` };
@@ -139,4 +139,257 @@ async function watchOne(input, options, fetchFn) {
 
 export function watchGuarded(input, options, fetchFn) {
   return Promise.resolve().then(() => watchOne(input, options, fetchFn)).catch((error) => ({ failure: `${input}: ${error.message}` }));
+}
+
+const FEW_WORDS = 15;
+const SOURCE_FOLDER = 'video-source';
+
+async function downloadVideo(url, folder, options) {
+  fs.rmSync(folder, { recursive: true, force: true });
+  fs.mkdirSync(folder, { recursive: true });
+  const runYtDlp = options.runYtDlp ?? runYtDlpWithRuntime;
+  const args = ['-f', 'bv*/b', '-S', 'res:480', '--no-playlist', '--playlist-items', '1', '--no-warnings', '-P', folder, '-o', 'video.%(ext)s', '--', url];
+  const run = await runYtDlp(args, options.ytDlpMs);
+  const name = fs.readdirSync(folder).find((file) => file.startsWith('video.'));
+  if (name && !run.error) return path.join(folder, name);
+  throw new ToolFailure(`video download failed: ${ytDlpReason(run, options)}`);
+}
+
+async function grabFrames({ url, dir, duration }, options) {
+  const folder = path.join(dir, SOURCE_FOLDER);
+  try {
+    const video = await downloadVideo(url, folder, options);
+    return await extractFrames(video, dir, duration, options);
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+}
+
+function isQuiet(result, options) {
+  if (!result.transcript || !(result.duration > 0)) return false;
+  const inBatch = options.urls?.length > 1;
+  return result.words < (inBatch ? 1 : FEW_WORDS);
+}
+
+export async function withKeyframes(result, url, options) {
+  const quiet = isQuiet(result, options);
+  if (!quiet) return result;
+  try {
+    const frames = await grabFrames({ url, dir: result.dir, duration: result.duration }, options);
+    return { ...result, line: `${result.line} frames=${frames} (${fs.readdirSync(frames).length} files)` };
+  } catch (error) {
+    if (error instanceof ToolFailure) return result;
+    throw error;
+  }
+}
+
+const INITIAL_DATA = 'var ytInitialData = ';
+
+function titleOf(text) {
+  return text?.simpleText ?? text?.runs?.map((run) => run.text).join('') ?? '';
+}
+
+function panelMarkers(panel) {
+  const items = panel.engagementPanelSectionListRenderer?.content?.macroMarkersListRenderer?.contents ?? [];
+  return items.map((item) => item.macroMarkersListItemRenderer).filter(Boolean);
+}
+
+function firstMarkers(data) {
+  return (data?.engagementPanels ?? []).map(panelMarkers).find((markers) => markers.length > 0) ?? [];
+}
+
+function initialDataOf(html) {
+  const from = html.indexOf(INITIAL_DATA);
+  if (from < 0) return null;
+  const start = from + INITIAL_DATA.length;
+  return parseLine(html.slice(start, html.indexOf(';</script>', start)));
+}
+
+export function chaptersFromHtml(html, duration) {
+  const markers = firstMarkers(initialDataOf(html));
+  const starts = new Map();
+  for (const marker of markers) {
+    const start = marker.onTap?.watchEndpoint?.startTimeSeconds;
+    if (typeof start === 'number' && !starts.has(start)) starts.set(start, titleOf(marker.title).replace(/\s+/g, ' ').trim() || 'Chapter');
+  }
+  const ordered = [...starts].sort((a, b) => a[0] - b[0]);
+  return ordered.map(([start, title], index) => ({ start, end: ordered[index + 1]?.[0] ?? duration, title }));
+}
+
+function usableKeys(tracks) {
+  return Object.keys(tracks ?? {}).filter((key) => key !== 'live_chat' && tracks[key]?.length > 0);
+}
+
+export function availableLanguages(info) {
+  return [...new Set([info.subtitles, info.automatic_captions].flatMap(usableKeys))];
+}
+
+function trackKey(tracks, wanted, preferOriginal = false) {
+  const keys = usableKeys(tracks);
+  if (keys.length === 0) return null;
+  if (wanted) {
+    const original = keys.find((key) => key === `${wanted}-orig`);
+    return (preferOriginal ? original : undefined)
+      ?? keys.find((key) => key === wanted)
+      ?? original
+      ?? keys.find((key) => key.startsWith(`${wanted}-`))
+      ?? null;
+  }
+  return keys.find((key) => key.endsWith('-orig')) ?? keys.find((key) => key.startsWith('en')) ?? keys[0];
+}
+
+function chooseTrack(tracks, language, preferOriginal) {
+  const base = language?.split('-')[0];
+  return trackKey(tracks, language, preferOriginal)
+    ?? (base && base !== language ? trackKey(tracks, base, preferOriginal) : null)
+    ?? trackKey(tracks, null);
+}
+
+function originalAudioLanguage(info) {
+  const original = (info.formats ?? []).find((format) => format.language && /\boriginal\b/i.test(format.format_note ?? ''));
+  return original?.language ?? null;
+}
+
+export function pickCaptions(info, lang) {
+  const wanted = lang ?? originalAudioLanguage(info) ?? info.language ?? null;
+  const manual = lang ? trackKey(info.subtitles, lang) : chooseTrack(info.subtitles, wanted);
+  if (manual) return { source: 'manual', key: manual };
+  const auto = lang ? trackKey(info.automatic_captions, lang, true) : chooseTrack(info.automatic_captions, wanted, true);
+  if (auto) return { source: 'auto', key: auto };
+  return null;
+}
+
+export function chaptersOf(info) {
+  return (info.chapters ?? []).map((chapter) => ({
+    start: chapter.start_time,
+    end: chapter.end_time,
+    title: String(chapter.title ?? '').replace(/\s+/g, ' ').trim() || 'Chapter',
+  }));
+}
+
+function idSuffix(id) {
+  if (!/[A-Z]/.test(id)) return '';
+  return `-${createHash('sha1').update(id).digest('hex').slice(0, 8)}`;
+}
+
+export function folderOf(info) {
+  const name = `${info.extractor_key.toLowerCase()}-${info.id}`.replace(/[^\w-]/g, '-');
+  return `${name}${idSuffix(info.id)}`;
+}
+
+const PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false';
+const IDENTITIES = [
+  { client: { clientName: 'ANDROID', clientVersion: '20.10.38' }, agent: 'com.google.android.youtube/20.10.38 (Linux; U; Android 14)' },
+  { client: { clientName: 'IOS', clientVersion: '20.10.4', deviceModel: 'iPhone16,2' }, agent: 'com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3 like Mac OS X)' },
+];
+
+export class Unreadable extends Error {
+  constructor(message, { retryable = false, blocked = false, rateLimited = false } = {}) {
+    super(message);
+    this.retryable = retryable;
+    this.blocked = blocked;
+    this.rateLimited = rateLimited;
+  }
+}
+
+function unanswered(url) {
+  return (error) => {
+    throw new Unreadable(`${url.split('?')[0]} did not answer: ${error.message}`, { retryable: true });
+  };
+}
+
+async function request({ fetchFn, options }, url, init) {
+  const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(options.fetchMs) }).catch(unanswered(url));
+  if (response.status === 429) throw new Unreadable('YouTube answered 429, this network is rate limited', { retryable: true, blocked: true, rateLimited: true });
+  if (!response.ok) throw new Unreadable(`YouTube answered HTTP ${response.status}`, { retryable: true });
+  return response.text().catch(unanswered(url));
+}
+
+async function fetchPlayer(id, network, identity) {
+  const body = JSON.stringify({ context: { client: identity.client }, videoId: id });
+  const headers = { 'content-type': 'application/json', 'user-agent': identity.agent };
+  const text = await request(network, PLAYER_URL, { method: 'POST', headers, body });
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Unreadable(`YouTube sent no player data for video ${id}`, { retryable: true });
+  }
+}
+
+async function playableWith(id, network, identity) {
+  const player = await fetchPlayer(id, network, identity);
+  checkPlayable(player);
+  return player;
+}
+
+export async function fetchPlayable(id, fetchFn, options) {
+  try {
+    return await playableWith(id, { fetchFn, options }, IDENTITIES[0]);
+  } catch (error) {
+    if (!error.blocked) throw error;
+    return playableWith(id, { fetchFn, options }, IDENTITIES[1]);
+  }
+}
+
+function emptyWhenUnreadable(error) {
+  if (!(error instanceof Unreadable)) throw error;
+  return '';
+}
+
+export async function fetchWatchPage(id, fetchFn, options) {
+  return request({ fetchFn, options }, `${WATCH_URL}${id}`, { headers: { 'accept-language': 'en-US,en;q=0.9' } }).catch(emptyWhenUnreadable);
+}
+
+function checkPlayable(player) {
+  const { status, reason = '' } = player.playabilityStatus ?? {};
+  if (status === 'OK') return;
+  if (status === 'LOGIN_REQUIRED' && /bot/i.test(reason)) throw new Unreadable('YouTube asks this network to sign in and prove it is not a bot', { retryable: true, blocked: true });
+  const cannotPlay = `the video cannot be played (${status ?? 'no status'}${reason ? `: ${reason}` : ''})`;
+  throw new Unreadable(cannotPlay, { retryable: status === 'UNPLAYABLE' });
+}
+
+export function tracksOf(player) {
+  const listed = player.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+  return listed
+    .filter((track) => YOUTUBE_HOST.test(urlOf(track.baseUrl ?? '')?.hostname ?? ''))
+    .map((track) => ({ code: track.languageCode, auto: track.kind === 'asr', url: track.baseUrl }));
+}
+
+export function defaultLanguage(player) {
+  const renderer = player.captions?.playerCaptionsTracklistRenderer;
+  const audio = renderer?.audioTracks?.[renderer.defaultAudioTrackIndex ?? 0];
+  const spoken = renderer?.captionTracks?.find((track) => track.kind === 'asr');
+  return audio?.audioTrackId?.split('.')[0] ?? spoken?.languageCode ?? null;
+}
+
+function sameLanguage(code, wanted) {
+  return code === wanted || code.split('-')[0].toLowerCase() === wanted.split('-')[0].toLowerCase();
+}
+
+function closest(tracks, wanted) {
+  return tracks.find((track) => track.code === wanted) ?? tracks.find((track) => sameLanguage(track.code, wanted)) ?? null;
+}
+
+function bestOf(tracks, wanted) {
+  return (wanted && closest(tracks, wanted)) || tracks.find((track) => track.code.startsWith('en')) || tracks[0] || null;
+}
+
+export function pickTrack(tracks, lang, defaultCode) {
+  const manual = tracks.filter((track) => !track.auto);
+  const auto = tracks.filter((track) => track.auto);
+  if (lang) return closest(manual, lang) ?? closest(auto, lang);
+  return bestOf(manual, defaultCode) ?? bestOf(auto, defaultCode);
+}
+
+export function languagesOf(tracks) {
+  return [...new Set(tracks.map((track) => track.code))];
+}
+
+export async function readCaptions(track, fetchFn, options) {
+  if (/[?&]exp=xpe\b/.test(track.url)) throw new Unreadable('YouTube wants a proof-of-origin token for these captions', { retryable: true });
+  const xml = await request({ fetchFn, options }, track.url, {});
+  if (xml.trim() === '') throw new Unreadable('YouTube sent an empty caption file', { retryable: true });
+  const cues = parseTimedText(xml, { auto: track.auto });
+  if (cues.length === 0) throw new Unreadable('YouTube sent a caption file with no text', { retryable: true });
+  return { xml, cues };
 }

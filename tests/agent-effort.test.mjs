@@ -9,7 +9,7 @@ import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
 import { agentEffort, agentHook } from '../hooks/agent-effort.mjs';
 import { dispatchMarker, readDispatchRules } from '../hooks/dispatch-rules.mjs';
-import { agentTools } from '../lib/agent-tools.mjs';
+import { agentTools } from '../lib/brief-denials.mjs';
 import { briefLines } from '../lib/guard-rules.mjs';
 import { orchestratorWorkers } from '../lib/context-limits.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';

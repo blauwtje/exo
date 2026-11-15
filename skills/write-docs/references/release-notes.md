@@ -17,7 +17,6 @@ Goal: draft user-facing notes for a range of commits, in the repo's changelog st
    - Keep the section order and the `Upgrade:` line under each breaking entry.
    - A subject that is not a conventional commit is left out. Say so when it hides user-facing work.
 4. **Deliver.**
-   - Reply with the notes, or write them to the file the user names.
    - Name the range used in one line, so the user can rerun it with `--from`.
 
 ## Missing `## Unreleased` lines

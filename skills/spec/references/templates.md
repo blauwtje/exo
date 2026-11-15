@@ -2,7 +2,7 @@
 
 A template is a landed plan with its changing words turned into parameters, so recurring work starts from a shape that already passed the plan check.
 
-Both live in the repository under version control, beside the plans `build` already searches, so a fresh session and every teammate read the same files:
+Both live in the repository under version control, beside the plans `build` searches:
 
 - `docs/plans/templates/<name>.md`: one template per file.
 - The file named definition-of-done in `docs/plans/`, the repo done-list. Each bullet of the form `` - `<command>` `` is a command every plan must pass; other lines are for readers and feed nothing.

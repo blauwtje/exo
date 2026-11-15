@@ -4,30 +4,27 @@ Color is a system, not an accent. Build it from the direction's world: the mater
 
 ## Dominant color and a sharp accent
 
-- Dominant: one hue owns the page's identity over large areas: the chrome rail, a hero ground, big art fields. An even spread of timid hues reads as a template, while one committed hue makes the page recognisable from a thumbnail.
-- Accent: one sharp color, kept for the primary action, selection and live status. Used sparingly, it shows where to act; used everywhere, it stops meaning anything.
-  - Good: one orange Install button on a deep-blue page. Bad: orange on links, badges, icons and three buttons at once.
-- Where saturation lives: chrome and art. Reading surfaces stay calm, so content outranks chrome: a page flooded edge to edge with a saturated hue turns white panels into boxes on a poster and the chrome shouts over the posts.
+- Dominant: one hue owns the page's identity over large areas: the chrome rail, a hero ground, big art fields.
+- Accent: one sharp color, kept for the primary action, selection and live status. Bad: orange on links, badges, icons and three buttons at once.
+- Where saturation lives: chrome and art. Reading surfaces stay calm, so content outranks chrome; a saturated hue flooding the page edge to edge does not.
 - Per-item hues: items and content types each get their own tint, drawn from the same world, so variety comes from the content.
 - Status: one consistent hue per state (ready, updating, queued, error), shown as a dot or fill beside calm text.
 
 ## Tokens
 
-- Ground: three value steps (deep, mid, light), so every view shows zones when squinted at, not one muddy or pale field.
-- Ink: a tinted dark or light from the same hue family, not neutral gray, so text belongs to its ground.
-  - Good: a warm brown ink on a paper ground. Bad: `#666` gray on the same paper.
-- Small accent text: its own darker or lighter token, apart from the fill, because a fill that works as a button rarely passes as text.
+- Ground: three value steps (deep, mid, light), so every view shows zones when squinted at.
+- Ink: a tinted dark or light from the same hue family, not neutral gray (a warm brown ink on paper, not `#666` gray).
+- Small accent text: its own darker or lighter token, apart from the fill.
 - Contrast: each text and ground token pair carries its computed ratio in a CSS comment.
-- Non-text contrast: borders of inputs, icons and focus rings at 3:1 or more against their ground, so controls stay findable.
-- Body text on dark: a tinted off-white, not pure `#FFF`, which halates on a dark ground and tires the eye.
-  - Good: `color: #E9E4D8` on a deep green ground. Bad: `color: #FFFFFF` on the same ground.
+- Non-text contrast: borders of inputs, icons and focus rings at 3:1 or more against their ground.
+- Body text on dark: a tinted off-white, not pure `#FFF` (`#E9E4D8` on deep green).
 
 ## Materials and depth
 
-Flat panels on a flat ground read as a wireframe. Give surfaces the finish of the world's materials:
+Give surfaces the finish of the world's materials:
 
 - Light: one light source; layered shadows (a tight contact shadow plus a soft long one) that agree with it.
 - Gradients: gentle value shifts that model a surface (lit chrome, a glowing hero, a curved bezel), not purple-to-blue decoration.
 - Inset and edge: inner highlights, recessed wells for inputs, bevels where the material has them.
-- Large grounds: any ground over about 40% of the viewport gets a surface treatment in the world's terms (grain, halftone, weave, SVG noise, a gradient of light) at low contrast and not under body text; reading surfaces sit on it as sheets. One flat value over a large area reads as unfinished.
+- Large grounds: any ground over about 40% of the viewport gets a surface treatment in the world's terms (grain, halftone, weave, SVG noise, a gradient of light) at low contrast and not under body text; reading surfaces sit on it as sheets.
 - Shape: one radius, border and shadow rule across cards and controls, taken from the direction.

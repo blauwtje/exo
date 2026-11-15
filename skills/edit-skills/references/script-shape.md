@@ -1,6 +1,6 @@
 # Shape of a skill script
 
-A script in `scripts/` does a step the same way every time, so the model runs it instead of rewriting it.
+A script in `scripts/` does a step the same way every time.
 
 ## Interface
 

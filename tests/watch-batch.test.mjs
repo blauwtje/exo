@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import process from 'node:process';
 import { restoreEnv, tempDir } from './harness.mjs';
 import './watch-gate-env.mjs';
-import { watchBatch } from '../skills/watch/scripts/batch.mjs';
-import { readOptions } from '../skills/watch/scripts/options.mjs';
+import { watchBatch } from '../skills/watch/scripts/transcript.mjs';
+import { readOptions } from '../skills/watch/scripts/transcript.mjs';
 
 const script = path.resolve('skills/watch/scripts/transcript.mjs');
 const VTT = 'WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nHello there\n\n00:00:03.000 --> 00:00:06.000\nsecond line\n';

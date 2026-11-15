@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { contrastArms, parseContrastEnv, parseContrastStyle } from '../skills/edit-skills/scripts/pressure-contrast.mjs';
-import { gradeReport } from '../skills/edit-skills/scripts/pressure-report.mjs';
+import { gradeReport } from '../skills/edit-skills/scripts/pressure.mjs';
 import { readPressureStream } from '../skills/edit-skills/scripts/pressure-stream.mjs';
 import { tempDir } from './harness.mjs';
 

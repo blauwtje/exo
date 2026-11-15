@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createClient } from '../skills/spec/scripts/sources/reddit-bucket.mjs';
+import { createClient } from '../skills/spec/scripts/sources/reddit.mjs';
 import { createHostState } from '../skills/spec/scripts/sources/host-state.mjs';
 import { BlockedRoute } from '../skills/spec/scripts/sources/http.mjs';
 

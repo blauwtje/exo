@@ -17,7 +17,6 @@ export function moveHead(root, message, { target, expected }) {
   return moved.status === 0;
 }
 
-
 export function locked(root, action) {
   try {
     return withLandLock(root, action);

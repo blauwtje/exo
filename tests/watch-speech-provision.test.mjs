@@ -219,7 +219,7 @@ test('a missing yt-dlp is the only missing tool the speech code reports', async 
   const s = site();
   const result = await s.run({ ytDlpNeed: async () => 'yt-dlp on PATH' });
   assert.deepEqual(result, { missing: 'yt-dlp on PATH' });
-  for (const name of ['speech.mjs', 'whisper-node.mjs', 'whisper-model.mjs']) {
+  for (const name of ['speech.mjs', 'whisper-model.mjs']) {
     const source = fs.readFileSync(path.resolve('skills/watch/scripts', name), 'utf8');
     assert.doesNotMatch(source, /brew install|pipx|HINTS|missing tool/);
   }

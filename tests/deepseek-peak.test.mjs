@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { peakNotice } from '../lib/deepseek-peak.mjs';
+import { peakNotice } from '../skills/build/scripts/setup-commands.mjs';
 
 const WINDOWS = { days: [1, 2, 3, 4, 5], hoursUtc: [[1, 4], [6, 10]] };
 const at = (iso) => Date.parse(iso);

@@ -66,7 +66,6 @@ export function landChangelogTask({ root, task, land }) {
     landed = proveLine({ root, proof: task.proof.replace(/^`(.*)`$/, '$1'), report }) && land() === true;
   } catch (error) {
     process.stderr.write(`changelog-task ${task.number}: script landing failed: ${error.message}\n`);
-    landed = false;
   }
   if (!landed) restore({ file, before, report });
   return landed;

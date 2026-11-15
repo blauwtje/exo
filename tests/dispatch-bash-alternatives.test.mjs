@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { git, tempDir } from './harness.mjs';
-import { saveLongCommand } from '../lib/long-command.mjs';
+import { saveLongCommand } from '../lib/bash-cap.mjs';
 
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
 const { scriptBytes } = await import('../lib/context-limits.mjs');
@@ -97,8 +97,8 @@ test('the repository root is found by a .git entry without starting git', () => 
   assert.equal(fs.existsSync(path.join(sub, '.exo')), false);
 });
 
-test('the long-command module imports no child process', () => {
-  const source = fs.readFileSync(new URL('../lib/long-command.mjs', import.meta.url), 'utf8');
+test('the bash-cap module imports no child process', () => {
+  const source = fs.readFileSync(new URL('../lib/bash-cap.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /child_process/);
 });
 

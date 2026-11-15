@@ -1,6 +1,6 @@
 # design-ui
 
-Build the page as a real product someone could ship tomorrow, designed from the world of the people who use it. The enemy is a style picked with no link to the subject, which gives one house look across unrelated briefs. The overcorrection is a page that passes every lint line, or paints one themed motif on every surface, yet nobody would choose it. The subject's own world makes a page specific, and a critique by fresh eyes makes it good.
+Build the page as a real product someone could ship tomorrow, designed from the world of the people who use it. The enemy is a style picked with no link to the subject, which gives one house look across unrelated briefs. The overcorrection is a page that passes every lint line, or paints one themed motif on every surface, yet nobody would choose it.
 
 Plan on about 900 s at effort high.
 
@@ -16,8 +16,8 @@ Decide first whether the page is an app or a document, because the two fit the s
 A named direction wins: the request's own look, the repo's tokens, a plan's `## Visual direction` or a task's `Contract:`. Build against it and pick none. Otherwise derive the direction from the subject, in visible text before any code:
 
 1. Name the category default: the look most products in this category ship (white cards and a blue primary for a dashboard, a food photo hero on cream for a recipe site), then its opposite. The default is where the page drifts unless something specific pulls it away.
-2. List 5-7 artifacts and traditions from the audience's own life: objects they handle, places they go, crafts and print they know. A cycling club suggests race numbers, jersey stripes and route cards; a tea shop suggests tins, paper wrappers and ledger books.
-3. Run `node "${CLAUDE_SKILL_DIR}/scripts/deal.mjs"` and add its two seeds to the list. They are nudges from outside the subject; a seed with no link to the audience loses to one that has it.
+2. List 5-7 artifacts and traditions from the audience's own life: objects they handle, places they go, crafts and print they know.
+3. Run `node "${CLAUDE_SKILL_DIR}/scripts/deal.mjs"` and add its two seeds to the list. They are nudges from outside the subject.
 4. Pick the candidate that fits this audience best and is furthest from the category default.
 5. Write the contract in a few lines: thesis (what the page should feel like and why), world and materials, palette (dominant color, sharp accent), type roles (display face, text face). Add the signature object that recurs across the page and the per-item imagery idea.
 6. Add density, tight or airy, for this audience: a trading desk runs tight, a recipe journal can breathe. Airy is where pages drift; pick it on purpose.
@@ -33,11 +33,11 @@ Steer away from the exo house look (pale ground, serif display with sans body an
 
 ## Imagery
 
-Imagery is where generic pages show most, so give it real work. Each item (game, post, product, person) gets its own picture of its own subject: the lighthouse for the sea game, the loaf for the baking post, the mountain pass for the ride. A single template recolored per item reads as a placeholder.
+Imagery is where generic pages show most, so give it real work. Each item (game, post, product, person) gets its own picture of its own subject. A template recolored per item is a placeholder.
 
-- Method: an art module of its own (SVG or canvas) with a per-item motif table and hand-written path data where a shape needs it. Size it to the job; a rich module of a few hundred lines is normal.
+- Method: an art module of its own (SVG or canvas) with a per-item motif table and hand-written path data where a shape needs it.
 - Scale: art fills whole tiles, banners and cover areas edge to edge, and is the largest element of a feed post that has one.
-- Detail: grows with area. A field over about 300px square gets planes (fore, mid, back), one light direction, a texture in the world's terms and small secondary marks; a large flat shape on a flat fill reads as a placeholder.
+- Detail: grows with area. A field over about 300px square gets planes (fore, mid, back), one light direction, a texture in the world's terms and small secondary marks.
 - Subject: the world from the contract shows in the materials and the signature object; the items' own art carries their variety.
 
 ## Build
@@ -45,7 +45,7 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 - Stack: the repo's stack and tokens, or plain HTML, CSS and JS when it has none. Split CSS, art, data and script into files; above 2 files, `exo:build-task` writes them and you keep its returns.
 - Restyle: keep all content, links and working behavior; change only presentation.
 - Content: the request's facts and names as given, and specific made-up data where it gives none. Invent no proof (reviews, logos, metrics).
-- Product data: rows, logs, builds, schedules, invoices and statuses inside the product can be invented freely and generously, since they are product, not proof.
+- Product data: rows, logs, builds, schedules, invoices and statuses inside the product can be invented freely and generously.
 - Repeated items: one data array plus one render function, so content lands in the DOM before the first paint.
 - Finish: a full, working product surface, not a hero with stubs: tabs and views switch, toggles toggle, progress moves, each requested state (loading, empty, error, success) has a styled place.
 - Controls: hover, `:focus-visible`, active and disabled styles; themed `::selection`, `caret-color` and scrollbar.
@@ -54,8 +54,6 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 - Copy: passes the swap test in the slop reference.
 
 ## Check
-
-The floors catch what is broken; the critique catches what is weak.
 
 1. Floors: `node "${CLAUDE_SKILL_DIR}/scripts/look.mjs" <file-or-url> --out <dir>`, with `--app` for an app, one `--expect "<text>"` per explicit ask, and one `--state "<name>=<js>"` per state worth seeing (a second tab, an open sheet, a filled form, an error, keyboard focus). The JS runs in the page and puts it in that state, for example `document.querySelector('#tab-friends').click()`.
 2. Fix each printed line: `CONTRAST` (the ratio decides, not the eye), `CLIP`, `OVERLAP`, `FONTS`, `FIT`, `NAV`, `OVERFLOW`, `CONSOLE`, `MISSING`, `BELOW`, `STATE`; fixes over 2 files go to `exo:build-task` with the printed lines and you keep its return. A hidden view counts for an ask only when its tab or control is visible and its content is in the DOM.

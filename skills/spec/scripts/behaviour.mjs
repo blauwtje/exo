@@ -73,16 +73,12 @@ function main(argv) {
   if (stale.length > 0) process.exitCode = 1;
 }
 
-function reportUsageError(error) {
-  if (!(error instanceof UsageError)) throw error;
-  process.stderr.write(`behaviour: ${error.message}\n`);
-  process.exitCode = USAGE_EXIT;
-}
-
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    reportUsageError(error);
+    if (!(error instanceof UsageError)) throw error;
+    process.stderr.write(`behaviour: ${error.message}\n`);
+    process.exitCode = USAGE_EXIT;
   }
 }

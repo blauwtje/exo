@@ -1,6 +1,6 @@
 # Where a fix lives
 
-A fix lives in the cheapest home that holds, and prose is the last home because it costs tokens on every load.
+A fix lives in the cheapest home that holds; prose is the last home.
 
 ## Take the first home that fits
 
@@ -30,4 +30,3 @@ Read the failed run's transcript, go down this list and stop at the first line t
 ## Judgment
 
 - What the failed run showed outranks the home the writer reaches for by habit.
-- A home that admits every good approach outranks a tighter one.

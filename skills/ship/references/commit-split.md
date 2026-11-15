@@ -19,6 +19,6 @@ Goal: turn a dirty tree into ordered commits that together equal the tree, appli
 
 ## Rules
 
-- Apply resets the index first, so a hand-staged split is replaced by the plan. The working tree is never touched.
+- Apply resets the index first, so a hand-staged split is replaced by the plan; the working tree is untouched.
 - Commit hooks run as usual; a failed hook stops the split with the earlier commits kept and the rest left in the tree.
 - Apply only adds new commits on the current branch.

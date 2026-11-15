@@ -9,7 +9,6 @@ const RELATIVE_IMPORT = /(?:from|import)\s*\(?\s*'(\.[^']+\.mjs)'/g;
 
 const SELF_BOUNDED = new Map([
   ['run-session.mjs', 'ends its child tree on its own deadline and when its parent dies'],
-  ['notify.mjs', 'one best-effort post with its own abort timeout'],
 ]);
 
 function reachableText(file, root, seen = new Set()) {

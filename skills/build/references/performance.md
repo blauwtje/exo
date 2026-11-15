@@ -13,5 +13,5 @@ For wrong output or a timeout, use the main `find-cause` loop, unless speed is t
 3. **Change one mechanism.** Make the smallest edit targeting that region, and bundle no adjacent cleanup.
 4. **Repeat the measurement.** Use the same tool, input, warm or cold state and run count. Record the new median and spread.
 5. **Apply the decision rule.** Keep the change only when the median improves by more than the larger of the before and after spreads. Otherwise revert it before testing another candidate.
-6. **Stop at two reverts.** After the second reverted candidate, go to the report step, because a third guess at the same region is intuition, not measurement.
+6. **Stop at two reverts.** After the second reverted candidate, go to the report step.
 7. **Report evidence.** Give the before and after medians, both spreads, the measurement method, the input and the mechanism changed.

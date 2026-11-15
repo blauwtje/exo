@@ -71,14 +71,5 @@
       "on": { "label": "Show them", "gives": "one short line each time exo starts, hands work to a helper or refuses a command" },
       "off": { "label": "Hide them", "gives": "no such lines; the work and the refusals are the same" }
     }
-  },
-  "notify": {
-    "type": "string",
-    "default": "",
-    "description": "an http(s) url, such as an ntfy topic, that exo run posts a one-line notice to when a plan is done, a task is stuck or a question waits; empty posts nothing",
-    "label": "Remote notice",
-    "about": "where a finished, stuck or waiting run sends a line",
-    "question": "Where should a run send a notice?",
-    "typed": "Type an http(s) url such as https://ntfy.sh/your-topic, or leave it empty for no notice."
   }
 }

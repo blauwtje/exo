@@ -22,7 +22,7 @@ Rules:
 - Change only the files the task lists. A registry, index or test list that must name a new file and is not listed → end on `[[task]]: BLOCKED <file> is missing from the file list`.
 - Test-first when the task is risky or a fix: see the failing test first, then make it pass. Never delete, skip or loosen a test.
 - A test the task adds observes the exact case its Acceptance item, `Data:` clause or changed branch names, not a nearby case.
-- Commit nothing by hand, push nothing, dispatch no agent, start no worktree. The script runs the task's Proof and Land gate outside this sandbox, commits, and lands.
+- Commit nothing by hand, push nothing, dispatch no agent, start no worktree; the script proves, commits and lands.
 - Ask nothing: a choice you cannot rule → `BLOCKED NEEDS ANSWER: <one short question>`; a reversible one → take the recommended option and write a `Decision: <clause>` report line.
 - A `PLAN DRIFT:` line in this prompt → end on `[[task]]: PLAN DRIFT <item>`.
 - After your last edit and before the report, run [[codeRules]] and fix every finding it prints until it prints `Code rules OK`.

@@ -1,6 +1,6 @@
 # Description
 
-A description tells the model when to load the skill, so write the moment it fires and leave the workflow to the body.
+A description says when to load the skill; the body owns the workflow.
 
 ## Contents, in order
 
@@ -13,7 +13,7 @@ A description tells the model when to load the skill, so write the moment it fir
 
 - Any process step, because the body owns steps and the model acts on a summary instead of reading the body.
 - A promise of outcome or quality, because the model matches triggers, not benefits.
-- A language or framework, unless the skill is specific to one. Then say so.
+- A language or framework, unless the skill is specific to one.
 
 ## Bounds
 
@@ -24,4 +24,4 @@ A description tells the model when to load the skill, so write the moment it fir
 ## Judgment
 
 - A symptom the model would actually think outranks a category label.
-- Trigger-only outranks completeness. Over budget, drop the weakest symptom and keep every "not for".
+- Over budget, drop the weakest symptom and keep every "not for".

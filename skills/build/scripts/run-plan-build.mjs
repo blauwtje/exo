@@ -7,21 +7,30 @@ import { landedTasks, planTaskTrailer } from '#plan-landed';
 import { readyTasks } from '#plan-waves';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { agentMaxTurns } from './run-session-args.mjs';
-import { deniedFields } from './run-session-stream.mjs';
+import { deniedFields, parseStream } from './run-session-stream.mjs';
 import { isFileOnDisk } from './run-session-claude.mjs';
-import { shelveLeftover, untrackedPaths } from './run-worktree.mjs';
+import { shelveLeftover, untrackedPaths, GIT_LIMIT, breachOf, worktreeTree, snapshot } from './run-worktree.mjs';
 import { planPrompt } from './run-prompts.mjs';
-import { clip, numbersText, startLine, taskSubject } from './run-report.mjs';
+import { clip, numbersText, startLine, taskSubject, idleLine, landedLine, planLandedLine, planSessionLine, scriptLandedLine } from './run-report.mjs';
 import { hasPin, isDocTask } from './run-plan-provider.mjs';
 import { sessionLast } from './run-plan-preflight.mjs';
-import { noteTask, noteStep } from './run-plan-notes.mjs';
-import { noteAttempt, noteSession, replayedSession, restoreResume, takePending } from './run-plan-resume.mjs';
+import { noteTask, noteStep, journalSteps, savedSpend } from './run-plan-notes.mjs';
 import { proofNotRun, recordAttempt, settleAttempt, writeReplyReport } from './run-plan-attempts.mjs';
 import { rebaseOntoMovedBase } from './run-plan-rebase.mjs';
-import { handoffFile, handoffNote, spawnOne } from './run-plan-session.mjs';
+import { handoffFile, handoffNote, spawnOne, planHash } from './run-plan-session.mjs';
 import { autonomyStop, blockedStop, budgetStop, maxTurnsStop, shelvePartialWork, unreachableInputStop, unsafeStop } from './run-plan-stops.mjs';
-import { failedAttemptNote, landByScript, landedByChangelogScript, landInOrder, markLanded, markNow, notePlanSession, sayIdle } from './run-plan-landing.mjs';
-import { repairTask, repairedNote } from './run-plan-repair.mjs';
+import { spawnSync } from 'node:child_process';
+import { performance } from 'node:perf_hooks';
+import { ruledOutText } from '../../../lib/ruled-out.mjs';
+import { environmentMs } from '#script-flags';
+import { landChangelogTask } from './changelog-task.mjs';
+import { appendLog } from './run-session.mjs';
+import { SCRIPT, PLUGIN_ROOT } from './run-session-paths.mjs';
+import { gitLine } from '#git';
+import { CHILD_OUTPUT_LIMIT } from '#process-tree';
+import { isUnreachableInput } from '#plan-inputs';
+import { PlanError, parsePlan } from '#plan-tasks';
+import { resumePoint } from './run-state.mjs';
 
 const fixNext = (log) => `read ${log}, fix the cause, then run exo run again`;
 
@@ -112,7 +121,7 @@ async function buildTask(build, task, landedCount) {
   build.failedSessions.delete(n);
   const prompt = resume === null ? build.setup.buildPrompt(n, ctx.retryNote + handoffNote(ctx, n)) : ctx.retryNote;
   fs.rmSync(path.join(ctx.root, SCRATCH_FOLDER, `implementer-${n}.md`), { force: true });
-  if (landedByChangelogScript(ctx, task)) return landChangelogTask(ctx, n);
+  if (landedByChangelogScript(ctx, task)) return markScriptLanded(ctx, n);
   const { before, outcome, parsed } = pending !== null ? replayedSession(ctx, pending) : await spawnTask(build, { task, log, resume, prompt });
   sayIdle(ctx, startedTask);
   writeReplyReport(ctx, n, outcome.timedOut ? '' : parsed.resultText);
@@ -137,7 +146,7 @@ function startTask(ctx, task, landedCount) {
   return startedTask;
 }
 
-function landChangelogTask(ctx, n) {
+function markScriptLanded(ctx, n) {
   ctx.iteration -= 1;
   markLanded({ ctx, n, record: { byScript: true, iteration: 0, task: n, turns: 0, weightedTokens: 0, cost: 0, peakContext: 0 }, startedTask: null });
   return undefined;
@@ -237,4 +246,209 @@ function attemptLimitStop(ctx, { n, log, startedTask }, repeated) {
   const settled = settleAttempt(ctx, { wallMs: Date.now() - startedTask.wall });
   if (!settled.stop) return undefined;
   return { kind: 'capped', task: n, line: settled.line, why: `The run stopped its failed attempts: ${settled.reason}`, next: fixNext(log) };
+}
+
+function markNow() {
+  return { wall: Date.now(), mono: performance.now() };
+}
+
+function sayIdle(ctx, started) {
+  const line = idleLine(Date.now() - started.wall, performance.now() - started.mono, environmentMs('EXO_IDLE_MS', 60_000));
+  if (line !== null) ctx.say(line);
+}
+
+function markLanded({ ctx, n, record, startedTask }) {
+  const { root, say, run, plan, passes } = ctx;
+  ctx.lastLandOutput = '';
+  ctx.fingerprints.delete(n);
+  ctx.retryNote = '';
+  run.landings.set(n, { sha: gitLine(root, ['rev-parse', '--short=12', 'HEAD'], GIT_LIMIT), record });
+  passes.add(n);
+  noteStep({ kind: 'commit', task: n, sha: run.landings.get(n).sha });
+  fs.rmSync(handoffFile(ctx, n), { force: true });
+  ctx.writeTasks();
+  const sha = run.landings.get(n).sha;
+  if (record.byScript) {
+    say(scriptLandedLine({ number: n, sha }));
+  } else if (startedTask === null) {
+    ctx.planLandedCount += 1;
+    say(planLandedLine({ number: n, sha }));
+  } else {
+    const ms = Math.round(performance.now() - startedTask.mono);
+    ctx.landedStats.push({ count: 1, ms, turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost });
+    say(landedLine({ number: n, sha, ms, turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost }));
+  }
+  noteTask({ n, subject: taskSubject(plan.tasks.find((entry) => entry.number === n).title), landed: passes.size, total: plan.tasks.length });
+  for (const line of (gitLine(root, ['status', '--porcelain'], { ...GIT_LIMIT, trim: false }) ?? '').split('\n').filter(Boolean)) {
+    const file = line.slice(3);
+    if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
+  }
+}
+
+function landByScript(ctx, n) {
+  const { root, planPath, planId, plan } = ctx;
+  const log = path.join(ctx.logDir, `land-task-${n}.log`);
+  const answer = spawnSync(process.execPath, [SCRIPT.landTask, '--plan', planPath, '--task', String(n), '--root', root], {
+    cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: CHILD_OUTPUT_LIMIT, timeout: ctx.timeoutMs
+  });
+  const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
+  appendLog(log, output);
+  ctx.lastLandOutput = output;
+  ctx.lastLandTask = n;
+  const landed = answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n);
+  noteStep({ kind: 'check', task: n, passed: landed, line: landed ? '' : failingLine(output) });
+  return { landed, output, log };
+}
+
+function landedByChangelogScript(ctx, task) {
+  if (!isDocTask(task) || ctx.scriptTried.has(task.number)) return false;
+  ctx.scriptTried.add(task.number);
+  return landChangelogTask({ root: ctx.root, task, land: () => landByScript(ctx, task.number).landed });
+}
+
+export function failedAttemptNote({ root, task, last, proofEnd, log, fallback }) {
+  const lines = [
+    `The previous attempt did not land task ${task}. Its last result line: ${last}`,
+    ...(proofEnd === undefined ? [] : [`The script's proof and land output ended: ${proofEnd}`]),
+    `Its log: ${log}`,
+    ...(fallback ? [`That attempt ran on ${fallback.to} instead of ${fallback.from} because the provider was overloaded.`] : []),
+    ...[ruledOutText(root, task).trimEnd()].filter((text) => text !== '')
+  ];
+  return `\n${lines.join('\n')}`;
+}
+
+function landInOrder({ ctx, numbers, record, started }) {
+  for (const n of numbers) {
+    const attempt = landedTasks(ctx.plan.tasks, ctx.root, ctx.planId).includes(n) ? { landed: true } : landByScript(ctx, n);
+    if (attempt.landed) {
+      markLanded({ ctx, n, record, startedTask: started });
+      continue;
+    }
+    ctx.say(`task ${n} not landed by the script: ${clip(failingLine(attempt.output), 80)}`);
+    ctx.retryNote = failedAttemptNote({ root: ctx.root, task: n, last: failingLine(attempt.output), log: attempt.log, fallback: ctx.sessionFallback });
+    return;
+  }
+}
+
+function notePlanSession(ctx, record, startedPlan) {
+  if (ctx.planLandedCount === 0) return;
+  const entry = { count: ctx.planLandedCount, ms: Math.round(performance.now() - startedPlan.mono), turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost };
+  ctx.landedStats.push(entry);
+  ctx.say(planSessionLine(entry));
+}
+
+function withoutFields(line) {
+  return line.replace(/(?:Files|Proof):[^|]*/g, '');
+}
+
+function withoutAddedRed(line, changed) {
+  return /\bRed:/.test(line) ? changed : changed.replace(/\s*\|\s*Red: none \([^|]*\)/, '');
+}
+
+function onlyFieldsChanged(before, after, n) {
+  const old = before.split('\n');
+  const now = after.split('\n');
+  const from = old.findIndex((line) => line.startsWith(`### Task ${n}:`));
+  const next = old.findIndex((line, index) => index > from && line.startsWith('#'));
+  const inTask = (index) => from >= 0 && index > from && (next === -1 || index < next);
+  return old.length === now.length && old.every((line, index) => line === now[index] || (inTask(index) && withoutFields(line) === withoutFields(withoutAddedRed(line, now[index]))));
+}
+
+function planCheckPasses(ctx) {
+  return spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', ctx.planPath, '--root', ctx.root, '--loop', '--run'], { encoding: 'utf8' }).status === 0;
+}
+
+function adoptRepair(ctx, text, n) {
+  try {
+    const fresh = parsePlan(text).tasks.find((entry) => entry.number === n);
+    Object.assign(ctx.plan.tasks.find((entry) => entry.number === n), fresh);
+    return true;
+  } catch (error) {
+    if (error instanceof PlanError) return false;
+    throw error;
+  }
+}
+
+function repairPrompt(ctx, n, report) {
+  return [
+    `Plan repair of task ${n} in ${ctx.planPath}, repository ${ctx.root}.`,
+    `Read ${path.join(PLUGIN_ROOT, 'skills', 'build', 'drift-repairer-prompt.md')} and follow its prompt; the task list spec is ${path.join(PLUGIN_ROOT, 'skills', 'spec', 'references', 'task-list.md')}.`,
+    `Edit only the Files: or Proof: line of task ${n}, or add \`Red: none (<reason>)\` to its field line; any other change is rejected.`,
+    `Drift report: ${report}`
+  ].join('\n');
+}
+
+function treeBesidePlan(ctx) {
+  const planInRoot = path.relative(ctx.root, fs.realpathSync(ctx.planPath));
+  return worktreeTree(ctx.root, planInRoot.startsWith('..') || path.isAbsolute(planInRoot) ? null : planInRoot);
+}
+
+function treeBreach(ctx, treeBefore) {
+  const treeAfter = treeBesidePlan(ctx);
+  if (treeBefore === null || treeAfter === null) return 'working tree unreadable';
+  return treeAfter === treeBefore ? null : 'working tree changed beyond the plan';
+}
+
+async function repairTask(ctx, n, report) {
+  const { root, planPath, say, repaired } = ctx;
+  if (repaired.has(n) || isUnreachableInput(report)) return false;
+  repaired.add(n);
+  const before = fs.readFileSync(planPath, 'utf8');
+  const treeBefore = treeBesidePlan(ctx);
+  say(`task ${n} blocked, repair session: ${clip(report, 80)}`);
+  const log = path.join(ctx.logDir, `iter-${ctx.iteration}-repair-${n}.log`);
+  const session = await spawnOne(ctx, { prompt: repairPrompt(ctx, n, report), allow: ctx.repairAllow, settings: ctx.taskSettings, pin: `${ctx.planId}/${n}`, log, repair: true });
+  if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
+  const after = fs.readFileSync(planPath, 'utf8');
+  const breach = breachOf(root, session.before, { tail: true }) ?? treeBreach(ctx, treeBefore);
+  if (breach === null && after !== before && onlyFieldsChanged(before, after, n) && planCheckPasses(ctx) && adoptRepair(ctx, after, n)) {
+    ctx.planAtStart = planHash(ctx);
+    say(`task ${n} plan repaired, task runs again`);
+    return true;
+  }
+  fs.writeFileSync(planPath, before);
+  say(`task ${n} repair rejected${breach === null ? '' : `: ${breach}`}`);
+  return false;
+}
+
+function repairedNote(n, reason) {
+  return `\nThe previous attempt on task ${n} reported ${clip(reason, 120)}; the plan's field line for it was repaired. Read the plan task again.`;
+}
+
+export function restoreResume(ctx, failedSessions, unprovenRetried) {
+  ctx.spent = savedSpend();
+  const point = resumePoint(journalSteps());
+  const landed = landedTasks(ctx.plan.tasks, ctx.root, ctx.planId);
+  const attempt = [...point.attempts.values()].filter((step) => !landed.includes(step.task)).at(-1);
+  ctx.resumed = { pending: point.pending !== null && !point.pending.timedOut && point.pending.plan === ctx.planAtStart && !landed.includes(point.pending.task) ? point.pending : null };
+  if (attempt === undefined) return;
+  ctx.failedAttempts = point.failedAttempts;
+  for (const step of point.attempts.values()) {
+    if (landed.includes(step.task)) continue;
+    ctx.fingerprints.set(step.task, new Set(step.fingerprints));
+    if (step.sessionId) failedSessions.set(step.task, step.sessionId);
+    if (step.freeTried) unprovenRetried.add(step.task);
+  }
+  ctx.retryNote = attempt.retryNote;
+}
+
+export function takePending(ctx, n) {
+  const step = ctx.resumed?.pending;
+  if (step?.task !== n) return null;
+  ctx.resumed.pending = null;
+  return step;
+}
+
+export function replayedSession(ctx, step) {
+  ctx.sessionFallback = null;
+  const parsed = { ...parseStream(''), resultText: step.last, sessionId: step.sessionId ?? null, model: step.model };
+  return { before: snapshot(ctx.root), outcome: { timedOut: false, code: 0, signal: null }, parsed };
+}
+
+export function noteSession(ctx, n, { outcome, parsed, last, marker }) {
+  noteStep({ kind: 'session', task: n, sessionId: parsed.sessionId ?? null, model: parsed.model, cost: parsed.cost, last, marker, timedOut: outcome.timedOut === true, plan: ctx.planAtStart });
+}
+
+export function noteAttempt(ctx, n, { sessionId, retryNote, freeTried }) {
+  noteStep({ kind: 'attempt', task: n, sessionId: sessionId ?? null, retryNote, freeTried, failedAttempts: ctx.failedAttempts, fingerprints: [...(ctx.fingerprints.get(n) ?? [])] });
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { vttOf } from '../skills/watch/scripts/whisper-node.mjs';
+import { vttOf } from '../skills/watch/scripts/speech.mjs';
 
 const REAL_SEGMENT = { text: ' Hello World, this is a test.', t0: 0, t1: 1840 };
 

@@ -25,5 +25,4 @@ Hold the test-first route to one failing test before each production edit. The e
 ## Judgment
 
 - Confirmed boundary outranks a boundary that reads well in the code.
-- One failing test outranks a suite written ahead of the code.
 - Test-design reference outranks this route wherever both speak; it owns those rules.

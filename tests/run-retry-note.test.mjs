@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { appendRuledOut } from '../lib/ruled-out.mjs';
-import { failedAttemptNote } from '../skills/build/scripts/run-plan-landing.mjs';
+import { failedAttemptNote } from '../skills/build/scripts/run-plan-build.mjs';
 import { tempDir } from './harness.mjs';
 
 const lines = (note) => note.split('\n');

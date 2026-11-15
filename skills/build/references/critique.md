@@ -1,6 +1,6 @@
 # Fresh-eyes critique
 
-Judge the delivered diff against the request before judging its internal elegance. The enemy is author anchoring: the diff matches the reasoning that produced it while drifting from the request. The overcorrection is context-free review that rejects settled decisions or invents new scope.
+Judge the delivered diff against the request before its internal elegance. The enemy is author anchoring: the diff matches the reasoning that produced it while drifting from the request. The overcorrection is context-free review that rejects settled decisions or invents new scope.
 
 ## What it checks, in order
 
@@ -16,19 +16,19 @@ Judge the delivered diff against the request before judging its internal eleganc
 6. **Simplification.**
    - Name a shared function that gained a flag or mode parameter for a second caller: inline it back and split.
    - Name duplicated logic, an abstraction with one caller, or a form with fewer statements and same observable behavior.
-   - Name as a cut any fallback chain, second source of truth, cache or replica, queue, polling loop, scheduler, watchdog, or distributed coordination the request did not ask for: each guards against an enemy the request never named.
-   - Do not name as a cut a security check, data-loss guard, accessibility affordance, idempotency, retry at an external boundary, or audit record: a simplification pass erodes these first.
-7. **Late-reference evidence.** Security, data-migration, or test-design guidance loaded → match each claimed result to its recorded negative test, migration invariant, or failing-before/passing-after command. Do not reload or restate those procedures here.
+   - Name as a cut any fallback chain, second source of truth, cache or replica, queue, polling loop, scheduler, watchdog, or distributed coordination the request did not ask for.
+   - Do not name as a cut a security check, data-loss guard, accessibility affordance, idempotency, retry at an external boundary, or audit record.
+7. **Late-reference evidence.** Security, data-migration, or test-design guidance loaded → match each claimed result to its recorded negative test, migration invariant, or failing-before/passing-after command.
 
 Report correctness and security first, then scope, missing verification, simplification. Axis with no finding → say nothing.
 
 ## Getting a separate context
 
-Use a perspective that has not seen the implementation reasoning. Give it exactly the request or brief and the diff, not the author's explanation of each choice.
+Give a perspective that has not seen the implementation reasoning exactly the request or brief and the diff, not the author's explanation.
 
 ## When no separate context exists
 
-State that no separate context was available. Run the seven checks in order, re-reading the request before the diff. Do not claim a separate review occurred.
+State that no separate context was available. Run the seven checks in order, re-reading the request before the diff, and claim no separate review.
 
 ## Judgment
 

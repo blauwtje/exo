@@ -217,7 +217,7 @@ const cases = {
 };
 
 const { redditRouteDecision } = await import('../lib/reddit-route.mjs');
-const { refusalText } = await import('../lib/refusal-memory.mjs');
+const { refusalText } = await import('../lib/hook-refusal.mjs');
 
 const repeated = (times) => {
   const hookInput = { session_id: `guard-rules-${process.pid}-${times}`, tool_name: 'WebSearch', tool_input: { query: 'x' } };

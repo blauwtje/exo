@@ -26,17 +26,15 @@ A page reads as blank when a region holds nothing, not when it has space. Squint
 
 - Primary object: the largest type and image on the screen (the game's title and art, the post's text or image, the tracked number).
 - Grouping: tight space inside a group, a clearly larger gap between groups, so structure reads without borders; a gap wider than a group's own height reads as empty.
-  - Good: 8px between a label and its field, 32px between field groups. Bad: 24px everywhere, so no group shows.
 - Rhythm: spacing from a 4/8 scale; one gap for items in a list, a larger one between sections.
 - Feed: posts as open bands on the ground with a moderate gap, each image post with full-width art as its largest element, not a thumbnail beside text.
 - Asymmetry: a dominant pane or tile beside smaller ones reads as designed; equal columns of equal cards read as a template.
 
 ## Density and text
 
-- Lists: enough items to fill the pane plus one scroll, so the pane reads as a real, used product; variety still comes from the items' art.
+- Lists: enough items to fill the pane plus one scroll.
 - Long names and numbers: truncate with an ellipsis or wrap cleanly; look.mjs prints `CLIP` and `OVERLAP` when text collides.
 - Empty, error and first-use states: an illustration area in the world's terms, a 16-18px headline, one muted line and one action, not a blank pane or a lone grey sentence.
-  - Good: a drawn empty tide table, "No tides logged", "Log your first reading" and a button. Bad: a blank pane with "No data."
 
 ## Patterns to replace
 

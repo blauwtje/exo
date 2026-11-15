@@ -7,6 +7,7 @@ import { isFileOnDisk } from './run-session-claude.mjs';
 import { gitLine } from '#git';
 import { GIT_LIMIT } from './run-worktree.mjs';
 import { ledgerDirOf } from './run-state.mjs';
+import { implementerReportPath } from './land-stopped.mjs';
 
 export function recordAttempt({ ctx, n, check, line }) {
   const seen = ctx.fingerprints.get(n) ?? new Set();
@@ -30,12 +31,12 @@ export function settleAttempt(ctx, { wallMs }) {
 }
 
 export function proofNotRun(ctx, n) {
-  const report = path.join(ctx.root, SCRATCH_FOLDER, `implementer-${n}.md`);
+  const report = implementerReportPath(ctx.root, n);
   return isFileOnDisk(report) && /\bnot run\b/i.test(fs.readFileSync(report, 'utf8'));
 }
 
 export function writeReplyReport(ctx, n, reply) {
-  const report = path.join(ctx.root, SCRATCH_FOLDER, `implementer-${n}.md`);
+  const report = implementerReportPath(ctx.root, n);
   const lines = reply.split(/\r?\n/);
   while (lines.length > 0 && lines.at(-1).trim() === '') lines.pop();
   lines.pop();

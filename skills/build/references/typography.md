@@ -5,7 +5,6 @@ Type carries most of a page's voice, so choose faces for the direction's world, 
 ## Roles
 
 - Display face: titles and the primary object only (game titles, post headlines, the big number). Used everywhere, a loud face flattens hierarchy: when every button, label and tab shouts, nothing does.
-  - Good: the game title in the display face, its tabs in the text face. Bad: the display face on every tab and button.
 - Text face: body, labels, buttons, metadata. Quiet and readable at small sizes, so the display face has room to speak.
 - Pairing: contrast in structure, such as a condensed or wide display over a humanist text face, or a slab over a grotesque. Two similar sans faces read as a mistake.
 - One family: fine when the family has a wide weight range and the direction is restrained; then hierarchy comes from weight and size alone.
@@ -26,12 +25,10 @@ A characterful face the system lacks beats a system stack the direction did not 
 
 - Documents: strong jumps: display at 3x body or more, weights at the extremes (300 against 800), so the hierarchy reads at a glance. A hero display may run 96-160px, since big tight type fills a hero with intent.
 - Tracking by size: -0.03em at 56px and up, -0.015em at 32-48px, +0.015em on 10-12px captions; large type set loose looks unfinished and tiny type set tight clogs.
-  - Good: `font-size: 72px; letter-spacing: -0.03em`. Bad: `font-size: 72px; letter-spacing: 0.05em`.
 - Heading line height: 1.1-1.2, since body leading on a large heading opens gaps between its lines.
 - App chrome: modest display, at most about 3x body; the primary object gets the largest type, chrome labels stay small.
 - Body: 15-17px in app chrome, 17-20px for posts and articles; body text lines at most about 75ch, while the column around them, art and data may run wider.
 - Numbers: `font-variant-numeric: tabular-nums` on prices, counts, times and progress, so columns align and values do not jitter.
-  - Good: a price column right-aligned with `tabular-nums`. Bad: proportional digits that shift the column as values change.
 - Controls: `button, input, select, textarea { font: inherit }`, so no browser default face leaks in.
 - Families: at most 2 per page; look.mjs prints `FONTS` past that.
 

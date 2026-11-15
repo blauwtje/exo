@@ -2,37 +2,28 @@ import path from 'node:path';
 import process from 'node:process';
 import { appendStep, readJournal, readState, recordStop, recordTask, updateRun } from './run-state.mjs';
 
-export function setPhase(phase) {
+function runTarget() {
   const dir = process.env.EXO_RUN_DIR;
-  if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), { phase });
+  return dir ? [path.resolve(dir, '..', '..', '..'), path.basename(dir)] : null;
 }
 
-export function noteTask(task) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) recordTask(path.resolve(dir, '..', '..', '..'), path.basename(dir), task);
-}
+const note = (write) => (value) => {
+  const target = runTarget();
+  if (target) write(...target, value);
+};
 
-export function noteCounts(counts) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), counts);
-}
-
-export function noteStop(stop) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) recordStop(path.resolve(dir, '..', '..', '..'), path.basename(dir), stop);
-}
-
-export function noteStep(step) {
-  const dir = process.env.EXO_RUN_DIR;
-  if (dir) appendStep(path.resolve(dir, '..', '..', '..'), path.basename(dir), step);
-}
+export const setPhase = (phase) => note(updateRun)({ phase });
+export const noteTask = note(recordTask);
+export const noteCounts = note(updateRun);
+export const noteStop = note(recordStop);
+export const noteStep = note(appendStep);
 
 export function journalSteps() {
-  const dir = process.env.EXO_RUN_DIR;
-  return dir ? readJournal(path.resolve(dir, '..', '..', '..'), path.basename(dir)) : [];
+  const target = runTarget();
+  return target ? readJournal(...target) : [];
 }
 
 export function savedSpend() {
-  const dir = process.env.EXO_RUN_DIR;
-  return dir ? readState(path.resolve(dir, '..', '..', '..'), path.basename(dir))?.spent ?? 0 : 0;
+  const target = runTarget();
+  return target ? readState(...target)?.spent ?? 0 : 0;
 }

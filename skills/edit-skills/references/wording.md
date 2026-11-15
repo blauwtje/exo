@@ -1,6 +1,6 @@
 # Wording
 
-Wording sets how firmly the model follows a rule, so match the register to the kind of skill.
+Match the register to the kind of skill.
 
 ## Register by skill kind
 
@@ -25,7 +25,7 @@ When two phrasings compete, test the sentence in isolation before a full scenari
 
 Run one arm per phrasing plus a no-guidance control, same prompt, fresh context, same run count; cut the sentence when the control passes; read every flagged output by eye, and treat variance as the signal: a binding phrasing converges and a weak one scatters.
 
-A micro-test settles wording only. Whether the skill holds under pressure is the scenario's job.
+A micro-test settles wording only; the scenario tests pressure.
 
 ## Judgment
 

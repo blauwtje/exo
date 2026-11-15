@@ -10,11 +10,10 @@ effort: medium
 
 # Skills tool
 
-A skill earns its place only by stopping a mistake the model makes without it, in the fewest words that takes. Produce a skill whose every line changes what the model does, with each rule carrying its boundary reason. Avoid restating default behavior, hiding the one rule that changes anything, and an order stripped of its boundary reason.
+A skill earns its place only by stopping a mistake the model makes without it, in the fewest words that takes. Produce a skill whose every line changes what the model does, with each rule carrying its boundary reason.
 
 ## When to use
 
-- Use it when creating, changing or sizing a skill, agent, hook or skill script.
 - When a stage (a plan step that calls this skill) borrows it, hand control back once the edit is done. Otherwise it owns the turn.
 - Skip it for a one-time fix, one project's habit, or a limit a regex can check. A commit, `CLAUDE.md` or the verifier holds those, and a skill is for a call that needs judgment.
 

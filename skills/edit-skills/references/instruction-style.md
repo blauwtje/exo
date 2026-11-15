@@ -1,6 +1,6 @@
 # Instruction-file style
 
-This guide covers `CLAUDE.md`, rules, skills, agents, output styles and hook text. Two readers use these files: the model that follows them and the maintainer who reviews them, so write plain sentences that both can read.
+This guide covers `CLAUDE.md`, rules, skills, agents, output styles and hook text. Write plain sentences that the model and the maintainer can both read.
 
 ## Open with the goal
 
@@ -21,18 +21,14 @@ This guide covers `CLAUDE.md`, rules, skills, agents, output styles and hook tex
 ## Give the reason
 
 - Add one clause that says why when the reason sets the rule's boundary: "Pass the path, because the script resolves nothing itself."
-- Skip the reason when the rule explains itself.
 - Phrase the target behavior positively, as in "Write in plain sentences". Keep a negative for a discrete prohibition such as "do not run `git stash`".
 - Use `never` and `IMPORTANT` only for a real guardrail, at most 2 per file. Capitals and `MUST` make a model over-apply the rule.
 
 ## Keep the words that set a boundary
 
 - Keep `not`, `no`, `only`, `except`, `never`, `unless`, `each`, `every`, `at most`, `before`, `after`, numbers, paths, commands, identifiers and error text. A shortened rule that loses one changes its meaning.
-- Rewrite a line that reads ambiguous instead of shortening it further.
 - Use a number or an exact command in place of an adjective: "kill a run past 10 minutes".
 - Em dashes: use none.
-- Line length, hard wraps and reading grade are not targets.
-- Leave out "think carefully", because thinking is always on.
 
 ## Cut
 
@@ -44,12 +40,10 @@ This guide covers `CLAUDE.md`, rules, skills, agents, output styles and hook tex
 - Ask a review prompt for all findings, then filter by severity afterwards.
 - Name delegation criteria or a cap in a brief that may spawn agents, and restate the parent's constraints.
 - Name the kinds of early stop to avoid in an unattended prompt.
-- Lower `effort` when less thinking is wanted, not the prose.
 
 ## Place and enforce
 
 - Keep a rule that must hold every time in `CLAUDE.md` or a check, because `.claude/rules/*.md` with `paths:` loads unreliably.
-- An `@` import organizes the file and cuts no context, since imported text loads at launch.
 - Keep `CLAUDE.md` under 60 lines. Move material only some paths need to a reference, one level deep, loaded through a pointer that names when to open it.
 - Keep a load path (skill body plus the references it reads) under about 150 rules.
 - The verifier fails a sentence over 40 words and a list item of 3 or more sentences.

@@ -11,11 +11,11 @@ Goal: act on the comments worth acting on, and answer each one after its fix is 
 
 - Resolve the active pull request for the current branch and confirm it is the one the request meant.
 - Fetch discussion comments and reviews with `gh pr view <n> --json comments,reviews`.
-- Fetch inline review comments with `gh api repos/<owner>/<repo>/pulls/<n>/comments`, because `gh pr view` omits them. The fix route below does that fetch.
+- Fetch inline review comments with `gh api repos/<owner>/<repo>/pulls/<n>/comments`, because `gh pr view` omits them.
 
 ## Triage into an action list
 
-- Group feedback by severity and actionability into a priority-ordered action list. The order decides what the round fixes first.
+- Group feedback by severity and actionability into a priority-ordered action list.
 - Act only on feedback you agree with. On a judgement call, reply saying what you would have done.
 - For a mechanical fix, edit and commit quoting the comment: write the message file in an earlier call and run `git commit -F <file>`, or pass `-m`.
 - Classify a bot or automation comment as fix, dismiss or ask before acting. A security, data or high-severity finding is asked about by default.

@@ -32,14 +32,12 @@ if (isMain(import.meta.url)) {
     allowPositionals: true,
     options: { cwd: { type: 'string' }, help: { type: 'boolean' } }
   });
-
-  const cwd = values.cwd ?? process.cwd();
-  const command = positionals[0];
+  const [command] = positionals;
 
   if (process.argv.includes('--help')) {
     console.log(USAGE);
   } else if (command === 'path') {
-    console.log(handoffFile(cwd));
+    console.log(handoffFile(values.cwd ?? process.cwd()));
   } else {
     console.error(`unknown command ${command ?? '(none)'}; expected path`);
     process.exitCode = 1;

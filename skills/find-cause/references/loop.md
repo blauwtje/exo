@@ -1,7 +1,5 @@
 # Steps 1-5
 
-Detail for Steps 1-5 of the loop in SKILL.md, whoever runs them.
-
 1. **Reproduce.**
    - No infrastructure: reproduce unstubbed at the first owning function below; do not ask the user first.
 2. **Instrument.** Keep two hypotheses; observe once at their first divergence.

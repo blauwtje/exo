@@ -3,9 +3,8 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { transcribe } from '../skills/watch/scripts/speech.mjs';
 import { runTool } from '../skills/watch/scripts/run-tool.mjs';
-import { VAD_MODEL } from '../skills/watch/scripts/whisper-vad.mjs';
+import { transcribe, VAD_MODEL } from '../skills/watch/scripts/speech.mjs';
 import { tempDir } from './harness.mjs';
 
 const WHISPER_BYTES = Buffer.from('fake whisper model');

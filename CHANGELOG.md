@@ -56,6 +56,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
+- The source was consolidated into fewer, deeper modules (about 70 small files merged into their one caller, no behavior change), and the skill, reference and script texts were trimmed.
 - `build refactor` gains a repo-wide route: a tool pass, one rubric and golden file per type up front, a 3-file dry run, a batched fan-out with per-file retries, one diff review and one `npm run check` at the end, in place of review-and-replan rounds; `waveLimit` in run.json `defaults` sets how many tasks run at once (default 4).
 - Every skill script has one owner per value and no flag or default only its tests used.
 - `lib/` has one owner per decision, with dead functions, forwarders, test-only exports and defaults no caller passes removed (112 files and 9422 lines to 111 files and 9229 lines).
@@ -201,6 +202,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
+- The `notify` setting and its remote post; the run-end desktop notice stays.
 - The topic-switch and lead-write nudges, `lib/map.mjs`, the unused context-peak report, 11 tests that reran repo checks and 6 tests that pinned code shape.
 - The branch review in `agents/review-branch.md` and its review model kinds; the agent keeps only the claims judge that research dispatches.
 - The `dispatch-edit` hook, its Edit and Write guards, `lib/edit-impact.mjs` and the removal mode of `evals/value.mjs`, after the frozen cases showed the hook did harm.

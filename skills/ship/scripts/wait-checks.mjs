@@ -17,12 +17,6 @@ const TIMEOUT_EXIT = 124;
 const NO_CHECKS = /no checks reported/i;
 const FAIL_STATUS = /^fail(ing|ed)?$/i;
 
-function readFlags(argv) {
-  const flags = parseFlags(argv, { pr: 'value' }, { usage: USAGE });
-  if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError(`--pr needs a pull request number, got '${flags.pr ?? ''}'`);
-  return { pr: flags.pr };
-}
-
 function openLog(cwd) {
   const gitDirectory = execFileSync('git', ['rev-parse', '--absolute-git-dir'], { cwd, encoding: 'utf8' }).trim();
   const logPath = path.join(gitDirectory, 'exo', 'wait-checks.log');
@@ -60,7 +54,9 @@ function watchChecks(pr, track, log) {
 
 function parseArguments() {
   try {
-    return readFlags(process.argv.slice(2));
+    const flags = parseFlags(process.argv.slice(2), { pr: 'value' }, { usage: USAGE });
+    if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError(`--pr needs a pull request number, got '${flags.pr ?? ''}'`);
+    return { pr: flags.pr };
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`${USAGE}: ${error.message}`);
@@ -97,12 +93,10 @@ function reportOutcome(outcome, timedOut) {
   }
   if (outcome.code === 0) {
     console.log('checks: pass');
-    process.exitCode = 0;
     return;
   }
   if (NO_CHECKS.test(outcome.errorText)) {
     console.log('checks: none');
-    process.exitCode = 0;
     return;
   }
   const failed = failingChecks(outcome.outText);

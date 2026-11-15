@@ -10,7 +10,7 @@ import { frameOf } from '#plan-frame';
 import { conflictMarkers, squashBlock, unmergedPaths } from '#merge-state';
 import { loadRunConfig } from './run-config.mjs';
 import { taskNumberFlag } from './next-task.mjs';
-import { runLandGate } from './land-gate.mjs';
+import { runLandGate } from './land-check.mjs';
 import { LandingError } from './land-errors.mjs';
 import { scriptPath } from './run-session-paths.mjs';
 import { gitText } from '#git';
@@ -111,6 +111,16 @@ const USAGE = [
 ].join('\n');
 
 function main(argv) {
+  try {
+    run(argv);
+  } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    process.stderr.write(`conflict-wave: ${error.message}\n`);
+    process.exitCode = USAGE_EXIT;
+  }
+}
+
+function run(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value' }, { usage: USAGE });
   for (const name of ['plan', 'root']) {
     if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required`);
@@ -120,14 +130,4 @@ function main(argv) {
   process.stdout.write(landResolved({ planPath, root: flags.root, number }));
 }
 
-function guarded(argv) {
-  try {
-    main(argv);
-  } catch (error) {
-    if (!(error instanceof UsageError)) throw error;
-    process.stderr.write(`conflict-wave: ${error.message}\n`);
-    process.exitCode = USAGE_EXIT;
-  }
-}
-
-if (isMain(import.meta.url)) guarded(process.argv.slice(2));
+if (isMain(import.meta.url)) main(process.argv.slice(2));

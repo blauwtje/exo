@@ -91,7 +91,7 @@ test('the refusal loop kind is owned by the handlers module', () => {
 
 test('the dead repair path and the code rule kind are gone', () => {
   assert.ok(!fs.existsSync(new URL('../skills/build/scripts/run-plan-land-repair.mjs', import.meta.url)));
-  assert.ok(!fs.readFileSync(new URL('../skills/build/scripts/run-plan-repair.mjs', import.meta.url), 'utf8').includes('repairOrBlock'));
+  assert.ok(!fs.readFileSync(new URL('../skills/build/scripts/run-plan-build.mjs', import.meta.url), 'utf8').includes('repairOrBlock'));
   assert.equal(RUN_OUTCOMES['code rule'], undefined);
   assert.ok(!fs.readFileSync(new URL('../skills/build/drift-repairer-prompt.md', import.meta.url), 'utf8').includes('no red proof'));
 });

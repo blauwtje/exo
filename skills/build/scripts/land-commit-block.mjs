@@ -41,7 +41,6 @@ function deriveCommit({ task, number, planId, signatures, root }) {
   return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(trailers)}`;
 }
 
-
 export function commitBlockOf({ plan, number, planId, signatures, root }) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);

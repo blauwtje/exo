@@ -7,8 +7,8 @@ Build the plan the user invokes run-plan on through `exo:build`, each task lande
 1. When the argument is `setup`, run `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" setup`, report its output and stop.
    - When the argument is `ci`, run `node "${CLAUDE_SKILL_DIR}/scripts/ci-render.mjs"` in the user's repository, report its output and stop. It refuses to replace an edited workflow; pass `--force` only when the user asks.
    - Otherwise the argument is one plan path; with none, ask for it and run nothing.
-2. With a plan path, invoke `exo:build <plan>` with the flags the user typed that build takes.
-3. Report one line: the headless loop, each task in its own process, runs only from a terminal, as the user's `exo run <plan> --detach`.
+2. With a plan path, invoke `exo:build <plan path>` with the flags the user typed that build takes.
+3. Report one line: the headless loop runs only from a terminal, as the user's `exo run <plan path> --detach`.
 
 ## Judgment
 

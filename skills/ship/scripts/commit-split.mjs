@@ -19,10 +19,6 @@ function gitStrict(root, args, env = {}) {
   return result.stdout;
 }
 
-function repositoryRoot(dir) {
-  return gitStrict(dir, ['rev-parse', '--show-toplevel']).trim();
-}
-
 function dirtyFiles(root) {
   const output = gitStrict(root, ['status', '--porcelain=v1', '-z', '-uall', '--no-renames']);
   return output
@@ -118,7 +114,7 @@ function formatProposal(groups) {
 }
 
 function run(flags) {
-  const root = repositoryRoot(process.cwd());
+  const root = gitStrict(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
   const dirty = dirtyFiles(root);
   if (flags.list) {
     process.stdout.write(dirty.map((entry) => `${entry.status} ${entry.file}\n`).join(''));

@@ -1,6 +1,6 @@
 # Critic brief
 
-The critic is one fresh delegate. Fresh context is the point: it has not seen the code or your reasoning, so it judges the page as a user does and is not anchored on what you meant.
+The critic is one fresh delegate. It has seen neither the code nor your reasoning, so it judges the page as a user does.
 
 ## What to pass
 

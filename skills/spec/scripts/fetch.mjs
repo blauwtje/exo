@@ -4,17 +4,214 @@ import process from 'node:process';
 import { limitLifetime } from '#lifetime';
 import { USAGE_EXIT } from '#script-flags';
 import { gateRequest } from '../../watch/scripts/request-gate.mjs';
-import { cookieHeader, confirmStep } from './age-gate.mjs';
-import { waybackSnapshot } from './archive.mjs';
-import { BlockedPage, blockReason } from './block-detect.mjs';
-import { renderWithBrowser } from './browser-render.mjs';
-import { khorosFeedText } from './khoros-feed.mjs';
 import { appendMetric } from './search.mjs';
 import { BlockedRoute, USER_AGENT } from './sources/http.mjs';
 import { createHostState } from './sources/host-state.mjs';
 import { pageRoute } from './sources/pages.mjs';
-import { pageText } from './page-text.mjs';
+import { htmlToText, pageText } from './page-text.mjs';
 import { excludeScratchIfGit, pagePath, recordSource } from './ledger.mjs';
+
+const CONFIRM_TEXT = /^\s*(enter|i am (over )?18\+?|i'm (over )?18\+?|yes|i agree|confirm|continue)\b/i;
+const ANCHOR = /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi;
+const FORM = /<form\b([^>]*)>([\s\S]*?)<\/form\s*>/gi;
+const INPUT = /<input\b([^>]*)>/gi;
+const BUTTON = /<(?:button|input)\b([^>]*)>([\s\S]*?)(?=<\/button|<|$)/gi;
+
+function attr(source, name) {
+  const found = new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(source);
+  return found ? (found[2] ?? found[3]) : null;
+}
+
+function plain(markup) {
+  return markup.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function sameOrigin(href, base) {
+  const resolved = href.replace(/&amp;/g, '&');
+  if (!URL.canParse(resolved, base)) return null;
+  const target = new URL(resolved, base);
+  if (target.origin !== new URL(base).origin) return null;
+  if (!/^https?:$/.test(target.protocol)) return null;
+  return target;
+}
+
+function linkStep(html, base) {
+  for (const [, attrs, inner] of html.matchAll(ANCHOR)) {
+    const href = attr(attrs, 'href');
+    if (!href || href.startsWith('#') || !CONFIRM_TEXT.test(plain(inner))) continue;
+    const target = sameOrigin(href, base);
+    if (target) return { url: target.href, init: {} };
+  }
+  return null;
+}
+
+function hasConfirmButton(inner) {
+  for (const [, attrs, text] of inner.matchAll(BUTTON)) {
+    if (CONFIRM_TEXT.test(plain(text)) || CONFIRM_TEXT.test(attr(attrs, 'value') ?? '')) return true;
+  }
+  return false;
+}
+
+function hiddenFields(formHtml) {
+  const fields = new URLSearchParams();
+  for (const [, inputAttrs] of formHtml.matchAll(INPUT)) {
+    const name = attr(inputAttrs, 'name');
+    if (name && /hidden/i.test(attr(inputAttrs, 'type') ?? '')) fields.append(name, attr(inputAttrs, 'value') ?? '');
+  }
+  return fields;
+}
+
+function formStep(html, base) {
+  for (const [, attrs, inner] of html.matchAll(FORM)) {
+    if (!hasConfirmButton(inner)) continue;
+    const target = sameOrigin(attr(attrs, 'action') || base, base);
+    if (!target) continue;
+    const fields = hiddenFields(inner);
+    if (/post/i.test(attr(attrs, 'method') ?? '')) {
+      return { url: target.href, init: { method: 'POST', body: fields.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } } };
+    }
+    fields.forEach((value, name) => target.searchParams.set(name, value));
+    return { url: target.href, init: {} };
+  }
+  return null;
+}
+
+function confirmStep(html, base) {
+  return linkStep(html, base) ?? formStep(html, base);
+}
+
+function cookieHeader(headers) {
+  const lines = typeof headers.getSetCookie === 'function' ? headers.getSetCookie() : [];
+  return lines.map((line) => line.split(';')[0]).join('; ');
+}
+
+
+const AVAILABLE = 'https://archive.org/wayback/available?url=';
+
+function snapshotDate(timestamp) {
+  return `${timestamp.slice(0, 4)}-${timestamp.slice(4, 6)}-${timestamp.slice(6, 8)}`;
+}
+
+async function get(url, { fetchImpl, gate, headers }) {
+  await gateRequest(url, gate);
+  const response = await fetchImpl(url, { headers, redirect: 'follow' });
+  return response.ok ? response : null;
+}
+
+function nullForBadJson(error) {
+  if (!(error instanceof SyntaxError)) throw error;
+  return null;
+}
+
+async function closestTimestamp(url, context) {
+  const response = await get(`${AVAILABLE}${encodeURIComponent(url)}`, context);
+  if (!response) return null;
+  const body = await response.json().catch(nullForBadJson);
+  const closest = body?.archived_snapshots?.closest;
+  if (!closest?.available || !/^\d{8,14}$/.test(closest.timestamp ?? '')) return null;
+  return closest.timestamp;
+}
+
+async function waybackSnapshot(url, context) {
+  const timestamp = await closestTimestamp(url, context);
+  if (!timestamp) return null;
+  const response = await get(`https://web.archive.org/web/${timestamp}id_/${url}`, context);
+  if (!response) return null;
+  return { response, html: await response.text(), date: snapshotDate(timestamp) };
+}
+
+const CHALLENGE_STATUS = new Set([403, 429, 503]);
+const CHALLENGE_BODY = /<title>\s*just a moment|cf-chl|verification successful|checking your browser/i;
+const AGE_MARKER = /\b18\s*\+|are you (over|at least|older)|age verification|verify your age|over (the age of )?18|adults? only|adult content/i;
+const ENTER_WORD = /\b(enter|i am (over )?18|i'm (over )?18|yes)\b/i;
+const GATE_TEXT_LIMIT = 1500;
+const CHALLENGE_TEXT_LIMIT = 4000;
+
+function isCloudflare(headers) {
+  return Boolean(headers.get('cf-mitigated')) || /cloudflare/i.test(headers.get('server') ?? '');
+}
+
+function blockReason({ status, headers, html, text }) {
+  if (CHALLENGE_STATUS.has(status) && isCloudflare(headers)) return 'challenge';
+  if (CHALLENGE_BODY.test(html) && text.length < CHALLENGE_TEXT_LIMIT) return 'challenge';
+  if (status === 401 || status === 403) return 'not-public';
+  if (status >= 400) return null;
+  if (text === '') return 'empty';
+  if (text.length < GATE_TEXT_LIMIT && AGE_MARKER.test(text) && ENTER_WORD.test(text)) return 'age-gate';
+  return null;
+}
+
+class BlockedPage extends Error {
+  constructor(reason, runDir, url) {
+    super(`status: blocked ${reason}; open it in your browser and save the text with: node fetch.mjs --save ${runDir} ${url} < text`);
+    this.reason = reason;
+  }
+}
+
+
+const NAVIGATION_MS = 30000;
+
+async function loadPlaywright() {
+  try {
+    return await import('playwright');
+  } catch (error) {
+    if (error.code === 'ERR_MODULE_NOT_FOUND') return null;
+    throw error;
+  }
+}
+
+async function renderWithBrowser(url) {
+  const playwright = await loadPlaywright();
+  if (!playwright) return null;
+  const browser = await playwright.chromium.launch();
+  try {
+    const page = await browser.newPage({ userAgent: USER_AGENT });
+    await page.goto(url, { timeout: NAVIGATION_MS, waitUntil: 'networkidle' });
+    return await page.content();
+  } finally {
+    await browser.close();
+  }
+}
+
+
+const THREAD = /^\/discussions\/([\w-]+)\/[^/]+\/(\d+)\/?$/;
+const ITEM = /<item>([\s\S]*?)<\/item>/gi;
+
+function decodeCdata(value) {
+  return value.replace(/^<!\[CDATA\[|\]\]>$/g, '');
+}
+
+function tag(item, name) {
+  const found = new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, 'i').exec(item);
+  return found ? decodeCdata(found[1].trim()) : '';
+}
+
+function feedUrl(url) {
+  const parsed = new URL(url);
+  const match = THREAD.exec(parsed.pathname);
+  if (!match) return null;
+  return { feed: `${parsed.origin}/t5/s/rss/board?board.id=${match[1]}`, id: match[2] };
+}
+
+function itemText(item) {
+  const title = tag(item, 'title');
+  const body = htmlToText(tag(item, 'description').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
+  return `${title}\n${body}`.trim();
+}
+
+async function khorosFeedText(url, { fetchImpl, gate, headers }) {
+  const target = feedUrl(url);
+  if (!target) return null;
+  await gateRequest(target.feed, gate);
+  const response = await fetchImpl(target.feed, { headers, redirect: 'follow' });
+  if (!response.ok) return null;
+  const xml = await response.text();
+  const wanted = new RegExp(`[/#]${target.id}\\b|/m-p/${target.id}\\b`);
+  for (const [, item] of xml.matchAll(ITEM)) {
+    if (wanted.test(item)) return itemText(item);
+  }
+  return null;
+}
 
 async function load(url, context, init = {}) {
   await gateRequest(url, context.gate);
@@ -107,14 +304,6 @@ async function fetchPage(url, options) {
   return { ...row, file, cached: false, via: found.via };
 }
 
-async function savePageText(url, text, options) {
-  const row = recordSource(options.runDir, { url, fields: {} });
-  const file = pagePath(options.runDir, row.ref);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${text.trim()}\n`);
-  return { ...row, file, cached: false };
-}
-
 async function fetchOne(url, options) {
   const started = Date.now();
   try {
@@ -135,9 +324,12 @@ async function fetchMany(urls, options) {
   return { lines, failures, failed: failures.length === urls.length };
 }
 
-async function saveFromStdin(runDir, url) {
-  const page = await savePageText(url, fs.readFileSync(0, 'utf8'), { runDir });
-  process.stdout.write(`${page.ref}\t${page.url}\tsaved\n`);
+function saveFromStdin(runDir, url) {
+  const row = recordSource(runDir, { url, fields: {} });
+  const file = pagePath(runDir, row.ref);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${fs.readFileSync(0, 'utf8').trim()}\n`);
+  process.stdout.write(`${row.ref}\t${row.url}\tsaved\n`);
 }
 
 async function main(argv) {

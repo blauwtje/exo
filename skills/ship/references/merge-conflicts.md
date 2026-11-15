@@ -13,11 +13,11 @@ Goal: resolve every conflict with a passing check, without a tag or a strategy f
 ## Resolve
 
 - Pass no `--strategy` or `-X`.
-- Create no tag while resolving. A tag can cut a release, which nothing here authorizes.
+- Create no tag while resolving.
 
 ## Lockfiles
 
-- Regenerate a conflicted lockfile with the package manager's own tooling. Hand edits drift from what the tool writes.
+- Regenerate a conflicted lockfile with the package manager's own tooling.
 
 ## Validate before the push
 

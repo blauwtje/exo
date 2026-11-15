@@ -1,6 +1,6 @@
 # Skill shape
 
-Start a new skill from this template and remove every section that has nothing real to put in it, because an empty section costs tokens on every load.
+Start a new skill from this template and remove every empty section.
 
 ```markdown
 ---
@@ -11,7 +11,6 @@ description: <The moments it fires, then "Not for ..." naming the cases it leave
 # <Title>
 
 <The principle in one sentence. Produce <the output this skill yields>. Avoid <concrete list of the mistakes this prevents>.>
-
 
 ## When to use
 

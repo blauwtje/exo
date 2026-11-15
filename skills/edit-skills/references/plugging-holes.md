@@ -1,10 +1,10 @@
 # Plugging holes
 
-A hole is an excuse the model still produced with the skill loaded. Close it in the cheapest way that stops it.
+A hole is an excuse the model still produced with the skill loaded.
 
 ## Closing one excuse
 
-Apply these in order, rerun after each, and stop at the first rerun that passes.
+Apply in order, rerun after each, and stop at the first pass.
 
 1. **Name the workaround in the rule.** Extend the rule to forbid by name the route the model took: "renaming the old function and keeping it" is also keeping it.
 2. **Quote the excuse in the red flags.** Add a row with the model's exact words and, in one clause, what is true instead.
@@ -21,4 +21,4 @@ Apply these in order, rerun after each, and stop at the first rerun that passes.
 Ask the failed run how the skill should have been worded, then act on the kind of answer.
 
 - The model proposes a specific sentence: add it in its words.
-- The model never noticed a section: move that section earlier or into the opening, and add nothing.
+- The model never noticed a section: move it earlier, and add nothing.

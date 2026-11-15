@@ -1,5 +1,3 @@
-
-
 export class LandingError extends Error {
   kind = 'proof failed';
 }

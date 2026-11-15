@@ -16,5 +16,5 @@ Worktree: <abs path>
 - Then one line per confirmed correctness finding, in file order: `file:start-end`, `defect` or `concern`, one sentence of evidence, and `fix` when the repair stays inside a path `git status --porcelain` lists, else `report`.
 - End the report with a `Count:` line.
 - Return this one line: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> concern=<n> report=<path>`.
-- Only a `BLOCKED` return adds a second line naming what could not be read, so a return runs to at most two lines.
+- Only a `BLOCKED` return adds a second line naming what could not be read.
 ```

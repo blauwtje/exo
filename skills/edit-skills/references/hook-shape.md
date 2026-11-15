@@ -1,6 +1,6 @@
 # Shape of a hook
 
-Hook text and code run on every matching event, so each hook pays for itself in tokens, time and false blocks.
+Hook text and code run on every matching event, so each hook must pay for its tokens, time and false blocks.
 
 ## Registration
 
@@ -23,6 +23,5 @@ Hook text and code run on every matching event, so each hook pays for itself in 
 ## Timing and matching
 
 - The default `timeout` is 600 s for a command and 30 s on `UserPromptSubmit`, and `SessionEnd` shares 1.5 s. A `timeout` under 1 s counts as 1 s.
-- `claude --debug` logs each hook's duration.
 - A `Read` matcher misses `cat` or `sed` through Bash, so match the Bash call too when the rule must hold.
 - Add a prefix to a command inside a pipeline and leave its text as written, because a rewritten pipeline breaks the command.

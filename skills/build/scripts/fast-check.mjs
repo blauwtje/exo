@@ -22,10 +22,6 @@ function touchedPaths(worktree) {
   return [...new Set([...changed, ...untracked])];
 }
 
-function runFastCommand(worktree, command) {
-  return runCheck(worktree, command).ok ? null : command;
-}
-
 function runCoveringTests(worktree, tests) {
   const command = `node --test ${tests.join(' ')}`;
   const env = { ...process.env };
@@ -34,7 +30,7 @@ function runCoveringTests(worktree, tests) {
 }
 
 function fastCheck({ worktree, fastCheck: command }) {
-  const failedCommand = command ? runFastCommand(worktree, command) : null;
+  const failedCommand = command && !runCheck(worktree, command).ok ? command : null;
   if (failedCommand) return { ok: false, command: failedCommand };
   const tests = coveringTests(worktree, touchedPaths(worktree));
   if (tests.length === 0) return { ok: true };

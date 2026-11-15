@@ -1,26 +1,18 @@
 #!/usr/bin/env node
 
 import { inSidecall } from '#hook-input';
-import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
+import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, sizeDenial, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
-import { kindLabels, pairText, runsPassed } from '../lib/kind-labels.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { refuseFields, rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
-import { recordResearchDispatch, researchFields } from '../lib/research-route.mjs';
-import { sizeDenial } from '../lib/size-denial.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
-import { defaulted, liftedEffort, resolvedKind } from '../lib/kind-resolution.mjs';
-import { inlineSingleWorker } from '../lib/inline-single-worker.mjs';
+import { defaulted, inlineSingleWorker, kindLabels, liftedEffort, pairText, recordResearchDispatch, researchFields, resolvedKind, runsPassed } from '../lib/kind-resolution.mjs';
 import { dispatchRules } from './dispatch-rules.mjs';
-
-function budgetSetting() {
-  return settingOrDefault('budget').value;
-}
 
 function filled(input, budget, level) {
   const kind = resolvedKind(input, budget)?.kind;
@@ -123,7 +115,7 @@ function agentFields(hookInput, budget, rewrite) {
   ]));
 }
 
-export function agentHook(hookInput, budget = budgetSetting(), enabled) {
+export function agentHook(hookInput, budget = settingOrDefault('budget').value, enabled) {
   const rewrite = readsRewrite(hookInput);
   const output = agentEffort(hookInput, budget, rewrite);
   const fields = agentFields(hookInput, budget, rewrite);

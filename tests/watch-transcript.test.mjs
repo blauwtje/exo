@@ -5,11 +5,9 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { parseTimedText, parseVtt } from '../skills/watch/scripts/cues.mjs';
 import { formatDuration, linkedStamp, renderTranscript, countWords } from '../skills/watch/scripts/format.mjs';
-import { planChunks } from '../skills/watch/scripts/chunks.mjs';
+import { planChunks } from '../skills/watch/scripts/outputs.mjs';
 import { sourceOf } from '../skills/watch/scripts/video-url.mjs';
-import { tracksOf, pickTrack, languagesOf } from '../skills/watch/scripts/youtube.mjs';
-import { chaptersFromHtml } from '../skills/watch/scripts/youtube-chapters.mjs';
-import { watchGuarded } from '../skills/watch/scripts/watch.mjs';
+import { tracksOf, pickTrack, languagesOf, chaptersFromHtml, watchGuarded } from '../skills/watch/scripts/watch.mjs';
 import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 

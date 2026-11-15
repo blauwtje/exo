@@ -39,7 +39,6 @@ Review-and-replan rounds are the time sink of a repo-wide rewrite, so one rubric
 | The excuse | What holds |
 |---|---|
 | "No time for tests on a mechanical split." | A throwaway comparison script takes minutes, no committed test needed. |
-| "Leave it extensible for the variants coming later." | One-implementation seam = indirection; the next variant adds its seam when it lands. |
 
 ## Judgment
 

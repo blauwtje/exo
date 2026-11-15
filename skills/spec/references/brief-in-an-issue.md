@@ -13,5 +13,5 @@ This page puts the brief in a GitHub issue. The `specs` setting authorizes the i
 
 ## Judgment
 
-- The file outranks the issue when the two differ, and under `both` the issue carries the file's path.
+- The file outranks the issue when the two differ.
 - A field the repository does not define stays unset, and the message names it.

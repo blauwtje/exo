@@ -6,17 +6,9 @@ const REPORT_PHASES = ['landed', 'passed'];
 const RUN_START = /run start:/;
 const LIVE_AGENT = ['pending', 'running', 'waiting'];
 
-function parseState(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
 async function readState($, file) {
   try {
-    return parseState(await $.fs.read(file));
+    return JSON.parse(await $.fs.read(file));
   } catch {
     return null;
   }

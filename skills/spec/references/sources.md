@@ -19,9 +19,9 @@ All keyless. Each search prints one JSON line per hit, or `status: blocked <sour
 - The route reads Reddit through the user's logged-in browser profile and calls only reddit.com.
 - A raise sent by the dispatching orchestrator is valid and the worker obeys it.
 - One fetch is one `search.mjs` call, and a brief's `Fetches:` is the thread count divided by the call's `--limit`, rounded up.
-- The script needs no key and returns post text and comments. `--query` runs only while the shared host state shows budget.
+- `--query` runs only while the shared host state shows budget.
 - On a `status: blocked reddit <reason>` line, record a gap and tell the user its fix. First-time setup is `search.mjs --source reddit --login`; the user types the password only in that browser window.
-- Never web-fetch reddit.com, old.reddit.com or a mirror such as redlib or libreddit; never retry a blocked route, record a gap.
+- Never web-fetch reddit.com, old.reddit.com or a mirror such as redlib or libreddit; never retry a blocked route.
 
 ## Rules
 

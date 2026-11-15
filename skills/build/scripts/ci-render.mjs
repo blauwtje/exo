@@ -35,16 +35,12 @@ function runCli(argv) {
   process.exitCode = refused ? 2 : 0;
 }
 
-function reportUsage(error) {
-  if (!(error instanceof UsageError)) throw error;
-  process.stderr.write(`exo: ${error.message}\n`);
-  process.exitCode = USAGE_EXIT;
-}
-
 if (isMain(import.meta.url)) {
   try {
     runCli(process.argv.slice(2));
   } catch (error) {
-    reportUsage(error);
+    if (!(error instanceof UsageError)) throw error;
+    process.stderr.write(`exo: ${error.message}\n`);
+    process.exitCode = USAGE_EXIT;
   }
 }

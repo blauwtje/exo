@@ -1,10 +1,10 @@
 # Handoff
 
-Each phase hands the next a file, so a delegate starts from recorded evidence, not a transcript. Too fat: pasted logs and prose the next context reads whole. Too thin: fix delegate reopens the investigation.
+Each phase hands the next a file, so a delegate starts from recorded evidence, not a transcript. Too fat: pasted logs and prose. Too thin: the fix delegate reopens the investigation.
 
 ## Fields
 
-- Every phase after Step 1 hands off through one file, `<debug-dir>/<slug>.md` in the checkout's `.exo/debug/`.
+- Every phase after Step 1 hands off through `<debug-dir>/<slug>.md` in the checkout's `.exo/debug/`.
 - `<slug>` = symptom in kebab-case, at most 40 characters.
 - `build`'s bug fixer → `task-<n>` in place of `<slug>`; writes both parts.
 - Output over a field's line cap → log; field names the log path, because the report phase reads the handoff, never its logs.

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { PLUGIN_ROOT } from './run-session-paths.mjs';
 import { DENY_RULES, SESSION_RULES } from './run-session-rules.mjs';
 
-const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', fix: 'Read,Edit,Write,Bash,Grep,Glob' };
+const SESSION_TOOLS = 'Read,Edit,Write,Bash,Grep,Glob';
 
 const SESSION_AGENTS = { build: 'build-task', fix: 'build-task' };
 
@@ -32,7 +32,7 @@ export function claudeArgs({ model, effort, budget, allow, settings: base = null
     ...(budget === undefined ? [] : ['--max-budget-usd', budget]),
     ...(settings === null ? [] : ['--settings', typeof settings === 'string' ? settings : JSON.stringify(settings)]),
     '--strict-mcp-config',
-    '--tools', SESSION_TOOLS[kind], '--disable-slash-commands',
+    '--tools', SESSION_TOOLS, '--disable-slash-commands',
     '--include-hook-events',
     '--append-system-prompt', SESSION_RULES,
     '--exclude-dynamic-system-prompt-sections',

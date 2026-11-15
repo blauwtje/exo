@@ -18,7 +18,5 @@ export const RUN_PLAN = path.join(SCRIPTS_DIR, 'run-plan.mjs');
 export const watchCommand = (id) => `node "${CLI}" wait ${id}`;
 
 export const scriptPath = (name) => path.join(SCRIPTS_DIR, name);
-
 export const realpathOr = (file) => orWhenAbsent(() => fs.realpathSync(file), path.resolve(file));
-
 export const spellings = (file) => [...new Set([file, realpathOr(file)])];

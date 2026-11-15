@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { appendOp, appendStep, createRun, listRuns, readJournal, readState, resumePoint, runDir } from '../skills/build/scripts/run-state.mjs';
-import { noteAttempt, noteSession, replayedSession, restoreResume, takePending } from '../skills/build/scripts/run-plan-resume.mjs';
+import { noteAttempt, noteSession, replayedSession, restoreResume, takePending } from '../skills/build/scripts/run-plan-build.mjs';
 import { tempDir } from './harness.mjs';
 
 function repo() {

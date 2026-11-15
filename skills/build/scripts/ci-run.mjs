@@ -36,10 +36,6 @@ function headCommit(root) {
   return spawnSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
 }
 
-function report(name, value) {
-  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
-}
-
 function runPlan(root, plan, resultDirectory) {
   if (planPathFrom(`/exo run ${plan}`) === null) return fail(`refused plan path ${JSON.stringify(plan)}`);
   const base = headCommit(root);
@@ -47,7 +43,7 @@ function runPlan(root, plan, resultDirectory) {
   if (ran.status !== 0) return ran.status ?? 1;
   const { branch, ahead } = bundleResult(root, base, resultDirectory);
   if (branch === null) return fail(`the run left ${ahead.length} branches ahead of ${base}, not one; nothing to push`);
-  report('has-result', 'true');
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'has-result=true\n');
   return 0;
 }
 

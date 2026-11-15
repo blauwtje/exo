@@ -2,9 +2,8 @@
 
 import process from 'node:process';
 import { mainCheckout } from '#checkout';
-import { defaultBranch } from '#git';
 import { UsageError, USAGE_EXIT, parseFlags, isMain } from '#script-flags';
-import { git } from '#git';
+import { defaultBranch, git } from '#git';
 import { firstLine } from './gh-run.mjs';
 
 const USAGE = 'usage: return-to-default.mjs [--merged <branch>]...';

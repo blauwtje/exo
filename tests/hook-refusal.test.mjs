@@ -4,7 +4,7 @@ import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { SHARED_STATE_STEP } from '../lib/lazy-steps.mjs';
 import { stallGuardInput } from '../hooks/run-stall-guard.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
-import { rememberRefusal } from '../lib/hook-refusal.mjs';
+import { refusalText, rememberRefusal } from '../lib/hook-refusal.mjs';
 
 const off = () => false;
 const session = (name) => `${name}-${process.pid}-${Date.now()}`;
@@ -63,4 +63,27 @@ test('an allowed output passes unchanged', () => {
   const output = { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: 'note' } };
   assert.equal(rememberRefusal({ session_id: 's' }, output, { guard: 'g' }), output);
   assert.equal(rememberRefusal({ session_id: 's' }, null, { guard: 'g' }), null);
+});
+
+const refusalCall = (session, query = 'x  Reddit') => ({ session_id: session, tool_name: 'WebSearch', tool_input: { query } });
+const refusalOptions = { guard: 'reddit', guardText: 'guard' };
+
+test('another session or call starts at hit 1', () => {
+  const session = `s-${process.pid}-c`;
+  refusalText(refusalCall(session), refusalOptions);
+  assert.equal(refusalText(refusalCall(`${session}x`), refusalOptions), 'guard');
+  assert.equal(refusalText(refusalCall(session, 'other'), refusalOptions), 'guard');
+});
+
+test('a call without a session is not counted', () => {
+  assert.equal(refusalText({ tool_name: 'WebSearch', tool_input: {} }, refusalOptions), 'guard');
+  assert.equal(refusalText({ tool_name: 'WebSearch', tool_input: {} }, refusalOptions), 'guard');
+});
+
+test('three identical refused calls give three distinct outputs', () => {
+  const session = `s-${process.pid}-d`;
+  const outputs = [1, 2, 3].map(() => refusalText(refusalCall(session), refusalOptions));
+  assert.equal(new Set(outputs).size, 3);
+  assert.ok(outputs[1].includes('follow the first refusal: guard'));
+  assert.match(outputs[2], /record the gap/);
 });

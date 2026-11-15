@@ -12,8 +12,7 @@ const REASON_MAX = 140;
 
 function receiptsOn() {
   try {
-    const value = settingOrDefault('receipts').value;
-    return value !== 'off';
+    return settingOrDefault('receipts').value !== 'off';
   } catch {
     return true;
   }

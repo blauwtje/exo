@@ -1,6 +1,6 @@
 # Pressure scenarios
 
-A pressure scenario tempts the model into the mistake the skill guards against, so a run shows whether the skill stops it.
+A pressure scenario tempts the model into the mistake the skill guards against.
 
 ## Building the prompt
 
@@ -11,7 +11,7 @@ A pressure scenario tempts the model into the mistake the skill guards against, 
 
 ## When a case needs pressure
 
-- Start every case as the ordinary task and add pressure only when the run without the skill passes it; a default tendency seen in a real run needs none, since pressure on it proves nothing and risks a refusal.
+- Start every case as the ordinary task and add pressure only when the run without the skill passes it; a default tendency seen in a real run needs none.
 
 ## Sources of pressure
 
@@ -19,7 +19,7 @@ A pressure scenario tempts the model into the mistake the skill guards against, 
 - Investment: work sunk into the wrong path, or the fatigue of a long session.
 - People: someone senior wanting the shortcut, or the social cost of saying no.
 
-One pressure gives a usable case. For a skill that guards a habit, stack three, because a skill that holds against one pressure still folds under the next.
+One pressure gives a usable case; for a skill that guards a habit, stack three.
 
 ## What each kind of file needs
 

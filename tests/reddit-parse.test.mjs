@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { parseSearchPage, parseThread, searchUrl } from '../skills/spec/scripts/sources/reddit-text.mjs';
+import { parseSearchPage, parseThread, searchUrl } from '../skills/spec/scripts/sources/reddit.mjs';
 
 const fixture = (name) => fs.readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 

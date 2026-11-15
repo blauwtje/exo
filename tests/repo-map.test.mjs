@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { DEFAULT_CAP, renderMap } from '../skills/spec/scripts/map-render.mjs';
+import { DEFAULT_CAP, renderMap } from '../skills/spec/scripts/repo-map.mjs';
 
 const commit = 'abc1234';
 

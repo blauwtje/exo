@@ -35,7 +35,7 @@ Output: <at most ten lines, or the log path>
 Paths in scope: <the task's Files: paths>
 Handoff file: <root>/.exo/debug/task-<n>.md; write its investigate part before the fix.
 
-Failing command above = red proof: quote its failure before the edit and its pass after; write no new test for it.
+The failing command is the red proof: quote its failure before the edit and its pass after; write no new test.
 `mcp:` command → rerun none, the session does: prove the fix with Bash, report it deferred.
 
 Return only the handoff path.

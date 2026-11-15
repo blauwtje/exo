@@ -4,7 +4,7 @@ Goal: carry one pull request to merge-ready in rounds, then hand it back.
 
 ## The round
 
-- Run one watcher per pull request at a time, because two rounds on one branch push over each other.
+- Run one watcher per pull request at a time.
 - A delegate that opened the pull request does not watch it and hands back to the dispatching session.
 - Before triaging, fetch full state: `gh pr view <number> --json number,title,state,mergeable,reviewDecision,statusCheckRollup,mergeStateStatus,comments,reviews`.
 - Push a round's known fixes together as one wave. When a conflict blocks, do not work a check to look busy.
@@ -23,7 +23,7 @@ Work in this order:
 ## The stop conditions
 
 - Call it ready when the build is green, every comment is resolved and the branch merges cleanly.
-- The draft stays a draft until then, because marking it ready earlier misrepresents its state.
+- The draft stays a draft until then.
 - When the next fix needs a design choice, stop and ask the user to make it.
 - Answer a user question mid-round and carry on. Only the user's explicit stop ends the watch early.
 

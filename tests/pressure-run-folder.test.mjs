@@ -6,10 +6,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { makeDefaultOptionsHome } from '../lib/default-options-home.mjs';
 import { parseFlags } from '../lib/script-flags.mjs';
-import { SPEC, USAGE, optionsFrom } from '../skills/edit-skills/scripts/pressure-options.mjs';
+import { SPEC, USAGE, cellsFor, gradeReport, optionsFrom, regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
+import { runOneCell } from '../skills/edit-skills/scripts/pressure-cell.mjs';
 import { dryRunReport, recordRun, recordedRuns } from '../skills/edit-skills/scripts/pressure-records.mjs';
-import { regradeFolder } from '../skills/edit-skills/scripts/pressure-regrade.mjs';
-import { gradeReport } from '../skills/edit-skills/scripts/pressure-report.mjs';
 import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
 import { restoreEnv, tempDir } from './harness.mjs';
 
@@ -142,4 +141,18 @@ test('grades.json records the mode of the run', () => {
     gradeReport(outDir, { 'sonnet:low': [] }, { ...DEFAULTS, mode });
     assert.equal(JSON.parse(fs.readFileSync(path.join(outDir, 'grades.json'), 'utf8'))['sonnet:low'].mode, mode);
   }
+});
+
+test('pressure-cell exports the runner', () => {
+  assert.equal(typeof runOneCell, 'function');
+});
+
+test('cellsFor lists model:effort cells for a listed agent file', () => {
+  const cells = cellsFor('agents/orchestrator.md').split(',');
+  assert.ok(cells.length > 0);
+  for (const cell of cells) assert.match(cell, /^[^:]+:[^:]+$/);
+});
+
+test('cellsFor refuses a file no kind lists', () => {
+  assert.throws(() => cellsFor('agents/none.md'), /no kind in lib\/model-kinds.json lists 'agents\/none.md'/);
 });

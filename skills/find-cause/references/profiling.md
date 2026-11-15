@@ -1,6 +1,6 @@
 # Profile and trace forensics
 
-Diagnose a slowdown, memory growth or captured profile from a signal, not from reading source. Failure: naming a bottleneck the trace never showed. Overcorrection: profiling without attributing the finding to file, symbol and line. Deliverable = diagnosis; Step 4 turns it into a fix once the cause is proven.
+Diagnose a slowdown, memory growth or captured profile from a signal, not from reading source. Failure: naming a bottleneck the trace never showed. Overcorrection: profiling without attributing the finding to file, symbol and line. Step 4 turns the diagnosis into a fix.
 
 ## Capture or load the signal
 
@@ -11,7 +11,6 @@ Diagnose a slowdown, memory growth or captured profile from a signal, not from r
 
 - For a large artifact, load it into a queryable form (one row per sample, frame or node) before reading by eye.
 - Narrow to the hot path (frames holding most time) or, for a leak, the retainer chain from the growing object to a root keeping it alive.
-- Read only the narrowed rows, not the raw artifact.
 
 ## Prove the mechanism
 

@@ -70,15 +70,14 @@ function hasOwnVocabulary(labels, types, projects) {
 
 function readProjectFields(owner, project, unread) {
   return optional(`project ${project.number} fields`, unread, () => {
-    const text = ghText([
+    return JSON.parse(ghText([
       'project', 'field-list', String(project.number), '--owner', owner, '--format', 'json',
       '--jq', '[.fields[]|{id,name,options:[.options[]?|{id,name}]}]'
-    ]);
-    return JSON.parse(text);
+    ]));
   });
 }
 
-function readRepository(cwd) {
+function readRepository() {
   const unread = [];
   const repoJson = JSON.parse(ghText(['repo', 'view', '--json', 'owner,name,defaultBranchRef']));
   const repo = { owner: repoJson.owner.login, name: repoJson.name, defaultBranch: repoJson.defaultBranchRef.name };
@@ -149,7 +148,7 @@ function runRepoRead(refresh) {
   }
   let data;
   try {
-    data = readRepository(cwd);
+    data = readRepository();
   } catch (error) {
     if (!(error instanceof GhError)) throw error;
     console.log(`fields: error gh=${error.message}`);
@@ -176,8 +175,7 @@ function sizeForCount(count) {
 
 function priorityCategory({ shape, shipped, blocking }) {
   if (shape === 'report') return shipped ? 'highest' : 'middle';
-  if (shape === 'spec') return blocking ? 'middle' : 'lowest';
-  throw new UsageError(`--shape must be 'spec' or 'report', got '${shape}'`);
+  return blocking ? 'middle' : 'lowest';
 }
 
 function priorityForCategory(category, options) {
@@ -196,19 +194,6 @@ function sizeFields({ paths, criteria, shape, shipped, blocking, options }) {
 function toCount(value, name) {
   if (value === undefined || !/^\d+$/.test(value)) throw new UsageError(`--${name} needs a non-negative integer`);
   return Number(value);
-}
-
-function readFlags(argv) {
-  return parseFlags(argv, {
-    size: 'boolean',
-    refresh: 'boolean',
-    paths: 'value',
-    criteria: 'value',
-    shape: 'value',
-    shipped: 'boolean',
-    blocking: 'boolean',
-    options: 'value'
-  }, { usage: USAGE });
 }
 
 function sizeFlagsFrom(flags) {
@@ -237,7 +222,16 @@ function runSize(flags) {
 function main() {
   let flags;
   try {
-    flags = readFlags(process.argv.slice(2));
+    flags = parseFlags(process.argv.slice(2), {
+      size: 'boolean',
+      refresh: 'boolean',
+      paths: 'value',
+      criteria: 'value',
+      shape: 'value',
+      shipped: 'boolean',
+      blocking: 'boolean',
+      options: 'value'
+    }, { usage: USAGE });
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`usage: repo-fields.mjs [--refresh] | --size --paths <n> --criteria <n> --shape spec|report [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]: ${error.message}`);

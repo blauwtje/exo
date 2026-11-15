@@ -5,7 +5,6 @@ Motion explains change: where a view came from, that an item was added, that pro
 ## The load
 
 - One orchestrated entrance: the main regions arrive in a short stagger (chrome, then primary content, then secondary), finished within about 500ms of load.
-  - Good: chrome at 0ms, content at 80ms, side panes at 160ms, all done by 400ms.
 - Content stays visible without interaction: no reveal gated on scroll position. Scroll-triggered fades leave content blank for readers who jump and in screenshots; look.mjs shoots shortly after load and scroll.
 - Entrance: `transform` and `opacity`, starting close to the final state (a small offset or scale), so a missed frame still shows the page.
 
@@ -13,13 +12,12 @@ Motion explains change: where a view came from, that an item was added, that pro
 
 - Hover, press, view and tab change: short, ease-out, `transform` and `opacity` only, so layout does not reflow mid-animation.
 - Entering uses ease-out. Leaving uses ease-in and runs shorter than entering.
-  - Good: a sheet in at 220ms ease-out, out at 160ms ease-in. Bad: both at 400ms linear.
 - Live states: progress bars move, toggles slide, loading placeholders pulse in the direction's colors, a new item slides into its list.
 - Bounce and overshoot: only when the world is playful (toys, games); functional UI settles without them.
 
 ## Signature motion
 
-One motion tied to the direction, used where it means something: a cartoon press on a toy-like button, a slow light sweep across a lit panel, a page-turn for a print world. One is memorable; five compete.
+One motion tied to the direction, used where it means something: a cartoon press on a toy-like button, a slow light sweep across a lit panel, a page-turn for a print world.
 
 ## Reduced motion
 

@@ -6,8 +6,7 @@ import { test } from 'node:test';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { writeBuildProgress } from '../lib/build-progress.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { checkTask } from '../skills/build/scripts/land-check.mjs';
-import { fixLand } from '../skills/build/scripts/land-fix.mjs';
+import { checkTask, fixLand } from '../skills/build/scripts/land-check.mjs';
 import { LandingError } from '../skills/build/scripts/land-errors.mjs';
 import { compactPlanFixture, git, gitRepository, planFixture, run, tempDir } from './harness.mjs';
 import {

@@ -21,7 +21,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is a h
 ## Pointers, not content
 
 - Each section names a path, command, issue number or line range, and stops there.
-- Paste no diff, file body or log; the reader can open them, and pasting spends the context the clear freed.
+- Paste no diff, file body or log; the reader can open them.
 - For an error, paste only its failing lines.
 - Quote a value only when it exists nowhere on disk, such as a number from an unlogged run.
 

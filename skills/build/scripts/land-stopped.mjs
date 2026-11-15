@@ -26,7 +26,7 @@ export function foldCheckpoints(root) {
 
 const STDIN_REPORT = 'stdin';
 
-const implementerReportPath = (root, number) => path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
+export const implementerReportPath = (root, number) => path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
 
 function fileReportOf(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;

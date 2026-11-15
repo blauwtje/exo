@@ -34,7 +34,7 @@ Set a milestone only when the repository has an open one whose title the outcome
 
 No body, Spec or Report, carries a background or motivation section beyond `### Problem`, a quote of the request, or a copy of the labels, type, parent, blocked-by or milestone, which go stale on the first edit.
 
-Every section is an H3, because a repository's issue form renders each field as one, so the item reads as one a person filed. An issue template's headings order a Spec or Report body.
+Every section is an H3, as a repository's issue form renders each field, and an issue template's headings order a Spec or Report body.
 
 - `### Outcome`: one present-tense sentence naming the result; a brief's Goal.
 - `### Problem` (optional): what goes wrong for the user today, from their side, in one or two sentences.
@@ -76,4 +76,4 @@ Read it back with `gh pr view <n> --json number,title,labels,milestone,url`.
 
 ## Judgment
 
-- Report a failed `gh` command with its output, and do not retry it unchanged.
+- Report a failed `gh` command with its output; do not retry it unchanged.

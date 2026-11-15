@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRepository } from '../verify/repository.mjs';
 import { checkQuestionOptions } from '../verify/checks/question-options.mjs';
 import { checkScriptOutput } from '../verify/checks/script-output.mjs';
-import { checkSessionLoad } from '../verify/checks/session-load.mjs';
+import { checkSessionLoad } from '../verify/checks/hook-budgets.mjs';
 import { failures, recorder, tree } from './check-outcome.mjs';
 
 test('question options fails on an option list that skips a letter', () => {

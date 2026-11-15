@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -8,9 +9,9 @@ import { frameOf } from '#plan-frame';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { runBounded } from '../../../lib/bounded-command.mjs';
 import { Refusal } from './cli-refusal.mjs';
-import { configDir, loadRunConfig } from './run-config.mjs';
-import { readKeyInput, writeKey } from './run-keys.mjs';
-import { startClaude } from './exo-claude.mjs';
+import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
+import { insideClaudeCode } from './run-session-env.mjs';
+import { resolveClaude } from './run-session-claude.mjs';
 
 const LAUNCHER = [
   '#!/bin/sh',
@@ -111,4 +112,184 @@ export async function setupRefusal(planPath, checkout) {
   const failure = await runSetupCommands(setupCommands(frameOf(plan.frame), plan.tasks), checkout);
   if (failure === null) return null;
   return `setup command \`${failure.command}\` failed, log ${failure.logFile}. Next: fix the environment, then rerun start-run.`;
+}
+
+const KEY_NAME = /^\w+$/;
+
+function checkKeyValue(value) {
+  if (!value) return 'the key is empty';
+  if (/\s/.test(value)) return 'the key holds whitespace or a newline';
+  return null;
+}
+
+function replaced(lines, name, value) {
+  const at = lines.findIndex((line) => {
+    const trimmed = line.trim();
+    return !trimmed.startsWith('#') && trimmed.split('=')[0].trim() === name && trimmed.includes('=');
+  });
+  if (at < 0) return null;
+  return lines.map((line, index) => (index === at ? `${name}=${value}` : line));
+}
+
+function keysFileText(existing, name, value) {
+  const lines = existing.split('\n');
+  const swapped = replaced(lines, name, value);
+  if (swapped) return swapped.join('\n');
+  if (existing === '') return `${name}=${value}\n`;
+  return `${existing}${existing.endsWith('\n') ? '' : '\n'}${name}=${value}\n`;
+}
+
+export function writeKey(file, name, value) {
+  if (!KEY_NAME.test(name)) throw new Error(`bad key name ${JSON.stringify(name)}`);
+  const problem = checkKeyValue(value);
+  if (problem) throw new Error(problem);
+  const directory = path.dirname(file);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  fs.chmodSync(directory, 0o700);
+  const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const temporary = path.join(directory, `.keys.env.${process.pid}.tmp`);
+  try {
+    fs.writeFileSync(temporary, keysFileText(existing, name, value), { mode: 0o600, flag: 'wx' });
+    fs.renameSync(temporary, file);
+  } finally {
+    fs.rmSync(temporary, { force: true });
+  }
+}
+
+async function readPiped(stdin) {
+  let text = '';
+  for await (const chunk of stdin) text += chunk;
+  return text.replace(/\r?\n$/, '');
+}
+
+function readHidden(stdin, stderr) {
+  return new Promise((resolve, reject) => {
+    let value = '';
+    const finish = (action) => {
+      stdin.setRawMode(false);
+      stdin.pause();
+      stdin.off('data', onData);
+      stderr.write('\n');
+      action();
+    };
+    const onData = (chunk) => {
+      for (const character of String(chunk)) {
+        if (character === '\u0003') return finish(() => reject(new Error('cancelled')));
+        if (character === '\r' || character === '\n') return finish(() => resolve(value));
+        value = character === '\u007f' ? value.slice(0, -1) : value + character;
+      }
+    };
+    stderr.write('Key (input hidden): ');
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+    stdin.on('data', onData);
+  });
+}
+
+export function readKeyInput(stdin, stderr) {
+  return stdin.isTTY ? readHidden(stdin, stderr) : readPiped(stdin);
+}
+
+const HOUR_MS = 3600000;
+const SEARCH_HOURS = 24 * 8;
+
+function isPeakHour(timeMs, { days, hoursUtc }) {
+  const date = new Date(timeMs);
+  const hour = date.getUTCHours();
+  return days.includes(date.getUTCDay()) && hoursUtc.some(([from, to]) => hour >= from && hour < to);
+}
+
+function deepseekPeak(timeMs, windows) {
+  if (!isPeakHour(timeMs, windows)) return { peak: false, nextOffPeak: null };
+  const hourStart = Math.floor(timeMs / HOUR_MS) * HOUR_MS;
+  for (let step = 1; step <= SEARCH_HOURS; step += 1) {
+    const candidate = hourStart + step * HOUR_MS;
+    if (!isPeakHour(candidate, windows)) return { peak: true, nextOffPeak: new Date(candidate).toISOString() };
+  }
+  return { peak: true, nextOffPeak: null };
+}
+
+export function peakNotice(timeMs, windows) {
+  const { peak, nextOffPeak } = deepseekPeak(timeMs, windows);
+  if (!peak) return null;
+  const until = nextOffPeak === null ? 'no off-peak hour is configured' : `off-peak starts at ${nextOffPeak}`;
+  return `notice: DeepSeek peak hours bill double; ${until}.`;
+}
+
+const USAGE = 'usage: exo claude [--provider <name>] [--effort <level>] [-- <claude args>]';
+
+function parseArgs(args) {
+  const separator = args.indexOf('--');
+  const own = separator < 0 ? args : args.slice(0, separator);
+  const passed = separator < 0 ? [] : args.slice(separator + 1);
+  const flags = {};
+  for (let at = 0; at < own.length; at += 2) {
+    const name = own[at];
+    if (!['--provider', '--effort'].includes(name) || own[at + 1] === undefined) return { refused: USAGE };
+    flags[name.slice(2)] = own[at + 1];
+  }
+  return { flags, passed };
+}
+
+function claudeEnvironment({ config, keys, home, env, provider: name, effort }) {
+  if (!Object.hasOwn(config.providers, name)) {
+    return { refused: `refused: unknown provider ${JSON.stringify(name)}; known: ${Object.keys(config.providers).join(', ')}` };
+  }
+  if (effort !== undefined && !config.efforts.includes(effort)) {
+    return { refused: `refused: unknown effort ${JSON.stringify(effort)}; use one of ${config.efforts.join(', ')}` };
+  }
+  const resolved = resolveProvider(config, name, { keys, effort, home });
+  if (resolved.refused !== undefined) return { refused: `refused: ${resolved.refused}` };
+  const inherited = { ...env };
+  if (name !== 'claude') delete inherited.ANTHROPIC_API_KEY;
+  const setsEffort = effort !== undefined || config.providers[name].effort !== undefined;
+  return {
+    provider: name,
+    env: { ...inherited, ...resolved.env, ...(setsEffort ? { CLAUDE_CODE_EFFORT_LEVEL: resolved.effort } : {}) }
+  };
+}
+
+function runChild(command, args, env) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { env, stdio: 'inherit' });
+    for (const signal of ['SIGINT', 'SIGQUIT']) process.on(signal, () => {});
+    child.on('error', (error) => resolve({ refused: `refused: cannot start claude: ${error.message}` }));
+    child.on('exit', (code) => resolve({ code: code ?? 1 }));
+  });
+}
+
+function loadConfig(home) {
+  try {
+    return { config: loadRunConfig({ home }) };
+  } catch (error) {
+    return { refused: `refused: ${path.join(configDir(home), 'run.json')} does not load: ${error.message}` };
+  }
+}
+
+function printPeakNotice(provider, config, env) {
+  if (provider !== 'deepseek') return;
+  const notice = peakNotice(environmentMs('EXO_NOW_MS', Date.now(), env), config.defaults.deepseekPeak);
+  if (notice) process.stderr.write(`${notice}\n`);
+}
+
+async function startClaude(args, { home }) {
+  if (insideClaudeCode()) return { refused: 'refused: exo claude starts an interactive session and runs only from a terminal, not inside a Claude Code session' };
+  const parsed = parseArgs(args);
+  if (parsed.refused) return parsed;
+  const loaded = loadConfig(home);
+  if (loaded.refused) return loaded;
+  const built = claudeEnvironment({
+    config: loaded.config,
+    keys: readKeys(path.join(configDir(home), 'keys.env')),
+    home,
+    env: process.env,
+    provider: parsed.flags.provider ?? loaded.config.defaults.provider,
+    effort: parsed.flags.effort
+  });
+  if (built.refused) return built;
+  printPeakNotice(built.provider, loaded.config, process.env);
+  const claude = resolveClaude({});
+  if (claude.refused) return { refused: `refused: ${claude.refused}` };
+  return runChild(claude.command, [...claude.prefix, ...parsed.passed], built.env);
 }

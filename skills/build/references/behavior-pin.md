@@ -1,6 +1,6 @@
 # Behavior pin
 
-A pin records what the code does now, so the refactor is judged against old outputs, not intent. Grading against intent lets a bug already shipped as behavior survive unnoticed. Overcorrection: a pin so exhaustive it stalls the refactor. Write the pin before the first structural edit; rerun it after every step.
+A pin records what the code does now, so the refactor is judged against old outputs, not intent. Overcorrection: a pin so exhaustive it stalls the refactor. Write the pin before the first structural edit; rerun it after every step.
 
 ## Choosing the pin
 
@@ -11,11 +11,11 @@ A pin records what the code does now, so the refactor is judged against old outp
 | No tests, output is a file, page or report | Snapshot of the output taken before, diffed after. |
 | Side effects: network, storage, time | Record the calls against a fake before the move; compare the call log after. |
 
-Type check, lint and "it builds" are never the pin: they pass when a value changes and the shape does not.
+Type check, lint and "it builds" are never the pin.
 
 ## Old against new
 
-Keep the old version runnable beside the new until the comparison passes, then delete it:
+Keep the old version runnable beside the new until the comparison passes, then delete it.
 
 1. Copy the original to a scratch file outside the source tree, or load it with `git show HEAD:<path>`.
 2. Generate inputs over every branch boundary: each threshold, enum value, flag combination, plus empty and extreme cases.

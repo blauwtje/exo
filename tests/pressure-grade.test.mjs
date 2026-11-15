@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { JUDGE_VOTES, aggregate, defaultJudge, gradeRun, linesForCase, parseCriteria, parseMargins } from '../skills/edit-skills/scripts/pressure-grade.mjs';
-import { regradeFolder } from '../skills/edit-skills/scripts/pressure-regrade.mjs';
+import { regradeFolder } from '../skills/edit-skills/scripts/pressure.mjs';
 import { tempDir } from './harness.mjs';
 
 const CRITERIA = `# x: criteria

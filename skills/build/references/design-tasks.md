@@ -1,6 +1,6 @@
 # Design tasks
 
-Route a `Design:` task by the direction state `next-task.mjs --block` prints on its `Design:` line. An unsettled direction stays with this session, because it needs the user's judgment and a delegate cannot ask. A frozen direction goes to a delegate, because building it here reads the plan and fills the context.
+Route a `Design:` task by the direction state `next-task.mjs --block` prints on its `Design:` line. An unsettled direction stays with this session, because a delegate cannot ask the user. A frozen direction goes to a delegate.
 
 ## Routes
 
@@ -11,8 +11,8 @@ This session reads the state only, and leaves the plan's `## Visual direction` a
   - Call no ScheduleWakeup, ListAgents, Monitor or sleep meanwhile.
   - Its one-line return routes as a unit's does.
   - It stops before landing (no return line, or a context-limit handover) → dispatch one finish delegate, same prompt shape, naming the on-disk diff and `<checkout>/.exo/implementer-<n>.md` if it exists; it runs `## The delegate` from step 2 and rebuilds nothing.
-- **`direction pending at rung <n>`.** Build the task in this session under `design-ui`; this session can ask the user, and dispatches the writing per its Build rules.
-- **`direction none`.** Build the task in this session under `design-ui`, same reason and same dispatch.
+- **`direction pending at rung <n>`.** Build the task in this session under `design-ui`; it dispatches the writing per its Build rules.
+- **`direction none`.** Build the task in this session under `design-ui`, dispatched the same way.
 
 ## The delegate
 

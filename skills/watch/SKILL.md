@@ -16,7 +16,6 @@ Read a video through its captions, or a local transcript of its audio, on disk, 
 
 - A video link or YouTube id comes with a question, a summary request or an extraction request.
 - Several videos to compare or merge.
-- Not for a web page: the web tools own it.
 
 ## A profile, channel or playlist url
 
@@ -29,7 +28,7 @@ Given a TikTok, YouTube, Instagram or X profile, a YouTube channel or a playlist
 
 ## The loop
 
-1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]` with every video in this one call, or `--from <file>` or `--from -` for the `list.mjs` output. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
+1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]` with every video, or `--from <file>` or `--from -` for the `list.mjs` output. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
    - Run a batch of two or more videos in the background, pass its last line on unchanged, and on exit 75 report the open video count and the restart command from that line.
    - Pass all videos in one batch call, which runs them one by one and skips the finished ones (`--force` redoes them); do not spread watch over parallel agents or parallel Bash calls.
    - Add `--lang <code>` only when the user names a language, because it picks a listed track, not a machine translation, and names the spoken language on the speech route.
